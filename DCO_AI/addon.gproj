@@ -1,0 +1,8 @@
+GameProject {
+ ID "DCOAI"
+ GUID "5EDAAE0D3CC60D6B"
+ TITLE "DCO_AI"
+ Dependencies {
+  "58D0FB3206B6F859"
+ }
+}

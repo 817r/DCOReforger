@@ -1,0 +1,15 @@
+MetaFileClass {
+ Name "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
+ Configurations {
+  BehaviorTreeResourceClass PC {
+  }
+  BehaviorTreeResourceClass XBOX_ONE : PC {
+  }
+  BehaviorTreeResourceClass XBOX_SERIES : PC {
+  }
+  BehaviorTreeResourceClass PS4 : PC {
+  }
+  BehaviorTreeResourceClass HEADLESS : PC {
+  }
+ }
+}

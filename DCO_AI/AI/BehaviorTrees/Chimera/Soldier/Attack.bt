@@ -1,0 +1,126 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -1087.429 -563.477
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos -1092.309 -403.12
+     Nodes {
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -2128.535 -19.775
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 4
+         PortName "weaponOrMuzzleSwitch"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 5
+         PortName "weaponReady"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 1
+         PortName "handleWeaponTree"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 2
+         PortName "weaponOrMuzzleSwitch"
+        }
+       }
+       BehaviorTree "{648E04634854A4AB}AI/BehaviorTrees/Chimera/Soldier/HandleWeaponSwitching.bt"
+      }
+      Selector Selector {
+       Name "Selector"
+       EditorPos -845.167 -182.048
+       Nodes {
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos -1023.928 -19.285
+         Nodes {
+          AITaskSetVariable "Set Variable" {
+           Name "Set Variable"
+           EditorPos -953.056 205.02
+           SetValue "false"
+           OutVariable 3
+          }
+         }
+         AbortType AbortChildrenBranchAndParentFurtherChildren
+         InVariable 2
+         TestType EqualsValue
+         TestValue "true"
+        }
+        RunBT RunBT {
+         Name "RunBT"
+         EditorPos -339.643 -6.985
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 6
+           PortName "WeaponReady"
+          }
+         }
+         BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.bt"
+         InBehaviorTree 0
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable weaponOrMuzzleSwitch {
+   VariableName "weaponOrMuzzleSwitch"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable handleWeaponTree {
+   VariableName "handleWeaponTree"
+   VariableTypeName "ResourceName"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable WeaponReady {
+   VariableName "WeaponReady"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference handleWeaponTree {
+   VariableType 1
+   EditorPos -698.214 201.846
+  }
+  VariableReference handleWeaponTree {
+   VariableType 1
+   EditorPos -1525.552 164.87
+  }
+  VariableReference weaponOrMuzzleSwitch {
+   VariableType 0
+   EditorPos -1524.286 248.571
+  }
+  VariableReference weaponOrMuzzleSwitch {
+   VariableType 0
+   EditorPos -744.286 345.714
+  }
+  VariableReference weaponOrMuzzleSwitch {
+   VariableType 0
+   EditorPos -2430 165.556
+  }
+  VariableReference WeaponReady {
+   VariableType 2
+   EditorPos -1520 28.75
+  }
+  VariableReference WeaponReady {
+   VariableType 2
+   EditorPos -587.5 66.75
+  }
+ }
+}

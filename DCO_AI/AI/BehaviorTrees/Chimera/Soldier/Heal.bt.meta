@@ -1,0 +1,15 @@
+MetaFileClass {
+ Name "{FC41512F03073E40}AI/BehaviorTrees/Chimera/Soldier/Heal.bt"
+ Configurations {
+  BehaviorTreeResourceClass PC {
+  }
+  BehaviorTreeResourceClass XBOX_ONE : PC {
+  }
+  BehaviorTreeResourceClass XBOX_SERIES : PC {
+  }
+  BehaviorTreeResourceClass PS4 : PC {
+  }
+  BehaviorTreeResourceClass HEADLESS : PC {
+  }
+ }
+}

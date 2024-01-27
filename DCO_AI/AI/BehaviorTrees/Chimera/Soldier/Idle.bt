@@ -1,0 +1,221 @@
+BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Idle.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -1141.945 -542.007
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -1138.222 -340.444
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -2841.452 -107.262
+       Nodes {
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos -4145.903 252.812
+         Period 1
+         PeriodRandom 2
+        }
+        AITaskGetGroupChildren "Get Group Children" {
+         Name "Get Group Children"
+         EditorPos -3969.791 256.146
+         IndexTo 0
+         OutEntity 3
+        }
+        SCR_AIGetPosForward "SCR_AI Get Pos Forward" {
+         Name "SCR_AI Get Pos Forward"
+         EditorPos -3688.049 255.578
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 3
+           PortName "TargetIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "DistanceIn"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 1
+           PortName "VectorOut"
+          }
+         }
+         m_Distance 20
+        }
+        AITaskCreatePosition "Create Position" {
+         Name "Create Position"
+         EditorPos -3397.847 243.09
+         OffsetVector 0 1 0
+         InRootVector 1
+         OutPosition 2
+        }
+        SCR_AIFindCover "SCR_AI Find Cover" {
+         Name "SCR_AI Find Cover"
+         EditorPos -3105.903 256.423
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Enemy"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 2
+           PortName "DangerPosition"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "InCover"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 4
+           PortName "Position"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "Stance"
+          }
+         }
+        }
+        SCR_AISendOrder_MovementType "SCR_AI Send Order_ Movement Type" {
+         Name "SCR_AI Send Order_ Movement Type"
+         EditorPos -2740.109 249.479
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Receiver"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "MovementType"
+          }
+         }
+         m_eMovementType WALK
+        }
+        AITaskMove Move {
+         Name "Move"
+         EditorPos -2218.339 243.507
+         InTargetLocation 4
+         PrecisionXZ 1.5
+         OrientationType ToPoint
+        }
+        SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
+         Name "SCR_AI Send Order_ Stance"
+         EditorPos -1681.18 227.217
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Receiver"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 5
+           PortName "Stance"
+          }
+         }
+         m_eStance CROUCH
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos -1304.097 206.84
+         Period 5
+         PeriodRandom 1
+        }
+       }
+      }
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos -1122.014 -26.904
+       Period 10
+       PeriodRandom 5
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -990.429 -33.064
+       BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
+      }
+      Switch Switch {
+       Name "Switch"
+       EditorPos -473.56 -27.476
+       Nodes {
+        RunBT RunBT {
+         Name "RunBT"
+         EditorPos -1047.342 282.976
+         BehaviorTree "{7BC17E0DF06FCF80}AI/BehaviorTrees/Chimera/Soldier/Idle_Observe.bt"
+        }
+        RunBT RunBT {
+         Name "RunBT"
+         EditorPos -545.521 285.54
+         BehaviorTree "{E5F18B69F38FAE75}AI/BehaviorTrees/Chimera/Soldier/Idle_GadgetUse.bt"
+        }
+        RunBT RunBT {
+         Name "RunBT"
+         EditorPos -43.797 280.925
+         BehaviorTree "{77827BF0468F4A99}AI/BehaviorTrees/Chimera/Soldier/Idle_InspectWeapon.bt"
+        }
+       }
+       RandomRange {
+        4 5 6 7
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable stance {
+   VariableName "stance"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable dangerPosition {
+   VariableName "dangerPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable leaderEntity {
+   VariableName "leaderEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverPos {
+   VariableName "coverPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference stance {
+   VariableType 0
+   EditorPos -2862.49 476.66
+  }
+  VariableReference dangerPosition {
+   VariableType 1
+   EditorPos -3600.347 424.34
+  }
+  VariableReference dangerPosition {
+   VariableType 1
+   EditorPos -3282.847 424.34
+  }
+  VariableReference leaderEntity {
+   VariableType 2
+   EditorPos -3954.18 447.09
+  }
+  VariableReference coverPos {
+   VariableType 3
+   EditorPos -2661.516 450.248
+  }
+  VariableReference stance {
+   VariableType 0
+   EditorPos -1825.347 350.59
+  }
+ }
+}

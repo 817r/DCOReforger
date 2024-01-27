@@ -1,0 +1,19 @@
+SCR_ChimeraAIAgent {
+ ID "50C4E8413B94E8B0"
+ components {
+  AIFormationComponent "{50C4E8410B604B4B}" {
+   DefaultFormation "Line"
+  }
+  SCR_AIConfigComponent "{5122F2C32CDD251C}" {
+   m_Skill 0.7
+   m_EnableLeaderStop 1
+   m_EnableAimingError 0
+   m_aDefaultReactions {
+    SCR_AIIdleReaction "{5458F49C533BDFBA}" {
+     m_OverrideBehaviorTree "AI\BehaviorTrees\Chimera\Soldier\Idle.bt"
+    }
+   }
+   m_sDefaultWeaponBehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
+  }
+ }
+}

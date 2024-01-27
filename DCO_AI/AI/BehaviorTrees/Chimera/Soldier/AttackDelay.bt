@@ -1,0 +1,86 @@
+BehaviorTree "{7BAEE68E09CF9BFE}AI/BehaviorTrees/Chimera/Soldier/AttackDelay.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/AttackDelay.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 115.714 -31.429
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 111.429 90
+     Nodes {
+      SCR_AIGetAttackBehaviorParameters "SCR_AI Get Attack Behavior Parameters" {
+       Name "SCR_AI Get Attack Behavior Parameters"
+       EditorPos -538.939 369.773
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "Target"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 0
+         PortName "WaitTime"
+        }
+       }
+      }
+      DecoTestVariable "Test Variable" {
+       Name "Test Variable"
+       EditorPos 10.127 304.605
+       Nodes {
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 43.766 531.002
+         PeriodRandom 3
+         PeriodKey 0
+        }
+       }
+       NegativeCondition 1
+       ForceNodeResult Success
+       InVariable 0
+       TestType EqualsValue
+       TestValue "1"
+      }
+      AITaskSetVariable "Set Variable" {
+       Name "Set Variable"
+       EditorPos 221.853 376.855
+       SetValue "5"
+       OutVariable 1
+      }
+      SCR_AISetAttackBehaviorParameters "SCR_AI Set Attack Behavior Parameters" {
+       Name "SCR_AI Set Attack Behavior Parameters"
+       EditorPos 497.5 371.667
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "Target"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 1
+         PortName "WaitTime"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable WaitTime {
+   VariableName "WaitTime"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference WaitTime {
+   VariableType 0
+   EditorPos -155.944 458.105
+  }
+  VariableReference WaitTime {
+   VariableType 0
+   EditorPos 272.996 496.177
+  }
+ }
+}

@@ -1,0 +1,321 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Group/ActivityHeal.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 652.679 -557.536
+   Nodes {
+    Selector Selector {
+     Name "Selector"
+     EditorPos 683.389 -349.222
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 483.833 -125.333
+       Nodes {
+        SCR_AIGetHealActivityParameters "SCR_AI Get Action Parameters" {
+         Name "SCR_AIGetHealActivityParameters"
+         EditorPos -1916.364 590.144
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 9
+           PortName "WaypointRelated"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "Entity"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 7
+           PortName "AgentsExclude"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 10
+           PortName "PriorityLevel"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "MedicEntity"
+          }
+         }
+        }
+        AITaskGetControlledEntity "Get Controlled Entity" {
+         Name "Get Controlled Entity"
+         EditorPos -1350.833 604.953
+         InEntity 0
+         OutAgent 2
+        }
+        SCR_AIGetMemberByGoal "SCR_AI Get Member By Goal" {
+         Name "SCR_AI Get Member By Goal"
+         EditorPos -982.03 576.533
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "RequirementsIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 5
+           PortName "EntityIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 7
+           PortName "AgentsExcludeArray"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 1
+           PortName "GroupMemberOut"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "IsUniqueOut"
+          }
+         }
+         m_goalToAchieve HEAL
+        }
+        SCR_AISendGoalMessage_Heal "SCR_AI Send Goal Message_ Heal" {
+         Name "SCR_AI Send Goal Message_ Heal"
+         EditorPos -356.31 568.75
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 1
+           PortName "Receiver"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 11
+           PortName "PriorityLevel"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 12
+           PortName "IsWaypointRelated"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 4
+           PortName "EntityToHeal"
+          }
+         }
+         m_sText "ActivityHeal"
+         m_fPriorityLevel 1
+        }
+        AITaskGetControlledEntity "Get Controlled Entity" {
+         Name "Get Controlled Entity"
+         EditorPos -191.588 840.039
+         InEntity 1
+         OutControlledEntity 6
+        }
+        SCR_AISendGoalMessage_HealWait "SCR_AI Send Goal Message_ Heal Wait" {
+         Name "SCR_AI Send Goal Message_ Heal Wait"
+         EditorPos 335.556 842.222
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 3
+           PortName "Receiver"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 13
+           PortName "PriorityLevel"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 14
+           PortName "IsWaypointRelated"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 6
+           PortName "HealProviderEntity"
+          }
+         }
+         m_sText "ActivityHeal"
+         m_fPriorityLevel 1
+        }
+        SCR_AISetHealActivityParameters "SCR_AI Set Heal Activity Parameters" {
+         Name "SCR_AI Set Heal Activity Parameters"
+         EditorPos 795.611 840.084
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "WaypointRelated"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Entity"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "AgentsExclude"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "PriorityLevel"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 6
+           PortName "MedicEntity"
+          }
+         }
+        }
+        SCR_AISuspendAction "SCR_AI Suspend Action" {
+         Name "SCR_AI Suspend Action"
+         EditorPos 1251.667 741.25
+        }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 1541.551 726.138
+         Result RUNNING
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 1334.333 -189.166
+       Nodes {
+        SCR_AISendGoalMessage_Cancel "SCR_AI Send Goal Message_ Cancel" {
+         Name "SCR_AI Send Goal Message_ Cancel"
+         EditorPos 1287.222 11.111
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 8
+           PortName "Receiver"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 16
+           PortName "PriorityLevel"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 15
+           PortName "IsWaypointRelated"
+          }
+         }
+         m_sText "ActivityHeal"
+        }
+        SCR_AIFailAction "SCR_AI Fail Action" {
+         Name "SCR_AI Fail Action"
+         EditorPos 1648.73 11.071
+        }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 1812.634 5.39
+         Result RUNNING
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable entityToHeal {
+   VariableName "entityToHeal"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable medicAgent {
+   VariableName "medicAgent"
+   VariableTypeName "AIAgent"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable agentToHeal {
+   VariableName "agentToHeal"
+   VariableTypeName "AIAgent"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable medicEntity {
+   VariableName "medicEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable agentsExclude {
+   VariableName "agentsExclude"
+   VariableTypeName "array<AIAgent>"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable waypointRelated {
+   VariableName "waypointRelated"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable priorityLevel {
+   VariableName "priorityLevel"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference entityToHeal {
+   VariableType 0
+   EditorPos -1573.143 640.785
+  }
+  VariableReference medicAgent {
+   VariableType 1
+   EditorPos -619.417 566.5
+  }
+  VariableReference agentToHeal {
+   VariableType 2
+   EditorPos -1313.975 732.857
+  }
+  VariableReference agentToHeal {
+   VariableType 2
+   EditorPos 108.697 707.532
+  }
+  VariableReference entityToHeal {
+   VariableType 0
+   EditorPos -627.403 832.727
+  }
+  VariableReference entityToHeal {
+   VariableType 0
+   EditorPos -1335.575 846.117
+  }
+  VariableReference medicEntity {
+   VariableType 3
+   EditorPos 102.092 1088.507
+  }
+  VariableReference agentsExclude {
+   VariableType 4
+   EditorPos -1387.386 935
+  }
+  VariableReference agentToHeal {
+   VariableType 2
+   EditorPos 1035.306 88
+  }
+  VariableReference waypointRelated {
+   VariableType 5
+   EditorPos -1561.111 550
+  }
+  VariableReference priorityLevel {
+   VariableType 6
+   EditorPos -1571.806 725.694
+  }
+  VariableReference priorityLevel {
+   VariableType 6
+   EditorPos -618.182 661.818
+  }
+  VariableReference waypointRelated {
+   VariableType 5
+   EditorPos -651.818 748.182
+  }
+  VariableReference priorityLevel {
+   VariableType 6
+   EditorPos 122.222 801.111
+  }
+  VariableReference waypointRelated {
+   VariableType 5
+   EditorPos 94.444 935.556
+  }
+  VariableReference waypointRelated {
+   VariableType 5
+   EditorPos 1022.5 243.75
+  }
+  VariableReference priorityLevel {
+   VariableType 6
+   EditorPos 1057.5 165
+  }
+ }
+}

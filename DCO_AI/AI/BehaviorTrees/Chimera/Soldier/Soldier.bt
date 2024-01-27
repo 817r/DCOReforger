@@ -1,0 +1,243 @@
+BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Soldier.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -243.333 -421
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos -242.778 -252.667
+     Nodes {
+      RunOnce "Run Once" {
+       Name "Run Once"
+       EditorPos -2974.611 471.667
+       Nodes {
+        SCR_AISendOrder_ReturnToDefault "SCR_AI Send Order_ Return To Default" {
+         Name "SCR_AI Send Order_ Return To Default"
+         EditorPos -3079.5 615.5
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Receiver"
+          }
+         }
+         m_sText "Soldier"
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -1912.969 410.841
+       Nodes {
+        Sequence Sequence {
+         Name "Seq: Detection"
+         EditorPos -1982.615 706.715
+         Nodes {
+          Decorator "{50F0D1E5FB473435}" {
+           Name "Decorator"
+           EditorPos -2002.476 833.136
+           Nodes {
+            SCR_AIFindTagetToLookAt "SCR_AI Find Taget To Look At" {
+             Name "SCR_AI Find Taget To Look At"
+             EditorPos -2023.321 981.536
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 0
+               PortName "BaseTarget"
+              }
+             }
+             m_fTimeSinceSeenMax_S 2
+            }
+           }
+           ForceNodeResult Success
+          }
+         }
+        }
+        SCR_AIDecideBehavior "SCR_AI Decide Behavior" {
+         Name "SCR_AI Decide Behavior"
+         EditorPos -1417.25 850
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 4
+           PortName "UnknownTarget"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 5
+           PortName "BehaviorTree"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 2
+           PortName "UpdateBehavior"
+          }
+         }
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos -897.472 721.917
+         Period 0.3
+        }
+       }
+      }
+      Selector Selector {
+       Name "Selector"
+       EditorPos -282.25 850.75
+       Nodes {
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos -773.056 1229.833
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos -733.036 1426.679
+           Nodes {
+            SCR_AIUpdateExecutedAction "SCR_AI Update Executed Action" {
+             Name "SCR_AI Update Executed Action"
+             EditorPos -1091.667 1564.079
+            }
+            AITaskSetVariable "Set Variable" {
+             Name "Set Variable"
+             EditorPos -695.436 1567.849
+             ClearVariable 1
+             OutVariable 6
+            }
+           }
+          }
+         }
+         UseChildResult 1
+         AbortType AbortParentNodeFurtherChildren
+         InVariable 3
+        }
+        SCR_AIIsValidAction "SCR_AI Is Valid Action" {
+         Name "SCR_AI Is Valid Action"
+         EditorPos -114.75 1177.056
+         Nodes {
+          RunBT RunBT {
+           Name "RunBT"
+           EditorPos -96.461 1334.844
+           AlwaysReinit 1
+           InBehaviorTree 1
+          }
+         }
+         UseChildResult 1
+        }
+       }
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -46.62 485.238
+       BehaviorTree "{98F1144DA724F591}AI/BehaviorTrees/Chimera/Soldier/LookAction.bt"
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos 408.453 481.88
+       BehaviorTree "{8DD322A18236DA18}AI/BehaviorTrees/Chimera/Soldier/HandleOrders.bt"
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos 857.579 476.88
+       BehaviorTree "{43ED08AE42F30D89}AI/BehaviorTrees/Chimera/Soldier/TargetReporting.bt"
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos 1345.333 484.333
+       BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
+      }
+      Selector Selector {
+       Name "Selector"
+       EditorPos 1818.333 466.667
+       Nodes {
+        DecoDangerEvent "Danger Event" {
+         Name "Danger Event"
+         EditorPos 1759.053 656.667
+         Nodes {
+          RunBT RunBT {
+           Name "RunBT"
+           EditorPos 1682.25 851.5
+           BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
+          }
+         }
+         AbortType AbortChildrenBranch
+         HasAny 1
+         DangerEventType NewEnemy
+         DistanceThreshold 100
+        }
+       }
+      }
+     }
+     UseChildResult -1
+    }
+   }
+  }
+ }
+ Variables {
+  Variable unknownTarget {
+   VariableName "unknownTarget"
+   VariableTypeName "BaseTarget"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable behaviorTree {
+   VariableName "behaviorTree"
+   VariableTypeName "string"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable updateBehavior {
+   VariableName "updateBehavior"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable lastSeenPosition {
+   VariableName "lastSeenPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable TargetEntity {
+   VariableName "TargetEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable baseTarget {
+   VariableName "baseTarget"
+   VariableTypeName "BaseTarget"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference unknownTarget {
+   VariableType 0
+   EditorPos -2031.119 1089.13
+  }
+  VariableReference behaviorTree {
+   VariableType 1
+   EditorPos -357.375 1424.971
+  }
+  VariableReference updateBehavior {
+   VariableType 2
+   EditorPos -1116.584 987.972
+  }
+  VariableReference updateBehavior {
+   VariableType 2
+   EditorPos -1016.389 1327.75
+  }
+  VariableReference unknownTarget {
+   VariableType 0
+   EditorPos -1701.356 883.255
+  }
+  VariableReference behaviorTree {
+   VariableType 1
+   EditorPos -1118.083 888.5
+  }
+  VariableReference updateBehavior {
+   VariableType 2
+   EditorPos -483.453 1641.024
+  }
+ }
+}
