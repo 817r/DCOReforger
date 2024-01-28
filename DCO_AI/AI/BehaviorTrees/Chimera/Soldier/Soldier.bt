@@ -149,9 +149,9 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
        Name "Selector"
        EditorPos 1818.333 466.667
        Nodes {
-        DecoDangerEvent "Danger Event" {
-         Name "Danger Event"
-         EditorPos 1759.053 656.667
+        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+         Name "SCR_AI Deco Is Above Threat Level"
+         EditorPos 1723.333 644.444
          Nodes {
           RunBT RunBT {
            Name "RunBT"
@@ -159,10 +159,12 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
            BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
           }
          }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainerClass {
+           PortName "ThresholdIn"
+          }
+         }
          AbortType AbortChildrenBranch
-         HasAny 1
-         DangerEventType NewEnemy
-         DistanceThreshold 100
         }
        }
       }
