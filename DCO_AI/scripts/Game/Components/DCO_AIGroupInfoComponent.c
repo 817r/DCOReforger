@@ -1,4 +1,4 @@
-class DCO_AIGroupInfoComponentClass: ScriptComponentClass
+class DCO_AIInfoGroupComponentClass: ScriptComponentClass
 {
 };
 
@@ -66,8 +66,8 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	
 	private bool m_bIsAnyFireteamNearby;
 	
-	static DCO_AIGroupInfoComponent m_sInstance;
-	static DCO_AIGroupInfoComponent GetInstance()
+	static DCO_AIInfoGroupComponent m_sInstance;
+	static DCO_AIInfoGroupComponent GetInstance()
 	{
 		return m_sInstance;
 	}
@@ -95,58 +95,7 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	
 	//------------------------------------------------------------------------------------------------
 	void DCO_AIGroupInfoComponentInitialize(bool initialize)
-	{
-		if (m_SCR_AISettingsComponent)
-		{
-			m_eFormation = m_SCR_AISettingsComponent.m_Formation;
-			
-			m_bInvestigate = m_SCR_AISettingsComponent.m_Investigate;
-			m_iInvestigateRadius = m_SCR_AISettingsComponent.m_InvestigateRadius;
-			m_iInvestigateDuration = m_SCR_AISettingsComponent.m_InvestigateDuration;
-			
-			m_iCombatMoveChance = m_SCR_AISettingsComponent.m_CombatMoveChance;
-			m_iCombatCoverChance = m_SCR_AISettingsComponent.m_CombatCoverChance;
-			m_iCombatDefendChance = m_SCR_AISettingsComponent.m_CombatDefendChance;
-			
-			m_eCombatBehaviorType = m_SCR_AISettingsComponent.m_CombatBehaviorType;
-			m_eCombatMovementType = m_SCR_AISettingsComponent.m_CombatMovementType;
-			
-			m_iWeaponFiredReactionDistance = m_SCR_AISettingsComponent.m_WeaponFiredReactionDistance;
-			
-			if (initialize && m_SCR_AIConfigComponent)
-			{
-				if (m_SCR_AIConfigComponent.m_Formation != DCO_EFormation.AUTONOMOUS)
-					m_eFormation = m_SCR_AIConfigComponent.m_Formation;
-				
-				if (m_SCR_AIConfigComponent.m_Investigate != true)
-					m_bInvestigate = m_SCR_AIConfigComponent.m_Investigate;
-				
-				if (m_SCR_AIConfigComponent.m_InvestigateRadius != -1)
-					m_iInvestigateRadius = m_SCR_AIConfigComponent.m_InvestigateRadius;
-				
-				if (m_SCR_AIConfigComponent.m_InvestigateDuration != 120)
-					m_iInvestigateDuration = m_SCR_AIConfigComponent.m_InvestigateDuration;
-				
-				if (m_SCR_AIConfigComponent.m_CombatMoveChance != 50)
-					m_iCombatMoveChance = m_SCR_AIConfigComponent.m_CombatMoveChance;
-				
-				if (m_SCR_AIConfigComponent.m_CombatCoverChance != 50)
-					m_iCombatCoverChance = m_SCR_AIConfigComponent.m_CombatCoverChance;
-				
-				if (m_SCR_AIConfigComponent.m_CombatDefendChance != -1)
-					m_iCombatDefendChance = m_SCR_AIConfigComponent.m_CombatDefendChance;
-				
-				if (m_SCR_AIConfigComponent.m_CombatBehaviorType != DCO_ECombatBehaviorType.DEFAULT)
-					m_eCombatBehaviorType = m_SCR_AIConfigComponent.m_CombatBehaviorType;
-				
-				if (m_SCR_AIConfigComponent.m_CombatMovementType != DCO_ECombatMovementType.AUTONOMOUS)
-					m_eCombatMovementType = m_SCR_AIConfigComponent.m_CombatMovementType;
-				
-				if (m_SCR_AIConfigComponent.m_WeaponFiredReactionDistance != 500)
-					m_iWeaponFiredReactionDistance = m_SCR_AIConfigComponent.m_WeaponFiredReactionDistance;
-			}
-		}
-		
+	{		
 		if (m_eFormation == DCO_EFormation.AUTONOMOUS)
 			m_eFormation = DCO_EFormation.WEDGE;
 		else

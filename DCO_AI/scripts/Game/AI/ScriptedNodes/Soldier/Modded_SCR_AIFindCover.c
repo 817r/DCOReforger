@@ -18,7 +18,7 @@ modded class SCR_AIFindCover : AITaskScripted
 	
 	private DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	private SCR_AIUtilityComponent m_SCR_AIUtilityComponent;
-	private DCO_AIGroupInfoComponent m_DCO_AIGroupInfoComponent;
+	private DCO_AIInfoGroupComponent m_DCO_AIGroupInfoComponent;
 	
 	//override private const vector
 	private const vector PRONE_OFFSET = Vector(0, 0.30, 0);
@@ -38,13 +38,11 @@ modded class SCR_AIFindCover : AITaskScripted
 		
 		m_SCR_AIUtilityComponent = SCR_AIUtilityComponent.Cast(owner.FindComponent(SCR_AIUtilityComponent));
 		
-		m_DCO_AIInfoComponent = m_SCR_AIUtilityComponent.m_DCO_AIInfoComponent;
+		//m_DCO_AIInfoComponent = m_SCR_AIUtilityComponent.m_DCO_AIInfoComponent;
 		
 		if (m_ParentGroup)
 		{
 			m_FormationComponent = AIFormationComponent.Cast(m_ParentGroup.FindComponent(AIFormationComponent));
-			
-			m_DCO_AIGroupInfoComponent = DCO_AIGroupInfoComponent.Cast(m_ParentGroup.FindComponent(DCO_AIGroupInfoComponent));
 		}
 	}
 	
@@ -127,105 +125,11 @@ modded class SCR_AIFindCover : AITaskScripted
 		
 		float distanceToDanger = vector.Distance(m_DangerPosition, ownerEntity.GetOrigin());
 		
-		m_ThreatSuppression = m_SCR_AIUtilityComponent.m_ThreatSystem.GetThreatSuppression();
-		
 		vector traceOrigin;
 		if (inCoverNow)
 			traceOrigin = ownerEntity.CoordToParent(IN_COVER_OFFSET);
 		else
 			traceOrigin = ownerEntity.GetOrigin();
-		
-		if (m_DCO_AIGroupInfoComponent)
-		{
-			DCO_ECombatMovementType combatMovementType = m_DCO_AIGroupInfoComponent.GetCombatMovementType();
-			
-			if (combatMovementType == DCO_ECombatMovementType.INDIVIDUAL)
-			{
-				traceOrigin = ownerEntity.GetOrigin();
-				
-			}
-			else
-			{
-				if (m_ParentGroup && combatMovementType == DCO_ECombatMovementType.GROUP)
-				{
-					AIAgent leaderAgent = m_ParentGroup.GetLeaderAgent();
-					
-					IEntity leaderEntity = m_ParentGroup.GetLeaderEntity();
-					
-					if (owner == leaderAgent)
-						traceOrigin = leaderEntity.GetOrigin();
-					else
-					{
-						if (m_FormationComponent)
-						{
-							AIFormationDefinition formation = m_FormationComponent.GetFormation();
-							
-							if (formation)
-							{
-								array<AIAgent> agents = {};
-								
-								m_ParentGroup.GetAgents(agents);
-								
-								int formationOffsetIndex = agents.Find(owner);
-								
-								vector offsetPosition = formation.GetOffsetPosition(formationOffsetIndex);
-								
-								vector offsetWorldPosition = leaderEntity.CoordToParent(offsetPosition);
-								
-								traceOrigin = offsetWorldPosition;
-							}
-						}
-					}
-				}
-				
-				if (m_SCR_ChimeraAIAgent && combatMovementType == DCO_ECombatMovementType.FIRETEAM)
-				{
-					SCR_AIGroupFireteam fireTeam = m_SCR_ChimeraAIAgent.GetFireteam();
-					
-					if (fireTeam)
-					{
-						AIAgent fireTeamLeaderAgent;
-						
-						array<AIAgent> fireTeamMembers = fireTeam.GetMembers();
-						
-						if (fireTeamMembers.IsEmpty())
-							fireTeamLeaderAgent = null;
-						else
-						{
-							fireTeamLeaderAgent = fireTeam.GetLeader();
-							
-							if (fireTeamLeaderAgent)
-							{
-								if (m_FormationComponent)
-								{
-									AIFormationDefinition formation = m_FormationComponent.GetFormation();
-									
-									if (formation)
-									{
-										int formationOffsetIndex = fireTeamMembers.Find(owner);
-										
-										IEntity fireTeamLeaderEntity = fireTeamLeaderAgent.GetControlledEntity();
-										
-										vector offsetPosition = formation.GetOffsetPosition(formationOffsetIndex);
-										
-										vector offsetWorldPosition = fireTeamLeaderEntity.CoordToParent(offsetPosition);
-										
-										traceOrigin = offsetWorldPosition;
-										
-										float distanceToFireteamLeaderThreshold = Math.RandomFloat(15,30);
-										
-										float distanceToFireteamLeader = vector.Distance(ownerEntity.GetOrigin(), fireTeamLeaderEntity.GetOrigin());
-										
-										if (distanceToFireteamLeader > distanceToFireteamLeaderThreshold)
-											ownerEntity = fireTeamLeaderEntity;
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
 		
 		bool isEndangering;
 		
@@ -246,10 +150,6 @@ modded class SCR_AIFindCover : AITaskScripted
 			offsetDistanceX = holdPositionRadius;
 			
 			traceOrigin = m_DCO_AIInfoComponent.GetHoldPositionOrigin();
-			
-			#ifdef WORKBENCH
-			DCO_AITaskDebugText.DebugTextScripted(m_OwnerEntity, offsetDistanceX.ToString(), true, 2, Color.WHITE, Color.PINK);
-			#endif
 		}
 		
 		float offsetDistanceZ = offsetDistanceX;
@@ -263,10 +163,6 @@ modded class SCR_AIFindCover : AITaskScripted
 		if (distanceIsDanger > distanceToDanger)
 		{
 			searchCoverOffset = Vector(0, 0, -7);
-			
-			#ifdef WORKBENCH
-			DCO_AITaskDebugText.DebugTextScripted(ownerEntity, "SCR_AIFindCover.c > DistanceIsDanger", true, 0, Color.WHITE, Color.DODGER_BLUE);
-			#endif
 		}
 		else
 		{
@@ -337,11 +233,7 @@ modded class SCR_AIFindCover : AITaskScripted
 				continue;
 			
 			if (hitNavmeshPos == vector.Zero)
-			{
-				#ifdef WORKBENCH
-				DCO_AITaskDebugText.DebugTextScripted(ownerEntity, "SCR_AIFindCover.c > vector.Zero", true, 1, Color.WHITE, Color.RED);
-				#endif
-				
+			{			
 				continue;
 			}
 						
@@ -546,14 +438,6 @@ modded class SCR_AIFindCover : AITaskScripted
 			if (prefabData)
 				prefabName = prefabData.GetPrefabName();
 			
-			if (max[1] > 1.5)
-			{
-				#ifdef WORKBENCH
-				DCO_AITaskDebugText.DebugTextScripted(entity, "SCR_AIFindCover.c" + " " + entityType, true, 1, Color.WHITE, Color.RED);
-
-				#endif
-			}
-			
 			if (m_ThreatSuppression < 0.9 && entityType == SCR_DestructibleEntity)
 			{
 				SCR_DestructibleEntityClass destructibleEntityPrefabData = SCR_DestructibleEntityClass.Cast(prefabData);
@@ -565,10 +449,6 @@ modded class SCR_AIFindCover : AITaskScripted
 						m_IsAgentNearby = true;
 						
 						m_AgentEntityNearby = entity;
-						
-						#ifdef WORKBENCH
-						DCO_AITaskDebugText.DebugTextScripted(entity, "SCR_AIFindCover.c > FENCE", true, 1, Color.WHITE, Color.RED);
-						#endif
 					}
 				}
 			}

@@ -67,19 +67,19 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
            Nodes {
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos -3087.57 2794.163
+             EditorPos -3285.57 2806.163
              Period 1
              PeriodRandom 2
             }
             AITaskGetGroupChildren "Get Group Children" {
              Name "Get Group Children"
-             EditorPos -2911.458 2797.497
+             EditorPos -3109.458 2809.497
              IndexTo 0
              OutEntity 45
             }
             SCR_AIGetPosForward "SCR_AI Get Pos Forward" {
              Name "SCR_AI Get Pos Forward"
-             EditorPos -2629.716 2796.928
+             EditorPos -2827.716 2808.928
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 45
@@ -100,7 +100,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             AITaskCreatePosition "Create Position" {
              Name "Create Position"
-             EditorPos -2336.181 2784.44
+             EditorPos -2534.181 2796.44
              OffsetVector 0 1 0
              InRootVector 41
              OutPosition 44
@@ -111,7 +111,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
              EditorPos -2047.57 2797.773
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port -1
+               Port 47
                PortName "Enemy"
               }
               SingleInputPortContainer SingleInputPortContainer {
@@ -1097,7 +1097,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
   }
   VariableReference dangerPosition {
    VariableType 29
-   EditorPos -2542.014 2965.69
+   EditorPos -2740.014 2977.69
   }
   VariableReference stance {
    VariableType 30
@@ -1109,15 +1109,19 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
   }
   VariableReference dangerPosition {
    VariableType 29
-   EditorPos -2224.514 2965.69
+   EditorPos -2422.514 2977.69
   }
   VariableReference leaderEntity {
    VariableType 32
-   EditorPos -2895.846 2988.44
+   EditorPos -3093.846 3000.44
   }
   VariableReference movePos {
    VariableType 8
    EditorPos -1789.5 2941.75
+  }
+  VariableReference TargetEntity {
+   VariableType 4
+   EditorPos -2282.227 2788.75
   }
  }
  Groups {

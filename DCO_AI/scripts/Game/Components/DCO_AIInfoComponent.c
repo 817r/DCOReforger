@@ -207,46 +207,6 @@ class DCO_AIInfoComponent : ScriptComponent
 	{
 		m_fAttackReactionDelayModifier = attackReactionDelayModifier;
 	}
-
-	EMovementType GetForceMovementType()
-	{
-		return m_eForceMovementType;
-	}
-	
-	void SetForceMovementType(EMovementType forceMovementType)
-	{
-		m_eForceMovementType = forceMovementType;
-	}
-
-	DCO_EForceWeaponRaised GetForceWeaponRaised()
-	{
-		return m_eForceWeaponRaised;
-	}
-	
-	void SetForceWeaponRaised(DCO_EForceWeaponRaised forceWeaponRaised)
-	{
-		m_eForceWeaponRaised = forceWeaponRaised;
-	}
-
-	DCO_EForceFlashlightState GetForceFlashlightState()
-	{
-		return m_eForceFlashlightState;
-	}
-	
-	void SetForceFlashlightState(DCO_EForceFlashlightState forceFlashlightState)
-	{
-		m_eForceFlashlightState = forceFlashlightState;
-	}
-
-	DCO_EForceWeaponFireMode GetForceWeaponFireMode()
-	{
-		return m_eForceWeaponFireMode;
-	}
-	
-	void SetForceWeaponFireMode(DCO_EForceWeaponFireMode forceWeaponFireMode)
-	{
-		m_eForceWeaponFireMode = forceWeaponFireMode;
-	}
 	
 	bool GetForceStayInVehicle()
 	{
@@ -256,11 +216,6 @@ class DCO_AIInfoComponent : ScriptComponent
 	void SetForceStayInVehicle(bool forceStayInVehicle)
 	{
 		m_bForceStayInVehicle = forceStayInVehicle;
-	}
-
-	DCO_ECombatBehaviorType GetCombatBehaviorType()
-	{
-		return m_eCombatBehaviorType;
 	}
 	
 	bool GetForceStanceAutonomous()
@@ -283,11 +238,6 @@ class DCO_AIInfoComponent : ScriptComponent
 		m_bForceMovementTypeAutonomous = forceMovementTypeAutonomous;
 	}
 	
-	void SetCombatBehaviorType(DCO_ECombatBehaviorType combatBehaviorType)
-	{
-		m_eCombatBehaviorType = combatBehaviorType;
-	}
-	
 	bool IsCombatBehaviorTypeDefensive()
 	{
 		return m_bCombatBehaviorTypeDefensive;
@@ -296,15 +246,5 @@ class DCO_AIInfoComponent : ScriptComponent
 	void SetCombatBehaviorTypeDefensive(bool combatBehaviorTypeDefensive)
 	{
 		m_bCombatBehaviorTypeDefensive = combatBehaviorTypeDefensive
-	}
-	
-	DCO_EBehaviorState GetBehaviorState()
-	{
-		return m_eBehaviorState;
-	}
-	
-	void SetBehaviorState(DCO_EBehaviorState behaviorState)
-	{
-		m_eBehaviorState = behaviorState;
 	}
 }
