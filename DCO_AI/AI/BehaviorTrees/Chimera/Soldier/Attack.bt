@@ -36,7 +36,7 @@ BehaviorTree {
       }
       Selector Selector {
        Name "Selector"
-       EditorPos -845.167 -182.048
+       EditorPos -843.5 -182.048
        Nodes {
         DecoTestVariable "Test Variable" {
          Name "Test Variable"

@@ -175,17 +175,41 @@ BehaviorTree {
          Name "Parallel"
          EditorPos 1446.159 322.417
          Nodes {
+          RunBT RunBT {
+           Name "RunBT"
+           EditorPos 570.141 1104.773
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 25
+             PortName "baseTarget"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "allowStand"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "moveExtraWaitTime"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 19
+             PortName "isTargetVisible"
+            }
+           }
+           BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CombatMoveDefault.bt"
+           InBehaviorTree -1
+          }
           Selector Selector {
            Name "Selector"
-           EditorPos 910 1135.25
+           EditorPos 1840 1192.75
            Nodes {
             SCR_AIIsTargetVisible "SCR_AI Is Target Visible" {
              Name "SCR_AI Is Target Visible"
-             EditorPos 522.286 1312.286
+             EditorPos 1452.286 1369.786
              Nodes {
               AITaskSetVariable "Set Variable" {
                Name "Set Variable"
-               EditorPos 593.714 1476.857
+               EditorPos 1523.714 1534.357
                SetValue "true"
                OutVariable 8
               }
@@ -207,46 +231,22 @@ BehaviorTree {
             }
             Sequence Sequence {
              Name "Sequence"
-             EditorPos 1148 1336.571
+             EditorPos 2078 1394.071
              Nodes {
               AITaskSetVariable "Set Variable" {
                Name "Set Variable"
-               EditorPos 1057.464 1505.357
+               EditorPos 1987.464 1562.857
                SetValue "false"
                OutVariable 8
               }
               AITaskReturnState "Return  State" {
                Name "Return  State"
-               EditorPos 1327.429 1506.322
+               EditorPos 2257.429 1563.822
                Result RUNNING
               }
              }
             }
            }
-          }
-          RunBT RunBT {
-           Name "RunBT"
-           EditorPos 1877.641 1046.44
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 25
-             PortName "baseTarget"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "allowStand"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "moveExtraWaitTime"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 19
-             PortName "isTargetVisible"
-            }
-           }
-           BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CombatMoveDefault.bt"
-           InBehaviorTree -1
           }
           Sequence Sequence {
            Name "Sequence"
@@ -636,11 +636,11 @@ BehaviorTree {
   }
   VariableReference IsTargetVisible {
    VariableType 4
-   EditorPos 1271.429 1639.143
+   EditorPos 2201.429 1696.643
   }
   VariableReference targetLastPosition {
    VariableType 1
-   EditorPos 883.814 1357.282
+   EditorPos 1813.814 1414.782
   }
   VariableReference IsTargetVisible {
    VariableType 4
@@ -680,7 +680,7 @@ BehaviorTree {
   }
   VariableReference IsTargetVisible {
    VariableType 4
-   EditorPos 1600.661 1170.045
+   EditorPos 293.161 1230.045
   }
   VariableReference IsTargetVisible {
    VariableType 4
@@ -700,11 +700,11 @@ BehaviorTree {
   }
   VariableReference baseTarget {
    VariableType 8
-   EditorPos 228.889 1361.111
+   EditorPos 1158.889 1418.611
   }
   VariableReference baseTarget {
    VariableType 8
-   EditorPos 1584.833 1090.583
+   EditorPos 277.333 1150.583
   }
   VariableReference baseTarget {
    VariableType 8

@@ -19,14 +19,14 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
        Name "Get Group Children"
        EditorPos -714.513 867.257
        IndexTo 0
-       OutEntity 3
+       OutEntity 2
       }
       SCR_AIGetPosForward "SCR_AI Get Pos Forward" {
        Name "SCR_AI Get Pos Forward"
        EditorPos -432.771 866.689
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
-         Port 3
+         Port 2
          PortName "TargetIn"
         }
         SingleInputPortContainer SingleInputPortContainer {
@@ -36,7 +36,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
        }
        OutPorts {
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 5
+         Port 4
          PortName "VectorOut"
         }
        }
@@ -46,8 +46,8 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
        Name "Create Position"
        EditorPos -139.236 854.201
        OffsetVector 0 1 0
-       InRootVector 5
-       OutPosition 4
+       InRootVector 4
+       OutPosition 3
        RandomOffsetMltp 2
       }
       SCR_AIFindCover "SCR_AI Find Cover" {
@@ -59,7 +59,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
          PortName "Enemy"
         }
         SingleInputPortContainer SingleInputPortContainer {
-         Port 4
+         Port 3
          PortName "DangerPosition"
         }
         SingleInputPortContainer SingleInputPortContainer {
@@ -73,7 +73,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
          PortName "Position"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 2
+         Port -1
          PortName "Stance"
         }
        }
@@ -174,10 +174,6 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
   VariableReference stance {
    VariableType 1
    EditorPos 1513.264 970.034
-  }
-  VariableReference stance {
-   VariableType 1
-   EditorPos 392.788 1087.771
   }
   VariableReference leaderEntity {
    VariableType 2

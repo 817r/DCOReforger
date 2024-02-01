@@ -47,7 +47,7 @@ class DCO_AIInfoComponent : ScriptComponent
 	private bool m_bForceStayInVehicle;
 	
 	private bool m_bHoldPosition;
-	private int m_fHoldPositionRadius;
+	private int m_fHoldPositionRadius = 20;
 	private vector m_vHoldPositionOrigin;
 	
 	private float m_fAttackReactionDelayModifier;
