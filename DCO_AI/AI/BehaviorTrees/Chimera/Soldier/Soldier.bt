@@ -81,6 +81,11 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
        }
       }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -699.068 479.5
+       BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
+      }
       Selector Selector {
        Name "Selector"
        EditorPos -282.25 850.75
@@ -144,29 +149,6 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
        Name "RunBT"
        EditorPos 1345.333 484.333
        BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
-      }
-      Selector Selector {
-       Name "Selector"
-       EditorPos 1818.333 466.667
-       Nodes {
-        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-         Name "SCR_AI Deco Is Above Threat Level"
-         EditorPos 1723.333 644.444
-         Nodes {
-          RunBT RunBT {
-           Name "RunBT"
-           EditorPos 1682.25 851.5
-           BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
-          }
-         }
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainerClass {
-           PortName "ThresholdIn"
-          }
-         }
-         AbortType AbortChildrenBranch
-        }
-       }
       }
      }
      UseChildResult -1
