@@ -4,8 +4,12 @@ SCR_ChimeraAIAgent {
   AIFormationComponent "{50C4E8410B604B4B}" {
    DefaultFormation "Line"
   }
+  DCO_AIInfoComponent "{6084F3ED01E80953}" {
+  }
+  DCO_AIInfoGroupComponent "{6084F3ED036871C9}" {
+  }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
-   m_Skill 0.7
+   m_Skill 1
    m_EnableLeaderStop 1
    m_EnableAimingError 0
    m_aDefaultReactions {
@@ -15,7 +19,7 @@ SCR_ChimeraAIAgent {
    }
    m_aGoalReactions {
     SCR_AIGoalReaction_Investigate "{5854E5A1C9811F68}" {
-     m_eType ATTACK
+     m_eType ATTACK_CLUSTER
     }
    }
    m_sDefaultWeaponBehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
