@@ -11,6 +11,10 @@ enum DCO_MoraleSystem
 {
 };
 
+typedef func SCR_DCOAIThreatStateChangedCallback;
+void SCR_DCOAIThreatStateChangedCallback(EAIThreatState prevState, EAIThreatState newState);
+typedef ScriptInvokerBase<SCR_DCOAIThreatStateChangedCallback> SCR_DCOAIThreatStateChangedInvoker;
+
 class SCR_DCOAIThreat
 {
 	private static const float BaseDropRate = 1.2;

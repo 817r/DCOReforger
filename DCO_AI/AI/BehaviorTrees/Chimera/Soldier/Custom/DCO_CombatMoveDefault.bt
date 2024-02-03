@@ -63,11 +63,11 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos -3133.178 1945.49
+           EditorPos -4468.178 2040.49
            Nodes {
             SCR_AIFindCover "SCR_AI Find Cover" {
              Name "SCR_AI Find Cover"
-             EditorPos -3779.236 2693.773
+             EditorPos -5114.236 2788.773
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 39
@@ -96,7 +96,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             SCR_AISendOrder_MovementType "SCR_AI Send Order_ Movement Type" {
              Name "SCR_AI Send Order_ Movement Type"
-             EditorPos -3411.775 2686.83
+             EditorPos -4746.775 2781.83
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -112,7 +112,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
              Name "SCR_AI Send Order_ Stance"
-             EditorPos -3037.837 2679.383
+             EditorPos -4372.837 2774.383
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -128,7 +128,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
              Name "SCR_AI Send Order_ Stance"
-             EditorPos -2689.513 2704.33
+             EditorPos -4024.513 2799.33
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -143,7 +143,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             AITaskMove Move {
              Name "Move"
-             EditorPos -2408.524 2716.619
+             EditorPos -3743.524 2811.619
              Group "{60830BADB3DA3A68}"
              InTargetLocation 43
              InPrecisionXZ -1
@@ -151,7 +151,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos -2063.145 2728.904
+             EditorPos -3398.145 2823.904
              Group "{60830BADB3DA3A68}"
              Period 2
              PeriodRandom 3
@@ -161,11 +161,11 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
           }
           DecoTestDistanceToEntity "Test Distance To Entity" {
            Name "Test Distance To Entity"
-           EditorPos -1613.583 1935.222
+           EditorPos -2948.583 2030.222
            Nodes {
             AITaskMove Move {
              Name "Move"
-             EditorPos -1631.833 2235.833
+             EditorPos -2966.833 2330.833
              InTargetLocation 42
              InPrecisionXZ -1
              OrientationType ToPoint
@@ -623,6 +623,18 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
     }
    }
   }
+  SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+   Name "SCR_AI Deco Is Above Threat Level"
+   EditorPos -2236.667 2040.833
+   InPorts {
+    SingleInputPortContainer SingleInputPortContainer {
+     Port -1
+     PortName "ThresholdIn"
+    }
+   }
+   NegativeCondition 1
+   m_threatThreshold ALERTED
+  }
  }
  Variables {
   Variable weaponMinDistance {
@@ -1006,40 +1018,40 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
   }
   VariableReference stance {
    VariableType 30
-   EditorPos -3524.572 2902.76
+   EditorPos -4859.572 2997.76
    Group "{60830BADB3DA3A68}"
   }
   VariableReference stance {
    VariableType 30
-   EditorPos -2833.68 2824.273
+   EditorPos -4168.68 2919.273
    Group "{60830BADB3DA3A68}"
   }
   VariableReference movePos {
    VariableType 8
-   EditorPos -3509.916 2827.75
+   EditorPos -4844.916 2922.75
    Group "{60830BADB3DA3A68}"
   }
   VariableReference TargetEntity {
    VariableType 4
-   EditorPos -4013.894 2684.75
+   EditorPos -5348.894 2779.75
    Group "{60830BADB3DA3A68}"
   }
   VariableReference lookingPos {
    VariableType 12
-   EditorPos -4009.923 2775.477
+   EditorPos -5344.923 2870.477
    Group "{60830BADB3DA3A68}"
   }
   VariableReference movePos {
    VariableType 8
-   EditorPos -1825.166 2026.972
+   EditorPos -3160.166 2121.972
   }
   VariableReference movePos {
    VariableType 8
-   EditorPos -1831.119 2270.655
+   EditorPos -3166.119 2365.655
   }
   VariableReference movePos {
    VariableType 8
-   EditorPos -2633.095 2878.44
+   EditorPos -3968.095 2973.44
    Group "{60830BADB3DA3A68}"
   }
  }

@@ -19,7 +19,6 @@ SCR_ChimeraAIAgent {
    }
    m_aGoalReactions {
     SCR_AIGoalReaction_Investigate "{5854E5A1C9811F68}" {
-     m_eType ATTACK_CLUSTER
     }
    }
    m_sDefaultWeaponBehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
