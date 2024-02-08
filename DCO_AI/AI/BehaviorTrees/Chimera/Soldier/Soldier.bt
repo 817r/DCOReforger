@@ -83,6 +83,11 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
       }
       RunBT RunBT {
        Name "RunBT"
+       EditorPos -1219.167 484.833
+       BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
+      }
+      RunBT RunBT {
+       Name "RunBT"
        EditorPos -699.068 479.5
        BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
       }
@@ -149,6 +154,13 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
        Name "RunBT"
        EditorPos 1345.333 484.333
        BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
+      }
+      DecoDangerEvent "Danger Event" {
+       Name "Danger Event"
+       EditorPos 1770.958 482.125
+       HasAny 1
+       DangerEventType GrenadeLanding
+       DistanceThreshold 1
       }
      }
      UseChildResult -1

@@ -27,6 +27,10 @@ modded class SCR_AIFindCover : AITaskScripted
 	
 	private ref array<ref vector> m_CoverPositions = DCO_AIFindCover.GetCoverPositions();
 	
+	//modded protected static ref TStringArray s_aVarsIn = {
+	//	PORT_FRIENDLY__REF
+	//};	
+	
 	//------------------------------------------------------------------------------------------------
 	override void OnInit(AIAgent owner)
 	{
@@ -140,7 +144,36 @@ modded class SCR_AIFindCover : AITaskScripted
 		if (m_ThreatSuppression > threatSuppressionIsDanger)
 			offsetDistanceX = m_CoverSearchDistance;
 		
-/*		if (m_DCO_AIInfoComponent.GetHoldPosition())
+		AIAgent leaderAgent = m_ParentGroup.GetLeaderAgent();
+					
+		IEntity leaderEntity = m_ParentGroup.GetLeaderEntity();
+					
+		if (owner == leaderAgent)
+			traceOrigin = leaderEntity.GetOrigin();
+					else
+					{
+						if (m_FormationComponent)
+						{
+							AIFormationDefinition formation = m_FormationComponent.GetFormation();
+							
+							if (formation)
+							{
+								array<AIAgent> agents = {};
+								
+								m_ParentGroup.GetAgents(agents);
+								
+								int formationOffsetIndex = agents.Find(owner);
+								
+								vector offsetPosition = formation.GetOffsetPosition(formationOffsetIndex);
+								
+								vector offsetWorldPosition = leaderEntity.CoordToParent(offsetPosition);
+								
+								traceOrigin = offsetWorldPosition;
+							}
+						}
+					}
+		
+		if (m_DCO_AIInfoComponent.GetHoldPosition())
 		{
 			int holdPositionRadius = m_DCO_AIInfoComponent.GetHoldPositionRadius();
 			
@@ -150,7 +183,7 @@ modded class SCR_AIFindCover : AITaskScripted
 			offsetDistanceX = holdPositionRadius;
 			
 			traceOrigin = m_DCO_AIInfoComponent.GetHoldPositionOrigin();
-		}*/
+		}
 		
 		float offsetDistanceZ = offsetDistanceX;
 		

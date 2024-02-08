@@ -6,8 +6,6 @@ SCR_ChimeraAIAgent {
   }
   DCO_AIInfoComponent "{6084F3ED01E80953}" {
   }
-  DCO_AIInfoGroupComponent "{6084F3ED036871C9}" {
-  }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
    m_Skill 1
    m_EnableLeaderStop 1
