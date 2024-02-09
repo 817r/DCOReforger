@@ -2,7 +2,7 @@ SCR_AIWorld : "{E0A05C76552E7F58}Prefabs/AI/SCR_AIWorld.et" {
  components {
   CoverManagerComponent "{5E3ADC0EA7048548}" {
    Enabled 1
-   MaxCovers 30
+   MaxCovers -1
    GenerateFailedpoints 1
    VisualizeFailedpoints 1
   }

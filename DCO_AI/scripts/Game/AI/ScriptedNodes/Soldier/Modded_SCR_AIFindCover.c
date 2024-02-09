@@ -173,7 +173,7 @@ modded class SCR_AIFindCover : AITaskScripted
 						}
 					}
 		
-		if (m_DCO_AIInfoComponent.GetHoldPosition())
+	/*	if (m_DCO_AIInfoComponent.GetHoldPosition())
 		{
 			int holdPositionRadius = m_DCO_AIInfoComponent.GetHoldPositionRadius();
 			
@@ -183,7 +183,7 @@ modded class SCR_AIFindCover : AITaskScripted
 			offsetDistanceX = holdPositionRadius;
 			
 			traceOrigin = m_DCO_AIInfoComponent.GetHoldPositionOrigin();
-		}
+		} */
 		
 		float offsetDistanceZ = offsetDistanceX;
 		

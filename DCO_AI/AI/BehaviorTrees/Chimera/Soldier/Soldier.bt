@@ -155,13 +155,6 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
        EditorPos 1345.333 484.333
        BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
       }
-      DecoDangerEvent "Danger Event" {
-       Name "Danger Event"
-       EditorPos 1770.958 482.125
-       HasAny 1
-       DangerEventType GrenadeLanding
-       DistanceThreshold 1
-      }
      }
      UseChildResult -1
     }

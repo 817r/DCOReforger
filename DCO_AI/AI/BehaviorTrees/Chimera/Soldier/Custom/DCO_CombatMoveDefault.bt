@@ -156,6 +156,18 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
              Period 2
              PeriodRandom 3
             }
+            DecoratorScripted Scripted {
+             Name "Scripted"
+             EditorPos -3235.5 2817
+             Nodes {
+              AITaskCharacterAim "Character Aim" {
+               Name "Character Aim"
+               EditorPos -3210.056 3014.472
+               InAimAtPosition 44
+              }
+             }
+             ForceNodeResult Success
+            }
            }
            Group "{60830BADB3DA3A68}"
           }
@@ -177,6 +189,63 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
           SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
            Name "SCR_AI Deco Is Above Threat Level"
            EditorPos -2205.239 2037.976
+           Nodes {
+            DecoTestDistanceToEntity "Test Distance To Entity" {
+             Name "Test Distance To Entity"
+             EditorPos -2224.456 2250.413
+             Nodes {
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos -2115.5 2536.111
+               Nodes {
+                SCR_AIGetPosForward "SCR_AI Get Pos Forward" {
+                 Name "SCR_AI Get Pos Forward"
+                 EditorPos -2533.75 2803.75
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 47
+                   PortName "TargetIn"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "DistanceIn"
+                  }
+                 }
+                 OutPorts {
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port 46
+                   PortName "VectorOut"
+                  }
+                 }
+                }
+                AITaskCharacterRaiseWeapon "Character Raise Weapon" {
+                 Name "Character Raise Weapon"
+                 EditorPos -2048.492 2820.04
+                }
+                AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+                 Name "Character Set Movement Speed"
+                 EditorPos -1754.067 2811.349
+                 "Movement speed" WALK
+                }
+                AITaskChangeStance "Change Stance" {
+                 Name "Change Stance"
+                 EditorPos -1383.75 2815
+                 Stance CROUCH
+                }
+                AITaskMove Move {
+                 Name "Move"
+                 EditorPos -1185.617 2818.649
+                 InTargetLocation 46
+                 OrientationType ToPoint
+                }
+               }
+              }
+             }
+             AbortType AbortChildrenBranchAndParentFurtherChildren
+             InPosition 45
+             DistanceThreshold 100
+            }
+           }
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -184,6 +253,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
            }
            NegativeCondition 1
+           AbortType AbortParentNodeFurtherChildren
            m_threatThreshold ALERTED
           }
          }
@@ -1053,6 +1123,22 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
    VariableType 8
    EditorPos -3968.095 2973.44
    Group "{60830BADB3DA3A68}"
+  }
+  VariableReference lastSeenPosition {
+   VariableType 5
+   EditorPos -3469.636 3052.204
+  }
+  VariableReference lastSeenPosition {
+   VariableType 5
+   EditorPos -2483.778 2365.639
+  }
+  VariableReference dangerPosition {
+   VariableType 29
+   EditorPos -2242.857 2967.143
+  }
+  VariableReference lookingPos {
+   VariableType 12
+   EditorPos -2800 2856.75
   }
  }
  Groups {

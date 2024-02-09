@@ -1,3 +1,6 @@
+class DCO_AIBase
+{};
+
 class DCO_System
 {};
 
