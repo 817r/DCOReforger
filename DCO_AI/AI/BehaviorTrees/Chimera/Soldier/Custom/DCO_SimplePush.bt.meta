@@ -1,0 +1,15 @@
+MetaFileClass {
+ Name "{DB02DB7A74D35799}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_SimplePush.bt"
+ Configurations {
+  BehaviorTreeResourceClass PC {
+  }
+  BehaviorTreeResourceClass XBOX_ONE : PC {
+  }
+  BehaviorTreeResourceClass XBOX_SERIES : PC {
+  }
+  BehaviorTreeResourceClass PS4 : PC {
+  }
+  BehaviorTreeResourceClass HEADLESS : PC {
+  }
+ }
+}

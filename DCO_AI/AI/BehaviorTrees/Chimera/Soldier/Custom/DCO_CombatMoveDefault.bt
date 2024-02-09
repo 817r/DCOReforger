@@ -174,6 +174,18 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
            InPosition 41
            DistanceThreshold 10
           }
+          SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+           Name "SCR_AI Deco Is Above Threat Level"
+           EditorPos -2205.239 2037.976
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "ThresholdIn"
+            }
+           }
+           NegativeCondition 1
+           m_threatThreshold ALERTED
+          }
          }
         }
         Parallel Parallel {
@@ -622,18 +634,6 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
      }
     }
    }
-  }
-  SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-   Name "SCR_AI Deco Is Above Threat Level"
-   EditorPos -2236.667 2040.833
-   InPorts {
-    SingleInputPortContainer SingleInputPortContainer {
-     Port -1
-     PortName "ThresholdIn"
-    }
-   }
-   NegativeCondition 1
-   m_threatThreshold ALERTED
   }
  }
  Variables {
