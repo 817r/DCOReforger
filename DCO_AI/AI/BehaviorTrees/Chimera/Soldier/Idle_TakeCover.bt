@@ -9,19 +9,25 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
      Name "Sequence"
      EditorPos 604.5 -552.5
      Nodes {
+      AITaskSetVariable "Set Variable" {
+       Name "Set Variable"
+       EditorPos -2973.778 -136.334
+       SetValue "False"
+       OutVariable 11
+      }
       Sequence Sequence {
        Name "Sequence"
-       EditorPos -1407.167 -172
+       EditorPos -553.833 -242
        Nodes {
         AITaskGetGroupChildren "Get Group Children" {
          Name "Get Group Children"
-         EditorPos -2534.722 188.723
+         EditorPos -1681.388 118.723
          IndexTo 0
          OutEntity 9
         }
         AITaskCreatePosition "Create Position" {
          Name "Create Position"
-         EditorPos -2065.695 166.917
+         EditorPos -1212.361 96.917
          OffsetVector 0 1 0
          InRootVector -1
          InEntity 9
@@ -30,7 +36,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
         }
         SCR_AIGetPosForward "SCR_AI Get Pos Forward" {
          Name "SCR_AI Get Pos Forward"
-         EditorPos -1640.411 157.53
+         EditorPos -787.077 87.53
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 12
@@ -51,7 +57,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
         }
         SCR_AIFindCover "SCR_AI Find Cover" {
          Name "SCR_AI Find Cover"
-         EditorPos -1303.278 156.777
+         EditorPos -449.944 86.777
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -79,25 +85,19 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
         }
         AITaskMove Move {
          Name "Move"
-         EditorPos -839.5 153
+         EditorPos 13.834 83
          InTargetLocation 10
          PrecisionXZ 1.5
          OrientationType ToPoint
         }
         AITaskSetVariable "Set Variable" {
          Name "Set Variable"
-         EditorPos -468.195 150.5
+         EditorPos 385.139 80.5
          Group "{60932292B03077A9}"
          SetValue "True"
          OutVariable 8
         }
        }
-      }
-      AITaskSetVariable "Set Variable" {
-       Name "Set Variable"
-       EditorPos 299.556 -189.667
-       SetValue "False"
-       OutVariable 11
       }
       Selector Selector {
        Name "Selector"
@@ -373,24 +373,24 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
   }
   VariableReference inCover {
    VariableType 4
-   EditorPos -239.306 250
+   EditorPos 614.028 180
    Group "{60932292B03077A9}"
   }
   VariableReference leaderEntity {
    VariableType 2
-   EditorPos -2283.656 306.939
+   EditorPos -1430.322 236.939
   }
   VariableReference coverPos {
    VariableType 0
-   EditorPos -1029.667 347.472
+   EditorPos -176.333 277.472
   }
   VariableReference inCover {
    VariableType 4
-   EditorPos 528.444 -90.167
+   EditorPos -2744.89 -36.834
   }
   VariableReference dangerPosition {
    VariableType 3
-   EditorPos -1831.5 319.25
+   EditorPos -978.166 249.25
   }
   VariableReference possDanger {
    VariableType 5
@@ -398,7 +398,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
   }
   VariableReference possDanger {
    VariableType 5
-   EditorPos -1463.161 325.113
+   EditorPos -609.827 255.113
   }
  }
 }

@@ -1,5 +1,6 @@
 PerceptionManager PerceptionManager1 : "{028DAEAD63E056BE}Prefabs/World/Game/PerceptionManager.et" {
  coords 5333.125 37.898 11300.019
+ LineOfSightLayer 1475064
 }
 TagManager : "{2FA9E172CAB1857A}Prefabs/MP/Managers/TagManager.et" {
  coords 4400.519 10.173 10707.777

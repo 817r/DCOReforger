@@ -57,9 +57,9 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
        Name "Parallel"
        EditorPos -71.976 322.429
        Nodes {
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos -3133.5 1465
+        Parallel Parallel {
+         Name "Parallel"
+         EditorPos -2940 1451.667
          Nodes {
           Sequence Sequence {
            Name "Sequence"
@@ -145,7 +145,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
              Name "Move"
              EditorPos -3743.524 2811.619
              Group "{60830BADB3DA3A68}"
-             InTargetLocation 43
+             InTargetLocation 41
              InPrecisionXZ -1
              OrientationType ToPoint
             }
@@ -158,12 +158,12 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             DecoratorScripted Scripted {
              Name "Scripted"
-             EditorPos -3235.5 2817
+             EditorPos -3235.5 2815.333
              Nodes {
               AITaskCharacterAim "Character Aim" {
                Name "Character Aim"
                EditorPos -3210.056 3014.472
-               InAimAtPosition 44
+               InAimAtPosition 42
               }
              }
              ForceNodeResult Success
@@ -171,79 +171,62 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
            }
            Group "{60830BADB3DA3A68}"
           }
-          DecoTestDistanceToEntity "Test Distance To Entity" {
-           Name "Test Distance To Entity"
-           EditorPos -2948.583 2030.222
-           Nodes {
-            AITaskMove Move {
-             Name "Move"
-             EditorPos -2966.833 2330.833
-             InTargetLocation 42
-             InPrecisionXZ -1
-             OrientationType ToPoint
-            }
-           }
-           InPosition 41
-           DistanceThreshold 10
-          }
           SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
            Name "SCR_AI Deco Is Above Threat Level"
-           EditorPos -2205.239 2037.976
+           EditorPos -1970 2090.555
            Nodes {
-            DecoTestDistanceToEntity "Test Distance To Entity" {
-             Name "Test Distance To Entity"
-             EditorPos -2224.456 2250.413
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos -1885.5 2566.111
              Nodes {
-              Sequence Sequence {
-               Name "Sequence"
-               EditorPos -2115.5 2536.111
-               Nodes {
-                SCR_AIGetPosForward "SCR_AI Get Pos Forward" {
-                 Name "SCR_AI Get Pos Forward"
-                 EditorPos -2533.75 2803.75
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 47
-                   PortName "TargetIn"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "DistanceIn"
-                  }
-                 }
-                 OutPorts {
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 46
-                   PortName "VectorOut"
-                  }
-                 }
+              SCR_AIGetPosForward "SCR_AI Get Pos Forward" {
+               Name "SCR_AI Get Pos Forward"
+               EditorPos -2301.75 2833.75
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 44
+                 PortName "TargetIn"
                 }
-                AITaskCharacterRaiseWeapon "Character Raise Weapon" {
-                 Name "Character Raise Weapon"
-                 EditorPos -2048.492 2820.04
-                }
-                AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-                 Name "Character Set Movement Speed"
-                 EditorPos -1754.067 2811.349
-                 "Movement speed" WALK
-                }
-                AITaskChangeStance "Change Stance" {
-                 Name "Change Stance"
-                 EditorPos -1383.75 2815
-                 Stance CROUCH
-                }
-                AITaskMove Move {
-                 Name "Move"
-                 EditorPos -1185.617 2818.649
-                 InTargetLocation 46
-                 OrientationType ToPoint
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "DistanceIn"
                 }
                }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 43
+                 PortName "VectorOut"
+                }
+               }
+               Group "{6094888C8C0A51A3}"
+               m_Distance 25
+              }
+              AITaskCharacterRaiseWeapon "Character Raise Weapon" {
+               Name "Character Raise Weapon"
+               EditorPos -2042.936 2844.484
+               Group "{6094888C8C0A51A3}"
+              }
+              AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+               Name "Character Set Movement Speed"
+               EditorPos -1711.845 2823.571
+               Group "{6094888C8C0A51A3}"
+               "Movement speed" WALK
+              }
+              AITaskChangeStance "Change Stance" {
+               Name "Change Stance"
+               EditorPos -1332.639 2822.778
+               Group "{6094888C8C0A51A3}"
+               Stance CROUCH
+              }
+              AITaskMove Move {
+               Name "Move"
+               EditorPos -955.617 2848.649
+               Group "{6094888C8C0A51A3}"
+               InTargetLocation 43
+               OrientationType ToPoint
               }
              }
-             AbortType AbortChildrenBranchAndParentFurtherChildren
-             InPosition 45
-             DistanceThreshold 100
+             Group "{6094888C8C0A51A3}"
             }
            }
            InPorts {
@@ -252,9 +235,9 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
              PortName "ThresholdIn"
             }
            }
+           Group "{6094888C8C0A51A3}"
            NegativeCondition 1
-           AbortType AbortParentNodeFurtherChildren
-           m_threatThreshold ALERTED
+           m_threatThreshold THREATENED
           }
          }
         }
@@ -1113,14 +1096,6 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
   }
   VariableReference movePos {
    VariableType 8
-   EditorPos -3160.166 2121.972
-  }
-  VariableReference movePos {
-   VariableType 8
-   EditorPos -3166.119 2365.655
-  }
-  VariableReference movePos {
-   VariableType 8
    EditorPos -3968.095 2973.44
    Group "{60830BADB3DA3A68}"
   }
@@ -1128,17 +1103,15 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
    VariableType 5
    EditorPos -3469.636 3052.204
   }
-  VariableReference lastSeenPosition {
-   VariableType 5
-   EditorPos -2483.778 2365.639
-  }
   VariableReference dangerPosition {
    VariableType 29
-   EditorPos -2242.857 2967.143
+   EditorPos -2012.857 2997.143
+   Group "{6094888C8C0A51A3}"
   }
-  VariableReference lookingPos {
-   VariableType 12
-   EditorPos -2800 2856.75
+  VariableReference lastSeenPosition {
+   VariableType 5
+   EditorPos -2612 2884.75
+   Group "{6094888C8C0A51A3}"
   }
  }
  Groups {
@@ -1156,6 +1129,10 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
   }
   BTGroup "{60830BADB3DA3A68}" {
    Name "Cover Manager + Move"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{6094888C8C0A51A3}" {
+   Name "Move Investigate"
    Color 0.6 0.6 0.6 0.251
   }
  }

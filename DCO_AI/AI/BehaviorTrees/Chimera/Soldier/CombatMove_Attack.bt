@@ -206,7 +206,7 @@ BehaviorTree "{7FBFFD791F6A4B5E}AI/BehaviorTrees/Chimera/Soldier/CombatMove_Atta
               }
               SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
                Name "SCR_AI Send Order_ Stance"
-               EditorPos -6507.25 1217.25
+               EditorPos -6510.583 1218.917
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
@@ -699,7 +699,7 @@ BehaviorTree "{7FBFFD791F6A4B5E}AI/BehaviorTrees/Chimera/Soldier/CombatMove_Atta
                 }
                 AITaskIdle Idle {
                  Name "Idle"
-                 EditorPos -1732.976 -1063.635
+                 EditorPos -1734.405 -1063.635
                  Period 2
                  PeriodRandom 4
                 }

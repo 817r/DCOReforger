@@ -8,11 +8,10 @@ SCR_ChimeraAIAgent {
   }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
    m_Skill 1
-   m_EnableLeaderStop 1
    m_EnableAimingError 0
    m_aDefaultReactions {
     SCR_AIIdleReaction "{5458F49C533BDFBA}" {
-     m_OverrideBehaviorTree "AI\BehaviorTrees\Chimera\Soldier\Idle.bt"
+     m_OverrideBehaviorTree "'AI\BehaviorTrees\Chimera\Soldier\Idle_TakeCover.bt'"
     }
    }
    m_aGoalReactions {
