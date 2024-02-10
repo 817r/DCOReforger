@@ -171,7 +171,7 @@ BehaviorTree {
          Nodes {
           SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
            Name "SCR_AI Deco Is Above Threat Level"
-           EditorPos 706.5 391.5
+           EditorPos 486.667 365
            Nodes {
             Parallel Parallel {
              Name "Parallel"
@@ -405,7 +405,7 @@ BehaviorTree {
              Nodes {
               SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
                Name "SCR_AI Get Random Point"
-               EditorPos 1696.5 1093.833
+               EditorPos 1696.5 1092.404
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1

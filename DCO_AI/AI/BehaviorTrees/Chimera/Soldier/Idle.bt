@@ -3,11 +3,11 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos -1141.945 -542.007
+   EditorPos -968.612 -546.451
    Nodes {
-    Parallel Parallel {
-     Name "Parallel"
-     EditorPos -1143.333 -341.667
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -967.405 -306.746
      Nodes {
       RunBT RunBT {
        Name "RunBT"
