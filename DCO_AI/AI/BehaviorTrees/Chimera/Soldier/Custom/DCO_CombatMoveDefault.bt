@@ -63,11 +63,11 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos -6333.178 2120.49
+           EditorPos -7669.845 2017.157
            Nodes {
             SCR_AIFindCover "SCR_AI Find Cover" {
              Name "SCR_AI Find Cover"
-             EditorPos -6979.236 2868.773
+             EditorPos -8315.902 2765.44
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 36
@@ -96,7 +96,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             SCR_AISendOrder_MovementType "SCR_AI Send Order_ Movement Type" {
              Name "SCR_AI Send Order_ Movement Type"
-             EditorPos -6611.775 2861.83
+             EditorPos -7948.441 2758.497
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -112,7 +112,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
              Name "SCR_AI Send Order_ Stance"
-             EditorPos -6237.837 2854.383
+             EditorPos -7574.503 2751.05
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -128,7 +128,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
              Name "SCR_AI Send Order_ Stance"
-             EditorPos -5889.513 2879.33
+             EditorPos -7226.18 2775.997
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -143,7 +143,7 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             AITaskMove Move {
              Name "Move"
-             EditorPos -5608.524 2891.619
+             EditorPos -6945.19 2788.286
              Group "{609551AE9D93621C}"
              InTargetLocation 38
              InPrecisionXZ -1
@@ -151,18 +151,18 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
             }
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos -5263.145 2903.904
+             EditorPos -6599.812 2800.571
              Group "{609551AE9D93621C}"
              Period 2
              PeriodRandom 3
             }
             DecoratorScripted Scripted {
              Name "Scripted"
-             EditorPos -5100.5 2895.333
+             EditorPos -6437.167 2792
              Nodes {
               AITaskCharacterAim "Character Aim" {
                Name "Character Aim"
-               EditorPos -5075.056 3094.472
+               EditorPos -6411.723 2991.139
                Group "{609551AE9D93621C}"
                InAimAtPosition 39
               }
@@ -237,12 +237,12 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
           }
           DecoDangerEvent "Danger Event" {
            Name "Danger Event"
-           EditorPos -1314.889 2197.667
+           EditorPos -1537.389 2227.667
            Nodes {
             AITaskMove Move {
              Name "Move"
-             EditorPos -1379.5 2430.75
-             InTargetLocation -1
+             EditorPos -1602 2460.75
+             InTargetLocation 44
              OrientationType ToPoint
             }
            }
@@ -1037,37 +1037,37 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
   }
   VariableReference stance {
    VariableType 22
-   EditorPos -6724.572 3077.76
+   EditorPos -8061.238 2974.427
    Group "{609551AE9D93621C}"
   }
   VariableReference stance {
    VariableType 22
-   EditorPos -6033.68 2999.273
+   EditorPos -7370.347 2895.94
    Group "{609551AE9D93621C}"
   }
   VariableReference movePos {
    VariableType 8
-   EditorPos -6709.916 3002.75
+   EditorPos -8046.583 2899.417
    Group "{609551AE9D93621C}"
   }
   VariableReference TargetEntity {
    VariableType 4
-   EditorPos -7213.894 2859.75
+   EditorPos -8550.561 2756.417
    Group "{609551AE9D93621C}"
   }
   VariableReference lookingPos {
    VariableType 12
-   EditorPos -7209.923 2950.477
+   EditorPos -8546.59 2847.144
    Group "{609551AE9D93621C}"
   }
   VariableReference movePos {
    VariableType 8
-   EditorPos -5833.095 3053.44
+   EditorPos -7169.762 2950.107
    Group "{609551AE9D93621C}"
   }
   VariableReference lastSeenPosition {
    VariableType 5
-   EditorPos -5334.636 3132.204
+   EditorPos -6671.303 3028.871
    Group "{609551AE9D93621C}"
   }
   VariableReference targetVector2 {
@@ -1087,6 +1087,10 @@ BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Comb
   VariableReference targetVector2 {
    VariableType 26
    EditorPos -3717.917 3026.667
+  }
+  VariableReference lastSeenPosition {
+   VariableType 5
+   EditorPos -1884.5 2497.416
   }
  }
  Groups {

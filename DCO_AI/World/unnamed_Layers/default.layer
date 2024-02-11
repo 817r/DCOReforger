@@ -2,20 +2,3 @@ SCR_SpawnPoint : "{5A2220DD0C16958B}Prefabs/MP/Spawning/SpawnPoint_US.et" {
  coords 5391.274 38.333 10557.584
  m_bShowInDeployMapOnly 1
 }
-StaticModelEntity : "{F8BFF80AC83FC6EA}Prefabs/Structures/Military/Fortifications/BlastCover_E_01/BlastCover_E_01_base.et" {
- components {
-  NavmeshCustomLinkComponent "{609488B6BAF93E1D}" {
-   LinkType NavmeshJumpLink "{6094888A46FD7CA7}" {
-    "Navmesh setting presets" {
-     NavmeshCustomLinkSetting "{6094888A4956BFFD}" {
-     }
-    }
-   }
-  }
-  RigidBody "{5272E314F5AC4FE7}" {
-   LayerPreset "Terrain"
-   ResponseIndex "HugeDestructible"
-  }
- }
- coords 4641.295 18.158 10621.491
-}
