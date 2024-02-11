@@ -1,40 +1,43 @@
-enum DCO_ThreatSystem
+modded enum EAIThreatState
 {
-	SAFE,
-	ALERTED,
-	VIGILANT,
-	SUPPRESSED,
-	PINNED
+	PINNED,
+	EXHAUSTED
 };
 
-enum DCO_MoraleSystem
+modded class SCR_AIThreatSystem
 {
-};
-
-typedef func SCR_DCOAIThreatStateChangedCallback;
-void SCR_DCOAIThreatStateChangedCallback(EAIThreatState prevState, EAIThreatState newState);
-typedef ScriptInvokerBase<SCR_DCOAIThreatStateChangedCallback> SCR_DCOAIThreatStateChangedInvoker;
-
-class SCR_DCOAIThreat
-{
-	private static const float BaseDropRate = 1.2;
-	private static const float SuppressionDropRate = 0.2;
-	private static const float PinnedDropRate = 0.1;
+	static const float PINNED_THRESHOLD = 1.2;
+	static const float EXHAUSTED_THRESHOLD = 2.2;
 	
-	private static const float fixedBullet = 5;
-	private static const float fixedBleed = 3;
-	private static const float fixedExplosion = 10;
+	private static const float SUPPRESSION_BULLET_INCREMENT = 0.10;
 	
-	private static const float FAR_INCREMENT = 1;
-	private static const float CLOSE_INCREMENT = 2.5;
+	private static const float THREAT_PINNED_DROP__RATE = 0.08 * 0.001;
+	private static const float THREAT_EXHAUSTED_DROP_RATE = 0.03 * 0.001;
+	private static const float THREAT_ENDANGERED_DROP_RATE  = 0.12 * 0.001;
+	private static const float THREAT_SUPPRESSION_DROP_RATE = 0.25 * 0.001; 
 	
-	private static const float ALERTED_INCREMENT = 1;
-	private static const float VIGILANT_INCREMENT = 1.2;
-	private static const float SUPPRESSED_INCREMENT = 1.5;
-	private static const float PINNED_INCREMENT = 2;
+	float GetThreatTotal()
+	{
+		return m_fThreatTotal;
+	}
 	
-	private static const float ALERTED_THRESHOLD = 12;
-	private static const float VIGILANT_THRESHOLD = 24;
-	private static const float SUPPRESSED_THRESHOLD = 75;
-	private static const float PINNED_THRESHOLD = 120;
+	float GetThreatInjury()
+	{
+		return m_fThreatInjury;
+	}
+	
+	float GetThreatShotsFired()
+	{
+		return m_fThreatShotsFired;
+	}
+	
+	float GetThreatSuppression()
+	{
+		return m_fThreatSuppression;
+	}
+	
+	float GetThreatEndangered()
+	{
+		return m_fThreatIsEndangered;
+	}
 };

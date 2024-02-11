@@ -498,11 +498,11 @@ BehaviorTree {
         }
         SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
          Name "SCR_AI Deco Is Above Threat Level"
-         EditorPos 3161.027 83.167
+         EditorPos 2507.694 86.5
          Nodes {
           RunBT RunBT {
            Name "RunBT"
-           EditorPos 3060.11 305.833
+           EditorPos 2406.777 309.166
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -594,6 +594,30 @@ BehaviorTree {
    VariableExposedInput 0
    VariableExposedOutput 0
   }
+  Variable newTarget {
+   VariableName "newTarget"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable targetBase {
+   VariableName "targetBase"
+   VariableTypeName "BaseTarget"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable targetEntity {
+   VariableName "targetEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable lastSeenPosTarget {
+   VariableName "lastSeenPosTarget"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
  }
  VariablesRefs {
   VariableReference position {
@@ -654,7 +678,7 @@ BehaviorTree {
   }
   VariableReference resetTimer {
    VariableType 5
-   EditorPos 721.727 1465.715
+   EditorPos 723.394 1465.715
    Group "{5C65018A80762E48}"
   }
   VariableReference timerValue {

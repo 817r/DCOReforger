@@ -3,190 +3,210 @@ BehaviorTree {
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos 368.666 -138.666
+   EditorPos 1393.666 -508.666
    Nodes {
-    Parallel Parallel {
-     Name "Parallel"
-     EditorPos 343.666 -2
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 1413.431 -338.056
      Nodes {
       Sequence Sequence {
        Name "Sequence"
-       EditorPos 169.684 318.684
+       EditorPos -990.319 73.111
+       Nodes {
+        SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+         Name "SCR_AI Get Entity Position"
+         EditorPos -1804.819 337.694
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Entity"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "Position"
+          }
+         }
+        }
+        AITaskSetADS SetADS {
+         Name "SetADS"
+         EditorPos -1284.819 367.694
+         UseADS 0
+        }
+        SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+         Name "SCR_AI Set Weapon Raised"
+         EditorPos -1061.625 371.722
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Raised"
+          }
+         }
+         m_bRaised 0
+        }
+        SCR_AISetStance "SCR_AI Set Stance" {
+         Name "SCR_AI Set Stance"
+         EditorPos -761.784 369.659
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Stance"
+          }
+         }
+        }
+        AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+         Name "Character Set Movement Speed"
+         EditorPos -556.069 373.945
+         "Movement speed" RUN
+        }
+        SCR_AIGetMoveFromDangerBehaviorParameters "SCR_AI Get Move From Danger Behavior Parameters" {
+         Name "SCR_AI Get Move From Danger Behavior Parameters"
+         EditorPos -156.069 371.087
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 9
+           PortName "DangerEntity"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 3
+           PortName "DangerPosition"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "CharacterStance"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "MovementType"
+          }
+         }
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 1474.431 444.944
        Nodes {
         Sequence Sequence {
          Name "Sequence"
-         EditorPos -399.474 749.788
+         EditorPos 270.431 928.944
          Nodes {
-          SCR_AIGetMoveFromDangerBehaviorParameters "SCR_AI Get Move From Danger Behavior Parameters" {
-           Name "SCR_AI Get Move From Danger Behavior Parameters"
-           EditorPos -1059.583 1028.75
+          SCR_AIGetSidePosition "SCR_AI Get Side Position" {
+           Name "SCR_AI Get Side Position"
+           EditorPos -196.903 1082
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Enemy"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 8
+             PortName "EnemyPosition"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "KeepSide"
+            }
+           }
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 8
-             PortName "DangerEntity"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 4
-             PortName "DangerPosition"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
              Port 2
-             PortName "CharacterStance"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 3
-             PortName "MovementType"
+             PortName "PositionOut"
             }
            }
           }
-          AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-           Name "Character Set Movement Speed"
-           EditorPos -349.214 1036.214
-           "Input Movement speed" 3
+          SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
+           Name "SCR_AI Get Random Point"
+           EditorPos 304.208 1089.778
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Waypoint"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 2
+             PortName "Origin"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Radius"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 4
+             PortName "ResultVector"
+            }
+           }
+           m_Radius 5
           }
          }
         }
         Sequence Sequence {
          Name "Sequence"
-         EditorPos 1268.354 768.768
+         EditorPos 1856.764 947.278
          Nodes {
-          Sequence Sequence {
-           Name "Sequence"
-           EditorPos 808.786 940.714
-           Nodes {
-            SCR_AIFindCover "SCR_AI Find Cover" {
-             Name "SCR_AI Find Cover"
-             EditorPos 346.512 1113.083
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 9
-               PortName "Enemy"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 10
-               PortName "DangerPosition"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "InCover"
-              }
-             }
-             OutPorts {
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 5
-               PortName "Position"
-              }
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 6
-               PortName "Stance"
-              }
-             }
-            }
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 964.5 1143.75
-             Nodes {
-              SCR_AIGetPosForwardToTarget "SCR_AI Get Pos Forward To Target" {
-               Name "SCR_AI Get Pos Forward To Target"
-               EditorPos 736.398 1325.184
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 5
-                 PortName "Target"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 6
-                 PortName "Distance"
-                }
-               }
-               OutPorts {
-                SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 1
-                 PortName "ResultVector"
-                }
-               }
-               m_Distance -15
-              }
-              SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
-               Name "SCR_AI Get Random Point"
-               EditorPos 1085.326 1321.148
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "Waypoint"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 1
-                 PortName "Origin"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "Radius"
-                }
-               }
-               OutPorts {
-                SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 0
-                 PortName "ResultVector"
-                }
-               }
-               m_Radius 5
-              }
-             }
-            }
-           }
-          }
-          SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
-           Name "SCR_AI Send Order_ Stance"
-           EditorPos 1111.131 1063.036
+          SCR_AIFindCover "SCR_AI Find Cover" {
+           Name "SCR_AI Find Cover"
+           EditorPos 1348.931 1253.944
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Receiver"
+             Port 10
+             PortName "Enemy"
             }
             SingleInputPortContainer SingleInputPortContainer {
              Port 7
+             PortName "DangerPosition"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "InCover"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 6
+             PortName "Position"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 1
              PortName "Stance"
             }
            }
           }
           AITaskMove Move {
            Name "Move"
-           EditorPos 1342.224 1077.386
-           InTargetLocation 0
-           PrecisionXZ 3
+           EditorPos 1910.359 1238.944
+           InTargetLocation 6
           }
-          SCR_AICompleteAction "SCR_AI Complete Action" {
-           Name "SCR_AI Complete Action"
-           EditorPos 1692.084 1072.084
-          }
-          AITaskReturnState "Return State" {
-           Name "Return State"
-           EditorPos 1922.5 1060
-           Result RUNNING
+          DecoTestDistanceToEntity "Test Distance To Entity" {
+           Name "Test Distance To Entity"
+           EditorPos 2412.819 1226.722
+           Nodes {
+            SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
+             Name "SCR_AI Send Order_ Stance"
+             EditorPos 2428.375 1505.055
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "Receiver"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 1
+               PortName "Stance"
+              }
+             }
+            }
+           }
+           InPosition 5
+           DistanceThreshold 3
           }
          }
         }
        }
       }
-      Sequence Sequence {
-       Name "Sequence"
-       EditorPos 683.833 216.5
-       Nodes {
-        AITaskIdle Idle {
-         Name "Idle"
-         EditorPos 636.583 348.25
-         Period 10
-         PeriodRandom 0
-        }
-        SCR_AIFailAction "SCR_AI Fail Action" {
-         Name "SCR_AI Fail Action"
-         EditorPos 805 347.5
-        }
-       }
-      }
      }
-     UseChildResult 0
     }
    }
   }
@@ -228,51 +248,81 @@ BehaviorTree {
    VariableExposedInput 0
    VariableExposedOutput 0
   }
+  Variable currentPosition {
+   VariableName "currentPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverStance {
+   VariableName "coverStance"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable searchPos {
+   VariableName "searchPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable movePos {
+   VariableName "movePos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverPos {
+   VariableName "coverPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
  }
  VariablesRefs {
-  VariableReference positionToRun {
-   VariableType 0
-   EditorPos 1144.532 1459.188
+  VariableReference currentPosition {
+   VariableType 6
+   EditorPos -1574.819 407.694
   }
-  VariableReference searchCenter {
-   VariableType 3
-   EditorPos 847.371 1451.387
+  VariableReference coverStance {
+   VariableType 7
+   EditorPos 1580.597 1345.611
   }
-  VariableReference stance {
-   VariableType 5
-   EditorPos -533.802 1195.906
-  }
-  VariableReference movementType {
-   VariableType 4
-   EditorPos -547.955 1092.013
+  VariableReference searchPos {
+   VariableType 8
+   EditorPos 70.875 1155.333
   }
   VariableReference dangerPos {
    VariableType 2
-   EditorPos -539.788 1014.124
+   EditorPos 391.073 444.983
   }
-  VariableReference positionToRun {
-   VariableType 0
-   EditorPos 561.44 1127.679
+  VariableReference movePos {
+   VariableType 9
+   EditorPos 576.431 1162
   }
-  VariableReference stance {
-   VariableType 5
-   EditorPos 565.096 1200.583
+  VariableReference coverPos {
+   VariableType 10
+   EditorPos 2204.986 1251.805
   }
-  VariableReference stance {
-   VariableType 5
-   EditorPos 978.297 1035.31
-  }
-  VariableReference dangerEntity {
-   VariableType 1
-   EditorPos -533 933
-  }
-  VariableReference dangerEntity {
-   VariableType 1
-   EditorPos 125.429 1094.75
+  VariableReference coverPos {
+   VariableType 10
+   EditorPos 1585.597 1270.611
   }
   VariableReference dangerPos {
    VariableType 2
-   EditorPos 128.929 1166.75
+   EditorPos 1094.764 1347.278
+  }
+  VariableReference dangerPos {
+   VariableType 2
+   EditorPos -411.625 1161.444
+  }
+  VariableReference dangerEntity {
+   VariableType 1
+   EditorPos 388.216 371.087
+  }
+  VariableReference dangerEntity {
+   VariableType 1
+   EditorPos 1070.597 1260.611
   }
  }
 }
