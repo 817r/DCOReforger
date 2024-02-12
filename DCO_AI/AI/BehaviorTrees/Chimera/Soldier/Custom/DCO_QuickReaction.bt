@@ -15,7 +15,7 @@ BehaviorTree {
        Nodes {
         SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
          Name "SCR_AI Get Entity Position"
-         EditorPos -888.75 693.75
+         EditorPos -888.75 692.321
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -29,14 +29,9 @@ BehaviorTree {
           }
          }
         }
-        AITaskSetADS SetADS {
-         Name "SetADS"
-         EditorPos -368.75 723.75
-         UseADS 0
-        }
         SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
          Name "SCR_AI Set Weapon Raised"
-         EditorPos -145.556 727.778
+         EditorPos -405.556 726.349
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -47,7 +42,7 @@ BehaviorTree {
         }
         SCR_AISetStance "SCR_AI Set Stance" {
          Name "SCR_AI Set Stance"
-         EditorPos 154.286 725.714
+         EditorPos -81.428 735.714
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -57,12 +52,12 @@ BehaviorTree {
         }
         AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
          Name "Character Set Movement Speed"
-         EditorPos 360 730
+         EditorPos 120 725.714
          "Movement speed" RUN
         }
         SCR_AIGetMoveFromDangerBehaviorParameters "SCR_AI Get Move From Danger Behavior Parameters" {
          Name "SCR_AI Get Move From Danger Behavior Parameters"
-         EditorPos 760 727.143
+         EditorPos 520 722.857
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
            Port 2
@@ -88,58 +83,28 @@ BehaviorTree {
        Name "Sequence"
        EditorPos 2390.5 801
        Nodes {
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 1186.5 1285
-         Nodes {
-          SCR_AIGetSidePosition "SCR_AI Get Side Position" {
-           Name "SCR_AI Get Side Position"
-           EditorPos 719.167 1438.055
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Enemy"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 3
-             PortName "EnemyPosition"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "KeepSide"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 4
-             PortName "PositionOut"
-            }
-           }
+        AITaskChangeStance "Change Stance" {
+         Name "Change Stance"
+         EditorPos 1980 1276
+         Stance PRONE
+        }
+        SCR_AILookAtPosition "SCR_AI Look At Position" {
+         Name "SCR_AI Look At Position"
+         EditorPos 2358.143 1273.571
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 1
+           PortName "PositionIn"
           }
-          SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
-           Name "SCR_AI Get Random Point"
-           EditorPos 1220.278 1445.833
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Waypoint"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 4
-             PortName "Origin"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Radius"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 5
-             PortName "ResultVector"
-            }
-           }
-           m_Radius 5
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "PriorityIn"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "PositionOut"
           }
          }
         }
@@ -152,11 +117,11 @@ BehaviorTree {
            EditorPos 2265 1610
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
-             Port 6
+             Port 3
              PortName "Enemy"
             }
             SingleInputPortContainer SingleInputPortContainer {
-             Port 7
+             Port 4
              PortName "DangerPosition"
             }
             SingleInputPortContainer SingleInputPortContainer {
@@ -166,11 +131,11 @@ BehaviorTree {
            }
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 9
+             Port 6
              PortName "Position"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 8
+             Port 5
              PortName "Stance"
             }
            }
@@ -178,7 +143,7 @@ BehaviorTree {
           AITaskMove Move {
            Name "Move"
            EditorPos 2826.428 1595
-           InTargetLocation 9
+           InTargetLocation 6
           }
           DecoTestDistanceToEntity "Test Distance To Entity" {
            Name "Test Distance To Entity"
@@ -193,13 +158,13 @@ BehaviorTree {
                PortName "Receiver"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 8
+               Port 5
                PortName "Stance"
               }
              }
             }
            }
-           InPosition 10
+           InPosition 7
            DistanceThreshold 3
           }
          }
@@ -262,23 +227,11 @@ BehaviorTree {
   }
   VariableReference dangerPos {
    VariableType 1
-   EditorPos 1307.143 801.039
+   EditorPos 1067.143 796.753
   }
   VariableReference dangerEntity {
    VariableType 2
-   EditorPos 1304.286 727.143
-  }
-  VariableReference dangerPos {
-   VariableType 1
-   EditorPos 504.444 1517.5
-  }
-  VariableReference searchPos {
-   VariableType 3
-   EditorPos 986.944 1511.389
-  }
-  VariableReference movePos {
-   VariableType 4
-   EditorPos 1492.5 1518.055
+   EditorPos 1064.286 722.857
   }
   VariableReference dangerEntity {
    VariableType 2

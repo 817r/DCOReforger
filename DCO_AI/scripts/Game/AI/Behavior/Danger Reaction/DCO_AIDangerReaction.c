@@ -41,7 +41,7 @@ modded class SCR_AIDangerReaction : SCR_AIReactionBase
 			
 			if (utility.m_CombatComponent.GetCurrentTarget() == null)
 			{
-				moveFromDangerChance = 100;
+				moveFromDangerChance = 85;
 				
 				threatSuppressionIsDanger = 1;
 				
@@ -51,7 +51,7 @@ modded class SCR_AIDangerReaction : SCR_AIReactionBase
 				
 			}
 			
-			if (threatSuppression > threatSuppressionIsDanger && Math.RandomInt(0,100) < moveFromDangerChance)
+			if (Math.RandomInt(0,100) < moveFromDangerChance)
 				return true;
 		}
 		
