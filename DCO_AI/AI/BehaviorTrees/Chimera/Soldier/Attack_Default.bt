@@ -1,4 +1,4 @@
-BehaviorTree {
+BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.bt" {
  Name "AI/BehaviorTrees/Chimera/Soldier/Attack_Default.bt"
  Nodes {
   RootNode Root {
@@ -173,7 +173,7 @@ BehaviorTree {
         }
         Parallel Parallel {
          Name "Parallel"
-         EditorPos 1446.159 322.417
+         EditorPos 2489.492 169.084
          Nodes {
           RunBT RunBT {
            Name "RunBT"
@@ -483,7 +483,7 @@ BehaviorTree {
                      Nodes {
                       AITaskCharacterAim "Character Aim" {
                        Name "Character Aim"
-                       EditorPos 4477.028 2345.306
+                       EditorPos 4478.139 2345.306
                        InAimAtPosition -1
                        InEntity 32
                        PrecisionXZ 30
@@ -503,11 +503,11 @@ BehaviorTree {
                     }
                     AITaskCharacterAim "Character Aim" {
                      Name "Character Aim"
-                     EditorPos 4985.153 2339.097
+                     EditorPos 4983.153 2339.097
                      InAimAtPosition 5
                      PrecisionXZ 30
                      PrecisionY 20
-                     Timeout -1
+                     Timeout 1
                      UseADS 0
                     }
                    }
@@ -598,6 +598,24 @@ BehaviorTree {
    VariableName "WeaponReady"
    VariableTypeName "bool"
    VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable target {
+   VariableName "target"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable targetPos {
+   VariableName "targetPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable CloseTarget {
+   VariableName "CloseTarget"
+   VariableTypeName "BaseTarget"
+   VariableExposedInput 0
    VariableExposedOutput 0
   }
  }

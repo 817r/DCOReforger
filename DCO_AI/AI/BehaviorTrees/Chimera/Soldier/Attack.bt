@@ -3,11 +3,11 @@ BehaviorTree {
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos -1087.429 -563.477
+   EditorPos -935.762 -560.144
    Nodes {
     Parallel Parallel {
      Name "Parallel"
-     EditorPos -1092.309 -403.12
+     EditorPos -925.642 -416.453
      Nodes {
       RunBT RunBT {
        Name "RunBT"
@@ -34,39 +34,63 @@ BehaviorTree {
        }
        BehaviorTree "{648E04634854A4AB}AI/BehaviorTrees/Chimera/Soldier/HandleWeaponSwitching.bt"
       }
-      Selector Selector {
-       Name "Selector"
-       EditorPos -843.5 -182.048
+      DecoTestVariable "Test Variable" {
+       Name "Test Variable"
+       EditorPos -1023.928 -20.952
        Nodes {
-        DecoTestVariable "Test Variable" {
-         Name "Test Variable"
-         EditorPos -1023.928 -19.285
-         Nodes {
-          AITaskSetVariable "Set Variable" {
-           Name "Set Variable"
-           EditorPos -953.056 205.02
-           SetValue "false"
-           OutVariable 3
-          }
-         }
-         AbortType AbortChildrenBranchAndParentFurtherChildren
-         InVariable 2
-         TestType EqualsValue
-         TestValue "true"
-        }
-        RunBT RunBT {
-         Name "RunBT"
-         EditorPos -339.643 -6.985
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 6
-           PortName "WeaponReady"
-          }
-         }
-         BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.bt"
-         InBehaviorTree 0
+        AITaskSetVariable "Set Variable" {
+         Name "Set Variable"
+         EditorPos -953.056 203.353
+         SetValue "false"
+         OutVariable 3
         }
        }
+       AbortType AbortChildrenBranchAndParentFurtherChildren
+       InVariable 2
+       TestType EqualsValue
+       TestValue "true"
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -337.976 -8.652
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 6
+         PortName "WeaponReady"
+        }
+       }
+       BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.bt"
+       InBehaviorTree 0
+      }
+      SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+       Name "SCR_AI Deco Is Above Threat Level"
+       EditorPos 241.191 -28.095
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 335.929 143.571
+         Nodes {
+          RunBT RunBT {
+           Name "RunBT"
+           EditorPos -0.786 329.214
+           BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_Position.bt"
+           InBehaviorTree -1
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 545.714 344.286
+           PeriodRandom 1
+          }
+         }
+        }
+       }
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ThresholdIn"
+        }
+       }
+       m_threatThreshold ALERTED
       }
      }
     }
@@ -89,6 +113,18 @@ BehaviorTree {
   Variable WeaponReady {
    VariableName "WeaponReady"
    VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable target {
+   VariableName "target"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable targetPos {
+   VariableName "targetPos"
+   VariableTypeName "vector"
    VariableExposedInput 0
    VariableExposedOutput 0
   }

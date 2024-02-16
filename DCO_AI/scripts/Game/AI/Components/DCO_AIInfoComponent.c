@@ -37,9 +37,6 @@ class DCO_AIInfoComponent : ScriptComponent
 	private float m_fPerceptionSafe;
 	private float m_fPerceptionVigilant;
 	
-	private int m_iMoveFromDangerChance;
-	private float m_fMoveFromDangerThreatThresholdModifier;
-	
 	private float m_fAimAccuracyError;
 	private float m_fAimAccuracyErrorOriginal;
 	private float m_fAimAccuracyErrorModifier;
@@ -176,26 +173,6 @@ class DCO_AIInfoComponent : ScriptComponent
 	void SetHoldPositionOrigin(vector holdPositionOrigin)
 	{
 		m_vHoldPositionOrigin = holdPositionOrigin;
-	}
-
-	int GetMoveFromDangerChance()
-	{
-		return m_iMoveFromDangerChance;
-	}
-	
-	void SetMoveFromDangerChance(int moveFromDangerChance)
-	{
-		m_iMoveFromDangerChance = moveFromDangerChance;
-	}
-
-	float GetMoveFromDangerThreatThresholdModifier()
-	{
-		return m_fMoveFromDangerThreatThresholdModifier;
-	}
-	
-	void SetMoveFromDangerThreatThresholdModifier(float moveFromDangerThreatThresholdModifier)
-	{
-		m_fMoveFromDangerThreatThresholdModifier = moveFromDangerThreatThresholdModifier;
 	}
 
 	float GetAttackReactionDelayModifier()

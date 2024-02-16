@@ -10,15 +10,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected static const float TARGET_MAX_DISTANCE_DISARMED = 2.0;
 	
-	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 30.0;
-	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 50.0;
+	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 600.0;
 	
-	protected const float PERCEPTION_FACTOR_SAFE = 3.0;
-	protected const float PERCEPTION_FACTOR_VIGILANT = 4.0;
+	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
+	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 40.0;
+	
+	protected const float PERCEPTION_FACTOR_SAFE = 4.0;
+	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
 	protected const float PERCEPTION_FACTOR_ALERTED = 5.0; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 3.0;
-	protected const float PERCEPTION_FACTOR_PINNED = 3.0;
-	protected const float PERCEPTION_FACTOR_EXHAUSTED = 3.0;
+	protected const float PERCEPTION_FACTOR_THREATENED = 5.0;
+	protected const float PERCEPTION_FACTOR_PINNED = 4.0;
+	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.0;
 	
 	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.6;
 	

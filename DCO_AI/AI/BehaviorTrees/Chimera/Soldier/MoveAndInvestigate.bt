@@ -1,4 +1,4 @@
-BehaviorTree {
+BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestigate.bt" {
  Name "AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestigate.bt"
  Nodes {
   RootNode Root {
@@ -446,26 +446,34 @@ BehaviorTree {
                }
                m_Radius 70
               }
-              SCR_AILookAtPosition "SCR_AI Look At Position" {
-               Name "SCR_AI Look At Position"
-               EditorPos 1832.761 1367.46
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 2
-                 PortName "PositionIn"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "PriorityIn"
+              Decorator Decorator {
+               Name "Decorator"
+               EditorPos 1815.195 1298.312
+               Nodes {
+                SCR_AILookAtPosition "SCR_AI Look At Position" {
+                 Name "SCR_AI Look At Position"
+                 EditorPos 1880.943 1430.187
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 2
+                   PortName "PositionIn"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "PriorityIn"
+                  }
+                 }
+                 OutPorts {
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port -1
+                   PortName "PositionOut"
+                  }
+                 }
+                 m_bSuccessWhenClose 0
+                 m_fPriority 5
                 }
                }
-               OutPorts {
-                SingleOutputPortContainer SingleOutputPortContainer {
-                 Port -1
-                 PortName "PositionOut"
-                }
-               }
-               m_fPriority 40
+               ForceNodeResult Success
               }
               AITaskMove Move {
                Name "Move"
@@ -502,26 +510,8 @@ BehaviorTree {
          Nodes {
           RunBT RunBT {
            Name "RunBT"
-           EditorPos 2406.777 309.166
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "baseTarget"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "allowStand"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "moveExtraWaitTime"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "isTargetVisible"
-            }
-           }
-           BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CombatMoveDefault.bt"
+           EditorPos 2472.491 293.452
+           BehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
           }
          }
          InPorts {

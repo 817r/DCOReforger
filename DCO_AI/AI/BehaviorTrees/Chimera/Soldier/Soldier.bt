@@ -11,11 +11,11 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
      Nodes {
       RunOnce "Run Once" {
        Name "Run Once"
-       EditorPos -2974.611 471.667
+       EditorPos -2262.111 424.167
        Nodes {
         SCR_AISendOrder_ReturnToDefault "SCR_AI Send Order_ Return To Default" {
          Name "SCR_AI Send Order_ Return To Default"
-         EditorPos -3079.5 615.5
+         EditorPos -2378.428 601.095
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -172,6 +172,12 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
   Variable updateBehavior {
    VariableName "updateBehavior"
    VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable MyEntity {
+   VariableName "MyEntity"
+   VariableTypeName "IEntity"
    VariableExposedInput 0
    VariableExposedOutput 0
   }

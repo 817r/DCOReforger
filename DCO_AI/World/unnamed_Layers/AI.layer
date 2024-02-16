@@ -3,9 +3,9 @@ SCR_AIWorld : "{E0A05C76552E7F58}Prefabs/AI/SCR_AIWorld.et" {
   CoverManagerComponent "{5E3ADC0EA7048548}" {
    Enabled 1
    MaxCovers -1
-   StandingSize 1.25
-   KneelingSize 0.7
-   CrouchingSize 0.25
+   StandingSize 1.3
+   KneelingSize 0.75
+   CrouchingSize 0.3
   }
   NavmeshWorldComponent "{5584F30E67F617AD}" {
    NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
@@ -23,9 +23,22 @@ SCR_AIWorld : "{E0A05C76552E7F58}Prefabs/AI/SCR_AIWorld.et" {
   }
   SCR_AISettingsComponent "{512CCCD0856CB4B9}" {
    m_EnableAimError 0
-   m_EnableLeaderStop 1
   }
  }
  coords 5292.37 40.391 11235.472
  "Initialize Road Network" 1
+ "Max number of cached BTs" 50
+ m_aGoalMessages {
+  SCR_AIMessage_Investigate "{5854E5A1E8BD402C}" {
+   MessageText "Investigating the Area"
+  }
+ }
+ m_aInfoMessages {
+  SCR_AIMessage_FoundCorpse "{54730D40A0792686}" {
+   MessageText "Dead People Here"
+  }
+  SCR_AIMessage_UnderFire "{54730D409ABB056E}" {
+   MessageText "Under Fire !"
+  }
+ }
 }

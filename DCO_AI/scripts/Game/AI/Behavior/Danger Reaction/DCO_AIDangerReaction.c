@@ -30,28 +30,14 @@ modded class SCR_AIDangerReaction : SCR_AIReactionBase
 			
 			threatSuppressionIsDanger = Math.RandomFloat(0.3,0.7);
 			
-			float moveFromDangerThreatThresholdModifier = aiInfoComponent.GetMoveFromDangerThreatThresholdModifier();
-			
-			if (moveFromDangerThreatThresholdModifier != 0)
-				threatSuppressionIsDanger += moveFromDangerThreatThresholdModifier;
-			
-			int moveFromDangerChance = aiInfoComponent.GetMoveFromDangerChance();
-			
 			float threatSuppression = utility.m_ThreatSystem.GetThreatSuppression();
 			
 			if (utility.m_CombatComponent.GetCurrentTarget() == null)
-			{
-				moveFromDangerChance = 85;
-				
-				threatSuppressionIsDanger = 1;
-				
-				moveFromDangerChance = Math.RandomInt(50,100);
-				
-				threatSuppressionIsDanger += moveFromDangerThreatThresholdModifier;
-				
+			{				
+				threatSuppressionIsDanger = 1;				
 			}
 			
-			if (Math.RandomInt(0,100) < moveFromDangerChance)
+			if (Math.RandomInt(0,100) < 80)
 				return true;
 		}
 		

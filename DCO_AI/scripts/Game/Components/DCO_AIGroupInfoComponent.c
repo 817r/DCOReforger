@@ -2,20 +2,6 @@ class DCO_AIInfoGroupComponentClass: ScriptComponentClass
 {
 };
 
-enum DCO_EFormation
-{
-	VEE,
-	LINE,
-	WEDGE,
-	COLUMN,
-	DIAMOND,
-	FIRETEAM,
-	ECHELONLEFT,
-	ECHELONRIGHT,
-	STAGGEREDCOLUMN,
-	AUTONOMOUS
-};
-
 enum DCO_ECombatBehaviorType
 {
 	DEFAULT,
@@ -42,14 +28,7 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	private int m_iCombatMoveChance;
 	private int m_iCombatCoverChance;
 	private int m_iCombatDefendChance;
-	
-	private bool m_bInvestigate;
-	private int m_iInvestigateRadius;
-	private int m_iInvestigateDuration;
-	
-	private int m_iRandomPatrolWaypoints;
-	
-	private DCO_EFormation m_eFormation;
+
 	private DCO_ECombatBehaviorType m_eCombatBehaviorType;
 	private DCO_ECombatMovementType m_eCombatMovementType;
 	
@@ -59,8 +38,6 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	
 	private int m_iWeaponFiredReactionDistance = SCR_AIReactionBase.AI_WEAPONFIRED_REACTION_DISTANCE;
 	
-	//------------------------------------------------------------------------------------------------
-	//! Functionality
 	private float m_fThrowGrenadeTime;
 	private bool m_bThrowGrenade = true;
 	
@@ -95,91 +72,23 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	
 	//------------------------------------------------------------------------------------------------
 	void DCO_AIGroupInfoComponentInitialize(bool initialize)
-	{		
-		if (m_eFormation == DCO_EFormation.AUTONOMOUS)
-			m_eFormation = DCO_EFormation.WEDGE;
-		else
-		{
-			if (m_AIFormationComponent)
-			{
-				string formation;
-				
-				switch (m_eFormation)
-				{
-					case DCO_EFormation.VEE:             formation = "Vee";             break;
-					case DCO_EFormation.LINE:            formation = "Line";            break;
-					case DCO_EFormation.WEDGE:           formation = "Wedge";           break;
-					case DCO_EFormation.COLUMN:          formation = "Column";          break;
-					case DCO_EFormation.DIAMOND:         formation = "Diamond";         break;
-					case DCO_EFormation.FIRETEAM:        formation = "Fireteam";        break;
-					case DCO_EFormation.ECHELONLEFT:     formation = "EchelonLeft";     break;
-					case DCO_EFormation.ECHELONRIGHT:    formation = "EchelonRight";    break;
-					case DCO_EFormation.STAGGEREDCOLUMN: formation = "StaggeredColumn"; break;
-				}
-				
-				m_AIFormationComponent.SetFormation(formation);
-			}
-		}
-		
+	{				
 		if (m_eCombatMovementType == DCO_ECombatMovementType.AUTONOMOUS)
 		{
-			m_eCombatMovementType = DCO_ECombatMovementType.INDIVIDUAL;
-			
-			if (unitPrefabSlots > 5 && Math.RandomFloat(0,100) < 50)
-				m_eCombatMovementType = DCO_ECombatMovementType.FIRETEAM;
-			else
-				m_eCombatMovementType = DCO_ECombatMovementType.INDIVIDUAL;
+			m_eCombatMovementType = DCO_ECombatMovementType.GROUP;
+		}
+		
+		if (m_eCombatBehaviorType == DCO_ECombatBehaviorType.DEFAULT)
+		{
+			m_eCombatBehaviorType = DCO_ECombatBehaviorType.OFFENSIVE;
 		}
 	}
-	
-	//------------------------------------------------------------------------------------------------
+
 	override protected void OnPostInit(IEntity owner)
 	{
 		m_sInstance = this;
 		super.OnPostInit(owner);
 		SetEventMask(owner, EntityEvent.INIT);
-	}
-
-	DCO_EFormation GetFormation()
-	{
-		return m_eFormation;
-	}
-	
-	void SetFormation(DCO_EFormation formation)
-	{
-		m_eFormation = formation;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	//! Investigate
-	bool GetInvestigate()
-	{
-		return m_bInvestigate;
-	}
-	
-	void SetInvestigate(bool investigate)
-	{
-		m_bInvestigate = investigate;
-	}
-	
-	int GetInvestigateRadius()
-	{
-		return m_iInvestigateRadius;
-	}
-	
-	void SetInvestigateRadius(int investigateRadius)
-	{
-		m_iInvestigateRadius = investigateRadius;
-	}
-	
-	int GetInvestigateDuration()
-	{
-		return m_iInvestigateDuration;
-	}
-	
-	void SetInvestigateDuration(int investigateDuration)
-	{
-		m_iInvestigateDuration = investigateDuration;
 	}
 	
 	int GetCombatMoveChance()
@@ -270,15 +179,5 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	void SetThrowGrenadeTime(float throwGrenadeTime)
 	{
 		m_fThrowGrenadeTime = throwGrenadeTime;
-	}
-
-	int GetRandomPatrolWaypoints()
-	{
-		return m_iRandomPatrolWaypoints;
-	}
-	
-	void SetRandomPatrolWaypoints(int randomPatrolWaypoints)
-	{
-		m_iRandomPatrolWaypoints = randomPatrolWaypoints;
 	}
 };

@@ -42,7 +42,7 @@ modded class SCR_AIFindCover : AITaskScripted
 		
 		m_SCR_AIUtilityComponent = SCR_AIUtilityComponent.Cast(owner.FindComponent(SCR_AIUtilityComponent));
 		
-		//m_DCO_AIInfoComponent = m_SCR_AIUtilityComponent.m_DCO_AIInfoComponent;
+		m_DCO_AIInfoComponent = m_SCR_AIUtilityComponent.m_DCO_AIInfoComponent;
 		
 		if (m_ParentGroup)
 		{
