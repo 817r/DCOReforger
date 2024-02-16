@@ -41,11 +41,11 @@ class DCO_AIInfoComponent : ScriptComponent
 	private float m_fAimAccuracyErrorOriginal;
 	private float m_fAimAccuracyErrorModifier;
 	
-	private bool m_bForceStayInVehicle;
-	
 	private bool m_bHoldPosition;
 	private int m_fHoldPositionRadius = 20;
 	private vector m_vHoldPositionOrigin;
+	
+	private DCO_ECombatBehaviorType m_eCombatBehaviorType;
 	
 	private float m_fAttackReactionDelayModifier;
 
@@ -184,17 +184,7 @@ class DCO_AIInfoComponent : ScriptComponent
 	{
 		m_fAttackReactionDelayModifier = attackReactionDelayModifier;
 	}
-	
-	bool GetForceStayInVehicle()
-	{
-		return m_bForceStayInVehicle;
-	}
-	
-	void SetForceStayInVehicle(bool forceStayInVehicle)
-	{
-		m_bForceStayInVehicle = forceStayInVehicle;
-	}
-	
+
 	bool GetForceStanceAutonomous()
 	{
 		return m_bForceStanceAutonomous;
@@ -223,5 +213,15 @@ class DCO_AIInfoComponent : ScriptComponent
 	void SetCombatBehaviorTypeDefensive(bool combatBehaviorTypeDefensive)
 	{
 		m_bCombatBehaviorTypeDefensive = combatBehaviorTypeDefensive
+	}
+	
+	DCO_ECombatBehaviorType GetCombatBehaviorType()
+	{
+		return m_eCombatBehaviorType;
+	}
+	
+	void SetCombatBehaviorType(DCO_ECombatBehaviorType combatBehaviorType)
+	{
+		m_eCombatBehaviorType = combatBehaviorType;
 	}
 }

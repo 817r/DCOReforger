@@ -181,7 +181,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
              PortName "ThresholdIn"
             }
            }
-           ForceNodeResult Fail
+           ForceNodeResult Success
           }
          }
         }
