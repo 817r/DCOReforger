@@ -26,7 +26,6 @@ SCR_AIWorld : "{E0A05C76552E7F58}Prefabs/AI/SCR_AIWorld.et" {
   }
  }
  coords 5292.37 40.391 11235.472
- "Initialize Road Network" 1
  "Max number of cached BTs" 50
  m_aGoalMessages {
   SCR_AIMessage_Investigate "{5854E5A1E8BD402C}" {

@@ -19,7 +19,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
          Nodes {
           SCR_AIGetObservePositionBehaviorParameters "SCR_AI Get Observe Position Behavior Parameters" {
            Name "SCR_AI Get Observe Position Behavior Parameters"
-           EditorPos -1627.444 647.571
+           EditorPos -1629.444 647.571
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
              Port 1
@@ -270,7 +270,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
   }
   VariableReference radius {
    VariableType 3
-   EditorPos -1093.611 762.856
+   EditorPos -1095.611 762.856
    Group "{5C56A6044E03EE3C}"
   }
   VariableReference radius {

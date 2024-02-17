@@ -171,19 +171,47 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
         }
        }
       }
+      SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+       Name "SCR_AI Deco Is Above Threat Level"
+       EditorPos 2687 31.25
+       Nodes {
+        SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
+         Name "SCR_AI Send Order_ Stance"
+         EditorPos 2721.389 206.944
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Receiver"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Stance"
+          }
+         }
+         m_eStance PRONE
+        }
+       }
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ThresholdIn"
+        }
+       }
+       m_threatThreshold THREATENED
+      }
       Sequence Sequence {
        Name "Sequence"
-       EditorPos 1709.791 -131.177
+       EditorPos 3367.291 -166.177
        Nodes {
         AITaskIdle Idle {
          Name "Idle"
-         EditorPos 1662.541 0.573
+         EditorPos 3320.041 -34.427
          Period 10
          PeriodRandom 0
         }
         SCR_AIFailAction "SCR_AI Fail Action" {
          Name "SCR_AI Fail Action"
-         EditorPos 1830.958 -0.177
+         EditorPos 3488.458 -35.177
         }
        }
       }
@@ -280,7 +308,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
   }
   VariableReference dangerPos {
    VariableType 2
-   EditorPos 1218.375 944.073
+   EditorPos 1220.597 948.517
   }
   VariableReference dangerPos {
    VariableType 2

@@ -69,7 +69,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
          Nodes {
           AITaskReturnState "Return  State" {
            Name "Return  State"
-           EditorPos -396.557 165.388
+           EditorPos -395.128 165.388
            Result RUNNING
           }
          }
@@ -393,6 +393,35 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                 }
                }
                Group "{5C65018A80762E48}"
+              }
+              SCR_AISendOrder_WeaponRaised "SCR_AI Send Order_ Weapon Raised" {
+               Name "SCR_AI Send Order_ Weapon Raised"
+               EditorPos 948.5 1076.5
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Receiver"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "WeaponRaised"
+                }
+               }
+              }
+              SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
+               Name "SCR_AI Send Order_ Stance"
+               EditorPos 1296.786 1069.928
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Receiver"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Stance"
+                }
+               }
+               m_eStance STAND
               }
              }
              UseChildResult 0

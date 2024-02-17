@@ -1,0 +1,294 @@
+BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_FriendlyInLineOfSight.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_FriendlyInLineOfSight.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -50 -45
+   Nodes {
+    Decorator Decorator {
+     Name "Decorator"
+     EditorPos -95 127
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -53.896 315
+       Nodes {
+        Selector Selector {
+         Name "Selector"
+         EditorPos -822.986 617.028
+         Nodes {
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos -968.68 808.556
+           Nodes {
+            SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+             Name "SCR_AI Get Entity Position"
+             EditorPos -999.652 998.278
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 0
+               PortName "Entity"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 7
+               PortName "Position"
+              }
+             }
+             Group "{60472BC28D6F1D3E}"
+            }
+           }
+           Group "{60472BC28D6F1D3E}"
+           InVariable 2
+           TestType EqualsValue
+           TestValue "true"
+          }
+          AITaskSetVariable "Set Variable" {
+           Name "Set Variable"
+           EditorPos -511.041 863.278
+           Group "{60472BC28D6F1D3E}"
+           OutVariable 7
+           InVariable 1
+          }
+         }
+         Group "{60472BC28D6F1D3E}"
+        }
+        Selector Selector {
+         Name "Selector"
+         EditorPos 17.857 543.571
+         Nodes {
+          SCR_AIFindCover "SCR_AI Find Cover" {
+           Name "SCR_AI Find Cover"
+           EditorPos -217.556 728.889
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 0
+             PortName "Enemy"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 1
+             PortName "DangerPosition"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "InCover"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 4
+             PortName "Position"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "Stance"
+            }
+           }
+          }
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 271.167 683.333
+           Nodes {
+            SCR_AIGetSidePosition "SCR_AI Get Side Position" {
+             Name "SCR_AI Get Side Position"
+             EditorPos -23.595 849.238
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 0
+               PortName "Enemy"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 7
+               PortName "EnemyPosition"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "KeepSide"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 6
+               PortName "PositionOut"
+              }
+             }
+             m_fDistance 5
+            }
+            SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
+             Name "SCR_AI Get Random Point"
+             EditorPos 454.207 852.111
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "Waypoint"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 6
+               PortName "Origin"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "Radius"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 4
+               PortName "ResultVector"
+              }
+             }
+             m_Radius 6
+            }
+           }
+          }
+         }
+        }
+        SCR_AISendOrder_MovementType "SCR_AI Send Order_ Movement Type" {
+         Name "SCR_AI Send Order_ Movement Type"
+         EditorPos 434.196 584.29
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Receiver"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "MovementType"
+          }
+         }
+         Group "{60472BC28D6F1D3E}"
+         m_eMovementType RUN
+        }
+        AITaskSetVariable "Set Variable" {
+         Name "Set Variable"
+         EditorPos 963.553 572.814
+         Group "{60472BC28D6F1D3E}"
+         SetValue "true"
+         OutVariable 3
+         InVariable 5
+        }
+        AITaskMove Move {
+         Name "Move"
+         EditorPos 1350.625 582.624
+         InTargetLocation 4
+         InPrecisionXZ -1
+         OrientationType ToPoint
+        }
+       }
+      }
+     }
+     ForceNodeResult Success
+    }
+   }
+  }
+ }
+ Variables {
+  Variable movePos {
+   VariableName "movePos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable targetPos {
+   VariableName "targetPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable lastSeenPosition {
+   VariableName "lastSeenPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable TargetEntity {
+   VariableName "TargetEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable searchRadius {
+   VariableName "searchRadius"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable isTargetVisible {
+   VariableName "isTargetVisible"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable lookingPos {
+   VariableName "lookingPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable targetVector {
+   VariableName "targetVector"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable keepSide {
+   VariableName "keepSide"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable lookAtPosition {
+   VariableName "lookAtPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable movePrecision {
+   VariableName "movePrecision"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable dangerPos {
+   VariableName "dangerPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference TargetEntity {
+   VariableType 3
+   EditorPos -1212.125 958.738
+  }
+  VariableReference lastSeenPosition {
+   VariableType 2
+   EditorPos -783.958 793.556
+  }
+  VariableReference isTargetVisible {
+   VariableType 5
+   EditorPos -1215.291 880.278
+  }
+  VariableReference lookAtPosition {
+   VariableType 9
+   EditorPos 1232.247 843.551
+  }
+  VariableReference movePos {
+   VariableType 0
+   EditorPos 747.629 743.099
+  }
+  VariableReference targetVector {
+   VariableType 7
+   EditorPos 777.348 646.354
+  }
+  VariableReference searchRadius {
+   VariableType 4
+   EditorPos 240.556 973.889
+  }
+  VariableReference dangerPos {
+   VariableType 11
+   EditorPos -285.714 1007.143
+  }
+ }
+}

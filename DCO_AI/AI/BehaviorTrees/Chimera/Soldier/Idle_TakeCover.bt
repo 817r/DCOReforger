@@ -15,17 +15,6 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
        SetValue "False"
        OutVariable 11
       }
-      SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
-       Name "SCR_AI Set Weapon Raised"
-       EditorPos -1112.5 -212.5
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "Raised"
-        }
-       }
-       m_bRaised 0
-      }
       Sequence Sequence {
        Name "Sequence"
        EditorPos -553.833 -242

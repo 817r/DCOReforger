@@ -4,7 +4,7 @@ modded class SCR_AIInvestigateClusterActivity : SCR_AIFireteamsClusterActivity
 	
 	override void OnActionSelected()
 	{
-		int investigateRadius = 50;
+		//float investigateRadius = 50;
 		
 		super.OnActionSelected();
 		

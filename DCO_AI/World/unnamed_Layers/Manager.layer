@@ -14,6 +14,31 @@ SCR_GameModeEditor GameMode_Editor1 : "{D2DE7F43D48A3667}Prefabs/MP/Modes/Editor
  coords 5325.981 36.739 10673.17
  m_eTestGameFlags SpawnAI
 }
+ScriptedChatEntity : "{F69BC912AC8236F9}Prefabs/MP/ScriptedChatEntity.et" {
+ coords 5645.451 89.861 5340.064
+ Channels {
+  BaseChatChannel "{559077E72C7027BC}" {
+   Style BaseChatChannelStyle "{60A30626839FC9B0}" {
+   }
+  }
+  FactionChatChannel "{559077E76537C0B4}" {
+   Style BaseChatChannelStyle "{60A306269E0D0994}" {
+   }
+  }
+  GroupChatChannel "{58729124A5B6D815}" {
+   Style BaseChatChannelStyle "{60A306268207FE4B}" {
+   }
+  }
+  LocalChatChannel "{559077E6A85B7EEE}" {
+   Style BaseChatChannelStyle "{60A30626848EB156}" {
+   }
+  }
+ }
+ "Whisper channel" PrivateMessageChannel "{52927B26F407CAD5}" {
+  Style BaseChatChannelStyle "{60A3062686E315C2}" {
+  }
+ }
+}
 HitRegistrationManager HitRegManager1 : "{0EDA3D48791120DD}Prefabs/MP/HitRegManager.et" {
  coords 4838.473 28.604 11767.825
 }
