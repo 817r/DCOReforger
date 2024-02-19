@@ -1,13 +1,13 @@
-BehaviorTree {
+BehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt" {
  Name "AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos -935.762 -560.144
+   EditorPos -105.762 -622.644
    Nodes {
     Parallel Parallel {
      Name "Parallel"
-     EditorPos -925.642 -416.453
+     EditorPos -106.904 -463.036
      Nodes {
       RunBT RunBT {
        Name "RunBT"
@@ -34,63 +34,40 @@ BehaviorTree {
        }
        BehaviorTree "{648E04634854A4AB}AI/BehaviorTrees/Chimera/Soldier/HandleWeaponSwitching.bt"
       }
-      DecoTestVariable "Test Variable" {
-       Name "Test Variable"
-       EditorPos -1023.928 -20.952
+      Selector Selector {
+       Name "Selector"
+       EditorPos -689.762 -179.464
        Nodes {
-        AITaskSetVariable "Set Variable" {
-         Name "Set Variable"
-         EditorPos -953.056 203.353
-         SetValue "false"
-         OutVariable 3
-        }
-       }
-       AbortType AbortChildrenBranchAndParentFurtherChildren
-       InVariable 2
-       TestType EqualsValue
-       TestValue "true"
-      }
-      RunBT RunBT {
-       Name "RunBT"
-       EditorPos -337.976 -8.652
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port 6
-         PortName "WeaponReady"
-        }
-       }
-       BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.bt"
-       InBehaviorTree 0
-      }
-      SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-       Name "SCR_AI Deco Is Above Threat Level"
-       EditorPos 241.191 -28.095
-       Nodes {
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 335.929 143.571
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos -1023.928 -20.952
          Nodes {
-          RunBT RunBT {
-           Name "RunBT"
-           EditorPos -0.786 329.214
-           BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_Position.bt"
-           InBehaviorTree -1
-          }
-          AITaskIdle Idle {
-           Name "Idle"
-           EditorPos 545.714 344.286
-           PeriodRandom 1
+          AITaskSetVariable "Set Variable" {
+           Name "Set Variable"
+           EditorPos -953.056 203.353
+           SetValue "false"
+           OutVariable 3
           }
          }
+         AbortType AbortChildrenBranchAndParentFurtherChildren
+         InVariable 2
+         TestType EqualsValue
+         TestValue "true"
+        }
+        RunBT RunBT {
+         Name "RunBT"
+         EditorPos 6.548 81.11
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 6
+           PortName "WeaponReady"
+          }
+         }
+         BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.bt"
+         AlwaysReinit 1
+         InBehaviorTree 0
         }
        }
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "ThresholdIn"
-        }
-       }
-       m_threatThreshold ALERTED
       }
      }
     }
@@ -132,7 +109,7 @@ BehaviorTree {
  VariablesRefs {
   VariableReference handleWeaponTree {
    VariableType 1
-   EditorPos -698.214 201.846
+   EditorPos -353.69 291.608
   }
   VariableReference handleWeaponTree {
    VariableType 1
@@ -156,7 +133,7 @@ BehaviorTree {
   }
   VariableReference WeaponReady {
    VariableType 2
-   EditorPos -587.5 66.75
+   EditorPos -242.976 156.512
   }
  }
 }

@@ -12,7 +12,7 @@ enum DCO_ECombatBehaviorType
 enum DCO_ECombatMovementType
 {
 	GROUP,
-	FIRETEAM,
+	TEAM,
 	INDIVIDUAL,
 	AUTONOMOUS
 };

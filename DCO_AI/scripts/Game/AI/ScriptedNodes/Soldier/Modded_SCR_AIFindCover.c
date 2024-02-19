@@ -21,7 +21,7 @@ modded class SCR_AIFindCover : AITaskScripted
 	private DCO_AIInfoGroupComponent m_DCO_AIGroupInfoComponent;
 	
 	//override private const vector
-	private const vector PRONE_OFFSET = Vector(0, 0.30, 0);
+	private const vector PRONE_OFFSET = Vector(0, 0.10, 0);
 	
 	private vector m_CurrentCoverPosition;
 	
@@ -57,7 +57,7 @@ modded class SCR_AIFindCover : AITaskScripted
 		
 		m_CoverSearchDistance++;
 		
-		if (m_CoverSearchDistance > 30)
+		if (m_CoverSearchDistance > 50)
 			m_CoverSearchDistance = 0;
 	}
 	
@@ -173,18 +173,6 @@ modded class SCR_AIFindCover : AITaskScripted
 						}
 					}
 		
-	/*	if (m_DCO_AIInfoComponent.GetHoldPosition())
-		{
-			int holdPositionRadius = m_DCO_AIInfoComponent.GetHoldPositionRadius();
-			
-			if (holdPositionRadius < 1)
-				holdPositionRadius = 1;
-			
-			offsetDistanceX = holdPositionRadius;
-			
-			traceOrigin = m_DCO_AIInfoComponent.GetHoldPositionOrigin();
-		} */
-		
 		float offsetDistanceZ = offsetDistanceX;
 		
 		if (Math.RandomFloat(0,100) < 50 && m_CoverSearchDistance > 5)
@@ -195,7 +183,7 @@ modded class SCR_AIFindCover : AITaskScripted
 		
 		if (distanceIsDanger > distanceToDanger)
 		{
-			searchCoverOffset = Vector(0, 0, -7);
+			searchCoverOffset = Vector(0, 0, -10);
 		}
 		else
 		{
@@ -242,25 +230,12 @@ modded class SCR_AIFindCover : AITaskScripted
 		vector hitNavmeshPos;
 		bool coverFound;		
 		
-#ifdef WORKBENCH
-		if (DiagMenu.GetBool(SCR_DebugMenuID.DEBUGUI_AI_DEBUG_COVERS))
-			m_DebugShapes.Insert(Shape.CreateSphere(Color.PINK, m_SphereFlags, traceOrigin, DEBUGSPHERE_RADIUS));
-#endif		
 		foreach (vector offsetLocal : offsets)
 		{
 			vector traceEndWorld = ownerEntity.CoordToParent(offsetLocal);
 			
 			bool holeInNavmesh = !m_PathfindingComponent.RayTrace(traceOrigin, traceEndWorld, hitNavmeshPos);
-			
-#ifdef WORKBENCH
-			if (DiagMenu.GetBool(SCR_DebugMenuID.DEBUGUI_AI_DEBUG_COVERS))
-			{ 
-				int color = COLOR_BLUE;
-				if (holeInNavmesh)
-					color = COLOR_BLUE_A;
-				m_DebugShapes.Insert(Shape.CreateSphere(color, m_SphereFlags, traceEndWorld, DEBUGSPHERE_RADIUS));
-			}
-#endif
+
 			
 			if (!holeInNavmesh)
 				continue;
@@ -286,7 +261,7 @@ modded class SCR_AIFindCover : AITaskScripted
 				}
 				else
 				{
-					if (distanceToCover < 3)
+					if (distanceToCover < 5)
 						continue;
 				}
 			}
@@ -307,7 +282,7 @@ modded class SCR_AIFindCover : AITaskScripted
 			if (IsAgentNearby(hitNavmeshPos))
 				return ENodeResult.FAIL; 
 			
-			m_CoverSearchDistance = 0;
+			m_CoverSearchDistance = 25;
 			
 			float coverDistaceOffset = Math.RandomFloat(1,2);
 			
@@ -355,8 +330,6 @@ modded class SCR_AIFindCover : AITaskScripted
 		if (m_CurrentTarget == null)
 		{
 			hitPrecision = Math.RandomFloat(0.3,0.5);
-			
-			hitPrecision = Math.RandomFloat(0.3,0.7);
 		}
 		
 		if (isEndangering)
@@ -378,10 +351,7 @@ modded class SCR_AIFindCover : AITaskScripted
 		
 		m_TraceParams.Start = posGround + PRONE_OFFSET;
 		hit = m_World.TraceMove(m_TraceParams, null);
-		
-#ifdef WORKBENCH
-		DrawDebugTrace(hit);
-#endif	
+
 		if (hit >= hitPrecision)
 		{
 			stance = ECharacterStance.PRONE;			
@@ -391,9 +361,6 @@ modded class SCR_AIFindCover : AITaskScripted
 		m_TraceParams.Start = posGround + KNEEL_OFFSET;
 		hit = m_World.TraceMove(m_TraceParams, null);
 		
-#ifdef WORKBENCH
-		DrawDebugTrace(hit);
-#endif
 		if (hit >= hitPrecision)
 		{
 			stance = ECharacterStance.CROUCH;			
@@ -402,10 +369,7 @@ modded class SCR_AIFindCover : AITaskScripted
 		
 		m_TraceParams.Start = posGround + STAND_OFFSET;
 		hit = m_World.TraceMove(m_TraceParams, null);
-		
-#ifdef WORKBENCH
-		DrawDebugTrace(hit);
-#endif
+
 		if (hit >= hitPrecision)
 		{
 			stance = ECharacterStance.STAND;
@@ -433,21 +397,6 @@ modded class SCR_AIFindCover : AITaskScripted
 		typename entityType = entity.Type();
 		
 		EntityPrefabData prefabData = entity.GetPrefabData();
-
-#ifdef DCO_DEVELOPMENT
-		
-		string className = entity.ClassName();
-		
-		string entityString = entity.ToString();
-		
-		if (prefabData)
-		{
-			BaseContainer prefab = prefabData.GetPrefab();
-			
-			ResourceName prefabName = prefabData.GetPrefabName();
-		}
-		
-#endif
 		
 		if (entityType == SCR_ChimeraCharacter)
 		{

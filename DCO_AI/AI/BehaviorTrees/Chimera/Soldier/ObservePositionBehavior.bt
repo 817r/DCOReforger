@@ -130,7 +130,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
                PortName "ResultVector"
               }
              }
-             m_Radius 30
+             m_Radius 0
             }
             AITaskCharacterAim "Character Aim" {
              Name "Character Aim"
@@ -138,7 +138,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
              InAimAtPosition 3
              PrecisionXZ 10
              PrecisionY 10
-             Timeout 1
+             Timeout 2
              UseADS 0
             }
             AITaskIdle Idle {
@@ -167,12 +167,13 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
           }
           SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
            Name "SCR_AI Deco Is Above Threat Level"
-           EditorPos 2688.75 482.25
+           EditorPos 2978.75 493.25
            Nodes {
             RunBT RunBT {
              Name "RunBT"
-             EditorPos 2668.333 701.667
+             EditorPos 2962.583 689.25
              BehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
+             AlwaysReinit 1
             }
            }
            InPorts {
@@ -181,7 +182,9 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
              PortName "ThresholdIn"
             }
            }
+           NegativeCondition 1
            ForceNodeResult Success
+           m_threatThreshold SAFE
           }
          }
         }

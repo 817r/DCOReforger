@@ -1,18 +1,8 @@
-[BaseContainerProps()]
 modded class SCR_AIDangerReaction : SCR_AIReactionBase
 {
 	bool IsDangerChanceByDistance(float distanceToDanger, out float dangerReactionChance)
 	{
-		dangerReactionChance = 15;
-		
-		if (distanceToDanger < 80)
-			dangerReactionChance = 100;
-		else if (distanceToDanger < 150)
-			dangerReactionChance = 60;
-		else if (distanceToDanger < 350)
-			dangerReactionChance = 35;
-		else if (distanceToDanger < 600)
-			dangerReactionChance = 15;
+		dangerReactionChance = 90;
 		
 		if (Math.RandomFloat(0,100) < dangerReactionChance)
 			return true;
@@ -26,9 +16,7 @@ modded class SCR_AIDangerReaction : SCR_AIReactionBase
 		
 		if (aiInfoComponent)
 		{
-			float threatSuppressionIsDanger = Math.RandomFloat(0.5,1.0);
-			
-			threatSuppressionIsDanger = Math.RandomFloat(0.3,0.7);
+			float threatSuppressionIsDanger = 0.8;
 			
 			float threatSuppression = utility.m_ThreatSystem.GetThreatSuppression();
 			
@@ -37,7 +25,7 @@ modded class SCR_AIDangerReaction : SCR_AIReactionBase
 				threatSuppressionIsDanger = 1;				
 			}
 			
-			if (Math.RandomInt(0,100) < 80)
+			if (Math.RandomInt(0,100) < 85)
 				return true;
 		}
 		

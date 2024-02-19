@@ -4,7 +4,7 @@ modded class SCR_AIGroupFireteamManager : Managed
 	
 	protected SCR_AIGroup m_Group;
 	protected ref array<ref SCR_AIGroupFireteam> m_aFireteams = {};
-	bool m_bRebalanceFireteams = false; // True when fireteams become unbalanced
+	bool m_bRebalanceFireteams = true; // True when fireteams become unbalanced
 	
 	// Fireteam events
 	protected ref ScriptInvokerBase<SCR_AIOnFireteamRemoved> Event_OnFireteamRemoved = new ScriptInvokerBase<SCR_AIOnFireteamRemoved>();
@@ -26,10 +26,8 @@ modded class SCR_AIGroupFireteamManager : Managed
 	{
 		if (groupSize >= 12)
 			return 8;
-		else if (groupSize >= 8)
-			return 8;
 		else if (groupSize > 4)
-			return 5;
+			return 8;
 		else if (groupSize == 4)
 			return 4; 
 		else

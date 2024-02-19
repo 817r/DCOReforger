@@ -39,7 +39,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
             }
             SCR_AISendOrder_WeaponRaised "SCR_AI Send Order_ Weapon Raised" {
              Name "SCR_AI Send Order_ Weapon Raised"
-             EditorPos -4219.048 1127.143
+             EditorPos -4219.048 1125.143
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -111,10 +111,10 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
           SCR_AIGetAttackBehaviorParameters "SCR_AI Get Attack Behavior Parameters" {
            Name "SCR_AI Get Attack Behavior Parameters"
-           EditorPos -2010 635
+           EditorPos -2010 633.75
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 22
+             Port 19
              PortName "Target"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
@@ -128,7 +128,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
            EditorPos -1382.841 647.083
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
-             Port 22
+             Port 19
              PortName "BaseTarget"
             }
            }
@@ -138,7 +138,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
              PortName "Entity"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 23
+             Port 20
              PortName "LastSeenPosition"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
@@ -156,15 +156,15 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
            EditorPos -780.158 637.142
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 14
+             Port 12
              PortName "MinDistance"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 15
+             Port 13
              PortName "MaxDistance"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 16
+             Port 14
              PortName "IsDirectDamage"
             }
            }
@@ -180,7 +180,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
            EditorPos 570.141 1104.773
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
-             Port 25
+             Port 22
              PortName "baseTarget"
             }
             SingleInputPortContainer SingleInputPortContainer {
@@ -192,11 +192,12 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
              PortName "moveExtraWaitTime"
             }
             SingleInputPortContainer SingleInputPortContainer {
-             Port 19
+             Port 17
              PortName "isTargetVisible"
             }
            }
            BehaviorTree "{064B0C5BC3CBF167}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CombatMoveDefault.bt"
+           AlwaysReinit 1
            InBehaviorTree -1
           }
           Selector Selector {
@@ -216,7 +217,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
              }
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 24
+               Port 21
                PortName "BaseTargetIn"
               }
              }
@@ -250,129 +251,133 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 3670.572 917.274
+           EditorPos 3433.786 711.203
            Nodes {
-            RunBT RunBT {
-             Name "RunBT"
-             EditorPos 3328.428 1079.059
-             BehaviorTree "{7BAEE68E09CF9BFE}AI/BehaviorTrees/Chimera/Soldier/AttackDelay.bt"
-            }
             Selector Selector {
              Name "Selector"
-             EditorPos 3870 1111.25
+             EditorPos 4765 1086.25
              Nodes {
               SCR_AIDecoCombatAllowance "SCR_AI Deco Combat Allowance" {
                Name "SCR_AI Deco Combat Allowance"
-               EditorPos 3523.591 1427.381
+               EditorPos 4418.591 1402.381
                Nodes {
                 DecoTestDistanceToEntity "Test Distance To Entity" {
                  Name "Test Distance To Entity - Dist > Min"
-                 EditorPos 3503.465 1650.262
+                 EditorPos 4398.465 1625.262
                  Nodes {
                   DecoTestDistanceToEntity "Test Distance To Entity" {
                    Name "Test Distance To Entity - Dist < Max"
-                   EditorPos 3501.798 1954.151
+                   EditorPos 4411.798 2149.151
                    Nodes {
                     SCR_AIIsFriendlyInAim "SCR_AI Is Friendly In Aim" {
                      Name "SCR_AI Is Friendly In Aim"
-                     EditorPos 3586.225 2253.904
+                     EditorPos 4496.225 2448.904
                      Nodes {
                       Selector Selector {
                        Name "Selector"
-                       EditorPos 3637.357 2464.857
+                       EditorPos 4547.357 2659.857
                        Nodes {
                         DecoTestVariable "Test Variable" {
                          Name "Test Variable"
-                         EditorPos 3217.976 2819.404
+                         EditorPos 4202.262 3025.833
                          Nodes {
                           Selector Selector {
                            Name "Selector"
-                           EditorPos 3332.027 3117.389
+                           EditorPos 4242.027 3312.389
                            Nodes {
                             SCR_AIDecoMustUseMeleeAttack "SCR_AI Deco Must Use Melee Attack" {
                              Name "SCR_AI Deco Must Use Melee Attack"
-                             EditorPos 2273.265 3464.928
+                             EditorPos 2912.979 3659.928
                              Nodes {
                               RunBT RunBT {
                                Name "RunBT"
-                               EditorPos 2264.822 3616.746
+                               EditorPos 2888.822 3811.746
                                InPorts {
                                 SingleInputPortContainer SingleInputPortContainer {
                                  Port 4
                                  PortName "targetEntity"
                                 }
                                }
+                               Group "{60A53B6DB0E522C7}"
                                BehaviorTree "{54BF4756359E3556}AI/BehaviorTrees/Chimera/Soldier/Fire_Melee.bt"
                               }
                              }
                              InPorts {
                               SingleInputPortContainer SingleInputPortContainer {
-                               Port 13
+                               Port 11
                                PortName "TargetPos"
                               }
                              }
-                             AbortType AbortChildrenBranchAndParentFurtherChildren
+                             Group "{60A53B6DB0E522C7}"
+                             AbortType AbortParentNodeFurtherChildren
                             }
                             SCR_AIDecoCombatAllowance "SCR_AI Deco Combat Allowance" {
                              Name "SCR_AI Deco Combat Allowance"
-                             EditorPos 2919.321 3352.246
+                             EditorPos 3733.892 3555.818
                              Nodes {
                               RunBT RunBT {
                                Name "RunBT"
-                               EditorPos 2890.893 3512.699
+                               EditorPos 3626.893 3717.699
                                InPorts {
                                 SingleInputPortContainer SingleInputPortContainer {
-                                 Port 12
-                                 PortName "isTargetVisible"
+                                 Port 32
+                                 PortName "lastSeenPosition"
                                 }
                                 SingleInputPortContainer SingleInputPortContainer {
-                                 Port 28
+                                 Port 25
                                  PortName "baseTarget"
                                 }
                                }
-                               BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressive.bt"
+                               Group "{60A53B6DB0E522C7}"
+                               BehaviorTree "{6EFA740C10F7169E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_SuppresiveFire.bt"
                                AlwaysReinit 1
                                InBehaviorTree -1
                               }
                              }
-                             AbortType AbortChildrenBranchAndParentFurtherChildren
+                             Group "{60A53B6DB0E522C7}"
+                             AbortType AbortParentNodeFurtherChildren
                              m_eCombatActions SUPPRESSIVE_FIRE
                             }
                             SCR_AIDecoCombatAllowance "SCR_AI Deco Combat Allowance" {
                              Name "SCR_AI Deco Combat Allowance"
-                             EditorPos 3334.447 3341.636
+                             EditorPos 4270.161 3533.779
                              Nodes {
                               RunBT RunBT {
                                Name "RunBT"
-                               EditorPos 3328.5 3499.331
+                               EditorPos 4238.5 3694.331
                                InPorts {
                                 SingleInputPortContainer SingleInputPortContainer {
-                                 Port 26
+                                 Port 23
                                  PortName "baseTarget"
                                 }
                                }
+                               Group "{60A53B6DB0E522C7}"
                                BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt"
                                AlwaysReinit 1
                               }
                              }
-                             AbortType AbortChildrenBranchAndParentFurtherChildren
+                             Group "{60A53B6DB0E522C7}"
+                             AbortType AbortParentNodeFurtherChildren
                              m_eCombatActions BURST_FIRE
                             }
                             RunBT RunBT {
                              Name "RunBT"
-                             EditorPos 3925.685 3333.639
+                             EditorPos 4835.685 3528.639
                              InPorts {
                               SingleInputPortContainer SingleInputPortContainer {
-                               Port 27
+                               Port 24
                                PortName "baseTarget"
                               }
                              }
+                             Group "{60A53B6DB0E522C7}"
                              BehaviorTree "{F86FF905B2478F3C}AI/BehaviorTrees/Chimera/Soldier/Fire_Single.bt"
                              AlwaysReinit 1
                             }
                            }
+                           Group "{60A53B6DB0E522C7}"
                           }
                          }
+                         Group "{60A53B6DB0E522C7}"
                          AbortType AbortChildrenBranchAndParentFurtherChildren
                          InVariable 10
                          TestType EqualsValue
@@ -380,112 +385,109 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
                         }
                         SCR_AIDecoCombatAllowance "SCR_AI Deco Combat Allowance" {
                          Name "SCR_AI Deco Combat Allowance"
-                         EditorPos 4652.143 2824.286
-                         Nodes {
-                          SCR_AIDecoCombatAllowance "SCR_AI Deco Combat Allowance" {
-                           Name "SCR_AI Deco Combat Allowance"
-                           EditorPos 4686.698 2998.976
-                           Nodes {
-                            RunBT RunBT {
-                             Name "RunBT"
-                             EditorPos 4619.377 3173.072
-                             InPorts {
-                              SingleInputPortContainer SingleInputPortContainer {
-                               Port 11
-                               PortName "isTargetVisible"
-                              }
-                              SingleInputPortContainer SingleInputPortContainer {
-                               Port 29
-                               PortName "baseTarget"
-                              }
-                             }
-                             BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressive.bt"
-                             AlwaysReinit 1
-                             InBehaviorTree -1
-                            }
-                           }
-                           AbortType AbortChildrenBranch
-                           m_eCombatActions SUPPRESSIVE_FIRE
-                          }
-                         }
-                         AbortType AbortChildrenBranchAndParentFurtherChildren
-                         m_eCombatActions SUPPRESSIVE_FIRE
-                        }
-                        DecoTestVariable "Test Variable" {
-                         Name "Test Variable"
-                         EditorPos 5551.591 2896.591
+                         EditorPos 5605.27 3193.976
                          Nodes {
                           RunBT RunBT {
                            Name "RunBT"
-                           EditorPos 5433.96 3199.739
+                           EditorPos 5529.377 3368.072
                            InPorts {
                             SingleInputPortContainer SingleInputPortContainer {
-                             Port 20
-                             PortName "isTargetVisible"
+                             Port 33
+                             PortName "lastSeenPosition"
                             }
                             SingleInputPortContainer SingleInputPortContainer {
-                             Port 30
+                             Port 26
                              PortName "baseTarget"
                             }
                            }
-                           BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressive.bt"
+                           Group "{60A53B6DB0E522C7}"
+                           BehaviorTree "{6EFA740C10F7169E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_SuppresiveFire.bt"
                            AlwaysReinit 1
                            InBehaviorTree -1
                           }
                          }
-                         InVariable 21
+                         Group "{60A53B6DB0E522C7}"
+                         m_eCombatActions SUPPRESSIVE_FIRE
+                        }
+                        DecoTestVariable "Test Variable" {
+                         Name "Test Variable"
+                         EditorPos 6501.174 3091.924
+                         Nodes {
+                          RunBT RunBT {
+                           Name "RunBT"
+                           EditorPos 6343.96 3394.739
+                           InPorts {
+                            SingleInputPortContainer SingleInputPortContainer {
+                             Port 31
+                             PortName "lastSeenPosition"
+                            }
+                            SingleInputPortContainer SingleInputPortContainer {
+                             Port 27
+                             PortName "baseTarget"
+                            }
+                           }
+                           Group "{60A53B6DB0E522C7}"
+                           BehaviorTree "{6EFA740C10F7169E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_SuppresiveFire.bt"
+                           AlwaysReinit 1
+                           InBehaviorTree -1
+                          }
+                         }
+                         Group "{60A53B6DB0E522C7}"
+                         InVariable 18
                          TestType EqualsValue
                          TestValue "false"
                         }
                        }
+                       Group "{60A53B6DB0E522C7}"
                       }
                      }
+                     Group "{60A53B6DB0E522C7}"
                      NegativeCondition 1
-                     AbortType AbortChildrenBranch
                     }
                    }
+                   Group "{60A53B6DB0E522C7}"
                    ForceNodeResult None
-                   AbortType AbortChildrenBranch
                    InEntity -1
                    InPosition 7
-                   InDistance 18
+                   InDistance 16
                    DistanceThreshold 0
                   }
                  }
+                 Group "{60A53B6DB0E522C7}"
                  NegativeCondition 1
                  ForceNodeResult None
-                 AbortType AbortChildrenBranch
                  InEntity -1
                  InPosition 7
-                 InDistance 17
+                 InDistance 15
                  DistanceThreshold 0
                 }
                }
+               Group "{60A53B6DB0E522C7}"
                NegativeCondition 1
-               AbortType AbortChildrenBranchAndParentFurtherChildren
                m_eCombatActions HOLD_FIRE
               }
               DecoTestVariable "Test Variable" {
                Name "Test Variable"
-               EditorPos 4834.037 1580.432
+               EditorPos 5734.037 1555.432
                Nodes {
                 Sequence Sequence {
                  Name "Sequence"
-                 EditorPos 4863.25 1752.5
+                 EditorPos 5763.25 1727.5
                  Nodes {
                   Selector Selector {
                    Name "Selector"
-                   EditorPos 4721.25 2012.917
+                   EditorPos 5636.25 2207.917
                    Nodes {
                     SCR_AIDecoTimeSinceTargetDetected "SCR_AI Deco Time Since Target Detected" {
                      Name "SCR_AI Deco Time Since Target Detected"
-                     EditorPos 4381.75 2176.862
+                     EditorPos 5296.75 2371.862
                      Nodes {
                       AITaskCharacterAim "Character Aim" {
                        Name "Character Aim"
-                       EditorPos 4478.139 2345.306
+                       EditorPos 5393.139 2540.306
+                       Group "{60A53B6DB0E522C7}"
                        InAimAtPosition -1
-                       InEntity 32
+                       InEntity 29
                        PrecisionXZ 30
                        PrecisionY 20
                        Timeout 1
@@ -494,16 +496,18 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
                      }
                      InPorts {
                       SingleInputPortContainer SingleInputPortContainer {
-                       Port 31
+                       Port 28
                        PortName "BaseTargetIn"
                       }
                      }
+                     Group "{60A53B6DB0E522C7}"
                      AbortType AbortParentNodeFurtherChildren
                      m_TimeThreshold_S 1
                     }
                     AITaskCharacterAim "Character Aim" {
                      Name "Character Aim"
-                     EditorPos 4983.153 2339.097
+                     EditorPos 5898.152 2534.097
+                     Group "{60A53B6DB0E522C7}"
                      InAimAtPosition 5
                      PrecisionXZ 30
                      PrecisionY 20
@@ -511,20 +515,25 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
                      UseADS 0
                     }
                    }
+                   Group "{60A53B6DB0E522C7}"
                   }
                   SCR_AIAllowLookAction "SCR_AI Allow Look Action" {
                    Name "SCR_AI Allow Look Action"
-                   EditorPos 5224.821 2210.702
+                   EditorPos 6139.82 2405.702
+                   Group "{60A53B6DB0E522C7}"
                   }
                  }
+                 Group "{60A53B6DB0E522C7}"
                 }
                }
+               Group "{60A53B6DB0E522C7}"
                AbortType AbortChildrenBranch
-               InVariable 33
+               InVariable 30
                TestType EqualsValue
                TestValue "false"
               }
              }
+             Group "{60A53B6DB0E522C7}"
             }
            }
           }
@@ -638,11 +647,13 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference targetEntity {
    VariableType 0
-   EditorPos 2056.383 3690.218
+   EditorPos 2680.383 3885.218
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference targetLastPosition {
    VariableType 1
-   EditorPos 4736.715 2373.335
+   EditorPos 5651.715 2568.335
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference myEntity {
    VariableType 3
@@ -650,7 +661,8 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference targetLastPosition {
    VariableType 1
-   EditorPos 3040.193 1931.503
+   EditorPos 4000.193 2001.503
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference IsTargetVisible {
    VariableType 4
@@ -662,19 +674,13 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference IsTargetVisible {
    VariableType 4
-   EditorPos 2993.333 2897.619
-  }
-  VariableReference IsTargetVisible {
-   VariableType 4
-   EditorPos 4400.416 3237.833
-  }
-  VariableReference IsTargetVisible {
-   VariableType 4
-   EditorPos 2663.412 3572.639
+   EditorPos 3981.905 3094.047
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference targetLastPosition {
    VariableType 1
-   EditorPos 2014.544 3520.337
+   EditorPos 2638.544 3715.337
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference weaponMinDistance {
    VariableType 5
@@ -690,23 +696,22 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference weaponMinDistance {
    VariableType 5
-   EditorPos 3038.76 1800.347
+   EditorPos 3993.76 1773.68
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference weaponMaxDistance {
    VariableType 6
-   EditorPos 3037.926 2083.125
+   EditorPos 3947.926 2278.125
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference IsTargetVisible {
    VariableType 4
    EditorPos 293.161 1230.045
   }
-  VariableReference IsTargetVisible {
-   VariableType 4
-   EditorPos 5180.714 3245.095
-  }
   VariableReference directDamage {
    VariableType 7
-   EditorPos 5295.682 2952.955
+   EditorPos 6245.682 3149.955
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference baseTarget {
    VariableType 8
@@ -726,35 +731,64 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference baseTarget {
    VariableType 8
-   EditorPos 3073.015 3735.377
+   EditorPos 3983.015 3930.377
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference baseTarget {
    VariableType 8
-   EditorPos 3697.916 3426.25
+   EditorPos 4607.916 3621.25
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference baseTarget {
    VariableType 8
-   EditorPos 2637.611 3653.695
+   EditorPos 3372.702 3845.059
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference baseTarget {
    VariableType 8
-   EditorPos 4375.25 3315.5
+   EditorPos 5285.25 3510.5
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference baseTarget {
    VariableType 8
-   EditorPos 5165.714 3348.572
+   EditorPos 6075.714 3543.572
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference baseTarget {
    VariableType 8
-   EditorPos 4149.639 2230.612
+   EditorPos 5064.639 2425.612
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference targetEntity {
    VariableType 0
-   EditorPos 4279.944 2411.306
+   EditorPos 5194.944 2606.306
+   Group "{60A53B6DB0E522C7}"
   }
   VariableReference IsTargetVisible {
    VariableType 4
-   EditorPos 4627.727 1658.814
+   EditorPos 5527.727 1633.814
+   Group "{60A53B6DB0E522C7}"
+  }
+  VariableReference targetLastPosition {
+   VariableType 1
+   EditorPos 6047.5 3455.75
+   Group "{60A53B6DB0E522C7}"
+  }
+  VariableReference targetLastPosition {
+   VariableType 1
+   EditorPos 3355.227 3764.477
+   Group "{60A53B6DB0E522C7}"
+  }
+  VariableReference targetLastPosition {
+   VariableType 1
+   EditorPos 5263.772 3357.204
+   Group "{60A53B6DB0E522C7}"
+  }
+ }
+ Groups {
+  BTGroup "{60A53B6DB0E522C7}" {
+   Name "Backups"
+   Color 0.6 0.6 0.6 0.251
   }
  }
 }

@@ -4,6 +4,10 @@ SCR_ChimeraAIAgent {
   AIFormationComponent "{50C4E8410B604B4B}" {
    DefaultFormation "Line"
   }
+  AIPathfindingComponent "{50C4E8411A108E21}" {
+   "Search half extend XZ" 30
+   "Search half extend Y" 5
+  }
   DCO_AIInfoComponent "{6084F3ED01E80953}" {
   }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
@@ -16,13 +20,10 @@ SCR_ChimeraAIAgent {
    }
    m_aDangerReactions {
     SCR_AIDangerReaction_DamageTaken "{5464DCF38C606017}" {
-     m_OverrideBehaviorTree "'AI\BehaviorTrees\Chimera\Soldier\Custom\DCO_QuickReaction.bt'"
     }
     SCR_AIDangerReaction_ProjectileHit "{5464DCF38EF5DDBF}" {
-     m_OverrideBehaviorTree "'AI\BehaviorTrees\Chimera\Soldier\Custom\DCO_QuickReaction.bt'"
     }
     SCR_AIDangerReaction_WeaponFired "{5464DCF38FDA35C3}" {
-     m_OverrideBehaviorTree "'AI\BehaviorTrees\Chimera\Soldier\Custom\DCO_QuickReaction.bt'"
     }
     SCR_AIDangerReaction_GrenadeLanding "{566CF439566A6ED6}" {
     }
@@ -38,4 +39,6 @@ SCR_ChimeraAIAgent {
    m_sDefaultWeaponBehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
   }
  }
+ DangerEventRange 800
+ DynamicsimLastlodDistance 0
 }

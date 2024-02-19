@@ -6,14 +6,14 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	
+	protected static const int	ENEMIES_SIMPLIFY_THRESHOLD = 15;
+	
+
 	protected static const float TARGET_INVESTIGATE_TIME = 1.0;	
 	
 	protected static const float TARGET_MAX_DISTANCE_DISARMED = 2.0;
 	
-	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 600.0;
-	
-	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
-	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 40.0;
+	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 500.0;
 	
 	protected const float PERCEPTION_FACTOR_SAFE = 4.0;
 	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
@@ -22,7 +22,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_PINNED = 4.0;
 	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.0;
 	
-	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.6;
+	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 2.0;
+	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
+	
+	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 2.0;
+	
+	protected static const float TARGET_SCORE_RETREAT = 150.0;
 	
 	protected static const float TARGET_INVISIBLE_TIME = 8.0;
 
@@ -56,10 +61,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 				perceptionFactor = PERCEPTION_FACTOR_ALERTED; break; 
 			case EAIThreatState.THREATENED:
 				perceptionFactor = PERCEPTION_FACTOR_THREATENED; break;
-			case EAIThreatState.PINNED:
-				perceptionFactor = PERCEPTION_FACTOR_PINNED; break;
-			case EAIThreatState.EXHAUSTED:
-				perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED; break; 
 		}
 		
 		perceptionFactor *= m_fEquipmentPerceptionFactor;

@@ -3,8 +3,8 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIObservePositionBehavior
 	protected const float TIMEOUT_S = 8.0;
 	protected const float DURATION_MIN_S = 0.1;			// Min duration of behavior
 	protected const float DIRECTION_SPAN_DEG = 150.0;	
-	protected const float DURATION_S_PER_METER = 0.001;	// How duration depends on distance
-	protected const float USE_BINOCULARS_DISTANCE_THRESHOLD = 120;
+	protected const float DURATION_S_PER_METER = 0.01;	// How duration depends on distance
+	protected const float USE_BINOCULARS_DISTANCE_THRESHOLD = 80;
 	
 	protected const float DELAY_MIN_S = 0.1;			// Min delay before we start looking at the position
 	protected const float DELAY_S_PER_METER = 0.0005;	// How the delay increases depending on distance

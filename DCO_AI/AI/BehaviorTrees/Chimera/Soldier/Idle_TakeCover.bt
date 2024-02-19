@@ -21,25 +21,16 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
        Nodes {
         AITaskGetGroupChildren "Get Group Children" {
          Name "Get Group Children"
-         EditorPos -1681.388 118.723
+         EditorPos -2083.888 158.723
          IndexTo 0
          OutEntity 9
         }
-        AITaskCreatePosition "Create Position" {
-         Name "Create Position"
-         EditorPos -1212.361 96.917
-         OffsetVector 0 1 0
-         InRootVector -1
-         InEntity 9
-         OutPosition 12
-         RandomOffsetMltp 2
-        }
         SCR_AIGetPosForward "SCR_AI Get Pos Forward" {
          Name "SCR_AI Get Pos Forward"
-         EditorPos -787.077 87.53
+         EditorPos -1607.355 126.419
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 12
+           Port 9
            PortName "TargetIn"
           }
           SingleInputPortContainer SingleInputPortContainer {
@@ -49,15 +40,24 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 14
+           Port 12
            PortName "VectorOut"
           }
          }
          m_Distance 50
         }
+        AITaskCreatePosition "Create Position" {
+         Name "Create Position"
+         EditorPos -1131.448 103.742
+         OffsetVector 0 1 0
+         InRootVector 12
+         InEntity -1
+         OutPosition 14
+         RandomOffsetMltp 2
+        }
         SCR_AIFindCover "SCR_AI Find Cover" {
          Name "SCR_AI Find Cover"
-         EditorPos -449.944 86.777
+         EditorPos -852.444 126.777
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -85,7 +85,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
         }
         AITaskMove Move {
          Name "Move"
-         EditorPos 13.834 83
+         EditorPos -388.666 123
          InTargetLocation 10
          PrecisionXZ 1.5
          OrientationType ToPoint
@@ -378,11 +378,11 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
   }
   VariableReference leaderEntity {
    VariableType 2
-   EditorPos -1430.322 236.939
+   EditorPos -1832.822 276.939
   }
   VariableReference coverPos {
    VariableType 0
-   EditorPos -176.333 277.472
+   EditorPos -578.833 317.472
   }
   VariableReference inCover {
    VariableType 4
@@ -390,7 +390,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
   }
   VariableReference dangerPosition {
    VariableType 3
-   EditorPos -978.166 249.25
+   EditorPos -1407.809 279.25
   }
   VariableReference possDanger {
    VariableType 5
@@ -398,7 +398,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
   }
   VariableReference possDanger {
    VariableType 5
-   EditorPos -609.827 255.113
+   EditorPos -1012.327 293.684
   }
  }
 }

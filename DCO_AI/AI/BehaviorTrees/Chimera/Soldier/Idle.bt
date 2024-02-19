@@ -11,8 +11,14 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
      Nodes {
       RunBT RunBT {
        Name "RunBT"
-       EditorPos -1471.155 67.571
+       EditorPos -1505.798 60.785
        BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
+       AlwaysReinit 1
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -1032.286 72.214
+       BehaviorTree "{E15B95CF618D9FE6}AI/BehaviorTrees/Chimera/Soldier/ReturnToDefault.bt"
       }
       Switch Switch {
        Name "Switch"
