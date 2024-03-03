@@ -49,4 +49,13 @@ modded class SCR_AIThreatSystem
 	{
 		return m_fThreatIsEndangered;
 	}
+	
+	void ThreatProjectileFlyby(int count)
+	{
+		#ifdef AI_DEBUG
+		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
+		#endif
+		
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 1);
+	}
 };

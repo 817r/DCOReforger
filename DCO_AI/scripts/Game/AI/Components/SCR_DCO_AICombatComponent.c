@@ -11,7 +11,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 
 	protected static const float TARGET_INVESTIGATE_TIME = 1.0;	
 	
-	protected static const float TARGET_MAX_DISTANCE_DISARMED = 2.0;
+	protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.5;
 	
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 500.0;
 	
@@ -27,9 +27,11 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 2.0;
 	
-	protected static const float TARGET_SCORE_RETREAT = 150.0;
+	protected static const float TARGET_SCORE_RETREAT = 75.0;
 	
 	protected static const float TARGET_INVISIBLE_TIME = 8.0;
+	
+	static const float LONG_RANGE_FIRE_DISTANCE = 100.0;
 
 	override protected void EOnInit(IEntity owner)
 	{
@@ -45,6 +47,20 @@ modded class SCR_AICombatComponent : ScriptComponent
 			
 			m_DCO_AIInfoComponent = DCO_AIInfoComponent.Cast(m_Agent.FindComponent(DCO_AIInfoComponent));
 		}
+	}
+	
+	override bool IsFriendlyInAim()
+	{
+		IEntity friendlyEntInAim = m_Perception.GetFriendlyInLineOfFire();
+#ifdef WORKBENCH
+		if (friendlyEntInAim && DiagMenu.GetBool(SCR_DebugMenuID.DEBUGUI_AI_SHOW_FRIENDLY_IN_AIM))
+			m_FriendlyAimShape = Shape.CreateSphere(COLOR_RED, ShapeFlags.NOOUTLINE|ShapeFlags.NOZBUFFER|ShapeFlags.TRANSP, friendlyEntInAim.GetOrigin() + Vector(0, 2, 0), 0.1);	
+		else 
+			m_FriendlyAimShape = null;
+#endif		
+		m_bFriendlyAimLastResult = friendlyEntInAim != null;
+				
+		return m_bFriendlyAimLastResult;
 	}
 	
 	override void UpdatePerceptionFactor(PerceptionComponent perceptionComp, SCR_AIThreatSystem threatSystem)
@@ -66,5 +82,87 @@ modded class SCR_AICombatComponent : ScriptComponent
 		perceptionFactor *= m_fEquipmentPerceptionFactor;
 		
 		perceptionComp.SetPerceptionFactor(perceptionFactor);
+	}
+	
+	override void SetHoldFire(bool isHoldFire)
+	{
+		#ifdef AI_DEBUG
+		AddDebugMessage(string.Format("SetHoldFire: %1", isHoldFire));
+		#endif
+		
+		if (isHoldFire)
+		{ 
+			SetActionAllowed(EAICombatActions.HOLD_FIRE,true);
+			SetActionAllowed(EAICombatActions.BURST_FIRE,false);
+			SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,false);
+		}
+		else
+		{
+			SetCombatType(m_eCombatType);
+		}
+	}
+	
+	override void SetCombatType(EAICombatType combatType)
+	{
+		#ifdef AI_DEBUG
+		AddDebugMessage(string.Format("SetCombatType: %1", typename.EnumToString(EAICombatType, combatType)));
+		#endif
+		
+		switch (combatType)
+		{
+			case EAICombatType.NONE:
+			{
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,false);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,false);
+				break;
+			}
+			case EAICombatType.NORMAL:
+			{
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,true);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,true);
+				break;
+			}
+			case EAICombatType.SUPPRESSIVE:
+			{
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,false);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,true);
+				break;
+			}
+			case EAICombatType.RETREAT:
+			{
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,true);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,false);
+				break;
+			}
+			case EAICombatType.SINGLE_SHOT:
+			{
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,false);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,false);
+				break;
+			}
+		}
+		m_eCombatType = combatType;
+#ifdef WORKBENCH
+		SCR_AIDebugVisualization.VisualizeMessage(GetOwner(), typename.EnumToString(EAICombatType,m_eCombatType), EAIDebugCategory.COMBAT, 5);
+#endif
+	}
+	
+	override void ResetCombatType()
+	{
+		#ifdef AI_DEBUG
+		AddDebugMessage("ResetCombatType");
+		#endif
+		
+		SetCombatType(m_eDefaultCombatType);
 	}
 };
