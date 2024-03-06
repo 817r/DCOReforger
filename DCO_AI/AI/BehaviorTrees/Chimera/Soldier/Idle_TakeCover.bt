@@ -48,7 +48,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
         }
         AITaskCreatePosition "Create Position" {
          Name "Create Position"
-         EditorPos -1131.448 103.742
+         EditorPos -1130.198 103.742
          OffsetVector 0 1 0
          InRootVector 12
          InEntity -1

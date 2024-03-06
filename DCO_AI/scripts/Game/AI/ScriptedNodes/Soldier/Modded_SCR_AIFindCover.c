@@ -20,18 +20,12 @@ modded class SCR_AIFindCover : AITaskScripted
 	private SCR_AIUtilityComponent m_SCR_AIUtilityComponent;
 	private DCO_AIInfoGroupComponent m_DCO_AIGroupInfoComponent;
 	
-	//override private const vector
-	private const vector PRONE_OFFSET = Vector(0, 0.10, 0);
+	private const vector PRONE_OFFSET = Vector(0, 0.15, 0);
 	
 	private vector m_CurrentCoverPosition;
 	
 	private ref array<ref vector> m_CoverPositions = DCO_AIFindCover.GetCoverPositions();
-	
-	//modded protected static ref TStringArray s_aVarsIn = {
-	//	PORT_FRIENDLY__REF
-	//};	
-	
-	//------------------------------------------------------------------------------------------------
+
 	override void OnInit(AIAgent owner)
 	{
 		m_ParentGroup = owner.GetParentGroup();
@@ -100,10 +94,6 @@ modded class SCR_AIFindCover : AITaskScripted
 		ChimeraCharacter enemyCharacter = ChimeraCharacter.Cast(m_Enemy);
 		if (!enemyCharacter && !directionProvided)
 			return ENodeResult.RUNNING;
-		
-#ifdef WORKBENCH		
-		ClearDebug();
-#endif
 		
 		bool inCoverNow;
 		if(!GetVariableIn(PORT_IN_COVER, inCoverNow))
@@ -224,6 +214,17 @@ modded class SCR_AIFindCover : AITaskScripted
 				Vector(-offsetDistanceX, GROUND_HEIGHT, offsetDistanceZ)
 			};
 		}
+		
+		if (m_DCO_AIGroupInfoComponent)
+		{
+			DCO_ECombatMovementType combatMovementType = m_DCO_AIGroupInfoComponent.GetCombatMovementType();
+			
+			if (combatMovementType == DCO_ECombatMovementType.INDIVIDUAL)
+			{
+				traceOrigin = ownerEntity.GetOrigin();
+			}
+		}
+		
 	
 		ECharacterStance stance;
 		
@@ -282,7 +283,7 @@ modded class SCR_AIFindCover : AITaskScripted
 			if (IsAgentNearby(hitNavmeshPos))
 				return ENodeResult.FAIL; 
 			
-			m_CoverSearchDistance = 25;
+			m_CoverSearchDistance = 30;
 			
 			float coverDistaceOffset = Math.RandomFloat(1,2);
 			
@@ -292,17 +293,9 @@ modded class SCR_AIFindCover : AITaskScripted
 			
 			int coverPositionIndex = m_CoverPositions.Find(m_CurrentCoverPosition);
 			
-			#ifdef WORKBENCH
-			
-			#endif
-			
 			if (coverPositionIndex > -1)
 			{
 				m_CoverPositions.Remove(coverPositionIndex);
-				
-				#ifdef WORKBENCH
-				
-				#endif
 			}
 			
 			m_CoverPositions.Insert(coverPosition);
@@ -329,11 +322,11 @@ modded class SCR_AIFindCover : AITaskScripted
 		
 		if (m_CurrentTarget == null)
 		{
-			hitPrecision = Math.RandomFloat(0.3,0.5);
+			hitPrecision = Math.RandomFloat(0.3,0.7);
 		}
 		
 		if (isEndangering)
-			hitPrecision -= Math.RandomFloat(0.1,0.3);
+			hitPrecision -= Math.RandomFloat(0.3,0.5);
 		
 		if (hitPrecision < 0)
 			hitPrecision = 0;
@@ -386,7 +379,7 @@ modded class SCR_AIFindCover : AITaskScripted
 		
 		m_AgentEntityNearby = null;
 		
-		GetGame().GetWorld().QueryEntitiesBySphere(hitNavmeshPos, 1, GetNearbyAgent);
+		GetGame().GetWorld().QueryEntitiesBySphere(hitNavmeshPos, 5, GetNearbyAgent);
 		
 		return m_IsAgentNearby;
 	}
@@ -480,7 +473,7 @@ modded class SCR_AIFindCover : AITaskScripted
 				
 				coverDistance = vector.Distance(coverPosition, hitNavmeshPos);
 				
-				if (coverDistance < 3)
+				if (coverDistance < 7)
 				{					
 					if (coverPosition == m_CurrentCoverPosition && m_ThreatSuppression > 0.1)
 						continue;

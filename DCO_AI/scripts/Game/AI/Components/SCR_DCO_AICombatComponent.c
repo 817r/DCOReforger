@@ -1,3 +1,9 @@
+modded enum EAISkill
+{
+	RECRUIT	= 10,
+	TRAINED	= 30,
+};
+
 modded class SCR_AICombatComponent : ScriptComponent
 {
 	protected SCR_AIGroup m_SCR_AIGroup;
@@ -8,10 +14,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected static const int	ENEMIES_SIMPLIFY_THRESHOLD = 15;
 	
-
 	protected static const float TARGET_INVESTIGATE_TIME = 1.0;	
 	
-	protected static const float TARGET_MAX_DISTANCE_DISARMED = 2.0;
+	protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.5;
 	
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 500.0;
 	
@@ -66,5 +71,67 @@ modded class SCR_AICombatComponent : ScriptComponent
 		perceptionFactor *= m_fEquipmentPerceptionFactor;
 		
 		perceptionComp.SetPerceptionFactor(perceptionFactor);
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	protected static const float DISTANCE_MAX = 600; 
+	protected static const float DISTANCE_MIN = 5; // Minimal distance when movement is allowed
+	private static const float NEAR_PROXIMITY = 3;
+	// TODO: add possibility to get cover towards custom position
+	//------------------------------------------------------------------------------------------------
+	override vector FindNextCoverPosition()
+	{
+		if (!m_SelectedTarget)
+			return vector.Zero;
+		
+		vector ownerPos = GetOwner().GetOrigin();
+		vector lastSeenPos = m_SelectedTarget.GetLastSeenPosition();
+		float distanceToTarget = vector.Distance(ownerPos, lastSeenPos);
+
+		if (m_StopDistance > distanceToTarget)
+			return vector.Zero;
+		
+		// Create randomized position
+		SCR_ChimeraAIAgent agent = GetAiAgent();
+		SCR_DefendWaypoint defendWp = SCR_DefendWaypoint.Cast(agent.m_GroupWaypoint);
+		vector direction;
+		bool standardAttack = true;
+		float nextCoverDistance;
+		
+		// If target is outside defend waypoint, run towards center of it
+		if (defendWp)
+		{
+			if (!defendWp.IsWithinCompletionRadius(lastSeenPos) &&
+				!defendWp.IsWithinCompletionRadius(ownerPos))
+			{
+				direction = vector.Direction(ownerPos, defendWp.GetOrigin());	// Direction towards center of defend wp
+				
+				if (vector.Distance(defendWp.GetOrigin(), ownerPos) < DISTANCE_MIN)
+					nextCoverDistance = 0;
+				else	
+					nextCoverDistance = DISTANCE_MIN;
+				
+				standardAttack = false;
+			}
+		}
+		
+		if (standardAttack)
+		{
+			nextCoverDistance = Math.RandomFloat(DISTANCE_MIN, DISTANCE_MAX);
+
+			// If close enough, get directly to the target
+			if (nextCoverDistance > (distanceToTarget - DISTANCE_MIN))
+				nextCoverDistance = distanceToTarget - DISTANCE_MIN;
+			
+			direction = vector.Direction(ownerPos, m_SelectedTarget.GetLastSeenPosition());
+		}
+			
+		direction.Normalize();
+		vector newPositionCenter = direction * nextCoverDistance + ownerPos, newPosition;
+		// yes possibly it could lead to end up in target position but lets ignore it for now
+		
+		newPosition = s_AIRandomGenerator.GenerateRandomPointInRadius(0, NEAR_PROXIMITY, newPositionCenter, true);
+		newPosition[1] = newPositionCenter[1];
+		return newPosition;
 	}
 };

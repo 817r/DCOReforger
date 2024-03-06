@@ -1,0 +1,11 @@
+SCR_AIWorld {
+ ID "50B2B8F35661FB44"
+ components {
+  CoverManagerComponent "{5E3ADC0EA7048548}" {
+   MaxCovers -1
+   StandingSize 1.2
+   KneelingSize 0.7
+   CrouchingSize 0.2
+  }
+ }
+}

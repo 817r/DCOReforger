@@ -442,11 +442,11 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
         }
         SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
          Name "SCR_AI Deco Is Above Threat Level"
-         EditorPos 2597.58 -57.196
+         EditorPos 3413.58 -31.196
          Nodes {
           RunBT RunBT {
            Name "RunBT"
-           EditorPos 2583.386 184.991
+           EditorPos 3399.386 210.991
            BehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
            AlwaysReinit 1
           }
@@ -461,11 +461,11 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
         }
         DecoTestDistanceToEntity "Test Distance To Entity" {
          Name "Test Distance To Entity"
-         EditorPos 3236 -78
+         EditorPos 4052 -52
          Nodes {
           RunBT RunBT {
            Name "RunBT"
-           EditorPos 3128.5 176
+           EditorPos 3944.5 202
            BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_Agressive.bt"
            AlwaysReinit 1
           }
@@ -561,6 +561,42 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
    VariableExposedInput 0
    VariableExposedOutput 0
   }
+  Variable teamMember {
+   VariableName "teamMember"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable teamMemPos {
+   VariableName "teamMemPos"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable moveAwayF {
+   VariableName "moveAwayF"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable teamPos {
+   VariableName "teamPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable myEntity {
+   VariableName "myEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable myPos {
+   VariableName "myPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
  }
  VariablesRefs {
   VariableReference position {
@@ -639,7 +675,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos 3016.25 18.75
+   EditorPos 3829.25 42.75
   }
  }
  Groups {

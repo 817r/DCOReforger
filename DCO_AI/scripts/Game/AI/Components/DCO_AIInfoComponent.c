@@ -42,7 +42,7 @@ class DCO_AIInfoComponent : ScriptComponent
 	private float m_fAimAccuracyErrorModifier;
 	
 	private bool m_bHoldPosition;
-	private int m_fHoldPositionRadius = 20;
+	private int m_fHoldPositionRadius = 80;
 	private vector m_vHoldPositionOrigin;
 	
 	private DCO_ECombatBehaviorType m_eCombatBehaviorType;

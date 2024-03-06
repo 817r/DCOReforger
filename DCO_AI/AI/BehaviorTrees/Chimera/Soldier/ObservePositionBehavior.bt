@@ -17,33 +17,6 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
          Name "Sequence"
          EditorPos -758.167 -1.667
          Nodes {
-          SCR_AIGetObservePositionBehaviorParameters "SCR_AI Get Observe Position Behavior Parameters" {
-           Name "SCR_AI Get Observe Position Behavior Parameters"
-           EditorPos -1629.444 647.571
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 1
-             PortName "Position"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 0
-             PortName "Duration"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 5
-             PortName "Radius"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 7
-             PortName "UseBinoculars"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 9
-             PortName "Delay"
-            }
-           }
-           Group "{5C56A6044E03EE3C}"
-          }
           AITaskIdle Idle {
            Name "Idle"
            EditorPos -817.31 785.905
@@ -130,7 +103,6 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
                PortName "ResultVector"
               }
              }
-             m_Radius 0
             }
             AITaskCharacterAim "Character Aim" {
              Name "Character Aim"
@@ -167,7 +139,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
           }
           SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
            Name "SCR_AI Deco Is Above Threat Level"
-           EditorPos 2978.75 493.25
+           EditorPos 2977.322 493.25
            Nodes {
             RunBT RunBT {
              Name "RunBT"

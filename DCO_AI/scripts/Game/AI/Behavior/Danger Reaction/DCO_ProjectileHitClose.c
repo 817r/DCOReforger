@@ -47,10 +47,8 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 						if (aiMoveFromDangerBehavior)
 							return true;
 						
-						if (IsMoveFromDangerChanceBySetting(utility))
-						{
-							utility.AddAction(new SCR_AIMoveFromDangerBehavior(utility, null, shooterPos, shooter));
-						}
+						utility.AddAction(new SCR_AIMoveFromDangerBehavior(utility, null, shooterPos, shooter));
+
 					}
 				}
 				
@@ -58,14 +56,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				
 				float distanceToShooter = vector.Distance(shooterPos, utility.GetOrigin());
 				
-				if (false)
 
-				{
-					if (IsDangerChanceBySetting(agent))
-						utility.AddAction(new SCR_AIMoveFromUnknownFire(utility, null, shooterPos, shooter));
-				}
-				else
-				{
 					bool isNullTarget = utility.m_CombatComponent.GetCurrentTarget() == null;
 
 					if (isNullTarget && distanceToDanger < 5 || distanceToDanger < 3)
@@ -124,54 +115,13 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 						
 						if (aiMoveFromDangerBehavior)
 							return true;
-
-						if (IsDangerChanceBySetting(agent) && Math.RandomFloat(0,100) < dangerReactionChance && threatSuppression > threatSuppressionIsDanger)
-							utility.AddAction(new SCR_AIMoveFromDangerBehavior(utility, null, shooterPos, shooter));
 						
 						return true;
-						
-						
 					}
 				}
-			}
+			
 		}
 		
 		return true;
-	}
-
-	bool DangerChanceByDistance(float distanceToDanger, out float dangerReactionChance)
-	{
-		dangerReactionChance = 15;
-		
-		if (distanceToDanger < 1)
-			dangerReactionChance = 100;
-		else if (distanceToDanger < 3)
-			dangerReactionChance = 75;
-		else if (distanceToDanger < 5)
-			dangerReactionChance = 50;
-		else if (distanceToDanger < 7)
-			dangerReactionChance = 35;
-		
-		if (Math.RandomFloat(0,100) < dangerReactionChance)
-			return true;
-		
-		return false;
-	}
-
-	bool IsDangerChanceBySetting(AIAgent owner)
-	{
-		SCR_AIConfigComponent aiConfigComponent;
-		
-		AIGroup parentGroup = owner.GetParentGroup();
-		
-		if (parentGroup)
-			aiConfigComponent = SCR_AIConfigComponent.Cast(parentGroup.FindComponent(SCR_AIConfigComponent));
-		else
-			aiConfigComponent = SCR_AIConfigComponent.Cast(owner.FindComponent(SCR_AIConfigComponent));
-		
-		if (Math.RandomFloat(0,100) < 90)
-			return true;
-		
-		return false;
 	}
 };

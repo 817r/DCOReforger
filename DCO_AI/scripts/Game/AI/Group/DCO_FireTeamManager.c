@@ -1,6 +1,6 @@
 modded class SCR_AIGroupFireteamManager : Managed
 {
-	protected const int FIRETEAM_MIN_SIZE = 4;
+	protected const int FIRETEAM_MIN_SIZE = 2;
 	
 	protected SCR_AIGroup m_Group;
 	protected ref array<ref SCR_AIGroupFireteam> m_aFireteams = {};
@@ -25,13 +25,13 @@ modded class SCR_AIGroupFireteamManager : Managed
 	override protected static int GetMaxFireteamSize(int groupSize)
 	{
 		if (groupSize >= 12)
-			return 8;
-		else if (groupSize > 4)
-			return 8;
+			return 3;
+		else if (groupSize > 9)
+			return 3;
 		else if (groupSize == 4)
-			return 4; 
+			return 2; 
 		else
-			return 4; // When below 4 members, one fireteam or 1-2-3
+			return groupSize; // When below 4 members, one fireteam or 1-2-3
 	}
 	
 	
@@ -211,5 +211,10 @@ modded class SCR_AIGroupFireteamManager : Managed
 					size: 13.0); 
 			}
 		}
+	}
+	
+	ref array<ref SCR_AIGroupFireteam> GetFT()
+	{
+		return m_aFireteams;
 	}
 }
