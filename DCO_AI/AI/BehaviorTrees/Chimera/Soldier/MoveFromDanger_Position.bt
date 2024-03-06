@@ -13,54 +13,48 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
        Name "Sequence"
        EditorPos 1085.642 -52.327
        Nodes {
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 516.484 378.777
-         Nodes {
-          SCR_AIGetMoveFromDangerBehaviorParameters "SCR_AI Get Move From Danger Behavior Parameters" {
-           Name "SCR_AI Get Move From Danger Behavior Parameters"
-           EditorPos -143.625 657.739
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 0
-             PortName "DangerEntity"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 3
-             PortName "DangerPosition"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 7
-             PortName "CharacterStance"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 9
-             PortName "MovementType"
-            }
-           }
+        SCR_AIGetMoveFromDangerBehaviorParameters "SCR_AI Get Move From Danger Behavior Parameters" {
+         Name "SCR_AI Get Move From Danger Behavior Parameters"
+         EditorPos 436.875 271.239
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "DangerEntity"
           }
-          SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
-           Name "SCR_AI Send Order_ Stance"
-           EditorPos 623.732 562.084
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Receiver"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 7
-             PortName "Stance"
-            }
-           }
-           m_eStance PRONE
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 3
+           PortName "DangerPosition"
           }
-          AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-           Name "Character Set Movement Speed"
-           EditorPos 873.25 559.5
-           "Movement speed" RUN
-           "Input Movement speed" 9
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 7
+           PortName "CharacterStance"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 9
+           PortName "MovementType"
           }
          }
+        }
+        SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
+         Name "SCR_AI Send Order_ Stance"
+         EditorPos 1188.993 251.846
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Receiver"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Stance"
+          }
+         }
+         m_eStance STAND
+        }
+        AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+         Name "Character Set Movement Speed"
+         EditorPos 1428.259 265.589
+         "Movement speed" SPRINT
+         "Input Movement speed" -1
         }
         Sequence Sequence {
          Name "Sequence"
@@ -68,18 +62,18 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
          Nodes {
           Selector Selector {
            Name "Selector"
-           EditorPos 1409.125 554.739
+           EditorPos 995.792 570.072
            Nodes {
             SCR_AIFindCover "SCR_AI Find Cover" {
              Name "SCR_AI Find Cover"
-             EditorPos 1118.541 727.072
+             EditorPos 511.457 734.905
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 4
                PortName "Enemy"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port -1
+               Port 10
                PortName "DangerPosition"
               }
               SingleInputPortContainer SingleInputPortContainer {
@@ -100,32 +94,35 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
             }
             Sequence Sequence {
              Name "Sequence"
-             EditorPos 1547.958 709.406
+             EditorPos 1134.625 724.739
              Nodes {
-              SCR_AIGetPosForwardToTarget "SCR_AI Get Pos Forward To Target" {
-               Name "SCR_AI Get Pos Forward To Target"
-               EditorPos 1319.856 889.173
+              SCR_AIGetSidePosition "SCR_AI Get Side Position" {
+               Name "SCR_AI Get Side Position"
+               EditorPos 936.667 906.444
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Enemy"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
                  Port 5
-                 PortName "Target"
+                 PortName "EnemyPosition"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
-                 PortName "Distance"
+                 PortName "KeepSide"
                 }
                }
                OutPorts {
                 SingleOutputPortContainer SingleOutputPortContainer {
                  Port 6
-                 PortName "ResultVector"
+                 PortName "PositionOut"
                 }
                }
-               m_Distance -5
               }
               SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
                Name "SCR_AI Get Random Point"
-               EditorPos 1670.034 885.137
+               EditorPos 1256.701 900.47
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
@@ -154,18 +151,45 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
           }
           AITaskMove Move {
            Name "Move"
-           EditorPos 2030.919 625.899
+           EditorPos 1756.919 689.399
            InTargetLocation 1
            PrecisionXZ 3
           }
+          SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
+           Name "SCR_AI Visualize Debug"
+           EditorPos 2156.334 701.167
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "DebugMessage"
+            }
+           }
+           m_sDebugMessage "MOVING FROM DANGER"
+           m_eAICategory BEHAVIOR
+          }
+          SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
+           Name "SCR_AI Send Order_ Stance"
+           EditorPos 2393.907 703.34
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Receiver"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Stance"
+            }
+           }
+           m_eStance PRONE
+          }
           SCR_AICompleteAction "SCR_AI Complete Action" {
            Name "SCR_AI Complete Action"
-           EditorPos 2329.589 630.835
+           EditorPos 2641.839 730.835
           }
           AITaskReturnState "Return State" {
            Name "Return State"
-           EditorPos 2560.005 618.751
-           Result RUNNING
+           EditorPos 2900.255 738.751
+           Result SUCCESS
           }
          }
         }
@@ -177,9 +201,9 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
        Nodes {
         AITaskIdle Idle {
          Name "Idle"
-         EditorPos 1552.541 -22.761
+         EditorPos 1550.041 -22.761
          Period 3
-         PeriodRandom 0
+         PeriodRandom 2
         }
         SCR_AIFailAction "SCR_AI Fail Action" {
          Name "SCR_AI Fail Action"
@@ -270,43 +294,47 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
  VariablesRefs {
   VariableReference dangerEntity {
    VariableType 1
-   EditorPos 382.958 561.989
+   EditorPos 963.458 175.489
   }
   VariableReference positionToRun {
    VariableType 0
-   EditorPos 1727.99 1023.177
+   EditorPos 1314.656 1038.51
   }
   VariableReference positionToRun {
    VariableType 0
-   EditorPos 1332.041 740.239
+   EditorPos 724.958 748.072
   }
   VariableReference dangerPos {
    VariableType 2
-   EditorPos 376.17 643.113
+   EditorPos 956.67 256.613
   }
   VariableReference dangerEntity {
    VariableType 1
-   EditorPos 868.458 830.739
+   EditorPos 277.624 732.322
   }
   VariableReference dangerPos {
    VariableType 2
-   EditorPos 1108.375 920.739
+   EditorPos 724.347 991.767
   }
   VariableReference searchCenter {
    VariableType 3
-   EditorPos 1430.829 1015.376
+   EditorPos 1019.718 1059.598
   }
   VariableReference stance {
    VariableType 5
-   EditorPos 388.156 729.395
+   EditorPos 968.656 342.895
   }
   VariableReference stance {
    VariableType 5
-   EditorPos 1337.125 814.572
+   EditorPos 730.042 822.405
   }
   VariableReference movementType {
    VariableType 4
-   EditorPos 365.146 812.073
+   EditorPos 945.646 425.573
+  }
+  VariableReference dangerPos {
+   VariableType 2
+   EditorPos 299.667 809.917
   }
  }
 }

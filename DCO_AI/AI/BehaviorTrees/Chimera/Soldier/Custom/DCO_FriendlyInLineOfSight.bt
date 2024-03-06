@@ -138,7 +138,7 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
                PortName "ResultVector"
               }
              }
-             m_Radius 6
+             m_ExclusionRadius 2
             }
            }
           }
@@ -170,10 +170,22 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
         }
         AITaskMove Move {
          Name "Move"
-         EditorPos 1350.625 582.624
+         EditorPos 1200.625 586.624
          InTargetLocation 4
          InPrecisionXZ -1
          OrientationType ToPoint
+        }
+        SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
+         Name "SCR_AI Visualize Debug"
+         EditorPos 1528 584
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "DebugMessage"
+          }
+         }
+         m_sDebugMessage "FRIENDLY IN LOS"
+         m_eAICategory BEHAVIOR
         }
        }
       }
@@ -217,7 +229,7 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
   Variable isTargetVisible {
    VariableName "isTargetVisible"
    VariableTypeName "bool"
-   VariableExposedInput 0
+   VariableExposedInput 1
    VariableExposedOutput 0
   }
   Variable lookingPos {
@@ -268,7 +280,7 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
   }
   VariableReference isTargetVisible {
    VariableType 5
-   EditorPos -1215.291 880.278
+   EditorPos -1203.291 847.707
   }
   VariableReference lookAtPosition {
    VariableType 9

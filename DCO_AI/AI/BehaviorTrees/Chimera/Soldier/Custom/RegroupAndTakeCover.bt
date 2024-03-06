@@ -8,8 +8,116 @@ BehaviorTree {
     Sequence Sequence {
      Name "Sequence"
      EditorPos -55.5 158.75
+     Nodes {
+      AITaskGetGroupChildren "Get Group Children" {
+       Name "Get Group Children"
+       EditorPos -1411.111 344.533
+       IndexTo 0
+       OutEntity 0
+      }
+      AITaskGetControlledEntity "Get Controlled Entity" {
+       Name "Get Controlled Entity"
+       EditorPos -901.333 392.222
+       InEntity 0
+       OutAgent 1
+      }
+      SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+       Name "SCR_AI Get Entity Position"
+       EditorPos -439.576 736
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 0
+         PortName "Entity"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 2
+         PortName "Position"
+        }
+       }
+      }
+      SCR_AISendGoalMessage_Defend "SCR_AI Send Goal Message_ Defend" {
+       Name "SCR_AI Send Goal Message_ Defend"
+       EditorPos 155.079 672.635
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 1
+         PortName "Receiver"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "PriorityLevel"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "IsWaypointRelated"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 2
+         PortName "DefendLocation"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "DefendAngularRange"
+        }
+       }
+      }
+     }
     }
    }
+  }
+ }
+ Variables {
+  Variable coverPos {
+   VariableName "coverPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable possDanger {
+   VariableName "possDanger"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable dangerPosition {
+   VariableName "dangerPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable leaderEntity {
+   VariableName "leaderEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable LeadPos {
+   VariableName "LeadPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable teamMem {
+   VariableName "teamMem"
+   VariableTypeName "AIAgent"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference leaderEntity {
+   VariableType 3
+   EditorPos -1158.616 462.749
+  }
+  VariableReference teamMem {
+   VariableType 5
+   EditorPos -615.555 537.222
+  }
+  VariableReference LeadPos {
+   VariableType 4
+   EditorPos -117.98 824.444
   }
  }
 }

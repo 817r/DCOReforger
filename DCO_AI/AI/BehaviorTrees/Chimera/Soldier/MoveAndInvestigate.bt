@@ -112,6 +112,12 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
        }
        m_eMovementType RUN
       }
+      AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+       Name "Set Pathfinding Filters"
+       EditorPos 340 -181.75
+       NavmeshProject "Soldiers"
+       IgnoreFlags 24
+      }
       Parallel Parallel {
        Name "Parallel"
        EditorPos 2377.167 -390.833

@@ -1,0 +1,14 @@
+SCR_AIGroup {
+ ID "0000000000000001"
+ components {
+  AIPathfindingComponent "{518A98842FFC190E}" {
+   IgnoreFlags 8
+  }
+  SCR_AIConfigComponent "{512CC1759AE69D6D}" {
+   m_Skill 0.707
+  }
+  SCR_CoverQueryComponent "{5DD4D299D08686AB}" {
+   Enabled 1
+  }
+ }
+}

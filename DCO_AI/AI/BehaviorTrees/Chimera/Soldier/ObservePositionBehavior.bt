@@ -17,9 +17,35 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
          Name "Sequence"
          EditorPos -758.167 -1.667
          Nodes {
+          SCR_AIGetObservePositionBehaviorParameters "SCR_AI Get Observe Position Behavior Parameters" {
+           Name "SCR_AI Get Observe Position Behavior Parameters"
+           EditorPos -1564.167 462.167
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 1
+             PortName "Position"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 0
+             PortName "Duration"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 5
+             PortName "Radius"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 7
+             PortName "UseBinoculars"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 9
+             PortName "Delay"
+            }
+           }
+          }
           AITaskIdle Idle {
            Name "Idle"
-           EditorPos -817.31 785.905
+           EditorPos -747.31 610.905
            Group "{5C56A6044E03EE3C}"
            Period 0
            PeriodRandom 0
@@ -78,11 +104,11 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 1161.38 664.334
+           EditorPos 588.047 171.001
            Nodes {
             SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
              Name "SCR_AI Get Random Point"
-             EditorPos 1049.806 840.195
+             EditorPos 476.473 346.862
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -106,7 +132,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
             }
             AITaskCharacterAim "Character Aim" {
              Name "Character Aim"
-             EditorPos 1300.242 835.473
+             EditorPos 726.909 342.14
              InAimAtPosition 3
              PrecisionXZ 10
              PrecisionY 10
@@ -115,7 +141,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
             }
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos 1508.297 779.147
+             EditorPos 934.964 285.814
              Period 0.35
              PeriodRandom 0.7
             }
@@ -123,29 +149,28 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
           }
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 2181.095 719.424
+           EditorPos 1461.095 292.757
            Nodes {
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos 2112.305 846.063
+             EditorPos 1392.305 419.396
              Period 1
              PeriodKey 2
             }
             SCR_AICompleteAction "SCR_AI Complete Action" {
              Name "SCR_AI Complete Action"
-             EditorPos 2247.226 845.396
+             EditorPos 1527.226 418.729
             }
            }
           }
           SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
            Name "SCR_AI Deco Is Above Threat Level"
-           EditorPos 2977.322 493.25
+           EditorPos 1905.655 201.583
            Nodes {
             RunBT RunBT {
              Name "RunBT"
-             EditorPos 2962.583 689.25
+             EditorPos 1889.25 415.917
              BehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
-             AlwaysReinit 1
             }
            }
            InPorts {
@@ -223,38 +248,38 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
  VariablesRefs {
   VariableReference duration {
    VariableType 0
-   EditorPos -1096.898 686.27
+   EditorPos -1024.398 511.27
    Group "{5C56A6044E03EE3C}"
   }
   VariableReference position {
    VariableType 1
-   EditorPos -1102.147 610.274
+   EditorPos -1029.647 435.274
    Group "{5C56A6044E03EE3C}"
   }
   VariableReference duration {
    VariableType 0
-   EditorPos 1962.156 879.805
+   EditorPos 1242.156 453.138
   }
   VariableReference aimPosition {
    VariableType 2
-   EditorPos 1078.735 977.794
+   EditorPos 505.402 484.461
   }
   VariableReference position {
    VariableType 1
-   EditorPos 875.615 851.37
+   EditorPos 302.282 358.037
   }
   VariableReference radius {
    VariableType 3
-   EditorPos -1095.611 762.856
+   EditorPos -1023.111 587.856
    Group "{5C56A6044E03EE3C}"
   }
   VariableReference radius {
    VariableType 3
-   EditorPos 903.358 931.953
+   EditorPos 330.025 438.62
   }
   VariableReference UseBinoculars {
    VariableType 4
-   EditorPos -1122.223 841.616
+   EditorPos -1049.723 666.616
    Group "{5C56A6044E03EE3C}"
   }
   VariableReference UseBinoculars {
@@ -264,7 +289,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
   }
   VariableReference delay {
    VariableType 5
-   EditorPos -1088.571 941.429
+   EditorPos -1016.071 766.429
    Group "{5C56A6044E03EE3C}"
   }
  }

@@ -7,5 +7,13 @@ SCR_AIWorld {
    KneelingSize 0.7
    CrouchingSize 0.2
   }
+  NavmeshWorldComponent "{5584F30E67F617AD}" {
+   NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
+    "Path stream area" 3
+   }
+  }
+  SCR_AISettingsComponent "{512CCCD0856CB4B9}" {
+   m_EFormation WEDGE
+  }
  }
 }

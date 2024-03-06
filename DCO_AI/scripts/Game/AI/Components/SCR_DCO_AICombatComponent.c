@@ -16,7 +16,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected static const float TARGET_INVESTIGATE_TIME = 1.0;	
 	
-	protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.5;
+	protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.0;
 	
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 500.0;
 	

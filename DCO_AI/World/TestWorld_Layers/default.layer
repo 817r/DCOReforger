@@ -1,8 +1,5 @@
 SCR_AIWorld : "{E0A05C76552E7F58}Prefabs/AI/SCR_AIWorld.et" {
  components {
-  CoverManagerComponent "{5E3ADC0EA7048548}" {
-   Enabled 1
-  }
   NavmeshWorldComponent "{5584F30E67F617AD}" {
    NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
     NavmeshFilesConfig BaseNavmeshFilesConfig "{60CB595E4BD3BDCB}" {
@@ -17,9 +14,6 @@ SCR_AIWorld : "{E0A05C76552E7F58}Prefabs/AI/SCR_AIWorld.et" {
      NavmeshFile "{5E19E60F26327356}worlds/MP/Navmeshes/LowResEden.nmn"
     }
    }
-  }
-  SCR_AISettingsComponent "{512CCCD0856CB4B9}" {
-   m_EFormation WEDGE
   }
  }
  coords 4862.006 28.594 11842.874
