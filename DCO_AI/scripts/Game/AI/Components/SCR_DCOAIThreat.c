@@ -14,7 +14,7 @@ modded class SCR_AIThreatSystem
 	private static const float BLEEDING_FIXED_INCREMENT = 0.2;
 	
 	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.008;
-	private static const float DISTANT_SHOT_INCREMENT = 0.0002;
+	private static const float DISTANT_SHOT_INCREMENT = 0.001;
 	
 	//private static const float THREAT_PINNED_DROP__RATE = 0.08 * 0.001;
 	//private static const float THREAT_EXHAUSTED_DROP_RATE = 0.03 * 0.001;
@@ -22,7 +22,7 @@ modded class SCR_AIThreatSystem
 	//private static const float THREAT_SUPPRESSION_DROP_RATE = 0.25 * 0.001; 
 	
 	private static const float THREAT_SHOT_DROP_RATE = 	0.12 * 0.001; // Falloff (percentual drop per milisecond)
-	private static const float THREAT_SUPPRESSION_DROP_RATE = 0.10 * 0.001;
+	private static const float THREAT_SUPPRESSION_DROP_RATE = 0.2 * 0.001;
 	private static const float THREAT_ENDANGERED_DROP_RATE = 	0.11 * 0.001;
 	
 	float GetThreatTotal()

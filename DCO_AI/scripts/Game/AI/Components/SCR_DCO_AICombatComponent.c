@@ -15,9 +15,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected static const int	ENEMIES_SIMPLIFY_THRESHOLD = 15;
 	
 	protected static const float TARGET_INVESTIGATE_TIME = 1.0;	
-	
-	protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.0;
-	
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 500.0;
 	
 	protected const float PERCEPTION_FACTOR_SAFE = 4.0;
@@ -27,7 +24,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_PINNED = 4.0;
 	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.0;
 	
-	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 2.0;
+	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.0;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
 	
 	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 2.0;
@@ -75,8 +72,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	//------------------------------------------------------------------------------------------------
 	protected static const float DISTANCE_MAX = 600; 
-	protected static const float DISTANCE_MIN = 5; // Minimal distance when movement is allowed
-	private static const float NEAR_PROXIMITY = 3;
+	protected static const float DISTANCE_MIN = 10; // Minimal distance when movement is allowed
+	private static const float NEAR_PROXIMITY = 15;
 	// TODO: add possibility to get cover towards custom position
 	//------------------------------------------------------------------------------------------------
 	override vector FindNextCoverPosition()

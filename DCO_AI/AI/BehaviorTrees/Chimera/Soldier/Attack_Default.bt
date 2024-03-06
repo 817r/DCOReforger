@@ -11,7 +11,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
      Nodes {
       AITaskReturnState "Return State" {
        Name "Return State"
-       EditorPos -1135 -194
+       EditorPos -1137 -194
        Result RUNNING
       }
       Sequence Sequence {
@@ -171,6 +171,10 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
          }
         }
+        SCR_AISetBehaviorAllowLook "SCR_AI Set Behavior Allow Look" {
+         Name "SCR_AI Set Behavior Allow Look"
+         EditorPos -903.333 74.583
+        }
         Parallel Parallel {
          Name "Parallel"
          EditorPos 2489.492 169.084
@@ -259,7 +263,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
              Nodes {
               SCR_AIDecoCombatAllowance "SCR_AI Deco Combat Allowance" {
                Name "SCR_AI Deco Combat Allowance"
-               EditorPos 4418.591 1402.381
+               EditorPos 4448.869 1405.02
                Nodes {
                 DecoTestDistanceToEntity "Test Distance To Entity" {
                  Name "Test Distance To Entity - Dist > Min"
@@ -269,13 +273,40 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
                    Name "Test Distance To Entity - Dist < Max"
                    EditorPos 4411.798 2149.151
                    Nodes {
-                    SCR_AIIsFriendlyInAim "SCR_AI Is Friendly In Aim" {
-                     Name "SCR_AI Is Friendly In Aim"
-                     EditorPos 4496.225 2448.904
+                    Selector Selector {
+                     Name "Selector"
+                     EditorPos 4168.333 2555
                      Nodes {
+                      SCR_AIIsFriendlyInAim "SCR_AI Is Friendly In Aim" {
+                       Name "SCR_AI Is Friendly In Aim"
+                       EditorPos 1910.333 3110.167
+                       Nodes {
+                        RunBT RunBT {
+                         Name "RunBT"
+                         EditorPos 1774.286 3370.317
+                         InPorts {
+                          SingleInputPortContainer SingleInputPortContainer {
+                           Port 34
+                           PortName "lastSeenPosition"
+                          }
+                          SingleInputPortContainer SingleInputPortContainer {
+                           Port 35
+                           PortName "TargetEntity"
+                          }
+                          SingleInputPortContainer SingleInputPortContainer {
+                           Port 36
+                           PortName "isTargetVisible"
+                          }
+                         }
+                         BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_FriendlyInLineOfSight.bt"
+                         AlwaysReinit 1
+                        }
+                       }
+                       AbortType AbortParentNodeFurtherChildren
+                      }
                       Selector Selector {
                        Name "Selector"
-                       EditorPos 4547.357 2659.857
+                       EditorPos 4517.357 2734.857
                        Nodes {
                         DecoTestVariable "Test Variable" {
                          Name "Test Variable"
@@ -441,8 +472,6 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
                        Group "{60A53B6DB0E522C7}"
                       }
                      }
-                     Group "{60A53B6DB0E522C7}"
-                     NegativeCondition 1
                     }
                    }
                    Group "{60A53B6DB0E522C7}"
@@ -783,6 +812,18 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
    VariableType 1
    EditorPos 5263.772 3357.204
    Group "{60A53B6DB0E522C7}"
+  }
+  VariableReference targetLastPosition {
+   VariableType 1
+   EditorPos 1470 3414
+  }
+  VariableReference targetEntity {
+   VariableType 0
+   EditorPos 1497 3491
+  }
+  VariableReference IsTargetVisible {
+   VariableType 4
+   EditorPos 1475 3584
   }
  }
  Groups {

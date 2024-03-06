@@ -13,61 +13,39 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
        Name "Sequence"
        EditorPos -53.896 315
        Nodes {
-        Selector Selector {
-         Name "Selector"
-         EditorPos -822.986 617.028
-         Nodes {
-          DecoTestVariable "Test Variable" {
-           Name "Test Variable"
-           EditorPos -968.68 808.556
-           Nodes {
-            SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
-             Name "SCR_AI Get Entity Position"
-             EditorPos -999.652 998.278
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 0
-               PortName "Entity"
-              }
-             }
-             OutPorts {
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 7
-               PortName "Position"
-              }
-             }
-             Group "{60472BC28D6F1D3E}"
-            }
-           }
-           Group "{60472BC28D6F1D3E}"
-           InVariable 2
-           TestType EqualsValue
-           TestValue "true"
-          }
-          AITaskSetVariable "Set Variable" {
-           Name "Set Variable"
-           EditorPos -511.041 863.278
-           Group "{60472BC28D6F1D3E}"
-           OutVariable 7
-           InVariable 1
+        SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
+         Name "SCR_AI Visualize Debug"
+         EditorPos -1059 707
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "DebugMessage"
           }
          }
+         m_sDebugMessage "LOOKING FOR BETTER ANGLE"
+         m_eAICategory BEHAVIOR
+        }
+        AITaskSetVariable "Set Variable" {
+         Name "Set Variable"
+         EditorPos -597.041 725.278
          Group "{60472BC28D6F1D3E}"
+         OutVariable 3
+         InVariable 0
         }
         Selector Selector {
          Name "Selector"
-         EditorPos 17.857 543.571
+         EditorPos -11.667 710
          Nodes {
           SCR_AIFindCover "SCR_AI Find Cover" {
            Name "SCR_AI Find Cover"
-           EditorPos -217.556 728.889
+           EditorPos -233.333 830
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
-             Port 0
+             Port -1
              PortName "Enemy"
             }
             SingleInputPortContainer SingleInputPortContainer {
-             Port 1
+             Port 3
              PortName "DangerPosition"
             }
             SingleInputPortContainer SingleInputPortContainer {
@@ -77,7 +55,7 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
            }
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 4
+             Port 1
              PortName "Position"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
@@ -88,18 +66,18 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
           }
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 271.167 683.333
+           EditorPos 119.5 890
            Nodes {
             SCR_AIGetSidePosition "SCR_AI Get Side Position" {
              Name "SCR_AI Get Side Position"
-             EditorPos -23.595 849.238
+             EditorPos -67.928 1112.905
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 0
+               Port -1
                PortName "Enemy"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 7
+               Port 3
                PortName "EnemyPosition"
               }
               SingleInputPortContainer SingleInputPortContainer {
@@ -109,22 +87,22 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
              }
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 6
+               Port 2
                PortName "PositionOut"
               }
              }
-             m_fDistance 5
+             m_fDistance 2
             }
             SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
              Name "SCR_AI Get Random Point"
-             EditorPos 454.207 852.111
+             EditorPos 448.207 1163.111
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
                PortName "Waypoint"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 6
+               Port 2
                PortName "Origin"
               }
               SingleInputPortContainer SingleInputPortContainer {
@@ -134,11 +112,11 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
              }
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 4
+               Port 1
                PortName "ResultVector"
               }
              }
-             m_ExclusionRadius 2
+             m_Radius 4
             }
            }
           }
@@ -146,7 +124,7 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
         }
         SCR_AISendOrder_MovementType "SCR_AI Send Order_ Movement Type" {
          Name "SCR_AI Send Order_ Movement Type"
-         EditorPos 434.196 584.29
+         EditorPos 326.196 628.29
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -158,26 +136,18 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
           }
          }
          Group "{60472BC28D6F1D3E}"
-         m_eMovementType RUN
-        }
-        AITaskSetVariable "Set Variable" {
-         Name "Set Variable"
-         EditorPos 963.553 572.814
-         Group "{60472BC28D6F1D3E}"
-         SetValue "true"
-         OutVariable 3
-         InVariable 5
+         m_eMovementType SPRINT
         }
         AITaskMove Move {
          Name "Move"
-         EditorPos 1200.625 586.624
-         InTargetLocation 4
+         EditorPos 952.054 624.053
+         InTargetLocation 1
          InPrecisionXZ -1
          OrientationType ToPoint
         }
         SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
          Name "SCR_AI Visualize Debug"
-         EditorPos 1528 584
+         EditorPos 1296.5 627
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -270,37 +240,21 @@ BehaviorTree "{4D67000A506C4C2E}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Frie
   }
  }
  VariablesRefs {
-  VariableReference TargetEntity {
-   VariableType 3
-   EditorPos -1212.125 958.738
-  }
   VariableReference lastSeenPosition {
    VariableType 2
-   EditorPos -783.958 793.556
-  }
-  VariableReference isTargetVisible {
-   VariableType 5
-   EditorPos -1203.291 847.707
-  }
-  VariableReference lookAtPosition {
-   VariableType 9
-   EditorPos 1232.247 843.551
+   EditorPos -917.958 819.556
   }
   VariableReference movePos {
    VariableType 0
-   EditorPos 747.629 743.099
-  }
-  VariableReference targetVector {
-   VariableType 7
-   EditorPos 777.348 646.354
+   EditorPos 725.962 738.099
   }
   VariableReference searchRadius {
    VariableType 4
-   EditorPos 240.556 973.889
+   EditorPos 203.556 1283.889
   }
   VariableReference dangerPos {
    VariableType 11
-   EditorPos -285.714 1007.143
+   EditorPos -309.714 1267.143
   }
  }
 }

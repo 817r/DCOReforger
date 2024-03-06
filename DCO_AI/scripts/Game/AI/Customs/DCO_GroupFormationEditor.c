@@ -48,9 +48,9 @@ class DCO_AIGroupFormationEditorAttribute : SCR_BaseFloatValueHolderEditorAttrib
 				{
 					if (formationName == "Autonomous")
 					{
-						formationName = "Wedge";
+						formationName = "VEE";
 						
-						formation = DCO_EFormationType.WEDGE;
+						formation = DCO_EFormationType.VEE;
 					}
 					
 					aiFormationComponent.SetFormation(formationName);

@@ -165,12 +165,13 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
           }
           SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
            Name "SCR_AI Deco Is Above Threat Level"
-           EditorPos 1905.655 201.583
+           EditorPos 1905.655 200.154
            Nodes {
             RunBT RunBT {
              Name "RunBT"
-             EditorPos 1889.25 415.917
-             BehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
+             EditorPos 1829.25 417.346
+             BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_Position.bt"
+             AlwaysReinit 1
             }
            }
            InPorts {

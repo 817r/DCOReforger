@@ -1,9 +1,5 @@
 modded class SCR_AIObservePositionBehavior : SCR_AIBehaviorBase
 {
-	protected bool m_bHasBinoculars;
-	
-	protected vector m_ObservePosition;
-	
 	protected SCR_InventoryStorageManagerComponent m_InventoryStorageManagerComponent;
 
 	override void InitParameters(vector position)
@@ -14,13 +10,13 @@ modded class SCR_AIObservePositionBehavior : SCR_AIBehaviorBase
 
 modded class SCR_AIObserveUnknownFireBehavior : SCR_AIObservePositionBehavior
 {
-	protected const float TIMEOUT_S = 5.0;
+	protected const float TIMEOUT_S = 3.0;
 	protected const float DURATION_MIN_S = 1.0;			// Min duration of behavior
 	protected const float DIRECTION_SPAN_DEG = 32.0;	
 	protected const float DURATION_S_PER_METER = 0.001;	// How duration depends on distance
 	protected const float USE_BINOCULARS_DISTANCE_THRESHOLD = 70;
 	
-	protected const float DELAY_MIN_S = 0.2;			// Min delay before we start looking at the position
+	protected const float DELAY_MIN_S = 0.02;			// Min delay before we start looking at the position
 	protected const float DELAY_S_PER_METER = 0.0001;	// How the delay increases depending on distance
 	
 	protected bool m_bHasBinoculars;
@@ -51,6 +47,6 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIObservePositionBehavior
 	{
 		super.OnActionDeselected();
 		
-		m_Utility.m_LookAction.LookAt(m_vPosition.m_Value, m_Utility.m_LookAction.PRIO_UNKNOWN_TARGET, 3.0);
+		m_Utility.m_LookAction.LookAt(m_vPosition.m_Value, m_Utility.m_LookAction.PRIO_UNKNOWN_TARGET, 1.0);
 	}
 };
