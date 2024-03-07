@@ -1,4 +1,5 @@
 enum DCO_CUSTOMRANK{
+	TRAITOR,
 	RECRUIT,
 	PRIVATE,
 	PRIVATE_FIRST_CLASS,
@@ -19,9 +20,30 @@ enum DCO_CUSTOMRANK{
 	GENERAL
 };
 
+class DCO_SkillComponentClass : ScriptComponentClass
+{
+	
+}
+
+
+class DCO_SkillComponent : ScriptComponent
+{
+	
+	[Attribute(defvalue: "1", uiwidget: UIWidgets.ComboBox, desc: "DCO Custom Ranks", enums: ParamEnumArray.FromEnum(DCO_CUSTOMRANK))]
+	protected DCO_CUSTOMRANK m_ERank;
+	protected IEntity m_Owner;
+	
+	static DCO_SkillComponent GetCharacterSkillRankComponent(IEntity unit)
+	{
+		return DCO_SkillComponent.Cast(unit.FindComponent(DCO_SkillComponent));
+	}
+	
+}
 
 class DCO_Skill : DCO_AIBase
 {
+	DCO_CUSTOMRANK cusRank;
+	
 	static EAISkill SetSkill(int indexAgent, int countAgent, IEntity entitiy, SCR_AICombatComponent combatComp)
 	{
 		EAISkill skill;
@@ -34,7 +56,11 @@ class DCO_Skill : DCO_AIBase
 		
 		SCR_ECharacterRank currRank = charRankComp.GetCharacterRank(entitiy);
 		
+		#ifdef Workbench
 		
+		string DebugText = String.Format("%1 > %2", typename.EnumToString(DCO_CUSTOMRANK, cusRank), typename.EnumToString(SCR_ECharacterRank, charRank));
+		
+		#endif
 		
 		return skill;
 	}
@@ -44,5 +70,10 @@ class DCO_Skill : DCO_AIBase
 		SCR_ECharacterRank charRank = SCR_ECharacterRank.PRIVATE;
 		
 		return  charRank;
+	}
+	
+	void setRank(int cusRanks)
+	{
+		cusRank = cusRanks;
 	}
 }

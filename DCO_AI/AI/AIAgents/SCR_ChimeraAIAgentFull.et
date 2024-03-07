@@ -11,7 +11,7 @@ SCR_ChimeraAIAgent {
   DCO_AIInfoComponent "{6084F3ED01E80953}" {
   }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
-   m_Skill 1
+   m_Skill 0.8
    m_aDefaultReactions {
     SCR_AIIdleReaction "{5458F49C533BDFBA}" {
      m_OverrideBehaviorTree "'AI\BehaviorTrees\Chimera\Soldier\Idle.bt'"

@@ -36,8 +36,10 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 		if (var)
 		{
 			AIAgent agent;
-			
+			DCO_Skill skill;
 			DCO_CUSTOMRANK cusRank = var.GetInt();
+			
+			DCO_SkillComponent dcoSkillComponent;
 			
 			IEntity controlledEntity;
 			
@@ -62,16 +64,8 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 					agent = agents[i];
 					
 					controlledEntity = agent.GetControlledEntity();
-					
-					if (controlledEntity)
-					{
-						characterRankComponent = SCR_CharacterRankComponent.Cast(controlledEntity.FindComponent(SCR_CharacterRankComponent));
-						
-						if (characterRankComponent)
-							characterRankComponent.SetCharacterRank(cusRank);
-						
-						SetSkill(rank, agent, controlledEntity, cusRank);
-					}
+					DCO_SetRanking(cusRank);
+					SetSkill(agent, controlledEntity, cusRank);
 				}
 			}
 			else
@@ -84,12 +78,11 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 					
 					if (controlledEntity)
 					{
-						characterRankComponent = SCR_CharacterRankComponent.Cast(controlledEntity.FindComponent(SCR_CharacterRankComponent));
+						//characterRankComponent = SCR_CharacterRankComponent.Cast(controlledEntity.FindComponent(SCR_CharacterRankComponent));
+						//dcoSkillComponent = DCO_SkillComponent.Cast(controlledEntity.FindComponent(DCO_SkillComponent));
 						
-						if (characterRankComponent)
-							characterRankComponent.SetCharacterRank(cusRank);
-						
-						SetSkill(rank, agent, controlledEntity, cusRank);
+						DCO_SetRanking(cusRank);
+						SetSkill(agent, controlledEntity, cusRank);
 					}
 				}
 			}
@@ -97,15 +90,36 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 	}
 	
 	//------------------------------------------------------------------------------------------------
-	void SetSkill(SCR_ECharacterRank rank, AIAgent agent, IEntity controlledEntity, DCO_CUSTOMRANK cusRank)
+	void SetSkill(AIAgent agent, IEntity controlledEntity, DCO_CUSTOMRANK cusRank)
 	{
 		EAISkill skill = EAISkill.REGULAR;
 		
 		switch (cusRank)
 		{
-			case DCO_CUSTOMRANK.RECRUIT:	skill = EAISkill.RECRUIT;    break;
-			case DCO_CUSTOMRANK.PRIVATE:	skill = EAISkill.ROOKIE; break;
-			case DCO_CUSTOMRANK.SERGEANT: 	skill = EAISkill.TRAINED; break;
+			case DCO_CUSTOMRANK.TRAITOR:	
+			{
+				skill = EAISkill.REGULAR; 		
+				cusRank = DCO_CUSTOMRANK.TRAITOR;
+				break;
+			}
+			case DCO_CUSTOMRANK.RECRUIT:
+			{
+				skill = EAISkill.REGULAR; 		
+				cusRank = DCO_CUSTOMRANK.RECRUIT;
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE:
+			{
+				skill = EAISkill.REGULAR; 		
+				cusRank = DCO_CUSTOMRANK.PRIVATE;
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+			{
+				skill = EAISkill.REGULAR; 		
+				cusRank = DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS;
+				break;
+			}
 		}
 		
 		float aimAccuracyErrorOriginal = SCR_AIGetAimErrorOffset.GetAimError(skill);
@@ -128,6 +142,40 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 			aiInfoComponent.SetAimAccuracyError(aimAccuracyError);
 			
 			aiInfoComponent.SetAimAccuracyErrorOriginal(aimAccuracyErrorOriginal);
+		}
+	}
+	
+	void DCO_SetRanking(DCO_CUSTOMRANK customRank)
+	{
+		
+		EAISkill skill = EAISkill.REGULAR;
+		
+		switch (customRank)
+		{
+			case DCO_CUSTOMRANK.TRAITOR:	
+			{
+				skill = EAISkill.REGULAR; 		
+				customRank = DCO_CUSTOMRANK.TRAITOR;
+				break;
+			}
+			case DCO_CUSTOMRANK.RECRUIT:
+			{
+				skill = EAISkill.REGULAR; 		
+				customRank = DCO_CUSTOMRANK.RECRUIT;
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE:
+			{
+				skill = EAISkill.REGULAR; 		
+				customRank = DCO_CUSTOMRANK.PRIVATE;
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+			{
+				skill = EAISkill.REGULAR; 		
+				customRank = DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS;
+				break;
+			}
 		}
 	}
 };

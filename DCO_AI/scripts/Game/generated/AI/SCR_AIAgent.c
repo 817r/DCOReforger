@@ -1,8 +1,3 @@
-  /* ================================================================================================ /
- / DCO-EAI Modded Class ( #DCO-EAIModdedClass )                                                      /
-/ ================================================================================================ */
-
-//------------------------------------------------------------------------------------------------
 modded class SCR_ChimeraAIAgent : ChimeraAIAgent
 {
 	AIGroup m_ParentGroup;
@@ -26,8 +21,7 @@ modded class SCR_ChimeraAIAgent : ChimeraAIAgent
 	protected SCR_AISettingsComponent m_SCR_AISettingsComponent;
 	
 	protected SCR_GadgetManagerComponent m_SCR_GadgetManagerComponent;
-	
-	//------------------------------------------------------------------------------------------------
+
 	override void EOnInit(IEntity owner) 
 	{
 		super.EOnInit(owner);
