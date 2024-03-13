@@ -2,10 +2,10 @@ SCR_AIWorld {
  ID "50B2B8F35661FB44"
  components {
   CoverManagerComponent "{5E3ADC0EA7048548}" {
-   MaxCovers -1
-   StandingSize 1.2
-   KneelingSize 0.7
+   ShootingExposition 0.1
    CrouchingSize 0.2
+   MinDistanceBetweenCovers 3
+   KneelingSize 0.7
   }
   NavmeshWorldComponent "{5584F30E67F617AD}" {
    NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
@@ -13,7 +13,8 @@ SCR_AIWorld {
    }
   }
   SCR_AISettingsComponent "{512CCCD0856CB4B9}" {
-   m_EFormation WEDGE
+   m_EnableLeaderStop 1
+   m_EFormation VEE
   }
  }
 }

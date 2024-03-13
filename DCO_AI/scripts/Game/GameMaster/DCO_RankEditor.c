@@ -121,27 +121,16 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 				break;
 			}
 		}
-		
-		float aimAccuracyErrorOriginal = SCR_AIGetAimErrorOffset.GetAimError(skill);
+
 		
 		DCO_AIInfoComponent aiInfoComponent = DCO_AIInfoComponent.Cast(agent.FindComponent(DCO_AIInfoComponent));
 		
 		SCR_AICombatComponent aiCombatComponent = SCR_AICombatComponent.Cast(controlledEntity.FindComponent(SCR_AICombatComponent));
 		
-		if (aiCombatComponent)
-			aiCombatComponent.SetAISkill(skill);
-		
-		float aimAccuracyError = aimAccuracyErrorOriginal;
-		
 		if (aiInfoComponent)
 		{
+			aiCombatComponent.SetAISkill(skill);
 			float aimAccuracyErrorModifier = aiInfoComponent.GetAimAccuracyErrorModifier();
-			
-			aimAccuracyError += aimAccuracyErrorModifier;
-			
-			aiInfoComponent.SetAimAccuracyError(aimAccuracyError);
-			
-			aiInfoComponent.SetAimAccuracyErrorOriginal(aimAccuracyErrorOriginal);
 		}
 	}
 	

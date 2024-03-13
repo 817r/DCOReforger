@@ -12,14 +12,19 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	
-	protected static const int	ENEMIES_SIMPLIFY_THRESHOLD = 15;
-	
-	protected static const float TARGET_INVESTIGATE_TIME = 1.0;	
+	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
+	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
+
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 500.0;
-	
+	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 0.8;
+			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 3.0;
+			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 8.0;
+			  static const float TARGET_MAX_LAST_SEEN = 20.0;
+	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 100.0;
+	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.7;
 	protected const float PERCEPTION_FACTOR_SAFE = 4.0;
 	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
-	protected const float PERCEPTION_FACTOR_ALERTED = 5.0; 
+	protected const float PERCEPTION_FACTOR_ALERTED = 6.0; 
 	protected const float PERCEPTION_FACTOR_THREATENED = 5.0;
 	protected const float PERCEPTION_FACTOR_PINNED = 4.0;
 	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.0;
@@ -27,11 +32,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.0;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
 	
-	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 2.0;
+	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.6;
 	
-	protected static const float TARGET_SCORE_RETREAT = 150.0;
-	
-	protected static const float TARGET_INVISIBLE_TIME = 8.0;
+	static const float LONG_RANGE_FIRE_DISTANCE = 300.0;
 
 	override protected void EOnInit(IEntity owner)
 	{
@@ -71,9 +74,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 	}
 	
 	//------------------------------------------------------------------------------------------------
-	protected static const float DISTANCE_MAX = 600; 
-	protected static const float DISTANCE_MIN = 10; // Minimal distance when movement is allowed
-	private static const float NEAR_PROXIMITY = 15;
+	protected static const float DISTANCE_MAX = 500; 
+	protected static const float DISTANCE_MIN = 5; // Minimal distance when movement is allowed
+	private static const float NEAR_PROXIMITY = 2;
 	// TODO: add possibility to get cover towards custom position
 	//------------------------------------------------------------------------------------------------
 	override vector FindNextCoverPosition()
@@ -130,5 +133,60 @@ modded class SCR_AICombatComponent : ScriptComponent
 		newPosition = s_AIRandomGenerator.GenerateRandomPointInRadius(0, NEAR_PROXIMITY, newPositionCenter, true);
 		newPosition[1] = newPositionCenter[1];
 		return newPosition;
+	}
+	
+	override void SetCombatType(EAICombatType combatType)
+	{
+		#ifdef AI_DEBUG
+		AddDebugMessage(string.Format("SetCombatType: %1", typename.EnumToString(EAICombatType, combatType)));
+		#endif
+		
+		switch (combatType)
+		{
+			case EAICombatType.NONE:
+			{
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,false);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,false);
+				break;
+			}
+			case EAICombatType.NORMAL:
+			{
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,true);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,true);
+				break;
+			}
+			case EAICombatType.SUPPRESSIVE:
+			{
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,false);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,true);
+				break;
+			}
+			case EAICombatType.RETREAT:
+			{
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,true);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,false);
+				break;
+			}
+			case EAICombatType.SINGLE_SHOT:
+			{
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,false);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,false);
+				break;
+			}
+		}
+		m_eCombatType = combatType;
+#ifdef WORKBENCH
+		SCR_AIDebugVisualization.VisualizeMessage(GetOwner(), typename.EnumToString(EAICombatType,m_eCombatType), EAIDebugCategory.COMBAT, 5);
+#endif
 	}
 };

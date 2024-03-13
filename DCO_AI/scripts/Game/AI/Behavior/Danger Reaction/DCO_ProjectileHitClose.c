@@ -1,6 +1,8 @@
 [BaseContainerProps()]
 modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 {
+	protected static const float BULLET_IMPACT_DISTANCE_SQ_MAX = 15*15;
+	
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent)
 	{
 		float distanceSq = vector.DistanceSq(utility.GetOrigin(), dangerEvent.GetPosition());

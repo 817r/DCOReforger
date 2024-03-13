@@ -47,7 +47,7 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	private SCR_AIConfigComponent m_SCR_AIConfigComponent;
 	private SCR_AISettingsComponent m_SCR_AISettingsComponent;
 	
-	private int m_iWeaponFiredReactionDistance = SCR_AIReactionBase.AI_WEAPONFIRED_REACTION_DISTANCE;
+	private int m_iWeaponFiredReactionDistance = SCR_AICombatComponent.LONG_RANGE_FIRE_DISTANCE;
 	
 	private float m_fThrowGrenadeTime;
 	private bool m_bThrowGrenade = true;

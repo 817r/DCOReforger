@@ -1,5 +1,5 @@
 MetaFileClass {
- Name "{C2D6E7227A4D44CF}AI/BehaviorTrees/Chimera/Group/ActivityMove.bt"
+ Name "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_IdleCover.bt"
  Configurations {
   BehaviorTreeResourceClass PC {
   }
@@ -8,6 +8,8 @@ MetaFileClass {
   BehaviorTreeResourceClass XBOX_SERIES : PC {
   }
   BehaviorTreeResourceClass PS4 : PC {
+  }
+  BehaviorTreeResourceClass PS5 : PC {
   }
   BehaviorTreeResourceClass HEADLESS : PC {
   }

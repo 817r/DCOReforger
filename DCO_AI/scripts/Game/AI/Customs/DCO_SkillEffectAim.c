@@ -1,105 +1,115 @@
 modded class SCR_AIGetAimErrorOffset: AITaskScripted
 {
-	//------------------------------------------------------------------------------------------------
-	protected string m_Faction;
 	protected IEntity m_ControlledEntity;
 	protected DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	protected SCR_AIUtilityComponent m_SCR_AIUtilityComponent;
-	
-	//------------------------------------------------------------------------------------------------
-	override void OnInit(AIAgent owner)
-	{
-		super.OnInit(owner);
-		
-		SCR_AIGroup aiGroup = SCR_AIGroup.Cast(owner);
-		
-		m_ControlledEntity = owner.GetControlledEntity();
-		
-		if (aiGroup)
-			m_Faction = aiGroup.m_faction;
-		
-		m_SCR_AIUtilityComponent = SCR_AIUtilityComponent.Cast(owner.FindComponent(SCR_AIUtilityComponent));
-		
-		m_DCO_AIInfoComponent = m_SCR_AIUtilityComponent.m_DCO_AIInfoComponent;
-	}
+	static const float CLOSE_RANGE_THRESHOLD = 15.0;
+	static const float LONG_RANGE_THRESHOLD = 200.0;
+	static const float AIMING_ERROR_SCALE = 1.0; // TODO: game master and server option
+	static const float AIMING_ERROR_FACTOR_MIN = 0.4; 
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.05;
+	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
+	static const float MAXIMAL_TOLERANCE = 11.0;
+	static const float MINIMAL_TOLERANCE = 0.003;
 
-	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
-    {
-		BaseTarget baseTarget;
-		
-		GetVariableIn(PORT_BASE_TARGET, baseTarget);
-		
-		if (baseTarget)
-			return super.EOnTaskSimulate(owner, dt);
-		
-		return ENodeResult.FAIL;
-	}
-	
-	static float GetAimError(EAISkill skill)
+	override float GetRandomFactor(EAISkill skill,float mu)
 	{
-		float sigma = 1.50;
-		
+		float sigma;
 		switch (skill)
 		{
-			case EAISkill.RECRUIT:
+			case EAISkill.ROOKIE :
 			{
-				sigma = 2.50;
+				sigma = 2;
 				break;
 			}
-			case EAISkill.ROOKIE:
+			case EAISkill.REGULAR :
 			{
-				sigma = 2.00;
+				sigma = 1.3;
 				break;
 			}
-			case EAISkill.TRAINED:
+			case EAISkill.VETERAN :
 			{
-				sigma = 1.70;
+				sigma = 1.0;
 				break;
 			}
-			case EAISkill.REGULAR:
+			case EAISkill.EXPERT :
 			{
-				sigma = 1.50;
+				sigma = 0.75;
 				break;
 			}
-			case EAISkill.VETERAN:
+			case EAISkill.CYLON :
 			{
-				sigma = 1.00;
-				break;
-			}
-			case EAISkill.EXPERT:
-			{
-				sigma = 0.50;
-				break;
-			}
-			case EAISkill.CYLON:
-			{
-				sigma = 0.10;
-				break;
+				return 0.4;
 			}
 		}
-		
-		return sigma;
+		// PrintFormat("Gauss: %1, sigma: %2, skill: %3",result,sigma,typename.EnumToString(EAISkill,skill));
+		return Math.RandomGaussFloat(sigma,mu);
 	}
-
-	override float GetRandomFactor(EAISkill skill, float mu)
+	
+	override EAISkill GetSkillFromThreat(EAISkill inSkill, EAIThreatState threat)
 	{
-		float aimAccuracyError = m_DCO_AIInfoComponent.GetAimAccuracyError();
-		
-		float sigma = aimAccuracyError;
-		
-		float aimAccuracyErrorThreatIncrement = m_SCR_AIUtilityComponent.m_ThreatSystem.GetThreatInjury();
-		
-		aimAccuracyErrorThreatIncrement += m_SCR_AIUtilityComponent.m_ThreatSystem.GetThreatSuppression();
-		
-		sigma += aimAccuracyErrorThreatIncrement;
-		
-		float sigmaClamp = Math.Clamp(sigma, 0, 10);
-		
-		sigma = sigmaClamp;
-		
-		if (sigma < 0)
-			sigma = 0;
-		
-		return Math.RandomGaussFloat(sigma, mu);
+		switch (threat)
+		{
+			case EAIThreatState.THREATENED : 
+			{		 
+				switch (inSkill)
+				{
+					case EAISkill.ROOKIE :
+					{
+						return EAISkill.ROOKIE;
+					}
+					case EAISkill.REGULAR :
+					{
+						return EAISkill.ROOKIE;
+					}
+					case EAISkill.VETERAN :
+					{
+						return EAISkill.REGULAR;
+					}
+					case EAISkill.EXPERT :
+					{
+						return EAISkill.REGULAR;
+					}
+					case EAISkill.CYLON :
+					{
+						return EAISkill.VETERAN;
+					}
+				};
+				break;
+			}
+			case EAIThreatState.ALERTED :
+			{
+				switch (inSkill)
+				{
+					case EAISkill.ROOKIE :
+					{
+						return EAISkill.REGULAR;
+					}
+					case EAISkill.REGULAR :
+					{
+						return EAISkill.VETERAN;
+					}
+					case EAISkill.VETERAN :
+					{
+						return EAISkill.VETERAN;
+					}
+					case EAISkill.EXPERT :
+					{
+						return EAISkill.EXPERT;
+					}
+					case EAISkill.CYLON :
+					{
+						return EAISkill.CYLON;
+					}
+				};
+				break;
+			}
+			default :
+			{
+				return inSkill;
+				break;
+			}	
+		}	
+		return EAISkill.NONE;
 	}
 };

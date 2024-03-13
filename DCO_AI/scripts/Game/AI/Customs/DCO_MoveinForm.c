@@ -34,34 +34,4 @@ modded class SCR_AIMoveInFormationBehavior : SCR_AIMoveBehaviorBase
 	{
 		super.OnActionCompleted();
 	}
-	
-	//------------------------------------------------------------------------------------------------
-	void SCR_AIMoveInFormationBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, vector pos, float priority = PRIORITY_BEHAVIOR_MOVE_IN_FORMATION, float priorityLevel = PRIORITY_LEVEL_NORMAL)
-	{
-		if (priorityLevel > 0)
-		{
-			SCR_ChimeraAIAgent chimeraAIAgent = utility.m_ChimeraAIAgent;
-			
-			if (chimeraAIAgent)
-			{
-				m_DCO_AIInfoComponent = DCO_AIInfoComponent.Cast(chimeraAIAgent.FindComponent(DCO_AIInfoComponent));
-				
-				if (m_DCO_AIInfoComponent)
-				{
-					m_DisableMovementControls = m_DCO_AIInfoComponent.GetDisableMovementControls();
-					
-					if (m_DisableMovementControls)
-					{
-						IEntity ownerEntity = utility.m_OwnerEntity;
-						
-						if (ownerEntity)
-						{
-							if (m_CharacterControllerComponent && m_CharacterControllerComponent.GetDisableMovementControls())
-								m_CharacterControllerComponent.SetDisableMovementControls(false);
-						}
-					}
-				}
-			}
-		}
-	}
 };

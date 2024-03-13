@@ -11,11 +11,11 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
      Nodes {
       RunOnce "Run Once" {
        Name "Run Once"
-       EditorPos -2262.111 424.167
+       EditorPos -2772.111 434.167
        Nodes {
         SCR_AISendOrder_ReturnToDefault "SCR_AI Send Order_ Return To Default" {
          Name "SCR_AI Send Order_ Return To Default"
-         EditorPos -2378.428 601.095
+         EditorPos -2877 578
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -28,26 +28,27 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
       }
       Sequence Sequence {
        Name "Sequence"
-       EditorPos -1912.969 410.841
+       EditorPos -1575.469 340.841
        Nodes {
         Sequence Sequence {
          Name "Seq: Detection"
-         EditorPos -1982.615 706.715
+         EditorPos -2313.448 651.715
          Nodes {
           Decorator "{50F0D1E5FB473435}" {
            Name "Decorator"
-           EditorPos -2002.476 833.136
+           EditorPos -2333.905 768.85
            Nodes {
             SCR_AIFindTagetToLookAt "SCR_AI Find Taget To Look At" {
              Name "SCR_AI Find Taget To Look At"
-             EditorPos -2023.321 981.536
+             EditorPos -2353.083 907.25
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
                Port 0
                PortName "BaseTarget"
               }
              }
-             m_fTimeSinceSeenMax_S 2
+             m_fTimeSinceSeenMax_S 1
+             m_fTimeSinceDetectedMax_S 0.4
             }
            }
            ForceNodeResult Success
@@ -56,7 +57,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
         SCR_AIDecideBehavior "SCR_AI Decide Behavior" {
          Name "SCR_AI Decide Behavior"
-         EditorPos -1417.25 848.571
+         EditorPos -1733.143 772.143
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 4
@@ -72,39 +73,49 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
            Port 2
            PortName "UpdateBehavior"
           }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 7
+           PortName "UseCombatMove"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 9
+           PortName "UpdateInterval"
+          }
          }
         }
         AITaskIdle Idle {
          Name "Idle"
-         EditorPos -897.472 721.917
-         Period 0.3
+         EditorPos -1070.901 811.631
+         Period 1
+         PeriodRandom 0
+         PeriodKey 9
         }
        }
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos -910.834 464.833
+       EditorPos -506 614
        BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
       }
       Selector Selector {
        Name "Selector"
-       EditorPos -282.25 850.75
+       EditorPos 33.75 787.75
        Nodes {
         DecoTestVariable "Test Variable" {
          Name "Test Variable"
-         EditorPos -773.056 1229.833
+         EditorPos -265.556 982.333
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos -733.036 1426.679
+           EditorPos -225.536 1179.179
            Nodes {
             SCR_AIUpdateExecutedAction "SCR_AI Update Executed Action" {
              Name "SCR_AI Update Executed Action"
-             EditorPos -1091.667 1564.079
+             EditorPos -584.167 1316.579
             }
             AITaskSetVariable "Set Variable" {
              Name "Set Variable"
-             EditorPos -695.436 1567.849
+             EditorPos -187.936 1320.349
              ClearVariable 1
              OutVariable 6
             }
@@ -117,11 +128,11 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
         SCR_AIIsValidAction "SCR_AI Is Valid Action" {
          Name "SCR_AI Is Valid Action"
-         EditorPos -114.75 1177.056
+         EditorPos 545.25 1002.056
          Nodes {
           RunBT RunBT {
            Name "RunBT"
-           EditorPos -95.032 1334.844
+           EditorPos 601.317 1295.4
            AlwaysReinit 1
            InBehaviorTree 1
           }
@@ -130,24 +141,44 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
        }
       }
+      Selector Selector {
+       Name "Selector"
+       EditorPos 1013.571 446.071
+       Nodes {
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 681.828 601.689
+         Nodes {
+          RunBT RunBT {
+           Name "RunBT"
+           EditorPos 644.964 771.325
+           BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMove.bt"
+          }
+         }
+         AbortType AbortChildrenBranchAndParentFurtherChildren
+         InVariable 8
+         TestType EqualsValue
+         TestValue "true"
+        }
+        SCR_AIResetCombatMoveState "SCR_AI Reset Combat Move State" {
+         Name "SCR_AI Reset Combat Move State"
+         EditorPos 1044.047 606.547
+        }
+       }
+      }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos -46.62 485.238
+       EditorPos 1302.38 419.572
        BehaviorTree "{98F1144DA724F591}AI/BehaviorTrees/Chimera/Soldier/LookAction.bt"
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos 408.453 481.88
+       EditorPos 1742.358 419.214
        BehaviorTree "{8DD322A18236DA18}AI/BehaviorTrees/Chimera/Soldier/HandleOrders.bt"
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos 857.579 476.88
-       BehaviorTree "{43ED08AE42F30D89}AI/BehaviorTrees/Chimera/Soldier/TargetReporting.bt"
-      }
-      RunBT RunBT {
-       Name "RunBT"
-       EditorPos 1345.333 484.333
+       EditorPos 2230 418.333
        BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
       }
      }
@@ -175,9 +206,15 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
    VariableExposedInput 0
    VariableExposedOutput 0
   }
-  Variable MyEntity {
-   VariableName "MyEntity"
-   VariableTypeName "IEntity"
+  Variable useCombatMove {
+   VariableName "useCombatMove"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable fDecisionUpdateInterval {
+   VariableName "fDecisionUpdateInterval"
+   VariableTypeName "float"
    VariableExposedInput 0
    VariableExposedOutput 0
   }
@@ -185,31 +222,43 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
  VariablesRefs {
   VariableReference unknownTarget {
    VariableType 0
-   EditorPos -2031.119 1089.13
+   EditorPos -2360.88 1014.844
   }
   VariableReference behaviorTree {
    VariableType 1
-   EditorPos -357.375 1424.971
+   EditorPos 163.737 1187.748
   }
   VariableReference updateBehavior {
    VariableType 2
-   EditorPos -1116.584 987.972
+   EditorPos -1437.06 821.782
   }
   VariableReference updateBehavior {
    VariableType 2
-   EditorPos -1016.389 1327.75
+   EditorPos -508.889 1080.25
   }
   VariableReference unknownTarget {
    VariableType 0
-   EditorPos -1701.356 883.255
+   EditorPos -2018.499 805.398
   }
   VariableReference behaviorTree {
    VariableType 1
-   EditorPos -1118.083 888.5
+   EditorPos -1435.226 752.31
   }
   VariableReference updateBehavior {
    VariableType 2
-   EditorPos -483.453 1641.024
+   EditorPos 24.047 1393.524
+  }
+  VariableReference useCombatMove {
+   VariableType 3
+   EditorPos -1435.476 892.143
+  }
+  VariableReference useCombatMove {
+   VariableType 3
+   EditorPos 455.357 677.078
+  }
+  VariableReference fDecisionUpdateInterval {
+   VariableType 4
+   EditorPos -1435 965.953
   }
  }
 }
