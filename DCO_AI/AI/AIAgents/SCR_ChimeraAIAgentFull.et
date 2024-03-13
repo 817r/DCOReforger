@@ -2,7 +2,8 @@ SCR_ChimeraAIAgent {
  ID "50C4E8413B94E8B0"
  components {
   AIFormationComponent "{50C4E8410B604B4B}" {
-   DefaultFormation "Wedge"
+   DefaultFormation "Vee"
+   "Min Distance to Raytrace an Offset" 2
   }
   AIPathfindingComponent "{50C4E8411A108E21}" {
    "Search half extend XZ" 30
@@ -12,6 +13,7 @@ SCR_ChimeraAIAgent {
   }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
    m_Skill 0.8
+   m_EnableLeaderStop 1
    m_aDefaultReactions {
     SCR_AIIdleReaction "{5458F49C533BDFBA}" {
      m_OverrideBehaviorTree "'AI\BehaviorTrees\Chimera\Soldier\Idle.bt'"

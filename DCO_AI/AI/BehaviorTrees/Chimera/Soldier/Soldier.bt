@@ -56,7 +56,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
         SCR_AIDecideBehavior "SCR_AI Decide Behavior" {
          Name "SCR_AI Decide Behavior"
-         EditorPos -1417.25 850
+         EditorPos -1417.25 848.571
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 4

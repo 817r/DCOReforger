@@ -4,29 +4,10 @@ class DCO_AIInfoComponentClass : ScriptComponentClass
 
 enum DCO_EUnitAIState
 {
-	MOVE,
 	COVER,
 	DANGER
 };
 
-enum DCO_EBehaviorState
-{
-	IDLE,
-	COMBAT,
-	INVESTIGATE
-};
-
-enum DCO_EForceWeaponRaised
-{
-	LOWER,
-	RAISED
-};
-
-enum DCO_EForceFlashlightState
-{
-	ON,
-	OFF
-};
 
 //------------------------------------------------------------------------------------------------
 class DCO_AIInfoComponent : ScriptComponent
@@ -223,5 +204,10 @@ class DCO_AIInfoComponent : ScriptComponent
 	void SetCombatBehaviorType(DCO_ECombatBehaviorType combatBehaviorType)
 	{
 		m_eCombatBehaviorType = combatBehaviorType;
+	}
+	
+	void setRank(int cusRank)
+	{
+		
 	}
 }

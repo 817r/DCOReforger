@@ -11,10 +11,10 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
      Nodes {
       SCR_AIGetTarget "SCR_AI Get Target" {
        Name "SCR_AI Get Target"
-       EditorPos -3549.643 1040.357
+       EditorPos -2739.643 1076.357
        OutPorts {
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 3
+         Port 2
          PortName "BaseTarget"
         }
        }
@@ -23,10 +23,10 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
       }
       SCR_AIGetBaseTargetProperties "SCR_AI Get Base Target Properties" {
        Name "SCR_AI Get Base Target Properties"
-       EditorPos -2941.429 1030
+       EditorPos -2131.429 1066
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
-         Port 3
+         Port 2
          PortName "BaseTarget"
         }
        }
@@ -50,30 +50,6 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
        }
        Group "{60A507D2A302D248}"
       }
-      SCR_AILookAtPosition "SCR_AI Look At Position" {
-       Name "SCR_AI Look At Position"
-       EditorPos -1655.556 1036.667
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port 2
-         PortName "PositionIn"
-        }
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "PriorityIn"
-        }
-       }
-       OutPorts {
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port -1
-         PortName "PositionOut"
-        }
-       }
-       Group "{60A507D2A302D248}"
-       m_fVerticalOffset 1
-       m_fIgnoreLookDistSq 1
-       m_fPriority 50
-      }
       SCR_AISelectFireMode "SCR_AI Select Fire Mode" {
        Name "SCR_AI Select Fire Mode"
        EditorPos -1381.263 1038.394
@@ -94,13 +70,13 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
             AITaskMove Move {
              Name "Move"
              EditorPos -1609.524 1888.571
-             InTargetLocation 11
+             InTargetLocation 10
             }
             AITaskCharacterAim "Character Aim" {
              Name "Character Aim"
              EditorPos -978.73 1882.658
-             InAimAtPosition 9
-             InEntity 10
+             InAimAtPosition 8
+             InEntity 9
             }
             AITaskFire Fire {
              Name "Fire"
@@ -137,7 +113,7 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
            }
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
-             Port 4
+             Port 3
              PortName "BaseTargetIn"
             }
            }
@@ -164,11 +140,11 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
                EditorPos 836.75 1741.444
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 6
+                 Port 5
                  PortName "Enemy"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 5
+                 Port 4
                  PortName "DangerPosition"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
@@ -178,11 +154,11 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
                }
                OutPorts {
                 SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 7
+                 Port 6
                  PortName "Position"
                 }
                 SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 8
+                 Port 7
                  PortName "Stance"
                 }
                }
@@ -192,7 +168,7 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
                Name "Move"
                EditorPos 1366.667 1744.444
                Group "{60A507D290965C11}"
-               InTargetLocation 7
+               InTargetLocation 6
               }
               SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
                Name "SCR_AI Send Order_ Stance"
@@ -203,7 +179,7 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
                  PortName "Receiver"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 8
+                 Port 7
                  PortName "Stance"
                 }
                }
@@ -215,7 +191,7 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
            }
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
-             Port 4
+             Port 3
              PortName "BaseTargetIn"
             }
            }
@@ -281,22 +257,17 @@ BehaviorTree "{17793CD82D718E9A}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CQB_
  VariablesRefs {
   VariableReference closeTarget {
    VariableType 0
-   EditorPos -2505.833 1039.222
+   EditorPos -1695.833 1075.222
    Group "{60A507D2A302D248}"
   }
   VariableReference closeTargetVector {
    VariableType 1
-   EditorPos -2510.629 1117.332
-   Group "{60A507D2A302D248}"
-  }
-  VariableReference closeTargetVector {
-   VariableType 1
-   EditorPos -1931.389 1168.972
+   EditorPos -1700.629 1153.332
    Group "{60A507D2A302D248}"
   }
   VariableReference targetClose {
    VariableType 2
-   EditorPos -3282.857 1172.857
+   EditorPos -2472.857 1208.857
    Group "{60A507D2A302D248}"
   }
   VariableReference targetClose {
