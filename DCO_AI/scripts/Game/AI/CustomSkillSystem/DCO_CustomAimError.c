@@ -7,10 +7,10 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float CLOSE_RANGE_THRESHOLD = 15.0;
 	static const float LONG_RANGE_THRESHOLD = 250.0;
 	static const float AIMING_ERROR_SCALE = 1.0; // TODO: game master and server option
-	static const float AIMING_ERROR_FACTOR_MIN = 0.4; 
+	static const float AIMING_ERROR_FACTOR_MIN = 0.2; 
 	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.05;
-	static const float AIMING_ERROR_FACTOR_MAX = 1.4;
-	static const float MAXIMAL_TOLERANCE = 11.0;
+	static const float AIMING_ERROR_FACTOR_MAX = 1.2;
+	static const float MAXIMAL_TOLERANCE = 10.0;	
 	static const float MINIMAL_TOLERANCE = 0.1;
 
 	//------------------------------------------------------------------------------------------------
@@ -22,12 +22,12 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case EAISkill.RECRUIT :
 			{
-				sigma = 3.0;
+				sigma = 2.7;
 				break;
 			}
 			case EAISkill.ROOKIE :
 			{
-				sigma = 2.7;
+				sigma = 2.2;
 				break;
 			}
 			case EAISkill.REGULAR :
@@ -37,22 +37,22 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EAISkill.TRAINED :
 			{
-				sigma = 1.5;
+				sigma = 1.3;
 				break;
 			}
 			case EAISkill.VETERAN :
 			{
-				sigma = 1.2;
+				sigma = 0.8;
 				break;
 			}
 			case EAISkill.EXPERT :
 			{
-				sigma = 0.95;
+				sigma = 0.5;
 				break;
 			}
 			case EAISkill.CYLON :
 			{
-				return 0.7;
+				return 0.2;
 			}
 		}
 		
@@ -87,7 +87,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 					}
 					case EAISkill.CYLON :
 					{
-						return EAISkill.VETERAN;
+						return EAISkill.EXPERT;
 					}
 				};
 				break;
