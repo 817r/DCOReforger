@@ -86,8 +86,8 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         AITaskIdle Idle {
          Name "Idle"
          EditorPos -1070.901 811.631
-         Period 1
-         PeriodRandom 0
+         Period 3
+         PeriodRandom 2
          PeriodKey 9
         }
        }
@@ -103,7 +103,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
         RunBT RunBT {
          Name "RunBT"
-         EditorPos -588 640
+         EditorPos -599.667 640
          BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
         }
         AITaskIdle Idle {

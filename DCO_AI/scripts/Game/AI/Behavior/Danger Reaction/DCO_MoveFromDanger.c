@@ -1,7 +1,5 @@
 modded class SCR_AIMoveFromDangerBehavior : SCR_AIBehaviorBase
 {
-	protected int index = 1;
-	
 	protected vector m_DangerPos;
 	
 	protected IEntity m_OwnerEntity;
@@ -20,36 +18,7 @@ modded class SCR_AIMoveFromDangerBehavior : SCR_AIBehaviorBase
 		if (m_DisableMovementControls)
 			Fail();
 	}
-
-	override void OnActionDeselected()
-	{
-		index++;
-		
-		super.OnActionDeselected();
-		
-		string aiMoveFromDangerActionState = "SCR_AIMoveFromDangerBehavior: DESELECTED";
-		
-		m_Utility.m_LookAction.LookAt(m_DangerPos, m_Utility.m_LookAction.PRIO_UNKNOWN_TARGET, 2.0);
-	}
-
-	override void OnActionCompleted()
-	{
-		index++;
-		
-		super.OnActionCompleted();
-		
-		string aiMoveFromDangerActionState = "SCR_AIMoveFromDangerBehavior: COMPLETED";
-	}
-
-	override void OnActionRemoved()
-	{
-		index++;
-		
-		super.OnActionRemoved();
-		
-		string aiMoveFromDangerActionState = "SCR_AIMoveFromDangerBehavior: REMOVED";
-	}
-
+	
 	override void InitParameters(IEntity dangerEntity, vector dangerPos)
 	{
 		m_DangerPos = dangerPos;
