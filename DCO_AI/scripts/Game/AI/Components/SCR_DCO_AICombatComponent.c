@@ -17,8 +17,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 2.0;
 
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 500.0;
-	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 0.8;
-			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 3.0;
+	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.0;
+			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 4.5;
 			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 8.0;
 			  static const float TARGET_MAX_LAST_SEEN = 20.0;
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 100.0;

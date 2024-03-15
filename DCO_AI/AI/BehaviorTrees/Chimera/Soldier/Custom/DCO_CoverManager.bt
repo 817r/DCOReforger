@@ -1,0 +1,428 @@
+BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CoverManager.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CoverManager.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 95 -540
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos 97.222 -344.444
+     Nodes {
+      SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+       Name "SCR_AI Deco Is Above Threat Level"
+       EditorPos 40.953 55.738
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 131.722 273
+         Nodes {
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos -59.047 466.19
+           Period 5
+          }
+          SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
+           Name "SCR_AI Visualize Debug"
+           EditorPos 144.274 463.361
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "DebugMessage"
+            }
+           }
+           m_sDebugMessage "Not Threatened"
+           m_eAICategory BEHAVIOR
+          }
+          AITaskReturnState "Return State" {
+           Name "Return State"
+           EditorPos 388 464
+           Result RUNNING
+          }
+         }
+        }
+       }
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ThresholdIn"
+        }
+       }
+       NegativeCondition 1
+       m_threatThreshold THREATENED
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 2712.056 511.556
+       Nodes {
+        Decorator Decorator {
+         Name "Decorator"
+         EditorPos 315.5 1185.833
+         Nodes {
+          SCR_AIDeploySmokeCover "SCR_AI Deploy Smoke Cover" {
+           Name "SCR_AI Deploy Smoke Cover"
+           EditorPos 300 1368.333
+          }
+         }
+         ForceNodeResult Success
+        }
+        SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
+         Name "SCR_AI Create Basic Cover Query Props"
+         EditorPos 630.833 1197.833
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Position"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Radius"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 4
+           PortName "CoverQueryProps"
+          }
+         }
+         m_fRadius 35
+         m_bSelectHighestScoreCover 1
+        }
+        SCR_AIFindCover "SCR_AI Find Cover" {
+         Name "SCR_AI Find Cover"
+         EditorPos 1223.889 1178.889
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 4
+           PortName "CoverQueryProps"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 5
+           PortName "CoverLock"
+          }
+         }
+        }
+        SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
+         Name "SCR_AI Get Cover Parameters"
+         EditorPos 1616.666 1165.556
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 5
+           PortName "CoverLock"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 6
+           PortName "Pos"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 8
+           PortName "Stance"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 7
+           PortName "StanceHide"
+          }
+         }
+        }
+        AITaskMove Move {
+         Name "Move"
+         EditorPos 2460 1171.666
+         InTargetLocation 9
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 2852.5 1187
+         Period 1.2
+        }
+        Selector Selector {
+         Name "Selector"
+         EditorPos 3035.5 1187
+         Nodes {
+          SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+           Name "SCR_AI Deco Is Above Threat Level"
+           EditorPos 2599.762 1470.516
+           Nodes {
+            AITaskSetVariable "Set Variable" {
+             Name "Set Variable"
+             EditorPos 2653.214 1676.905
+             OutVariable 12
+             InVariable 14
+            }
+           }
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "ThresholdIn"
+            }
+           }
+           NegativeCondition 1
+          }
+          AITaskSetVariable "Set Variable" {
+           Name "Set Variable"
+           EditorPos 3303.333 1385.833
+           OutVariable 11
+           InVariable 13
+          }
+         }
+        }
+        AITaskChangeStance "Change Stance" {
+         Name "Change Stance"
+         EditorPos 3830.024 1234.238
+         InStance 11
+        }
+        SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
+         Name "SCR_AI Set Combat Move State"
+         EditorPos 4061.881 1226.763
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "InCover"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ExposedInCover"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "AimAtTarget"
+          }
+         }
+         m_bSetInCover 1
+         m_bSetExposedInCover 1
+         m_bExposedInCoverValue 1
+        }
+        SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
+         Name "SCR_AI Visualize Debug"
+         EditorPos 4376.047 1228
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "DebugMessage"
+          }
+         }
+         m_sDebugMessage "Cover Success"
+         m_eAICategory BEHAVIOR
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 4609.333 1230
+         Period 2
+        }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 4751.167 1227.833
+         Result RUNNING
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+  RunOnce "Run Once" {
+   Name "Run Once"
+   EditorPos -1211.667 361.667
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -1212.389 662.397
+     Nodes {
+      SCR_AIGetCombatMoveState "SCR_AI Get Combat Move State" {
+       Name "SCR_AI Get Combat Move State"
+       EditorPos -1986.429 1004.286
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 0
+         PortName "InCover"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 1
+         PortName "CoverLock"
+        }
+       }
+       Group "{60DECB6AABBC261D}"
+      }
+      SCR_AIGetSidePosition "SCR_AI Get Side Position" {
+       Name "SCR_AI Get Side Position"
+       EditorPos -1251.568 998.731
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "Enemy"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 2
+         PortName "EnemyPosition"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "KeepSide"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 3
+         PortName "PositionOut"
+        }
+       }
+       Group "{60DECB6AABBC261D}"
+       m_fDistance 80
+      }
+      AITaskCreatePosition "Create Position" {
+       Name "Create Position"
+       EditorPos -766.667 1006.667
+       Group "{60DECB6AABBC261D}"
+       InRootVector 3
+       OutPosition 10
+      }
+     }
+     Group "{60DECB6AABBC261D}"
+    }
+   }
+  }
+ }
+ Variables {
+  Variable inCover {
+   VariableName "inCover"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverLock {
+   VariableName "coverLock"
+   VariableTypeName "SCR_AICoverLock"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable lastSeen {
+   VariableName "lastSeen"
+   VariableTypeName "vector"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable friendlyArea {
+   VariableName "friendlyArea"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverQuery {
+   VariableName "coverQuery"
+   VariableTypeName "CoverQueryProperties"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverLock1 {
+   VariableName "coverLock1"
+   VariableTypeName "SCR_AICoverLock"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverPos {
+   VariableName "coverPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverStanceHdie {
+   VariableName "coverStanceHdie"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverStanceNorm {
+   VariableName "coverStanceNorm"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable friendlyPos {
+   VariableName "friendlyPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable expectedStance {
+   VariableName "expectedStance"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference inCover {
+   VariableType 0
+   EditorPos -1693.652 999.842
+   Group "{60DECB6AABBC261D}"
+  }
+  VariableReference coverLock {
+   VariableType 1
+   EditorPos -1703.652 1084.286
+   Group "{60DECB6AABBC261D}"
+  }
+  VariableReference lastSeen {
+   VariableType 2
+   EditorPos -1455.874 999.842
+   Group "{60DECB6AABBC261D}"
+  }
+  VariableReference friendlyArea {
+   VariableType 3
+   EditorPos -1000.318 1038.175
+   Group "{60DECB6AABBC261D}"
+  }
+  VariableReference coverQuery {
+   VariableType 4
+   EditorPos 1007.222 1327.778
+  }
+  VariableReference coverLock1 {
+   VariableType 5
+   EditorPos 1412.111 1327.111
+  }
+  VariableReference coverPos {
+   VariableType 6
+   EditorPos 1937.083 1165
+  }
+  VariableReference coverStanceHdie {
+   VariableType 7
+   EditorPos 1933.75 1305
+  }
+  VariableReference coverStanceNorm {
+   VariableType 8
+   EditorPos 1929.583 1235
+  }
+  VariableReference coverPos {
+   VariableType 6
+   EditorPos 2225.322 1315.322
+  }
+  VariableReference friendlyPos {
+   VariableType 9
+   EditorPos -523.81 1038.095
+  }
+  VariableReference expectedStance {
+   VariableType 10
+   EditorPos 3602.928 1392.024
+  }
+  VariableReference expectedStance {
+   VariableType 10
+   EditorPos 2899.278 1717.861
+  }
+  VariableReference coverStanceNorm {
+   VariableType 8
+   EditorPos 3082.976 1470.679
+  }
+  VariableReference coverStanceHdie {
+   VariableType 7
+   EditorPos 2402.785 1807.94
+  }
+ }
+ Groups {
+  BTGroup "{60DECB6AABBC261D}" {
+   Name "Init"
+   Color 0.6 0.6 0.6 0.251
+  }
+ }
+}

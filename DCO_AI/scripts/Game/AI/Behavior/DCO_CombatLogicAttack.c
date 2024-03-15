@@ -8,6 +8,106 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 {
 
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 1.0;//0.3 * Math.PI;
+	
+	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
+	{
+		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
+		if (currentTime_ms < m_fNextUpdate_ms)
+			return ENodeResult.RUNNING;
+		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
+		
+		BaseTarget target;
+		GetVariableIn(PORT_BASE_TARGET, target);
+		if (!target || !target.GetTargetEntity() || !m_State || !m_MyEntity || !m_Utility || !m_CombatComp || !m_CharacterController)
+			return ENodeResult.FAIL;
+		
+		// Don't run combat movement logic if CombatMove BT is not used now (like in turret)
+		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_Utility.GetExecutedAction());
+		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
+			return ENodeResult.RUNNING;
+		
+		// Update cached variables
+		m_Target = target;
+		m_fTargetDist = target.GetDistance();
+		m_bCloseRangeCombat = m_fTargetDist < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST;
+		m_eThreatState = m_Utility.m_ThreatSystem.GetState();
+		m_eStance = m_CharacterController.GetStance();
+		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
+		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
+		
+		
+		/*		
+		//------------------------------------------------------------------------------------
+		Combat movement logic
+		
+		Conditions represent states inside which we want to remain.
+		
+		Conditions are organized based on their priority, highest first.
+		
+		Within each state there can be extra logic which decides if it's worth to
+		send a new request, because even though we have selected a state, we should avoid
+		spamming same request over and over.
+		
+		Conditions for states mostly depend on Combat Move State and its timers.
+		
+		It is important to write logic in such a way that it doesn't depend on state
+		of this node. In this case the state flow also doesn't depend on it, and AI
+		does movement is more fluent when switching to a new behavior which also utilizes
+		combat movement, including attacking a different target.
+		*/
+		
+		if (SuppressedInCoverCondition())
+		{
+			SuppressedInCoverLogic();
+		}
+		else if (MoveFromTargetCondition())
+		{
+			// Too close to target
+			// Step away
+			if (MoveFromTargetNewRequestCondition())
+				PushRequestMoveFromTarget();
+		}
+		else if (CurrentCoverUselessCondition())
+		{
+			// Current cover has been compromised, it's not directed at enemy any more
+			// Find a new cover nearby
+			PushRequestLeaveUselessCover();
+		}
+		else if (m_State.m_bInCover && m_CharacterController.IsReloading())
+		{
+			// We're reloading and can't do much else now
+			// Hide in cover
+			if (m_State.m_bExposedInCover)
+				m_State.ApplyRequestChangeStanceInCover(false);
+		}
+		else if (m_State.m_bInCover && !m_State.m_bExposedInCover)
+		{
+			// We're in cover but we are still hiding in it, unhide
+			m_State.ApplyRequestChangeStanceInCover(true);
+		}
+		else if (FFAvoidanceCondition())
+		{
+			if (FFAvoidanceNewRequestCondition())
+				PushRequestFFAvoidance();
+		}
+		else if (MoveToNextPosCondition())
+		{
+			// We've waited here too long, move to next place
+			PushRequestMove();
+		}
+		else if (!m_State.IsExecutingRequest() && !m_State.m_bInCover)
+		{
+			// We are stopped and not in cover, manage our stance
+			ECharacterStance newStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
+			if (newStance > m_eStance)
+			{
+				// Only let stance go down, no need to get back up
+				m_State.ApplyRequestChangeStanceOutsideCover(newStance);
+			}
+		}
+		
+		return ENodeResult.RUNNING;
+	}
 
 	override protected void PushRequestMove()
 	{		
@@ -23,7 +123,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_bCheckCoverVisibility = true;
 
 		float coverSearchDistMin = 2;
-		float coverSearchDistMax = 35;
+		float coverSearchDistMax = 20;
 		float moveDistanceMax = 10;
 		if (m_bCloseRangeCombat)
 		{
@@ -106,8 +206,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				case EAIThreatState.VIGILANT:
 				{
 					coverSearchDistMin = 2.0;
-					coverSearchDistMax = 20.0;
-					moveDistanceMax = 12.0;
+					coverSearchDistMax = 15.0;
+					moveDistanceMax = 10.0;
 					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eMovementType = EMovementType.SPRINT;
 					rq.m_eStanceEnd = ECharacterStance.PRONE;
@@ -117,8 +217,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				default:
 				{
 					coverSearchDistMin = 2.0;
-					coverSearchDistMax = 20.0;
-					moveDistanceMax = 15.0; // Shouldn't be so large because we are sprinting and can't shoot
+					coverSearchDistMax = 15.0;
+					moveDistanceMax = 12.0; // Shouldn't be so large because we are sprinting and can't shoot
 					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eMovementType = EMovementType.SPRINT;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
@@ -389,7 +489,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	// If we are between weaponMinDist and 'optimal' dist, we don't need to move closer to tgt
 	override protected static float ResolveOptimalDistance(float weaponMinDist)
 	{
-		return Math.Max(weaponMinDist + 10.0, 10.0);
+		return Math.Max(weaponMinDist + 15.0, 10.0);
 	}
 	
 	protected override void PushRequestFFAvoidance()
@@ -416,8 +516,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_eStanceMoving = m_CharacterController.GetStance(); // Don't change stance
 		rq.m_eStanceEnd = rq.m_eStanceMoving;
 		rq.m_vMovePos = ResolveRequestTargetPos();
-		rq.m_eMovementType = EMovementType.WALK;
-		rq.m_fMoveDistance = 2.0;
+		rq.m_eMovementType = EMovementType.RUN;
+		rq.m_fMoveDistance = 5.0;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
 		

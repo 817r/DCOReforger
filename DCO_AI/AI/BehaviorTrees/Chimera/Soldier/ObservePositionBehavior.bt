@@ -3,7 +3,7 @@ BehaviorTree {
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos 113.476 -880.92
+   EditorPos 121.476 -880.92
    Nodes {
     Parallel Parallel {
      Name "Parallel"
