@@ -11,15 +11,15 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
      Nodes {
       Sequence Sequence {
        Name "Sequence"
-       EditorPos 169.684 318.684
+       EditorPos -235.316 308.684
        Nodes {
         Sequence Sequence {
          Name "Sequence"
-         EditorPos -399.474 749.788
+         EditorPos -1239.474 748.955
          Nodes {
           SCR_AIGetMoveFromDangerBehaviorParameters "SCR_AI Get Move From Danger Behavior Parameters" {
            Name "SCR_AI Get Move From Danger Behavior Parameters"
-           EditorPos -1608.916 1049.417
+           EditorPos -1931.416 1054.417
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
              Port 1
@@ -33,13 +33,13 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
           }
           AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
            Name "Character Set Movement Speed"
-           EditorPos -856.547 1052.881
+           EditorPos -1179.047 1057.881
            "Movement speed" SPRINT
            "Input Movement speed" -1
           }
           SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
            Name "SCR_AI Send Order_ Stance"
-           EditorPos -430.833 1060.167
+           EditorPos -797.619 1066.596
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -81,7 +81,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
              PortName "PositionOut"
             }
            }
-           m_fDistance 50
+           m_fDistance 10
           }
           SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
            Name "SCR_AI Create Basic Cover Query Props"
@@ -102,7 +102,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
              PortName "CoverQueryProps"
             }
            }
-           m_fRadius 10
+           m_fRadius 7
            m_bSelectHighestScoreCover 1
           }
           SCR_AIFindCover "SCR_AI Find Cover" {
@@ -123,7 +123,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
           }
           SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
            Name "SCR_AI Get Cover Parameters"
-           EditorPos 1388 1079
+           EditorPos 1373.833 1076.5
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port 7
@@ -147,7 +147,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
           }
           AITaskMove Move {
            Name "Move"
-           EditorPos 1843.438 1030.743
+           EditorPos 1851.771 1035.743
            InTargetLocation 0
            PrecisionXZ 3
           }
@@ -171,7 +171,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
           }
           AITaskReturnState "Return State" {
            Name "Return State"
-           EditorPos 2652.286 1020.5
+           EditorPos 2667.286 1048.833
            Result RUNNING
           }
          }
@@ -185,7 +185,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
         AITaskIdle Idle {
          Name "Idle"
          EditorPos 636.583 348.25
-         Period 10
+         Period 3
          PeriodRandom 0
         }
         SCR_AIFailAction "SCR_AI Fail Action" {
@@ -253,15 +253,15 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
  VariablesRefs {
   VariableReference positionToRun {
    VariableType 0
-   EditorPos 1635.746 1029.688
+   EditorPos 1628.663 1034.688
   }
   VariableReference dangerPos {
    VariableType 2
-   EditorPos -1090.371 1062.291
+   EditorPos -1412.871 1067.291
   }
   VariableReference dangerEntity {
    VariableType 1
-   EditorPos -1094.833 1139.917
+   EditorPos -1417.333 1144.917
   }
   VariableReference dangerEntity {
    VariableType 1
@@ -273,7 +273,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
   }
   VariableReference searchCenter {
    VariableType 3
-   EditorPos 392.879 1099.848
+   EditorPos 387.879 1101.515
   }
   VariableReference coverQuer {
    VariableType 6

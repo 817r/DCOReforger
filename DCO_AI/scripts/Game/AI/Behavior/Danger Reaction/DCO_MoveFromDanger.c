@@ -29,7 +29,7 @@ modded class SCR_AIMoveFromDangerBehavior : SCR_AIBehaviorBase
 		
 		string aiMoveFromDangerActionState = "SCR_AIMoveFromDangerBehavior: DESELECTED";
 		
-		m_Utility.m_LookAction.LookAt(m_DangerPos, m_Utility.m_LookAction.PRIO_UNKNOWN_TARGET, 1.0);
+		m_Utility.m_LookAction.LookAt(m_DangerPos, m_Utility.m_LookAction.PRIO_UNKNOWN_TARGET, 2.0);
 	}
 
 	override void OnActionCompleted()

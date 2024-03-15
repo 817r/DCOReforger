@@ -160,36 +160,60 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
          }
         }
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 1776.167 981.667
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 1640.321 918.714
          Nodes {
-          DecoTestVariable "Test Variable" {
-           Name "Test Variable"
-           EditorPos 1659.333 1155.667
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 1664.024 1140
            Nodes {
-            RunBT RunBT {
-             Name "RunBT"
-             EditorPos 1507.083 1372.917
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 12
-               PortName "lastSeen"
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 1453 1307
+             Period 10
+            }
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 1679.5 1333.75
+             Nodes {
+              SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
+               Name "SCR_AI Visualize Debug"
+               EditorPos 1349.179 1522.5
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "DebugMessage"
+                }
+               }
+               m_sDebugMessage "Cover Manager"
+               m_eAICategory BEHAVIOR
+              }
+              RunBT RunBT {
+               Name "RunBT"
+               EditorPos 1645.754 1510.198
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 12
+                 PortName "lastSeen"
+                }
+               }
+               BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CoverManager.bt"
               }
              }
-             BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CoverManager.bt"
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 1891.048 1305.904
+             Period 10
             }
            }
-           InVariable 30
-           TestType EqualsValue
-           TestValue "false"
-          }
-          AITaskIdle Idle {
-           Name "Idle"
-           EditorPos 1883.334 1163.333
-           Period 10
           }
          }
+         NegativeCondition 1
+         InVariable 30
+         TestType EqualsValue
+         TestValue "true"
         }
         Selector Selector {
          Name "Selector"
@@ -197,7 +221,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          Nodes {
           DecoTestVariable "Test Variable" {
            Name "Test Variable"
-           EditorPos 1221.053 1905.386
+           EditorPos 1235.053 1905.386
            Nodes {
             Selector Selector {
              Name "Selector"
@@ -518,7 +542,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference targetLastSeenPosition {
    VariableType 1
-   EditorPos 809.732 1237.748
+   EditorPos 810.982 1237.748
   }
   VariableReference IsTargetVisible {
    VariableType 4
@@ -590,7 +614,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference inCover {
    VariableType 8
-   EditorPos 1493.333 1175.417
+   EditorPos 1468.929 1026.643
   }
  }
  Groups {

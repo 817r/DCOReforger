@@ -92,10 +92,26 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
        }
       }
-      RunBT RunBT {
-       Name "RunBT"
-       EditorPos -506 614
-       BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -411.5 433
+       Nodes {
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos -784 652
+         Period 3
+        }
+        RunBT RunBT {
+         Name "RunBT"
+         EditorPos -588 640
+         BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos -78.5 657
+         Period 7
+        }
+       }
       }
       Selector Selector {
        Name "Selector"

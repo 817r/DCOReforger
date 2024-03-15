@@ -1,3 +1,9 @@
+modded class SCR_AICombatMoveUtils
+{
+	static const float CLOSE_RANGE_COMBAT_DIST = 30.0;
+}
+
+
 modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 {
 
@@ -16,9 +22,9 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility = true;
 
-		float coverSearchDistMin = 5;
+		float coverSearchDistMin = 2;
 		float coverSearchDistMax = 35;
-		float moveDistanceMax = 30;
+		float moveDistanceMax = 10;
 		if (m_bCloseRangeCombat)
 		{
 			// Close range combat
@@ -31,7 +37,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					coverSearchDistMin = 2.0;
 					coverSearchDistMax = 8.0;
-					moveDistanceMax = 5.0;
+					moveDistanceMax = 3.0;
 					break;
 				}
 				case EAIThreatState.ALERTED:
@@ -39,26 +45,26 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					coverSearchDistMin = 2.0;
-					coverSearchDistMax = 10.0;
-					moveDistanceMax = 8.0;
+					coverSearchDistMax = 8.0;
+					moveDistanceMax = 5.0;
 					break;
 				}
 				case EAIThreatState.VIGILANT:
 				{
 					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					coverSearchDistMin = 5.0;
-					coverSearchDistMax = 15.0;
-					moveDistanceMax = 12.0;
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 10.0;
+					moveDistanceMax = 7.0;
 					break;
 				}
 				default:
 				{
-					rq.m_eStanceMoving = ECharacterStance.STAND;
-					rq.m_eStanceEnd = ECharacterStance.STAND;
-					coverSearchDistMin = 8.0;
-					coverSearchDistMax = 17.0;
-					moveDistanceMax = 15.0;
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 12.0;
+					moveDistanceMax = 10.0;
 					break;
 				}
 			}
@@ -78,19 +84,19 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				case EAIThreatState.THREATENED:
 				{
 					coverSearchDistMin = 2.0;
-					coverSearchDistMax = 20.0;
-					moveDistanceMax = 10.0;
+					coverSearchDistMax = 8.0;
+					moveDistanceMax = 5.0;
 					rq.m_eStanceMoving = ECharacterStance.PRONE;
-					rq.m_eMovementType = EMovementType.WALK;
+					rq.m_eMovementType = EMovementType.RUN;
 					rq.m_eStanceEnd = ECharacterStance.PRONE;
 					rq.m_bAimAtTarget = true;
 					break;
 				}
 				case EAIThreatState.ALERTED:
 				{
-					coverSearchDistMin = 4.0;
-					coverSearchDistMax = 22.0;
-					moveDistanceMax = 15.0;
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 12.0;
+					moveDistanceMax = 8.0;
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eMovementType = EMovementType.RUN;
 					rq.m_eStanceEnd = ECharacterStance.PRONE;
@@ -99,9 +105,9 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				}
 				case EAIThreatState.VIGILANT:
 				{
-					coverSearchDistMin = 7.0;
-					coverSearchDistMax = 22.0;
-					moveDistanceMax = 18.0;
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 20.0;
+					moveDistanceMax = 12.0;
 					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eMovementType = EMovementType.SPRINT;
 					rq.m_eStanceEnd = ECharacterStance.PRONE;
@@ -110,9 +116,9 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				}
 				default:
 				{
-					coverSearchDistMin = 10.0;
-					coverSearchDistMax = 25.0;
-					moveDistanceMax = 20.0; // Shouldn't be so large because we are sprinting and can't shoot
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 20.0;
+					moveDistanceMax = 15.0; // Shouldn't be so large because we are sprinting and can't shoot
 					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eMovementType = EMovementType.SPRINT;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
@@ -288,7 +294,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_eStanceMoving = ECharacterStance.STAND;
 		rq.m_eStanceEnd = ECharacterStance.CROUCH;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
-		rq.m_fMoveDistance = 15.0;
+		rq.m_fMoveDistance = 10.0;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
 		
@@ -383,7 +389,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	// If we are between weaponMinDist and 'optimal' dist, we don't need to move closer to tgt
 	override protected static float ResolveOptimalDistance(float weaponMinDist)
 	{
-		return Math.Max(weaponMinDist + 10.0, 15.0);
+		return Math.Max(weaponMinDist + 10.0, 10.0);
 	}
 	
 	protected override void PushRequestFFAvoidance()
@@ -401,7 +407,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		}
 		else
 		{
-			if (Math.RandomIntInclusive(2, 5) == 3)
+			if (Math.RandomIntInclusive(0, 1) == 1)
 				rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 			else
 				rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;

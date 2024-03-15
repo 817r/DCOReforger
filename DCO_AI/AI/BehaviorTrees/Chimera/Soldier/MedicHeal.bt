@@ -389,14 +389,9 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
                m_eItemType BANDAGE
                m_eGadgetType CONSUMABLE
               }
-              SCR_AISetGadgetRaisedMode "SCR_AI Set Gadget Raised Mode" {
-               Name "SCR_AI Set Gadget Raised Mode"
-               EditorPos 656.667 2158.333
-               m_bRaised 1
-              }
               SCR_AIPerformSmartHealing "SCR_AI Perform Smart Healing" {
                Name "SCR_AI Perform Smart Healing"
-               EditorPos 994.064 2149.764
+               EditorPos 937.473 2152.037
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
@@ -546,7 +541,7 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
   }
   VariableReference TargetEntity {
    VariableType 0
-   EditorPos 503.598 2318.567
+   EditorPos 639.312 2102.853
    Group "{5C68CAB1CBBDEA71}"
   }
   VariableReference TargetEntity {

@@ -1,4 +1,4 @@
-BehaviorTree {
+BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CoverManager.bt" {
  Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CoverManager.bt"
  Nodes {
   RootNode Root {
@@ -56,7 +56,7 @@ BehaviorTree {
         }
         AITaskCreatePosition "Create Position" {
          Name "Create Position"
-         EditorPos -380 877.143
+         EditorPos -380 890
          InRootVector 3
          OutPosition 11
         }
@@ -69,7 +69,7 @@ BehaviorTree {
        Nodes {
         SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
          Name "SCR_AI Create Basic Cover Query Props"
-         EditorPos 430 811.111
+         EditorPos 388 817.111
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 11
@@ -131,11 +131,12 @@ BehaviorTree {
         }
         AITaskChangeStance "Change Stance" {
          Name "Change Stance"
-         EditorPos 1874.167 794.167
+         EditorPos 1887.5 798.5
+         InStance -1
         }
         AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
          Name "Character Set Movement Speed"
-         EditorPos 2082.917 787.5
+         EditorPos 2106.917 781.5
          "Movement speed" SPRINT
         }
         AITaskMove Move {
@@ -143,14 +144,19 @@ BehaviorTree {
          EditorPos 2481.667 778.333
          InTargetLocation 9
         }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 2820 798
+         Period 1.2
+        }
         AITaskChangeStance "Change Stance" {
          Name "Change Stance"
-         EditorPos 2836 782
+         EditorPos 3014 778
          InStance 10
         }
         SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
          Name "SCR_AI Set Combat Move State"
-         EditorPos 3050 775.667
+         EditorPos 3228 771.667
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -167,10 +173,11 @@ BehaviorTree {
          }
          m_bSetInCover 1
          m_bSetExposedInCover 1
+         m_bExposedInCoverValue 1
         }
         SCR_AICompleteAction "SCR_AI Complete Action" {
          Name "SCR_AI Complete Action"
-         EditorPos 3335 787.5
+         EditorPos 3513 783.5
         }
        }
       }
@@ -288,11 +295,11 @@ BehaviorTree {
   }
   VariableReference coverStanceNorm {
    VariableType 8
-   EditorPos 2566.25 979.25
+   EditorPos 2750.25 1021.25
   }
   VariableReference friendlyPos {
    VariableType 9
-   EditorPos -141.429 912.857
+   EditorPos -137.143 921.428
   }
  }
  Groups {
