@@ -4,6 +4,7 @@ modded class SCR_AIDangerReaction : SCR_AIReactionBase
 	
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent) {}
 	
+<<<<<<< HEAD
 	bool IsDangerChanceByDistance(float distanceToDanger, out float dangerReactionChance)
 	{
 		dangerReactionChance = 90;
@@ -13,26 +14,23 @@ modded class SCR_AIDangerReaction : SCR_AIReactionBase
 		
 		return false;
 	}
+=======
+};
+>>>>>>> Reforger_1.1
 
-	bool IsMoveFromDangerChanceBySetting(SCR_AIUtilityComponent utility)
+modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
+{
+	protected static const float BULLET_IMPACT_DISTANCE_MAX_SQ = 15*15;
+	
+	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent)
 	{
-		DCO_AIInfoComponent aiInfoComponent = utility.m_DCO_AIInfoComponent;
+		float distanceSq = vector.DistanceSq(utility.GetOrigin(), dangerEvent.GetPosition());
+		if (distanceSq > BULLET_IMPACT_DISTANCE_MAX_SQ)
+			return false;
 		
-		if (aiInfoComponent)
-		{
-			float threatSuppressionIsDanger = 0.8;
-			
-			float threatSuppression = utility.m_ThreatSystem.GetThreatSuppression();
-			
-			if (utility.m_CombatComponent.GetCurrentTarget() == null)
-			{				
-				threatSuppressionIsDanger = 1;				
-			}
-			
-			if (Math.RandomInt(0,100) < 85)
-				return true;
-		}
+		IEntity shooter = dangerEvent.GetObject();
 		
+<<<<<<< HEAD
 		return false;
 	}
 	
@@ -51,6 +49,8 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		
 		IEntity shooter = dangerEvent.GetObject();
 		
+=======
+>>>>>>> Reforger_1.1
 		if (!shooter)
 			return false;
 		
@@ -63,11 +63,17 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		
 		float distanceToShooter = vector.Distance(utility.GetOrigin(), shooterPos);
 		
+<<<<<<< HEAD
 		if (utility.m_CombatComponent.GetCurrentTarget() == null && distanceToShooter > SCR_AICombatComponent.LONG_RANGE_FIRE_DISTANCE && shooter)
 		{
 			utility.AddAction(new SCR_AIMoveFromUnknownFire(utility, null, shooterPos, shooter));
 			//TODO: change combat type from SILENT
 		}
+=======
+
+		utility.AddAction(new SCR_AIMoveFromUnknownFire(utility, null, shooterPos, shooter));
+
+>>>>>>> Reforger_1.1
 
 		threatSystem.ThreatBulletImpact(dangerEvent.GetCount());
 		

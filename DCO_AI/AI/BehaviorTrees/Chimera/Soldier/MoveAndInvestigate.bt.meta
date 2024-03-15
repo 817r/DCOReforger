@@ -9,6 +9,8 @@ MetaFileClass {
   }
   BehaviorTreeResourceClass PS4 : PC {
   }
+  BehaviorTreeResourceClass PS5 : PC {
+  }
   BehaviorTreeResourceClass HEADLESS : PC {
   }
  }

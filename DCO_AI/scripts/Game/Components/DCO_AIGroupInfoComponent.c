@@ -2,6 +2,16 @@ class DCO_AIInfoGroupComponentClass: ScriptComponentClass
 {
 };
 
+enum DCO_EFormationType
+{
+	WEDGE,
+	LINE,
+	STAGGERED_COL,
+	VEE,
+	DIAMOND,
+	AUTONOMOUS
+};
+
 enum DCO_ECombatBehaviorType
 {
 	DEFAULT,
@@ -29,14 +39,15 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	private int m_iCombatCoverChance;
 	private int m_iCombatDefendChance;
 
-	private DCO_ECombatBehaviorType m_eCombatBehaviorType;
-	private DCO_ECombatMovementType m_eCombatMovementType;
+	private DCO_ECombatBehaviorType m_eCombatBehaviorType = DCO_ECombatBehaviorType.DEFAULT;
+	private DCO_ECombatMovementType m_eCombatMovementType = DCO_ECombatMovementType.AUTONOMOUS;
+	private DCO_EFormationType m_eFormation;
 	
 	private AIFormationComponent m_AIFormationComponent;
 	private SCR_AIConfigComponent m_SCR_AIConfigComponent;
 	private SCR_AISettingsComponent m_SCR_AISettingsComponent;
 	
-	private int m_iWeaponFiredReactionDistance = SCR_AIReactionBase.AI_WEAPONFIRED_REACTION_DISTANCE;
+	private int m_iWeaponFiredReactionDistance = SCR_AICombatComponent.LONG_RANGE_FIRE_DISTANCE;
 	
 	private float m_fThrowGrenadeTime;
 	private bool m_bThrowGrenade = true;
@@ -75,13 +86,18 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	{				
 		if (m_eCombatMovementType == DCO_ECombatMovementType.AUTONOMOUS)
 		{
-			m_eCombatMovementType = DCO_ECombatMovementType.GROUP;
+			m_eCombatMovementType = DCO_ECombatMovementType.INDIVIDUAL;
 		}
 		
 		if (m_eCombatBehaviorType == DCO_ECombatBehaviorType.DEFAULT)
 		{
 			m_eCombatBehaviorType = DCO_ECombatBehaviorType.OFFENSIVE;
 		}
+	}
+	
+	void SetFormaton(DCO_EFormationType formation)
+	{
+		m_eFormation = formation;
 	}
 
 	override protected void OnPostInit(IEntity owner)

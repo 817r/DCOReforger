@@ -1,9 +1,0 @@
-BehaviorTree {
- Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Scanning.bt"
- Nodes {
-  RootNode Root {
-   Name "Root"
-   EditorPos -50 -45
-  }
- }
-}

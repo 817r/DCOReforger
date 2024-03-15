@@ -1,0 +1,661 @@
+BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -1347.25 -1741.25
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos -1363.75 -1535
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -1628.833 -1314
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -2352.499 -767.889
+         Nodes {
+          SCR_AIPrintDebug "SCR_AI Print Debug" {
+           Name "SCR_AI Print Debug"
+           EditorPos -2524.166 -631.222
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "DebugMessage"
+            }
+           }
+           Group "{5C68CAB1D2BCA916}"
+           m_bIncludeMe 1
+           m_sDebugMessage "Medic behavior started"
+          }
+          SCR_AIGetMedicHealBehaviorParameters "SCR_AI Get Medic Heal Behavior Parameters" {
+           Name "SCR_AI Get Medic Heal Behavior Parameters"
+           EditorPos -2320 -632.857
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 2
+             PortName "Entity"
+            }
+           }
+           Group "{5C68CAB1D2BCA916}"
+          }
+         }
+         Group "{5C68CAB1D2BCA916}"
+        }
+        Selector Selector {
+         Name "Selector"
+         EditorPos -1039 -346.5
+         Nodes {
+          DecoratorEntity Entity {
+           Name "Entity"
+           EditorPos -5211.079 432.752
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos -5105.579 623.752
+             Nodes {
+              SCR_AICompleteAction "SCR_AI Complete Action" {
+               Name "SCR_AI Complete Action"
+               EditorPos -5225.412 758.752
+               Group "{5C68CAB0E340F45A}"
+              }
+              AITaskReturnState "Return State" {
+               Name "Return State"
+               EditorPos -5019.787 753.252
+               Group "{5C68CAB0E340F45A}"
+               Result RUNNING
+              }
+             }
+             Group "{5C68CAB0E340F45A}"
+            }
+           }
+           Group "{5C68CAB0E340F45A}"
+           NegativeCondition 1
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           InEntity 14
+           TEST {
+            DecoratorTestNotNull "{5C68A3CBB8B3C747}" {
+            }
+           }
+          }
+          DecoratorEntity Entity {
+           Name "Entity"
+           EditorPos -4570.59 490.468
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos -4468.811 693.558
+             Nodes {
+              SCR_AIFailAction "SCR_AI Fail Action" {
+               Name "SCR_AI Fail Action"
+               EditorPos -4577.677 835.568
+               Group "{5C68CAB0C17AD631}"
+              }
+              AITaskReturnState "Return State" {
+               Name "Return State"
+               EditorPos -4429.444 832.885
+               Group "{5C68CAB0C17AD631}"
+               Result RUNNING
+              }
+             }
+             Group "{5C68CAB0C17AD631}"
+            }
+           }
+           Group "{5C68CAB0C17AD631}"
+           NegativeCondition 1
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           InEntity 15
+           TEST {
+            DecoratorTestDamageIsAlive "{5C68A3D7F012E593}" {
+            }
+           }
+          }
+          DecoratorEntity Entity {
+           Name "Entity"
+           EditorPos -3608.975 530.975
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos -3501.972 742.301
+             Nodes {
+              SCR_AIGetPosForwardToTarget "SCR_AI Get Pos Forward To Target" {
+               Name "SCR_AI Get Pos Forward To Target"
+               EditorPos -3929.912 927.718
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 13
+                 PortName "Target"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Distance"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 12
+                 PortName "ResultVector"
+                }
+               }
+               Group "{5C68CAB0FA3C557A}"
+               m_Distance -3
+              }
+              Decorator Decorator {
+               Name "Decorator"
+               EditorPos -3551.55 925.656
+               Nodes {
+                AITaskMove Move {
+                 Name "Move"
+                 EditorPos -3590.755 1055.011
+                 Group "{5C68CAB0FA3C557A}"
+                 InTargetLocation 12
+                }
+               }
+               Group "{5C68CAB0FA3C557A}"
+               ForceNodeResult Success
+              }
+              SCR_AICompleteAction "SCR_AI Complete Action" {
+               Name "SCR_AI Complete Action"
+               EditorPos -3318.333 930
+               Group "{5C68CAB0FA3C557A}"
+              }
+              AITaskReturnState "Return State" {
+               Name "Return State"
+               EditorPos -3050 920.667
+               Group "{5C68CAB0FA3C557A}"
+               Result RUNNING
+              }
+             }
+             Group "{5C68CAB0FA3C557A}"
+            }
+           }
+           Group "{5C68CAB0FA3C557A}"
+           NegativeCondition 1
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           InEntity 10
+           TEST {
+            SCR_AIDecoTestCharacterWounded "{5C74EA93003F8322}" {
+            }
+           }
+          }
+          SCR_AIDecoHasRole "SCR_AI Deco Has Role" {
+           Name "SCR_AI Deco Has Role"
+           EditorPos -2596.25 534
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos -2490.5 718.333
+             Nodes {
+              SCR_AIGetMyGroup "SCR_AI Get My Group" {
+               Name "SCR_AI Get My Group"
+               EditorPos -2665.08 848.963
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 8
+                 PortName "GroupOut"
+                }
+               }
+               Group "{5C68CAB0CFA24838}"
+              }
+              SCR_AISendMessage_HealFailed "SCR_AI Send Message_ Heal Failed" {
+               Name "SCR_AI Send Message_ Heal Failed"
+               EditorPos -2413.67 900.513
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 8
+                 PortName "Receiver"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 9
+                 PortName "TargetEntity"
+                }
+               }
+               Group "{5C68CAB0CFA24838}"
+               m_string "HealingFailed - no bandage "
+              }
+              SCR_AIGetPosForwardToTarget "SCR_AI Get Pos Forward To Target" {
+               Name "SCR_AI Get Pos Forward To Target"
+               EditorPos -2016.25 908.167
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 9
+                 PortName "Target"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Distance"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 11
+                 PortName "ResultVector"
+                }
+               }
+               Group "{5C68CAB0CFA24838}"
+               m_Distance -3
+              }
+              Decorator Decorator {
+               Name "Decorator"
+               EditorPos -1636.638 916.938
+               Nodes {
+                AITaskMove Move {
+                 Name "Move"
+                 EditorPos -1679.176 1091.293
+                 Group "{5C68CAB0CFA24838}"
+                 InTargetLocation 11
+                }
+               }
+               Group "{5C68CAB0CFA24838}"
+               ForceNodeResult Success
+              }
+              SCR_AIFailAction "SCR_AI Fail Action" {
+               Name "SCR_AI Fail Action"
+               EditorPos -1345.416 917.083
+               Group "{5C68CAB0CFA24838}"
+              }
+              AITaskReturnState "Return State" {
+               Name "Return State"
+               EditorPos -1136.75 899.917
+               Group "{5C68CAB0CFA24838}"
+               Result RUNNING
+              }
+             }
+             Group "{5C68CAB0CFA24838}"
+            }
+           }
+           Group "{5C68CAB0CFA24838}"
+           NegativeCondition 1
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           m_eUnitRole MEDIC
+          }
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos -753.667 1315.334
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos -2210.666 1872.833
+             Nodes {
+              AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+               Name "Character Set Movement Speed"
+               EditorPos -2636.25 2062.083
+               Group "{5C68CAB173FEC84F}"
+               "Movement speed" RUN
+              }
+              AITaskMoveToEntity "Move To Entity" {
+               Name "Move To Entity"
+               EditorPos -2068.523 2062.119
+               Group "{5C68CAB173FEC84F}"
+               PrecisionXZ 3.5
+               InEntity 7
+              }
+             }
+             Group "{5C68CAB173FEC84F}"
+            }
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos -1017.291 1874.251
+             Nodes {
+              AITaskChangeStance "Change Stance" {
+               Name "Change Stance"
+               EditorPos -1622.167 2121.5
+               Group "{5C68CAB1F9299525}"
+               Stance CROUCH
+              }
+              SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+               Name "SCR_AI Get Entity Position"
+               EditorPos -1205.614 2121.167
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 0
+                 PortName "Entity"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 5
+                 PortName "Position"
+                }
+               }
+               Group "{5C68CAB1F9299525}"
+               m_fOffsetLocal 0.7 0 0
+              }
+              Parallel Parallel {
+               Name "Parallel"
+               EditorPos -791.667 2105.834
+               Nodes {
+                AITaskMove Move {
+                 Name "Move"
+                 EditorPos -944.088 2257.417
+                 Group "{5C68CAB1F9299525}"
+                 InTargetLocation 5
+                 PrecisionXZ 0.3
+                 OrientationType ToPoint
+                }
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos -634.167 2254.584
+                 Group "{5C68CAB1F9299525}"
+                 PeriodRandom 0
+                }
+               }
+               Group "{5C68CAB1F9299525}"
+               UseChildResult 1
+              }
+              AITaskCharacterAim "Character Aim" {
+               Name "Character Aim"
+               EditorPos -404.739 2066.072
+               Group "{5C68CAB1F9299525}"
+               InAimAtPosition -1
+               InEntity 6
+               PrecisionXZ 30
+               PrecisionY 30
+               InAimOffset -1
+               UseADS 0
+              }
+             }
+             Group "{5C68CAB1F9299525}"
+            }
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 483.643 1867.476
+             Nodes {
+              AITaskChangeStance "Change Stance" {
+               Name "Change Stance"
+               EditorPos -48.333 2156.667
+               Group "{5C68CAB1CBBDEA71}"
+               Stance CROUCH
+              }
+              AITaskIdle Idle {
+               Name "Idle"
+               EditorPos 192.154 2155.322
+               Group "{5C68CAB1CBBDEA71}"
+               Period 0.5
+               PeriodRandom 0
+              }
+              SCR_AITakeGadgetInLeftHand "SCR_AI Take Gadget In Left Hand" {
+               Name "SCR_AI Take Gadget In Left Hand"
+               EditorPos 336.258 2144.517
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 16
+                 PortName "ItemOut"
+                }
+               }
+               Group "{5C68CAB1CBBDEA71}"
+               m_eItemType BANDAGE
+               m_eGadgetType CONSUMABLE
+              }
+              SCR_AIPerformSmartHealing "SCR_AI Perform Smart Healing" {
+               Name "SCR_AI Perform Smart Healing"
+               EditorPos 937.473 2152.037
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "UserAction"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 1
+                 PortName "TargetEntity"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 16
+                 PortName "ItemToUse"
+                }
+               }
+               Group "{5C68CAB1CBBDEA71}"
+              }
+             }
+             Group "{5C68CAB1CBBDEA71}"
+            }
+           }
+          }
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos -62.667 100.334
+           Nodes {
+            SCR_AIUnEquipItems "SCR_AI Un Equip Items" {
+             Name "SCR_AI Un Equip Items"
+             EditorPos -542.512 304.119
+             Group "{5C68CAB1D777E006}"
+             m_bKeepRunningUntilAborted 0
+            }
+            SCR_AIPrintDebug "SCR_AI Print Debug" {
+             Name "SCR_AI Print Debug"
+             EditorPos -201.035 306.952
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "DebugMessage"
+              }
+             }
+             Group "{5C68CAB1D777E006}"
+             m_bIncludeMe 1
+             m_sDebugMessage "Unable to heal unit: "
+            }
+            SCR_AIGetMyGroup "SCR_AI Get My Group" {
+             Name "SCR_AI Get My Group"
+             EditorPos -23.548 306.286
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 3
+               PortName "GroupOut"
+              }
+             }
+             Group "{5C68CAB1D777E006}"
+            }
+            SCR_AISendMessage_HealFailed "SCR_AI Send Message_ Heal Failed" {
+             Name "SCR_AI Send Message_ Heal Failed"
+             EditorPos 229.945 432.003
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 3
+               PortName "Receiver"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 4
+               PortName "TargetEntity"
+              }
+             }
+             Group "{5C68CAB1D777E006}"
+            }
+            AITaskReturnState "Return State" {
+             Name "Return State"
+             EditorPos 553.452 325.857
+             Group "{5C68CAB1D777E006}"
+             Result RUNNING
+            }
+            SCR_AIFailAction "SCR_AI Fail Action" {
+             Name "SCR_AI Fail Action"
+             EditorPos 834.191 325.354
+             Group "{5C68CAB1D777E006}"
+            }
+           }
+           Group "{5C68CAB1D777E006}"
+          }
+         }
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -1158 -1293.75
+       Nodes {
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos -1236.667 -1111.667
+         Period 10
+        }
+        SCR_AIFailAction "SCR_AI Fail Action" {
+         Name "SCR_AI Fail Action"
+         EditorPos -1051.833 -1105
+        }
+       }
+      }
+     }
+     UseChildResult 1
+    }
+   }
+  }
+ }
+ Variables {
+  Variable TargetEntity {
+   VariableName "TargetEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable item {
+   VariableName "item"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable myGroup {
+   VariableName "myGroup"
+   VariableTypeName "AIGroup"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable providerMoveOutPos {
+   VariableName "providerMoveOutPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable MovePosition {
+   VariableName "MovePosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos -1415.971 2156.52
+   Group "{5C68CAB1F9299525}"
+  }
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos 639.312 2102.853
+   Group "{5C68CAB1CBBDEA71}"
+  }
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos -1884.671 -585.842
+   Group "{5C68CAB1D2BCA916}"
+  }
+  VariableReference myGroup {
+   VariableType 2
+   EditorPos -11.6 448.159
+   Group "{5C68CAB1D777E006}"
+  }
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos -22.683 535.194
+   Group "{5C68CAB1D777E006}"
+  }
+  VariableReference MovePosition {
+   VariableType 4
+   EditorPos -1181.058 2235.286
+   Group "{5C68CAB1F9299525}"
+  }
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos -602.751 2130
+   Group "{5C68CAB1F9299525}"
+  }
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos -2272.302 2094.73
+   Group "{5C68CAB173FEC84F}"
+  }
+  VariableReference myGroup {
+   VariableType 2
+   EditorPos -2675.632 975.836
+   Group "{5C68CAB0CFA24838}"
+  }
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos -2686.715 1061.442
+   Group "{5C68CAB0CFA24838}"
+  }
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos -3818.702 628.464
+   Group "{5C68CAB0FA3C557A}"
+  }
+  VariableReference providerMoveOutPos {
+   VariableType 3
+   EditorPos -2158.164 1252.98
+   Group "{5C68CAB0CFA24838}"
+  }
+  VariableReference providerMoveOutPos {
+   VariableType 3
+   EditorPos -3879.743 1090.031
+   Group "{5C68CAB0FA3C557A}"
+  }
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos -4135.786 963.893
+   Group "{5C68CAB0FA3C557A}"
+  }
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos -5407.689 527.169
+   Group "{5C68CAB0E340F45A}"
+  }
+  VariableReference TargetEntity {
+   VariableType 0
+   EditorPos -4779.149 586.711
+   Group "{5C68CAB0C17AD631}"
+  }
+  VariableReference item {
+   VariableType 1
+   EditorPos 550.223 2412
+   Group "{5C68CAB1CBBDEA71}"
+  }
+ }
+ Groups {
+  BTGroup "{5C68CAB0E340F45A}" {
+   Name "Target doesn't exist any more"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{5C68CAB0FA3C557A}" {
+   Name "Target is not wounded any more"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{5C68CAB0CFA24838}" {
+   Name "We don't have medical equipment any more"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{5C68CAB0C17AD631}" {
+   Name "Target is not alive any more"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{5C68CAB173FEC84F}" {
+   Name "Move to target imprecisely"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{5C68CAB1F9299525}" {
+   Name "Move precisely to target side"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{5C68CAB1CBBDEA71}" {
+   Name "Treat the target"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{5C68CAB1D777E006}" {
+   Name "Report heal failure to group"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{5C68CAB1D2BCA916}" {
+   Name "Init"
+   Color 0.6 0.6 0.6 0.251
+  }
+ }
+}

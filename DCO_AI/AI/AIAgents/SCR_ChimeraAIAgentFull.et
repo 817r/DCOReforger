@@ -2,43 +2,15 @@ SCR_ChimeraAIAgent {
  ID "50C4E8413B94E8B0"
  components {
   AIFormationComponent "{50C4E8410B604B4B}" {
-   DefaultFormation "Line"
+   DefaultFormation "Vee"
   }
-  AIPathfindingComponent "{50C4E8411A108E21}" {
-   "Search half extend XZ" 30
-   "Search half extend Y" 5
+  DCO_AIInfoComponent "{60DAF5419FFD87E8}" {
   }
-  DCO_AIInfoComponent "{6084F3ED01E80953}" {
+  DCO_SkillComponent "{60DAF54189CA2E7C}" {
   }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
-   m_Skill 1
-   m_EnableAimingError 0
-   m_aDefaultReactions {
-    SCR_AIIdleReaction "{5458F49C533BDFBA}" {
-     m_OverrideBehaviorTree "'AI\BehaviorTrees\Chimera\Soldier\Idle.bt'"
-    }
-   }
-   m_aDangerReactions {
-    SCR_AIDangerReaction_DamageTaken "{5464DCF38C606017}" {
-    }
-    SCR_AIDangerReaction_ProjectileHit "{5464DCF38EF5DDBF}" {
-    }
-    SCR_AIDangerReaction_WeaponFired "{5464DCF38FDA35C3}" {
-    }
-    SCR_AIDangerReaction_GrenadeLanding "{566CF439566A6ED6}" {
-    }
-    SCR_AIDangerReaction_StartedBleeding "{568E790814AEEDFB}" {
-    }
-    SCR_AIDangerReaction_DoorMovement "{5982DA42070FB2D2}" {
-    }
-   }
-   m_aGoalReactions {
-    SCR_AIGoalReaction_Investigate "{5854E5A1C9811F68}" {
-    }
-   }
-   m_sDefaultWeaponBehaviorTree "{E707BBE068AF51E4}AI/BehaviorTrees/Chimera/Soldier/Attack.bt"
+   m_Skill 0.8
+   m_EnableLeaderStop 1
   }
  }
- DangerEventRange 800
- DynamicsimLastlodDistance 0
 }
