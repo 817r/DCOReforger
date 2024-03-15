@@ -14,6 +14,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
+	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 2.0;
 
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 500.0;
 	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 0.8;
