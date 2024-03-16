@@ -170,7 +170,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
            Nodes {
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos 1446.071 1342.714
+             EditorPos 1448.071 1342.714
              Period 10
              PeriodRandom 0
             }

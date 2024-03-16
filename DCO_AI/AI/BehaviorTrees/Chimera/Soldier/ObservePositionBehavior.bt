@@ -70,7 +70,7 @@ BehaviorTree {
                Nodes {
                 SCR_AITakeGadgetInLeftHand "SCR_AI Take Gadget In Left Hand" {
                  Name "SCR_AI Take Gadget In Left Hand"
-                 EditorPos -552.585 730.951
+                 EditorPos -554.252 729.284
                  OutPorts {
                   SingleOutputPortContainer SingleOutputPortContainer {
                    Port -1
@@ -82,7 +82,7 @@ BehaviorTree {
                 }
                 SCR_AISetGadgetRaisedMode "SCR_AI Set Gadget Raised Mode" {
                  Name "SCR_AI Set Gadget Raised Mode"
-                 EditorPos -237.828 733.012
+                 EditorPos -236.161 731.345
                  Group "{5C56A6044E03EE3C}"
                  m_bRaised 1
                  m_bKeepRunningUntilAborted 0
@@ -207,7 +207,7 @@ BehaviorTree {
            Nodes {
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos 2061.305 881.563
+             EditorPos 2059.638 881.563
              Period 1
              PeriodKey 2
             }
@@ -250,7 +250,7 @@ BehaviorTree {
           }
           SCR_AIDecoCombatMove_AimingAllowed "SCR_AI Deco Combat Move_ Aiming Allowed" {
            Name "SCR_AI Deco Combat Move_ Aiming Allowed"
-           EditorPos 3927.5 457.5
+           EditorPos 3924.167 457.5
            Nodes {
             Parallel Parallel {
              Name "Parallel"

@@ -3,28 +3,28 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos 86.667 -541.667
+   EditorPos 971.667 -701.667
    Nodes {
     Parallel Parallel {
      Name "Parallel"
-     EditorPos 88.889 -363.015
+     EditorPos 960.556 -371.348
      Nodes {
       SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
        Name "SCR_AI Deco Is Above Threat Level"
-       EditorPos -216.547 -109.262
+       EditorPos 56.191 -6.643
        Nodes {
         Sequence Sequence {
          Name "Sequence"
-         EditorPos -125.778 108
+         EditorPos 141.246 238.833
          Nodes {
           AITaskIdle Idle {
            Name "Idle"
-           EditorPos -316.547 301.19
+           EditorPos -309.047 438.69
            Period 5
           }
           SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
            Name "SCR_AI Visualize Debug"
-           EditorPos -113.226 298.361
+           EditorPos -128.583 438.718
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -34,9 +34,28 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
            m_sDebugMessage "Not Threatened"
            m_eAICategory BEHAVIOR
           }
+          SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
+           Name "SCR_AI Set Combat Move State"
+           EditorPos 194.167 451
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "InCover"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "ExposedInCover"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "AimAtTarget"
+            }
+           }
+           m_bReleaseCoverLock 1
+          }
           AITaskReturnState "Return State" {
            Name "Return State"
-           EditorPos 130.5 299
+           EditorPos 621.571 424.357
            Result RUNNING
           }
          }
@@ -53,22 +72,32 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
       }
       Sequence Sequence {
        Name "Sequence"
-       EditorPos 2712.056 511.556
+       EditorPos 2664.556 444.056
        Nodes {
         Decorator Decorator {
          Name "Decorator"
-         EditorPos 315.5 1185.833
+         EditorPos -187 1190.833
          Nodes {
           SCR_AIDeploySmokeCover "SCR_AI Deploy Smoke Cover" {
            Name "SCR_AI Deploy Smoke Cover"
-           EditorPos 300 1368.333
+           EditorPos -202.5 1373.333
           }
          }
          ForceNodeResult Success
         }
+        AITaskChangeStance "Change Stance" {
+         Name "Change Stance"
+         EditorPos 79.833 1188.5
+         InStance -1
+        }
+        AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+         Name "Character Set Movement Speed"
+         EditorPos 307.333 1190.833
+         "Movement speed" RUN
+        }
         SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
          Name "SCR_AI Create Basic Cover Query Props"
-         EditorPos 630.833 1197.833
+         EditorPos 699.166 1194.5
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -90,7 +119,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
         }
         SCR_AIFindCover "SCR_AI Find Cover" {
          Name "SCR_AI Find Cover"
-         EditorPos 1223.889 1178.889
+         EditorPos 1317.222 1175.556
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 4
@@ -106,7 +135,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
         }
         SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
          Name "SCR_AI Get Cover Parameters"
-         EditorPos 1616.666 1165.556
+         EditorPos 1709.999 1162.223
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 5
@@ -131,7 +160,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
         AITaskMove Move {
          Name "Move"
          EditorPos 2460 1171.666
-         InTargetLocation 9
+         InTargetLocation 6
         }
         AITaskIdle Idle {
          Name "Idle"
@@ -149,8 +178,8 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
             AITaskSetVariable "Set Variable" {
              Name "Set Variable"
              EditorPos 2653.214 1676.905
-             OutVariable 12
-             InVariable 14
+             OutVariable 11
+             InVariable 13
             }
            }
            InPorts {
@@ -159,20 +188,21 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
              PortName "ThresholdIn"
             }
            }
-           NegativeCondition 1
+           m_threatThreshold THREATENED
           }
           AITaskSetVariable "Set Variable" {
            Name "Set Variable"
            EditorPos 3303.333 1385.833
-           OutVariable 11
-           InVariable 13
+           OutVariable 10
+           InVariable 12
           }
          }
         }
         AITaskChangeStance "Change Stance" {
          Name "Change Stance"
          EditorPos 3830.024 1234.238
-         InStance 11
+         Stance CROUCH
+         InStance 10
         }
         SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
          Name "SCR_AI Set Combat Move State"
@@ -192,6 +222,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
           }
          }
          m_bSetInCover 1
+         m_bInCoverValue 1
          m_bSetExposedInCover 1
          m_bExposedInCoverValue 1
         }
@@ -278,7 +309,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
        EditorPos -766.667 1006.667
        Group "{60DECB6AABBC261D}"
        InRootVector 3
-       OutPosition 10
+       OutPosition 9
       }
      }
      Group "{60DECB6AABBC261D}"
@@ -377,27 +408,23 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
   }
   VariableReference coverQuery {
    VariableType 4
-   EditorPos 1007.222 1327.778
+   EditorPos 1100.555 1324.445
   }
   VariableReference coverLock1 {
    VariableType 5
-   EditorPos 1412.111 1327.111
+   EditorPos 1505.444 1323.778
   }
   VariableReference coverPos {
    VariableType 6
-   EditorPos 1937.083 1165
+   EditorPos 2030.416 1161.667
   }
   VariableReference coverStanceHdie {
    VariableType 7
-   EditorPos 1933.75 1305
+   EditorPos 2027.083 1301.667
   }
   VariableReference coverStanceNorm {
    VariableType 8
-   EditorPos 1929.583 1235
-  }
-  VariableReference coverPos {
-   VariableType 6
-   EditorPos 2235.322 1261.572
+   EditorPos 2022.916 1231.667
   }
   VariableReference friendlyPos {
    VariableType 9
@@ -409,7 +436,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
   }
   VariableReference expectedStance {
    VariableType 10
-   EditorPos 2899.278 1717.861
+   EditorPos 2879.278 1767.861
   }
   VariableReference coverStanceNorm {
    VariableType 8

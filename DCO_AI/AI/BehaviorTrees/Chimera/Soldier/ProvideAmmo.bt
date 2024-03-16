@@ -11,18 +11,18 @@ BehaviorTree {
      Nodes {
       Sequence Sequence {
        Name "Sequence - Init"
-       EditorPos 709.714 684.73
+       EditorPos 614.714 769.73
        Nodes {
         AITaskGetControlledEntity "Get Controlled Entity" {
          Name "Get Controlled Entity"
-         EditorPos 171.666 940.583
+         EditorPos -347.334 1083.583
          InEntity -1
          OutControlledEntity 6
          OutAgent -1
         }
         SCR_AIGetProvideAmmoBehaviorParameters "SCR_AI Get Provide Ammo Behavior Parameters" {
          Name "SCR_AI Get Provide Ammo Behavior Parameters"
-         EditorPos 454.432 937.045
+         EditorPos -64.568 1080.045
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
            Port 4
@@ -36,14 +36,13 @@ BehaviorTree {
         }
         SCR_AISpawnMagazines "SCR_AI Spawn Magazines" {
          Name "SCR_AI Spawn Magazines"
-         EditorPos 1275.714 961.429
+         EditorPos 740.297 1079.429
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 5
            PortName "MagazineWell"
           }
          }
-         m_iMagazineCount 5
         }
        }
       }
@@ -72,6 +71,7 @@ BehaviorTree {
            PortName "MagazineWell"
           }
          }
+         m_FractionOfMagazines 0.25
         }
         AITaskCreatePosition "Create Position" {
          Name "Create Position"
@@ -82,7 +82,7 @@ BehaviorTree {
         }
         SCR_AISendGoalMessage_PickupInventoryItems "SCR_AI Send Goal Message_ Pickup Inventory Items" {
          Name "SCR_AI Send Goal Message_ Pickup Inventory Items"
-         EditorPos 2006.364 1716.705
+         EditorPos 2002.614 1719.205
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 1
@@ -106,7 +106,7 @@ BehaviorTree {
           }
          }
          m_sText "ProvideAmmo"
-         m_fPriorityLevel 40
+         m_fPriorityLevel 60
         }
         SCR_AIGetRandomPointWithExclude "SCR_AI Get Random Point With Exclude" {
          Name "SCR_AI Get Random Point With Exclude"
@@ -201,6 +201,12 @@ BehaviorTree {
    VariableExposedInput 0
    VariableExposedOutput 0
   }
+  Variable magwell {
+   VariableName "magwell"
+   VariableTypeName "MagazineWellUK59Class"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
  }
  VariablesRefs {
   VariableReference pickupAmmoPosition {
@@ -221,15 +227,15 @@ BehaviorTree {
   }
   VariableReference ammoConsumerEntity {
    VariableType 0
-   EditorPos 915.381 958.19
+   EditorPos 396.381 1101.19
   }
   VariableReference magazineWellType {
    VariableType 3
-   EditorPos 916.666 1047.262
+   EditorPos 397.666 1190.262
   }
   VariableReference controlledEntity {
    VariableType 4
-   EditorPos 191.222 1049.833
+   EditorPos -327.778 1192.833
   }
   VariableReference controlledEntity {
    VariableType 4

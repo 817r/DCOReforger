@@ -39,7 +39,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
           }
           SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
            Name "SCR_AI Send Order_ Stance"
-           EditorPos -797.619 1066.596
+           EditorPos -791.619 1066.596
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -144,11 +144,11 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
                  PortName "Pos"
                 }
                 SingleOutputPortContainer SingleOutputPortContainer {
-                 Port -1
+                 Port 8
                  PortName "Stance"
                 }
                 SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 8
+                 Port -1
                  PortName "StanceHide"
                 }
                }
@@ -215,18 +215,13 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
            m_sDebugMessage "Just Run From Danger"
            m_eAICategory BEHAVIOR
           }
-          AITaskIdle Idle {
-           Name "Idle"
-           EditorPos 2599.25 1251.417
-           Period 1
-          }
           SCR_AICompleteAction "SCR_AI Complete Action" {
            Name "SCR_AI Complete Action"
-           EditorPos 2788.715 1243.715
+           EditorPos 2534.429 1250.858
           }
           AITaskReturnState "Return State" {
            Name "Return State"
-           EditorPos 3032.703 1244.25
+           EditorPos 2762.703 1251.393
            Result RUNNING
           }
          }
@@ -240,7 +235,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
         AITaskIdle Idle {
          Name "Idle"
          EditorPos 636.583 348.25
-         Period 2
+         Period 5
          PeriodRandom 0
         }
         SCR_AIFailAction "SCR_AI Fail Action" {
@@ -340,7 +335,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
   }
   VariableReference stance {
    VariableType 5
-   EditorPos 1495 1431
+   EditorPos 1872.778 1544.333
   }
  }
 }

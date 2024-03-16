@@ -488,7 +488,7 @@ BehaviorTree {
             }
             SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
              Name "SCR_AI Deco Is Above Threat Level"
-             EditorPos 4449.869 173.309
+             EditorPos 4465.583 173.309
              Nodes {
               Sequence Sequence {
                Name "Sequence"
@@ -501,7 +501,7 @@ BehaviorTree {
                 }
                 AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
                  Name "Character Set Movement Speed"
-                 EditorPos 4413.833 598.167
+                 EditorPos 4412.404 596.738
                  "Movement speed" RUN
                 }
                 AITaskChangeStance "Change Stance" {

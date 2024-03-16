@@ -1,6 +1,6 @@
 modded class SCR_AICombatMoveUtils
 {
-	static const float CLOSE_RANGE_COMBAT_DIST = 30.0;
+	static const float CLOSE_RANGE_COMBAT_DIST = 45.0;
 }
 
 
@@ -188,6 +188,9 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					moveDistanceMax = 5.0;
 					rq.m_eStanceMoving = ECharacterStance.PRONE;
 					rq.m_eMovementType = EMovementType.RUN;
+					if (Math.RandomIntInclusive(0, 5) > 1)
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+						else
 					rq.m_eStanceEnd = ECharacterStance.PRONE;
 					rq.m_bAimAtTarget = true;
 					break;
@@ -199,7 +202,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					moveDistanceMax = 8.0;
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eMovementType = EMovementType.RUN;
-					rq.m_eStanceEnd = ECharacterStance.PRONE;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					rq.m_bAimAtTarget = true;
 					break;
 				}
@@ -209,7 +212,10 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					coverSearchDistMax = 15.0;
 					moveDistanceMax = 10.0;
 					rq.m_eStanceMoving = ECharacterStance.STAND;
+					if (Math.RandomIntInclusive(0, 5) > 1)
 					rq.m_eMovementType = EMovementType.SPRINT;
+						else
+					rq.m_eMovementType = EMovementType.RUN;
 					rq.m_eStanceEnd = ECharacterStance.PRONE;
 					rq.m_bAimAtTarget = false;
 					break;
@@ -242,7 +248,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
-		rq.m_fMoveDistance = Math.RandomFloat(0.2, 1.2) * moveDistanceMax; // Move distance if cover is not found, randomized
+		rq.m_fMoveDistance = Math.RandomFloat(0.2, 2.0) * moveDistanceMax; // Move distance if cover is not found, randomized
 		
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving
@@ -340,19 +346,19 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		else
 		{
 			if (m_State.m_bExposedInCover)
-				waitTime_s = 1.2;
+				waitTime_s = 8.0;
 			else
-				waitTime_s = 5.0;
+				waitTime_s = 13.0;
 		}
 		
 		if (m_State.m_bExposedInCover && m_State.m_fTimerRequest_s > waitTime_s)
 		{
-			float newWaitTime = Math.RandomFloat(5.0, 9.0); // Hide in cover for this time
+			float newWaitTime = Math.RandomFloat(3.0, 9.0); // Hide in cover for this time
 			PushRequestChangeStanceInCover(false, SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER, newWaitTime);
 		}
 		else if (!m_State.m_bExposedInCover && m_State.m_fTimerRequest_s > waitTime_s)
 		{
-			float newWaitTime = Math.RandomFloat(1.2, 3.0); // Expose out of cover for this time
+			float newWaitTime = Math.RandomFloat(1.0, 4.0); // Expose out of cover for this time
 			PushRequestChangeStanceInCover(true, SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER, newWaitTime);
 		}
 	}
@@ -377,8 +383,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
 		
-		rq.m_fCoverSearchDistMin = 10;
-		rq.m_fCoverSearchDistMax = 30;
+		rq.m_fCoverSearchDistMin = 5;
+		rq.m_fCoverSearchDistMax = 25;
 		
 		m_State.ApplyNewRequest(rq);
 	}
@@ -411,10 +417,10 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			switch (threat)
 			{
 				case EAIThreatState.THREATENED:
-					waitTime = 10.0;	// Stay in cover for a long time, until we are not suppressed any more
+					waitTime = 15.0;	// Stay in cover for a long time, until we are not suppressed any more
 					break;
 				default:
-					waitTime = 5.0;
+					waitTime = 10.0;
 			}
 		}
 		else
@@ -423,10 +429,10 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			switch (threat)
 			{
 				case EAIThreatState.THREATENED:
-					waitTime = 5.0;
+					waitTime = 12.0;
 					break;
 				default:
-					waitTime = 2.0;
+					waitTime = 8.0;
 					break;
 			}
 		}
@@ -444,6 +450,9 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		
 		if (longWaitTime)
 			waitTime *= 2.0;
+		
+		if(m_bCloseRangeCombat)
+			waitTime = waitTime/2;
 		
 		return waitTime;
 	}
@@ -489,7 +498,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	// If we are between weaponMinDist and 'optimal' dist, we don't need to move closer to tgt
 	override protected static float ResolveOptimalDistance(float weaponMinDist)
 	{
-		return Math.Max(weaponMinDist + 10.0, 10.0);
+		return Math.Max(weaponMinDist + 12.0, 10.0);
 	}
 	
 	protected override void PushRequestFFAvoidance()
@@ -516,8 +525,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_eStanceMoving = m_CharacterController.GetStance(); // Don't change stance
 		rq.m_eStanceEnd = rq.m_eStanceMoving;
 		rq.m_vMovePos = ResolveRequestTargetPos();
-		rq.m_eMovementType = EMovementType.RUN;
-		rq.m_fMoveDistance = 5.0;
+		rq.m_eMovementType = EMovementType.WALK;
+		rq.m_fMoveDistance = 2.0;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
 		

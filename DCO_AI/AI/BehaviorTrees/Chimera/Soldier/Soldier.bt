@@ -194,7 +194,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos 2230 418.333
+       EditorPos 2232 418.333
        BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
       }
      }

@@ -189,4 +189,40 @@ modded class SCR_AICombatComponent : ScriptComponent
 		SCR_AIDebugVisualization.VisualizeMessage(GetOwner(), typename.EnumToString(EAICombatType,m_eCombatType), EAIDebugCategory.COMBAT, 5);
 #endif
 	}
+	
+	override bool EvaluateLowAmmo(BaseWeaponComponent weaponComp, int muzzleId)
+	{
+		if (!weaponComp)
+			return false;
+		array<BaseMuzzleComponent> muzzles = {};
+		weaponComp.GetMuzzlesList(muzzles);
+		if (muzzleId >= muzzles.Count() || muzzleId < 0)
+			return false;
+		
+		BaseMuzzleComponent muzzleComp = muzzles[muzzleId];
+		if (!muzzleComp)
+			return false;
+				
+		// Ignore disposable weapons
+		if (muzzleComp.IsDisposable())
+			return false;
+		
+		int magCount = m_InventoryManager.GetMagazineCountByWeapon(weaponComp);
+		
+		int lowMagThreshold = 1;
+		
+		// Decide how many remainiing magazines is enough to complain
+		switch (weaponComp.GetWeaponType())
+		{
+			case EWeaponType.WT_RIFLE: lowMagThreshold = 2; break;
+			case EWeaponType.WT_GRENADELAUNCHER: lowMagThreshold = 3; break; // todo now it won't work when we are out of UGL ammo because weapons are not marked with WT_GRENADELAUNCHER
+			case EWeaponType.WT_SNIPERRIFLE: lowMagThreshold = 1; break;
+			case EWeaponType.WT_ROCKETLAUNCHER: lowMagThreshold = 1; break;
+			case EWeaponType.WT_MACHINEGUN: lowMagThreshold = 1; break;
+			case EWeaponType.WT_HANDGUN: lowMagThreshold = 1; break;
+			default: lowMagThreshold = 1;
+		}
+		
+		return magCount < lowMagThreshold;
+	}
 };
