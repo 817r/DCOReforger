@@ -14,26 +14,25 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
-	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 2.0;
+	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.5;
 
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 500.0;
-	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.0;
+	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 2.0;
 			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 4.5;
 			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 8.0;
-			  static const float TARGET_MAX_LAST_SEEN = 20.0;
+			  static const float TARGET_MAX_LAST_SEEN = 30.0;
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 100.0;
-	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.7;
+	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.8;
+	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.4;
 	protected const float PERCEPTION_FACTOR_SAFE = 4.0;
 	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
 	protected const float PERCEPTION_FACTOR_ALERTED = 6.0; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 5.0;
+	protected const float PERCEPTION_FACTOR_THREATENED = 4.0;
 	protected const float PERCEPTION_FACTOR_PINNED = 4.0;
 	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.0;
 	
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.0;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
-	
-	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.6;
 	
 	static const float LONG_RANGE_FIRE_DISTANCE = 300.0;
 

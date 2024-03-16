@@ -3,28 +3,28 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos 95 -540
+   EditorPos 86.667 -541.667
    Nodes {
     Parallel Parallel {
      Name "Parallel"
-     EditorPos 97.222 -344.444
+     EditorPos 88.889 -363.015
      Nodes {
       SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
        Name "SCR_AI Deco Is Above Threat Level"
-       EditorPos 40.953 55.738
+       EditorPos -216.547 -109.262
        Nodes {
         Sequence Sequence {
          Name "Sequence"
-         EditorPos 131.722 273
+         EditorPos -125.778 108
          Nodes {
           AITaskIdle Idle {
            Name "Idle"
-           EditorPos -59.047 466.19
+           EditorPos -316.547 301.19
            Period 5
           }
           SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
            Name "SCR_AI Visualize Debug"
-           EditorPos 144.274 463.361
+           EditorPos -113.226 298.361
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -36,7 +36,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
           }
           AITaskReturnState "Return State" {
            Name "Return State"
-           EditorPos 388 464
+           EditorPos 130.5 299
            Result RUNNING
           }
          }
@@ -135,7 +135,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
         }
         AITaskIdle Idle {
          Name "Idle"
-         EditorPos 2852.5 1187
+         EditorPos 2838.5 1177
          Period 1.2
         }
         Selector Selector {
@@ -210,7 +210,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
         AITaskIdle Idle {
          Name "Idle"
          EditorPos 4609.333 1230
-         Period 2
+         Period 5
         }
         AITaskReturnState "Return State" {
          Name "Return State"
@@ -220,6 +220,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
        }
       }
      }
+     UseChildResult 0
     }
    }
   }
@@ -396,7 +397,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
   }
   VariableReference coverPos {
    VariableType 6
-   EditorPos 2225.322 1315.322
+   EditorPos 2235.322 1261.572
   }
   VariableReference friendlyPos {
    VariableType 9

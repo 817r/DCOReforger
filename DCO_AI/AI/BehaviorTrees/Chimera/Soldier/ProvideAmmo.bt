@@ -1,0 +1,255 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/ProvideAmmo.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 1248.667 389.167
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 1237.667 507.667
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence - Init"
+       EditorPos 709.714 684.73
+       Nodes {
+        AITaskGetControlledEntity "Get Controlled Entity" {
+         Name "Get Controlled Entity"
+         EditorPos 171.666 940.583
+         InEntity -1
+         OutControlledEntity 6
+         OutAgent -1
+        }
+        SCR_AIGetProvideAmmoBehaviorParameters "SCR_AI Get Provide Ammo Behavior Parameters" {
+         Name "SCR_AI Get Provide Ammo Behavior Parameters"
+         EditorPos 454.432 937.045
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 4
+           PortName "AmmoConsumerEntity"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 5
+           PortName "MagazineWellType"
+          }
+         }
+        }
+        SCR_AISpawnMagazines "SCR_AI Spawn Magazines" {
+         Name "SCR_AI Spawn Magazines"
+         EditorPos 1275.714 961.429
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 5
+           PortName "MagazineWell"
+          }
+         }
+         m_iMagazineCount 5
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence - Provide Ammo"
+       EditorPos 1766.777 1224.667
+       Nodes {
+        AITaskGetControlledEntity "Get Controlled Entity" {
+         Name "Get Controlled Entity"
+         EditorPos 67.258 1707.166
+         InEntity 8
+         OutControlledEntity -1
+         OutAgent 3
+        }
+        SCR_AIPlayItemGesture "SCR_AI Play Item Gesture" {
+         Name "SCR_AI Play Item Gesture"
+         EditorPos 348.825 1735.619
+         m_eGesture EItemGesturePickUp
+        }
+        SCR_AIDropMagazines "SCR_AI Drop Magazines" {
+         Name "SCR_AI Drop Magazines"
+         EditorPos 849.611 1747.139
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 9
+           PortName "MagazineWell"
+          }
+         }
+        }
+        AITaskCreatePosition "Create Position" {
+         Name "Create Position"
+         EditorPos 1369.31 1751.941
+         InEntity 7
+         OutPosition 0
+         RandomizeYAxis 0
+        }
+        SCR_AISendGoalMessage_PickupInventoryItems "SCR_AI Send Goal Message_ Pickup Inventory Items" {
+         Name "SCR_AI Send Goal Message_ Pickup Inventory Items"
+         EditorPos 2006.364 1716.705
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 1
+           PortName "Receiver"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "PriorityLevel"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "IsWaypointRelated"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 0
+           PortName "PickupPosition"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 2
+           PortName "MagazineWellType"
+          }
+         }
+         m_sText "ProvideAmmo"
+         m_fPriorityLevel 40
+        }
+        SCR_AIGetRandomPointWithExclude "SCR_AI Get Random Point With Exclude" {
+         Name "SCR_AI Get Random Point With Exclude"
+         EditorPos 2494.159 1775.298
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 11
+           PortName "Entity"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "SearchCenter"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "SearchRadius"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ExclusionCenter"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ExclusionRadius"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 10
+           PortName "Position"
+          }
+         }
+         m_fSearchRadius 3
+         m_fExcludeRadius 1
+         m_iIterationCount 50
+        }
+        AITaskMove Move {
+         Name "Move"
+         EditorPos 2886.122 1777.115
+         InTargetLocation 10
+        }
+        SCR_AICompleteAction "SCR_AI Complete Action" {
+         Name "SCR_AI Complete Action"
+         EditorPos 3226.216 1769.119
+        }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 3475.377 1752.777
+         Result RUNNING
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable ammoConsumerEntity {
+   VariableName "ammoConsumerEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable pickupAmmoPosition {
+   VariableName "pickupAmmoPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable ammoConsumerAgent {
+   VariableName "ammoConsumerAgent"
+   VariableTypeName "AIAgent"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable magazineWellType {
+   VariableName "magazineWellType"
+   VariableTypeName "typename"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable controlledEntity {
+   VariableName "controlledEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable providerMoveOutPos {
+   VariableName "providerMoveOutPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference pickupAmmoPosition {
+   VariableType 1
+   EditorPos 1723.56 1812.333
+  }
+  VariableReference ammoConsumerAgent {
+   VariableType 2
+   EditorPos 1686.06 1738.083
+  }
+  VariableReference magazineWellType {
+   VariableType 3
+   EditorPos 1698.31 1886.583
+  }
+  VariableReference ammoConsumerAgent {
+   VariableType 2
+   EditorPos 27.457 1825.162
+  }
+  VariableReference ammoConsumerEntity {
+   VariableType 0
+   EditorPos 915.381 958.19
+  }
+  VariableReference magazineWellType {
+   VariableType 3
+   EditorPos 916.666 1047.262
+  }
+  VariableReference controlledEntity {
+   VariableType 4
+   EditorPos 191.222 1049.833
+  }
+  VariableReference controlledEntity {
+   VariableType 4
+   EditorPos 1138.453 1851.262
+  }
+  VariableReference ammoConsumerEntity {
+   VariableType 0
+   EditorPos -203.139 1727.305
+  }
+  VariableReference magazineWellType {
+   VariableType 3
+   EditorPos 566.944 1803.027
+  }
+  VariableReference providerMoveOutPos {
+   VariableType 5
+   EditorPos 2581.448 1934.109
+  }
+  VariableReference controlledEntity {
+   VariableType 4
+   EditorPos 2215.151 1980.072
+  }
+ }
+}

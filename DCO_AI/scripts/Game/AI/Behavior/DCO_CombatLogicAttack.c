@@ -489,7 +489,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	// If we are between weaponMinDist and 'optimal' dist, we don't need to move closer to tgt
 	override protected static float ResolveOptimalDistance(float weaponMinDist)
 	{
-		return Math.Max(weaponMinDist + 15.0, 10.0);
+		return Math.Max(weaponMinDist + 10.0, 10.0);
 	}
 	
 	protected override void PushRequestFFAvoidance()

@@ -281,7 +281,7 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
              Nodes {
               AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
                Name "Character Set Movement Speed"
-               EditorPos -2636.25 2062.083
+               EditorPos -2638.25 2062.083
                Group "{5C68CAB173FEC84F}"
                "Movement speed" RUN
               }
@@ -367,18 +367,18 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
                Name "Change Stance"
                EditorPos -48.333 2156.667
                Group "{5C68CAB1CBBDEA71}"
-               Stance CROUCH
+               Stance PRONE
               }
               AITaskIdle Idle {
                Name "Idle"
-               EditorPos 192.154 2155.322
+               EditorPos 170.487 2161.989
                Group "{5C68CAB1CBBDEA71}"
                Period 0.5
                PeriodRandom 0
               }
               SCR_AITakeGadgetInLeftHand "SCR_AI Take Gadget In Left Hand" {
                Name "SCR_AI Take Gadget In Left Hand"
-               EditorPos 336.258 2144.517
+               EditorPos 336.258 2147.85
                OutPorts {
                 SingleOutputPortContainer SingleOutputPortContainer {
                  Port 16
