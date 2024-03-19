@@ -52,8 +52,8 @@ BehaviorTree {
       }
       AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
        Name "Character Set Movement Speed"
-       EditorPos -1706.167 2501.5
-       "Movement speed" SPRINT
+       EditorPos -1707.834 2501.5
+       "Movement speed" RUN
       }
       Decorator "{58969BEDE78A5462}" {
        Name "Decorator"
@@ -205,6 +205,17 @@ BehaviorTree {
           }
          }
         }
+        SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+         Name "SCR_AI Set Weapon Raised"
+         EditorPos -15.667 2632.111
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Raised"
+          }
+         }
+         m_bWeaponRaised 0
+        }
         Sequence Sequence {
          Name "Sequence"
          EditorPos 726.952 2659.905
@@ -273,37 +284,6 @@ BehaviorTree {
            PeriodRandom 1
           }
          }
-        }
-        Switch Switch {
-         Name "Switch"
-         EditorPos 1500 2826.667
-         Nodes {
-          SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
-           Name "SCR_AI Set Weapon Raised"
-           EditorPos 1338.333 3072.778
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Raised"
-            }
-           }
-           m_bWeaponRaised 0
-          }
-          SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
-           Name "SCR_AI Set Weapon Raised"
-           EditorPos 1670.055 3075.389
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Raised"
-            }
-           }
-          }
-         }
-         RandomRange {
-          3 4
-         }
-         AbortVariableChanged 0
         }
         SCR_AICharacterLeanOnAbort "SCR_AI Character Lean On Abort" {
          Name "SCR_AI Character Lean On Abort"

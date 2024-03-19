@@ -11,7 +11,7 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
      Nodes {
       SCR_AITalk "SCR_AI Talk" {
        Name "SCR_AI Talk"
-       EditorPos 4257.096 -1380.904
+       EditorPos 4247.096 -1385.904
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port -1
@@ -62,7 +62,7 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
        Nodes {
         AITaskCreatePosition "Create Position" {
          Name "Create Position"
-         EditorPos 965.666 -240.333
+         EditorPos 966.777 -240.333
          InEntity 18
          OutPosition 8
         }
@@ -96,19 +96,19 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
         }
         DecoTestVariable "Test Variable" {
          Name "Test Variable"
-         EditorPos 2671.5 -218.929
+         EditorPos 2814 -248.929
          Nodes {
           ForEachChild "For Each Child" {
            Name "For Each Child"
-           EditorPos 2691.5 -13.5
+           EditorPos 2834 -43.5
            Nodes {
             Sequence Sequence {
              Name "Sequence"
-             EditorPos 2718.928 168.857
+             EditorPos 2861.428 138.857
              Nodes {
               AITaskGetControlledEntity "Get Controlled Entity" {
                Name "Get Controlled Entity"
-               EditorPos 2247.167 366.357
+               EditorPos 2389.667 336.357
                Group "{5C5AEE08369D7087}"
                InEntity 43
                OutControlledEntity -1
@@ -116,11 +116,11 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
               }
               DecoIsInVehicle "Is In Vehicle" {
                Name "Is In Vehicle"
-               EditorPos 2918.833 315.881
+               EditorPos 3061.333 285.881
                Nodes {
                 SCR_AISendGoalMessage_GetOut "SCR_AI Send Goal Message_ Get Out" {
                  Name "SCR_AI Send Goal Message_ Get Out"
-                 EditorPos 2885.405 499.119
+                 EditorPos 3027.905 469.119
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port 42
@@ -189,7 +189,7 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
         }
         ForEachChild "For Each Child" {
          Name "For Each Child"
-         EditorPos 5423.833 -224.999
+         EditorPos 5423.833 -226.249
          Nodes {
           Selector Selector {
            Name "Selector"
@@ -518,15 +518,15 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
         }
         ForEachChild "For Each Child" {
          Name "For Each Child"
-         EditorPos 9574.5 -244.667
+         EditorPos 9339.5 -286.334
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 9586.667 -74.762
+           EditorPos 9351.667 -116.429
            Nodes {
             SCR_AIGetRadialAngleForAgent "SCR_AI Get Radial Angle For Agent" {
              Name "SCR_AI Get Radial Angle For Agent"
-             EditorPos 9205.985 202.424
+             EditorPos 8970.985 160.757
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 25
@@ -551,7 +551,7 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
             }
             SCR_AISendGoalMessage_Defend "SCR_AI Send Goal Message_ Defend" {
              Name "SCR_AI Send Goal Message_ Defend"
-             EditorPos 10055 248.333
+             EditorPos 9820 206.666
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 7
@@ -586,7 +586,7 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
         }
         SCR_AIClearAgentsForRadialCover "SCR_AI Clear Agents For Radial Cover" {
          Name "SCR_AI Clear Agents For Radial Cover"
-         EditorPos 9902.167 -255
+         EditorPos 9667.167 -296.667
          Group "{5B1CE3194EA954CC}"
         }
        }
@@ -721,7 +721,7 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
   }
   VariableReference vehicleWithTurret {
    VariableType 2
-   EditorPos 4155.96 771.908
+   EditorPos 4157.96 771.908
    Group "{5C5ACDCFBB6EB794}"
   }
   VariableReference groupMember {
@@ -741,12 +741,12 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
   }
   VariableReference groupMember {
    VariableType 1
-   EditorPos 9808.618 191.837
+   EditorPos 9573.618 150.17
    Group "{5B1CE3194EA954CC}"
   }
   VariableReference originOfSearch {
    VariableType 4
-   EditorPos 1368.211 -92.424
+   EditorPos 1369.322 -92.424
   }
   VariableReference radiusOfSearch {
    VariableType 5
@@ -765,7 +765,7 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
   }
   VariableReference waypoint {
    VariableType 0
-   EditorPos 1001.25 -82.639
+   EditorPos 1000 -82.639
   }
   VariableReference originOfSearch {
    VariableType 4
@@ -800,12 +800,12 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
   }
   VariableReference priorityLevel {
    VariableType 10
-   EditorPos 4886.999 765.763
+   EditorPos 4886.999 767.43
    Group "{5C5ACDCFBB6EB794}"
   }
   VariableReference priorityLevel {
    VariableType 10
-   EditorPos 9829.476 298.091
+   EditorPos 9594.476 256.424
    Group "{5B1CE3194EA954CC}"
   }
   VariableReference priorityLevel {
@@ -824,22 +824,22 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
   }
   VariableReference groupMember {
    VariableType 1
-   EditorPos 9203.633 13.65
+   EditorPos 8968.633 -28.017
    Group "{5B1CE3194EA954CC}"
   }
   VariableReference DefendAngularRange {
    VariableType 13
-   EditorPos 9499.604 336.111
+   EditorPos 9264.604 294.444
    Group "{5B1CE3194EA954CC}"
   }
   VariableReference DefendDirectionOfAgent {
    VariableType 12
-   EditorPos 9506.561 240.44
+   EditorPos 9271.561 198.773
    Group "{5B1CE3194EA954CC}"
   }
   VariableReference AttackLocation {
    VariableType 14
-   EditorPos 9199.586 361.726
+   EditorPos 8964.586 320.059
    Group "{5B1CE3194EA954CC}"
   }
   VariableReference AttackLocation {
@@ -892,37 +892,37 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
   }
   VariableReference groupMemberEntity {
    VariableType 9
-   EditorPos 2932.822 76
+   EditorPos 3075.322 46
    Group "{5C5AEE08369D7087}"
   }
   VariableReference groupMember {
    VariableType 1
-   EditorPos 2593.464 416.821
+   EditorPos 2735.964 386.821
    Group "{5C5AEE08369D7087}"
   }
   VariableReference priorityLevel {
    VariableType 10
-   EditorPos 2608.976 675.452
+   EditorPos 2751.476 645.452
    Group "{5C5AEE08369D7087}"
   }
   VariableReference groupMember {
    VariableType 1
-   EditorPos 2569.309 588.786
+   EditorPos 2711.809 558.786
    Group "{5C5AEE08369D7087}"
   }
   VariableReference groupMemberEntity {
    VariableType 9
-   EditorPos 1950 405.25
+   EditorPos 2098.833 370.25
    Group "{5C5AEE08369D7087}"
   }
   VariableReference fastInit {
    VariableType 15
-   EditorPos 2506.572 -71.143
+   EditorPos 2649.072 -101.143
    Group "{5C5AEE08369D7087}"
   }
   VariableReference waypointRelated {
    VariableType 11
-   EditorPos 2592 771
+   EditorPos 2734.5 741
    Group "{5C5AEE08369D7087}"
   }
   VariableReference waypointRelated {
@@ -937,7 +937,7 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
   }
   VariableReference waypointRelated {
    VariableType 11
-   EditorPos 9754.445 443.333
+   EditorPos 9519.445 401.666
    Group "{5B1CE3194EA954CC}"
   }
   VariableReference originOfSearch {

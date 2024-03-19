@@ -9,21 +9,20 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
      Name "Sequence"
      EditorPos -1088.222 -528.777
      Nodes {
-      RunBT RunBT {
-       Name "RunBT"
-       EditorPos -1995.198 -41.21
-       BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_IdleCover.bt"
-       AlwaysReinit 1
-      }
       AITaskIdle Idle {
        Name "Idle"
-       EditorPos -1399.474 -11.984
-       Period 10
-       PeriodRandom 5
+       EditorPos -1881.141 -46.984
+       Period 3
+       PeriodRandom 2
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos -1168.286 -42.112
+       EditorPos -1620.198 -64.543
+       BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_IdleCover.bt"
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -1063.286 -63.779
        BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
       }
       Selector Selector {
@@ -32,11 +31,11 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
        Nodes {
         DecoratorEntity Entity {
          Name "IsInVehicle or Turret?"
-         EditorPos -673.81 63.81
+         EditorPos -523.81 62.143
          Nodes {
           RunBT RunBT {
            Name "RunBT"
-           EditorPos -773.001 306.167
+           EditorPos -638.001 294.5
            BehaviorTree "{A39A4C0702473EF5}AI/BehaviorTrees/Chimera/Soldier/Idle_ObserveFromVehicle.bt"
           }
          }
