@@ -96,11 +96,11 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
         }
         DecoTestVariable "Test Variable" {
          Name "Test Variable"
-         EditorPos 2814 -248.929
+         EditorPos 2814 -236.929
          Nodes {
           ForEachChild "For Each Child" {
            Name "For Each Child"
-           EditorPos 2834 -43.5
+           EditorPos 2836 -43.5
            Nodes {
             Sequence Sequence {
              Name "Sequence"

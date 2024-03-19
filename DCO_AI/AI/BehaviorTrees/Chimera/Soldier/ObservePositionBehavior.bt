@@ -3,7 +3,7 @@ BehaviorTree {
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos 121.476 -880.92
+   EditorPos 140.476 -879.92
    Nodes {
     Parallel Parallel {
      Name "Parallel"
@@ -151,7 +151,7 @@ BehaviorTree {
           }
           SCR_AIDecoCombatMove_AimingAllowed "SCR_AI Deco Combat Move_ Aiming Allowed" {
            Name "SCR_AI Deco Combat Move_ Aiming Allowed"
-           EditorPos 1338.75 626.25
+           EditorPos 1334.464 626.25
            Nodes {
             Sequence Sequence {
              Name "Sequence"

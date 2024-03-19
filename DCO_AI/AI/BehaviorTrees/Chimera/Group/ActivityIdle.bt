@@ -3,245 +3,294 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos 442 -143.667
+   EditorPos 145.333 29.666
    Nodes {
-    Parallel Parallel {
-     Name "Parallel"
-     EditorPos 452 53
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 137.833 318.333
      Nodes {
       Sequence Sequence {
        Name "Sequence"
-       EditorPos 137.833 318.333
+       EditorPos -3503.813 997.602
        Nodes {
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos -2270.48 990.935
-         Nodes {
-          AITaskSetVariable "Set Variable" {
-           Name "Set Variable"
-           EditorPos -3116.575 1216.839
-           Group "{60E6B86F9CA17457}"
-           SetValue "true"
-           OutVariable 4
+        AITaskSetVariable "Set Variable" {
+         Name "Set Variable"
+         EditorPos -4349.909 1223.506
+         Group "{60E6B86F9CA17457}"
+         SetValue "true"
+         OutVariable 4
+        }
+        AITaskSetVariable "Set Variable" {
+         Name "Set Variable"
+         EditorPos -3980.67 1230.53
+         Group "{60E6B86F9CA17457}"
+         SetValue "30"
+         OutVariable 1
+        }
+        AITaskGetGroupChildren "Get Group Children" {
+         Name "Get Group Children"
+         EditorPos -3663.631 1208.713
+         Group "{60E6B86F9CA17457}"
+         IndexTo 0
+         OutEntity 2
+        }
+        SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+         Name "SCR_AI Get Entity Position"
+         EditorPos -3232.201 1226.269
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 2
+           PortName "Entity"
           }
-          AITaskSetVariable "Set Variable" {
-           Name "Set Variable"
-           EditorPos -2747.337 1223.863
-           Group "{60E6B86F9CA17457}"
-           SetValue "30"
-           OutVariable 1
-          }
-          AITaskGetGroupChildren "Get Group Children" {
-           Name "Get Group Children"
-           EditorPos -2430.298 1202.046
-           Group "{60E6B86F9CA17457}"
-           IndexTo 0
-           OutEntity 2
-          }
-          SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
-           Name "SCR_AI Get Entity Position"
-           EditorPos -1998.868 1219.602
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 2
-             PortName "Entity"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 3
-             PortName "Position"
-            }
-           }
-           Group "{60E6B86F9CA17457}"
-          }
-          AITaskCreatePosition "Create Position" {
-           Name "Create Position"
-           EditorPos -1523.217 1204.212
-           Group "{60E6B86F9CA17457}"
-           InRootVector 3
-           InEntity -1
-           OutPosition 0
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 3
+           PortName "Position"
           }
          }
          Group "{60E6B86F9CA17457}"
         }
+        AITaskCreatePosition "Create Position" {
+         Name "Create Position"
+         EditorPos -2756.55 1210.879
+         Group "{60E6B86F9CA17457}"
+         InRootVector 3
+         InEntity -1
+         OutPosition 0
+        }
+       }
+       Group "{60E6B86F9CA17457}"
+      }
+      ForEachChild "For Each Child" {
+       Name "For Each Child"
+       EditorPos -1452.369 996
+       Nodes {
         Sequence Sequence {
          Name "Sequence"
-         EditorPos -337.167 991.667
+         EditorPos -1426.941 1178.357
          Nodes {
-          SCR_AIFindTurrets "SCR_AI Find Turrets" {
-           Name "SCR_AI Find Turrets"
-           EditorPos -557.695 1268.898
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 5
-             PortName "OriginIn"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 6
-             PortName "RadiusIn"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "TurretNumber"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "TurretsFound"
-            }
-           }
-           Group "{60E6B86F9645BFBF}"
+          AITaskGetControlledEntity "Get Controlled Entity" {
+           Name "Get Controlled Entity"
+           EditorPos -1898.702 1375.857
+           Group "{60E6DE68905CD739}"
+           InEntity 20
+           OutControlledEntity -1
+           OutAgent 21
           }
-          ForEachChild "For Each Child" {
-           Name "For Each Child"
-           EditorPos 318.027 1288.76
+          DecoIsInVehicle "Is In Vehicle" {
+           Name "Is In Vehicle"
+           EditorPos -1225.369 1325.381
            Nodes {
-            Selector Selector {
-             Name "Selector"
-             EditorPos 347.861 1452.399
+            SCR_AISendGoalMessage_GetOut "SCR_AI Send Goal Message_ Get Out" {
+             Name "SCR_AI Send Goal Message_ Get Out"
+             EditorPos -1258.797 1508.619
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 22
+               PortName "Receiver"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "PriorityLevel"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "IsWaypointRelated"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "VehicleEntity"
+              }
+             }
+             Group "{60E6DE68905CD739}"
+             m_sText "Leave vehicle"
+            }
+           }
+           Group "{60E6DE68905CD739}"
+           EntityIn 19
+          }
+         }
+         Group "{60E6DE68905CD739}"
+        }
+       }
+       Group "{60E6DE68905CD739}"
+       OutEntity 19
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -232.167 996.667
+       Nodes {
+        SCR_AIFindTurrets "SCR_AI Find Turrets" {
+         Name "SCR_AI Find Turrets"
+         EditorPos -452.695 1273.898
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 5
+           PortName "OriginIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 6
+           PortName "RadiusIn"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "TurretNumber"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "TurretsFound"
+          }
+         }
+         Group "{60E6B86F9645BFBF}"
+        }
+        ForEachChild "For Each Child" {
+         Name "For Each Child"
+         EditorPos 423.027 1293.76
+         Nodes {
+          Selector Selector {
+           Name "Selector"
+           EditorPos 452.861 1457.399
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos -289.222 1865.37
              Nodes {
-              Sequence Sequence {
-               Name "Sequence"
-               EditorPos -445.889 1747.037
-               Nodes {
-                AITaskFindSmartAction "Find Smart Action" {
-                 Name "Find Smart Action"
-                 EditorPos -648.723 1911.565
-                 Group "{60E6B86F9645BFBF}"
-                 Radius 30
-                 OutSmartAction 8
-                 InPosition 12
-                 InRadius 15
-                 Tags {
-                  "ObservationPost" "CoverPost"
-                 }
-                 TagsTest InOrder
-                 InTags -1
+              AITaskFindSmartAction "Find Smart Action" {
+               Name "Find Smart Action"
+               EditorPos -492.056 2029.898
+               Group "{60E6B86F9645BFBF}"
+               Radius 30
+               OutSmartAction 8
+               InPosition 12
+               InRadius 15
+               Tags {
+                "ObservationPost" "CoverPost"
+               }
+               TagsTest InOrder
+               InTags -1
+              }
+              SCR_AISetSmartActionReserved "SCR_AI Set Smart Action Reserved" {
+               Name "SCR_AI Set Smart Action Reserved"
+               EditorPos 309.492 2092.687
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 11
+                 PortName "OwnerAgentIn"
                 }
-                SCR_AISetSmartActionReserved "SCR_AI Set Smart Action Reserved" {
-                 Name "SCR_AI Set Smart Action Reserved"
-                 EditorPos 152.825 1974.354
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 11
-                   PortName "OwnerAgentIn"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 13
-                   PortName "SmartActionIn"
-                  }
-                 }
-                 Group "{60E6B86F9645BFBF}"
-                }
-                SCR_AISendGoalMessage_PerformAction "SCR_AI Send Goal Message_ Perform Action" {
-                 Name "SCR_AI Send Goal Message_ Perform Action"
-                 EditorPos 655.186 1974.017
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 11
-                   PortName "Receiver"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "PriorityLevel"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "IsWaypointRelated"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 13
-                   PortName "SmartAction"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "SmartActionEntity"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "SmartActionTag"
-                  }
-                 }
-                 Group "{60E6B86F9645BFBF}"
-                 m_sText "Idle"
-                 m_fPriorityLevel 0
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 13
+                 PortName "SmartActionIn"
                 }
                }
                Group "{60E6B86F9645BFBF}"
               }
-              Sequence Sequence {
-               Name "Sequence"
-               EditorPos 2006.611 1721.843
-               Nodes {
-                SCR_AIGetAllocatedCompartment "SCR_AI Get Allocated Compartment" {
-                 Name "SCR_AI Get Allocated Compartment"
-                 EditorPos 1106.051 2019.056
-                 OutPorts {
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 14
-                   PortName "CompartmentOut"
-                  }
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 10
-                   PortName "VehicleOut"
-                  }
-                 }
-                 Group "{60E6B86F9645BFBF}"
-                 m_eCompartmentType Turret
+              SCR_AISendGoalMessage_PerformAction "SCR_AI Send Goal Message_ Perform Action" {
+               Name "SCR_AI Send Goal Message_ Perform Action"
+               EditorPos 810.424 2092.35
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 11
+                 PortName "Receiver"
                 }
-                SCR_AISendGoalMessage_GetIn "SCR_AI Send Goal Message_ Get In" {
-                 Name "SCR_AI Send Goal Message_ Get In"
-                 EditorPos 2037.505 1968.533
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 9
-                   PortName "Receiver"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "PriorityLevel"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "IsWaypointRelated"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 10
-                   PortName "VehicleEntity"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "RoleInVehicle"
-                  }
-                 }
-                 Group "{60E6B86F9645BFBF}"
-                 m_sText "Get in to turret"
-                 m_fPriorityLevel 0
-                 m_eRoleInVehicle Turret
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "PriorityLevel"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "IsWaypointRelated"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 13
+                 PortName "SmartAction"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "SmartActionEntity"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "SmartActionTag"
                 }
                }
                Group "{60E6B86F9645BFBF}"
+               m_sText "Idle"
+               m_fPriorityLevel 52
+              }
+             }
+             Group "{60E6B86F9645BFBF}"
+            }
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 1919.944 1955.176
+             Nodes {
+              SCR_AIGetAllocatedCompartment "SCR_AI Get Allocated Compartment" {
+               Name "SCR_AI Get Allocated Compartment"
+               EditorPos 1292.717 2312.389
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 14
+                 PortName "CompartmentOut"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 10
+                 PortName "VehicleOut"
+                }
+               }
+               Group "{60E6B86F9645BFBF}"
+               m_eCompartmentType Turret
+              }
+              SCR_AISendGoalMessage_GetIn "SCR_AI Send Goal Message_ Get In" {
+               Name "SCR_AI Send Goal Message_ Get In"
+               EditorPos 2225.838 2261.866
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 9
+                 PortName "Receiver"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "PriorityLevel"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "IsWaypointRelated"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 10
+                 PortName "VehicleEntity"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "RoleInVehicle"
+                }
+               }
+               Group "{60E6B86F9645BFBF}"
+               m_sText "Get in to turret"
+               m_fPriorityLevel 53
+               m_eRoleInVehicle Turret
               }
              }
              Group "{60E6B86F9645BFBF}"
             }
            }
            Group "{60E6B86F9645BFBF}"
-           OutEntity 7
-           ReturnControlledEntity 0
           }
          }
          Group "{60E6B86F9645BFBF}"
-        }
-        AITaskReturnState "Return State" {
-         Name "Return State"
-         EditorPos 297.262 539
-         Result RUNNING
+         OutEntity 7
+         ReturnControlledEntity 0
         }
        }
+       Group "{60E6B86F9645BFBF}"
+      }
+      AITaskReturnState "Return State" {
+       Name "Return State"
+       EditorPos 471.833 593.857
+       Result RUNNING
       }
      }
     }
@@ -249,15 +298,15 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
   }
   ForEachChild "For Each Child" {
    Name "For Each Child"
-   EditorPos 3037.564 1003.631
+   EditorPos 2997.564 1028.631
    Nodes {
     Sequence Sequence {
      Name "Sequence"
-     EditorPos 3064.969 1193.774
+     EditorPos 3024.969 1218.774
      Nodes {
       SCR_AISendGoalMessage_Defend "SCR_AI Send Goal Message_ Defend" {
        Name "SCR_AI Send Goal Message_ Defend"
-       EditorPos 2975.207 1375.917
+       EditorPos 2935.207 1400.917
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port 17
@@ -389,101 +438,127 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
    VariableExposedInput 0
    VariableExposedOutput 0
   }
+  Variable groupMemberEntity {
+   VariableName "groupMemberEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
  }
  VariablesRefs {
   VariableReference originOfSearch {
    VariableType 0
-   EditorPos -1227.061 1318.371
+   EditorPos -2460.394 1325.038
    Group "{60E6B86F9CA17457}"
   }
   VariableReference radiusOfSearch {
    VariableType 1
-   EditorPos -2533.337 1326.197
+   EditorPos -3766.67 1332.864
    Group "{60E6B86F9CA17457}"
   }
   VariableReference leader {
    VariableType 2
-   EditorPos -2181.091 1309.823
+   EditorPos -3412.996 1316.49
    Group "{60E6B86F9CA17457}"
   }
   VariableReference LeaderPos {
    VariableType 3
-   EditorPos -1741.091 1322.046
+   EditorPos -2974.424 1328.713
    Group "{60E6B86F9CA17457}"
   }
   VariableReference useTurrets {
    VariableType 4
-   EditorPos -2872.194 1342.565
+   EditorPos -4105.527 1349.232
    Group "{60E6B86F9CA17457}"
   }
   VariableReference originOfSearch {
    VariableType 0
-   EditorPos -854.52 1254.64
+   EditorPos -749.52 1259.64
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference radiusOfSearch {
    VariableType 1
-   EditorPos -842.972 1361.525
+   EditorPos -737.972 1366.525
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference groupMember {
    VariableType 6
-   EditorPos 586.694 1394.343
+   EditorPos 691.694 1399.343
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference smartActionComponent {
    VariableType 7
-   EditorPos -741.956 2239.74
+   EditorPos -585.289 2358.073
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference groupMember {
    VariableType 6
-   EditorPos 1703.527 2081.902
+   EditorPos 1891.86 2375.235
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference vehicleWithTurret {
    VariableType 8
-   EditorPos 1635.868 2195.012
+   EditorPos 1824.201 2488.345
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference groupMember {
    VariableType 6
-   EditorPos -170.939 2083.025
+   EditorPos -14.272 2201.358
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference originOfSearch {
    VariableType 0
-   EditorPos -994.139 1948.427
+   EditorPos -837.472 2066.76
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference smartActionComponent {
    VariableType 7
-   EditorPos -234.125 2239.265
+   EditorPos -77.458 2357.598
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference turretCompartment {
    VariableType 12
-   EditorPos 1518.315 1982.199
+   EditorPos 1706.648 2275.532
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference radiusOfSearch {
    VariableType 1
-   EditorPos -968.973 2046.121
+   EditorPos -812.306 2164.454
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference groupMember {
    VariableType 6
-   EditorPos 3254.951 1093.218
+   EditorPos 3214.951 1118.218
    Group "{60E6B86F0378742E}"
   }
   VariableReference groupMember {
    VariableType 6
-   EditorPos 2663.27 1424.976
+   EditorPos 2623.27 1449.976
    Group "{60E6B86F0378742E}"
   }
   VariableReference LeaderPos {
    VariableType 3
    EditorPos 2663.472 1532.5
+  }
+  VariableReference groupMemberEntity {
+   VariableType 16
+   EditorPos -1214.476 1085.5
+   Group "{60E6DE68905CD739}"
+  }
+  VariableReference groupMemberEntity {
+   VariableType 16
+   EditorPos -2189.536 1409.75
+   Group "{60E6DE68905CD739}"
+  }
+  VariableReference groupMember {
+   VariableType 6
+   EditorPos -1582.405 1428.321
+   Group "{60E6DE68905CD739}"
+  }
+  VariableReference groupMember {
+   VariableType 6
+   EditorPos -1574.893 1598.286
+   Group "{60E6DE68905CD739}"
   }
  }
  Groups {
@@ -497,6 +572,10 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
   }
   BTGroup "{60E6B86F0378742E}" {
    Name "Unassigned Child"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{60E6DE68905CD739}" {
+   Name "GetOut"
    Color 0.6 0.6 0.6 0.251
   }
  }

@@ -36,7 +36,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
           }
           SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
            Name "SCR_AI Set Combat Move State"
-           EditorPos 194.167 451
+           EditorPos 115.834 449.333
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -55,7 +55,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
           }
           AITaskReturnState "Return State" {
            Name "Return State"
-           EditorPos 621.571 424.357
+           EditorPos 433.238 447.69
            Result RUNNING
           }
          }

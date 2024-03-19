@@ -73,13 +73,6 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			// Find a new cover nearby
 			PushRequestLeaveUselessCover();
 		}
-		else if (m_CharacterController.IsReloading())
-		{
-			if(m_eStance == ECharacterStance.STAND)
-			{
-				m_eStance = ECharacterStance.CROUCH;
-			}	
-		}
 		else if (m_State.m_bInCover && m_CharacterController.IsReloading())
 		{
 			// We're reloading and can't do much else now
@@ -532,16 +525,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_eStanceMoving = m_CharacterController.GetStance(); // Don't change stance
 		rq.m_eStanceEnd = rq.m_eStanceMoving;
 		rq.m_vMovePos = ResolveRequestTargetPos();
-			if (Math.RandomIntInclusive(0, 1) == 1)
-		{
-				rq.m_eMovementType = EMovementType.WALK;
-				rq.m_fMoveDistance = 2.0;
-		}
-			else
-		{
-				rq.m_eMovementType = EMovementType.RUN;
-				rq.m_fMoveDistance = 3.5;
-		}
+		rq.m_eMovementType = EMovementType.WALK;
+		rq.m_fMoveDistance = 2.0;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
 		
