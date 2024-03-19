@@ -197,33 +197,33 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
        EditorPos 2232 418.333
        BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
       }
-      Selector Selector {
-       Name "Selector"
-       EditorPos 2754 441
+      SCR_AIDayNightTest "SCR_AI Day Night Test" {
+       Name "SCR_AI Day Night Test"
+       EditorPos 2667.833 414.25
        Nodes {
-        SCR_AIDayNightTest "SCR_AI Day Night Test" {
-         Name "SCR_AI Day Night Test"
-         EditorPos 2554.5 624.25
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 2698.945 580.556
          Nodes {
-          SCR_AIToggleFlashlightsOnSimulate "SCR_AI Toggle Flashlights On Simulate" {
-           Name "SCR_AI Toggle Flashlights On Simulate"
-           EditorPos 2476.25 807.5
+          RunOnce "Run Once" {
+           Name "Run Once"
+           EditorPos 2522.889 727.222
+           Nodes {
+            SCR_AIToggleFlashlightsOnSimulate "SCR_AI Toggle Flashlights On Simulate" {
+             Name "SCR_AI Toggle Flashlights On Simulate"
+             EditorPos 2417.897 851.952
+             m_bEnable 0
+            }
+           }
           }
-         }
-         NegativeCondition 1
-        }
-        SCR_AIDayNightTest "SCR_AI Day Night Test" {
-         Name "SCR_AI Day Night Test"
-         EditorPos 2946 631
-         Nodes {
-          SCR_AIToggleFlashlightsOnSimulate "SCR_AI Toggle Flashlights On Simulate" {
-           Name "SCR_AI Toggle Flashlights On Simulate"
-           EditorPos 2865.5 813.25
-           m_bEnable 0
+          SCR_AIToggleFlashlightsOnAbort "SCR_AI Toggle Flashlights On Abort" {
+           Name "SCR_AI Toggle Flashlights On Abort"
+           EditorPos 2794.445 843.333
           }
          }
         }
        }
+       AbortType AbortChildrenBranch
       }
      }
      UseChildResult -1
