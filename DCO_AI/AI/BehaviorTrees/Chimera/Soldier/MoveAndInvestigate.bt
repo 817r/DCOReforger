@@ -128,9 +128,15 @@ BehaviorTree {
        m_messageType REPORT_MOVING
        m_bTransmitIfPassenger 0
       }
+      AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+       Name "Set Pathfinding Filters"
+       EditorPos 498 -172
+       NavmeshProject "Soldiers"
+       IgnoreFlags 24
+      }
       Parallel Parallel {
        Name "Parallel"
-       EditorPos 2449.167 -470.833
+       EditorPos 4829.167 -580.833
        Nodes {
         Sequence Sequence {
          Name "Sequence"
@@ -437,37 +443,57 @@ BehaviorTree {
         }
         Sequence Sequence {
          Name "Sequence"
-         EditorPos 4498.301 -284.199
+         EditorPos 5481.634 62.468
          Nodes {
           Selector Selector {
            Name "Selector"
-           EditorPos 4098.309 -48.737
+           EditorPos 4699.809 343.263
            Nodes {
+            DecoDangerEvent "Danger Event" {
+             Name "Danger Event"
+             EditorPos 3467.75 623.25
+             Nodes {
+              RunBT RunBT {
+               Name "RunBT"
+               EditorPos 3372.5 976.5
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "lastSeen"
+                }
+               }
+               BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CoverManager.bt"
+              }
+             }
+             AbortType AbortParentNodeFurtherChildren
+             DangerEventType WeaponFire
+             DistanceThreshold 50
+            }
             SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
              Name "SCR_AI Deco Is Above Threat Level"
-             EditorPos 3632.786 160.452
+             EditorPos 4596.286 567.202
              Nodes {
               Sequence Sequence {
                Name "Sequence"
-               EditorPos 3715.055 362.777
+               EditorPos 4682.555 775.277
                Nodes {
                 AITaskCharacterRaiseWeapon "Character Raise Weapon" {
                  Name "Character Raise Weapon"
-                 EditorPos 2978.334 584.444
+                 EditorPos 3945.834 996.944
                 }
                 AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
                  Name "Character Set Movement Speed"
-                 EditorPos 3285.5 593.167
+                 EditorPos 4253 1005.667
                  "Movement speed" WALK
                 }
                 AITaskChangeStance "Change Stance" {
                  Name "Change Stance"
-                 EditorPos 3674.444 562.222
+                 EditorPos 4641.944 974.722
                  Stance CROUCH
                 }
                 SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
                  Name "SCR_AI Set Weapon Raised"
-                 EditorPos 3875.555 556.112
+                 EditorPos 4843.055 968.612
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port -1
@@ -484,33 +510,34 @@ BehaviorTree {
                PortName "ThresholdIn"
               }
              }
+             AbortType AbortParentNodeFurtherChildren
              m_threatThreshold ALERTED
             }
             SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
              Name "SCR_AI Deco Is Above Threat Level"
-             EditorPos 4465.583 173.309
+             EditorPos 5430.333 587.309
              Nodes {
               Sequence Sequence {
                Name "Sequence"
-               EditorPos 4550.056 382.777
+               EditorPos 5517.556 795.277
                Nodes {
                 AITaskCharacterRaiseWeapon "Character Raise Weapon" {
                  Name "Character Raise Weapon"
-                 EditorPos 4143.556 595
+                 EditorPos 5111.056 1007.5
                  Raise 0
                 }
                 AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
                  Name "Character Set Movement Speed"
-                 EditorPos 4412.404 596.738
+                 EditorPos 5379.904 1009.238
                  "Movement speed" RUN
                 }
                 AITaskChangeStance "Change Stance" {
                  Name "Change Stance"
-                 EditorPos 4742.833 592.056
+                 EditorPos 5710.333 1004.556
                 }
                 SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
                  Name "SCR_AI Set Weapon Raised"
-                 EditorPos 4937.199 580.016
+                 EditorPos 5904.699 992.516
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port -1
@@ -529,15 +556,16 @@ BehaviorTree {
               }
              }
              NegativeCondition 1
+             AbortType AbortParentNodeFurtherChildren
              m_threatThreshold ALERTED
             }
            }
           }
           AITaskIdle Idle {
            Name "Idle"
-           EditorPos 4778.361 7.587
+           EditorPos 5899.027 388.92
            Period 2
-           PeriodRandom 1
+           PeriodRandom 0.1
           }
          }
         }

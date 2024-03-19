@@ -22,7 +22,7 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos -1168.286 -40.445
+       EditorPos -1168.286 -42.112
        BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
       }
       Selector Selector {
@@ -69,17 +69,12 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
           }
           RunBT RunBT {
            Name "RunBT"
-           EditorPos 358.25 341.5
-           BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_IdleCover.bt"
-          }
-          RunBT RunBT {
-           Name "RunBT"
-           EditorPos 865.849 338.694
+           EditorPos 750.135 332.98
            BehaviorTree "{E5F18B69F38FAE75}AI/BehaviorTrees/Chimera/Soldier/Idle_GadgetUse.bt"
           }
           RunBT RunBT {
            Name "RunBT"
-           EditorPos 1290.668 328.722
+           EditorPos 1174.954 323.008
            BehaviorTree "{77827BF0468F4A99}AI/BehaviorTrees/Chimera/Soldier/Idle_InspectWeapon.bt"
           }
          }

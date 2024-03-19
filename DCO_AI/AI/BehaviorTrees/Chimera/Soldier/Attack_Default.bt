@@ -13,9 +13,13 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
        Name "Sequence"
        EditorPos -920.477 532.682
        Nodes {
+        AITaskResetPathfindingFilters "Reset Pathfinding Filters" {
+         Name "Reset Pathfinding Filters"
+         EditorPos -1956 840
+        }
         SCR_AISetAIState "SCR_AI SetAI State" {
          Name "SCR_AI SetAI State"
-         EditorPos -1644.611 831.833
+         EditorPos -1654.611 831.833
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
