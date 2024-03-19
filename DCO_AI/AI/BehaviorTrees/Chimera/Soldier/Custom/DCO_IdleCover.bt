@@ -3,7 +3,7 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos -253.333 -1650
+   EditorPos -250.476 -1650
    Nodes {
     Parallel Parallel {
      Name "Parallel"
@@ -50,17 +50,17 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos -3015.423 558.94
+           EditorPos -2895.423 498.94
            Nodes {
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos -4564.468 1166.061
+             EditorPos -4444.468 1106.061
              Group "{60E613E5BDA9470D}"
              PeriodRandom 4
             }
             SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
              Name "SCR_AI Create Basic Cover Query Props"
-             EditorPos -4171.943 1176.667
+             EditorPos -4051.943 1116.667
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 12
@@ -83,7 +83,7 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
             }
             SCR_AIFindCover "SCR_AI Find Cover" {
              Name "SCR_AI Find Cover"
-             EditorPos -3428.61 1172.222
+             EditorPos -3308.61 1112.222
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 2
@@ -100,7 +100,7 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
             }
             SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
              Name "SCR_AI Get Cover Parameters"
-             EditorPos -2875.832 1181.666
+             EditorPos -2755.832 1121.666
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 3
@@ -125,19 +125,19 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
             }
             AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
              Name "Character Set Movement Speed"
-             EditorPos -2610.555 1005.278
+             EditorPos -2490.555 945.278
              Group "{60E613E5BDA9470D}"
              "Movement speed" WALK
             }
             AITaskMove Move {
              Name "Move"
-             EditorPos -2207.499 1142.5
+             EditorPos -2087.499 1082.5
              Group "{60E613E5BDA9470D}"
              InTargetLocation 4
             }
             SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
              Name "SCR_AI Set Combat Move State"
-             EditorPos -1798.927 1130
+             EditorPos -1678.927 1070
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -159,7 +159,7 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
             }
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos -1453.499 1122
+             EditorPos -1333.499 1062
              Group "{60E613E5BDA9470D}"
             }
            }
@@ -528,27 +528,27 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
   }
   VariableReference coverQuery {
    VariableType 2
-   EditorPos -3773.055 1268.889
+   EditorPos -3653.055 1208.889
    Group "{60E613E5BDA9470D}"
   }
   VariableReference coverLock {
    VariableType 3
-   EditorPos -3172.499 1268.333
+   EditorPos -3052.499 1208.333
    Group "{60E613E5BDA9470D}"
   }
   VariableReference coverPos {
    VariableType 4
-   EditorPos -2581.499 1175.385
+   EditorPos -2461.499 1115.385
    Group "{60E613E5BDA9470D}"
   }
   VariableReference stanceNormal {
    VariableType 5
-   EditorPos -2576.73 1255.385
+   EditorPos -2456.73 1195.385
    Group "{60E613E5BDA9470D}"
   }
   VariableReference stanceHide {
    VariableType 6
-   EditorPos -2577.499 1333.846
+   EditorPos -2457.499 1273.846
    Group "{60E613E5BDA9470D}"
   }
   VariableReference smartActionComponent {
@@ -578,7 +578,7 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
   }
   VariableReference LeaderPos {
    VariableType 1
-   EditorPos -4368.999 1171.75
+   EditorPos -4248.999 1111.75
    Group "{60E613E5BDA9470D}"
   }
   VariableReference useTurrets {
