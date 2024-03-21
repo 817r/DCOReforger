@@ -1,6 +1,6 @@
 modded class SCR_AICombatMoveUtils
 {
-	static const float CLOSE_RANGE_COMBAT_DIST = 45.0;
+	static const float CLOSE_RANGE_COMBAT_DIST = 30.0;
 }
 
 

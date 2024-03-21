@@ -60,7 +60,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
          Nodes {
           SCR_AIGetSidePosition "SCR_AI Get Side Position" {
            Name "SCR_AI Get Side Position"
-           EditorPos -171.937 1250.397
+           EditorPos 553.063 1265.397
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port 3
@@ -85,15 +85,15 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
           }
           Selector Selector {
            Name "Selector"
-           EditorPos 989.762 1102.143
+           EditorPos 1714.762 1117.143
            Nodes {
             Sequence Sequence {
              Name "Sequence"
-             EditorPos 833.547 1262.857
+             EditorPos 1558.547 1277.857
              Nodes {
               SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
                Name "SCR_AI Create Basic Cover Query Props"
-               EditorPos 395.214 1465.714
+               EditorPos 1120.214 1480.714
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port 5
@@ -115,7 +115,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
               }
               SCR_AIFindCover "SCR_AI Find Cover" {
                Name "SCR_AI Find Cover"
-               EditorPos 884.333 1475.833
+               EditorPos 1609.333 1490.833
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port 6
@@ -131,7 +131,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
               }
               SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
                Name "SCR_AI Get Cover Parameters"
-               EditorPos 1161.333 1476.5
+               EditorPos 1886.333 1491.5
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port 7
@@ -157,7 +157,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
             }
             SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
              Name "SCR_AI Get Random Point"
-             EditorPos 1135.714 1252.857
+             EditorPos 1860.714 1267.857
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 5
@@ -182,15 +182,40 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
             }
            }
           }
+          SCR_AITalk "SCR_AI Talk" {
+           Name "SCR_AI Talk"
+           EditorPos 2217.333 1213.333
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "SpeakerIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "TargetIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "LocationIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "EnumIn"
+            }
+           }
+           m_messageType REPORT_UNDER_FIRE
+           m_ePreset IMMEDIATE
+           m_bTransmitIfPassenger 0
+          }
           AITaskMove Move {
            Name "Move"
-           EditorPos 1691.771 1220.743
+           EditorPos 2416.771 1235.743
            InTargetLocation 0
            PrecisionXZ 3
           }
           SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
            Name "SCR_AI Send Order_ Stance"
-           EditorPos 2025.834 1231.429
+           EditorPos 2750.834 1246.429
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -205,7 +230,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
           }
           SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
            Name "SCR_AI Visualize Debug"
-           EditorPos 2298.5 1244.5
+           EditorPos 3023.5 1259.5
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -215,14 +240,14 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
            m_sDebugMessage "Just Run From Danger"
            m_eAICategory BEHAVIOR
           }
-          SCR_AICompleteAction "SCR_AI Complete Action" {
-           Name "SCR_AI Complete Action"
-           EditorPos 2534.429 1250.858
-          }
           AITaskReturnState "Return State" {
            Name "Return State"
-           EditorPos 2762.703 1251.393
-           Result RUNNING
+           EditorPos 3273.036 1252.726
+           Result SUCCESS
+          }
+          SCR_AICompleteAction "SCR_AI Complete Action" {
+           Name "SCR_AI Complete Action"
+           EditorPos 3460 1270
           }
          }
         }
@@ -303,7 +328,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
  VariablesRefs {
   VariableReference positionToRun {
    VariableType 0
-   EditorPos 1456.663 1221.688
+   EditorPos 2171.663 1378.688
   }
   VariableReference dangerPos {
    VariableType 2
@@ -315,27 +340,27 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
   }
   VariableReference dangerEntity {
    VariableType 1
-   EditorPos -425.341 1249.679
+   EditorPos 299.659 1264.679
   }
   VariableReference dangerPos {
    VariableType 2
-   EditorPos -413.181 1326.842
+   EditorPos 311.819 1341.842
   }
   VariableReference searchCenter {
    VariableType 3
-   EditorPos 76.45 1286.515
+   EditorPos 801.45 1301.515
   }
   VariableReference coverQuer {
    VariableType 6
-   EditorPos 669.929 1628.286
+   EditorPos 1394.929 1643.286
   }
   VariableReference covLock {
    VariableType 7
-   EditorPos 1076.5 1610
+   EditorPos 1801.5 1625
   }
   VariableReference stance {
    VariableType 5
-   EditorPos 1872.778 1544.333
+   EditorPos 2607.778 1539.333
   }
  }
 }

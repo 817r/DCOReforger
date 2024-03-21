@@ -1,4 +1,4 @@
-BehaviorTree {
+BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePositionBehavior.bt" {
  Name "AI/BehaviorTrees/Chimera/Soldier/ObservePositionBehavior.bt"
  Nodes {
   RootNode Root {
@@ -43,6 +43,24 @@ BehaviorTree {
             }
             SingleOutputPortContainer SingleOutputPortContainer {
              Port 11
+             PortName "UseMovement"
+            }
+            SingleOutputPortContainer SingleOutputPortContainerClass {
+             PortName "Position"
+            }
+            SingleOutputPortContainer SingleOutputPortContainerClass {
+             PortName "Duration"
+            }
+            SingleOutputPortContainer SingleOutputPortContainerClass {
+             PortName "Radius"
+            }
+            SingleOutputPortContainer SingleOutputPortContainerClass {
+             PortName "UseBinoculars"
+            }
+            SingleOutputPortContainer SingleOutputPortContainerClass {
+             PortName "Delay"
+            }
+            SingleOutputPortContainer SingleOutputPortContainerClass {
              PortName "UseMovement"
             }
            }
@@ -105,15 +123,15 @@ BehaviorTree {
         }
         Parallel Parallel {
          Name "Parallel"
-         EditorPos 1436.143 -11.445
+         EditorPos 2811.143 138.555
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 858.394 385.924
+           EditorPos 828.394 970.924
            Nodes {
             SCR_AIGetObserveUnknownFireBehaviorParameters "SCR_AI Get Observe Position Behavior Parameters" {
              Name "SCR_AI Get Observe Position Behavior Parameters"
-             EditorPos 288.917 596.583
+             EditorPos 258.917 1181.583
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
                Port -1
@@ -136,14 +154,32 @@ BehaviorTree {
                PortName "Delay"
               }
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 13
+               Port 12
+               PortName "UseMovement"
+              }
+              SingleOutputPortContainer SingleOutputPortContainerClass {
+               PortName "Position"
+              }
+              SingleOutputPortContainer SingleOutputPortContainerClass {
+               PortName "Duration"
+              }
+              SingleOutputPortContainer SingleOutputPortContainerClass {
+               PortName "Radius"
+              }
+              SingleOutputPortContainer SingleOutputPortContainerClass {
+               PortName "UseBinoculars"
+              }
+              SingleOutputPortContainer SingleOutputPortContainerClass {
+               PortName "Delay"
+              }
+              SingleOutputPortContainer SingleOutputPortContainerClass {
                PortName "UseMovement"
               }
              }
             }
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos 973.576 589.242
+             EditorPos 839.076 1165.742
              Period 0.1
              PeriodRandom 0
             }
@@ -151,15 +187,15 @@ BehaviorTree {
           }
           SCR_AIDecoCombatMove_AimingAllowed "SCR_AI Deco Combat Move_ Aiming Allowed" {
            Name "SCR_AI Deco Combat Move_ Aiming Allowed"
-           EditorPos 1334.464 626.25
+           EditorPos 1304.464 1211.25
            Nodes {
             Sequence Sequence {
              Name "Sequence"
-             EditorPos 1468.88 754.334
+             EditorPos 1438.88 1339.334
              Nodes {
               SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
                Name "SCR_AI Get Random Point"
-               EditorPos 1266.306 914.195
+               EditorPos 920.528 1512.084
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
@@ -182,9 +218,33 @@ BehaviorTree {
                }
                m_Radius 50
               }
+              SCR_AITalk "SCR_AI Talk" {
+               Name "SCR_AI Talk"
+               EditorPos 1365.683 1498.334
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "SpeakerIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "TargetIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 13
+                 PortName "LocationIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "EnumIn"
+                }
+               }
+               m_messageType REPORT_CONTACT
+               m_ePreset MEDIUM
+              }
               AITaskCharacterAim "Character Aim" {
                Name "Character Aim"
-               EditorPos 1516.742 909.473
+               EditorPos 1536.742 1496.473
                InAimAtPosition 3
                PrecisionXZ 10
                PrecisionY 10
@@ -193,9 +253,9 @@ BehaviorTree {
               }
               AITaskIdle Idle {
                Name "Idle"
-               EditorPos 1699.797 905.147
+               EditorPos 1719.797 1484.147
                Period 0.35
-               PeriodRandom 0.7
+               PeriodRandom 0
               }
              }
             }
@@ -203,77 +263,68 @@ BehaviorTree {
           }
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 2130.095 754.924
+           EditorPos 2100.095 1339.924
            Nodes {
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos 2059.638 881.563
+             EditorPos 2022.495 1502.992
              Period 1
              PeriodKey 2
             }
             SCR_AICompleteAction "SCR_AI Complete Action" {
              Name "SCR_AI Complete Action"
-             EditorPos 2196.226 880.896
+             EditorPos 2188.012 1503.932
             }
            }
           }
-          DecoTestVariable "Test Variable" {
-           Name "Test Variable"
-           EditorPos 2890.715 783.571
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 3112.333 1266.333
            Nodes {
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 2906.5 946.333
-             Nodes {
-              SCR_AICombatMoveLogic_HideFromUnknownFire "SCR_AI Combat Move Logic_ Hide From Unknown Fire" {
-               Name "SCR_AI Combat Move Logic_ Hide From Unknown Fire"
-               EditorPos 2550 1078.333
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 10
-                 PortName "Position"
-                }
-               }
-              }
-              AITaskIdle Idle {
-               Name "Idle"
-               EditorPos 3057.788 1076.455
-               Period 0.5
-               PeriodRandom 0
+            SCR_AICombatMoveLogic_HideFromUnknownFire "SCR_AI Combat Move Logic_ Hide From Unknown Fire" {
+             Name "SCR_AI Combat Move Logic_ Hide From Unknown Fire"
+             EditorPos 2612.5 1438.333
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 10
+               PortName "Position"
               }
              }
             }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 3264.717 1439.205
+             Period 3
+             PeriodRandom 0
+            }
            }
-           InVariable 12
-           TestType EqualsValue
-           TestValue "true"
           }
           SCR_AIDecoCombatMove_AimingAllowed "SCR_AI Deco Combat Move_ Aiming Allowed" {
            Name "SCR_AI Deco Combat Move_ Aiming Allowed"
-           EditorPos 3924.167 457.5
+           EditorPos 4241.667 1050
            Nodes {
             Parallel Parallel {
              Name "Parallel"
-             EditorPos 4062.693 577.027
+             EditorPos 4380.193 1169.527
              Nodes {
               Sequence Sequence {
                Name "Sequence"
-               EditorPos 3713.31 831.381
+               EditorPos 4030.81 1423.881
                Nodes {
                 AITaskIdle Idle {
                  Name "Idle"
-                 EditorPos 3540.179 1015.345
+                 EditorPos 3857.679 1607.845
                  Group "{5C56A607287B1803}"
                  Period 0.5
                  PeriodRandom 2
                 }
                 Decorator "{5C4CF38255D28867}" {
                  Name "Decorator"
-                 EditorPos 3663.349 1002.08
+                 EditorPos 3980.849 1594.58
                  Nodes {
                   AITaskChangeStance "Change Stance" {
                    Name "Change Stance"
-                   EditorPos 3680.905 1130.524
+                   EditorPos 3998.405 1723.024
                    Group "{5C56A607287B1803}"
                    Stance CROUCH
                   }
@@ -283,7 +334,7 @@ BehaviorTree {
                 }
                 AITaskReturnState "Return State" {
                  Name "Return State"
-                 EditorPos 3876.131 1032.453
+                 EditorPos 4193.631 1624.953
                  Group "{5C56A607287B1803}"
                  Result RUNNING
                 }
@@ -292,22 +343,22 @@ BehaviorTree {
               }
               Sequence Sequence {
                Name "Sequence"
-               EditorPos 4390.453 827.096
+               EditorPos 4707.953 1419.596
                Nodes {
                 AITaskIdle Idle {
                  Name "Idle"
-                 EditorPos 4216.191 1031.461
+                 EditorPos 4533.691 1623.961
                  Group "{5C56A607287B1803}"
                  Period 0.5
                  PeriodRandom 2
                 }
                 Decorator "{5C4CF38255D289A1}" {
                  Name "Decorator"
-                 EditorPos 4358.255 995.191
+                 EditorPos 4675.755 1587.691
                  Nodes {
                   SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
                    Name "SCR_AI Set Weapon Raised"
-                   EditorPos 4352.5 1127.5
+                   EditorPos 4670 1720
                    InPorts {
                     SingleInputPortContainer SingleInputPortContainer {
                      Port -1
@@ -322,7 +373,7 @@ BehaviorTree {
                 }
                 AITaskReturnState "Return State" {
                  Name "Return State"
-                 EditorPos 4589.739 1012.309
+                 EditorPos 4907.239 1604.809
                  Group "{5C56A607287B1803}"
                  Result RUNNING
                 }
@@ -410,15 +461,15 @@ BehaviorTree {
   }
   VariableReference duration {
    VariableType 0
-   EditorPos 1911.156 915.305
+   EditorPos 1859.728 1595.305
   }
   VariableReference aimPosition {
    VariableType 2
-   EditorPos 1295.235 1051.794
+   EditorPos 1169.568 1687.921
   }
   VariableReference position {
    VariableType 1
-   EditorPos 1092.115 925.37
+   EditorPos 731.337 1505.259
   }
   VariableReference radius {
    VariableType 3
@@ -427,7 +478,7 @@ BehaviorTree {
   }
   VariableReference radius {
    VariableType 3
-   EditorPos 1119.858 1005.953
+   EditorPos 757.08 1601.842
   }
   VariableReference UseBinoculars {
    VariableType 4
@@ -446,7 +497,7 @@ BehaviorTree {
   }
   VariableReference position {
    VariableType 1
-   EditorPos 2390.973 1113.442
+   EditorPos 2442.044 1512.013
   }
   VariableReference UseMovement {
    VariableType 6
@@ -455,11 +506,11 @@ BehaviorTree {
   }
   VariableReference UseMovement {
    VariableType 6
-   EditorPos 2702.143 840.714
+   EditorPos 742.276 1336.613
   }
-  VariableReference UseMovement {
-   VariableType 6
-   EditorPos 772.276 751.613
+  VariableReference position {
+   VariableType 1
+   EditorPos 1191.578 1564.672
   }
  }
  Groups {

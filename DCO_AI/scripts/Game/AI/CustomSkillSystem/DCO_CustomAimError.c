@@ -27,12 +27,12 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EAISkill.ROOKIE :
 			{
-				sigma = 2.2;
+				sigma = 1.4;
 				break;
 			}
 			case EAISkill.REGULAR :
 			{
-				sigma = 1.7;
+				sigma = 1.0;
 				break;
 			}
 			case EAISkill.TRAINED :
@@ -42,12 +42,12 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EAISkill.VETERAN :
 			{
-				sigma = 0.8;
+				sigma = 0.6;
 				break;
 			}
 			case EAISkill.EXPERT :
 			{
-				sigma = 0.5;
+				sigma = 0.4;
 				break;
 			}
 			case EAISkill.CYLON :

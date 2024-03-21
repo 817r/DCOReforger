@@ -14,7 +14,7 @@ modded class SCR_AIThreatSystem
 	private static const float BLEEDING_FIXED_INCREMENT = 0.2;
 	private static const float SUPPRESSION_BULLET_INCREMENT = 0.10;
 	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.008;
-	private static const float DISTANT_SHOT_INCREMENT = 0.0004;
+	private static const float DISTANT_SHOT_INCREMENT = 0.0006;
 	private static const float EXPLOSION_MAX_INCREMENT = 0.6;
 	
 	//private static const float THREAT_PINNED_DROP__RATE = 0.08 * 0.001;

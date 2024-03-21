@@ -32,33 +32,9 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          Name "Character Raise Weapon"
          EditorPos -1485.139 828.611
         }
-        SCR_AITalk "SCR_AI Talk" {
-         Name "SCR_AI Talk"
-         EditorPos -1166.19 818.453
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "SpeakerIn"
-          }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "TargetIn"
-          }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "LocationIn"
-          }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "EnumIn"
-          }
-         }
-         m_messageType REPORT_ENGAGING
-         m_bTransmitIfPassenger 0
-        }
         SCR_AIGetAttackBehaviorParameters "SCR_AI Get Attack Behavior Parameters" {
          Name "SCR_AI Get Attack Behavior Parameters"
-         EditorPos -1015 818.778
+         EditorPos -1193.333 827.111
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
            Port 4
@@ -72,7 +48,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
         }
         SCR_AIGetBaseTargetProperties "SCR_AI Get Base Target Properties" {
          Name "SCR_AI Get Base Target Properties"
-         EditorPos -387.841 828.083
+         EditorPos -566.174 836.416
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 4
@@ -98,9 +74,34 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
          }
         }
+        SCR_AITalk "SCR_AI Talk" {
+         Name "SCR_AI Talk"
+         EditorPos -138.071 845.716
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "SpeakerIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 0
+           PortName "TargetIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "LocationIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "EnumIn"
+          }
+         }
+         m_messageType REPORT_TARGET
+         m_ePreset IMMEDIATE
+         m_bTransmitIfNoReceivers 1
+        }
         SCR_AIGetCombatMoveState "SCR_AI Get Combat Move State" {
          Name "SCR_AI Get Combat Move State"
-         EditorPos 190 840
+         EditorPos 72.5 852.5
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
            Port 29
@@ -130,7 +131,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
         }
         SCR_AIUpdateTargetAttackData "SCR_AI Update Target Attack Data" {
          Name "SCR_AI Update Target Attack Data"
-         EditorPos 622.5 1205.75
+         EditorPos 284.5 1259.75
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 11
@@ -497,7 +498,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
  VariablesRefs {
   VariableReference targetEntity {
    VariableType 0
-   EditorPos -55.212 863.317
+   EditorPos -358.938 1036.984
   }
   VariableReference targetEntity {
    VariableType 0
@@ -514,7 +515,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos -639.546 860.293
+   EditorPos -817.879 868.626
   }
   VariableReference baseTarget {
    VariableType 5
@@ -544,19 +545,19 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 382.333 1241.25
+   EditorPos 44.333 1295.25
   }
   VariableReference targetLastSeenPosition {
    VariableType 1
-   EditorPos 1008.482 1192.748
+   EditorPos 670.482 1246.748
   }
   VariableReference IsTargetVisible {
    VariableType 4
-   EditorPos 1010.818 1118.455
+   EditorPos 672.818 1172.455
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 1006.954 1265.954
+   EditorPos 668.954 1319.954
   }
   VariableReference iFireTreeId {
    VariableType 6
@@ -604,19 +605,19 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference eAimpointType0 {
    VariableType 7
-   EditorPos 1008.5 1342.5
+   EditorPos 670.5 1396.5
   }
   VariableReference eAimpointType1 {
    VariableType 3
-   EditorPos 1019.5 1435.167
+   EditorPos 681.5 1489.167
   }
   VariableReference WeaponReady {
    VariableType 2
-   EditorPos 416.591 1311.545
+   EditorPos 78.591 1365.545
   }
   VariableReference inCover {
    VariableType 8
-   EditorPos 482.333 876.667
+   EditorPos 364.833 889.167
   }
   VariableReference inCover {
    VariableType 8

@@ -7,9 +7,10 @@ SCR_ChimeraAIAgent {
   DCO_AIInfoComponent "{60DAF5419FFD87E8}" {
   }
   DCO_SkillComponent "{60DAF54189CA2E7C}" {
+   m_ERank PRIVATE
   }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
-   m_Skill 0.8
+   m_Skill 0.85
    m_EnableLeaderStop 1
   }
  }

@@ -126,6 +126,7 @@ BehaviorTree {
         }
        }
        m_messageType REPORT_MOVING
+       m_ePreset MANDATORY
        m_bTransmitIfPassenger 0
       }
       Parallel Parallel {
@@ -439,33 +440,71 @@ BehaviorTree {
            Nodes {
             SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
              Name "SCR_AI Deco Is Above Threat Level"
-             EditorPos 4121.286 577.202
+             EditorPos 3917.286 590.869
              Nodes {
-              Sequence Sequence {
-               Name "Sequence"
-               EditorPos 4207.555 785.277
+              Selector Selector {
+               Name "Selector"
+               EditorPos 4008.333 790
                Nodes {
-                AITaskCharacterRaiseWeapon "Character Raise Weapon" {
-                 Name "Character Raise Weapon"
-                 EditorPos 3470.834 1006.944
+                DecoTestDistanceToEntity "Test Distance To Entity" {
+                 Name "Test Distance To Entity"
+                 EditorPos 3571.833 999.197
+                 Nodes {
+                  Sequence Sequence {
+                   Name "Sequence"
+                   EditorPos 3636.166 1263.333
+                   Nodes {
+                    AITaskChangeStance "Change Stance" {
+                     Name "Change Stance"
+                     EditorPos 3186.881 1468.643
+                     Stance CROUCH
+                    }
+                    AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+                     Name "Character Set Movement Speed"
+                     EditorPos 3422.881 1474.595
+                     "Movement speed" WALK
+                    }
+                    SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+                     Name "SCR_AI Set Weapon Raised"
+                     EditorPos 3783.785 1467.452
+                     InPorts {
+                      SingleInputPortContainer SingleInputPortContainer {
+                       Port -1
+                       PortName "Raised"
+                      }
+                     }
+                    }
+                   }
+                  }
+                 }
+                 AbortType AbortParentNodeFurtherChildren
+                 InPosition 19
+                 DistanceThreshold 50
                 }
-                AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-                 Name "Character Set Movement Speed"
-                 EditorPos 3778 1015.667
-                 "Movement speed" WALK
-                }
-                AITaskChangeStance "Change Stance" {
-                 Name "Change Stance"
-                 EditorPos 4166.944 984.722
-                 Stance CROUCH
-                }
-                SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
-                 Name "SCR_AI Set Weapon Raised"
-                 EditorPos 4368.055 978.612
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "Raised"
+                Sequence Sequence {
+                 Name "Sequence"
+                 EditorPos 4386.889 991.087
+                 Nodes {
+                  AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+                   Name "Character Set Movement Speed"
+                   EditorPos 3961.619 1232.905
+                   "Movement speed" RUN
+                  }
+                  AITaskChangeStance "Change Stance" {
+                   Name "Change Stance"
+                   EditorPos 4369.099 1225.603
+                   Stance CROUCH
+                  }
+                  SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+                   Name "SCR_AI Set Weapon Raised"
+                   EditorPos 4625.424 1215.243
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port -1
+                     PortName "Raised"
+                    }
+                   }
+                   m_bWeaponRaised 0
                   }
                  }
                 }
@@ -489,23 +528,18 @@ BehaviorTree {
                Name "Sequence"
                EditorPos 5210.056 807.777
                Nodes {
-                AITaskCharacterRaiseWeapon "Character Raise Weapon" {
-                 Name "Character Raise Weapon"
-                 EditorPos 4803.556 1020
-                 Raise 0
-                }
                 AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
                  Name "Character Set Movement Speed"
-                 EditorPos 5072.404 1021.738
+                 EditorPos 4890.975 1028.881
                  "Movement speed" RUN
                 }
                 AITaskChangeStance "Change Stance" {
                  Name "Change Stance"
-                 EditorPos 5402.833 1017.056
+                 EditorPos 5262.833 1029.913
                 }
                 SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
                  Name "SCR_AI Set Weapon Raised"
-                 EditorPos 5597.199 1005.016
+                 EditorPos 5455.771 1035.016
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port -1
@@ -561,7 +595,7 @@ BehaviorTree {
   Variable initPosition {
    VariableName "initPosition"
    VariableTypeName "vector"
-   VariableExposedInput 0
+   VariableExposedInput 1
    VariableExposedOutput 0
   }
   Variable result {
@@ -678,6 +712,10 @@ BehaviorTree {
    VariableType 4
    EditorPos -2353.269 1009.744
    Group "{5C64A805E3F031E4}"
+  }
+  VariableReference position {
+   VariableType 0
+   EditorPos 3390.012 1074.955
   }
  }
  Groups {

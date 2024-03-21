@@ -25,6 +25,7 @@ class DCO_AIInfoComponent : ScriptComponent
 	private bool m_bHoldPosition;
 	private int m_fHoldPositionRadius = 80;
 	private vector m_vHoldPositionOrigin;
+	private DCO_CUSTOMRANK cussRank;
 	
 	private DCO_ECombatBehaviorType m_eCombatBehaviorType;
 	
@@ -208,6 +209,6 @@ class DCO_AIInfoComponent : ScriptComponent
 	
 	void setRank(int cusRank)
 	{
-		
+		cussRank = cusRank;
 	}
 }

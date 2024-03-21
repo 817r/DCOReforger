@@ -23,12 +23,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 100.0;
 	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.7;
-	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.4;
+	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.45;
 	
 	protected const float PERCEPTION_FACTOR_SAFE = 4.0;
 	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
-	protected const float PERCEPTION_FACTOR_ALERTED = 5.0; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 4.0;
+	protected const float PERCEPTION_FACTOR_ALERTED = 6.0; 
+	protected const float PERCEPTION_FACTOR_THREATENED = 5.0;
 	protected const float PERCEPTION_FACTOR_PINNED = 4.0;
 	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.0;
 
@@ -225,5 +225,37 @@ modded class SCR_AICombatComponent : ScriptComponent
 		}
 		
 		return magCount < lowMagThreshold;
+	}
+	
+	override protected void Event_OnDamageOverTimeAdded(EDamageType dType, float dps, HitZone hz)
+	{
+		if (dType != EDamageType.BLEEDING || !m_Utility || !m_Utility.m_AIInfo)
+			return;
+		
+		SCR_AIActionBase currentAction = SCR_AIActionBase.Cast(m_Utility.GetCurrentAction());
+		if (!currentAction)
+			return;
+		float priorityLevelClamped = currentAction.GetRestrictedPriorityLevel();
+		
+		if (m_Utility.m_AIInfo.HasRole(EUnitRole.MEDIC))
+		{
+			if (!m_Utility.HasActionOfType(SCR_AIHealBehavior))
+			{
+				// If we can heal ourselves, add Heal Behavior.
+				SCR_AIHealBehavior behavior = new SCR_AIHealBehavior(m_Utility, null, m_Utility.m_OwnerEntity, true, priorityLevel: priorityLevelClamped);
+				m_Utility.AddAction(behavior);
+			}
+		}
+		else if (m_Agent)
+		{
+			// If we immediately know that we can't heal ourselves, report to group
+			AIGroup myGroup = m_Agent.GetParentGroup();
+			if (myGroup)
+			{
+				SCR_MailboxComponent myMailbox = SCR_MailboxComponent.Cast(m_Agent.FindComponent(SCR_MailboxComponent));
+				SCR_AIMessage_Wounded msg = SCR_AIMessage_Wounded.Create(m_Utility.m_OwnerEntity);
+				myMailbox.RequestBroadcast(msg, myGroup);
+			}
+		}
 	}
 };

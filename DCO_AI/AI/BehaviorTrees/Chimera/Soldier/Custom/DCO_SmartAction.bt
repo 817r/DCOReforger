@@ -1,0 +1,39 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_SmartAction.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -50 -45
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -57.5 171
+    }
+   }
+  }
+  Sequence Sequence {
+   Name "Sequence"
+   EditorPos -1197.5 530
+   Nodes {
+    SCR_AIDecoHasWeaponOfType "SCR_AI Deco Has Weapon Of Type" {
+     Name "SCR_AI Deco Has Weapon Of Type"
+     EditorPos -1729 829
+     InPorts {
+      SingleInputPortContainer SingleInputPortContainerClass {
+       PortName "WeaponTypeIn"
+      }
+      SingleInputPortContainer SingleInputPortContainerClass {
+       PortName "MagazineWell"
+      }
+     }
+     OutPorts {
+      SingleOutputPortContainer SingleOutputPortContainerClass {
+       PortName "WeaponTypeOut"
+      }
+     }
+     m_WeaponType WT_SNIPERRIFLE
+    }
+   }
+  }
+ }
+}

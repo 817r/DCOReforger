@@ -1,0 +1,27 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_InvestigateClose.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -54 -32
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -60.5 166
+     Nodes {
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -734 496
+       BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePositionBehavior.bt"
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -252 500
+       BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
+      }
+     }
+    }
+   }
+  }
+ }
+}

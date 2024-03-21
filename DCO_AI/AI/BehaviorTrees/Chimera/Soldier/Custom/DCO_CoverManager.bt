@@ -36,7 +36,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
           }
           SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
            Name "SCR_AI Set Combat Move State"
-           EditorPos 115.834 449.333
+           EditorPos 104.834 441.333
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -55,7 +55,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
           }
           AITaskReturnState "Return State" {
            Name "Return State"
-           EditorPos 433.238 447.69
+           EditorPos 435.682 442.134
            Result RUNNING
           }
          }
@@ -95,76 +95,103 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
          EditorPos 307.333 1190.833
          "Movement speed" RUN
         }
-        SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
-         Name "SCR_AI Create Basic Cover Query Props"
-         EditorPos 699.166 1194.5
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "Position"
+        Selector Selector {
+         Name "Cover Or Move"
+         EditorPos 2095 807.5
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 1027 1485
+           Nodes {
+            SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
+             Name "SCR_AI Create Basic Cover Query Props"
+             EditorPos 214.166 1727
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "Position"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "Radius"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 4
+               PortName "CoverQueryProps"
+              }
+             }
+             Group "{60E9001F3E1D15BE}"
+             m_fRadius 35
+             m_bSelectHighestScoreCover 1
+            }
+            SCR_AIFindCover "SCR_AI Find Cover" {
+             Name "SCR_AI Find Cover"
+             EditorPos 832.222 1708.056
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 4
+               PortName "CoverQueryProps"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 5
+               PortName "CoverLock"
+              }
+             }
+             Group "{60E9001F3E1D15BE}"
+            }
+            SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
+             Name "SCR_AI Get Cover Parameters"
+             EditorPos 1224.999 1694.723
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "CoverLock"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 6
+               PortName "Pos"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 8
+               PortName "Stance"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 7
+               PortName "StanceHide"
+              }
+             }
+             Group "{60E9001F3E1D15BE}"
+            }
+            AITaskMove Move {
+             Name "Move"
+             EditorPos 1792.5 1701.666
+             Group "{60E9001F3E1D15BE}"
+             InTargetLocation 6
+            }
+           }
+           Group "{60E9001F3E1D15BE}"
           }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "Radius"
+          SCR_AICombatMoveLogic_HideFromUnknownFire "SCR_AI Combat Move Logic_ Hide From Unknown Fire" {
+           Name "SCR_AI Combat Move Logic_ Hide From Unknown Fire"
+           EditorPos 2221.357 1211.5
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 14
+             PortName "Position"
+            }
+           }
           }
          }
-         OutPorts {
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 4
-           PortName "CoverQueryProps"
-          }
-         }
-         m_fRadius 35
-         m_bSelectHighestScoreCover 1
-        }
-        SCR_AIFindCover "SCR_AI Find Cover" {
-         Name "SCR_AI Find Cover"
-         EditorPos 1317.222 1175.556
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 4
-           PortName "CoverQueryProps"
-          }
-         }
-         OutPorts {
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 5
-           PortName "CoverLock"
-          }
-         }
-        }
-        SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
-         Name "SCR_AI Get Cover Parameters"
-         EditorPos 1709.999 1162.223
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 5
-           PortName "CoverLock"
-          }
-         }
-         OutPorts {
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 6
-           PortName "Pos"
-          }
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 8
-           PortName "Stance"
-          }
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 7
-           PortName "StanceHide"
-          }
-         }
-        }
-        AITaskMove Move {
-         Name "Move"
-         EditorPos 2460 1171.666
-         InTargetLocation 6
         }
         AITaskIdle Idle {
          Name "Idle"
-         EditorPos 2838.5 1177
+         EditorPos 2780.5 1207
          Period 1.2
         }
         Selector Selector {
@@ -198,6 +225,30 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
           }
          }
         }
+        SCR_AITalk "SCR_AI Talk" {
+         Name "SCR_AI Talk"
+         EditorPos 3345 1165
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "SpeakerIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "TargetIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "LocationIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "EnumIn"
+          }
+         }
+         m_messageType REPORT_MOVING
+         m_ePreset MEDIUM
+        }
         AITaskChangeStance "Change Stance" {
          Name "Change Stance"
          EditorPos 3830.024 1234.238
@@ -206,7 +257,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
         }
         SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
          Name "SCR_AI Set Combat Move State"
-         EditorPos 4061.881 1226.763
+         EditorPos 4061.881 1224.763
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -408,23 +459,28 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
   }
   VariableReference coverQuery {
    VariableType 4
-   EditorPos 1100.555 1324.445
+   EditorPos 615.555 1856.945
+   Group "{60E9001F3E1D15BE}"
   }
   VariableReference coverLock1 {
    VariableType 5
-   EditorPos 1505.444 1323.778
+   EditorPos 1020.444 1856.278
+   Group "{60E9001F3E1D15BE}"
   }
   VariableReference coverPos {
    VariableType 6
-   EditorPos 2030.416 1161.667
+   EditorPos 1545.416 1694.167
+   Group "{60E9001F3E1D15BE}"
   }
   VariableReference coverStanceHdie {
    VariableType 7
-   EditorPos 2027.083 1301.667
+   EditorPos 1542.083 1834.167
+   Group "{60E9001F3E1D15BE}"
   }
   VariableReference coverStanceNorm {
    VariableType 8
-   EditorPos 2022.916 1231.667
+   EditorPos 1537.916 1764.167
+   Group "{60E9001F3E1D15BE}"
   }
   VariableReference friendlyPos {
    VariableType 9
@@ -444,12 +500,20 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
   }
   VariableReference coverStanceHdie {
    VariableType 7
-   EditorPos 2402.785 1807.94
+   EditorPos 2436.118 1771.273
+  }
+  VariableReference lastSeen {
+   VariableType 2
+   EditorPos 2049.201 1283.64
   }
  }
  Groups {
   BTGroup "{60DECB6AABBC261D}" {
    Name "Init"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{60E9001F3E1D15BE}" {
+   Name "Move to Cover"
    Color 0.6 0.6 0.6 0.251
   }
  }
