@@ -39,7 +39,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
           }
           SCR_AISendOrder_Stance "SCR_AI Send Order_ Stance" {
            Name "SCR_AI Send Order_ Stance"
-           EditorPos -791.619 1066.596
+           EditorPos -791.619 1064.929
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -60,7 +60,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
          Nodes {
           SCR_AIGetSidePosition "SCR_AI Get Side Position" {
            Name "SCR_AI Get Side Position"
-           EditorPos 553.063 1265.397
+           EditorPos 554.73 1265.397
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port 3
@@ -178,7 +178,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
                PortName "ResultVector"
               }
              }
-             m_Radius 3
+             m_Radius 5
             }
            }
           }

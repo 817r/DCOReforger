@@ -105,7 +105,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
            Nodes {
             SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
              Name "SCR_AI Create Basic Cover Query Props"
-             EditorPos 214.166 1727
+             EditorPos 212.499 1727
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -123,7 +123,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
               }
              }
              Group "{60E9001F3E1D15BE}"
-             m_fRadius 35
+             m_fRadius 30
              m_bSelectHighestScoreCover 1
             }
             SCR_AIFindCover "SCR_AI Find Cover" {

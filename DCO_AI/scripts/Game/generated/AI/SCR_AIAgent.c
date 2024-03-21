@@ -21,35 +21,4 @@ modded class SCR_ChimeraAIAgent : ChimeraAIAgent
 	protected SCR_AISettingsComponent m_SCR_AISettingsComponent;
 	
 	protected SCR_GadgetManagerComponent m_SCR_GadgetManagerComponent;
-
-	void SetFireteam(SCR_AIGroupFireteam fireteam)
-	{
-		m_SCR_AIGroupFireteam = fireteam;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	SCR_AIGroupFireteam GetFireteam()
-	{
-		return m_SCR_AIGroupFireteam;
-	}
-
-	ref array<ref SCR_AIGroupFireteam> GetFireteams()
-	{
-		if (m_SCR_AIGroupFireteams.IsEmpty())
-			return null;
-		
-		return m_SCR_AIGroupFireteams;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	vector GetSpawnPositinOrigin()
-	{
-		return m_vSpawnPositionOrigin;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	void AddFireteam(SCR_AIGroupFireteam fireteam)
-	{	
-		m_SCR_AIGroupFireteams.Insert(fireteam);
-	}
 };

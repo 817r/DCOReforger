@@ -11,14 +11,7 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 		DCO_CUSTOMRANK cusRank;
 		
 		SCR_EditableEntityComponent editableEntityComponent = SCR_EditableEntityComponent.Cast(item);
-		
-		SCR_AIGroup aiGroup = DCO_EditableEntityTypes.GetAIGroup(editableEntityComponent);
-		
-		if (aiGroup)
-			agent = aiGroup.GetLeaderAgent();
-		else
-			agent = DCO_EditableEntityTypes.GetAIAgent(editableEntityComponent);
-		
+
 		if (agent == null)
 			return null;
 		
@@ -36,7 +29,6 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 		if (var)
 		{
 			AIAgent agent;
-			DCO_Skill skill;
 			DCO_CUSTOMRANK cusRank = var.GetInt();
 			
 			DCO_SkillComponent dcoSkillComponent;
@@ -48,44 +40,6 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 			SCR_CharacterRankComponent characterRankComponent;
 			
 			SCR_EditableEntityComponent editableEntityComponent = SCR_EditableEntityComponent.Cast(item);
-			
-			SCR_AIGroup aiGroup = DCO_EditableEntityTypes.GetAIGroup(editableEntityComponent);
-			
-			if (aiGroup)
-			{
-				array<AIAgent> agents = {};
-				
-				aiGroup.GetAgents(agents);
-				
-				int agentsCount = agents.Count();
-				
-				for (int i = 0; i < agentsCount; ++i)
-				{
-					agent = agents[i];
-					
-					controlledEntity = agent.GetControlledEntity();
-					DCO_SetRanking(cusRank);
-					SetSkill(agent, controlledEntity, cusRank);
-				}
-			}
-			else
-			{
-				agent = DCO_EditableEntityTypes.GetAIAgent(editableEntityComponent);
-				
-				if (agent)
-				{
-					controlledEntity = agent.GetControlledEntity();
-					
-					if (controlledEntity)
-					{
-						//characterRankComponent = SCR_CharacterRankComponent.Cast(controlledEntity.FindComponent(SCR_CharacterRankComponent));
-						//dcoSkillComponent = DCO_SkillComponent.Cast(controlledEntity.FindComponent(DCO_SkillComponent));
-						
-						DCO_SetRanking(cusRank);
-						SetSkill(agent, controlledEntity, cusRank);
-					}
-				}
-			}
 		}
 	}
 	

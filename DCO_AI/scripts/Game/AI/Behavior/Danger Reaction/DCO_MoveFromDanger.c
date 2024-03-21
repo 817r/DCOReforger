@@ -11,12 +11,6 @@ modded class SCR_AIMoveFromDangerBehavior : SCR_AIBehaviorBase
 		super.OnActionSelected();
 		
 		m_OwnerEntity = m_Utility.m_OwnerEntity;
-		
-		if (m_CharacterControllerComponent)
-			m_DisableMovementControls = m_CharacterControllerComponent.GetDisableMovementControls();
-		
-		if (m_DisableMovementControls)
-			Fail();
 	}
 	
 	override void InitParameters(IEntity dangerEntity, vector dangerPos)

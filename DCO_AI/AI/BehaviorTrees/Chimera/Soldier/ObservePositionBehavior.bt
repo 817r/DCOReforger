@@ -22,45 +22,51 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
            EditorPos -1627.444 649
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 1
+             Port -1
              PortName "Position"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 0
+             Port -1
              PortName "Duration"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 5
+             Port -1
              PortName "Radius"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 7
+             Port -1
              PortName "UseBinoculars"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 9
+             Port -1
              PortName "Delay"
             }
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 11
+             Port -1
              PortName "UseMovement"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 1
              PortName "Position"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 0
              PortName "Duration"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 5
              PortName "Radius"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 7
              PortName "UseBinoculars"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 9
              PortName "Delay"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 11
              PortName "UseMovement"
             }
            }
@@ -154,7 +160,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
                PortName "Delay"
               }
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 12
+               Port -1
                PortName "UseMovement"
               }
               SingleOutputPortContainer SingleOutputPortContainerClass {
@@ -173,6 +179,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
                PortName "Delay"
               }
               SingleOutputPortContainer SingleOutputPortContainerClass {
+               Port 12
                PortName "UseMovement"
               }
              }
@@ -473,7 +480,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
   }
   VariableReference radius {
    VariableType 3
-   EditorPos -1093.611 762.856
+   EditorPos -1087.247 761.038
    Group "{5C56A6044E03EE3C}"
   }
   VariableReference radius {
