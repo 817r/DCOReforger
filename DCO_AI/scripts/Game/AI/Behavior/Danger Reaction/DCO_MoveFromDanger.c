@@ -9,7 +9,7 @@ modded class SCR_AIMoveFromDangerBehavior : SCR_AIBehaviorBase
 	override void OnActionSelected()
 	{
 		super.OnActionSelected();
-		
+
 		m_OwnerEntity = m_Utility.m_OwnerEntity;
 	}
 	

@@ -84,7 +84,6 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 		if (aiInfoComponent)
 		{
 			aiCombatComponent.SetAISkill(skill);
-			float aimAccuracyErrorModifier = aiInfoComponent.GetAimAccuracyErrorModifier();
 		}
 	}
 	

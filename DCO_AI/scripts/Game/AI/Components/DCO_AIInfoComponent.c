@@ -18,13 +18,6 @@ class DCO_AIInfoComponent : ScriptComponent
 	private float m_fPerceptionSafe;
 	private float m_fPerceptionVigilant;
 	
-	private float m_fAimAccuracyError;
-	private float m_fAimAccuracyErrorOriginal;
-	private float m_fAimAccuracyErrorModifier;
-	
-	private bool m_bHoldPosition;
-	private int m_fHoldPositionRadius = 80;
-	private vector m_vHoldPositionOrigin;
 	private DCO_CUSTOMRANK cussRank;
 	
 	private DCO_ECombatBehaviorType m_eCombatBehaviorType;
@@ -54,8 +47,6 @@ class DCO_AIInfoComponent : ScriptComponent
 				m_Entity = controlledEntity;
 				
 				vector origin = controlledEntity.GetOrigin();
-				
-				m_vHoldPositionOrigin = origin;
 			}
 		}
 	}
@@ -97,65 +88,6 @@ class DCO_AIInfoComponent : ScriptComponent
 		m_fPerceptionVigilant = perceptionVigilant;
 	}
 
-	float GetAimAccuracyError()
-	{
-		return m_fAimAccuracyError;
-	}
-	
-	void SetAimAccuracyError(float aimAccuracyError)
-	{
-		m_fAimAccuracyError = aimAccuracyError;
-	}
-	
-	float GetAimAccuracyErrorOriginal()
-	{
-		return m_fAimAccuracyErrorOriginal;
-	}
-	
-	void SetAimAccuracyErrorOriginal(float aimAccuracyErrorOriginal)
-	{
-		m_fAimAccuracyErrorOriginal = aimAccuracyErrorOriginal;
-	}
-	
-	float GetAimAccuracyErrorModifier()
-	{
-		return m_fAimAccuracyErrorModifier;
-	}
-	
-	void SetAimAccuracyErrorModifier(float aimAccuracyErrorModifier)
-	{
-		m_fAimAccuracyErrorModifier = aimAccuracyErrorModifier;
-	}
-
-	bool GetHoldPosition()
-	{
-		return m_bHoldPosition;
-	}
-	
-	void SetHoldPosition(bool holdPosition)
-	{
-		m_bHoldPosition = holdPosition;
-	}
-	
-	int GetHoldPositionRadius()
-	{
-		return m_fHoldPositionRadius;
-	}
-	
-	void SetHoldPositionRadius(int holdPositionRadius)
-	{
-		m_fHoldPositionRadius = holdPositionRadius;
-	}
-	
-	vector GetHoldPositionOrigin()
-	{
-		return m_vHoldPositionOrigin;
-	}
-	
-	void SetHoldPositionOrigin(vector holdPositionOrigin)
-	{
-		m_vHoldPositionOrigin = holdPositionOrigin;
-	}
 
 	float GetAttackReactionDelayModifier()
 	{

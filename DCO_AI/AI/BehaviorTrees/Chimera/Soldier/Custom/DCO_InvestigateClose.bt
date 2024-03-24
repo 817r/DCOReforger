@@ -11,12 +11,12 @@ BehaviorTree {
      Nodes {
       RunBT RunBT {
        Name "RunBT"
-       EditorPos -3289.647 429.111
+       EditorPos -1539.647 284.111
        BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
       }
       SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
        Name "SCR_AI Set Weapon Raised"
-       EditorPos -2742.712 441.524
+       EditorPos -992.712 296.524
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port -1
@@ -26,14 +26,14 @@ BehaviorTree {
       }
       SCR_AIGetInvestigateBehaviorParameters "SCR_AI Get Investigate Behavior Parameters" {
        Name "SCR_AI Get Investigate Behavior Parameters"
-       EditorPos -2433.333 431.667
+       EditorPos -683.333 286.667
        OutPorts {
         SingleOutputPortContainer SingleOutputPortContainer {
          Port 0
          PortName "Position"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 1
+         Port -1
          PortName "isDangerous"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
@@ -56,7 +56,7 @@ BehaviorTree {
       }
       SCR_AILookAtPosition "SCR_AI Look At Position" {
        Name "SCR_AI Look At Position"
-       EditorPos -1571.712 402.841
+       EditorPos 178.288 257.841
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port 0
@@ -73,10 +73,11 @@ BehaviorTree {
          PortName "PositionOut"
         }
        }
+       m_fVerticalOffset 1
       }
       SCR_AITalk "SCR_AI Talk" {
        Name "SCR_AI Talk"
-       EditorPos -1314.569 405.476
+       EditorPos 435.431 260.476
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port -1
@@ -99,6 +100,12 @@ BehaviorTree {
        m_ePreset MANDATORY
        m_bTransmitIfPassenger 0
       }
+      AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+       Name "Set Pathfinding Filters"
+       EditorPos 611.667 286.667
+       NavmeshProject "Soldiers"
+       IgnoreFlags 24
+      }
       Parallel Parallel {
        Name "Parallel"
        EditorPos 1958.955 198.786
@@ -111,48 +118,40 @@ BehaviorTree {
            Name "Sequence"
            EditorPos -668.5 961.5
            Nodes {
-            SCR_AIGetRandomPointWithExclude "SCR_AI Get Random Point With Exclude" {
-             Name "SCR_AI Get Random Point With Exclude"
-             EditorPos -1215.739 1283.763
+            SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
+             Name "SCR_AI Get Random Point"
+             EditorPos -1133 1311
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
-               PortName "Entity"
+               PortName "Waypoint"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 2
-               PortName "SearchCenter"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "SearchRadius"
+               Port 1
+               PortName "Origin"
               }
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
-               PortName "ExclusionCenter"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "ExclusionRadius"
+               PortName "Radius"
               }
              }
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 3
-               PortName "Position"
+               Port 2
+               PortName "ResultVector"
               }
              }
-             m_fSearchRadius 12
-             m_iIterationCount 5
+             m_Radius 7
             }
             AITaskMove Move {
              Name "Move"
-             EditorPos -683.059 1256.377
+             EditorPos -674.877 1262.741
              Group "{5C64A805E3F031E4}"
-             InTargetLocation 3
+             InTargetLocation 2
              InTargetOrientation -1
              InPrecisionXZ -1
              PrecisionXZ 1
+             PrecisionY 1
              RequestResult -1
             }
             AITaskIdle Idle {
@@ -427,11 +426,7 @@ BehaviorTree {
  VariablesRefs {
   VariableReference initPosition {
    VariableType 8
-   EditorPos -1851.963 401.285
-  }
-  VariableReference isDangerous {
-   VariableType 9
-   EditorPos -1846.661 487.708
+   EditorPos -101.963 256.285
   }
   VariableReference initPosition {
    VariableType 8
@@ -439,7 +434,7 @@ BehaviorTree {
   }
   VariableReference movePos {
    VariableType 11
-   EditorPos -859.5 1338.761
+   EditorPos -865.864 1346.034
   }
  }
 }

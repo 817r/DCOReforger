@@ -34,10 +34,6 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	private int unitPrefabSlots;
 	
 	private SCR_AIGroup m_SCR_AIGroup;
-	
-	private int m_iCombatMoveChance;
-	private int m_iCombatCoverChance;
-	private int m_iCombatDefendChance;
 
 	private DCO_ECombatBehaviorType m_eCombatBehaviorType = DCO_ECombatBehaviorType.DEFAULT;
 	private DCO_ECombatMovementType m_eCombatMovementType = DCO_ECombatMovementType.AUTONOMOUS;
@@ -105,36 +101,6 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 		m_sInstance = this;
 		super.OnPostInit(owner);
 		SetEventMask(owner, EntityEvent.INIT);
-	}
-	
-	int GetCombatMoveChance()
-	{
-		return m_iCombatMoveChance;
-	}
-	
-	void SetCombatMoveChance(int combatMoveChance)
-	{
-		m_iCombatMoveChance = combatMoveChance;
-	}
-	
-	int GetCombatCoverChance()
-	{
-		return m_iCombatCoverChance;
-	}
-	
-	void SetCombatCoverChance(int combatCoverChance)
-	{
-		m_iCombatCoverChance = combatCoverChance;
-	}
-	
-	int GetCombatDefendChance()
-	{
-		return m_iCombatDefendChance;
-	}
-	
-	void SetCombatDefendChance(int combatDefendChance)
-	{
-		m_iCombatDefendChance = combatDefendChance;
 	}
 	
 	DCO_ECombatBehaviorType GetCombatBehaviorType()

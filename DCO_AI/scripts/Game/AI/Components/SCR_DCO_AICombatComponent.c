@@ -23,16 +23,16 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 100.0;
 	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.7;
-	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.45;
+	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.3;
 	
 	protected const float PERCEPTION_FACTOR_SAFE = 4.0;
 	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
 	protected const float PERCEPTION_FACTOR_ALERTED = 6.0; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 5.0;
+	protected const float PERCEPTION_FACTOR_THREATENED = 4.0;
 	protected const float PERCEPTION_FACTOR_PINNED = 4.0;
 	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.0;
 
-	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.0;
+	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 4.0;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
 	
 	static const float LONG_RANGE_FIRE_DISTANCE = 200.0;
@@ -75,7 +75,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	}
 	
 	//------------------------------------------------------------------------------------------------
-	protected static const float DISTANCE_MAX = 500; 
+	protected static const float DISTANCE_MAX = 800; 
 	protected static const float DISTANCE_MIN = 5; // Minimal distance when movement is allowed
 	private static const float NEAR_PROXIMITY = 2;
 	// TODO: add possibility to get cover towards custom position

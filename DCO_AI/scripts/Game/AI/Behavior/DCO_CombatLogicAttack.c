@@ -122,7 +122,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility = true;
 
-		float coverSearchDistMin = 2;
+		float coverSearchDistMin = 0;
 		float coverSearchDistMax = 20;
 		float moveDistanceMax = 10;
 		if (m_bCloseRangeCombat)
@@ -216,7 +216,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					rq.m_eMovementType = EMovementType.SPRINT;
 						else
 					rq.m_eMovementType = EMovementType.RUN;
-					rq.m_eStanceEnd = ECharacterStance.PRONE;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					rq.m_bAimAtTarget = false;
 					break;
 				}
@@ -439,6 +439,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		
 		// When using those weapons we want to move much less
 		bool longWaitTime = false;
+		bool specialistTime = false;
 		switch (weaponType)
 		{
 			case EWeaponType.WT_MACHINEGUN:
@@ -448,11 +449,21 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				longWaitTime = true;
 		}
 		
+		switch (weaponType)
+		{
+			case EWeaponType.WT_MACHINEGUN:
+			case EWeaponType.WT_SNIPERRIFLE:
+				specialistTime = true;
+		}
+		
 		if (longWaitTime)
 			waitTime *= 2.0;
 		
+		if(specialistTime)
+			waitTime *= 1.5;
+		
 		if(m_bCloseRangeCombat)
-			waitTime = waitTime/2;
+			waitTime = waitTime/3;
 		
 		return waitTime;
 	}

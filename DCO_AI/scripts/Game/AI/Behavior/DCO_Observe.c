@@ -1,17 +1,17 @@
 modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 {
-	protected const float TIMEOUT_S = 5.0;
-	protected const float DURATION_MIN_S = 3.0;			// Min duration of behavior
+	protected const float TIMEOUT_S = 3.0;
+	protected const float DURATION_MIN_S = 1.0;			// Min duration of behavior
 	protected const float DIRECTION_SPAN_DEG = 32.0;	
 	protected const float DURATION_S_PER_METER = 0.01;	// How duration depends on distance
-	protected const float USE_BINOCULARS_DISTANCE_THRESHOLD = 120;
+	protected const float USE_BINOCULARS_DISTANCE_THRESHOLD = 80;
 	
-	protected const float HIGH_PRIORITY_MAX_DISTANCE = 100; // Max distance at which we consider observing unknown fire a high priority
+	protected const float HIGH_PRIORITY_MAX_DISTANCE = 50; // Max distance at which we consider observing unknown fire a high priority
 	
-	protected const float DELAY_MIN_S = 0.01;			// Min delay before we start looking at the position
+	protected const float DELAY_MIN_S = 0.1;			// Min delay before we start looking at the position
 	protected const float DELAY_S_PER_METER = 0.001;	// How the delay increases depending on dista
 	
-	protected const float RED_AREA = 40;
+	protected const float RED_AREA = 15;
 	protected const float YELLOW_AREA = 80;
 	
 	ref SCR_BTParam<vector> m_vPosition = new SCR_BTParam<vector>("Position");
@@ -30,23 +30,15 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 		float distance;
 		IEntity controlledEntity = utility.GetAIAgent().GetControlledEntity();
 		distance = vector.Distance(controlledEntity.GetOrigin(), posWorld);
-		
-		if(distance <= YELLOW_AREA)
-		{
-			m_sBehaviorTree = "{802BA7E7B6A62323}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_InvestigateClose.bt";
-			m_fPriorityLevel.m_Value = 65;
-		} else
-		{
-			m_sBehaviorTree = "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePositionBehavior.bt";
-				if (distance <= HIGH_PRIORITY_MAX_DISTANCE)
-					m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE_HIGH_PRIORITY;
-			m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE;
-		} 
+		m_sBehaviorTree = "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePositionBehavior.bt";
+			if (distance <= HIGH_PRIORITY_MAX_DISTANCE)
+				m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE_HIGH_PRIORITY;
+		m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE; 
 		m_bAllowLook = false;
 		m_bResetLook = true;
 		m_bUseCombatMove = useMovement;
 		SetIsUniqueInActionQueue(true);
-		m_fThreat = 0.95 * SCR_AIThreatSystem.VIGILANT_THRESHOLD;
+		m_fThreat = 1.01 * SCR_AIThreatSystem.VIGILANT_THRESHOLD;
 		m_fPriorityLevel.m_Value = priorityLevel;
 			
 		InitTiming(distance);

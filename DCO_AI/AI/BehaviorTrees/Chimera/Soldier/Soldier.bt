@@ -199,28 +199,41 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
       }
       SCR_AIDayNightTest "SCR_AI Day Night Test" {
        Name "SCR_AI Day Night Test"
-       EditorPos 2667.833 414.25
+       EditorPos 2748.166 419.917
        Nodes {
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 2698.945 580.556
+        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+         Name "SCR_AI Deco Is Above Threat Level"
+         EditorPos 2688.571 605.714
          Nodes {
-          RunOnce "Run Once" {
-           Name "Run Once"
-           EditorPos 2522.889 727.222
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 2777.072 803.366
            Nodes {
-            SCR_AIToggleFlashlightsOnSimulate "SCR_AI Toggle Flashlights On Simulate" {
-             Name "SCR_AI Toggle Flashlights On Simulate"
-             EditorPos 2417.897 851.952
-             m_bEnable 0
+            RunOnce "Run Once" {
+             Name "Run Once"
+             EditorPos 2594.905 948.365
+             Nodes {
+              SCR_AIToggleFlashlightsOnSimulate "SCR_AI Toggle Flashlights On Simulate" {
+               Name "SCR_AI Toggle Flashlights On Simulate"
+               EditorPos 2485.052 1082.262
+               m_bEnable 0
+              }
+             }
+            }
+            SCR_AIToggleFlashlightsOnAbort "SCR_AI Toggle Flashlights On Abort" {
+             Name "SCR_AI Toggle Flashlights On Abort"
+             EditorPos 2870.35 1076.143
             }
            }
           }
-          SCR_AIToggleFlashlightsOnAbort "SCR_AI Toggle Flashlights On Abort" {
-           Name "SCR_AI Toggle Flashlights On Abort"
-           EditorPos 2794.445 843.333
+         }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainerClass {
+           PortName "ThresholdIn"
           }
          }
+         NegativeCondition 1
+         m_threatThreshold THREATENED
         }
        }
        AbortType AbortChildrenBranch

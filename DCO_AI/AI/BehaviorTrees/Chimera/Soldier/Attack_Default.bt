@@ -34,7 +34,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
         }
         SCR_AIGetAttackBehaviorParameters "SCR_AI Get Attack Behavior Parameters" {
          Name "SCR_AI Get Attack Behavior Parameters"
-         EditorPos -1193.333 827.111
+         EditorPos -1191.333 827.111
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
            Port 4

@@ -129,6 +129,12 @@ BehaviorTree {
        m_ePreset MANDATORY
        m_bTransmitIfPassenger 0
       }
+      AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+       Name "Set Pathfinding Filters"
+       EditorPos 495 -178.333
+       NavmeshProject "Soldiers"
+       IgnoreFlags 24
+      }
       Parallel Parallel {
        Name "Parallel"
        EditorPos 4829.167 -585.833
