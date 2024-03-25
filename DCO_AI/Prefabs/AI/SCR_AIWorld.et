@@ -6,7 +6,7 @@ SCR_AIWorld {
    ShootingExposition 0.115
    CrouchingSize 0.2
    MinDistanceBetweenCovers 3
-   KneelingSize 0.7
+   KneelingSize 0.8
   }
   NavmeshWorldComponent "{5584F30E67F617AD}" {
    NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {

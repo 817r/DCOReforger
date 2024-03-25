@@ -7,7 +7,7 @@ modded class SCR_AICombatMoveUtils
 modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 {
 
-	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 1.0;//0.3 * Math.PI;
+	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.3 * Math.PI;
 	
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{

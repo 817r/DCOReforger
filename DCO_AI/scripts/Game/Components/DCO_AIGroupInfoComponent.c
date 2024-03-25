@@ -132,16 +132,6 @@ class DCO_AIInfoGroupComponent : ScriptComponent
 	{
 		m_iWeaponFiredReactionDistance = weaponFiredReactionDistance;
 	}
-	
-	bool GetIsAnyFireteamNearby()
-	{
-		return m_bIsAnyFireteamNearby;
-	}
-	
-	void SetIsAnyFireteamNearby(bool isAnyFireteamNearby)
-	{
-		m_bIsAnyFireteamNearby = isAnyFireteamNearby;
-	}
 
 	bool GetThrowGrenade()
 	{

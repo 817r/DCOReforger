@@ -126,7 +126,7 @@ BehaviorTree {
         }
        }
        m_messageType REPORT_MOVING
-       m_ePreset MANDATORY
+       m_ePreset MEDIUM
        m_bTransmitIfPassenger 0
       }
       AITaskSetPathfindingFilters "Set Pathfinding Filters" {

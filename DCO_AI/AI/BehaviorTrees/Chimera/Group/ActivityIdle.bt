@@ -11,32 +11,32 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
      Nodes {
       Sequence Sequence {
        Name "Sequence"
-       EditorPos -3503.813 997.602
+       EditorPos -2218.813 1012.602
        Nodes {
         AITaskSetVariable "Set Variable" {
          Name "Set Variable"
-         EditorPos -4349.909 1223.506
+         EditorPos -3064.909 1238.506
          Group "{60E6B86F9CA17457}"
          SetValue "true"
          OutVariable 4
         }
         AITaskSetVariable "Set Variable" {
          Name "Set Variable"
-         EditorPos -3980.67 1230.53
+         EditorPos -2695.67 1245.53
          Group "{60E6B86F9CA17457}"
          SetValue "30"
          OutVariable 1
         }
         AITaskGetGroupChildren "Get Group Children" {
          Name "Get Group Children"
-         EditorPos -3663.631 1208.713
+         EditorPos -2378.631 1223.713
          Group "{60E6B86F9CA17457}"
          IndexTo 0
          OutEntity 2
         }
         SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
          Name "SCR_AI Get Entity Position"
-         EditorPos -3232.201 1226.269
+         EditorPos -1947.201 1241.269
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 2
@@ -53,7 +53,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
         }
         AITaskCreatePosition "Create Position" {
          Name "Create Position"
-         EditorPos -2756.55 1210.879
+         EditorPos -1471.55 1225.879
          Group "{60E6B86F9CA17457}"
          InRootVector 3
          InEntity -1
@@ -61,61 +61,6 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
         }
        }
        Group "{60E6B86F9CA17457}"
-      }
-      ForEachChild "For Each Child" {
-       Name "For Each Child"
-       EditorPos -1452.369 996
-       Nodes {
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos -1426.941 1178.357
-         Nodes {
-          AITaskGetControlledEntity "Get Controlled Entity" {
-           Name "Get Controlled Entity"
-           EditorPos -1898.702 1375.857
-           Group "{60E6DE68905CD739}"
-           InEntity 20
-           OutControlledEntity -1
-           OutAgent 21
-          }
-          DecoIsInVehicle "Is In Vehicle" {
-           Name "Is In Vehicle"
-           EditorPos -1225.369 1325.381
-           Nodes {
-            SCR_AISendGoalMessage_GetOut "SCR_AI Send Goal Message_ Get Out" {
-             Name "SCR_AI Send Goal Message_ Get Out"
-             EditorPos -1258.797 1508.619
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 22
-               PortName "Receiver"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "PriorityLevel"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "IsWaypointRelated"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "VehicleEntity"
-              }
-             }
-             Group "{60E6DE68905CD739}"
-             m_sText "Leave vehicle"
-            }
-           }
-           Group "{60E6DE68905CD739}"
-           EntityIn 19
-          }
-         }
-         Group "{60E6DE68905CD739}"
-        }
-       }
-       Group "{60E6DE68905CD739}"
-       OutEntity 19
       }
       Sequence Sequence {
        Name "Sequence"
@@ -174,7 +119,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
               }
               SCR_AISetSmartActionReserved "SCR_AI Set Smart Action Reserved" {
                Name "SCR_AI Set Smart Action Reserved"
-               EditorPos 309.492 2092.687
+               EditorPos 309.492 2090.687
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port 11
@@ -218,7 +163,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
                }
                Group "{60E6B86F9645BFBF}"
                m_sText "Idle"
-               m_fPriorityLevel 52
+               m_fPriorityLevel 0
               }
              }
              Group "{60E6B86F9645BFBF}"
@@ -270,7 +215,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
                }
                Group "{60E6B86F9645BFBF}"
                m_sText "Get in to turret"
-               m_fPriorityLevel 53
+               m_fPriorityLevel 0
                m_eRoleInVehicle Turret
               }
              }
@@ -289,7 +234,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
       }
       AITaskReturnState "Return State" {
        Name "Return State"
-       EditorPos 471.833 593.857
+       EditorPos 646.833 622.19
        Result RUNNING
       }
      }
@@ -448,27 +393,27 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
  VariablesRefs {
   VariableReference originOfSearch {
    VariableType 0
-   EditorPos -2460.394 1325.038
+   EditorPos -1175.394 1340.038
    Group "{60E6B86F9CA17457}"
   }
   VariableReference radiusOfSearch {
    VariableType 1
-   EditorPos -3766.67 1332.864
+   EditorPos -2481.67 1347.864
    Group "{60E6B86F9CA17457}"
   }
   VariableReference leader {
    VariableType 2
-   EditorPos -3412.996 1316.49
+   EditorPos -2127.996 1331.49
    Group "{60E6B86F9CA17457}"
   }
   VariableReference LeaderPos {
    VariableType 3
-   EditorPos -2974.424 1328.713
+   EditorPos -1689.424 1343.713
    Group "{60E6B86F9CA17457}"
   }
   VariableReference useTurrets {
    VariableType 4
-   EditorPos -4105.527 1349.232
+   EditorPos -2820.527 1364.232
    Group "{60E6B86F9CA17457}"
   }
   VariableReference originOfSearch {
@@ -540,26 +485,6 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
    VariableType 3
    EditorPos 2663.472 1532.5
   }
-  VariableReference groupMemberEntity {
-   VariableType 16
-   EditorPos -1214.476 1085.5
-   Group "{60E6DE68905CD739}"
-  }
-  VariableReference groupMemberEntity {
-   VariableType 16
-   EditorPos -2189.536 1409.75
-   Group "{60E6DE68905CD739}"
-  }
-  VariableReference groupMember {
-   VariableType 6
-   EditorPos -1582.405 1428.321
-   Group "{60E6DE68905CD739}"
-  }
-  VariableReference groupMember {
-   VariableType 6
-   EditorPos -1574.893 1598.286
-   Group "{60E6DE68905CD739}"
-  }
  }
  Groups {
   BTGroup "{60E6B86F9645BFBF}" {
@@ -572,10 +497,6 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
   }
   BTGroup "{60E6B86F0378742E}" {
    Name "Unassigned Child"
-   Color 0.6 0.6 0.6 0.251
-  }
-  BTGroup "{60E6DE68905CD739}" {
-   Name "GetOut"
    Color 0.6 0.6 0.6 0.251
   }
  }

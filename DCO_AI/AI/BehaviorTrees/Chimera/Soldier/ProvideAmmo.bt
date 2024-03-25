@@ -71,7 +71,7 @@ BehaviorTree {
            PortName "MagazineWell"
           }
          }
-         m_FractionOfMagazines 0.25
+         m_FractionOfMagazines 0.2
         }
         AITaskCreatePosition "Create Position" {
          Name "Create Position"
@@ -141,7 +141,6 @@ BehaviorTree {
          }
          m_fSearchRadius 3
          m_fExcludeRadius 1
-         m_iIterationCount 50
         }
         AITaskMove Move {
          Name "Move"

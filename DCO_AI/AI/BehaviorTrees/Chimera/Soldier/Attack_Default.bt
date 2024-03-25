@@ -37,11 +37,18 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          EditorPos -1191.333 827.111
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 4
+           Port -1
            PortName "Target"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
            Port -1
+           PortName "WaitTime"
+          }
+          SingleOutputPortContainer SingleOutputPortContainerClass {
+           Port 4
+           PortName "Target"
+          }
+          SingleOutputPortContainer SingleOutputPortContainerClass {
            PortName "WaitTime"
           }
          }
@@ -76,7 +83,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
         }
         SCR_AITalk "SCR_AI Talk" {
          Name "SCR_AI Talk"
-         EditorPos -138.071 845.716
+         EditorPos -136.404 845.716
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -96,7 +103,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
          }
          m_messageType REPORT_TARGET
-         m_ePreset IMMEDIATE
+         m_ePreset MEDIUM
          m_bTransmitIfNoReceivers 1
         }
         SCR_AIGetCombatMoveState "SCR_AI Get Combat Move State" {
