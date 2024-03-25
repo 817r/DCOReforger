@@ -188,7 +188,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					moveDistanceMax = 5.0;
 					rq.m_eStanceMoving = ECharacterStance.PRONE;
 					rq.m_eMovementType = EMovementType.RUN;
-					if (Math.RandomIntInclusive(0, 5) > 1)
+					if (Math.RandomIntInclusive(1, 5) > 1)
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 						else
 					rq.m_eStanceEnd = ECharacterStance.PRONE;

@@ -217,7 +217,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
               }
              }
              m_messageType REPORT_UNDER_FIRE
-             m_ePreset IMMEDIATE
+             m_ePreset MEDIUM
              m_bTransmitIfPassenger 0
             }
             AITaskMove Move {

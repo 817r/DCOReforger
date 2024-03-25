@@ -1,7 +1,6 @@
 modded class SCR_AIMoveFromDangerBehavior : SCR_AIBehaviorBase
 {
 	protected vector m_DangerPos;
-	
 	protected IEntity m_OwnerEntity;
 	
 	protected bool m_DisableMovementControls;

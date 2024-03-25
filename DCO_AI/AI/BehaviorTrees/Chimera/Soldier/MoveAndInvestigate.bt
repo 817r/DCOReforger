@@ -141,7 +141,7 @@ BehaviorTree {
        Nodes {
         Sequence Sequence {
          Name "Sequence"
-         EditorPos 1341.166 16.166
+         EditorPos 1311.166 1.166
          Nodes {
           Parallel Parallel {
            Name "Parallel"
@@ -149,11 +149,11 @@ BehaviorTree {
            Nodes {
             Selector Selector {
              Name "Selector"
-             EditorPos -1164.893 648.493
+             EditorPos -1163.893 656.493
              Nodes {
               AITaskMove Move {
                Name "Move"
-               EditorPos -1490.574 854.851
+               EditorPos -1489.574 862.851
                Group "{5C64A805E3F031E4}"
                InTargetLocation 5
                InTargetOrientation -1
@@ -163,20 +163,20 @@ BehaviorTree {
               }
               DecoTestVariable "Test Variable" {
                Name "Test Variable"
-               EditorPos -968 861.334
+               EditorPos -967 869.334
                Nodes {
                 Sequence Sequence {
                  Name "Sequence"
-                 EditorPos -954.548 1028.358
+                 EditorPos -953.548 1036.358
                  Nodes {
                   SCR_AIFailAction "SCR_AI Fail Action" {
                    Name "SCR_AI Fail Action"
-                   EditorPos -1093 1211.334
+                   EditorPos -1092 1219.334
                    Group "{5C64A805E3F031E4}"
                   }
                   AITaskReturnState "Return  State" {
                    Name "Return  State"
-                   EditorPos -907.207 1216.056
+                   EditorPos -906.207 1224.056
                    Group "{5C64A805E3F031E4}"
                    Result RUNNING
                   }
@@ -191,20 +191,20 @@ BehaviorTree {
               }
               DecoTestVariable "Test Variable" {
                Name "Test Variable"
-               EditorPos -570.449 864.306
+               EditorPos -569.449 872.306
                Nodes {
                 Sequence Sequence {
                  Name "Sequence"
-                 EditorPos -554.831 1039.663
+                 EditorPos -553.831 1047.663
                  Nodes {
                   SCR_AIFailAction "SCR_AI Fail Action" {
                    Name "SCR_AI Fail Action"
-                   EditorPos -693.283 1222.639
+                   EditorPos -692.283 1230.639
                    Group "{5C64A805E3F031E4}"
                   }
                   AITaskReturnState "Return  State" {
                    Name "Return  State"
-                   EditorPos -507.99 1217.361
+                   EditorPos -506.99 1225.361
                    Group "{5C64A805E3F031E4}"
                    Result RUNNING
                   }
@@ -234,7 +234,7 @@ BehaviorTree {
                  Nodes {
                   AITaskSetVariable "Set Variable" {
                    Name "Set Variable"
-                   EditorPos -210.333 1284.64
+                   EditorPos -218.111 1304.64
                    Group "{5C65018B59CAAC0D}"
                    SetValue "false"
                    OutVariable 12
@@ -300,11 +300,11 @@ BehaviorTree {
             }
             Sequence Sequence {
              Name "Sequence"
-             EditorPos 879.167 668.476
+             EditorPos 835.238 652.405
              Nodes {
               SCR_AIGetInvestigateBehaviorParameters "SCR_AI Get Investigate Behavior Parameters" {
                Name "SCR_AI Get Investigate Behavior Parameters"
-               EditorPos 628.571 864.091
+               EditorPos 584.642 848.02
                OutPorts {
                 SingleOutputPortContainer SingleOutputPortContainer {
                  Port -1
@@ -335,7 +335,7 @@ BehaviorTree {
               }
               AITaskIdle Idle {
                Name "Idle"
-               EditorPos 1094.667 868.333
+               EditorPos 1050.738 852.262
                Group "{5C65018A80762E48}"
                PeriodRandom 1
               }
@@ -362,7 +362,7 @@ BehaviorTree {
              Nodes {
               SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
                Name "SCR_AI Get Random Point"
-               EditorPos 1694.833 1086.833
+               EditorPos 1597.778 1083.333
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
@@ -379,11 +379,10 @@ BehaviorTree {
                }
                OutPorts {
                 SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 0
+                 Port 2
                  PortName "ResultVector"
                 }
                }
-               m_Radius 50
               }
               SCR_AILookAtPosition "SCR_AI Look At Position" {
                Name "SCR_AI Look At Position"
@@ -404,7 +403,6 @@ BehaviorTree {
                  PortName "PositionOut"
                 }
                }
-               m_fPriority 40
               }
               AITaskMove Move {
                Name "Move"
@@ -412,6 +410,7 @@ BehaviorTree {
                InTargetLocation 0
                InTargetOrientation -1
                PrecisionXZ 1.5
+               PrecisionY -1
               }
               AITaskIdle Idle {
                Name "Idle"
@@ -430,7 +429,7 @@ BehaviorTree {
           }
           AITaskReturnState "Return  State" {
            Name "Return  State"
-           EditorPos 2702.46 716.389
+           EditorPos 2703.888 716.389
            Result RUNNING
           }
          }
@@ -459,19 +458,14 @@ BehaviorTree {
                    Name "Sequence"
                    EditorPos 3636.166 1258.333
                    Nodes {
-                    AITaskChangeStance "Change Stance" {
-                     Name "Change Stance"
-                     EditorPos 3186.881 1463.643
-                     Stance CROUCH
-                    }
                     AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
                      Name "Character Set Movement Speed"
-                     EditorPos 3422.881 1469.595
+                     EditorPos 3342.881 1463.881
                      "Movement speed" WALK
                     }
                     SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
                      Name "SCR_AI Set Weapon Raised"
-                     EditorPos 3783.785 1462.452
+                     EditorPos 3772.356 1456.738
                      InPorts {
                       SingleInputPortContainer SingleInputPortContainer {
                        Port -1
@@ -488,7 +482,7 @@ BehaviorTree {
                 }
                 Sequence Sequence {
                  Name "Sequence"
-                 EditorPos 4386.889 991.087
+                 EditorPos 4378.889 991.087
                  Nodes {
                   AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
                    Name "Character Set Movement Speed"
@@ -509,7 +503,6 @@ BehaviorTree {
                      PortName "Raised"
                     }
                    }
-                   m_bWeaponRaised 0
                   }
                  }
                 }
@@ -544,7 +537,7 @@ BehaviorTree {
                 }
                 SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
                  Name "SCR_AI Set Weapon Raised"
-                 EditorPos 5455.771 1030.016
+                 EditorPos 5457.2 1031.445
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port -1
@@ -571,8 +564,8 @@ BehaviorTree {
           AITaskIdle Idle {
            Name "Idle"
            EditorPos 5899.027 383.92
-           Period 1
-           PeriodRandom 0.1
+           Period 0.5
+           PeriodRandom 0.3
           }
          }
         }
@@ -637,7 +630,7 @@ BehaviorTree {
  VariablesRefs {
   VariableReference position {
    VariableType 0
-   EditorPos 1949.666 1207.254
+   EditorPos 2301.666 1197.254
   }
   VariableReference isDangerous {
    VariableType 1
@@ -649,7 +642,7 @@ BehaviorTree {
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos 1470.166 1150.31
+   EditorPos 1311.075 1093.037
   }
   VariableReference initPosition {
    VariableType 2
@@ -657,12 +650,12 @@ BehaviorTree {
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos -1759.111 921.888
+   EditorPos -1758.111 929.888
    Group "{5C64A805E3F031E4}"
   }
   VariableReference result {
    VariableType 3
-   EditorPos -1129.18 915.397
+   EditorPos -1128.18 923.397
    Group "{5C64A805E3F031E4}"
   }
   VariableReference radius {
@@ -671,11 +664,11 @@ BehaviorTree {
   }
   VariableReference radius {
    VariableType 4
-   EditorPos 1523 1231.143
+   EditorPos 1343.909 1197.507
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos -191.111 -120.556
+   EditorPos -181.111 -181.389
   }
   VariableReference resetTimer {
    VariableType 5
@@ -683,7 +676,7 @@ BehaviorTree {
   }
   VariableReference result {
    VariableType 3
-   EditorPos -719.463 919.561
+   EditorPos -718.463 927.561
    Group "{5C64A805E3F031E4}"
   }
   VariableReference resetTimer {
@@ -693,7 +686,7 @@ BehaviorTree {
   }
   VariableReference resetTimer {
    VariableType 5
-   EditorPos 1080.477 1020.715
+   EditorPos 1036.548 1004.644
    Group "{5C65018A80762E48}"
   }
   VariableReference timerValue {
@@ -715,7 +708,7 @@ BehaviorTree {
   }
   VariableReference radius {
    VariableType 4
-   EditorPos -1703.269 1002.744
+   EditorPos -1702.269 1010.744
    Group "{5C64A805E3F031E4}"
   }
   VariableReference position {

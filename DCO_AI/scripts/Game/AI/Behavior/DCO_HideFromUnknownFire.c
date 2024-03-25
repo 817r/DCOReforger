@@ -1,6 +1,6 @@
 modded class SCR_AICombatMoveLogic_HideFromUnknownFire : AITaskScripted
 {
-	protected static const float COVER_SEARCH_DIST_MAX = 15.0;
+	protected static const float COVER_SEARCH_DIST_MAX = 50.0;
 
 	override void CombatMoveLogic(vector threatPos, float distToThreat)
 	{

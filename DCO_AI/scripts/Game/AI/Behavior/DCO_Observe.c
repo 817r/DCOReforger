@@ -1,7 +1,7 @@
 modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 {
-	protected const float TIMEOUT_S = 5.0;
-	protected const float DURATION_MIN_S = 3.0;			// Min duration of behavior
+	protected const float TIMEOUT_S = 12.0;
+	protected const float DURATION_MIN_S = 4.0;			// Min duration of behavior
 	protected const float DIRECTION_SPAN_DEG = 32.0;	
 	protected const float DURATION_S_PER_METER = 0.01;	// How duration depends on distance
 	protected const float USE_BINOCULARS_DISTANCE_THRESHOLD = 80;
