@@ -29,38 +29,21 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				SCR_AIInfoComponent aiInfoComponent = utility.m_AIInfo;
 				
 				ECharacterStance stance = aiInfoComponent.GetStance();
-				
-				threatSystem.ThreatBulletImpact(dangerEvent.GetCount());
-				
+
 				float threatSuppression = utility.m_ThreatSystem.GetThreatSuppression();
 				
 				float distanceToDanger = vector.Distance(utility.GetOrigin(), dangerEvent.GetPosition());
 				
-				{					
+				if (threatSuppression > 0.8)	
 					utility.AddAction(new SCR_AIMoveFromUnknownFire(utility, null, shooterPos, shooter));
-				}
-				
-				return true;
 				
 				float distanceToShooter = vector.Distance(shooterPos, utility.GetOrigin());
 				
-					bool isNullTarget = utility.m_CombatComponent.GetCurrentTarget() == null;
+				bool isNullTarget = utility.m_CombatComponent.GetCurrentTarget() == null;
 
-					if (isNullTarget && distanceToDanger < 5 || distanceToDanger < 3)
-
-					{
-						EUnitAIState aiState = aiInfoComponent.GetAIState();
-						
-						if (isNullTarget || stance == ECharacterStance.PRONE)
-						{							
-							if (isNullTarget || distanceToDanger < 3)
-							{
-								utility.AddAction(new SCR_AIMoveFromUnknownFire(utility, null, shooterPos, shooter));
-							}
-						}
-					}
+				if (isNullTarget || distanceToDanger < 10 || distanceToDanger < 5)
+					utility.AddAction(new SCR_AIMoveFromUnknownFire(utility, null, shooterPos, shooter));
 			}
-			
 		}
 		
 		return true;

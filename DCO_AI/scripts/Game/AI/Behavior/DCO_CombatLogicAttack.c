@@ -7,7 +7,7 @@ modded class SCR_AICombatMoveUtils
 modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 {
 
-	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.3 * Math.PI;
+	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 	
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
@@ -123,8 +123,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_bCheckCoverVisibility = true;
 
 		float coverSearchDistMin = 0;
-		float coverSearchDistMax = 20;
-		float moveDistanceMax = 10;
+		float coverSearchDistMax = 50;
+		float moveDistanceMax = 50;
 		if (m_bCloseRangeCombat)
 		{
 			// Close range combat
@@ -186,9 +186,12 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					coverSearchDistMin = 2.0;
 					coverSearchDistMax = 8.0;
 					moveDistanceMax = 5.0;
+					if (Math.RandomIntInclusive(0, 1) == 1)
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					else
 					rq.m_eStanceMoving = ECharacterStance.PRONE;
 					rq.m_eMovementType = EMovementType.RUN;
-					if (Math.RandomIntInclusive(1, 5) > 1)
+					if (Math.RandomIntInclusive(1, 5) > 2)
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 						else
 					rq.m_eStanceEnd = ECharacterStance.PRONE;
@@ -212,7 +215,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					coverSearchDistMax = 15.0;
 					moveDistanceMax = 10.0;
 					rq.m_eStanceMoving = ECharacterStance.STAND;
-					if (Math.RandomIntInclusive(0, 5) > 1)
+					if (Math.RandomIntInclusive(1, 5) > 2)
 					rq.m_eMovementType = EMovementType.SPRINT;
 						else
 					rq.m_eMovementType = EMovementType.RUN;
@@ -244,7 +247,11 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		
 		// If we are not in cover, min cover search distance is overridden to 0, we should find any cover ASAP
 		if (!m_State.m_bInCover)
-			coverSearchDistMin = 0;
+		{
+			coverSearchDistMin = 3;
+			coverSearchDistMax = 70;
+		}
+			
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
@@ -376,15 +383,15 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_bCheckCoverVisibility = true;
 		rq.m_bFailIfNoCover = true;
 		rq.m_eStanceMoving = ECharacterStance.STAND;
-		rq.m_eStanceEnd = ECharacterStance.PRONE;
+		rq.m_eStanceEnd = ECharacterStance.CROUCH;
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD; // Move back from target
-		rq.m_fCoverSearchSectorHalfAngleRad = -1.0;
+		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
 		
 		rq.m_fCoverSearchDistMin = 5;
-		rq.m_fCoverSearchDistMax = 25;
+		rq.m_fCoverSearchDistMax = 50;
 		
 		m_State.ApplyNewRequest(rq);
 	}
@@ -400,6 +407,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_eStanceMoving = ECharacterStance.STAND;
 		rq.m_eStanceEnd = ECharacterStance.CROUCH;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_fMoveDistance = 10.0;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
@@ -495,8 +503,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			{
 				case EAIThreatState.THREATENED:
 					return ECharacterStance.PRONE;
-				case EAIThreatState.ALERTED:
-					return ECharacterStance.PRONE;
+				case EAIThreatState.VIGILANT:
+					return ECharacterStance.STAND;
 				default:
 					return ECharacterStance.CROUCH;
 			}

@@ -46,21 +46,27 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
              PortName "UseMovement"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 1
              PortName "Position"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 0
              PortName "Duration"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 4
              PortName "Radius"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 6
              PortName "UseBinoculars"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 8
              PortName "Delay"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
+             Port 10
              PortName "UseMovement"
             }
            }
@@ -72,7 +78,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
            Group "{5C56A6044E03EE3C}"
            Period 0
            PeriodRandom 0
-           PeriodKey 9
+           PeriodKey 8
           }
           Decorator Decorator {
            Name "Decorator"
@@ -110,7 +116,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
               }
              }
              Group "{5C56A6044E03EE3C}"
-             InVariable 8
+             InVariable 7
              TestType EqualsValue
              TestValue "true"
             }
@@ -121,20 +127,20 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
          }
          Group "{5C56A6044E03EE3C}"
         }
+        SCR_AICombatMoveLogic_HideFromUnknownFire "SCR_AI Combat Move Logic_ Hide From Unknown Fire" {
+         Name "SCR_AI Combat Move Logic_ Hide From Unknown Fire"
+         EditorPos 250.309 193.571
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 9
+           PortName "Position"
+          }
+         }
+        }
         Parallel Parallel {
          Name "Parallel"
          EditorPos 2811.143 138.555
          Nodes {
-          SCR_AICombatMoveLogic_HideFromUnknownFire "SCR_AI Combat Move Logic_ Hide From Unknown Fire" {
-           Name "SCR_AI Combat Move Logic_ Hide From Unknown Fire"
-           EditorPos -368.167 1105
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 10
-             PortName "Position"
-            }
-           }
-          }
           Sequence Sequence {
            Name "Sequence"
            EditorPos 828.394 970.924
@@ -183,6 +189,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
                PortName "Delay"
               }
               SingleOutputPortContainer SingleOutputPortContainerClass {
+               Port 11
                PortName "UseMovement"
               }
              }
@@ -212,50 +219,26 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
                  PortName "Waypoint"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 4
+                 Port 3
                  PortName "Origin"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 6
+                 Port 5
                  PortName "Radius"
                 }
                }
                OutPorts {
                 SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 3
+                 Port 2
                  PortName "ResultVector"
                 }
                }
                m_Radius 50
               }
-              SCR_AITalk "SCR_AI Talk" {
-               Name "SCR_AI Talk"
-               EditorPos 1365.683 1498.334
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "SpeakerIn"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "TargetIn"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 13
-                 PortName "LocationIn"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "EnumIn"
-                }
-               }
-               m_messageType REPORT_CONTACT
-               m_ePreset MEDIUM
-              }
               AITaskCharacterAim "Character Aim" {
                Name "Character Aim"
-               EditorPos 1536.742 1496.473
-               InAimAtPosition 3
+               EditorPos 1448.171 1506.473
+               InAimAtPosition 2
                PrecisionXZ 10
                PrecisionY 10
                Timeout 1
@@ -263,7 +246,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
               }
               AITaskIdle Idle {
                Name "Idle"
-               EditorPos 1719.797 1484.147
+               EditorPos 1702.654 1518.433
                Period 0.35
                PeriodRandom 0
               }
@@ -271,48 +254,32 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
             }
            }
           }
-          Sequence Sequence {
-           Name "Sequence"
-           EditorPos 2100.095 1339.924
-           Nodes {
-            AITaskIdle Idle {
-             Name "Idle"
-             EditorPos 2022.495 1502.992
-             Period 1
-             PeriodKey 2
-            }
-            SCR_AICompleteAction "SCR_AI Complete Action" {
-             Name "SCR_AI Complete Action"
-             EditorPos 2188.012 1503.932
-            }
-           }
-          }
           SCR_AIDecoCombatMove_AimingAllowed "SCR_AI Deco Combat Move_ Aiming Allowed" {
            Name "SCR_AI Deco Combat Move_ Aiming Allowed"
-           EditorPos 4241.667 1050
+           EditorPos 2826.667 1015
            Nodes {
             Parallel Parallel {
              Name "Parallel"
-             EditorPos 4380.193 1169.527
+             EditorPos 2965.193 1134.527
              Nodes {
               Sequence Sequence {
                Name "Sequence"
-               EditorPos 4030.81 1423.881
+               EditorPos 2615.81 1388.881
                Nodes {
                 AITaskIdle Idle {
                  Name "Idle"
-                 EditorPos 3857.679 1607.845
+                 EditorPos 2442.679 1572.845
                  Group "{5C56A607287B1803}"
                  Period 0.5
                  PeriodRandom 2
                 }
                 Decorator "{5C4CF38255D28867}" {
                  Name "Decorator"
-                 EditorPos 3980.849 1594.58
+                 EditorPos 2565.849 1559.58
                  Nodes {
                   AITaskChangeStance "Change Stance" {
                    Name "Change Stance"
-                   EditorPos 3998.405 1723.024
+                   EditorPos 2583.405 1688.024
                    Group "{5C56A607287B1803}"
                    Stance CROUCH
                   }
@@ -322,7 +289,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
                 }
                 AITaskReturnState "Return State" {
                  Name "Return State"
-                 EditorPos 4193.631 1624.953
+                 EditorPos 2778.631 1589.953
                  Group "{5C56A607287B1803}"
                  Result RUNNING
                 }
@@ -331,22 +298,22 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
               }
               Sequence Sequence {
                Name "Sequence"
-               EditorPos 4707.953 1419.596
+               EditorPos 3292.953 1384.596
                Nodes {
                 AITaskIdle Idle {
                  Name "Idle"
-                 EditorPos 4533.691 1623.961
+                 EditorPos 3118.691 1588.961
                  Group "{5C56A607287B1803}"
                  Period 0.5
                  PeriodRandom 2
                 }
                 Decorator "{5C4CF38255D289A1}" {
                  Name "Decorator"
-                 EditorPos 4675.755 1587.691
+                 EditorPos 3260.755 1552.691
                  Nodes {
                   SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
                    Name "SCR_AI Set Weapon Raised"
-                   EditorPos 4670 1720
+                   EditorPos 3255 1685
                    InPorts {
                     SingleInputPortContainer SingleInputPortContainer {
                      Port -1
@@ -361,7 +328,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
                 }
                 AITaskReturnState "Return State" {
                  Name "Return State"
-                 EditorPos 4907.239 1604.809
+                 EditorPos 3492.239 1569.809
                  Group "{5C56A607287B1803}"
                  Result RUNNING
                 }
@@ -375,6 +342,10 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
            Group "{5C56A607287B1803}"
           }
          }
+        }
+        SCR_AICompleteAction "SCR_AI Complete Action" {
+         Name "SCR_AI Complete Action"
+         EditorPos 3578.012 180.599
         }
        }
       }
@@ -447,10 +418,6 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
    EditorPos -1102.147 610.274
    Group "{5C56A6044E03EE3C}"
   }
-  VariableReference duration {
-   VariableType 0
-   EditorPos 1859.728 1595.305
-  }
   VariableReference aimPosition {
    VariableType 2
    EditorPos 1169.568 1687.921
@@ -485,7 +452,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
   }
   VariableReference position {
    VariableType 1
-   EditorPos -538.623 1178.68
+   EditorPos 69.853 281.251
   }
   VariableReference UseMovement {
    VariableType 6
@@ -495,10 +462,6 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
   VariableReference UseMovement {
    VariableType 6
    EditorPos 742.276 1336.613
-  }
-  VariableReference position {
-   VariableType 1
-   EditorPos 1191.578 1564.672
   }
  }
  Groups {

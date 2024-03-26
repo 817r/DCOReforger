@@ -8,7 +8,7 @@ modded class SCR_AIMoveFromDangerBehavior : SCR_AIBehaviorBase
 	override void OnActionSelected()
 	{
 		super.OnActionSelected();
-
+		SetActionInterruptable(false);
 		m_OwnerEntity = m_Utility.m_OwnerEntity;
 	}
 	
@@ -25,4 +25,4 @@ modded class SCR_AIMoveFromDangerBehavior : SCR_AIBehaviorBase
 		m_bResetLook = true;
 		m_bAllowLook = false;
 	}
-};
+}

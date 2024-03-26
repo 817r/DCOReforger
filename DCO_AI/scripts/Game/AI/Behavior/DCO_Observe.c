@@ -30,10 +30,10 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 		float distance;
 		IEntity controlledEntity = utility.GetAIAgent().GetControlledEntity();
 		distance = vector.Distance(controlledEntity.GetOrigin(), posWorld);
+		m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE; 
 		m_sBehaviorTree = "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePositionBehavior.bt";
 			if (distance <= HIGH_PRIORITY_MAX_DISTANCE)
 				m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE_HIGH_PRIORITY;
-		m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE; 
 		m_bAllowLook = false;
 		m_bResetLook = true;
 		m_bUseCombatMove = useMovement;
@@ -64,7 +64,7 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 	override void InitTiming(float distance)
 	{
 		float duration_s = Math.Max(DURATION_MIN_S, DURATION_S_PER_METER * distance);	// Linearly increase with distance
-		duration_s = Math.RandomFloat(0.7*duration_s, 1.3*duration_s);	
+		duration_s = Math.RandomFloat(1*duration_s, 1.5*duration_s);	
 		m_fDuration.m_Value = duration_s;
 		
 		float timeout_s = Math.Max(TIMEOUT_S, duration_s);	// Timeout is quite big, but it should be smaller than duration
@@ -78,7 +78,7 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 	override void InitTimeout(float timeout_s)
 	{
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime(); // Milliseconds!
-		m_fDeleteActionTime_ms = currentTime_ms + 1000 * timeout_s;
+		m_fDeleteActionTime_ms = currentTime_ms + 1500 * timeout_s;		
 	}
 	
 	override void SetUseMovement(bool value)
@@ -90,18 +90,9 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 	override void OnActionSelected()
 	{
 		super.OnActionSelected();
-		
-		if (Math.RandomFloat01() < 0.2)
-		{
-			if (!m_Utility.m_CommsHandler.CanBypass())
-			{
-				SCR_AITalkRequest rq = new SCR_AITalkRequest(ECommunicationType.REPORT_UNDER_FIRE, null, vector.Zero, 0, false, true, SCR_EAITalkRequestPreset.IRRELEVANT);
-				m_Utility.m_CommsHandler.AddRequest(rq);
-			}
-		}
-		
-		// If combat move is not used at all here, allow aiming immediately
-		// Because aiming is blocked by combat move aiming decorator
+		SCR_AITalkRequest rq = new SCR_AITalkRequest(ECommunicationType.REPORT_UNDER_FIRE, null, vector.Zero, 0, false, true, SCR_EAITalkRequestPreset.MEDIUM);
+		m_Utility.m_CommsHandler.AddRequest(rq);
+
 		if (!m_bUseMovement.m_Value)
 		{
 			m_Utility.m_CombatMoveState.EnableAiming(true);
@@ -115,6 +106,12 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 		if (currentTime_ms > m_fDeleteActionTime_ms)
 		{
 			Fail();
+			return 0;
+		}
+		
+		if (GetActionState() == EAIActionState.COMPLETED)
+		{
+			Complete();
 			return 0;
 		}
 		

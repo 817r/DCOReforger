@@ -75,7 +75,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	}
 	
 	//------------------------------------------------------------------------------------------------
-	protected static const float DISTANCE_MAX = 800; 
+	protected static const float DISTANCE_MAX = 500; 
 	protected static const float DISTANCE_MIN = 5; // Minimal distance when movement is allowed
 	private static const float NEAR_PROXIMITY = 2;
 	// TODO: add possibility to get cover towards custom position
@@ -215,7 +215,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 		// Decide how many remainiing magazines is enough to complain
 		switch (weaponComp.GetWeaponType())
 		{
-			case EWeaponType.WT_RIFLE: lowMagThreshold = 2; break;
+			case EWeaponType.WT_RIFLE: lowMagThreshold = 1; break;
 			case EWeaponType.WT_GRENADELAUNCHER: lowMagThreshold = 3; break; // todo now it won't work when we are out of UGL ammo because weapons are not marked with WT_GRENADELAUNCHER
 			case EWeaponType.WT_SNIPERRIFLE: lowMagThreshold = 1; break;
 			case EWeaponType.WT_ROCKETLAUNCHER: lowMagThreshold = 1; break;

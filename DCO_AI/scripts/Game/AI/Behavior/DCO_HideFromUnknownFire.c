@@ -1,12 +1,9 @@
 modded class SCR_AICombatMoveLogic_HideFromUnknownFire : AITaskScripted
 {
-	protected static const float COVER_SEARCH_DIST_MAX = 50.0;
+	protected static const float COVER_SEARCH_DIST_MAX = 55.0;
 
 	override void CombatMoveLogic(vector threatPos, float distToThreat)
-	{
-		if (!m_State)
-			return;
-		
+	{		
 		if (!m_State.IsMoving() && !m_State.IsInValidCover() && !m_bPushedMoveRequest)
 		{
 			// Standing not in cover
@@ -20,7 +17,7 @@ modded class SCR_AICombatMoveLogic_HideFromUnknownFire : AITaskScripted
 			rq.m_bTryFindCover = true;
 			rq.m_bUseCoverSearchDirectivity = false;
 			rq.m_bCheckCoverVisibility = false;
-			rq.m_bFailIfNoCover = false;
+			rq.m_bFailIfNoCover = true;
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.SPRINT;

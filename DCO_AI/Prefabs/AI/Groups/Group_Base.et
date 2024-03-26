@@ -1,0 +1,9 @@
+SCR_AIGroup {
+ ID "0000000000000001"
+ components {
+  SCR_CoverQueryComponent "{5DD4D299D08686AB}" {
+   CoverPathfindLength 50
+   CoverPathfindMaxPolys 10
+  }
+ }
+}
