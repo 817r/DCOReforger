@@ -83,8 +83,8 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 	
 	override void SetUseMovement(bool value)
 	{
-		m_bUseMovement.m_Value = value;
-		m_bUseCombatMove = value;
+		m_bUseMovement.m_Value = true;
+		m_bUseCombatMove = true;
 	}
 	
 	override void OnActionSelected()

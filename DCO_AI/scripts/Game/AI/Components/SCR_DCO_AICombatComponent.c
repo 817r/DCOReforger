@@ -25,7 +25,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.7;
 	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.4;
 	
-	protected const float PERCEPTION_FACTOR_SAFE = 4.0;
+	protected const float PERCEPTION_FACTOR_SAFE = 1.5;
 	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
 	protected const float PERCEPTION_FACTOR_ALERTED = 6.0; 
 	protected const float PERCEPTION_FACTOR_THREATENED = 4.0;
