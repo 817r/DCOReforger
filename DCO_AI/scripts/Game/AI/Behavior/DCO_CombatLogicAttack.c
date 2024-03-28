@@ -312,7 +312,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				{
 					// Towards target
 					movePos = targetPos;
-					eDirection = SCR_EAICombatMoveDirection.FORWARD;
+					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 				}
 				else

@@ -10,7 +10,7 @@ modded class SCR_AIThreatSystem
 	static const float EXHAUSTED_THRESHOLD = 2.2;
 	
 	private static const float SUPPRESSION_BULLET_INCREMENT = 0.11;
-	private static const float ENDANGERED_INCREMENT = 0.3;
+	private static const float ENDANGERED_INCREMENT = 0.25;
 	private static const float BLEEDING_FIXED_INCREMENT = 0.2;
 	private static const float SUPPRESSION_BULLET_INCREMENT = 0.10;
 	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.008;
@@ -24,7 +24,7 @@ modded class SCR_AIThreatSystem
 	
 	private static const float THREAT_SHOT_DROP_RATE = 	0.11 * 0.001; // Falloff (percentual drop per milisecond)
 	private static const float THREAT_SUPPRESSION_DROP_RATE = 0.13 * 0.001;
-	private static const float THREAT_ENDANGERED_DROP_RATE = 	0.11 * 0.001;
+	private static const float THREAT_ENDANGERED_DROP_RATE = 	0.12 * 0.001;
 	
 	float GetThreatTotal()
 	{

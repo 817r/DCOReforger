@@ -12,7 +12,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	protected float m_fPerceptionUpdateTimer_ms;
 	
 	// Update interval of group perception and target clusters and their processing
-	protected const float PERCEPTION_UPDATE_TIMER_MS = 500.0;
+	protected const float PERCEPTION_UPDATE_TIMER_MS = 1500.0;
 	
 	protected bool m_bNewGroupMemberAdded;
 	protected ref SCR_AIActionBase m_CurrentActivity;
