@@ -11,18 +11,8 @@ BehaviorTree {
      Nodes {
       RunBT RunBT {
        Name "RunBT"
-       EditorPos -2095.269 -207.175
+       EditorPos -1790.269 -190.508
        BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
-      }
-      SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
-       Name "SCR_AI Set Weapon Raised"
-       EditorPos -1545 -203.095
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "Raised"
-        }
-       }
       }
       SCR_AIGetInvestigateBehaviorParameters "SCR_AI Get Investigate Behavior Parameters" {
        Name "SCR_AI Get Investigate Behavior Parameters"
@@ -409,7 +399,7 @@ BehaviorTree {
                EditorPos 2498.154 1100.382
                InTargetLocation 0
                InTargetOrientation -1
-               PrecisionXZ 1.5
+               PrecisionXZ 1
                PrecisionY -1
               }
               AITaskIdle Idle {
@@ -564,7 +554,7 @@ BehaviorTree {
           AITaskIdle Idle {
            Name "Idle"
            EditorPos 5899.027 383.92
-           Period 0.5
+           Period 2
            PeriodRandom 0.3
           }
          }

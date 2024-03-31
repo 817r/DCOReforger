@@ -98,7 +98,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				{
 					case EAISkill.ROOKIE :
 					{
-						return EAISkill.REGULAR;
+						return EAISkill.ROOKIE;
 					}
 					case EAISkill.REGULAR :
 					{

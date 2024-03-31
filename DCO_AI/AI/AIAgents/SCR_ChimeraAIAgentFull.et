@@ -12,11 +12,6 @@ SCR_ChimeraAIAgent {
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
    m_Skill 0.85
    m_EnableLeaderStop 1
-   m_aInfoReactions {
-    SCR_AIInfoReaction_NoAmmo "{60F30C98D188B99C}" {
-     m_eType NO_AMMO
-    }
-   }
   }
  }
  DangerEventRange 350

@@ -21,6 +21,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 10.0;
 			  static const float TARGET_MAX_LAST_SEEN = 50.0;
 	
+	
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 100.0;
 	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.7;
 	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.45;
@@ -36,6 +37,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
 	
 	static const float LONG_RANGE_FIRE_DISTANCE = 200.0;
+	
+	protected const float DISMOUNT_TURRET_TIMER_MS = 1500;
 
 	override protected void EOnInit(IEntity owner)
 	{
