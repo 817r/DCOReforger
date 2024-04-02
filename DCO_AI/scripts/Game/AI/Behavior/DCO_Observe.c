@@ -36,9 +36,7 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 			m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE_HIGH_PRIORITY;
 		else if (distance < RED_AREA)
 		{
-			m_fPriority = PRIORITY_CUSTOM_BEHAVIOR_INVESTIGATE_CLOSE;
-			utility.AddAction(new SCR_AIMoveAndInvestigateCloseBehavior(null, null, posWorld, true));
-			m_sBehaviorTree = "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestigate.bt";
+			m_Utility.AddAction(new SCR_AIMoveAndInvestigateCloseBehavior(null, null, posWorld, true));
 		}
 		m_bAllowLook = false;
 		m_bResetLook = true;

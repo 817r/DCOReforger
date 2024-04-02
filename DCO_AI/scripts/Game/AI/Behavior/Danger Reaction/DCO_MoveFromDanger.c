@@ -1,35 +1,31 @@
-modded class SCR_AIMoveFromDangerBehavior : SCR_AIBehaviorBase
+class SCR_AIMoveFromSuppressBehavior : SCR_AIMoveFromDangerBehavior
 {
-	protected vector m_DangerPos;
-	protected IEntity m_OwnerEntity;
-
-	protected bool m_DisableMovementControls;
+	float timeOut = 8000;
+	float m_fBehaviorTimeout;
 	
-	override void InitParameters(IEntity dangerEntity, vector dangerPos)
+	void SCR_AIMoveFromSuppressBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, vector dangerPos, IEntity dangerEntity)
 	{
-		m_DangerPosition.Init(this, dangerPos);
-		m_DangerEntity.Init(this, dangerEntity);
-		m_Stance.Init(this, ECharacterStance.STAND);
-		m_MovementType.Init(this, EMovementType.RUN);
-	}
-	
-	void SCR_AIMoveFromDangerBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, vector dangerPos, IEntity dangerEntity)
-	{
+		m_fBehaviorTimeout = GetGame().GetWorld().GetWorldTime() + timeOut;
 		SetPriority(PRIORITY_BEHAVIOR_MOVE_FROM_DANGER);
-		InitParameters(dangerEntity, dangerPos);
-		if (dangerEntity)
-		{
-			m_DangerPosition.m_Value = dangerEntity.GetOrigin();
-		}
-		
-		m_sBehaviorTree = "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_Position.bt";
-		m_bResetLook = true;
+		m_Stance.m_Value = ECharacterStance.STAND;
+		m_MovementType.m_Value = EMovementType.SPRINT;
+		m_bIsInterruptable = false;
 		m_bAllowLook = false;
-	}
 
+		m_sBehaviorTree = "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_MoveFromSuppressiveFire.bt";
+	}
+	
+	override float CustomEvaluate()
+	{			
+		if (GetGame().GetWorld().GetWorldTime() > m_fBehaviorTimeout)
+			return PRIORITY_BEHAVIOR_MOVE_FROM_DANGER;
+		
+		return GetPriority();
+	}
+	
 	override void OnActionSelected()
 	{
 		super.OnActionSelected();
-		SetActionInterruptable(false);
+		bool m_bSelected = true;
 	}
 }

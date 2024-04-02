@@ -14,12 +14,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
-	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.2;
+	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.5;
 
-	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 2.0;
+	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.0;
 			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 4.5;
 			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 10.0;
-			  static const float TARGET_MAX_LAST_SEEN = 50.0;
+			  static const float TARGET_MAX_LAST_SEEN = 60.0;
 	
 	
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 100.0;
@@ -29,7 +29,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_SAFE = 1.5;
 	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
 	protected const float PERCEPTION_FACTOR_ALERTED = 6.0; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 4.0;
+	protected const float PERCEPTION_FACTOR_THREATENED = 5.0;
 	protected const float PERCEPTION_FACTOR_PINNED = 4.0;
 	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.0;
 
@@ -38,7 +38,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	static const float LONG_RANGE_FIRE_DISTANCE = 200.0;
 	
-	protected const float DISMOUNT_TURRET_TIMER_MS = 1500;
+	protected const float DISMOUNT_TURRET_TIMER_MS = 2000;
+	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 5.0;
 
 	override protected void EOnInit(IEntity owner)
 	{
@@ -260,5 +261,71 @@ modded class SCR_AICombatComponent : ScriptComponent
 				myMailbox.RequestBroadcast(msg, myGroup);
 			}
 		}
+	}
+	
+	override bool DismountTurretCondition(inout vector targetPos, bool targetPosProvided)
+	{
+		// False if not in turret
+		if (!m_CurrentTurretController)
+			return false;
+		TurretComponent turretComp = m_CurrentTurretController.GetTurretComponent();
+		if (!turretComp)
+			return false;
+		
+		// False if we have a valid target to attack
+		if (m_SelectedTarget)
+			return false;
+		
+		// False if we have a driver in the vehicle
+		array<BaseCompartmentSlot> compartments = {};
+		m_CurrentVehicleCompartmentManager.GetCompartments(compartments);
+		foreach (BaseCompartmentSlot slot : compartments)
+		{
+			if (PilotCompartmentSlot.Cast(slot) && slot.GetOccupant())
+				return false;
+		}
+		
+		// False if we are in a vehicle and we should not leave turret of this vehicle type
+		// Note that static turrets are not of Vehicle class.
+		Vehicle vehicle = Vehicle.Cast(m_CurrentVehicle);
+		if (vehicle && s_aForbidDismountTurretsOfVehicleTypes.Find(vehicle.m_eVehicleType) != -1)
+			return false;
+		
+		// If target pos is not provided, find a target which we are going to check against
+		if (!targetPosProvided)
+		{
+			BaseTarget target = m_Perception.GetClosestTarget(ETargetCategory.DETECTED, DISMOUNT_TURRET_TARGET_LAST_SEEN_MAX_S, DISMOUNT_TURRET_TARGET_LAST_SEEN_MAX_S);
+			if (target)
+				targetPos = target.GetLastDetectedPosition();
+			else
+			{
+				target = m_Perception.GetClosestTarget(ETargetCategory.ENEMY, DISMOUNT_TURRET_TARGET_LAST_SEEN_MAX_S, DISMOUNT_TURRET_TARGET_LAST_SEEN_MAX_S);
+				if (target)
+					targetPos = target.GetLastSeenPosition();
+			}
+			
+			// False if there is no target which would cause us to dismount
+			if (!target)
+				return false;
+			else
+			{
+				IEntity targetEntity = target.GetTargetEntity();
+				if (!targetEntity)
+					return false;
+				else
+				{
+					vector bmin, bmax;
+					targetEntity.GetBounds(bmin, bmax);
+					targetPos = targetPos + 0.5 * (bmin + bmax);
+				}
+			}
+		}
+			
+		// Check angle excess of the target's position
+		vector angleExcess = turretComp.GetAimingAngleExcess(targetPos);
+		
+		//PrintFormat("Excess angle: %1", angleExcess);
+		
+		return angleExcess.Length() > TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG;
 	}
 };

@@ -447,7 +447,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
   }
   VariableReference delay {
    VariableType 5
-   EditorPos -1084.821 908.929
+   EditorPos -1085.821 912.929
    Group "{5C56A6044E03EE3C}"
   }
   VariableReference position {

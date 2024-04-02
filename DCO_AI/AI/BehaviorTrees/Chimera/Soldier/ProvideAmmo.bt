@@ -64,7 +64,7 @@ BehaviorTree {
         }
         SCR_AIDropMagazines "SCR_AI Drop Magazines" {
          Name "SCR_AI Drop Magazines"
-         EditorPos 849.611 1747.139
+         EditorPos 849.611 1748.806
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 9
@@ -75,7 +75,7 @@ BehaviorTree {
         }
         AITaskCreatePosition "Create Position" {
          Name "Create Position"
-         EditorPos 1369.31 1751.941
+         EditorPos 1369.31 1753.608
          InEntity 7
          OutPosition 0
          RandomizeYAxis 0
@@ -153,7 +153,7 @@ BehaviorTree {
         }
         AITaskReturnState "Return State" {
          Name "Return State"
-         EditorPos 3475.377 1752.777
+         EditorPos 3470.377 1764.444
          Result RUNNING
         }
        }

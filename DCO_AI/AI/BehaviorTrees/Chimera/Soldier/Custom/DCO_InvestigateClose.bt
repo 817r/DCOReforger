@@ -28,9 +28,25 @@ BehaviorTree {
        Name "SCR_AI Get Investigate Close Behavior Parameters"
        EditorPos -607.5 252.5
        OutPorts {
-        SingleOutputPortContainer SingleOutputPortContainerClass {
+        SingleOutputPortContainer SingleOutputPortContainer {
          Port 0
          PortName "Position"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "isDangerous"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "Radius"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "ResetTimer"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "Duration"
         }
        }
       }
@@ -80,11 +96,9 @@ BehaviorTree {
        m_ePreset MANDATORY
        m_bTransmitIfPassenger 0
       }
-      AITaskSetPathfindingFilters "Set Pathfinding Filters" {
-       Name "Set Pathfinding Filters"
-       EditorPos 611.667 286.667
-       NavmeshProject "Soldiers"
-       IgnoreFlags 24
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos 633.333 273.333
       }
       Parallel Parallel {
        Name "Parallel"

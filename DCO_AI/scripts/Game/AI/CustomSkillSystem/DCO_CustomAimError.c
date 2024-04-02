@@ -6,7 +6,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const string PORT_TOLERANCE = "AimingTolerance";
 	static const float CLOSE_RANGE_THRESHOLD = 15.0;
 	static const float LONG_RANGE_THRESHOLD = 250.0;
-	static const float AIMING_ERROR_SCALE = 1.0; // TODO: game master and server option
+	static const float AIMING_ERROR_SCALE = 1.15; // TODO: game master and server option
 	static const float AIMING_ERROR_FACTOR_MIN = 0.2; 
 	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.05;
 	static const float AIMING_ERROR_FACTOR_MAX = 1.2;
@@ -52,7 +52,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EAISkill.CYLON :
 			{
-				return 0.2;
+				return 0.25;
 			}
 		}
 		

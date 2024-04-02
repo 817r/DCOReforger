@@ -3,7 +3,6 @@ class SCR_AIMoveAndInvestigateCloseBehavior : SCR_AIMoveBehaviorBase
 	ref SCR_BTParam<bool> m_bIsDangerous = new SCR_BTParam<bool>(SCR_AIActionTask.IS_DANGEROUS_PORT);
 	ref SCR_BTParam<float> m_fRadius = new SCR_BTParam<float>(SCR_AIActionTask.RADIUS_PORT);
 	ref SCR_BTParam<bool> m_bResetTimer = new SCR_BTParam<bool>(SCR_AIActionTask.RESET_TIMER_PORT);
-	ref SCR_BTParam<float> m_fTimeOut = new SCR_BTParam<float>(SCR_AIActionTask.TIMEOUT_PORT);
 	ref SCR_BTParam<float> m_fDuration = new SCR_BTParam<float>("Duration"); // How much to investigate once we have arrived
 	
 	EAIUnitType m_eTargetUnitType;
@@ -12,13 +11,12 @@ class SCR_AIMoveAndInvestigateCloseBehavior : SCR_AIMoveBehaviorBase
 	protected static const float INVESTIGATION_TIMEOUT_MS = 20000;		// how long it can take NOT to investigate before the investigation becomes obsolete in ms
 	
 	//-----------------------------------------------------------------------------------------------------
-	void SCR_AIMoveAndInvestigateBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, vector pos, float priority = PRIORITY_CUSTOM_BEHAVIOR_INVESTIGATE_CLOSE, float priorityLevel = PRIORITY_LEVEL_NORMAL, float radius = 10, bool isDangerous = true, EAIUnitType targetUnitType = EAIUnitType.UnitType_Infantry, float duration = 10.0)
+	void SCR_AIMoveAndInvestigateCloseBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, vector pos, float priority = PRIORITY_CUSTOM_BEHAVIOR_INVESTIGATE_CLOSE, float priorityLevel = PRIORITY_LEVEL_NORMAL, float radius = 10, bool isDangerous = true, EAIUnitType targetUnitType = EAIUnitType.UnitType_Infantry, float duration = 10.0)
 	{
 		m_bIsDangerous.Init(this, isDangerous);
 		m_fRadius.Init(this, radius);
 		m_bResetTimer.Init(this, false);
 		//m_fTimeOut.Init(this, Math.RandomFloat(20,50));
-		m_fTimeOut.Init(this, 5.0 * 60.0); // For now it's a reasonable long enough time
 		m_fDuration.Init(this, Math.RandomFloat(0.8*duration, 1.2*duration));
 		m_eTargetUnitType = targetUnitType;
 		

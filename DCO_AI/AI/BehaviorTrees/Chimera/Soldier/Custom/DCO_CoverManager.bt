@@ -3,103 +3,103 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos 2669.445 259.444
+   EditorPos 2914.445 87.777
    Nodes {
-    Sequence Sequence {
-     Name "Sequence"
-     EditorPos 2664.556 444.056
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos 2898.333 240
      Nodes {
-      Decorator Decorator {
-       Name "Decorator"
-       EditorPos 843 1086.833
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 2664.556 444.056
        Nodes {
-        SCR_AIDeploySmokeCover "SCR_AI Deploy Smoke Cover" {
-         Name "SCR_AI Deploy Smoke Cover"
-         EditorPos 827.5 1269.333
+        Decorator Decorator {
+         Name "Decorator"
+         EditorPos 2073 1137.5
+         Nodes {
+          SCR_AIDeploySmokeCover "SCR_AI Deploy Smoke Cover" {
+           Name "SCR_AI Deploy Smoke Cover"
+           EditorPos 2057.5 1320
+          }
+         }
+         ForceNodeResult Success
+        }
+        SCR_AIDCO_COVERMANAGER SCR_AIDCO_COVERMANAGER {
+         Name "SCR_AIDCO_COVERMANAGER"
+         EditorPos 2581.428 1150.857
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 5
+           PortName "Position"
+          }
+         }
+        }
+        SCR_AITalk "SCR_AI Talk" {
+         Name "SCR_AI Talk"
+         EditorPos 2872.083 1154.583
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "SpeakerIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "TargetIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "LocationIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "EnumIn"
+          }
+         }
+         m_messageType REPORT_MOVING
+         m_ePreset MEDIUM
+        }
+        SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
+         Name "SCR_AI Visualize Debug"
+         EditorPos 3016.38 1152.667
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "DebugMessage"
+          }
+         }
+         m_sDebugMessage "Cover Success"
+         m_eAICategory BEHAVIOR
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 3224.666 1151.333
+         Period 5
+        }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 3383.167 1152.5
+         Result RUNNING
         }
        }
-       ForceNodeResult Success
       }
-      AITaskChangeStance "Change Stance" {
-       Name "Change Stance"
-       EditorPos 1375.5 1110.5
-       Stance CROUCH
-       InStance -1
-      }
-      SCR_AICombatMoveLogic_HideFromUnknownFire "SCR_AI Combat Move Logic_ Hide From Unknown Fire" {
-       Name "SCR_AI Combat Move Logic_ Hide From Unknown Fire"
-       EditorPos 1762.357 1118.5
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port 7
-         PortName "Position"
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 3157.167 465
+       Nodes {
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 3085 651.111
+         Period 3
+        }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 3259.083 641.722
+         Result RUNNING
         }
        }
-      }
-      AITaskIdle Idle {
-       Name "Idle"
-       EditorPos 2337.167 1123.667
-       Period 1.2
-      }
-      AITaskSetVariable "Set Variable" {
-       Name "Set Variable"
-       EditorPos 2546.333 1133.833
-       OutVariable 5
-       InVariable 6
-      }
-      SCR_AITalk "SCR_AI Talk" {
-       Name "SCR_AI Talk"
-       EditorPos 2890 1105
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "SpeakerIn"
-        }
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "TargetIn"
-        }
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "LocationIn"
-        }
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "EnumIn"
-        }
-       }
-       m_messageType REPORT_MOVING
-       m_ePreset MEDIUM
-      }
-      AITaskChangeStance "Change Stance" {
-       Name "Change Stance"
-       EditorPos 3100.024 1119.238
-       Stance CROUCH
-       InStance 5
-      }
-      SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
-       Name "SCR_AI Visualize Debug"
-       EditorPos 3301.047 1123
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "DebugMessage"
-        }
-       }
-       m_sDebugMessage "Cover Success"
-       m_eAICategory BEHAVIOR
-      }
-      AITaskIdle Idle {
-       Name "Idle"
-       EditorPos 3534.333 1125
-       Period 5
-      }
-      AITaskReturnState "Return State" {
-       Name "Return State"
-       EditorPos 3676.167 1122.833
-       Result RUNNING
       }
      }
+     UseChildResult 1
     }
    }
   }
@@ -319,17 +319,9 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
    VariableType 9
    EditorPos -1078.81 1038.095
   }
-  VariableReference expectedStance {
-   VariableType 10
-   EditorPos 2852.928 1339.024
-  }
-  VariableReference coverStanceNorm {
-   VariableType 8
-   EditorPos 2327.976 1298.679
-  }
   VariableReference lastSeen {
    VariableType 2
-   EditorPos 1576.201 1250.64
+   EditorPos 2374.558 1280.068
   }
  }
  Groups {

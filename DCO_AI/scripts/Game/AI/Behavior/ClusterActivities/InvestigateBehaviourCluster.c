@@ -17,7 +17,7 @@ modded class SCR_AIInvestigateClusterActivity : SCR_AIFireteamsClusterActivity
 			if (rand == 1) radius = 12;
 			else if (rand == 2) radius = 25;
 			else if (rand == 3) radius = 40;
-			else radius = 5;
+			else radius = 60;
 			
 			
 			foreach (AIAgent agent : agents)

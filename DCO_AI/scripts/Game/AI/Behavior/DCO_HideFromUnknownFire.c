@@ -1,7 +1,9 @@
 modded class SCR_AICombatMoveLogic_HideFromUnknownFire : AITaskScripted
 {
-	protected static const float COVER_SEARCH_DIST_MAX = 55.0;
-
+	protected static const float COVER_SEARCH_DIST_MAX = 20.0;
+	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
+	
+	
 	override void CombatMoveLogic(vector threatPos, float distToThreat)
 	{		
 		if (!m_State.IsMoving() && !m_State.IsInValidCover() && !m_bPushedMoveRequest)
@@ -16,8 +18,8 @@ modded class SCR_AICombatMoveLogic_HideFromUnknownFire : AITaskScripted
 			rq.m_vMovePos = rq.m_vTargetPos;
 			rq.m_bTryFindCover = true;
 			rq.m_bUseCoverSearchDirectivity = false;
-			rq.m_bCheckCoverVisibility = false;
-			rq.m_bFailIfNoCover = true;
+			rq.m_bCheckCoverVisibility = true;
+			rq.m_bFailIfNoCover = false;
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.SPRINT;
@@ -25,7 +27,7 @@ modded class SCR_AICombatMoveLogic_HideFromUnknownFire : AITaskScripted
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
-			// rq.m_fCoverSearchSectorHalfAngleRad - not needed since direction is ANYWHERE
+			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			
 			rq.m_bAimAtTarget = false; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
