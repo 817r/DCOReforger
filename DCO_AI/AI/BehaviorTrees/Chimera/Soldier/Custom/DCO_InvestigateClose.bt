@@ -24,33 +24,13 @@ BehaviorTree {
         }
        }
       }
-      SCR_AIGetInvestigateBehaviorParameters "SCR_AI Get Investigate Behavior Parameters" {
-       Name "SCR_AI Get Investigate Behavior Parameters"
-       EditorPos -683.333 286.667
+      SCR_AIGetInvestigateCloseBehaviorParameters "SCR_AI Get Investigate Close Behavior Parameters" {
+       Name "SCR_AI Get Investigate Close Behavior Parameters"
+       EditorPos -607.5 252.5
        OutPorts {
-        SingleOutputPortContainer SingleOutputPortContainer {
+        SingleOutputPortContainer SingleOutputPortContainerClass {
          Port 0
          PortName "Position"
-        }
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port -1
-         PortName "isDangerous"
-        }
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port -1
-         PortName "Radius"
-        }
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port -1
-         PortName "ResetTimer"
-        }
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port -1
-         PortName "Timeout"
-        }
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port -1
-         PortName "Duration"
         }
        }
       }
@@ -120,7 +100,7 @@ BehaviorTree {
            Nodes {
             SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
              Name "SCR_AI Get Random Point"
-             EditorPos -1133 1311
+             EditorPos -1131.889 1313.222
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -141,7 +121,7 @@ BehaviorTree {
                PortName "ResultVector"
               }
              }
-             m_Radius 7
+             m_Radius 12
             }
             AITaskMove Move {
              Name "Move"
@@ -156,7 +136,7 @@ BehaviorTree {
             }
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos -313.453 1292.904
+             EditorPos -313.453 1294.333
              Period 2
              PeriodRandom 3
             }
@@ -168,7 +148,7 @@ BehaviorTree {
           }
           AITaskReturnState "Return  State" {
            Name "Return  State"
-           EditorPos -10.585 974.341
+           EditorPos -20.585 967.674
            Result RUNNING
           }
          }
@@ -179,7 +159,7 @@ BehaviorTree {
          Nodes {
           SCR_AIFindTagetToLookAt "SCR_AI Find Taget To Look At" {
            Name "SCR_AI Find Taget To Look At"
-           EditorPos 1917.036 756.678
+           EditorPos 1917.036 758.678
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
              Port -1
@@ -214,7 +194,7 @@ BehaviorTree {
                Nodes {
                 DecoTestDistanceToEntity "Test Distance To Entity" {
                  Name "Test Distance To Entity"
-                 EditorPos 1984.121 1583.816
+                 EditorPos 1985.371 1585.066
                  Nodes {
                   Sequence Sequence {
                    Name "Sequence"
@@ -244,8 +224,8 @@ BehaviorTree {
                   }
                  }
                  AbortType AbortParentNodeFurtherChildren
-                 InPosition -1
-                 DistanceThreshold 3
+                 InPosition 3
+                 DistanceThreshold 5
                 }
                 Sequence Sequence {
                  Name "Sequence"
@@ -253,8 +233,8 @@ BehaviorTree {
                  Nodes {
                   AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
                    Name "Character Set Movement Speed"
-                   EditorPos 2373.907 1817.524
-                   "Movement speed" WALK
+                   EditorPos 2375.018 1817.524
+                   "Movement speed" RUN
                   }
                   AITaskChangeStance "Change Stance" {
                    Name "Change Stance"
@@ -329,9 +309,9 @@ BehaviorTree {
           }
           AITaskIdle Idle {
            Name "Idle"
-           EditorPos 4312.743 973.539
+           EditorPos 4310.743 973.539
            Period 1
-           PeriodRandom 0.1
+           PeriodRandom 0.5
           }
          }
         }
@@ -426,7 +406,7 @@ BehaviorTree {
  VariablesRefs {
   VariableReference initPosition {
    VariableType 8
-   EditorPos -101.963 256.285
+   EditorPos -98.213 272.535
   }
   VariableReference initPosition {
    VariableType 8
@@ -435,6 +415,10 @@ BehaviorTree {
   VariableReference movePos {
    VariableType 11
    EditorPos -865.864 1346.034
+  }
+  VariableReference initPosition {
+   VariableType 8
+   EditorPos 1758.198 1724.528
   }
  }
 }
