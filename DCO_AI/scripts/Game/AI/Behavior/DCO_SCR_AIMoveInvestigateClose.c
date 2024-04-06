@@ -8,7 +8,7 @@ class SCR_AIMoveAndInvestigateCloseBehavior : SCR_AIMoveBehaviorBase
 	EAIUnitType m_eTargetUnitType;
 	float m_fTimeStamp;													// world time when constructor of behavior is called
 	bool m_bCanTimeout = true;											// can timeout when not executed?
-	protected static const float INVESTIGATION_TIMEOUT_MS = 20000;		// how long it can take NOT to investigate before the investigation becomes obsolete in ms
+	protected static const float INVESTIGATION_TIMEOUT_MS = 30000;		// how long it can take NOT to investigate before the investigation becomes obsolete in ms
 	
 	//-----------------------------------------------------------------------------------------------------
 	void SCR_AIMoveAndInvestigateCloseBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, vector pos, float priority = PRIORITY_CUSTOM_BEHAVIOR_INVESTIGATE_CLOSE, float priorityLevel = PRIORITY_LEVEL_NORMAL, float radius = 10, bool isDangerous = true, EAIUnitType targetUnitType = EAIUnitType.UnitType_Infantry, float duration = 10.0)
@@ -26,12 +26,8 @@ class SCR_AIMoveAndInvestigateCloseBehavior : SCR_AIMoveBehaviorBase
 			// marking time of creation of this move and investigate (world time)
 			m_fTimeStamp = GetGame().GetWorld().GetWorldTime();
 		}
-		
-		// If target is dangerous, during execution of this action we will increase our threat level
-		// Aim of this is to be in alerted state through the action, so that when we encounter enemy again,
-		// We are not 'surprised' by enemy and there will be no extra delay added
-		if (isDangerous)
-			m_fThreat = 1.01 * SCR_AIThreatSystem.VIGILANT_THRESHOLD;
+
+		m_fThreat = 1.01 * SCR_AIThreatSystem.VIGILANT_THRESHOLD;
 	}
 	
 	//-----------------------------------------------------------------------------------------------------

@@ -4,7 +4,7 @@ modded class SCR_AIGroupTargetClusterProcessor : Managed
 	
 	// When we don't receive new information from cluster for more than this amount of seconds,
 	// We switch to 'LOST' state.
-	protected const float MAX_CLUSTER_AGE_S = 150.0;
+	protected const float MAX_CLUSTER_AGE_S = 180.0;
 	
 	override void AllocateMoreFireteams(SCR_AITargetClusterState s, notnull TFireteamLockRefArray inOutFtLocksMain, notnull TFireteamLockRefArray ftLocksAux)
 	{

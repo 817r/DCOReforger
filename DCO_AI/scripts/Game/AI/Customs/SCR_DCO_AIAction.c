@@ -55,4 +55,5 @@ modded class SCR_AIActionBase : AIActionBase
 	
 	// CUSTOM ACTION PRIORITY
 	const static float PRIORITY_CUSTOM_BEHAVIOR_INVESTIGATE_CLOSE = 67;
+	const static float PRIORITY_CUSTOM_BEHAVIOR_EXPLOSION_CLOSE = 71;
 };

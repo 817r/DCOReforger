@@ -35,6 +35,10 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
            EditorPos -2320 -632.857
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "Entity"
+            }
+            SingleOutputPortContainer SingleOutputPortContainerClass {
              Port 2
              PortName "Entity"
             }
@@ -122,7 +126,7 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
              Nodes {
               SCR_AIGetPosForwardToTarget "SCR_AI Get Pos Forward To Target" {
                Name "SCR_AI Get Pos Forward To Target"
-               EditorPos -3929.912 927.718
+               EditorPos -3929.912 926.289
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port 13
@@ -289,7 +293,8 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
                Name "Move To Entity"
                EditorPos -2068.523 2062.119
                Group "{5C68CAB173FEC84F}"
-               PrecisionXZ 3.5
+               PrecisionXZ 3
+               PrecisionY 2
                InEntity 7
               }
              }
@@ -329,10 +334,11 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
                Nodes {
                 AITaskMove Move {
                  Name "Move"
-                 EditorPos -944.088 2257.417
+                 EditorPos -945.755 2257.417
                  Group "{5C68CAB1F9299525}"
                  InTargetLocation 5
                  PrecisionXZ 0.3
+                 PrecisionY 1
                  OrientationType ToPoint
                 }
                 AITaskIdle Idle {
@@ -347,12 +353,12 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
               }
               AITaskCharacterAim "Character Aim" {
                Name "Character Aim"
-               EditorPos -404.739 2066.072
+               EditorPos -403.628 2066.072
                Group "{5C68CAB1F9299525}"
                InAimAtPosition -1
                InEntity 6
-               PrecisionXZ 30
-               PrecisionY 30
+               PrecisionXZ 1
+               PrecisionY 1
                InAimOffset -1
                UseADS 0
               }
@@ -367,7 +373,7 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
                Name "Change Stance"
                EditorPos -48.333 2156.667
                Group "{5C68CAB1CBBDEA71}"
-               Stance PRONE
+               Stance CROUCH
               }
               AITaskIdle Idle {
                Name "Idle"
@@ -391,7 +397,7 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
               }
               SCR_AIPerformSmartHealing "SCR_AI Perform Smart Healing" {
                Name "SCR_AI Perform Smart Healing"
-               EditorPos 937.473 2152.037
+               EditorPos 939.14 2152.037
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
@@ -566,7 +572,7 @@ BehaviorTree "{990FE3889BBA5839}AI/BehaviorTrees/Chimera/Soldier/MedicHeal.bt" {
   }
   VariableReference TargetEntity {
    VariableType 0
-   EditorPos -602.751 2130
+   EditorPos -612.751 2130
    Group "{5C68CAB1F9299525}"
   }
   VariableReference TargetEntity {

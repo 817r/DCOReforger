@@ -94,27 +94,43 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				{
 					if(m_State != null)
 					{
-						rq.m_vTargetPos = shooterPos;
-						rq.m_vMovePos = rq.m_vTargetPos;
-						rq.m_bTryFindCover = true;
-						rq.m_bUseCoverSearchDirectivity = true;
-						rq.m_bCheckCoverVisibility = true;
-						rq.m_bFailIfNoCover = false;
-						rq.m_eStanceMoving = ECharacterStance.STAND;
-						rq.m_eStanceEnd = ECharacterStance.CROUCH;
-						rq.m_eMovementType = EMovementType.SPRINT;
-						rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
-						rq.m_fCoverSearchDistMin = 2;
-						rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
-						rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
-						rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-						rq.m_bAimAtTarget = false; // Don't aim while running
-						rq.m_bAimAtTargetEnd = true;
-			
-						m_State.ApplyNewRequest(rq);
-						m_bPushedMoveRequest = true;	
+						int randomizer = Math.RandomInt(1,2);
 						
-						return true;
+						if (randomizer == 1)
+						{						
+							rq.m_vTargetPos = shooterPos;
+							rq.m_vMovePos = rq.m_vTargetPos;
+							rq.m_bTryFindCover = true;
+							rq.m_bUseCoverSearchDirectivity = true;
+							rq.m_bCheckCoverVisibility = true;
+							rq.m_bFailIfNoCover = false;
+							rq.m_eStanceMoving = ECharacterStance.STAND;
+							rq.m_eStanceEnd = ECharacterStance.CROUCH;
+							rq.m_eMovementType = EMovementType.SPRINT;
+							rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
+							rq.m_fCoverSearchDistMin = 2;
+							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
+							rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
+							rq.m_bAimAtTarget = false; // Don't aim while running
+							rq.m_bAimAtTargetEnd = true;
+			
+							m_State.ApplyNewRequest(rq);
+							m_bPushedMoveRequest = true;
+
+							return true;		
+						}
+						else
+						{
+							SCR_AIMoveFromSuppressBehavior aiMovefromSuppress = SCR_AIMoveFromSuppressBehavior.Cast(utility.FindActionOfType(SCR_AIMoveFromSuppressBehavior));
+						
+							if(aiMovefromSuppress) return true;
+						
+							utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, shooterPos, shooter));
+							
+							return true;
+						}
+
 					}
 					else
 					{
@@ -122,7 +138,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 						
 						if(aiMovefromSuppress) return true;
 						
-						utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, shooterPos, shooter))
+						utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, shooterPos, shooter));
 					}
 					
 					return true;
@@ -131,27 +147,42 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				{
 					if(m_State != null)
 					{
-						rq.m_vTargetPos = shooterPos;
-						rq.m_vMovePos = rq.m_vTargetPos;
-						rq.m_bTryFindCover = true;
-						rq.m_bUseCoverSearchDirectivity = true;
-						rq.m_bCheckCoverVisibility = true;
-						rq.m_bFailIfNoCover = false;
-						rq.m_eStanceMoving = ECharacterStance.STAND;
-						rq.m_eStanceEnd = ECharacterStance.CROUCH;
-						rq.m_eMovementType = EMovementType.RUN;
-						rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
-						rq.m_fCoverSearchDistMin = 2;
-						rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
-						rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
-						rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-						rq.m_bAimAtTarget = false; // Don't aim while running
-						rq.m_bAimAtTargetEnd = true;
-			
-						m_State.ApplyNewRequest(rq);
-						m_bPushedMoveRequest = true;	
+						int randomizer = Math.RandomInt(1,2);
 						
-						return true;
+						if (randomizer == 1)
+						{						
+							rq.m_vTargetPos = shooterPos;
+							rq.m_vMovePos = rq.m_vTargetPos;
+							rq.m_bTryFindCover = true;
+							rq.m_bUseCoverSearchDirectivity = true;
+							rq.m_bCheckCoverVisibility = true;
+							rq.m_bFailIfNoCover = false;
+							rq.m_eStanceMoving = ECharacterStance.STAND;
+							rq.m_eStanceEnd = ECharacterStance.CROUCH;
+							rq.m_eMovementType = EMovementType.RUN;
+							rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
+							rq.m_fCoverSearchDistMin = 2;
+							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
+							rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
+							rq.m_bAimAtTarget = false; // Don't aim while running
+							rq.m_bAimAtTargetEnd = true;
+			
+							m_State.ApplyNewRequest(rq);
+							m_bPushedMoveRequest = true;
+
+							return true;		
+						}
+						else
+						{
+							SCR_AIMoveFromSuppressBehavior aiMovefromSuppress = SCR_AIMoveFromSuppressBehavior.Cast(utility.FindActionOfType(SCR_AIMoveFromSuppressBehavior));
+						
+							if(aiMovefromSuppress) return true;
+						
+							utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, shooterPos, shooter));
+							
+							return true;
+						}
 					}
 					else
 					{
@@ -165,27 +196,42 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				{
 					if(m_State != null)
 					{
-						rq.m_vTargetPos = shooterPos;
-						rq.m_vMovePos = rq.m_vTargetPos;
-						rq.m_bTryFindCover = true;
-						rq.m_bUseCoverSearchDirectivity = true;
-						rq.m_bCheckCoverVisibility = true;
-						rq.m_bFailIfNoCover = false;
-						rq.m_eStanceMoving = ECharacterStance.STAND;
-						rq.m_eStanceEnd = ECharacterStance.CROUCH;
-						rq.m_eMovementType = EMovementType.SPRINT;
-						rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
-						rq.m_fCoverSearchDistMin = 2;
-						rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
-						rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
-						rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-						rq.m_bAimAtTarget = false; // Don't aim while running
-						rq.m_bAimAtTargetEnd = true;
-			
-						m_State.ApplyNewRequest(rq);
-						m_bPushedMoveRequest = true;	
+						int randomizer = Math.RandomInt(1,2);
 						
-						return true;
+						if (randomizer == 1)
+						{						
+							rq.m_vTargetPos = shooterPos;
+							rq.m_vMovePos = rq.m_vTargetPos;
+							rq.m_bTryFindCover = true;
+							rq.m_bUseCoverSearchDirectivity = true;
+							rq.m_bCheckCoverVisibility = true;
+							rq.m_bFailIfNoCover = false;
+							rq.m_eStanceMoving = ECharacterStance.STAND;
+							rq.m_eStanceEnd = ECharacterStance.PRONE;
+							rq.m_eMovementType = EMovementType.SPRINT;
+							rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
+							rq.m_fCoverSearchDistMin = 2;
+							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
+							rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
+							rq.m_bAimAtTarget = false; // Don't aim while running
+							rq.m_bAimAtTargetEnd = true;
+			
+							m_State.ApplyNewRequest(rq);
+							m_bPushedMoveRequest = true;
+
+							return true;		
+						}
+						else
+						{
+							SCR_AIMoveFromSuppressBehavior aiMovefromSuppress = SCR_AIMoveFromSuppressBehavior.Cast(utility.FindActionOfType(SCR_AIMoveFromSuppressBehavior));
+						
+							if(aiMovefromSuppress) return true;
+						
+							utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, shooterPos, shooter));
+							
+							return true;
+						}
 					}
 					else
 					{
@@ -198,6 +244,68 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				return true;
 			}
 		}
+		
+		return true;
+	}
+};
+
+[BaseContainerProps()]
+modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
+{
+	private static const float EXPLOSION_OBSERVE_DISTANCE = 150; // Maximal distance from explosion to trigger observe behavior
+	private static const float EXPLOSION_REACTION = 20;
+	
+	override void CreateObserveUnknownBehavior(SCR_AIUtilityComponent utility, vector observeReactionPosition)
+	{
+		if (observeReactionPosition == vector.Zero || utility.m_CombatComponent.GetCurrentTarget() != null)
+			return;
+				
+		vector myOrigin = utility.m_OwnerEntity.GetOrigin();
+								
+		SCR_AIMoveAndInvestigateBehavior investigateBehavior = SCR_AIMoveAndInvestigateBehavior.Cast(utility.FindActionOfType(SCR_AIMoveAndInvestigateBehavior));
+		SCR_AIObserveUnknownFireBehavior oldObserveBehavior = SCR_AIObserveUnknownFireBehavior.Cast(utility.FindActionOfType(SCR_AIObserveUnknownFireBehavior));
+		
+		// Exit if investigating
+		if (investigateBehavior && investigateBehavior.GetActionState() == EAIActionState.RUNNING)
+			return;
+		
+		// Exit if already observing something else
+		if (oldObserveBehavior)
+			return;
+		
+		SCR_AIObserveUnknownFireBehavior observeBehavior = new SCR_AIObserveUnknownFireBehavior(utility, null, posWorld: observeReactionPosition, useMovement: false);
+		utility.AddAction(observeBehavior);
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent)
+	{
+		IEntity ownerEntity = utility.m_OwnerEntity;
+		
+		if (!ownerEntity)
+			return false;
+		
+		vector position = dangerEvent.GetPosition();
+		float distance = vector.Distance(ownerEntity.GetOrigin(), position);
+		
+		if (distance > SCR_AIThreatSystem.EXPLOSION_MAX_DISTANCE)
+			return false;
+		
+		if (distance < EXPLOSION_REACTION)
+		{
+			
+		}
+			
+		
+		// Increase threat level
+		threatSystem.ThreatExplosion(distance);
+		
+		// Look at explosion
+		utility.m_LookAction.LookAt(position, SCR_AILookAction.PRIO_UNKNOWN_TARGET, 1);
+		
+		// Observe if not investigating or already observing something else
+		if (distance <= EXPLOSION_OBSERVE_DISTANCE)
+			CreateObserveUnknownBehavior(utility, position);
 		
 		return true;
 	}

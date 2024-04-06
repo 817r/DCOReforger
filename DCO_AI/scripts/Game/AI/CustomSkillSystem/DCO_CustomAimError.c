@@ -7,11 +7,11 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float CLOSE_RANGE_THRESHOLD = 15.0;
 	static const float LONG_RANGE_THRESHOLD = 250.0;
 	static const float AIMING_ERROR_SCALE = 1.15; // TODO: game master and server option
-	static const float AIMING_ERROR_FACTOR_MIN = 0.2; 
-	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.05;
-	static const float AIMING_ERROR_FACTOR_MAX = 1.2;
+	static const float AIMING_ERROR_FACTOR_MIN = 0.3; 
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.1;
+	static const float AIMING_ERROR_FACTOR_MAX = 1.4;
 	static const float MAXIMAL_TOLERANCE = 10.0;	
-	static const float MINIMAL_TOLERANCE = 0.1;
+	static const float MINIMAL_TOLERANCE = 0.15;
 
 	//------------------------------------------------------------------------------------------------
 	// returns random factor based on AI skill
@@ -22,37 +22,37 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case EAISkill.RECRUIT :
 			{
-				sigma = 2.7;
+				sigma = 2.75;
 				break;
 			}
 			case EAISkill.ROOKIE :
 			{
-				sigma = 1.4;
+				sigma = 1.45;
 				break;
 			}
 			case EAISkill.REGULAR :
 			{
-				sigma = 1.0;
+				sigma = 1.05;
 				break;
 			}
 			case EAISkill.TRAINED :
 			{
-				sigma = 1.3;
+				sigma = 1.35;
 				break;
 			}
 			case EAISkill.VETERAN :
 			{
-				sigma = 0.6;
+				sigma = 0.65;
 				break;
 			}
 			case EAISkill.EXPERT :
 			{
-				sigma = 0.4;
+				sigma = 0.45;
 				break;
 			}
 			case EAISkill.CYLON :
 			{
-				return 0.25;
+				return 0.3;
 			}
 		}
 		
