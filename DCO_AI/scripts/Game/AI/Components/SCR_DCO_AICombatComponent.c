@@ -17,13 +17,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.5;
 
 	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.0;
-			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 4.5;
+			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 5.0;
 			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 10.0;
 			  static const float TARGET_MAX_LAST_SEEN = 60.0;
 	
-	
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 100.0;
-	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.7;
+	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.8;
 	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.45;
 	
 	protected const float PERCEPTION_FACTOR_SAFE = 1.5;
@@ -220,7 +219,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 		switch (weaponComp.GetWeaponType())
 		{
 			case EWeaponType.WT_RIFLE: lowMagThreshold = 1; break;
-			case EWeaponType.WT_GRENADELAUNCHER: lowMagThreshold = 3; break; // todo now it won't work when we are out of UGL ammo because weapons are not marked with WT_GRENADELAUNCHER
+			case EWeaponType.WT_GRENADELAUNCHER: lowMagThreshold = 2; break; // todo now it won't work when we are out of UGL ammo because weapons are not marked with WT_GRENADELAUNCHER
 			case EWeaponType.WT_SNIPERRIFLE: lowMagThreshold = 1; break;
 			case EWeaponType.WT_ROCKETLAUNCHER: lowMagThreshold = 1; break;
 			case EWeaponType.WT_MACHINEGUN: lowMagThreshold = 1; break;
@@ -323,9 +322,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 			
 		// Check angle excess of the target's position
 		vector angleExcess = turretComp.GetAimingAngleExcess(targetPos);
-		
+			
 		//PrintFormat("Excess angle: %1", angleExcess);
-		
+			
 		return angleExcess.Length() > TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG;
 	}
 };

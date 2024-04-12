@@ -90,7 +90,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		{
 			if (agent && agent.IsEnemy(shooter))
 			{
-				if (distanceToDanger < 3 && bulletCount > 2)
+				if (distanceToDanger < 1 && bulletCount > 5)
 				{
 					if(m_State != null)
 					{
@@ -143,7 +143,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 					
 					return true;
 				}
-				else if (distanceToDanger < 3 && distanceToShooter < 5 || bulletCount > 4)
+				else if (distanceToDanger < 1 && distanceToShooter < 5 || bulletCount > 5)
 				{
 					if(m_State != null)
 					{
@@ -192,7 +192,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 						utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, shooterPos, shooter))
 					}
 				}
-				else if (isNullTarget && distanceToDanger < 4)
+				else if (isNullTarget && distanceToDanger < 5)
 				{
 					if(m_State != null)
 					{

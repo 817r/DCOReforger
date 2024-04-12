@@ -10,6 +10,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	
 	SCR_ChimeraAIAgent m_Agent;
 	
+	AIDangerEvent danger;
+	
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
@@ -129,8 +131,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_bCheckCoverVisibility = true;
 
 		float coverSearchDistMin = 0;
-		float coverSearchDistMax = 50;
-		float moveDistanceMax = Math.RandomFloat(5.0, 50.0);
+		float coverSearchDistMax = 30;
+		float moveDistanceMax = Math.RandomFloat(5.0, 30.0);
 		if (m_bCloseRangeCombat)
 		{
 			// Close range combat
@@ -479,10 +481,10 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			switch (threat)
 			{
 				case EAIThreatState.THREATENED:
-					waitTime = Math.RandomFloat(5.0, 13.0);	// Stay in cover for a long time, until we are not suppressed any more
+					waitTime = Math.RandomFloat(10.0, 15.0);	// Stay in cover for a long time, until we are not suppressed any more
 					break;
 				default:
-					waitTime = Math.RandomFloat(2.0, 8.0);
+					waitTime = Math.RandomFloat(6.0, 10.0);
 			}
 		}
 		else
@@ -491,10 +493,10 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			switch (threat)
 			{
 				case EAIThreatState.THREATENED:
-					waitTime = Math.RandomFloat(1.0, 5.0);
+					waitTime = Math.RandomFloat(3.0, 8.0);
 					break;
 				default:
-					waitTime = Math.RandomFloat(3.0, 8.0);
+					waitTime = Math.RandomFloat(5.0, 8.0);
 					break;
 			}
 		}
@@ -515,17 +517,18 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		{
 			case EWeaponType.WT_MACHINEGUN:
 			case EWeaponType.WT_SNIPERRIFLE:
+			case EWeaponType.WT_ROCKETLAUNCHER:
 				specialistTime = true;
 		}
 		
 		if (longWaitTime)
-			waitTime *= Math.RandomFloat(1.2, 2.0);
+			waitTime *= Math.RandomFloat(1.7, 2.0);
 		
 		if(specialistTime)
-			waitTime *= Math.RandomFloat(1.0, 1.5);
+			waitTime *= Math.RandomFloat(1.2, 1.5);
 		
 		if(m_bCloseRangeCombat)
-			waitTime = waitTime/4;
+			waitTime = waitTime/2;
 		
 		return waitTime;
 	}

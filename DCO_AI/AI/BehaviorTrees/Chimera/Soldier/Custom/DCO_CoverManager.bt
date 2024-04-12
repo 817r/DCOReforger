@@ -15,24 +15,47 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
        Nodes {
         Decorator Decorator {
          Name "Decorator"
-         EditorPos 2073 1137.5
+         EditorPos 1681.571 1137.738
          Nodes {
           SCR_AIDeploySmokeCover "SCR_AI Deploy Smoke Cover" {
            Name "SCR_AI Deploy Smoke Cover"
-           EditorPos 2057.5 1320
+           EditorPos 1666.071 1318.571
           }
          }
          ForceNodeResult Success
         }
+        SCR_AICompleteLookAction "SCR_AI Complete Look Action" {
+         Name "SCR_AI Complete Look Action"
+         EditorPos 1926.19 1146.904
+        }
         SCR_AIDCO_COVERMANAGER SCR_AIDCO_COVERMANAGER {
          Name "SCR_AIDCO_COVERMANAGER"
-         EditorPos 2581.428 1150.857
+         EditorPos 2240.238 1148
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 5
            PortName "Position"
           }
          }
+        }
+        SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
+         Name "SCR_AI Set Combat Move State"
+         EditorPos 2534.286 1146
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "InCover"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ExposedInCover"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "AimAtTarget"
+          }
+         }
+         m_bReleaseCoverLock 1
         }
         SCR_AITalk "SCR_AI Talk" {
          Name "SCR_AI Talk"
@@ -77,7 +100,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
         }
         AITaskReturnState "Return State" {
          Name "Return State"
-         EditorPos 3383.167 1152.5
+         EditorPos 3381.5 1152.5
          Result RUNNING
         }
        }
@@ -89,7 +112,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
         AITaskIdle Idle {
          Name "Idle"
          EditorPos 3085 651.111
-         Period 3
+         Period 4
         }
         AITaskReturnState "Return State" {
          Name "Return State"
@@ -321,7 +344,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
   }
   VariableReference lastSeen {
    VariableType 2
-   EditorPos 2374.558 1280.068
+   EditorPos 2027.415 1350.068
   }
  }
  Groups {

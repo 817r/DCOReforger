@@ -169,29 +169,6 @@ BehaviorTree {
         }
         Sequence Sequence {
          Name "Sequence"
-         EditorPos 2137.747 546.091
-         Nodes {
-          SCR_AIFindTagetToLookAt "SCR_AI Find Taget To Look At" {
-           Name "SCR_AI Find Taget To Look At"
-           EditorPos 1917.036 758.678
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "BaseTarget"
-            }
-           }
-           m_fTimeSinceSeenMax_S 2
-           m_fTimeSinceDetectedMax_S 5
-          }
-          AITaskIdle Idle {
-           Name "Idle"
-           EditorPos 2305.143 756.286
-           PeriodRandom 0.5
-          }
-         }
-        }
-        Sequence Sequence {
-         Name "Sequence"
          EditorPos 3893.922 647.087
          Nodes {
           Selector Selector {
@@ -333,6 +310,29 @@ BehaviorTree {
        UseChildResult 0
       }
      }
+    }
+   }
+  }
+  Sequence Sequence {
+   Name "Sequence"
+   EditorPos 2137.747 546.091
+   Nodes {
+    SCR_AIFindTagetToLookAt "SCR_AI Find Taget To Look At" {
+     Name "SCR_AI Find Taget To Look At"
+     EditorPos 1917.036 758.678
+     OutPorts {
+      SingleOutputPortContainer SingleOutputPortContainer {
+       Port -1
+       PortName "BaseTarget"
+      }
+     }
+     m_fTimeSinceSeenMax_S 2
+     m_fTimeSinceDetectedMax_S 5
+    }
+    AITaskIdle Idle {
+     Name "Idle"
+     EditorPos 2305.143 756.286
+     PeriodRandom 0.5
     }
    }
   }

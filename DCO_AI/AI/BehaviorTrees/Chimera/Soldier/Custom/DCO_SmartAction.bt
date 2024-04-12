@@ -13,21 +13,24 @@ BehaviorTree {
   }
   Sequence Sequence {
    Name "Sequence"
-   EditorPos -1197.5 530
+   EditorPos -1650 645
    Nodes {
     SCR_AIDecoHasWeaponOfType "SCR_AI Deco Has Weapon Of Type" {
      Name "SCR_AI Deco Has Weapon Of Type"
-     EditorPos -1729 829
+     EditorPos -1735.667 829
      InPorts {
-      SingleInputPortContainer SingleInputPortContainerClass {
+      SingleInputPortContainer SingleInputPortContainer {
+       Port -1
        PortName "WeaponTypeIn"
       }
-      SingleInputPortContainer SingleInputPortContainerClass {
+      SingleInputPortContainer SingleInputPortContainer {
+       Port -1
        PortName "MagazineWell"
       }
      }
      OutPorts {
-      SingleOutputPortContainer SingleOutputPortContainerClass {
+      SingleOutputPortContainer SingleOutputPortContainer {
+       Port -1
        PortName "WeaponTypeOut"
       }
      }

@@ -44,35 +44,6 @@ BehaviorTree {
         }
        }
       }
-      DecoTestVariable "Test Variable" {
-       Name "Test Variable"
-       EditorPos -421.539 -231.398
-       Nodes {
-        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-         Name "SCR_AI Deco Is Above Threat Level"
-         EditorPos -467.183 -36.076
-         Nodes {
-          AITaskReturnState "Return  State" {
-           Name "Return  State"
-           EditorPos -396.557 160.388
-           Result RUNNING
-          }
-         }
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "ThresholdIn"
-          }
-         }
-         AbortType AbortChildrenBranch
-         m_threatThreshold ALERTED
-        }
-       }
-       ForceNodeResult Success
-       InVariable 1
-       TestType EqualsValue
-       TestValue "true"
-      }
       SCR_AILookAtPosition "SCR_AI Look At Position" {
        Name "SCR_AI Look At Position"
        EditorPos 16 -186.778
@@ -92,7 +63,6 @@ BehaviorTree {
          PortName "PositionOut"
         }
        }
-       m_fPriority 40
       }
       SCR_AITalk "SCR_AI Talk" {
        Name "SCR_AI Talk"
@@ -128,7 +98,7 @@ BehaviorTree {
          Nodes {
           Parallel Parallel {
            Name "Parallel"
-           EditorPos -1629.167 1751.667
+           EditorPos -1929.167 1769.667
            Nodes {
             Selector Selector {
              Name "Selector"
@@ -318,9 +288,10 @@ BehaviorTree {
               }
               AITaskIdle Idle {
                Name "Idle"
-               EditorPos -889.262 2472.262
+               EditorPos -681.08 2479.535
                Group "{5C65018A80762E48}"
                PeriodRandom 1
+               PeriodKey -1
               }
              }
              Group "{5C65018A80762E48}"
@@ -527,7 +498,7 @@ BehaviorTree {
                 }
                 AITaskChangeStance "Change Stance" {
                  Name "Change Stance"
-                 EditorPos 5262.833 1024.913
+                 EditorPos 5257.833 1029.913
                 }
                 SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
                  Name "SCR_AI Set Weapon Raised"
@@ -569,6 +540,36 @@ BehaviorTree {
      }
     }
    }
+  }
+  DecoTestVariable "Test Variable" {
+   Name "Test Variable"
+   EditorPos -421.539 -231.398
+   Nodes {
+    SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+     Name "SCR_AI Deco Is Above Threat Level"
+     EditorPos -467.183 -36.076
+     Nodes {
+      AITaskReturnState "Return  State" {
+       Name "Return  State"
+       EditorPos -395.986 183.388
+       Result RUNNING
+      }
+     }
+     InPorts {
+      SingleInputPortContainer SingleInputPortContainer {
+       Port -1
+       PortName "ThresholdIn"
+      }
+     }
+     NegativeCondition 1
+     AbortType AbortChildrenBranch
+     m_threatThreshold THREATENED
+    }
+   }
+   ForceNodeResult Success
+   InVariable -1
+   TestType EqualsValue
+   TestValue "true"
   }
  }
  Variables {
@@ -629,7 +630,7 @@ BehaviorTree {
   }
   VariableReference isDangerous {
    VariableType 1
-   EditorPos -745.616 -121.911
+   EditorPos -745.616 -127.625
   }
   VariableReference position {
    VariableType 0
@@ -666,7 +667,7 @@ BehaviorTree {
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos -181.111 -181.389
+   EditorPos -194.861 -120.139
   }
   VariableReference resetTimer {
    VariableType 5

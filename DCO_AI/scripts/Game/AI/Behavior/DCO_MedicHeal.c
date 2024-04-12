@@ -9,7 +9,7 @@ modded class SCR_AIMedicHealBehavior : SCR_AIBehaviorBase
 	ref SCR_AIMoveIndividuallyBehavior m_HealMove;
 	
 	// Max threat value under which we will consider healing someone
-	protected const float MAX_THREAT_THRESHOLD = 0.4;
+	protected const float MAX_THREAT_THRESHOLD = 0.8;
 	
 	void SCR_AIMedicHealBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, IEntity entityToHeal, bool allowHealMove, float priority = PRIORITY_BEHAVIOR_MEDIC_HEAL, float priorityLevel = PRIORITY_LEVEL_NORMAL)
 	{

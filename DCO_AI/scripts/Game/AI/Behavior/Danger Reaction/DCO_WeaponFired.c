@@ -40,7 +40,8 @@ modded class SCR_AIDangerReaction_WeaponFired : SCR_AIDangerReaction
 		// Notify our group
 		// ! Only if we are a leader
 		AIGroup myGroup = AIGroup.Cast(utility.GetOwner().GetParentGroup());
-		NotifyGroup(myGroup, shooterRoot, lookPosition);
+		if (myGroup && myGroup.GetLeaderAgent() == agent)
+			NotifyGroup(myGroup, shooterRoot, lookPosition);
 		
 		// Ignore if we have selected a target
 		// Ignore if target is too far

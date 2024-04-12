@@ -17,11 +17,5 @@ SCR_ChimeraCharacter {
     }
    }
   }
-  BaseFlattenGrassComponent "{520EA1D2F659CE26}" {
-   Enabled 0
-  }
-  CharacterAnimationComponent "{520EA1D2F659C994}" {
-   RagdollDisableTimer -1
-  }
  }
 }

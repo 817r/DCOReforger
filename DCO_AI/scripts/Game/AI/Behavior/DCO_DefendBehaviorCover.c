@@ -50,7 +50,7 @@ modded class SCR_AICreateDefendBehaviorCoverQueryProps : AITaskScripted
 		m_CoverQueryProps.m_vThreatPos = threatPos;
 		m_CoverQueryProps.m_fQuerySectorAngleCosMin = -1; // Full circle
 		m_CoverQueryProps.m_fCoverToThreatAngleCosMin = 0.707; // Cos(45 deg) we don't need cover direction to be so perfect
-		m_CoverQueryProps.m_fScoreWeightDirection = 2.0;
+		m_CoverQueryProps.m_fScoreWeightDirection = 3.0;
 		m_CoverQueryProps.m_fScoreWeightDistance = 1.0;
 		m_CoverQueryProps.m_bCheckVisibility = true;
 		m_CoverQueryProps.m_bSelectHighestScore = true; // Lowest score, nearest cover
