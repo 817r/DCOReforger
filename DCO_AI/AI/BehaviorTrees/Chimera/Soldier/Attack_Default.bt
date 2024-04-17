@@ -204,53 +204,6 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          TestType EqualsValue
          TestValue "true"
         }
-        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-         Name "SCR_AI Deco Is Above Threat Level"
-         EditorPos 2180.381 1083.619
-         Nodes {
-          DecoTestVariable "Test Variable" {
-           Name "Test Variable"
-           EditorPos 2251.524 1255.774
-           Nodes {
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 2268.214 1445.571
-             Nodes {
-              AITaskIdle Idle {
-               Name "Idle"
-               EditorPos 2088.357 1637.571
-               Period 5
-               PeriodRandom 0.2
-              }
-              RunBT RunBT {
-               Name "RunBT"
-               EditorPos 2305.381 1656.286
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 34
-                 PortName "lastSeen"
-                }
-               }
-               BehaviorTree "{C529D8EDF7B24DC6}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_AttackPush.bt"
-              }
-             }
-            }
-           }
-           NegativeCondition 1
-           InVariable 32
-           TestType EqualsValue
-           TestValue "true"
-          }
-         }
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "ThresholdIn"
-          }
-         }
-         NegativeCondition 1
-         m_threatThreshold THREATENED
-        }
         Selector Selector {
          Name "Selector"
          EditorPos 3032.357 1954.857
@@ -472,11 +425,68 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
    EditorPos 234.797 2757.845
    InPorts {
     SingleInputPortContainer SingleInputPortContainer {
-     Port 33
+     Port 32
      PortName "initPosition"
     }
    }
    BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestigate.bt"
+  }
+  SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+   Name "SCR_AI Deco Is Above Threat Level"
+   EditorPos 2180.381 1083.619
+   Nodes {
+    SCR_AIDecoHasWeaponOfType "SCR_AI Deco Has Weapon Of Type" {
+     Name "SCR_AI Deco Has Weapon Of Type"
+     EditorPos 2184.286 1250
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 2268.214 1445.571
+       Nodes {
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 2088.357 1637.571
+         Period 5
+         PeriodRandom 0.2
+        }
+        RunBT RunBT {
+         Name "RunBT"
+         EditorPos 2305.381 1656.286
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 33
+           PortName "lastSeen"
+          }
+         }
+         BehaviorTree "{C529D8EDF7B24DC6}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_AttackPush.bt"
+        }
+       }
+      }
+     }
+     InPorts {
+      SingleInputPortContainer SingleInputPortContainerClass {
+       PortName "WeaponTypeIn"
+      }
+      SingleInputPortContainer SingleInputPortContainerClass {
+       PortName "MagazineWell"
+      }
+     }
+     OutPorts {
+      SingleOutputPortContainer SingleOutputPortContainerClass {
+       PortName "WeaponTypeOut"
+      }
+     }
+     m_bCurrent 1
+    }
+   }
+   InPorts {
+    SingleInputPortContainer SingleInputPortContainer {
+     Port -1
+     PortName "ThresholdIn"
+    }
+   }
+   NegativeCondition 1
+   m_threatThreshold THREATENED
   }
  }
  Variables {
@@ -666,10 +676,6 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   VariableReference targetLastSeenPosition {
    VariableType 1
    EditorPos 1032.5 1808.75
-  }
-  VariableReference IsTargetVisible {
-   VariableType 4
-   EditorPos 2029.631 1376.345
   }
   VariableReference targetLastSeenPosition {
    VariableType 1
