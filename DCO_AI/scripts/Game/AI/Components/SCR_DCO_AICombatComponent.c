@@ -9,7 +9,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected SCR_AIGroup m_SCR_AIGroup;
 	protected IEntity m_ControlledEntity;
 	protected SCR_ChimeraAIAgent m_SCR_ChimeraAIAgent;
-	
+	protected DCO_AIMoraleSystem m_DCO_MoraleSystem;
 	protected DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;

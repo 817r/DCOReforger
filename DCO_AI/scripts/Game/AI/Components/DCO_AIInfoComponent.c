@@ -17,6 +17,7 @@ class DCO_AIInfoComponent : ScriptComponent
 	
 	private float m_fPerceptionSafe;
 	private float m_fPerceptionVigilant;
+	protected DCO_AIMoraleSystem m_DCOMoraleSystem;
 	
 	private DCO_CUSTOMRANK cussRank;
 	
@@ -142,5 +143,10 @@ class DCO_AIInfoComponent : ScriptComponent
 	void setRank(int cusRank)
 	{
 		cussRank = cusRank;
+	}
+	
+	void InitMoraleSystem(DCO_AIMoraleSystem moraleSystem)
+	{
+		m_DCOMoraleSystem = moraleSystem;	
 	}
 }

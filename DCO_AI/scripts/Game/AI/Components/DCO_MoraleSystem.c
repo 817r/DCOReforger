@@ -20,18 +20,248 @@ class DCO_AIMoraleSystem
 	
 	// Round classification (EWeaponType) classification
 	
-	private static const float MORALE_SHOT_RECOVERY 			= 			0.1 * 0.001;	//!< Falloff (percentual drop per milisecond)
-	private static const float MORALE_SUPPRESSION_RECOVERY 		= 			0.1 * 0.001;
-	private static const float MORALE_ENDANGERED_RECOVERY 		= 			0.2 * 0.001;
+	private static const float MORALE_SHOT_RECOVERY 				= 			0.01 * 0.001;	//!< Falloff (percentual drop per milisecond)
+	private static const float MORALE_SUPPRESSION_RECOVERY 			= 			0.008 * 0.001;
+	private static const float MORALE_ENDANGERED_RECOVERY 			= 			0.02 * 0.001;
 	
-	private static const float MORALE_BOOST_LEADER_DISTANCE		=			50;
-	private static const float MORALE_BOOST_FRIENDLY_DISTANCE	=			10;
+	private static const float MORALE_BOOST_LEADER_DISTANCE			=			50;
+	private static const float MORALE_BOOST_FRIENDLY_DISTANCE		=			10;
 	
-	private static const float MORALE_BOOST_LEADER_VALUE		=			0.11;
-	private static const float MORALE_BOOST_FRIENDLY_VALUE		=			0.035;
+	private static const float MORALE_BOOST_LEADER_VALUE			=			0.11;
+	private static const float MORALE_BOOST_FRIENDLY_VALUE			=			0.035;
 	
-	private static const float MORALE_DROP_SUPPRESSION			=			0.12;
-	private static const float MORALE_DROP_FIREFIGHT_FIXED		=			0.2;
+	private static const float MORALE_DROP_SUPPRESSION				=			0.12;
+	private static const float MORALE_DROP_FIREFIGHT_FIXED			=			0.2;
+	
+	private static const float MORALE_DROP_BLEEDING_FIXED_INCREMENT	=			0.13;
+	
+	private static const float MOTIVATED_THRESHOLD 					= 			0.4;
+	private static const float WISE_THRESHOLD						=			1.5;
+	private static const float MANIAC_THRESHOLD						=			1.8;
+	private static const float BREAK_THRESHOLD						=			3.0;
+	
+	private static const float ENDANGERED_INCREMENT 				= 			0.15;
+	private static const float SUPPRESSION_BULLET_INCREMENT			=			0.15;
+	
+	private float m_fMoraleTotal;
+	private float m_fMoraleSuppression;
+	private float m_fMoraleInjury;
+	private float m_fMoraleEndangered;
 
+	private SCR_AIUtilityComponent				m_Utility;
+	private SCR_AIConfigComponent				m_Config;
+	private SCR_AICombatComponent				m_Combat;
+	private SCR_DamageManagerComponent			m_DamageManager;
+	private SCR_AIThreatSystem					m_Threat;
 	
+	private SCR_ChimeraAIAgent m_Agent;
+	
+	private moraleState m_State;
+		
+	private ref SCR_AIMoraleStateChangedInvoker m_OnThreatStateChanged = new SCR_AIMoraleStateChangedInvoker();
+	
+	void DCO_AIMoraleSystem(SCR_AIUtilityComponent utility)
+	{
+		m_Utility = utility;
+		m_Config = utility.m_ConfigComponent;	
+		m_Combat = utility.m_CombatComponent;
+		m_DamageManager = SCR_DamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));
+		
+		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
+		if (!agent)
+			return;
+		m_Agent = agent;
+		
+		if (m_DamageManager)
+		{
+			m_DamageManager.GetOnDamageOverTimeAdded().Insert(OnDamageOverTimeAdded);
+			m_DamageManager.GetOnDamageOverTimeRemoved().Insert(OnDamageOverTimeRemoved);
+		}
+			
+		m_State = moraleState.NORMAL;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	//! \return
+	SCR_AIMoraleStateChangedInvoker GetOnThreatStateChanged()
+	{
+		return m_OnThreatStateChanged;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	//! \return
+	moraleState GetState()
+	{
+		return m_State;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	protected void OnDamageOverTimeAdded(EDamageType dType, float dps, HitZone hz)
+	{
+		if (dType != EDamageType.BLEEDING)
+			return;
+		
+		if (m_DamageManager.IsDamagedOverTime(EDamageType.BLEEDING))
+			m_fMoraleInjury = MORALE_DROP_BLEEDING_FIXED_INCREMENT;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	protected void OnDamageOverTimeRemoved(EDamageType dType, HitZone hz)
+	{
+		if (dType != EDamageType.BLEEDING)
+			return;
+		
+		if (!m_DamageManager.IsDamagedOverTime(EDamageType.BLEEDING))
+			m_fMoraleInjury = m_fMoraleInjury - MORALE_DROP_BLEEDING_FIXED_INCREMENT;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	//! \return Sum of all threats without the effect of injuries - used for deciding to patch oneself
+	float GetMoraleMeasureWithoutInjuryFactor()
+	{
+		return m_fMoraleTotal - m_fMoraleInjury;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	//! \return
+	float GetMoraleMeasure()
+	{
+		return m_fMoraleTotal;
+	}
+	
+	#ifdef WORKBENCH
+	//------------------------------------------------------------------------------------------------
+	//!
+	void ShowDebug()
+	{
+		// Show message above AI's head
+
+		Color color;
+		
+		switch (m_State)
+		{
+			case moraleState.NORMAL:
+			{
+				color = Color.FromInt(Color.GREEN);
+				break;
+			}
+			case moraleState.WISE:
+			{
+				color = Color.FromInt(Color.BLUE);
+				break;
+			}
+			case moraleState.MOTIVATED:
+			{
+				color = Color.FromInt(Color.YELLOW);
+				break;
+			}
+			case moraleState.MANIAC:
+			{
+				color = Color.FromInt(Color.ORANGE);
+				break;
+			}
+			case moraleState.BREAK:
+			{
+				color = Color.FromInt(Color.RED);
+				break;
+			}
+		}
+		
+		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.BEHAVIOR, 1.4, color);	
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fMoraleTotal.ToString(), EAIDebugCategory.INFO, 1.4, color);	
+	}
+#endif // WORKBENCH
+	
+	private void StateTransition(moraleState newState)
+	{
+		if (newState == m_State)
+			return;
+		
+		m_OnThreatStateChanged.Invoke(m_State, newState);
+		
+		m_State = newState;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	private void UpdateState()
+	{
+		moraleState newState = moraleState.NORMAL;
+		
+		if (m_fMoraleTotal > MOTIVATED_THRESHOLD)
+			newState = moraleState.MOTIVATED;
+		else if (m_fMoraleTotal > WISE_THRESHOLD)
+			newState = moraleState.WISE;
+		else if (m_fMoraleTotal > MANIAC_THRESHOLD)
+			newState = moraleState.MANIAC;
+		else if (m_fMoraleTotal > BREAK_THRESHOLD)
+			newState = moraleState.BREAK;
+		
+		StateTransition(newState);
+	}
+	
+	void Update(SCR_AIUtilityComponent utility, float timeSlice)
+	{
+		m_fMoraleSuppression -= m_fMoraleSuppression * MORALE_SUPPRESSION_RECOVERY * timeSlice;
+		
+		if (m_Combat)
+		{
+			if (m_Combat.GetCurrentTarget())
+				m_fMoraleEndangered = ENDANGERED_INCREMENT;
+			else
+				m_fMoraleEndangered -= m_fMoraleEndangered * MORALE_ENDANGERED_RECOVERY * timeSlice;
+		}
+
+		// Process all danger events and clear the array
+		if (m_Agent && m_Config.m_EnableDangerEvents)
+		{
+			bool handled;
+			int i = 0;
+			for (; i < m_Agent.GetDangerEventsCount(); i++)
+			{
+				AIDangerEvent dangerEvent = m_Agent.GetDangerEvent(i);
+				
+				if (dangerEvent)
+				{
+					#ifdef AI_DEBUG
+					AddDebugMessage(string.Format("PerformDangerReaction: %1, %2", dangerEvent, typename.EnumToString(EAIDangerEventType, dangerEvent.GetDangerType())));
+					#endif
+					
+					if (m_Config.PerformDangerReaction(m_Utility, dangerEvent))
+					{
+#ifdef WORKBENCH	
+						string message = typename.EnumToString(EAIDangerEventType, dangerEvent.GetDangerType());
+						SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, message, EAIDebugCategory.DANGER, 2);	// Show message above AI's head
+#endif
+						break;
+					}
+				}
+			}
+			m_Agent.ClearDangerEvents(i+1);
+		}		
+		
+		m_fMoraleTotal = Math.Clamp(m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered, 0, 3.5);
+		
+		UpdateState();
+#ifdef WORKBENCH
+		ShowDebug();
+#endif
+	}
+	
+	void ThreatProjectileFlyby(int count)
+	{
+		#ifdef AI_DEBUG
+		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
+		#endif
+		
+		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0.2, 2.5);
+	}
+	
+	void ThreatBulletImpact(float distance, int count)
+	{
+		#ifdef AI_DEBUG
+		AddDebugMessage(string.Format("ThreatBulletImpact: %1", count));
+		#endif
+		
+		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0.2, 2.5);
+	}
 }

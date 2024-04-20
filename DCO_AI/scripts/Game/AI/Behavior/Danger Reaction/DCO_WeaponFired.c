@@ -5,7 +5,7 @@ modded class SCR_AIDangerReaction_WeaponFired : SCR_AIDangerReaction
 	protected static const float PROJECTILE_FLYBY_RADIUS_SQ = PROJECTILE_FLYBY_RADIUS * PROJECTILE_FLYBY_RADIUS;
 	protected static const float AI_WEAPONFIRED_REACTION_DISTANCE = 500;
 	
-	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent)
+	bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, notnull DCO_AIMoraleSystem moralesystems, AIDangerEvent dangerEvent)
 	{
 		IEntity shooter = dangerEvent.GetObject();
 		
@@ -29,9 +29,16 @@ modded class SCR_AIDangerReaction_WeaponFired : SCR_AIDangerReaction
 		bool flyby = IsFlyby(myOrigin, distance, shooter);
 		
 		if (flyby)
+		{
+			moralesystems.ThreatProjectileFlyby(dangerEvent.GetCount());
 			threatSystem.ThreatProjectileFlyby(dangerEvent.GetCount());
+		}
 		else
+		{
 			threatSystem.ThreatShotFired(distance, dangerEvent.GetCount());
+			moralesystems.ThreatBulletImpact(distance, dangerEvent.GetCount());
+		}
+			
 
 		// Look at shooting position. Even though we add an observe behavior, we can't guarantee that
 		// some other behavior doesn't override observe behavior, in which case we might want to look at shooter in parallel.

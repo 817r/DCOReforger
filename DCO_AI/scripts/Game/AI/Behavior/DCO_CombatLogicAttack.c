@@ -9,6 +9,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 	
 	SCR_ChimeraAIAgent m_Agent;
+	DCO_AIMoraleSystem m_DCOMorale;
 	
 	AIDangerEvent danger;
 	
@@ -114,6 +115,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	
 	override protected bool SuppressedInCoverCondition()
 	{
+		//float currMorale = m_DCOMorale.GetMoraleMeasure();
+		
 		return m_State.m_bInCover && m_eThreatState == EAIThreatState.THREATENED;
 	}
 
@@ -143,7 +146,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				{
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					coverSearchDistMin = 2.0;
 					coverSearchDistMax = 8.0;
 					moveDistanceMax = 3.0;
@@ -206,7 +209,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					else
 						rq.m_eStanceEnd = ECharacterStance.PRONE;
 					rq.m_bAimAtTarget = true;
-					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					break;
 				}
 				case EAIThreatState.ALERTED:

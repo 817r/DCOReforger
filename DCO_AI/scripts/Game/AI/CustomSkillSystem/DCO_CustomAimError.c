@@ -5,7 +5,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const string PORT_AIM_POINT = "AimPoint";
 	static const string PORT_TOLERANCE = "AimingTolerance";
 	static const float CLOSE_RANGE_THRESHOLD = 15.0;
-	static const float LONG_RANGE_THRESHOLD = 200.0;
+	static const float LONG_RANGE_THRESHOLD = 150.0;
 	static const float AIMING_ERROR_SCALE = 1.1; // TODO: game master and server option
 	static const float AIMING_ERROR_FACTOR_MIN = 0.35; 
 	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.1;
