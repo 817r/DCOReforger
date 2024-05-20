@@ -15,14 +15,13 @@ class DCO_AIMoraleSystem
 {
 	// it should be like this DROP is the number going up 
 	// RECOVERY is the number going down
-	
 	// Courage is the resistance to Morale 
-	
 	// Round classification (EWeaponType) classification
 	
-	private static const float MORALE_SHOT_RECOVERY 				= 			0.01 * 0.001;	//!< Falloff (percentual drop per milisecond)
-	private static const float MORALE_SUPPRESSION_RECOVERY 			= 			0.008 * 0.001;
-	private static const float MORALE_ENDANGERED_RECOVERY 			= 			0.02 * 0.001;
+	private static const float MORALE_SHOT_RECOVERY 				= 			0.05 * 0.001;	//!< Falloff (percentual drop per milisecond)
+	private static const float MORALE_SUPPRESSION_RECOVERY 			= 			0.04 * 0.001;
+	private static const float MORALE_ENDANGERED_RECOVERY 			= 			0.1 * 0.001;
+	private static const float LOW_SUPPLY_RECOVERY					=			0.2 * 0.001;
 	
 	private static const float MORALE_BOOST_LEADER_DISTANCE			=			50;
 	private static const float MORALE_BOOST_FRIENDLY_DISTANCE		=			10;
@@ -33,20 +32,22 @@ class DCO_AIMoraleSystem
 	private static const float MORALE_DROP_SUPPRESSION				=			0.12;
 	private static const float MORALE_DROP_FIREFIGHT_FIXED			=			0.2;
 	
-	private static const float MORALE_DROP_BLEEDING_FIXED_INCREMENT	=			0.13;
+	private static const float MORALE_DROP_BLEEDING_FIXED_INCREMENT	=			0.35;
 	
 	private static const float MOTIVATED_THRESHOLD 					= 			0.4;
 	private static const float WISE_THRESHOLD						=			1.5;
 	private static const float MANIAC_THRESHOLD						=			1.8;
 	private static const float BREAK_THRESHOLD						=			3.0;
 	
-	private static const float ENDANGERED_INCREMENT 				= 			0.15;
+	private static const float ENDANGERED_INCREMENT 				= 			0.3;
 	private static const float SUPPRESSION_BULLET_INCREMENT			=			0.15;
+	private static const float LOW_SUPPLY							=			0.5;
 	
 	private float m_fMoraleTotal;
 	private float m_fMoraleSuppression;
 	private float m_fMoraleInjury;
 	private float m_fMoraleEndangered;
+	private float m_fMoraleSupply;
 
 	private SCR_AIUtilityComponent				m_Utility;
 	private SCR_AIConfigComponent				m_Config;
@@ -56,6 +57,7 @@ class DCO_AIMoraleSystem
 	
 	private SCR_ChimeraAIAgent m_Agent;
 	
+	private EAIThreatState m_ThreatState;
 	private moraleState m_State;
 		
 	private ref SCR_AIMoraleStateChangedInvoker m_OnThreatStateChanged = new SCR_AIMoraleStateChangedInvoker();
@@ -63,7 +65,7 @@ class DCO_AIMoraleSystem
 	void DCO_AIMoraleSystem(SCR_AIUtilityComponent utility)
 	{
 		m_Utility = utility;
-		m_Config = utility.m_ConfigComponent;	
+		m_Config = utility.m_ConfigComponent;
 		m_Combat = utility.m_CombatComponent;
 		m_DamageManager = SCR_DamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));
 		
@@ -102,7 +104,7 @@ class DCO_AIMoraleSystem
 			return;
 		
 		if (m_DamageManager.IsDamagedOverTime(EDamageType.BLEEDING))
-			m_fMoraleInjury = MORALE_DROP_BLEEDING_FIXED_INCREMENT;
+			m_fMoraleInjury += MORALE_DROP_BLEEDING_FIXED_INCREMENT;
 	}
 	
 	//------------------------------------------------------------------------------------------------
@@ -187,14 +189,14 @@ class DCO_AIMoraleSystem
 	{
 		moraleState newState = moraleState.NORMAL;
 		
-		if (m_fMoraleTotal > MOTIVATED_THRESHOLD)
-			newState = moraleState.MOTIVATED;
+		if (m_fMoraleTotal > BREAK_THRESHOLD)
+			newState = moraleState.BREAK;		
+		else if (m_fMoraleTotal > MANIAC_THRESHOLD)
+			newState = moraleState.MANIAC;		
 		else if (m_fMoraleTotal > WISE_THRESHOLD)
 			newState = moraleState.WISE;
-		else if (m_fMoraleTotal > MANIAC_THRESHOLD)
-			newState = moraleState.MANIAC;
-		else if (m_fMoraleTotal > BREAK_THRESHOLD)
-			newState = moraleState.BREAK;
+		else if (m_fMoraleTotal > MOTIVATED_THRESHOLD)
+			newState = moraleState.MOTIVATED;
 		
 		StateTransition(newState);
 	}
@@ -209,6 +211,11 @@ class DCO_AIMoraleSystem
 				m_fMoraleEndangered = ENDANGERED_INCREMENT;
 			else
 				m_fMoraleEndangered -= m_fMoraleEndangered * MORALE_ENDANGERED_RECOVERY * timeSlice;
+			
+			if (m_Combat.lowAmmo())
+				m_fMoraleSupply = m_fMoraleSupply + LOW_SUPPLY;
+			else
+				m_fMoraleSupply -= m_fMoraleSupply * LOW_SUPPLY_RECOVERY * timeSlice;
 		}
 
 		// Process all danger events and clear the array
@@ -239,7 +246,7 @@ class DCO_AIMoraleSystem
 			m_Agent.ClearDangerEvents(i+1);
 		}		
 		
-		m_fMoraleTotal = Math.Clamp(m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered, 0, 3.5);
+		m_fMoraleTotal = Math.Clamp(m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered + m_fMoraleSupply, 0, 3.5);
 		
 		UpdateState();
 #ifdef WORKBENCH
@@ -253,7 +260,7 @@ class DCO_AIMoraleSystem
 		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
 		#endif
 		
-		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0.2, 2.5);
+		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.5);
 	}
 	
 	void ThreatBulletImpact(float distance, int count)
@@ -262,6 +269,11 @@ class DCO_AIMoraleSystem
 		AddDebugMessage(string.Format("ThreatBulletImpact: %1", count));
 		#endif
 		
-		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0.2, 2.5);
+		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.5);
+	}
+	
+	void threatToMoraleEffect()
+	{
+		m_ThreatState = m_Threat.GetState();
 	}
 }

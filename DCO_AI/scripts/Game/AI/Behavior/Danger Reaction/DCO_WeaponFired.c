@@ -5,7 +5,7 @@ modded class SCR_AIDangerReaction_WeaponFired : SCR_AIDangerReaction
 	protected static const float PROJECTILE_FLYBY_RADIUS_SQ = PROJECTILE_FLYBY_RADIUS * PROJECTILE_FLYBY_RADIUS;
 	protected static const float AI_WEAPONFIRED_REACTION_DISTANCE = 500;
 	
-	bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, notnull DCO_AIMoraleSystem moralesystems, AIDangerEvent dangerEvent)
+	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, notnull DCO_AIMoraleSystem moraleSystem, AIDangerEvent dangerEvent)
 	{
 		IEntity shooter = dangerEvent.GetObject();
 		
@@ -30,13 +30,13 @@ modded class SCR_AIDangerReaction_WeaponFired : SCR_AIDangerReaction
 		
 		if (flyby)
 		{
-			moralesystems.ThreatProjectileFlyby(dangerEvent.GetCount());
+			moraleSystem.ThreatProjectileFlyby(dangerEvent.GetCount());
 			threatSystem.ThreatProjectileFlyby(dangerEvent.GetCount());
 		}
 		else
 		{
 			threatSystem.ThreatShotFired(distance, dangerEvent.GetCount());
-			moralesystems.ThreatBulletImpact(distance, dangerEvent.GetCount());
+			moraleSystem.ThreatBulletImpact(distance, dangerEvent.GetCount());
 		}
 			
 

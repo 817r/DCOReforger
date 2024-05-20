@@ -48,7 +48,7 @@ class SCR_AIDCO_COVERMANAGER: AITaskScripted
 	
 	void CombatMoveLogic(vector threatPos, float distToThreat)
 	{				
-		if (!m_State.IsInValidCover() && !m_bPushedMoveRequest)
+		if (!m_State.IsInValidCover() && !m_bPushedMoveRequest && !m_State.IsMovingToCover())
 		{		
 			SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 			

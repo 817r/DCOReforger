@@ -44,9 +44,50 @@ BehaviorTree {
         }
        }
       }
+      DecoTestVariable "Test Variable" {
+       Name "Test Variable"
+       EditorPos -426.427 -238.536
+       Nodes {
+        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+         Name "SCR_AI Deco Is Above Threat Level"
+         EditorPos -472.071 -43.214
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos -383.5 177
+           Nodes {
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos -519.429 363
+             Period 5
+             PeriodRandom 5
+            }
+            AITaskReturnState "Return  State" {
+             Name "Return  State"
+             EditorPos -242.445 360.583
+             Result FAIL
+            }
+           }
+          }
+         }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ThresholdIn"
+          }
+         }
+         AbortType AbortChildrenBranch
+         m_threatThreshold PINNED
+        }
+       }
+       ForceNodeResult Success
+       InVariable -1
+       TestType EqualsValue
+       TestValue "true"
+      }
       SCR_AILookAtPosition "SCR_AI Look At Position" {
        Name "SCR_AI Look At Position"
-       EditorPos 16 -186.778
+       EditorPos 86 -198.778
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port 9
@@ -66,7 +107,7 @@ BehaviorTree {
       }
       SCR_AITalk "SCR_AI Talk" {
        Name "SCR_AI Talk"
-       EditorPos 308.81 -182.143
+       EditorPos 378.81 -194.143
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port -1
@@ -541,36 +582,6 @@ BehaviorTree {
     }
    }
   }
-  DecoTestVariable "Test Variable" {
-   Name "Test Variable"
-   EditorPos -421.539 -231.398
-   Nodes {
-    SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-     Name "SCR_AI Deco Is Above Threat Level"
-     EditorPos -467.183 -36.076
-     Nodes {
-      AITaskReturnState "Return  State" {
-       Name "Return  State"
-       EditorPos -395.986 183.388
-       Result RUNNING
-      }
-     }
-     InPorts {
-      SingleInputPortContainer SingleInputPortContainer {
-       Port -1
-       PortName "ThresholdIn"
-      }
-     }
-     NegativeCondition 1
-     AbortType AbortChildrenBranch
-     m_threatThreshold THREATENED
-    }
-   }
-   ForceNodeResult Success
-   InVariable -1
-   TestType EqualsValue
-   TestValue "true"
-  }
  }
  Variables {
   Variable position {
@@ -667,7 +678,7 @@ BehaviorTree {
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos -194.861 -120.139
+   EditorPos -142.861 -80.139
   }
   VariableReference resetTimer {
    VariableType 5

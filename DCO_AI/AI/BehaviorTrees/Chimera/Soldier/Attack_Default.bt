@@ -37,7 +37,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          EditorPos -1191.333 827.111
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 4
+           Port -1
            PortName "Target"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
@@ -193,8 +193,8 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
             AITaskIdle Idle {
              Name "Idle"
              EditorPos 1577.298 1501.904
-             Period 40
-             PeriodRandom 5
+             Period 90
+             PeriodRandom 30
             }
            }
           }
@@ -464,15 +464,18 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
       }
      }
      InPorts {
-      SingleInputPortContainer SingleInputPortContainerClass {
+      SingleInputPortContainer SingleInputPortContainer {
+       Port -1
        PortName "WeaponTypeIn"
       }
-      SingleInputPortContainer SingleInputPortContainerClass {
+      SingleInputPortContainer SingleInputPortContainer {
+       Port -1
        PortName "MagazineWell"
       }
      }
      OutPorts {
-      SingleOutputPortContainer SingleOutputPortContainerClass {
+      SingleOutputPortContainer SingleOutputPortContainer {
+       Port -1
        PortName "WeaponTypeOut"
       }
      }

@@ -3,126 +3,167 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos 2914.445 87.777
+   EditorPos 2427.251 -376.195
    Nodes {
-    Parallel Parallel {
-     Name "Parallel"
-     EditorPos 2898.333 240
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 2421.167 -215.417
      Nodes {
-      Sequence Sequence {
-       Name "Sequence"
-       EditorPos 2664.556 444.056
-       Nodes {
-        Decorator Decorator {
-         Name "Decorator"
-         EditorPos 1681.571 1137.738
-         Nodes {
-          SCR_AIDeploySmokeCover "SCR_AI Deploy Smoke Cover" {
-           Name "SCR_AI Deploy Smoke Cover"
-           EditorPos 1666.071 1318.571
-          }
-         }
-         ForceNodeResult Success
+      SCR_AIGetCombatMoveState "SCR_AI Get Combat Move State" {
+       Name "SCR_AI Get Combat Move State"
+       EditorPos 1941.667 167.5
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 6
+         PortName "InCover"
         }
-        SCR_AICompleteLookAction "SCR_AI Complete Look Action" {
-         Name "SCR_AI Complete Look Action"
-         EditorPos 1926.19 1146.904
-        }
-        SCR_AIDCO_COVERMANAGER SCR_AIDCO_COVERMANAGER {
-         Name "SCR_AIDCO_COVERMANAGER"
-         EditorPos 2240.238 1148
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 5
-           PortName "Position"
-          }
-         }
-        }
-        SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
-         Name "SCR_AI Set Combat Move State"
-         EditorPos 2534.286 1146
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "InCover"
-          }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "ExposedInCover"
-          }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "AimAtTarget"
-          }
-         }
-         m_bReleaseCoverLock 1
-        }
-        SCR_AITalk "SCR_AI Talk" {
-         Name "SCR_AI Talk"
-         EditorPos 2872.083 1154.583
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "SpeakerIn"
-          }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "TargetIn"
-          }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "LocationIn"
-          }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "EnumIn"
-          }
-         }
-         m_messageType REPORT_MOVING
-         m_ePreset MEDIUM
-        }
-        SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
-         Name "SCR_AI Visualize Debug"
-         EditorPos 3016.38 1152.667
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "DebugMessage"
-          }
-         }
-         m_sDebugMessage "Cover Success"
-         m_eAICategory BEHAVIOR
-        }
-        AITaskIdle Idle {
-         Name "Idle"
-         EditorPos 3224.666 1151.333
-         Period 5
-        }
-        AITaskReturnState "Return State" {
-         Name "Return State"
-         EditorPos 3381.5 1152.5
-         Result RUNNING
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "CoverLock"
         }
        }
       }
-      Sequence Sequence {
-       Name "Sequence"
-       EditorPos 3157.167 465
+      Selector Selector {
+       Name "Selector"
+       EditorPos 2748.75 -56.25
        Nodes {
-        AITaskIdle Idle {
-         Name "Idle"
-         EditorPos 3085 651.111
-         Period 4
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 2508 98.75
+         Nodes {
+          AITaskReturnState "Return State" {
+           Name "Return State"
+           EditorPos 2508.944 252.833
+           Result RUNNING
+          }
+         }
+         InVariable 6
+         TestType EqualsValue
+         TestValue "true"
         }
-        AITaskReturnState "Return State" {
-         Name "Return State"
-         EditorPos 3259.083 641.722
-         Result RUNNING
+        Parallel Parallel {
+         Name "Parallel"
+         EditorPos 2885.583 103.25
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 2664.556 444.056
+           Nodes {
+            Decorator Decorator {
+             Name "Decorator"
+             EditorPos 1681.571 1137.738
+             Nodes {
+              SCR_AIDeploySmokeCover "SCR_AI Deploy Smoke Cover" {
+               Name "SCR_AI Deploy Smoke Cover"
+               EditorPos 1666.071 1318.571
+              }
+             }
+             ForceNodeResult Success
+            }
+            SCR_AICompleteLookAction "SCR_AI Complete Look Action" {
+             Name "SCR_AI Complete Look Action"
+             EditorPos 1930.19 1146.904
+            }
+            SCR_AIDCO_COVERMANAGER SCR_AIDCO_COVERMANAGER {
+             Name "SCR_AIDCO_COVERMANAGER"
+             EditorPos 2240.238 1148
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "Position"
+              }
+             }
+            }
+            SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
+             Name "SCR_AI Set Combat Move State"
+             EditorPos 2534.286 1146
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "InCover"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "ExposedInCover"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "AimAtTarget"
+              }
+             }
+             m_eRequestStateValue SUCCESS
+             m_bReleaseCoverLock 1
+            }
+            SCR_AITalk "SCR_AI Talk" {
+             Name "SCR_AI Talk"
+             EditorPos 2871.25 1154.583
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "SpeakerIn"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "TargetIn"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "LocationIn"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "EnumIn"
+              }
+             }
+             m_messageType REPORT_MOVING
+             m_ePreset IRRELEVANT
+            }
+            SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
+             Name "SCR_AI Visualize Debug"
+             EditorPos 3016.38 1152.667
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "DebugMessage"
+              }
+             }
+             m_sDebugMessage "Cover Success"
+             m_eAICategory BEHAVIOR
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 3224.666 1151.333
+             Period 5
+            }
+            AITaskReturnState "Return State" {
+             Name "Return State"
+             EditorPos 3381.5 1152.5
+             Result RUNNING
+            }
+           }
+          }
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 3157.167 465
+           Nodes {
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 3085 651.111
+             Period 5
+            }
+            AITaskReturnState "Return State" {
+             Name "Return State"
+             EditorPos 3259.083 641.722
+             Result RUNNING
+            }
+           }
+          }
+         }
+         UseChildResult 1
         }
        }
       }
      }
-     UseChildResult 1
     }
    }
   }
@@ -316,6 +357,12 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
    VariableExposedInput 0
    VariableExposedOutput 0
   }
+  Variable inCoverCheck {
+   VariableName "inCoverCheck"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
  }
  VariablesRefs {
   VariableReference inCover {
@@ -345,6 +392,10 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
   VariableReference lastSeen {
    VariableType 2
    EditorPos 2027.415 1350.068
+  }
+  VariableReference inCoverCheck {
+   VariableType 11
+   EditorPos 2238.5 158
   }
  }
  Groups {

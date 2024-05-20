@@ -31,13 +31,16 @@ BehaviorTree {
          Name "SCR_AI Set Combat Move State"
          EditorPos -423.75 891.25
          InPorts {
-          SingleInputPortContainer SingleInputPortContainerClass {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
            PortName "InCover"
           }
-          SingleInputPortContainer SingleInputPortContainerClass {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
            PortName "ExposedInCover"
           }
-          SingleInputPortContainer SingleInputPortContainerClass {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
            PortName "AimAtTarget"
           }
          }

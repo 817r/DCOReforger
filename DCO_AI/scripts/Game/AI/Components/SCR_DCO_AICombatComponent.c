@@ -29,8 +29,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
 	protected const float PERCEPTION_FACTOR_ALERTED = 6.0; 
 	protected const float PERCEPTION_FACTOR_THREATENED = 5.0;
-	protected const float PERCEPTION_FACTOR_PINNED = 4.0;
-	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.0;
+	protected const float PERCEPTION_FACTOR_PINNED = 3.0;
+	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.0;
 
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 4.0;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
@@ -39,7 +39,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected const float DISMOUNT_TURRET_TIMER_MS = 2000;
 	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 5.0;
-
+	
+	private bool LOW_AMMO = false;
+	
 	override protected void EOnInit(IEntity owner)
 	{
 		GetAiAgent();
@@ -70,6 +72,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 				perceptionFactor = PERCEPTION_FACTOR_ALERTED; break; 
 			case EAIThreatState.THREATENED:
 				perceptionFactor = PERCEPTION_FACTOR_THREATENED; break;
+			case EAIThreatState.PINNED:
+				perceptionFactor = PERCEPTION_FACTOR_PINNED; break;
+			case EAIThreatState.EXHAUSTED:
+				perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED; break;
 		}
 		
 		perceptionFactor *= m_fEquipmentPerceptionFactor;
@@ -227,7 +233,15 @@ modded class SCR_AICombatComponent : ScriptComponent
 			default: lowMagThreshold = 1;
 		}
 		
-		return magCount < lowMagThreshold;
+		if( magCount < lowMagThreshold )
+		{
+			LOW_AMMO = true;
+			return true;
+		}
+		
+		LOW_AMMO = false;
+		
+		return false;
 	}
 	
 	override protected void Event_OnDamageOverTimeAdded(EDamageType dType, float dps, HitZone hz)
@@ -326,5 +340,15 @@ modded class SCR_AICombatComponent : ScriptComponent
 		//PrintFormat("Excess angle: %1", angleExcess);
 			
 		return angleExcess.Length() > TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG;
+	}
+	
+	bool lowAmmo()
+	{
+		return LOW_AMMO;
+	}
+	
+	ECharacterStance getCharacterStance()
+	{
+		return m_AIInfo.GetStance();
 	}
 };

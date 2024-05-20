@@ -142,6 +142,27 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			
 			switch (m_eThreatState)
 			{
+				case EAIThreatState.EXHAUSTED:
+				{
+					rq.m_eStanceMoving = ECharacterStance.PRONE;
+					rq.m_eStanceEnd = ECharacterStance.PRONE;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					rq.m_bCheckCoverVisibility = false;
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 5.0;
+					moveDistanceMax = 3.0;
+					break;
+				}
+				case EAIThreatState.PINNED:
+				{
+					rq.m_eStanceMoving = ECharacterStance.PRONE;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					coverSearchDistMin = 5.0;
+					coverSearchDistMax = 7.0;
+					moveDistanceMax = 3.0;
+					break;
+				}
 				case EAIThreatState.THREATENED:
 				{
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
@@ -194,6 +215,43 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			
 			switch (m_eThreatState)
 			{
+				case EAIThreatState.EXHAUSTED:
+				{
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 8.0;
+					moveDistanceMax = 5.0;
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+					rq.m_bCheckCoverVisibility = false;
+					if (Math.RandomIntInclusive(0, 1) == 1)
+						rq.m_eMovementType = EMovementType.SPRINT;
+					else
+						rq.m_eMovementType = EMovementType.RUN;
+					if (Math.RandomIntInclusive(1, 5) > 2)
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					else
+						rq.m_eStanceEnd = ECharacterStance.PRONE;
+					rq.m_bAimAtTarget = false;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					break;
+				}
+				case EAIThreatState.PINNED:
+				{
+					coverSearchDistMin = 10.0;
+					coverSearchDistMax = 15.0;
+					moveDistanceMax = 10.0;
+					if (Math.RandomIntInclusive(0, 1) == 1)
+						rq.m_eStanceMoving = ECharacterStance.STAND;
+					else
+						rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eMovementType = EMovementType.SPRINT;
+					if (Math.RandomIntInclusive(1, 5) > 2)
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					else
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_bAimAtTarget = false;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					break;
+				}
 				case EAIThreatState.THREATENED:
 				{
 					coverSearchDistMin = 2.0;
@@ -209,7 +267,10 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					else
 						rq.m_eStanceEnd = ECharacterStance.PRONE;
 					rq.m_bAimAtTarget = true;
-					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					if (Math.RandomIntInclusive(1, 2) == 2)
+						rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+					else
+						rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 					break;
 				}
 				case EAIThreatState.ALERTED:
@@ -221,6 +282,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					rq.m_eMovementType = EMovementType.RUN;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					rq.m_bAimAtTarget = true;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					break;
 				}
 				case EAIThreatState.VIGILANT:
@@ -470,7 +532,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_fMoveDistance = 10.0;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
-		
+		rq.m_bCheckCoverVisibility = false;
 		m_State.ApplyNewRequest(rq);
 	}
 
@@ -483,6 +545,12 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			// In cover
 			switch (threat)
 			{
+				case EAIThreatState.EXHAUSTED:
+					waitTime = Math.RandomFloat(35.0, 60.0);
+					break;
+				case EAIThreatState.PINNED:
+					waitTime = Math.RandomFloat(15.0, 25.0);
+					break;
 				case EAIThreatState.THREATENED:
 					waitTime = Math.RandomFloat(10.0, 15.0);	// Stay in cover for a long time, until we are not suppressed any more
 					break;
@@ -495,11 +563,17 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			// Not in cover
 			switch (threat)
 			{
+				case EAIThreatState.EXHAUSTED:
+					waitTime = Math.RandomFloat(10.0, 20.0);
+					break;
+				case EAIThreatState.PINNED:
+					waitTime = Math.RandomFloat(4.0, 10.0);
+					break;
 				case EAIThreatState.THREATENED:
-					waitTime = Math.RandomFloat(3.0, 8.0);
+					waitTime = Math.RandomFloat(6.0, 8.0);
 					break;
 				default:
-					waitTime = Math.RandomFloat(5.0, 8.0);
+					waitTime = Math.RandomFloat(3.0, 15.0);
 					break;
 			}
 		}
@@ -544,8 +618,12 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		{
 			switch (threat)
 			{
-				case EAIThreatState.THREATENED:
+				case EAIThreatState.EXHAUSTED:
 					return ECharacterStance.PRONE;
+				case EAIThreatState.PINNED:
+					return ECharacterStance.CROUCH;
+				case EAIThreatState.THREATENED:
+					return ECharacterStance.CROUCH;
 				case EAIThreatState.ALERTED:
 					return ECharacterStance.CROUCH;
 				case EAIThreatState.VIGILANT:
@@ -561,8 +639,14 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			// Long range combat
 			switch (threat)
 			{
-				case EAIThreatState.THREATENED:
+				case EAIThreatState.EXHAUSTED:
+					return ECharacterStance.CROUCH;
+				case EAIThreatState.PINNED:
 					return ECharacterStance.PRONE;
+				case EAIThreatState.THREATENED:
+					return ECharacterStance.CROUCH;
+				case EAIThreatState.ALERTED:
+					return ECharacterStance.CROUCH;
 				case EAIThreatState.VIGILANT:
 					return ECharacterStance.STAND;
 				default:
@@ -612,7 +696,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_fMoveDistance = Math.RandomFloat(1.0, 3.0);
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
-		
+		rq.m_bCheckCoverVisibility = true;
 		m_State.ApplyNewRequest(rq);
 	}
 }

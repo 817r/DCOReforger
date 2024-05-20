@@ -48,7 +48,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	
 	void CombatMoveLogic(vector threatPos, float distToThreat)
 	{				
-		if (!m_bPushedMoveRequest)
+		if (!m_bPushedMoveRequest && !m_State.IsMoving() && !m_State.IsMovingToCover())
 		{		
 			SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 			

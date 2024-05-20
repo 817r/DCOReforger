@@ -6,5 +6,18 @@ modded class SCR_AIInfoComponent : SCR_AIInfoBaseComponent
 	{
 		m_DCOMoraleSystem = moraleSystem;	
 	}
+	
+	moraleState getMoraleState()
+	{
+		if(m_DCOMoraleSystem)
+			return m_DCOMoraleSystem.GetState();
+		else
+			return moraleState.NORMAL;
+	}
+	
+	DCO_AIMoraleSystem getMoraleSystem()
+	{
+		return m_DCOMoraleSystem;
+	}
 
 }
