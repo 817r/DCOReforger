@@ -59,8 +59,8 @@ BehaviorTree {
             AITaskIdle Idle {
              Name "Idle"
              EditorPos -519.429 363
-             Period 5
-             PeriodRandom 5
+             Period 2
+             PeriodRandom 3
             }
             AITaskReturnState "Return  State" {
              Name "Return  State"

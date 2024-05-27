@@ -117,7 +117,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	{
 		//float currMorale = m_DCOMorale.GetMoraleMeasure();
 		
-		return m_State.m_bInCover && m_eThreatState == EAIThreatState.THREATENED;
+		return m_State.m_bInCover && m_eThreatState == EAIThreatState.PINNED;
 	}
 
 	override protected void PushRequestMove()
@@ -326,7 +326,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		if (!m_State.m_bInCover)
 		{
 			coverSearchDistMin = 3;
-			coverSearchDistMax = 70;
+			coverSearchDistMax = 50;
 		}
 			
 		
@@ -450,7 +450,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		else
 		{
 			if (m_State.m_bExposedInCover)
-				waitTime_s = 2.0;
+				waitTime_s = 1.0;
 			else
 				waitTime_s = Math.RandomFloat(4.0, 10.0);
 		}
@@ -529,7 +529,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_eStanceEnd = ECharacterStance.CROUCH;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-		rq.m_fMoveDistance = 10.0;
+		rq.m_fMoveDistance = 15.0;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
 		rq.m_bCheckCoverVisibility = false;
@@ -539,7 +539,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	override protected float ResolveStoppedWaitTime(bool inCover, EAIThreatState threat, EWeaponType weaponType)
 	{
 		float waitTime;
-		
+		float CQB;
 		if (inCover)
 		{
 			// In cover
@@ -555,7 +555,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					waitTime = Math.RandomFloat(10.0, 15.0);	// Stay in cover for a long time, until we are not suppressed any more
 					break;
 				default:
-					waitTime = Math.RandomFloat(6.0, 10.0);
+					waitTime = Math.RandomFloat(8.0, 10.0);
 			}
 		}
 		else
@@ -567,13 +567,13 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					waitTime = Math.RandomFloat(10.0, 20.0);
 					break;
 				case EAIThreatState.PINNED:
-					waitTime = Math.RandomFloat(4.0, 10.0);
+					waitTime = Math.RandomFloat(10.0, 15.0);
 					break;
 				case EAIThreatState.THREATENED:
-					waitTime = Math.RandomFloat(6.0, 8.0);
+					waitTime = Math.RandomFloat(8.0, 12.0);
 					break;
 				default:
-					waitTime = Math.RandomFloat(3.0, 15.0);
+					waitTime = Math.RandomFloat(5.0, 15.0);
 					break;
 			}
 		}
@@ -581,6 +581,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		// When using those weapons we want to move much less
 		bool longWaitTime = false;
 		bool specialistTime = false;
+		bool closerangeTime = false;
 		switch (weaponType)
 		{
 			case EWeaponType.WT_MACHINEGUN:
@@ -594,8 +595,55 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		{
 			case EWeaponType.WT_MACHINEGUN:
 			case EWeaponType.WT_SNIPERRIFLE:
-			case EWeaponType.WT_ROCKETLAUNCHER:
 				specialistTime = true;
+		}
+		
+		if(m_bCloseRangeCombat)
+		{
+			switch(threat)
+			{
+				case EAIThreatState.EXHAUSTED:
+				{
+					CQB = Math.RandomFloat(25.0, 32.0);
+					break;
+				}
+				
+				case EAIThreatState.PINNED:
+				{
+					CQB = Math.RandomFloat(18.0, 21.0);
+					break;
+				}
+				
+				case EAIThreatState.THREATENED:
+				{
+					CQB = Math.RandomFloat(15.0, 18.0);
+					break;
+				}
+		
+				case EAIThreatState.ALERTED:
+				{
+					CQB = Math.RandomFloat(13.0, 18.0);
+					break;				
+				}
+				
+				case EAIThreatState.VIGILANT:
+				{
+					CQB = Math.RandomFloat(10.0, 12.0);
+					break;				
+				}
+				
+				case EAIThreatState.SAFE:
+				{
+					CQB = Math.RandomFloat(5.0, 8.0);
+					break;				
+				}
+				
+				default:
+				{
+					CQB = Math.RandomFloat(10.0, 15.0);
+					break;				
+				}
+			}
 		}
 		
 		if (longWaitTime)
@@ -605,7 +653,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			waitTime *= Math.RandomFloat(1.2, 1.5);
 		
 		if(m_bCloseRangeCombat)
-			waitTime = waitTime/2;
+			waitTime += CQB;		
 		
 		return waitTime;
 	}

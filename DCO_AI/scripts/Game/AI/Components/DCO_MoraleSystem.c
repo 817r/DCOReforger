@@ -48,6 +48,7 @@ class DCO_AIMoraleSystem
 	private float m_fMoraleInjury;
 	private float m_fMoraleEndangered;
 	private float m_fMoraleSupply;
+	private float m_fMoraleThreat;
 
 	private SCR_AIUtilityComponent				m_Utility;
 	private SCR_AIConfigComponent				m_Config;
@@ -169,8 +170,8 @@ class DCO_AIMoraleSystem
 			}
 		}
 		
-		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.BEHAVIOR, 1.4, color);	
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fMoraleTotal.ToString(), EAIDebugCategory.INFO, 1.4, color);	
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.BEHAVIOR, 1.4, color);	
+		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fMoraleTotal.ToString(), EAIDebugCategory.INFO, 1.4, color);	
 	}
 #endif // WORKBENCH
 	
@@ -260,7 +261,7 @@ class DCO_AIMoraleSystem
 		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
 		#endif
 		
-		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.5);
+		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, BREAK_THRESHOLD);
 	}
 	
 	void ThreatBulletImpact(float distance, int count)
@@ -269,7 +270,7 @@ class DCO_AIMoraleSystem
 		AddDebugMessage(string.Format("ThreatBulletImpact: %1", count));
 		#endif
 		
-		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.5);
+		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, BREAK_THRESHOLD);
 	}
 	
 	void threatToMoraleEffect()

@@ -143,7 +143,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 					
 					return true;
 				}
-				else if (distanceToDanger < 1 && distanceToShooter < 5 || bulletCount > 5)
+				else if (distanceToDanger < 1 && distanceToShooter < 5 && bulletCount > 5)
 				{
 					if(m_State != null)
 					{
@@ -192,7 +192,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 						utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, shooterPos, shooter))
 					}
 				}
-				else if (isNullTarget && distanceToDanger < 5)
+				else if (isNullTarget && distanceToDanger < 3)
 				{
 					if(m_State != null)
 					{
@@ -301,7 +301,7 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 		threatSystem.ThreatExplosion(distance);
 		
 		// Look at explosion
-		utility.m_LookAction.LookAt(position, SCR_AILookAction.PRIO_UNKNOWN_TARGET, 1);
+		utility.m_LookAction.LookAt(position, SCR_AILookAction.PRIO_UNKNOWN_TARGET, 1.2);
 		
 		// Observe if not investigating or already observing something else
 		if (distance <= EXPLOSION_OBSERVE_DISTANCE)

@@ -4,14 +4,14 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const string PORT_BASE_TARGET = "BaseTargetIn";
 	static const string PORT_AIM_POINT = "AimPoint";
 	static const string PORT_TOLERANCE = "AimingTolerance";
-	static const float CLOSE_RANGE_THRESHOLD = 15.0;
+	static const float CLOSE_RANGE_THRESHOLD = 10.0;
 	static const float LONG_RANGE_THRESHOLD = 170.0;
 	static const float AIMING_ERROR_SCALE = 1.0; // TODO: game master and server option
-	static const float AIMING_ERROR_FACTOR_MIN = 0.35; 
+	static const float AIMING_ERROR_FACTOR_MIN = 0.45; 
 	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.05;
 	static const float AIMING_ERROR_FACTOR_MAX = 1.25;
 	static const float MAXIMAL_TOLERANCE = 15.0;	
-	static const float MINIMAL_TOLERANCE = 0.007;
+	static const float MINIMAL_TOLERANCE = 0.005;
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
     {
@@ -153,17 +153,17 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EAISkill.VETERAN :
 			{
-				sigma = 0.65;
+				sigma = 0.67;
 				break;
 			}
 			case EAISkill.EXPERT :
 			{
-				sigma = 0.45;
+				sigma = 0.47;
 				break;
 			}
 			case EAISkill.CYLON :
 			{
-				return 0.35;
+				return 0.37;
 			}
 		}
 		
@@ -299,7 +299,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case EWeaponType.WT_RIFLE:
 			{
-				return 1.35;
+				return 1.2;
 			}
 			case EWeaponType.WT_MACHINEGUN:
 			{
@@ -307,7 +307,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EWeaponType.WT_HANDGUN:
 			{
-				return 1.2;
+				return 1.35;
 			}
 			case EWeaponType.WT_FRAGGRENADE:
 			{
@@ -319,11 +319,11 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EWeaponType.WT_ROCKETLAUNCHER:
 			{
-				return 1.2;
+				return 1.3;
 			}
 			case EWeaponType.WT_SNIPERRIFLE:
 			{
-				return 0.4;
+				return 0.35;
 			}
 		}
 		return 1.2;
@@ -335,11 +335,11 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case ECharacterStance.STAND:
 			{
-				return 1.2;
+				return 1.4;
 			}
 			case ECharacterStance.CROUCH:
 			{
-				return 1.0;
+				return 1.2;
 			}
 			case ECharacterStance.PRONE:
 			{

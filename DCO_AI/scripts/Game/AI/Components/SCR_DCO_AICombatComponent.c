@@ -14,30 +14,30 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
-	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.5;
+	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 2.0;
 
 	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.0;
 			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 5.0;
 			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 10.0;
 			  static const float TARGET_MAX_LAST_SEEN = 60.0;
 	
-	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 100.0;
+	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 98.0;
 	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.8;
-	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.45;
+	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.48;
 	
-	protected const float PERCEPTION_FACTOR_SAFE = 1.5;
-	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
-	protected const float PERCEPTION_FACTOR_ALERTED = 6.0; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 5.0;
-	protected const float PERCEPTION_FACTOR_PINNED = 3.0;
-	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.0;
+	protected const float PERCEPTION_FACTOR_SAFE = 1.2;
+	protected const float PERCEPTION_FACTOR_VIGILANT = 7.0;
+	protected const float PERCEPTION_FACTOR_ALERTED = 6.5; 
+	protected const float PERCEPTION_FACTOR_THREATENED = 5.5;
+	protected const float PERCEPTION_FACTOR_PINNED = 5.0;
+	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.5;
 
-	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 4.0;
+	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 2.5;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
 	
 	static const float LONG_RANGE_FIRE_DISTANCE = 200.0;
 	
-	protected const float DISMOUNT_TURRET_TIMER_MS = 2000;
+	protected const float DISMOUNT_TURRET_TIMER_MS = 1500;
 	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 5.0;
 	
 	private bool LOW_AMMO = false;
@@ -86,7 +86,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	//------------------------------------------------------------------------------------------------
 	protected static const float DISTANCE_MAX = 500; 
 	protected static const float DISTANCE_MIN = 5; // Minimal distance when movement is allowed
-	private static const float NEAR_PROXIMITY = 2;
+	private static const float NEAR_PROXIMITY = 10;
 	// TODO: add possibility to get cover towards custom position
 	//------------------------------------------------------------------------------------------------
 	override vector FindNextCoverPosition()
@@ -350,5 +350,13 @@ modded class SCR_AICombatComponent : ScriptComponent
 	ECharacterStance getCharacterStance()
 	{
 		return m_AIInfo.GetStance();
+	}
+	
+	int getTargetCount()
+	{
+		if(m_aAssignedTargets.IsEmpty())
+			return 0;
+		else
+			return m_aAssignedTargets.Count();
 	}
 };

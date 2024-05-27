@@ -1,8 +1,8 @@
 modded class SCR_AIAttackBehavior : SCR_AIBehaviorBase
 {
 
-	protected static const float WAIT_TIME_UNEXPECTED = 0.15;
-	protected static const float WAIT_TIME_OVERTHREATENED = 0.3;
+	protected static const float WAIT_TIME_UNEXPECTED = 0.2;
+	protected static const float WAIT_TIME_OVERTHREATENED = 0.4;
 	
 	void SCR_AIAttackBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, BaseTarget target, BaseTarget prevTarget, float priorityLevel = PRIORITY_LEVEL_NORMAL)
 	{
@@ -40,13 +40,13 @@ modded class SCR_AIAttackBehavior : SCR_AIBehaviorBase
 		// Update m_bUseCombatMove
 		m_bUseCombatMove = !m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET);
 		
-		targetNow = m_Utility.m_PerceptionComponent.GetClosestTarget(ETargetCategory.ENEMY, 1.0, 5.0);
+		/* targetNow = m_Utility.m_PerceptionComponent.GetClosestTarget(ETargetCategory.ENEMY, 2.0, 5.0);
 		if (targetNow != null && baseTarget == null)
 		{
 			float targetNowDistance = targetNow.GetDistance();
 			if (targetNowDistance <= 10)
 				return PRIORITY_BEHAVIOR_ATTACK_HIGH_PRIORITY;
-		}
+		}*/
 		
 		float targetScore = m_Utility.m_CombatComponent.m_WeaponTargetSelector.CalculateTargetScore(baseTarget);
 
