@@ -40,16 +40,15 @@ modded class SCR_AIAttackBehavior : SCR_AIBehaviorBase
 		// Update m_bUseCombatMove
 		m_bUseCombatMove = !m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET);
 		
-		/* targetNow = m_Utility.m_PerceptionComponent.GetClosestTarget(ETargetCategory.ENEMY, 2.0, 5.0);
-		if (targetNow != null && baseTarget == null)
+		targetNow = m_Utility.m_PerceptionComponent.GetClosestTarget(ETargetCategory.ENEMY, 2.0, 5.0);
+		if (targetNow != null)
 		{
 			float targetNowDistance = targetNow.GetDistance();
-			if (targetNowDistance <= 10)
+			if (targetNowDistance <= baseTarget.GetDistance())
 				return PRIORITY_BEHAVIOR_ATTACK_HIGH_PRIORITY;
-		}*/
+		}
 		
 		float targetScore = m_Utility.m_CombatComponent.m_WeaponTargetSelector.CalculateTargetScore(baseTarget);
-
 				
 		if (baseTarget.IsEndangering() || baseTarget.GetTimeSinceEndangered() < SCR_AICombatComponent.TARGET_ENDANGERED_TIMEOUT_S)
 			targetScore *= SCR_AICombatComponent.ENDANGERING_TARGET_SCORE_MULTIPLIER;
@@ -61,5 +60,32 @@ modded class SCR_AIAttackBehavior : SCR_AIBehaviorBase
 			return PRIORITY_BEHAVIOR_ATTACK_SELECTED;		
 		
 		return PRIORITY_BEHAVIOR_ATTACK_NOT_SELECTED;
+	}
+	
+	override protected void InitWaitTime(SCR_AIUtilityComponent utility)
+	{
+		float threatMeasure = utility.m_ThreatSystem.GetThreatMeasure();
+		
+		// Delay depending on threat
+		float threatDelay;
+		if (threatMeasure < SCR_AIThreatSystem.ATTACK_DELAYED_THRESHOLD)
+			threatDelay = WAIT_TIME_UNEXPECTED;
+		else if (threatMeasure < SCR_AIThreatSystem.THREATENED_THRESHOLD)
+			threatDelay = 0;
+		else if (threatMeasure < SCR_AIThreatSystem.EXHAUSTED_THRESHOLD)
+			threatDelay = 0.5 + WAIT_TIME_OVERTHREATENED;
+		else
+			threatDelay = WAIT_TIME_OVERTHREATENED;
+		
+		// Delay depending on distance
+		// 0m - 0ms
+		// 100m - 340ms
+		// 300m - 700ms
+		// 500m - 870ms
+		// 800m - 1018ms
+		float distance = vector.Distance(m_Utility.m_OwnerEntity.GetOrigin(), m_Target.m_Value.GetLastSeenPosition());
+		float distanceDelay = (1.4 * distance) / (30 + distance);
+		
+		m_fWaitTime.m_Value = threatDelay + distanceDelay;
 	}
 };

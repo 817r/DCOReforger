@@ -12,18 +12,20 @@ modded class SCR_AIThreatSystem
 {
 	private DCO_AIMoraleSystem m_moraleSystem;
 	
-	static const float PINNED_THRESHOLD = 1.4;
-	static const float EXHAUSTED_THRESHOLD = 2.5;
+	static const float VIGILANT_THRESHOLD = 0.05;
+	protected static const float ALERTED_THRESHOLD = 0.4;
+	static const float THREATENED_THRESHOLD = 0.8;
+	static const float PINNED_THRESHOLD = 1.8;
+	static const float EXHAUSTED_THRESHOLD = 3.5;
 	
 	private static const float SUPPRESSION_BULLET_INCREMENT = 0.11;
 	private static const float ENDANGERED_INCREMENT = 0.4;
 	private static const float BLEEDING_FIXED_INCREMENT = 0.2;
-	private static const float SUPPRESSION_BULLET_INCREMENT = 0.10;
 	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.008;
 	private static const float DISTANT_SHOT_INCREMENT = 0.0006;
 	private static const float EXPLOSION_MAX_INCREMENT = 0.8;
 	private static const float EXPLOSION_CLOSE_DISTANCE = 15;	//!< What distance in m is considered close - max increment is used
-	static const float EXPLOSION_MAX_DISTANCE = 500;
+	static const float EXPLOSION_MAX_DISTANCE = 300;
 	
 	//private static const float THREAT_PINNED_DROP__RATE = 0.08 * 0.001;
 	//private static const float THREAT_EXHAUSTED_DROP_RATE = 0.03 * 0.001;
@@ -47,6 +49,7 @@ modded class SCR_AIThreatSystem
 		m_Utility = utility;
 		m_Config = utility.m_ConfigComponent;	
 		m_Combat = utility.m_CombatComponent;
+		m_moraleSystem = utility.m_DCOMoraleSystem;
 		m_DamageManager = SCR_DamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 		if (!agent)
@@ -113,8 +116,8 @@ modded class SCR_AIThreatSystem
 			}
 		}
 		
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fThreatTotal.ToString(), EAIDebugCategory.THREAT, 1.4, color);	
-		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(EAIThreatState, m_State), EAIDebugCategory.THREAT, 1.4, color);
+		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fThreatTotal.ToString(), EAIDebugCategory.THREAT, 1.4, color);	
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(EAIThreatState, m_State), EAIDebugCategory.THREAT, 1.4, color);
 	}
 #endif // WORKBENCH
 	
@@ -174,8 +177,17 @@ modded class SCR_AIThreatSystem
 	override void Update(SCR_AIUtilityComponent utility, float timeSlice)
 	{
 		// Threat falloff
-		m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESSION_DROP_RATE * timeSlice;
-		m_fThreatShotsFired -= m_fThreatShotsFired * THREAT_SHOT_DROP_RATE * timeSlice;
+		
+		if (m_fThreatTotal > EXHAUSTED_THRESHOLD)
+		{
+			m_fThreatSuppression -= m_fThreatSuppression * (THREAT_SUPPRESSION_DROP_RATE / 2) * timeSlice;
+			m_fThreatShotsFired -= m_fThreatShotsFired * (THREAT_SHOT_DROP_RATE / 2) * timeSlice;
+		} else 
+		{
+			m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESSION_DROP_RATE * timeSlice;
+			m_fThreatShotsFired -= m_fThreatShotsFired * THREAT_SHOT_DROP_RATE * timeSlice;
+		}
+
 		
 		if (m_Combat)
 		{
@@ -218,7 +230,7 @@ modded class SCR_AIThreatSystem
 		if (utility.m_CurrentBehavior)
 			threatFromBehavior = utility.m_CurrentBehavior.m_fThreat;
 		
-		m_fThreatTotal = Math.Clamp(threatFromBehavior + m_fThreatSuppression + m_fThreatInjury + m_fThreatShotsFired + m_fThreatIsEndangered, 0, 3.0);
+		m_fThreatTotal = Math.Clamp(threatFromBehavior + m_fThreatSuppression + m_fThreatInjury + m_fThreatShotsFired + m_fThreatIsEndangered, 0, 5.0);
 		
 		UpdateStates();
 #ifdef WORKBENCH
@@ -232,7 +244,8 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatBulletImpact: %1", count));
 		#endif
 		
-		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count*SUPPRESSION_BULLET_INCREMENT, 0, 2.4);
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count*SUPPRESSION_BULLET_INCREMENT, 0, 5.0);
+		decreaseMoraleWeaponFired(count);
 	}
 	
 	override void ThreatShotFired(float distance, int count)
@@ -242,7 +255,7 @@ modded class SCR_AIThreatSystem
 		#endif
 		
 		// google can show you the increment function if you write it in
-		m_fThreatShotsFired = Math.Clamp(m_fThreatShotsFired + count*(DISTANT_SHOT_INCREMENT + ZERO_DISTANCE_SHOT_INCREMENT/(distance + 1)), 0, PINNED_THRESHOLD);
+		m_fThreatShotsFired = Math.Clamp(m_fThreatShotsFired + count*(DISTANT_SHOT_INCREMENT + ZERO_DISTANCE_SHOT_INCREMENT/(distance + 1)), 0, THREATENED_THRESHOLD);
 	}
 	
 	override void ThreatProjectileFlyby(int count)
@@ -251,7 +264,8 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
 		#endif
 		
-		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 2.0);
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 5.0);
+		decreaseMoraleWeaponFired(count);
 	}
 	
 	void decreaseMoraleWeaponFired(int counts)
@@ -270,4 +284,5 @@ modded class SCR_AIThreatSystem
 			+ m_fThreatIsEndangered.ToString(1,4));
 		;
 	}
+	
 };

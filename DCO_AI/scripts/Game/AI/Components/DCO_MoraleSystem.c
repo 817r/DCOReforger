@@ -69,7 +69,6 @@ class DCO_AIMoraleSystem
 		m_Config = utility.m_ConfigComponent;
 		m_Combat = utility.m_CombatComponent;
 		m_DamageManager = SCR_DamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));
-		
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 		if (!agent)
 			return;
@@ -170,8 +169,8 @@ class DCO_AIMoraleSystem
 			}
 		}
 		
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.BEHAVIOR, 1.4, color);	
-		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fMoraleTotal.ToString(), EAIDebugCategory.INFO, 1.4, color);	
+		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.BEHAVIOR, 1.4, color);	
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fMoraleTotal.ToString(), EAIDebugCategory.INFO, 1.4, color);	
 	}
 #endif // WORKBENCH
 	
@@ -217,35 +216,7 @@ class DCO_AIMoraleSystem
 				m_fMoraleSupply = m_fMoraleSupply + LOW_SUPPLY;
 			else
 				m_fMoraleSupply -= m_fMoraleSupply * LOW_SUPPLY_RECOVERY * timeSlice;
-		}
-
-		// Process all danger events and clear the array
-		if (m_Agent && m_Config.m_EnableDangerEvents)
-		{
-			bool handled;
-			int i = 0;
-			for (; i < m_Agent.GetDangerEventsCount(); i++)
-			{
-				AIDangerEvent dangerEvent = m_Agent.GetDangerEvent(i);
-				
-				if (dangerEvent)
-				{
-					#ifdef AI_DEBUG
-					AddDebugMessage(string.Format("PerformDangerReaction: %1, %2", dangerEvent, typename.EnumToString(EAIDangerEventType, dangerEvent.GetDangerType())));
-					#endif
-					
-					if (m_Config.PerformDangerReaction(m_Utility, dangerEvent))
-					{
-#ifdef WORKBENCH	
-						string message = typename.EnumToString(EAIDangerEventType, dangerEvent.GetDangerType());
-						SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, message, EAIDebugCategory.DANGER, 2);	// Show message above AI's head
-#endif
-						break;
-					}
-				}
-			}
-			m_Agent.ClearDangerEvents(i+1);
-		}		
+		}	
 		
 		m_fMoraleTotal = Math.Clamp(m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered + m_fMoraleSupply, 0, 3.5);
 		
@@ -257,20 +228,12 @@ class DCO_AIMoraleSystem
 	
 	void ThreatProjectileFlyby(int count)
 	{
-		#ifdef AI_DEBUG
-		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
-		#endif
-		
-		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, BREAK_THRESHOLD);
+		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.5);
 	}
 	
 	void ThreatBulletImpact(float distance, int count)
-	{
-		#ifdef AI_DEBUG
-		AddDebugMessage(string.Format("ThreatBulletImpact: %1", count));
-		#endif
-		
-		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, BREAK_THRESHOLD);
+	{		
+		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.5);
 	}
 	
 	void threatToMoraleEffect()

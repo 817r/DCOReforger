@@ -11,6 +11,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected SCR_ChimeraAIAgent m_SCR_ChimeraAIAgent;
 	protected DCO_AIMoraleSystem m_DCO_MoraleSystem;
 	protected DCO_AIInfoComponent m_DCO_AIInfoComponent;
+	protected SCR_CharacterDamageManagerComponent damageManager;
 	
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
@@ -28,9 +29,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_SAFE = 1.2;
 	protected const float PERCEPTION_FACTOR_VIGILANT = 7.0;
 	protected const float PERCEPTION_FACTOR_ALERTED = 6.5; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 5.5;
-	protected const float PERCEPTION_FACTOR_PINNED = 5.0;
-	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.5;
+	protected const float PERCEPTION_FACTOR_THREATENED = 6.0;
+	protected const float PERCEPTION_FACTOR_PINNED = 5.5;
+	protected const float PERCEPTION_FACTOR_EXHAUSTED = 5.0;
 
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 2.5;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
@@ -51,6 +52,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 		if (m_Agent)
 		{
 			m_ControlledEntity = m_Agent.GetControlledEntity();
+			
+			damageManager = SCR_CharacterDamageManagerComponent.Cast(m_Agent.FindComponent(SCR_CharacterDamageManagerComponent));
 			
 			m_SCR_ChimeraAIAgent = SCR_ChimeraAIAgent.Cast(m_Agent);
 			
@@ -358,5 +361,15 @@ modded class SCR_AICombatComponent : ScriptComponent
 			return 0;
 		else
 			return m_aAssignedTargets.Count();
+	}
+	
+	float getCurrentHealth()
+	{
+		return damageManager.GetHealth();
+	}
+	
+	float GetMaxHealth()
+	{
+		return damageManager.GetMaxHealth();
 	}
 };

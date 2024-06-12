@@ -5,11 +5,14 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const string PORT_AIM_POINT = "AimPoint";
 	static const string PORT_TOLERANCE = "AimingTolerance";
 	static const float CLOSE_RANGE_THRESHOLD = 10.0;
-	static const float LONG_RANGE_THRESHOLD = 170.0;
+	static const float MEDIUM_RANGE_THRESHOLD = 80.0;
+	static const float LONG_RANGE_THRESHOLD = 200.0;
+	
 	static const float AIMING_ERROR_SCALE = 1.0; // TODO: game master and server option
 	static const float AIMING_ERROR_FACTOR_MIN = 0.45; 
 	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.05;
-	static const float AIMING_ERROR_FACTOR_MAX = 1.25;
+	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
+	
 	static const float MAXIMAL_TOLERANCE = 15.0;	
 	static const float MINIMAL_TOLERANCE = 0.005;
 	
@@ -69,6 +72,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		
 		EWeaponType weaponType = m_CombatComponent.GetCurrentWeaponType();
 		ECharacterStance stances = m_CombatComponent.getCharacterStance();
+		
 
 #ifdef AI_DEBUG
 		if (DiagMenu.GetBool(SCR_DebugMenuID.DEBUGUI_AI_SHOW_TARGET_AIMPOINT))
@@ -101,6 +105,15 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		return ENodeResult.SUCCESS;
 	}
 	
+	override float GetDistanceFactor(float distance)
+	{
+		if (distance < CLOSE_RANGE_THRESHOLD)
+			return Math.Map(distance, 0, CLOSE_RANGE_THRESHOLD, AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN, AIMING_ERROR_FACTOR_MIN);
+
+		float distanceCl = Math.Clamp((distance - CLOSE_RANGE_THRESHOLD) / LONG_RANGE_THRESHOLD, 0, 1);
+		return Math.Lerp(AIMING_ERROR_FACTOR_MIN, AIMING_ERROR_FACTOR_MAX, distanceCl);
+	}
+	
 	float GetTolerances(IEntity observer, IEntity target, float angularSize, float distance, EWeaponType weaponType, ECharacterStance stance)
 	{
 		float tolerance;
@@ -109,6 +122,9 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		// Always use max tolerance in close range
 		if (distance < CLOSE_RANGE_THRESHOLD)
 			return MAXIMAL_TOLERANCE;
+		
+		if (distance < MEDIUM_RANGE_THRESHOLD)
+			return MAXIMAL_TOLERANCE/2;
 			
 		tolerance = angularSize / 2; // half of the size
 		// angular speed
@@ -153,17 +169,17 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EAISkill.VETERAN :
 			{
-				sigma = 0.67;
+				sigma = 0.77;
 				break;
 			}
 			case EAISkill.EXPERT :
 			{
-				sigma = 0.47;
+				sigma = 0.52;
 				break;
 			}
 			case EAISkill.CYLON :
 			{
-				return 0.37;
+				return 0.42;
 			}
 		}
 		
@@ -325,6 +341,10 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			{
 				return 0.35;
 			}
+			case EWeaponType.WT_GRENADELAUNCHER:
+			{
+				return 3.0;
+			}
 		}
 		return 1.2;
 	}
@@ -346,6 +366,27 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				return 2.0;
 			}
 		}
+		return 1.0;
+	}
+	
+	float GetHealthTypeFactor()
+	{
+		float currHealth = m_CombatComponent.getCurrentHealth();
+		float maxHealth = m_CombatComponent.GetMaxHealth();
+		
+		if (currHealth < maxHealth)
+		{
+			return 1.5;
+		} 
+		else if (currHealth < maxHealth/2)
+		{
+			return 2.0;
+		}
+		else if (currHealth < maxHealth/4)
+		{
+			return 3.5;
+		} 
+		
 		return 1.0;
 	}
 };

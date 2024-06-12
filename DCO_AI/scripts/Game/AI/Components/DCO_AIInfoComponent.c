@@ -41,6 +41,7 @@ class DCO_AIInfoComponent : ScriptComponent
 		{
 			m_Agent = agent;
 			
+			
 			IEntity controlledEntity = agent.GetControlledEntity();
 			
 			if (controlledEntity)
