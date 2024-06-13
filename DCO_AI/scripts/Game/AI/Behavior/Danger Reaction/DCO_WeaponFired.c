@@ -30,13 +30,11 @@ modded class SCR_AIDangerReaction_WeaponFired : SCR_AIDangerReaction
 		
 		if (flyby)
 		{
-			moraleSystem.ThreatProjectileFlyby(dangerEvent.GetCount());
 			threatSystem.ThreatProjectileFlyby(dangerEvent.GetCount());
 		}
 		else
 		{
 			threatSystem.ThreatShotFired(distance, dangerEvent.GetCount());
-			moraleSystem.ThreatBulletImpact(distance, dangerEvent.GetCount());
 		}
 			
 

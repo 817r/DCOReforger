@@ -53,7 +53,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 		{
 			m_ControlledEntity = m_Agent.GetControlledEntity();
 			
-			damageManager = SCR_CharacterDamageManagerComponent.Cast(m_Agent.FindComponent(SCR_CharacterDamageManagerComponent));
+			damageManager = SCR_CharacterDamageManagerComponent.Cast(m_ControlledEntity.FindComponent(SCR_CharacterDamageManagerComponent));
 			
 			m_SCR_ChimeraAIAgent = SCR_ChimeraAIAgent.Cast(m_Agent);
 			

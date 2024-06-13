@@ -73,7 +73,7 @@ modded class SCR_AIAttackBehavior : SCR_AIBehaviorBase
 		else if (threatMeasure < SCR_AIThreatSystem.THREATENED_THRESHOLD)
 			threatDelay = 0;
 		else if (threatMeasure < SCR_AIThreatSystem.EXHAUSTED_THRESHOLD)
-			threatDelay = 0.5 + WAIT_TIME_OVERTHREATENED;
+			threatDelay = 0.4 + WAIT_TIME_OVERTHREATENED;
 		else
 			threatDelay = WAIT_TIME_OVERTHREATENED;
 		

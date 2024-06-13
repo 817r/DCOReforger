@@ -10,11 +10,11 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	static const float AIMING_ERROR_SCALE = 1.0; // TODO: game master and server option
 	static const float AIMING_ERROR_FACTOR_MIN = 0.45; 
-	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.05;
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.2;
 	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
 	
 	static const float MAXIMAL_TOLERANCE = 15.0;	
-	static const float MINIMAL_TOLERANCE = 0.005;
+	static const float MINIMAL_TOLERANCE = 0.3;
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
     {
@@ -135,7 +135,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		else 
 		{
 			// weapon type tolerance modifier
-			tolerance *= GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance);
+			tolerance *= GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor();
 		};
 		return Math.Clamp(tolerance, MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE);
 	}	
