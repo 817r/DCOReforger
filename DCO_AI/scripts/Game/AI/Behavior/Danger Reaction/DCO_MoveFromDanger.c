@@ -1,6 +1,6 @@
 class SCR_AIMoveFromSuppressBehavior : SCR_AIMoveFromDangerBehavior
 {
-	float timeOut = 8000;
+	float timeOut = 3000;
 	float m_fBehaviorTimeout;
 	
 	void SCR_AIMoveFromSuppressBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, vector dangerPos, IEntity dangerEntity)

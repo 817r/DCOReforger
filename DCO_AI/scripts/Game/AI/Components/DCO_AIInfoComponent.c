@@ -19,6 +19,7 @@ class DCO_AIInfoComponent : ScriptComponent
 	private float m_fPerceptionVigilant;
 	protected DCO_AIMoraleSystem m_DCOMoraleSystem;
 	
+	private DCO_SkillComponent cussSkill;
 	private DCO_CUSTOMRANK cussRank;
 	
 	private DCO_ECombatBehaviorType m_eCombatBehaviorType;
@@ -144,6 +145,7 @@ class DCO_AIInfoComponent : ScriptComponent
 	void setRank(int cusRank)
 	{
 		cussRank = cusRank;
+		cussSkill.setAISkills(cussRank);
 	}
 	
 	void InitMoraleSystem(DCO_AIMoraleSystem moraleSystem)

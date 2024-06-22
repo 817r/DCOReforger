@@ -4,21 +4,13 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 	//------------------------------------------------------------------------------------------------
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		AIAgent agent;
+		int cusRank;
 		
-		SCR_ECharacterRank rank;
+		SCR_EditableEntityComponent editableEntity = SCR_EditableEntityComponent.Cast(item);
 		
-		DCO_CUSTOMRANK cusRank;
-		
-		SCR_EditableEntityComponent editableEntityComponent = SCR_EditableEntityComponent.Cast(item);
+		if (editableEntity.HasEntityState(EEditableEntityState.PLAYER)) return null;
 
-		if (agent == null)
-			return null;
-		
-		IEntity controlledEntity = agent.GetControlledEntity();
-		
-		if (controlledEntity)
-			rank = SCR_CharacterRankComponent.GetCharacterRank(controlledEntity);
+		cusRank = DCO_SkillComponent.GetCharacterRank(editableEntity.GetOwner());
 		
 		return SCR_BaseEditorAttributeVar.CreateInt(cusRank);
 	}
@@ -26,98 +18,21 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 	//------------------------------------------------------------------------------------------------
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		if (var)
-		{
-			AIAgent agent;
-			DCO_CUSTOMRANK cusRank = var.GetInt();
-			
-			DCO_SkillComponent dcoSkillComponent;
-			
-			IEntity controlledEntity;
-			
-			SCR_ECharacterRank rank = var.GetInt();
-			
-			SCR_CharacterRankComponent characterRankComponent;
-			
-			SCR_EditableEntityComponent editableEntityComponent = SCR_EditableEntityComponent.Cast(item);
-		}
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	void SetSkill(AIAgent agent, IEntity controlledEntity, DCO_CUSTOMRANK cusRank)
-	{
-		EAISkill skill = EAISkill.REGULAR;
-		
-		switch (cusRank)
-		{
-			case DCO_CUSTOMRANK.TRAITOR:	
-			{
-				skill = EAISkill.REGULAR; 		
-				cusRank = DCO_CUSTOMRANK.TRAITOR;
-				break;
-			}
-			case DCO_CUSTOMRANK.RECRUIT:
-			{
-				skill = EAISkill.REGULAR; 		
-				cusRank = DCO_CUSTOMRANK.RECRUIT;
-				break;
-			}
-			case DCO_CUSTOMRANK.PRIVATE:
-			{
-				skill = EAISkill.REGULAR; 		
-				cusRank = DCO_CUSTOMRANK.PRIVATE;
-				break;
-			}
-			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
-			{
-				skill = EAISkill.REGULAR; 		
-				cusRank = DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS;
-				break;
-			}
-		}
+		if (!var)
+			return;
 
+		SCR_EditableEntityComponent editableEntity = SCR_EditableEntityComponent.Cast(item);
 		
-		DCO_AIInfoComponent aiInfoComponent = DCO_AIInfoComponent.Cast(agent.FindComponent(DCO_AIInfoComponent));
+		if (editableEntity.HasEntityState(EEditableEntityState.PLAYER)) return;
 		
-		SCR_AICombatComponent aiCombatComponent = SCR_AICombatComponent.Cast(controlledEntity.FindComponent(SCR_AICombatComponent));
+		int cusRank = var.GetInt();
+
+		//DCO_SkillComponent rankComponent = DCO_SkillComponent.Cast(editableEntity.FindComponent(DCO_SkillComponent));
+			//if (!rankComponent) return;
+			
+		DCO_SkillComponent.setSkill(editableEntity.GetOwner(), cusRank);
+			
+		cusRank = DCO_SkillComponent.GetCharacterRank(editableEntity.GetOwner());
 		
-		if (aiInfoComponent)
-		{
-			aiCombatComponent.SetAISkill(skill);
-		}
-	}
-	
-	void DCO_SetRanking(DCO_CUSTOMRANK customRank)
-	{
-		
-		EAISkill skill = EAISkill.REGULAR;
-		
-		switch (customRank)
-		{
-			case DCO_CUSTOMRANK.TRAITOR:	
-			{
-				skill = EAISkill.REGULAR; 		
-				customRank = DCO_CUSTOMRANK.TRAITOR;
-				break;
-			}
-			case DCO_CUSTOMRANK.RECRUIT:
-			{
-				skill = EAISkill.REGULAR; 		
-				customRank = DCO_CUSTOMRANK.RECRUIT;
-				break;
-			}
-			case DCO_CUSTOMRANK.PRIVATE:
-			{
-				skill = EAISkill.REGULAR; 		
-				customRank = DCO_CUSTOMRANK.PRIVATE;
-				break;
-			}
-			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
-			{
-				skill = EAISkill.REGULAR; 		
-				customRank = DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS;
-				break;
-			}
-		}
 	}
 };

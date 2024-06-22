@@ -1,6 +1,13 @@
 SCR_ChimeraCharacter {
  ID "520EC961A090B1EE"
  components {
+  SCR_CharacterInventoryStorageComponent "{520EA1D2DB118DAC}" {
+   components {
+    DCO_SkillComponent "{61AABE0631CC77EC}" {
+     m_ERank RECRUIT
+    }
+   }
+  }
   ChimeraAIControlComponent "{520EA1D2DB109F34}" {
    components {
     PerceptionComponent "{54A2CBC75F06064B}" {
@@ -16,6 +23,9 @@ SCR_ChimeraCharacter {
      }
     }
    }
+  }
+  SCR_CharacterDamageManagerComponent "{55872AD7B4E959F2}" {
+   m_fRegenScale 1.1
   }
  }
 }

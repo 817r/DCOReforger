@@ -13,8 +13,8 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.2;
 	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
 	
-	static const float MAXIMAL_TOLERANCE = 15.0;	
-	static const float MINIMAL_TOLERANCE = 0.3;
+	static const float MAXIMAL_TOLERANCE = 12.0;	
+	static const float MINIMAL_TOLERANCE = 0.35;
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
     {
@@ -135,7 +135,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		else 
 		{
 			// weapon type tolerance modifier
-			tolerance *= GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor();
+			tolerance *= GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor() - GetAimImprovement();
 		};
 		return Math.Clamp(tolerance, MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE);
 	}	
@@ -315,11 +315,11 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case EWeaponType.WT_RIFLE:
 			{
-				return 1.2;
+				return 1.1;
 			}
 			case EWeaponType.WT_MACHINEGUN:
 			{
-				return 3.5;
+				return 3.1;
 			}
 			case EWeaponType.WT_HANDGUN:
 			{
@@ -343,7 +343,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EWeaponType.WT_GRENADELAUNCHER:
 			{
-				return 3.0;
+				return 3.2;
 			}
 		}
 		return 1.2;
@@ -376,18 +376,23 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		
 		if (currHealth < maxHealth)
 		{
-			return 1.5;
+			return 0.5;
+		} 
+		else if (currHealth < (maxHealth - maxHealth/4))
+		{
+			return 1.1;
 		} 
 		else if (currHealth < maxHealth/2)
 		{
-			return 2.0;
+			return 1.8;
 		}
-		else if (currHealth < maxHealth/4)
-		{
-			return 3.5;
-		} 
-		
-		return 1.0;
+
+		return 0;
+	}
+	
+	float GetAimImprovement()
+	{
+		return m_CombatComponent.getImprovement() * 5;
 	}
 };
 

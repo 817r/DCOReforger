@@ -76,7 +76,6 @@ BehaviorTree {
            PortName "ThresholdIn"
           }
          }
-         AbortType AbortChildrenBranch
          m_threatThreshold PINNED
         }
        }

@@ -157,7 +157,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
            Nodes {
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos 1125.393 1508.714
+             EditorPos 1123.726 1508.714
              Period 20
              PeriodRandom 10
             }
@@ -189,12 +189,6 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
                BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CoverManager.bt"
               }
              }
-            }
-            AITaskIdle Idle {
-             Name "Idle"
-             EditorPos 1577.298 1501.904
-             Period 90
-             PeriodRandom 30
             }
            }
           }

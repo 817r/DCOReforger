@@ -74,9 +74,20 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
               }
              }
             }
+            SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+             Name "SCR_AI Set Weapon Raised"
+             EditorPos 2497.143 1154.286
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "Raised"
+              }
+             }
+             m_bWeaponRaised 0
+            }
             SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
              Name "SCR_AI Set Combat Move State"
-             EditorPos 2534.286 1146
+             EditorPos 2737.143 1146
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -96,7 +107,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
             }
             SCR_AITalk "SCR_AI Talk" {
              Name "SCR_AI Talk"
-             EditorPos 2871.25 1154.583
+             EditorPos 3041.25 1150.297
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -120,7 +131,7 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
             }
             SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
              Name "SCR_AI Visualize Debug"
-             EditorPos 3016.38 1152.667
+             EditorPos 3202.094 1156.953
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -132,12 +143,12 @@ BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Cove
             }
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos 3224.666 1151.333
+             EditorPos 3427.523 1151.333
              Period 5
             }
             AITaskReturnState "Return State" {
              Name "Return State"
-             EditorPos 3381.5 1152.5
+             EditorPos 3584.357 1152.5
              Result RUNNING
             }
            }

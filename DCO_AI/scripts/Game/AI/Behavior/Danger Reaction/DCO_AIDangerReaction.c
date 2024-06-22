@@ -89,7 +89,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		if (shooter)
 		{
 			if (agent && agent.IsEnemy(shooter))
-			{
+			{								
 				if (distanceToDanger < 1 && bulletCount > 5)
 				{
 					if(m_State != null)
@@ -247,6 +247,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		
 		return true;
 	}
+	
 };
 
 [BaseContainerProps()]

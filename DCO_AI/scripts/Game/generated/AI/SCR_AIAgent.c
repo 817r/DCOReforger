@@ -5,6 +5,8 @@ modded class SCR_ChimeraAIAgent : ChimeraAIAgent
 	DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	SCR_AICombatComponent m_SCR_AICombatComponent;
 	DCO_AIInfoGroupComponent m_DCO_AIGroupInfoComponent;
+	DCO_AIMoraleSystem m_DCO_AIMoraleSystem;
+	DCO_SkillComponent m_DCO_SkillComponent;
 	
 	protected IEntity m_ControlledEntity;
 	protected SCR_ChimeraAIAgent m_ChimeraAIAgent;
@@ -21,4 +23,16 @@ modded class SCR_ChimeraAIAgent : ChimeraAIAgent
 	protected SCR_AISettingsComponent m_SCR_AISettingsComponent;
 	
 	protected SCR_GadgetManagerComponent m_SCR_GadgetManagerComponent;
+	
+	void improveAim(float aimCorrection)
+	{
+		m_SCR_AICombatComponent.improvement(aimCorrection);
+	}
+	
+	DCO_SkillComponent getSkillComponent()
+	{
+		m_DCO_SkillComponent = DCO_SkillComponent.Cast(m_ControlledEntity.FindComponent(DCO_SkillComponent));
+		
+		return m_DCO_SkillComponent;
+	}
 };

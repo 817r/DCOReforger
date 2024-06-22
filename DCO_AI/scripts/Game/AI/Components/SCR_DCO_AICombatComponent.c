@@ -26,8 +26,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.8;
 	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.48;
 	
-	protected const float PERCEPTION_FACTOR_SAFE = 1.2;
-	protected const float PERCEPTION_FACTOR_VIGILANT = 7.0;
+	protected const float PERCEPTION_FACTOR_SAFE = 0.8;
+	protected const float PERCEPTION_FACTOR_VIGILANT = 6.0;
 	protected const float PERCEPTION_FACTOR_ALERTED = 6.5; 
 	protected const float PERCEPTION_FACTOR_THREATENED = 6.0;
 	protected const float PERCEPTION_FACTOR_PINNED = 5.5;
@@ -41,7 +41,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float DISMOUNT_TURRET_TIMER_MS = 1500;
 	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 5.0;
 	
+	private float AimImprovement;
+	
 	private bool LOW_AMMO = false;
+	bool selectedTargetChanged = false;
 	
 	override protected void EOnInit(IEntity owner)
 	{
@@ -345,6 +348,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 		return angleExcess.Length() > TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG;
 	}
 	
+	float improvementCalcuation()
+	{
+		if (!m_SelectedTarget && selectedTargetChanged)
+			return 0;
+		
+		vector targetPosition = m_SelectedTarget.GetTargetEntity().GetOrigin();
+		
+		
+		return 0;
+	}
+	
 	bool lowAmmo()
 	{
 		return LOW_AMMO;
@@ -371,5 +385,24 @@ modded class SCR_AICombatComponent : ScriptComponent
 	float GetMaxHealth()
 	{
 		return damageManager.GetMaxHealth();
+	}
+	
+	float improvement(float improvement)
+	{
+		AimImprovement = improvement;
+
+		return AimImprovement;
+	}
+	
+	float getImprovement()
+	{		
+		return AimImprovement;
+	}
+	
+	float resetImprovement()
+	{
+		AimImprovement = 0;
+		
+		return 0;
 	}
 };

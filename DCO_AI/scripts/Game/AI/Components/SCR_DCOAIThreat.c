@@ -11,6 +11,9 @@ typedef ScriptInvokerBase<SCR_AIThreatStatesChangedCallback> SCR_AIThreatStatesC
 modded class SCR_AIThreatSystem
 {
 	private DCO_AIMoraleSystem m_moraleSystem;
+	private DCO_SkillComponent m_DCO_Skill;
+	
+	private float m_fMoraleEffect;
 	
 	static const float VIGILANT_THRESHOLD = 0.1;
 	protected static const float ALERTED_THRESHOLD = 0.6;
@@ -44,6 +47,9 @@ modded class SCR_AIThreatSystem
 	private static const float EXHAUSTED_MORALE = 1.5;
 	
 	private EAIThreatState m_States;
+	private moraleState m_MoraleState;
+	
+	private DCO_CUSTOMRANK rank;
 	
 	private ref SCR_AIThreatStatesChangedInvoker m_OnThreatStatesChanged = new SCR_AIThreatStatesChangedInvoker();
 	
@@ -57,6 +63,7 @@ modded class SCR_AIThreatSystem
 		m_Config = utility.m_ConfigComponent;	
 		m_Combat = utility.m_CombatComponent;
 		m_moraleSystem = utility.m_DCOMoraleSystem;
+		m_DCO_Skill = utility.m_DCO_Skill.GetCharacterRankComponent(utility.m_OwnerEntity);
 		m_DamageManager = SCR_DamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 		if (!agent)
@@ -69,7 +76,8 @@ modded class SCR_AIThreatSystem
 			m_DamageManager.GetOnDamageOverTimeAdded().Insert(OnDamageOverTimeAdded);
 			m_DamageManager.GetOnDamageOverTimeRemoved().Insert(OnDamageOverTimeRemoved);
 		}
-			
+		
+		
 		m_States = EAIThreatState.SAFE;
 	}
 	
@@ -123,7 +131,7 @@ modded class SCR_AIThreatSystem
 			}
 		}
 		
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fThreatTotal.ToString(), EAIDebugCategory.THREAT, 1.4, color);	
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(DCO_CUSTOMRANK, rank), EAIDebugCategory.THREAT, 1.4, color);	
 		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(EAIThreatState, m_State), EAIDebugCategory.THREAT, 1.4, color);
 	}
 #endif // WORKBENCH
@@ -151,6 +159,40 @@ modded class SCR_AIThreatSystem
 	float GetThreatEndangered()
 	{
 		return m_fThreatIsEndangered;
+	}
+	
+	float GetMoraleEffect()
+	{
+		switch(m_MoraleState)
+		{
+			case moraleState.NORMAL:
+			{
+				m_fMoraleEffect = 0;
+				break;
+			}
+			case moraleState.WISE:
+			{
+				m_fMoraleEffect = 0.15;
+				break;
+			}
+			case moraleState.MOTIVATED:
+			{
+				m_fMoraleEffect = 0.3;
+				break;
+			}
+			case moraleState.MANIAC:
+			{
+				m_fMoraleEffect = 0.45;
+				break;
+			}
+			case moraleState.BREAK:
+			{
+				m_fMoraleEffect = 0.6;
+				break;
+			}
+		}
+		
+		return 0;
 	}
 	
 	private void StateTransitions(EAIThreatState newStates)
@@ -216,7 +258,7 @@ modded class SCR_AIThreatSystem
 		if (m_Combat)
 		{
 			if (m_Combat.GetCurrentTarget())
-				m_fThreatIsEndangered = ENDANGERED_INCREMENT;
+				m_fThreatIsEndangered = ENDANGERED_INCREMENT + GetMoraleEffect();
 			else
 				m_fThreatIsEndangered -= m_fThreatIsEndangered * THREAT_ENDANGERED_DROP_RATE * timeSlice;
 		}
@@ -254,6 +296,7 @@ modded class SCR_AIThreatSystem
 		if (utility.m_CurrentBehavior)
 			threatFromBehavior = utility.m_CurrentBehavior.m_fThreat;
 		
+		rank = m_DCO_Skill.GetCharacterRank(utility.m_OwnerEntity);
 		m_fThreatTotal = Math.Clamp(threatFromBehavior + m_fThreatSuppression + m_fThreatInjury + m_fThreatShotsFired + m_fThreatIsEndangered, 0, 5.5);
 		
 		UpdateStates();
@@ -268,7 +311,7 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatBulletImpact: %1", count));
 		#endif
 		
-		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count*SUPPRESSION_BULLET_INCREMENT, 0, PINNED_THRESHOLD + 1.2);
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count*SUPPRESSION_BULLET_INCREMENT, 0, PINNED_THRESHOLD + 2.1);
 		decreaseMoraleWeaponFired(count);
 	}
 	
@@ -279,7 +322,8 @@ modded class SCR_AIThreatSystem
 		#endif
 		
 		// google can show you the increment function if you write it in
-		m_fThreatShotsFired = Math.Clamp(m_fThreatShotsFired + count*(DISTANT_SHOT_INCREMENT + ZERO_DISTANCE_SHOT_INCREMENT/(distance + 1)), 0, ALERTED_THRESHOLD);
+		
+		m_fThreatShotsFired = Math.Clamp(m_fThreatShotsFired + count*(DISTANT_SHOT_INCREMENT + ZERO_DISTANCE_SHOT_INCREMENT/(distance + 1)), 0, ALERTED_THRESHOLD + 0.5);
 	}
 	
 	override void ThreatProjectileFlyby(int count)
@@ -288,7 +332,7 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
 		#endif
 		
-		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, PINNED_THRESHOLD + 1.2);
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, PINNED_THRESHOLD + 2.1);
 		decreaseMoraleWeaponFired(count);
 	}
 	

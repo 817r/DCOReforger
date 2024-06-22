@@ -1,6 +1,7 @@
 modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 {
 	ref DCO_AIMoraleSystem m_DCOMoraleSystem;
+	DCO_SkillComponent m_DCO_Skill;
 
 	protected static const float DISTANCE_HYSTERESIS_FACTOR = 0.2; 	//!< how bigger must be old distance to new in IsInvestigationRelevant()
 	protected static const float NEARBY_DISTANCE_SQ = 150; 			//!< what is the minimal distance of new vs old in IsInvestigationRelevant()
@@ -183,7 +184,8 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_OwnerEntity = GenericEntity.Cast(agent.GetControlledEntity());
 		if (!m_OwnerEntity)
 			return;
-
+		
+		m_DCO_Skill = DCO_SkillComponent.Cast(m_OwnerEntity.FindComponent(DCO_SkillComponent));
 		m_DCOMoraleSystem = new DCO_AIMoraleSystem(this);
 		m_AIInfo = SCR_AIInfoComponent.Cast(agent.FindComponent(SCR_AIInfoComponent));
 		m_CombatComponent = SCR_AICombatComponent.Cast(m_OwnerEntity.FindComponent(SCR_AICombatComponent));
