@@ -9,7 +9,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 	
 	SCR_ChimeraAIAgent m_Agent;
-	DCO_AIMoraleSystem m_DCOMorale;
+	DCO_CUSTOMRANK rank;
+	moraleState morale;
 	
 	AIDangerEvent danger;
 	
@@ -32,7 +33,9 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		
 		// Update cached variables
 		m_Target = target;
+		rank = m_Utility.m_DCO_Skill.GetCharacterRank(m_MyEntity);
 		m_fTargetDist = target.GetDistance();
+		morale = m_Utility.m_DCOMoraleSystem.GetMoraleMeasure();
 		m_bCloseRangeCombat = m_fTargetDist < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST;
 		m_eThreatState = m_Utility.m_ThreatSystem.GetState();
 		m_eStance = m_CharacterController.GetStance();
@@ -59,7 +62,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		does movement is more fluent when switching to a new behavior which also utilizes
 		combat movement, including attacking a different target.
 		*/
-		
+
 		if (SuppressedInCoverCondition())
 		{
 			SuppressedInCoverLogic();
@@ -76,6 +79,10 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			// Current cover has been compromised, it's not directed at enemy any more
 			// Find a new cover nearby
 			PushRequestLeaveUselessCover();
+		}
+		else if (!m_State.m_bInCover && IsFirstExecution())
+		{
+			CoverManager(target.GetLastDetectedPosition(), SCR_EAICombatMoveDirection.BACKWARD);			
 		}
 		else if (m_State.m_bInCover && m_CharacterController.IsReloading())
 		{
@@ -102,12 +109,15 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		else if (!m_State.IsExecutingRequest() && !m_State.m_bInCover)
 		{
 			// We are stopped and not in cover, manage our stance
-			ECharacterStance newStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
+			ECharacterStance newStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState, morale, rank);
 			if (newStance > m_eStance)
 			{
 				// Only let stance go down, no need to get back up
 				m_State.ApplyRequestChangeStanceOutsideCover(newStance);
 			}
+			
+			if (m_State.m_fTimerStopped_s > Math.RandomFloat(8.0, 11.0) && m_eThreatState >= EAIThreatState.THREATENED && morale == moraleState.ANXIOUS)
+				CoverManager(target.GetLastDetectedPosition(), SCR_EAICombatMoveDirection.BACKWARD);
 		}
 		
 		return ENodeResult.RUNNING;
@@ -117,7 +127,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	{
 		//float currMorale = m_DCOMorale.GetMoraleMeasure();
 		
-		return m_State.m_bInCover && m_eThreatState == EAIThreatState.PINNED;
+		return m_State.m_bInCover && (m_eThreatState >= EAIThreatState.PINNED || morale >= moraleState.ANXIOUS);
 	}
 
 	override protected void PushRequestMove()
@@ -128,7 +138,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		
 		// Common values
 		rq.m_vTargetPos = ResolveRequestTargetPos();
-		ResolveMoveRequestMovePosAndDir(rq.m_vTargetPos, rq.m_vMovePos, rq.m_eDirection, rq.m_fCoverSearchSectorHalfAngleRad);
+		ResolveMoveRequestMovePosAndDir(rq.m_vTargetPos, rq.m_vMovePos, rq.m_eDirection, rq.m_fCoverSearchSectorHalfAngleRad, morale);
 		rq.m_bTryFindCover = true;
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility = true;
@@ -167,7 +177,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				{
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 					coverSearchDistMin = 2.0;
 					coverSearchDistMax = 8.0;
 					moveDistanceMax = 3.0;
@@ -177,6 +187,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				{
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					coverSearchDistMin = 2.0;
 					coverSearchDistMax = 8.0;
 					moveDistanceMax = 5.0;
@@ -189,20 +200,22 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					coverSearchDistMin = 2.0;
 					coverSearchDistMax = 10.0;
-					moveDistanceMax = 7.0;
+					moveDistanceMax = 5.0;
 					break;
 				}
 				default:
 				{
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					coverSearchDistMin = 2.0;
 					coverSearchDistMax = 12.0;
-					moveDistanceMax = 10.0;
+					moveDistanceMax = 7.0;
 					break;
 				}
 			}
 			
+			rq.m_bCheckCoverVisibility = true;
 			rq.m_bFailIfNoCover = false;
 			rq.m_eMovementType = EMovementType.WALK;
 			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
@@ -221,7 +234,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					coverSearchDistMax = 8.0;
 					moveDistanceMax = 5.0;
 					rq.m_eStanceMoving = ECharacterStance.STAND;
-					rq.m_bCheckCoverVisibility = false;
+					rq.m_bCheckCoverVisibility = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 					if (Math.RandomIntInclusive(0, 1) == 1)
 						rq.m_eMovementType = EMovementType.SPRINT;
 					else
@@ -230,7 +243,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 						rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					else
 						rq.m_eStanceEnd = ECharacterStance.PRONE;
-					rq.m_bAimAtTarget = false;
+					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 					break;
 				}
@@ -248,7 +261,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 						rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					else
 						rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					rq.m_bAimAtTarget = false;
+					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					break;
 				}
@@ -281,7 +294,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eMovementType = EMovementType.RUN;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					rq.m_bAimAtTarget = true;
+					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					break;
 				}
@@ -296,7 +309,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					else
 						rq.m_eMovementType = EMovementType.RUN;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					rq.m_bAimAtTarget = false;
+					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 					rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					break;
 				}
@@ -308,13 +321,13 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eMovementType = EMovementType.SPRINT;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					rq.m_bAimAtTarget = false;
+					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 					break;
 				}
 			}
 			
 			if (IsFirstExecution())
-				rq.m_bFailIfNoCover = true; // On first run we want to move to cover, or stay where we are if there is no cover, and shoot.
+				rq.m_bFailIfNoCover = false; // On first run we want to move to cover, or stay where we are if there is no cover, and shoot.
 			else
 				rq.m_bFailIfNoCover = m_State.m_bInCover; // Don't leave cover if there is no next cover
 
@@ -344,13 +357,15 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 
 	// Resolves which move pos and dir. we should use for _MOVE_ request
 	// By now rq.m_vTargetPos must be already calculated!
-	override protected void ResolveMoveRequestMovePosAndDir(vector targetPos, out vector outMovePos, out SCR_EAICombatMoveDirection outDirection, out float outCoverSearchSectorHalfAngleRad)
+	protected void ResolveMoveRequestMovePosAndDir(vector targetPos, out vector outMovePos, out SCR_EAICombatMoveDirection outDirection, out float outCoverSearchSectorHalfAngleRad, moraleState morales)
 	{	
 		AIWaypoint wp = null;
 		AIAgent agent = m_Utility.GetAIAgent();
 		AIGroup group = agent.GetParentGroup();
 		if (group)
 			wp = group.GetCurrentWaypoint();
+		
+
 		
 		vector movePos;
 		SCR_EAICombatMoveDirection eDirection;
@@ -360,12 +375,40 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		{
 			// No waypoint, standard move logic
 			movePos = targetPos;
-			eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
-			
-			if (IsFirstExecution())
-					coverSearchSectorHalfAngleRad = Math.PI; // Full circle, on first run we just want any cover if possible
-				else
-					coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+			switch(morales)
+			{
+				case moraleState.NORMAL:
+				{
+					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					break;
+				}
+				case moraleState.MOTIVATED:
+				{
+					eDirection = SCR_EAICombatMoveDirection.FORWARD;
+					break;
+				}
+				case moraleState.ANXIOUS:
+				{
+					int rand = Math.RandomInt(1,2);
+					if (rand == 1)
+						eDirection = SCR_EAICombatMoveDirection.LEFT;
+					else
+						eDirection = SCR_EAICombatMoveDirection.RIGHT;
+				
+					break;
+				}
+				case moraleState.MANIAC:
+				{
+					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					break;
+				}
+				case moraleState.BREAK:
+				{
+					eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					break;
+				}
+			}
+			coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		}
 		else
 		{
@@ -427,10 +470,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		if (m_State.IsExecutingRequest())
 			return false;
 		
-		// If it's first run, ignore timers, only if:
-		// - If we are not in cover.
-		if (IsFirstExecution() && !m_State.m_bInCover)
-			return true;
+		if (morale >= moraleState.ANXIOUS && m_eThreatState >= EAIThreatState.THREATENED && !m_State.m_bInCover)
+			return m_State.m_fTimerStopped_s > Math.RandomFloat(4.0, 7.0);
 		
 		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
@@ -512,7 +553,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_bAimAtTargetEnd = true;
 		
 		rq.m_fCoverSearchDistMin = Math.RandomFloat(3.0, 5.0);
-		rq.m_fCoverSearchDistMax = Math.RandomFloat(30.0, 60.0);
+		rq.m_fCoverSearchDistMax = Math.RandomFloat(10.0, 30.0);
 		
 		m_State.ApplyNewRequest(rq);
 	}
@@ -529,7 +570,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_eStanceEnd = ECharacterStance.CROUCH;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-		rq.m_fMoveDistance = 15.0;
+		rq.m_fMoveDistance = 7.0;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
 		rq.m_bCheckCoverVisibility = false;
@@ -573,7 +614,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 					waitTime = Math.RandomFloat(8.0, 12.0);
 					break;
 				default:
-					waitTime = Math.RandomFloat(5.0, 15.0);
+					waitTime = Math.RandomFloat(8.0, 15.0);
 					break;
 			}
 		}
@@ -593,7 +634,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		
 		switch (weaponType)
 		{
-			case EWeaponType.WT_MACHINEGUN:
+			case EWeaponType.WT_HANDGUN:
 			case EWeaponType.WT_SNIPERRIFLE:
 				specialistTime = true;
 		}
@@ -660,22 +701,726 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	
 	//--------------------------------------------------------------------------------------------
 	// Returns stance when stopped outside cover
-	override protected static ECharacterStance ResolveStanceOutsideCover(bool closeRange, EAIThreatState threat)
+	protected static ECharacterStance ResolveStanceOutsideCover(bool closeRange, EAIThreatState threat, moraleState morales, DCO_CUSTOMRANK ranks)
 	{
 		if (closeRange)
 		{
 			switch (threat)
 			{
 				case EAIThreatState.EXHAUSTED:
-					return ECharacterStance.PRONE;
+				{
+					switch (morales)
+					{
+						case moraleState.NORMAL:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MANIAC:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MOTIVATED:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.ANXIOUS:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.BREAK:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				break;
+				}
+				
 				case EAIThreatState.PINNED:
-					return ECharacterStance.CROUCH;
+				{
+					switch (morales)
+					{
+						case moraleState.NORMAL:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MANIAC:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MOTIVATED:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.ANXIOUS:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.BREAK:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				break;
+				}
+				
 				case EAIThreatState.THREATENED:
-					return ECharacterStance.CROUCH;
+				{
+					switch (morales)
+					{
+						case moraleState.NORMAL:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MANIAC:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MOTIVATED:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.ANXIOUS:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.BREAK:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				break;
+				}
+				
 				case EAIThreatState.ALERTED:
-					return ECharacterStance.CROUCH;
+				{
+					switch (morales)
+					{
+						case moraleState.NORMAL:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MANIAC:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MOTIVATED:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.ANXIOUS:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.BREAK:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				break;
+				}
+				
 				case EAIThreatState.VIGILANT:
-					return ECharacterStance.CROUCH;
+				{
+					switch (morales)
+					{
+						case moraleState.NORMAL:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MANIAC:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MOTIVATED:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.ANXIOUS:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.BREAK:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				break;
+				}
 				default:
 					return ECharacterStance.STAND;
 			}
@@ -688,17 +1433,723 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			switch (threat)
 			{
 				case EAIThreatState.EXHAUSTED:
-					return ECharacterStance.CROUCH;
+				{
+					switch (morales)
+					{
+						case moraleState.NORMAL:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MANIAC:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MOTIVATED:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.ANXIOUS:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.BREAK:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				break;
+				}
+				
 				case EAIThreatState.PINNED:
-					return ECharacterStance.PRONE;
+				{
+					switch (morales)
+					{
+						case moraleState.NORMAL:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MANIAC:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MOTIVATED:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.ANXIOUS:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.BREAK:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				break;
+				}
+				
 				case EAIThreatState.THREATENED:
-					return ECharacterStance.CROUCH;
+				{
+					switch (morales)
+					{
+						case moraleState.NORMAL:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MANIAC:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MOTIVATED:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.ANXIOUS:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.BREAK:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				break;
+				}
+				
 				case EAIThreatState.ALERTED:
-					return ECharacterStance.CROUCH;
+				{
+					switch (morales)
+					{
+						case moraleState.NORMAL:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MANIAC:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MOTIVATED:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.ANXIOUS:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.BREAK:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				break;
+				}
+				
 				case EAIThreatState.VIGILANT:
-					return ECharacterStance.STAND;
+				{
+					switch (morales)
+					{
+						case moraleState.NORMAL:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MANIAC:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.MOTIVATED:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.STAND;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.ANXIOUS:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.CROUCH;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+						case moraleState.BREAK:
+						{
+							switch (ranks)
+							{
+								case DCO_CUSTOMRANK.RECRUIT:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+								case DCO_CUSTOMRANK.SPECIALIST:
+								{
+									return ECharacterStance.PRONE;
+									break;
+								}
+							}
+							break;
+						}
+					}
+				break;
+				}
+				
 				default:
-					return ECharacterStance.CROUCH;
+					return ECharacterStance.STAND;
+
 			}
 		}
 		return ECharacterStance.STAND;
@@ -709,7 +2160,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	// If we are between weaponMinDist and 'optimal' dist, we don't need to move closer to tgt
 	override protected static float ResolveOptimalDistance(float weaponMinDist)
 	{
-		return Math.Max(weaponMinDist + 12.0, 10.0);
+		return Math.Max(weaponMinDist + 10.0, 10.0);
 	}
 	
 	protected override void PushRequestFFAvoidance()
@@ -746,5 +2197,65 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_bAimAtTargetEnd = true;
 		rq.m_bCheckCoverVisibility = true;
 		m_State.ApplyNewRequest(rq);
+	}
+	
+	override protected bool MoveFromTargetCondition()
+	{
+		return m_fTargetDist < 20;
+	}
+	
+	void CoverManager(vector threatPos, SCR_EAICombatMoveDirection dir)
+	{						
+		if (m_State.IsExecutingRequest())
+			return;
+		
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		if (m_eWeaponType == EWeaponType.WT_MACHINEGUN)
+		{
+			rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+			
+			rq.m_vTargetPos = threatPos;
+			rq.m_vMovePos = rq.m_vTargetPos;
+			rq.m_bTryFindCover = true;
+			rq.m_bUseCoverSearchDirectivity = true;
+			rq.m_bCheckCoverVisibility = true;
+			rq.m_bFailIfNoCover = false;
+			rq.m_eStanceMoving = ECharacterStance.CROUCH;
+			rq.m_eStanceEnd = ECharacterStance.PRONE;
+			rq.m_eMovementType = EMovementType.WALK;
+			rq.m_fCoverSearchDistMax = 20;
+			rq.m_fCoverSearchDistMin = 2;
+			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
+			rq.m_eDirection = dir;
+			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
+			rq.m_bAimAtTarget = true;; // Don't aim while running
+			rq.m_bAimAtTargetEnd = true;
+			
+			m_State.ApplyNewRequest(rq);	
+		} 
+		else
+		{
+			rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+			
+			rq.m_vTargetPos = threatPos;
+			rq.m_vMovePos = rq.m_vTargetPos;
+			rq.m_bTryFindCover = true;
+			rq.m_bUseCoverSearchDirectivity = true;
+			rq.m_bCheckCoverVisibility = true;
+			rq.m_bFailIfNoCover = true;
+			rq.m_eStanceMoving = ECharacterStance.STAND;
+			rq.m_eStanceEnd = ECharacterStance.CROUCH;
+			rq.m_eMovementType = EMovementType.RUN;
+			rq.m_fCoverSearchDistMax = 25;
+			rq.m_fCoverSearchDistMin = 2;
+			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 10;
+			rq.m_eDirection = dir;
+			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
+			rq.m_bAimAtTarget = false;; // Don't aim while running
+			rq.m_bAimAtTargetEnd = true;
+			
+			m_State.ApplyNewRequest(rq);		
+		}
 	}
 }

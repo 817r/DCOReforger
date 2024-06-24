@@ -73,6 +73,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		if (!shooter)
 			return false;
 		
+		DCO_CUSTOMRANK rank = utility.getRanks();
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 		IEntity shooterRoot = shooter.GetRootParent();
 		vector shooterPos = shooter.GetOrigin();
@@ -94,7 +95,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				{
 					if(m_State != null)
 					{
-						int randomizer = Math.RandomInt(1,2);
+						int randomizer = Math.RandomInt(1,3);
 						
 						if (randomizer == 1)
 						{						
@@ -147,7 +148,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				{
 					if(m_State != null)
 					{
-						int randomizer = Math.RandomInt(1,2);
+						int randomizer = Math.RandomInt(1,3);
 						
 						if (randomizer == 1)
 						{						
@@ -196,7 +197,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				{
 					if(m_State != null)
 					{
-						int randomizer = Math.RandomInt(1,2);
+						int randomizer = Math.RandomInt(1,4);
 						
 						if (randomizer == 1)
 						{						
@@ -294,7 +295,10 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 		
 		if (distance < EXPLOSION_REACTION)
 		{
-			
+			SCR_AIMoveFromSuppressBehavior aiMovefromSuppress = SCR_AIMoveFromSuppressBehavior.Cast(utility.FindActionOfType(SCR_AIMoveFromSuppressBehavior));
+			if(aiMovefromSuppress) return true;
+						
+			utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, position, null))
 		}
 			
 		
@@ -302,7 +306,7 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 		threatSystem.ThreatExplosion(distance);
 		
 		// Look at explosion
-		utility.m_LookAction.LookAt(position, SCR_AILookAction.PRIO_UNKNOWN_TARGET, 1.2);
+		utility.m_LookAction.LookAt(position, SCR_AILookAction.PRIO_DANGER_EVENT, 1.2);
 		
 		// Observe if not investigating or already observing something else
 		if (distance <= EXPLOSION_OBSERVE_DISTANCE)

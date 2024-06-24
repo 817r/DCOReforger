@@ -4,6 +4,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	SCR_AIConfigComponent m_ConfigComponent;
 	SCR_AIGroupInfoComponent m_GroupInfo;
 	SCR_MailboxComponent m_Mailbox;
+	ref DCO_Group_Info m_DCOGroupInfo;
 	ref array<SCR_AIInfoComponent> m_aInfoComponents = {};
 	
 	ref ScriptInvoker_GroupMoveFailed m_OnMoveFailed;
@@ -27,6 +28,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	
 	// Fireteams
 	ref SCR_AIGroupFireteamManager m_FireteamMgr;
+	//ref DCO_FireTeam m_DCOFireteamMgr;
 	
 	// Used by SCR_AIGetMemberByGoal nodes
 	int m_iGetMemberByGoalNextIndex = 0;
@@ -148,5 +150,45 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		m_bNewGroupMemberAdded = false; // resetting reaction on group member added
 		
 		return m_CurrentActivity;
+	}
+	
+	int GetMemberCount()
+	{
+		return m_Owner.GetAgentsCount();
+	}
+	
+	override void EOnInit(IEntity owner)
+	{
+		super.EOnInit(owner);
+		m_Owner = SCR_AIGroup.Cast(owner);
+		if (!m_Owner)
+			return;	
+		
+		m_ConfigComponent = SCR_AIConfigComponent.Cast(m_Owner.FindComponent(SCR_AIConfigComponent));
+		
+		m_ConfigComponent.AddDefaultActivities(this);
+		//AddAction(new SCR_AIIdleActivity(this))
+		
+		m_Owner.GetOnAgentAdded().Insert(OnAgentAdded);
+		m_Owner.GetOnAgentRemoved().Insert(OnAgentRemoved);
+		m_Owner.GetOnWaypointCompleted().Insert(OnWaypointCompleted);
+		m_Owner.GetOnWaypointRemoved().Insert(OnWaypointRemoved);
+		m_Owner.GetOnCurrentWaypointChanged().Insert(OnCurrentWaypointChanged);
+		
+		m_DCOGroupInfo = new DCO_Group_Info(m_Owner);
+		
+		m_GroupInfo = SCR_AIGroupInfoComponent.Cast(m_Owner.FindComponent(SCR_AIGroupInfoComponent));
+		
+		m_TargetClusterProcessor = new SCR_AIGroupTargetClusterProcessor(this);
+		m_TargetClusterProcessor.m_OnClusterStateChanged.Insert(OnTargetClusterStateChanged);
+		
+		m_FireteamMgr = new SCR_AIGroupFireteamManager(m_Owner);
+		
+		m_Perception = new SCR_AIGroupPerception(this, m_Owner);
+		m_Perception.GetOnEnemyDetectedFiltered().Insert(OnEnemyDetectedFiltered);
+		
+		m_Mailbox = SCR_MailboxComponent.Cast(m_Owner.FindComponent(SCR_MailboxComponent));
+		
+		m_fPerceptionUpdateTimer_ms = Math.RandomFloat(0, PERCEPTION_UPDATE_TIMER_MS);
 	}
 }

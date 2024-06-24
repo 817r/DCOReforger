@@ -1,10 +1,8 @@
 modded class SCR_ChimeraAIAgent : ChimeraAIAgent
 {
-	AIGroup m_ParentGroup;
-	
 	DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	SCR_AICombatComponent m_SCR_AICombatComponent;
-	DCO_AIInfoGroupComponent m_DCO_AIGroupInfoComponent;
+	ref DCO_Group_Info m_DCO_AIGroupInfoComponent;
 	DCO_AIMoraleSystem m_DCO_AIMoraleSystem;
 	DCO_SkillComponent m_DCO_SkillComponent;
 	
@@ -24,15 +22,26 @@ modded class SCR_ChimeraAIAgent : ChimeraAIAgent
 	
 	protected SCR_GadgetManagerComponent m_SCR_GadgetManagerComponent;
 	
-	void improveAim(float aimCorrection)
-	{
-		m_SCR_AICombatComponent.improvement(aimCorrection);
-	}
 	
-	DCO_SkillComponent getSkillComponent()
+	override void EOnInit(IEntity owner) 
 	{
-		m_DCO_SkillComponent = DCO_SkillComponent.Cast(m_ControlledEntity.FindComponent(DCO_SkillComponent));
+		IEntity controlledEntity = GetControlledEntity();
+		if (!controlledEntity)
+			return;
 		
-		return m_DCO_SkillComponent;
+		ChimeraCharacter character = ChimeraCharacter.Cast(controlledEntity);
+		if (character)
+		{
+			m_CharacterController = SCR_CharacterControllerComponent.Cast(character.GetCharacterController());
+			if (m_CharacterController)
+				m_CharacterController.m_OnLifeStateChanged.Insert(OnLifeStateChanged);
+		}
+			
+		GetGame().GetCallqueue().CallLater(EnsureAILimit, 1, false);
+		
+		m_FactionAffiliationComponent = FactionAffiliationComponent.Cast(controlledEntity.FindComponent(FactionAffiliationComponent));
+		m_InfoComponent = SCR_AIInfoComponent.Cast(FindComponent(SCR_AIInfoComponent));
+		m_UtilityComponent = SCR_AIUtilityComponent.Cast(FindComponent(SCR_AIUtilityComponent));
+		m_DCO_AIGroupInfoComponent = new DCO_Group_Info(SCR_AIGroup.Cast(GetParentGroup()));
 	}
 };

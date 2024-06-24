@@ -14,6 +14,7 @@ class DCO_AIInfoComponent : ScriptComponent
 {
 	private AIAgent m_Agent;
 	private IEntity m_Entity;
+	private DCO_Group_Info m_GroupInfo;
 	
 	private float m_fPerceptionSafe;
 	private float m_fPerceptionVigilant;
@@ -22,9 +23,9 @@ class DCO_AIInfoComponent : ScriptComponent
 	private DCO_SkillComponent cussSkill;
 	private DCO_CUSTOMRANK cussRank;
 	
-	private DCO_ECombatBehaviorType m_eCombatBehaviorType;
-	
 	private float m_fAttackReactionDelayModifier;
+	
+	private int memberNumber;
 
 	private bool m_bDisableMovementControls;
 	private bool m_bCombatBehaviorTypeDefensive;
@@ -42,12 +43,16 @@ class DCO_AIInfoComponent : ScriptComponent
 		{
 			m_Agent = agent;
 			
+			m_GroupInfo = DCO_Group_Info.Cast(owner.FindComponent(DCO_Group_Info));
 			
 			IEntity controlledEntity = agent.GetControlledEntity();
 			
 			if (controlledEntity)
 			{
 				m_Entity = controlledEntity;
+				
+				if (m_GroupInfo)
+					memberNumber = m_GroupInfo.getMemberCount();
 				
 				vector origin = controlledEntity.GetOrigin();
 			}
@@ -101,46 +106,6 @@ class DCO_AIInfoComponent : ScriptComponent
 	{
 		m_fAttackReactionDelayModifier = attackReactionDelayModifier;
 	}
-
-	bool GetForceStanceAutonomous()
-	{
-		return m_bForceStanceAutonomous;
-	}
-	
-	void SetForceStanceAutonomous(bool forceStanceAutonomous)
-	{
-		m_bForceStanceAutonomous = forceStanceAutonomous;
-	}
-	
-	bool GetForceMovementTypeAutonomous()
-	{
-		return m_bForceMovementTypeAutonomous;
-	}
-	
-	void SetForceMovementTypeAutonomous(bool forceMovementTypeAutonomous)
-	{
-		m_bForceMovementTypeAutonomous = forceMovementTypeAutonomous;
-	}
-	
-	bool IsCombatBehaviorTypeDefensive()
-	{
-		return m_bCombatBehaviorTypeDefensive;
-	}
-	
-	void SetCombatBehaviorTypeDefensive(bool combatBehaviorTypeDefensive)
-	{
-		m_bCombatBehaviorTypeDefensive = combatBehaviorTypeDefensive
-	}
-	
-	DCO_ECombatBehaviorType GetCombatBehaviorType()
-	{
-		return m_eCombatBehaviorType;
-	}
-	
-	void SetCombatBehaviorType(DCO_ECombatBehaviorType combatBehaviorType)
-	{
-		m_eCombatBehaviorType = combatBehaviorType;
-	}
 	
 	void setRank(int cusRank)
 	{
@@ -151,5 +116,10 @@ class DCO_AIInfoComponent : ScriptComponent
 	void InitMoraleSystem(DCO_AIMoraleSystem moraleSystem)
 	{
 		m_DCOMoraleSystem = moraleSystem;	
+	}
+	
+	int getMemberNumber()
+	{
+		return memberNumber;
 	}
 }

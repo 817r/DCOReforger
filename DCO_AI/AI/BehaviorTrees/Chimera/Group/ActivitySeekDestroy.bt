@@ -47,7 +47,7 @@ BehaviorTree {
       }
       AITaskSetPathfindingFilters "Set Pathfinding Filters" {
        Name "Set Pathfinding Filters"
-       EditorPos 1917.108 -563.425
+       EditorPos 1915.108 -563.425
        NavmeshProject "Soldiers"
        IgnoreFlags 8
       }

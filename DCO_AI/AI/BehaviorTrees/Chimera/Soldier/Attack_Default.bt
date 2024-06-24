@@ -37,7 +37,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          EditorPos -1191.333 827.111
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port -1
+           Port 4
            PortName "Target"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
@@ -146,57 +146,6 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
            PortName "AimpointType1"
           }
          }
-        }
-        DecoTestVariable "Test Variable" {
-         Name "Test Variable"
-         EditorPos 1341.571 1081.797
-         Nodes {
-          Sequence Sequence {
-           Name "Sequence"
-           EditorPos 1356.524 1304.75
-           Nodes {
-            AITaskIdle Idle {
-             Name "Idle"
-             EditorPos 1123.726 1508.714
-             Period 20
-             PeriodRandom 10
-            }
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 1359.5 1499.75
-             Nodes {
-              SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
-               Name "SCR_AI Visualize Debug"
-               EditorPos 1029.179 1688.5
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "DebugMessage"
-                }
-               }
-               m_sDebugMessage "Cover Manager"
-               m_eAICategory BEHAVIOR
-              }
-              RunBT RunBT {
-               Name "RunBT"
-               EditorPos 1363.754 1673.341
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 31
-                 PortName "lastSeen"
-                }
-               }
-               BehaviorTree "{62A413D37CC1B3C0}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_CoverManager.bt"
-              }
-             }
-            }
-           }
-          }
-         }
-         NegativeCondition 1
-         InVariable 30
-         TestType EqualsValue
-         TestValue "true"
         }
         Selector Selector {
          Name "Selector"
@@ -419,71 +368,11 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
    EditorPos 234.797 2757.845
    InPorts {
     SingleInputPortContainer SingleInputPortContainer {
-     Port 32
+     Port 30
      PortName "initPosition"
     }
    }
    BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestigate.bt"
-  }
-  SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-   Name "SCR_AI Deco Is Above Threat Level"
-   EditorPos 2180.381 1083.619
-   Nodes {
-    SCR_AIDecoHasWeaponOfType "SCR_AI Deco Has Weapon Of Type" {
-     Name "SCR_AI Deco Has Weapon Of Type"
-     EditorPos 2184.286 1250
-     Nodes {
-      Sequence Sequence {
-       Name "Sequence"
-       EditorPos 2268.214 1445.571
-       Nodes {
-        AITaskIdle Idle {
-         Name "Idle"
-         EditorPos 2088.357 1637.571
-         Period 5
-         PeriodRandom 0.2
-        }
-        RunBT RunBT {
-         Name "RunBT"
-         EditorPos 2305.381 1656.286
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 33
-           PortName "lastSeen"
-          }
-         }
-         BehaviorTree "{C529D8EDF7B24DC6}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_AttackPush.bt"
-        }
-       }
-      }
-     }
-     InPorts {
-      SingleInputPortContainer SingleInputPortContainer {
-       Port -1
-       PortName "WeaponTypeIn"
-      }
-      SingleInputPortContainer SingleInputPortContainer {
-       Port -1
-       PortName "MagazineWell"
-      }
-     }
-     OutPorts {
-      SingleOutputPortContainer SingleOutputPortContainer {
-       Port -1
-       PortName "WeaponTypeOut"
-      }
-     }
-     m_bCurrent 1
-    }
-   }
-   InPorts {
-    SingleInputPortContainer SingleInputPortContainer {
-     Port -1
-     PortName "ThresholdIn"
-    }
-   }
-   NegativeCondition 1
-   m_threatThreshold THREATENED
   }
  }
  Variables {
@@ -666,21 +555,9 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
    VariableType 8
    EditorPos 363.015 860.076
   }
-  VariableReference inCover {
-   VariableType 8
-   EditorPos 1176.608 1116.393
-  }
-  VariableReference targetLastSeenPosition {
-   VariableType 1
-   EditorPos 1032.5 1808.75
-  }
   VariableReference targetLastSeenPosition {
    VariableType 1
    EditorPos -70.815 2882.037
-  }
-  VariableReference targetLastSeenPosition {
-   VariableType 1
-   EditorPos 1978.547 1790.655
   }
  }
  Groups {

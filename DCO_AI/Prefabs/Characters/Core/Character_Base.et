@@ -4,7 +4,6 @@ SCR_ChimeraCharacter {
   SCR_CharacterInventoryStorageComponent "{520EA1D2DB118DAC}" {
    components {
     DCO_SkillComponent "{61AABE0631CC77EC}" {
-     m_ERank RECRUIT
     }
    }
   }

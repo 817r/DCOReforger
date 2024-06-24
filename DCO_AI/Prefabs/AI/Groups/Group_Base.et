@@ -1,9 +1,12 @@
 SCR_AIGroup {
  ID "0000000000000001"
  components {
+  DCO_AIInfoGroupComponent "{61AE6D30EF55B61E}" {
+  }
   SCR_CoverQueryComponent "{5DD4D299D08686AB}" {
-   CoverPathfindLength 50
-   CoverPathfindMaxPolys 15
+   CoverPathfindLength 15
+   CoverPathfindMaxPolys 20
   }
  }
+ DangerEventRange 250
 }

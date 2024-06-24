@@ -118,27 +118,156 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	{
 		float tolerance;
 		bool setMaxTolerance;
+		float maxTOl;
+		float minTOl;
 	
 		// Always use max tolerance in close range
 		if (distance < CLOSE_RANGE_THRESHOLD)
-			return MAXIMAL_TOLERANCE;
+		{
+			switch(weaponType)
+			{
+				case EWeaponType.WT_GRENADELAUNCHER:
+				{
+					maxTOl = MAXIMAL_TOLERANCE * 1.1;
+					minTOl = MINIMAL_TOLERANCE * 300;
+					break;
+				}
+				default:
+				{
+					maxTOl = MAXIMAL_TOLERANCE - 2.0;
+					minTOl = MINIMAL_TOLERANCE * 30;
+					break;
+				}
+			}
+		}
 		
-		if (distance < MEDIUM_RANGE_THRESHOLD)
-			return MAXIMAL_TOLERANCE/2;
+		if (distance > CLOSE_RANGE_THRESHOLD)
+		{
+			switch(weaponType)
+			{
+				case EWeaponType.WT_RIFLE:
+				{
+					maxTOl = MAXIMAL_TOLERANCE * 1.1;
+					minTOl = MINIMAL_TOLERANCE * 30;
+					break;
+				}
+				case EWeaponType.WT_MACHINEGUN:
+				{
+					maxTOl = MAXIMAL_TOLERANCE * 1.25;
+					minTOl = MINIMAL_TOLERANCE * 50;
+					break;
+				}
+				case EWeaponType.WT_ROCKETLAUNCHER:
+				{
+					maxTOl = MAXIMAL_TOLERANCE * 1.2;
+					minTOl = MINIMAL_TOLERANCE * 50;
+					break;
+				}
+				case EWeaponType.WT_SNIPERRIFLE:
+				{
+					maxTOl = MAXIMAL_TOLERANCE / 5;
+					minTOl = MINIMAL_TOLERANCE * 30;
+					break;
+				}
+				case EWeaponType.WT_GRENADELAUNCHER:
+				{
+					maxTOl = MAXIMAL_TOLERANCE * 1.1;
+					minTOl = MINIMAL_TOLERANCE * 50;
+					break;
+				}
+				default:
+				{
+					maxTOl = MAXIMAL_TOLERANCE;
+					minTOl = MINIMAL_TOLERANCE;
+					break;
+				}
+			}
+		}
+			
+		
+		if (distance > MEDIUM_RANGE_THRESHOLD)
+		{
+			switch(weaponType)
+			{
+				case EWeaponType.WT_RIFLE:
+				{
+					maxTOl = MAXIMAL_TOLERANCE * 1.1;
+					minTOl = MINIMAL_TOLERANCE * 300;
+					break;
+				}
+				case EWeaponType.WT_MACHINEGUN:
+				{
+					maxTOl = MAXIMAL_TOLERANCE * 1.25;
+					minTOl = MINIMAL_TOLERANCE * 350;
+					break;
+				}
+				case EWeaponType.WT_ROCKETLAUNCHER:
+				{
+					maxTOl = MAXIMAL_TOLERANCE * 1.2;
+					minTOl = MINIMAL_TOLERANCE * 320;
+					break;
+				}
+				case EWeaponType.WT_SNIPERRIFLE:
+				{
+					maxTOl = MAXIMAL_TOLERANCE / 4;
+					minTOl = MINIMAL_TOLERANCE * 200;
+					break;
+				}
+				case EWeaponType.WT_GRENADELAUNCHER:
+				{
+					maxTOl = MAXIMAL_TOLERANCE * 1.1;
+					minTOl = MINIMAL_TOLERANCE * 350;
+					break;
+				}
+				default:
+				{
+					maxTOl = MAXIMAL_TOLERANCE;
+					minTOl = MINIMAL_TOLERANCE;
+					break;
+				}
+			}
+		}
+			
 			
 		tolerance = angularSize / 2; // half of the size
 		// angular speed
 		tolerance *= GetAngularSpeedFactor(observer, target, setMaxTolerance);
 				
 		if (setMaxTolerance)
-			tolerance = MAXIMAL_TOLERANCE;
+			return MAXIMAL_TOLERANCE;
 		else 
 		{
 			// weapon type tolerance modifier
-			tolerance *= GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor() - GetAimImprovement();
+			tolerance = (tolerance * (GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor())) - GetAimImprovement();
 		};
-		return Math.Clamp(tolerance, MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE);
+		return Math.Clamp(tolerance, minTOl, maxTOl);
 	}	
+	
+	override float GetAngularSpeedFactor(IEntity observer, IEntity enemy, out bool setBigTolerance)
+	{
+		IEntity parent = enemy.GetParent(); // getting the vehicle for character inside vehicle
+		if (parent)
+		{
+			enemy = parent;					// case of driver
+			parent = enemy.GetParent();
+			if (parent)						// case of turret
+				enemy = parent;
+		}
+		Physics ph = enemy.GetPhysics();
+		if (ph)
+		{
+			vector positionVector = enemy.GetOrigin() - observer.GetOrigin();
+			vector angularVelocity = positionVector * ph.GetVelocity() / positionVector.LengthSq();  // omega = (r x v) / ||r||^2 
+			float angularSpeed = angularVelocity.Length();			
+			
+			if (angularSpeed < 0.07) // rougly 4 degs in radians
+				return 1.0;
+			else if (angularSpeed < 0.17) // roughly 10 degs in radians
+				return 2;
+		}	
+		setBigTolerance = true;
+		return 0;
+	}
 	
 	//------------------------------------------------------------------------------------------------
 	// returns random factor based on AI skill
@@ -339,7 +468,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EWeaponType.WT_SNIPERRIFLE:
 			{
-				return 0.35;
+				return 0.15;
 			}
 			case EWeaponType.WT_GRENADELAUNCHER:
 			{
@@ -384,7 +513,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		} 
 		else if (currHealth < maxHealth/2)
 		{
-			return 1.8;
+			return 1.4;
 		}
 
 		return 0;
@@ -392,7 +521,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	float GetAimImprovement()
 	{
-		return m_CombatComponent.getImprovement() * 5;
+		return m_CombatComponent.getImprovement();
 	}
 };
 

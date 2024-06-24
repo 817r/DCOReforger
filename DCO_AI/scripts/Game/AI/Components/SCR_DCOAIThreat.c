@@ -42,9 +42,9 @@ modded class SCR_AIThreatSystem
 	private static const float SAFE_MORALE = 0;
 	private static const float VIGILANT_MORALE = 0.1;
 	private static const float ALERTED_MORALE = 0.3;
-	private static const float THREATENED_MORALE = 0.5;
-	private static const float PINNED_MORALE = 0.8;
-	private static const float EXHAUSTED_MORALE = 1.5;
+	private static const float THREATENED_MORALE = 0.7;
+	private static const float PINNED_MORALE = 1.3;
+	private static const float EXHAUSTED_MORALE = 2.0;
 	
 	private EAIThreatState m_States;
 	private moraleState m_MoraleState;
@@ -53,7 +53,7 @@ modded class SCR_AIThreatSystem
 	
 	private ref SCR_AIThreatStatesChangedInvoker m_OnThreatStatesChanged = new SCR_AIThreatStatesChangedInvoker();
 	
-	#ifdef WORKBENCH
+
 	//------------------------------------------------------------------------------------------------
 	//!
 	
@@ -63,7 +63,7 @@ modded class SCR_AIThreatSystem
 		m_Config = utility.m_ConfigComponent;	
 		m_Combat = utility.m_CombatComponent;
 		m_moraleSystem = utility.m_DCOMoraleSystem;
-		m_DCO_Skill = utility.m_DCO_Skill.GetCharacterRankComponent(utility.m_OwnerEntity);
+		m_DCO_Skill = utility.m_DCO_Skill.GetCharacterSkillRankComponent(utility.m_OwnerEntity);
 		m_DamageManager = SCR_DamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 		if (!agent)
@@ -91,6 +91,7 @@ modded class SCR_AIThreatSystem
 		return m_States;
 	}
 	
+	#ifdef WORKBENCH
 	override void ShowDebug()
 	{
 		// Show message above AI's head
@@ -131,10 +132,10 @@ modded class SCR_AIThreatSystem
 			}
 		}
 		
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(DCO_CUSTOMRANK, rank), EAIDebugCategory.THREAT, 1.4, color);	
-		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(EAIThreatState, m_State), EAIDebugCategory.THREAT, 1.4, color);
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, "Rank : " + typename.EnumToString(DCO_CUSTOMRANK, rank) + ", Threat State : " + typename.EnumToString(EAIThreatState, m_State) + ", Morale : " + typename.EnumToString(moraleState, m_MoraleState), EAIDebugCategory.THREAT, 1.4, color);	
 	}
-#endif // WORKBENCH
+	#endif
+
 	
 	float GetThreatTotal()
 	{
@@ -170,7 +171,7 @@ modded class SCR_AIThreatSystem
 				m_fMoraleEffect = 0;
 				break;
 			}
-			case moraleState.WISE:
+			case moraleState.ANXIOUS:
 			{
 				m_fMoraleEffect = 0.15;
 				break;
@@ -311,7 +312,7 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatBulletImpact: %1", count));
 		#endif
 		
-		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count*SUPPRESSION_BULLET_INCREMENT, 0, PINNED_THRESHOLD + 2.1);
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count*SUPPRESSION_BULLET_INCREMENT, 0, 5.5);
 		decreaseMoraleWeaponFired(count);
 	}
 	
@@ -323,7 +324,7 @@ modded class SCR_AIThreatSystem
 		
 		// google can show you the increment function if you write it in
 		
-		m_fThreatShotsFired = Math.Clamp(m_fThreatShotsFired + count*(DISTANT_SHOT_INCREMENT + ZERO_DISTANCE_SHOT_INCREMENT/(distance + 1)), 0, ALERTED_THRESHOLD + 0.5);
+		m_fThreatShotsFired = Math.Clamp(m_fThreatShotsFired + count*(DISTANT_SHOT_INCREMENT + ZERO_DISTANCE_SHOT_INCREMENT/(distance + 1)), 0, 1.1);
 	}
 	
 	override void ThreatProjectileFlyby(int count)
@@ -332,7 +333,7 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
 		#endif
 		
-		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, PINNED_THRESHOLD + 2.1);
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 5.5);
 		decreaseMoraleWeaponFired(count);
 	}
 	

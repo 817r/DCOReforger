@@ -6,12 +6,14 @@ modded enum EAISkill
 
 modded class SCR_AICombatComponent : ScriptComponent
 {
-	protected SCR_AIGroup m_SCR_AIGroup;
+	protected DCO_Group_Info m_SCR_AIGroup;
 	protected IEntity m_ControlledEntity;
 	protected SCR_ChimeraAIAgent m_SCR_ChimeraAIAgent;
 	protected DCO_AIMoraleSystem m_DCO_MoraleSystem;
 	protected DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	protected SCR_CharacterDamageManagerComponent damageManager;
+	private DCO_SkillComponent m_DCO_Skill;
+	private DCO_CUSTOMRANK rank;
 	
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
@@ -26,12 +28,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.8;
 	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.48;
 	
-	protected const float PERCEPTION_FACTOR_SAFE = 0.8;
-	protected const float PERCEPTION_FACTOR_VIGILANT = 6.0;
-	protected const float PERCEPTION_FACTOR_ALERTED = 6.5; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 6.0;
-	protected const float PERCEPTION_FACTOR_PINNED = 5.5;
-	protected const float PERCEPTION_FACTOR_EXHAUSTED = 5.0;
+	protected const float PERCEPTION_FACTOR_SAFE = 0.5;
+	protected const float PERCEPTION_FACTOR_VIGILANT = 3.0;
+	protected const float PERCEPTION_FACTOR_ALERTED = 2.8; 
+	protected const float PERCEPTION_FACTOR_THREATENED = 2.5;
+	protected const float PERCEPTION_FACTOR_PINNED = 1.2;
+	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.0;
 
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 2.5;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
@@ -40,6 +42,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	protected const float DISMOUNT_TURRET_TIMER_MS = 1500;
 	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 5.0;
+	
+	private int groupNumber;
+	private int nowGroupNumber;
+	bool alreadyGetMemberCount = false;
 	
 	private float AimImprovement;
 	
@@ -56,32 +62,243 @@ modded class SCR_AICombatComponent : ScriptComponent
 		{
 			m_ControlledEntity = m_Agent.GetControlledEntity();
 			
+			rank = m_DCO_Skill.GetCharacterRank(m_Utility.m_OwnerEntity);
+			
 			damageManager = SCR_CharacterDamageManagerComponent.Cast(m_ControlledEntity.FindComponent(SCR_CharacterDamageManagerComponent));
+			
+			m_SCR_AIGroup = m_Utility.m_DCO_GroupInfo;
+						
+			m_DCO_Skill = m_Utility.m_DCO_Skill.GetCharacterSkillRankComponent(m_Utility.m_OwnerEntity);
 			
 			m_SCR_ChimeraAIAgent = SCR_ChimeraAIAgent.Cast(m_Agent);
 			
 			m_DCO_AIInfoComponent = DCO_AIInfoComponent.Cast(m_Agent.FindComponent(DCO_AIInfoComponent));
+			
+			if (m_DCO_AIInfoComponent)
+			{
+				groupNumber = m_DCO_AIInfoComponent.getMemberNumber();
+			}
 		}
 	}
 	
+	override void Update(float timeSliceMs)
+	{
+		// Evaluate if we must dismount turret - only if we are already in turret
+		if (m_CurrentTurretController)
+			EvaluateDismountTurret(timeSliceMs);
+		
+		if (m_DCO_AIInfoComponent)
+			nowGroupNumber = m_DCO_AIInfoComponent.getMemberNumber();
+				
+		#ifdef WORKBENCH
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, "Group Number Init : " + groupNumber.ToString() + ", Group Number Now : " + nowGroupNumber.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);
+		#endif
+	}
+	
+	int getGroupNumber()
+	{
+		return groupNumber;
+	}
+
 	override void UpdatePerceptionFactor(PerceptionComponent perceptionComp, SCR_AIThreatSystem threatSystem)
 	{
 		EAIThreatState threatState = threatSystem.GetState();
+		
 		float perceptionFactor;
 		switch (threatState)
 		{
 			case EAIThreatState.SAFE:
-				perceptionFactor = PERCEPTION_FACTOR_SAFE; break; 
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_SAFE; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.4;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.6; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_SAFE;
+						break;
+					}
+				}
+				break;
+			}
 			case EAIThreatState.VIGILANT:
-				perceptionFactor = PERCEPTION_FACTOR_VIGILANT; break;
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.45;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.7; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT;
+						break;
+					}
+				}
+				break;
+			}
 			case EAIThreatState.ALERTED:
-				perceptionFactor = PERCEPTION_FACTOR_ALERTED; break; 
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.45;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.7; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED;
+						break;
+					}
+				}
+				break;
+			}
 			case EAIThreatState.THREATENED:
-				perceptionFactor = PERCEPTION_FACTOR_THREATENED; break;
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.45;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.7; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED;
+						break;
+					}
+				}
+				break;
+			}
 			case EAIThreatState.PINNED:
-				perceptionFactor = PERCEPTION_FACTOR_PINNED; break;
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_PINNED; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.45;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.7; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_PINNED;
+						break;
+					}
+				}
+				break;
+			}
 			case EAIThreatState.EXHAUSTED:
-				perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED; break;
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.45;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.7; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED;
+						break;
+					}
+				}
+				break;
+			}
 		}
 		
 		perceptionFactor *= m_fEquipmentPerceptionFactor;
@@ -90,9 +307,11 @@ modded class SCR_AICombatComponent : ScriptComponent
 	}
 	
 	//------------------------------------------------------------------------------------------------
-	protected static const float DISTANCE_MAX = 500; 
-	protected static const float DISTANCE_MIN = 5; // Minimal distance when movement is allowed
+	protected static const float DISTANCE_MAX = 1500; 
+	protected static const float DISTANCE_MIN = 0; // Minimal distance when movement is allowed
 	private static const float NEAR_PROXIMITY = 10;
+	
+	protected const float m_StopDistance = 30 + Math.RandomFloat(0, 12); 
 	// TODO: add possibility to get cover towards custom position
 	//------------------------------------------------------------------------------------------------
 	override vector FindNextCoverPosition()
@@ -201,9 +420,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 			}
 		}
 		m_eCombatType = combatType;
-#ifdef WORKBENCH
-		SCR_AIDebugVisualization.VisualizeMessage(GetOwner(), typename.EnumToString(EAICombatType,m_eCombatType), EAIDebugCategory.COMBAT, 5);
-#endif
 	}
 	
 	override bool EvaluateLowAmmo(BaseWeaponComponent weaponComp, int muzzleId)
@@ -387,11 +603,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 		return damageManager.GetMaxHealth();
 	}
 	
-	float improvement(float improvement)
+	void improvement(float improvement)
 	{
 		AimImprovement = improvement;
-
-		return AimImprovement;
 	}
 	
 	float getImprovement()

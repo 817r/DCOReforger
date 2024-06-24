@@ -30,17 +30,12 @@ class DCO_SkillComponent : ScriptComponent
 	DCO_CUSTOMRANK m_ERank;
 	protected IEntity m_Owner;
 	
-	static DCO_SkillComponent GetCharacterRankComponent(IEntity unit)
-	{
-		return DCO_SkillComponent.Cast(unit.FindComponent(DCO_SkillComponent));
-	}
-	
 	static DCO_CUSTOMRANK setSkill(IEntity unit, DCO_CUSTOMRANK rank)
 	{
 		if (!unit)
 			return DCO_CUSTOMRANK.RECRUIT;
 		
-		DCO_SkillComponent comp = GetCharacterRankComponent(unit);
+		DCO_SkillComponent comp = GetCharacterSkillRankComponent(unit);
 		
 		if (!comp)
 			return DCO_CUSTOMRANK.RECRUIT;
@@ -53,7 +48,7 @@ class DCO_SkillComponent : ScriptComponent
 		if (!unit)
 			return DCO_CUSTOMRANK.RECRUIT;
 		
-		DCO_SkillComponent comp = GetCharacterRankComponent(unit);
+		DCO_SkillComponent comp = GetCharacterSkillRankComponent(unit);
 		
 		if (!comp)
 			return DCO_CUSTOMRANK.RECRUIT;

@@ -1,7 +1,5 @@
 modded class SCR_AIInvestigateClusterActivity : SCR_AIFireteamsClusterActivity
 {
-	protected DCO_AIInfoGroupComponent m_DCO_AIInfoGroupComponent;
-	
 	protected float YELLOW_AREA = 100;
 	protected float RED_AREA = 30;
 	

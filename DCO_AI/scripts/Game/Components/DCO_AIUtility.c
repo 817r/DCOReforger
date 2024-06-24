@@ -1,7 +1,9 @@
 modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 {
+	SCR_AIGroup m_Owner;
 	ref DCO_AIMoraleSystem m_DCOMoraleSystem;
 	DCO_SkillComponent m_DCO_Skill;
+	ref DCO_Group_Info m_DCO_GroupInfo;
 
 	protected static const float DISTANCE_HYSTERESIS_FACTOR = 0.2; 	//!< how bigger must be old distance to new in IsInvestigationRelevant()
 	protected static const float NEARBY_DISTANCE_SQ = 150; 			//!< what is the minimal distance of new vs old in IsInvestigationRelevant()
@@ -176,6 +178,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	{
 		super.EOnInit(owner);
 		AIAgent agent = AIAgent.Cast(GetOwner());
+		m_Owner = SCR_AIGroup.Cast(owner);
 		if (!agent)
 			return;	
 		
@@ -185,6 +188,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		if (!m_OwnerEntity)
 			return;
 		
+		m_DCO_GroupInfo = new DCO_Group_Info(m_Owner);
 		m_DCO_Skill = DCO_SkillComponent.Cast(m_OwnerEntity.FindComponent(DCO_SkillComponent));
 		m_DCOMoraleSystem = new DCO_AIMoraleSystem(this);
 		m_AIInfo = SCR_AIInfoComponent.Cast(agent.FindComponent(SCR_AIInfoComponent));
@@ -199,5 +203,15 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_Mailbox = SCR_MailboxComponent.Cast(owner.FindComponent(SCR_MailboxComponent));
 		m_CommsHandler = new SCR_AICommsHandler(m_OwnerEntity, agent);
 		m_CombatMoveState = new SCR_AICombatMoveState();
+	}
+	
+	DCO_SkillComponent getSkillComp()
+	{
+		return m_DCO_Skill;
+	}
+	
+	DCO_CUSTOMRANK getRanks()
+	{
+		return m_DCO_Skill.GetCharacterSkillRankComponent(m_OwnerEntity);
 	}
 }
