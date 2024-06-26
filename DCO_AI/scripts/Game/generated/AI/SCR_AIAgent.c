@@ -11,9 +11,6 @@ modded class SCR_ChimeraAIAgent : ChimeraAIAgent
 	protected AICharacterMovementComponent m_CharacterMovementComponent;
 	protected CharacterControllerComponent m_CharacterControllerComponent;
 	
-	protected vector m_vSpawnPositionOrigin;
-	protected float m_fAimAccuracyErrorOriginal;
-	
 	protected ref SCR_AIGroupFireteam m_SCR_AIGroupFireteam;
 	protected ref array<ref SCR_AIGroupFireteam> m_SCR_AIGroupFireteams = {};
 	

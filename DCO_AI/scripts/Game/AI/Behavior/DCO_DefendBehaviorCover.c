@@ -44,16 +44,17 @@ modded class SCR_AICreateDefendBehaviorCoverQueryProps : AITaskScripted
 		vector threatPos = sectorCenterPos + (4.0 * sectorRadius) * sectorDir;
 		
 		vector myPos = ownerEntity.GetOrigin();
-		m_CoverQueryProps.m_vAgentPos = myPos; // Pathfinding checks are done from our pos, not from center pos
+		m_CoverQueryProps.m_vNearestPolyHalfExtend = SCR_AIFindCover.NEAREST_POLY_HALF_EXTEND;
+		m_CoverQueryProps.m_fNmAreaCostScale = SCR_AIFindCover.NAVMESH_AREA_COST_SCALE;
 		m_CoverQueryProps.m_vSectorPos = myPos;
 		m_CoverQueryProps.m_vSectorDir = sectorDir;
 		m_CoverQueryProps.m_vThreatPos = threatPos;
 		m_CoverQueryProps.m_fQuerySectorAngleCosMin = -1; // Full circle
 		m_CoverQueryProps.m_fCoverToThreatAngleCosMin = 0.707; // Cos(45 deg) we don't need cover direction to be so perfect
-		m_CoverQueryProps.m_fScoreWeightDirection = 3.0;
+		m_CoverQueryProps.m_fScoreWeightDirection = 2.0;
 		m_CoverQueryProps.m_fScoreWeightDistance = 1.0;
-		m_CoverQueryProps.m_bCheckVisibility = true;
-		m_CoverQueryProps.m_bSelectHighestScore = true; // Lowest score, nearest cover
+		m_CoverQueryProps.m_bCheckVisibility = false;
+		m_CoverQueryProps.m_bSelectHighestScore = false; // Lowest score, nearest cover
 		
 		// Min and max distance
 		// Clamp max distance at reasonable value
@@ -63,10 +64,10 @@ modded class SCR_AICreateDefendBehaviorCoverQueryProps : AITaskScripted
 		
 		
 		// Prefer directly reachable covers
-		m_CoverQueryProps.m_fScoreWeightNavmeshRay = 2.0;
+		m_CoverQueryProps.m_fScoreWeightNavmeshRay = 4.0;
 		
 		// Defend waypoint usage is very numerous, that's why we should reduce its performance impact
-		m_CoverQueryProps.m_iMaxCoversToCheck = SCR_CoverQueryComponent.MAX_COVERS_LOW_PRIORITY;
+		m_CoverQueryProps.m_iMaxCoversToCheck = SCR_AIFindCover.MAX_COVERS_LOW_PRIORITY;
 		
 		SetVariableOut(PORT_COVER_QUERY_PROPERTIES, m_CoverQueryProps);
 		

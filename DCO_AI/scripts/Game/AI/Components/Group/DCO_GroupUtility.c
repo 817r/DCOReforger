@@ -125,25 +125,38 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 			if (DiagMenu.GetBool(SCR_DebugMenuID.DEBUGUI_AI_PRINT_ACTIVITY))
 				PrintFormat("Agent %1 activity %2",m_Owner,m_CurrentActivity.GetActionDebugInfo());
 #endif
-		}		
-		// Rebalance fireteams if needed
-		if (m_FireteamMgr.m_bRebalanceFireteams)
-		{
-			if (CanRebalanceFireteams()) // In some cases we can't rebalance fireteams yet
-			{
-				m_FireteamMgr.RebalanceFireteams();
-			}
 		}
 		
-		// Perception and clusters
-		m_fPerceptionUpdateTimer_ms += deltaTime_ms;
-		if (m_fPerceptionUpdateTimer_ms > PERCEPTION_UPDATE_TIMER_MS)
+		#ifdef AI_DEBUG
+		AddDebugMessage("EvaluateActivity END\n");
+		#endif
+		
+		// Rebalance fireteams if needed
+		bool isMilitary = IsMilitary();
+		if (isMilitary && !m_Owner.IsSlave())
 		{
-			m_Perception.Update();
-			if (!m_Perception.m_aTargetClusters.IsEmpty())
-				UpdateClustersState(m_fPerceptionUpdateTimer_ms);
-			
-			m_fPerceptionUpdateTimer_ms -= PERCEPTION_UPDATE_TIMER_MS;
+			if (m_FireteamMgr.m_bRebalanceFireteams)
+			{
+				if (CanRebalanceFireteams()) // In some cases we can't rebalance fireteams yet
+				{
+					m_FireteamMgr.RebalanceAllFireteams();
+				}
+			}
+		
+			// Perception and clusters
+			m_fPerceptionUpdateTimer_ms += deltaTime_ms;
+			if (m_fPerceptionUpdateTimer_ms > PERCEPTION_UPDATE_TIMER_MS)
+			{
+				m_Perception.Update();
+				UpdateSuppressCluster();
+				UpdateThreatMeasure();
+				EvaluateFlareUsage();
+				
+				if (!m_Perception.m_aTargetClusters.IsEmpty())
+					UpdateClustersState(m_fPerceptionUpdateTimer_ms);
+				
+				m_fPerceptionUpdateTimer_ms -= PERCEPTION_UPDATE_TIMER_MS;
+			}
 		}
 			
 		m_fLastUpdateTime = currentTime;

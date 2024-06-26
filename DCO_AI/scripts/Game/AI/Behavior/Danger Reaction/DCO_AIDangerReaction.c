@@ -254,7 +254,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 [BaseContainerProps()]
 modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 {
-	private static const float EXPLOSION_OBSERVE_DISTANCE = 150; // Maximal distance from explosion to trigger observe behavior
+	private static const float EXPLOSION_OBSERVE_DISTANCE = 100; // Maximal distance from explosion to trigger observe behavior
 	private static const float EXPLOSION_REACTION = 20;
 	
 	override void CreateObserveUnknownBehavior(SCR_AIUtilityComponent utility, vector observeReactionPosition)
@@ -275,7 +275,7 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 		if (oldObserveBehavior)
 			return;
 		
-		SCR_AIObserveUnknownFireBehavior observeBehavior = new SCR_AIObserveUnknownFireBehavior(utility, null, posWorld: observeReactionPosition, useMovement: false);
+		SCR_AIObserveUnknownFireBehavior observeBehavior = new SCR_AIObserveUnknownFireBehavior(utility, null, posWorld: observeReactionPosition, useMovement: true);
 		utility.AddAction(observeBehavior);
 	}
 	

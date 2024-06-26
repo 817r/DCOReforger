@@ -68,7 +68,7 @@ BehaviorTree "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Move
             }
            }
            Group "{61050D19B62AEA10}"
-           m_fRadius 20
+           m_fRadius 15
            m_bSelectHighestScoreCover 1
           }
           AITaskChangeStance "Change Stance" {
@@ -81,6 +81,17 @@ BehaviorTree "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Move
            EditorPos -2794.167 1519.584
            Group "{61050D19B62AEA10}"
            "Movement speed" SPRINT
+          }
+          SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+           Name "SCR_AI Set Weapon Raised"
+           EditorPos -2438 1518
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Raised"
+            }
+           }
+           m_bWeaponRaised 0
           }
          }
          Group "{61050D19B62AEA10}"
@@ -163,7 +174,8 @@ BehaviorTree "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Move
         AITaskIdle Idle {
          Name "Idle"
          EditorPos -76.047 890.286
-         Period 4
+         Period 1.5
+         PeriodRandom 0.3
         }
         SCR_AIFailAction "SCR_AI Fail Action" {
          Name "SCR_AI Fail Action"

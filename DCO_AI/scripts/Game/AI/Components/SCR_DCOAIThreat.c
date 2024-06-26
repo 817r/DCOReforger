@@ -64,7 +64,7 @@ modded class SCR_AIThreatSystem
 		m_Combat = utility.m_CombatComponent;
 		m_moraleSystem = utility.m_DCOMoraleSystem;
 		m_DCO_Skill = utility.m_DCO_Skill.GetCharacterSkillRankComponent(utility.m_OwnerEntity);
-		m_DamageManager = SCR_DamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));
+		m_DamageManager = SCR_ExtendedDamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_ExtendedDamageManagerComponent));
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 		if (!agent)
 			return;
@@ -73,8 +73,8 @@ modded class SCR_AIThreatSystem
 		// AI threat system is owned by Utility Component, therefore we don't unsubscribe from the event
 		if (m_DamageManager)
 		{
-			m_DamageManager.GetOnDamageOverTimeAdded().Insert(OnDamageOverTimeAdded);
-			m_DamageManager.GetOnDamageOverTimeRemoved().Insert(OnDamageOverTimeRemoved);
+			m_DamageManager.GetOnDamageEffectAdded().Insert(OnDamageEffectAdded);
+			m_DamageManager.GetOnDamageEffectRemoved().Insert(OnDamageEffectRemoved);
 		}
 		
 		

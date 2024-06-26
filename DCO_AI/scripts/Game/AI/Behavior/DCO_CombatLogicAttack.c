@@ -2243,7 +2243,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			rq.m_bTryFindCover = true;
 			rq.m_bUseCoverSearchDirectivity = true;
 			rq.m_bCheckCoverVisibility = true;
-			rq.m_bFailIfNoCover = true;
+			rq.m_bFailIfNoCover = false;
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.RUN;

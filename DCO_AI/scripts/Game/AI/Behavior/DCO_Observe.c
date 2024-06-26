@@ -21,29 +21,32 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 	ref SCR_BTParam<float> m_fDelay = new SCR_BTParam<float>("Delay");
 	ref SCR_BTParam<bool> m_bUseMovement = new SCR_BTParam<bool>("UseMovement");
 	
-	void SCR_AIObserveUnknownFireBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity,	vector posWorld, bool useMovement, float priorityLevel = PRIORITY_LEVEL_NORMAL)
+	void SCR_AIObserveUnknownFireBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity,	vector posWorld, bool useMovement, float priorityLevel = PRIORITY_LEVEL_NORMAL, float priority = PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE)
 	{
 		InitParameters(posWorld, useMovement);
 		
 		if (!utility || !utility.GetAIAgent())
 			return;
-		float distance;
-		IEntity controlledEntity = utility.GetAIAgent().GetControlledEntity();
-		distance = vector.Distance(controlledEntity.GetOrigin(), posWorld);
-		m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE; 
+				
 		m_sBehaviorTree = "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePositionBehavior.bt";
-		if (distance <= HIGH_PRIORITY_MAX_DISTANCE)
-			m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE_HIGH_PRIORITY;
-		else if (distance < RED_AREA)
-		{
-			m_Utility.AddAction(new SCR_AIMoveAndInvestigateCloseBehavior(null, null, posWorld, true));
-		}
-		m_bAllowLook = false;
+		m_bAllowLook = false; // Disable standard looking
 		m_bResetLook = true;
 		m_bUseCombatMove = useMovement;
 		SetIsUniqueInActionQueue(true);
 		m_fThreat = 1.01 * SCR_AIThreatSystem.VIGILANT_THRESHOLD;
+		m_fPriority = priority;
 		m_fPriorityLevel.m_Value = priorityLevel;
+		
+		// Calculate duration depending on distance
+		IEntity controlledEntity = utility.GetAIAgent().GetControlledEntity();
+		float distance;
+		if (controlledEntity)
+		{
+			distance = vector.Distance(controlledEntity.GetOrigin(), posWorld);
+			
+			if (distance <= HIGH_PRIORITY_MAX_DISTANCE)
+				m_fPriority = SCR_AIActionBase.PRIORITY_BEHAVIOR_OBSERVE_UNKNOWN_FIRE_HIGH_PRIORITY;
+		}
 			
 		InitTiming(distance);
 		
@@ -51,7 +54,8 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 		{
 			float radius = distance * Math.Tan(Math.DEG2RAD * DIRECTION_SPAN_DEG);
 			m_fRadius.m_Value = radius;
-			m_bUseBinoculars.m_Value = distance > USE_BINOCULARS_DISTANCE_THRESHOLD;
+			bool inVehicleOrTurret = utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE) || utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET);
+			m_bUseBinoculars.m_Value = !inVehicleOrTurret && distance > USE_BINOCULARS_DISTANCE_THRESHOLD;
 		}
 	}
 	

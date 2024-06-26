@@ -40,8 +40,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	static const float LONG_RANGE_FIRE_DISTANCE = 200.0;
 	
-	protected const float DISMOUNT_TURRET_TIMER_MS = 1500;
-	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 5.0;
+	protected const float DISMOUNT_TURRET_TIMER_MS = 1000;
+	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 4.0;
 	
 	private int groupNumber;
 	private int nowGroupNumber;
@@ -86,9 +86,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 		// Evaluate if we must dismount turret - only if we are already in turret
 		if (m_CurrentTurretController)
 			EvaluateDismountTurret(timeSliceMs);
-		
-		if (m_DCO_AIInfoComponent)
-			nowGroupNumber = m_DCO_AIInfoComponent.getMemberNumber();
 				
 		#ifdef WORKBENCH
 		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, "Group Number Init : " + groupNumber.ToString() + ", Group Number Now : " + nowGroupNumber.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);
@@ -466,7 +463,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 		return false;
 	}
 	
-	override protected void Event_OnDamageOverTimeAdded(EDamageType dType, float dps, HitZone hz)
+	protected void Event_OnDamageOverTimeAdded(EDamageType dType, float dps, HitZone hz)
 	{
 		if (dType != EDamageType.BLEEDING || !m_Utility || !m_Utility.m_AIInfo)
 			return;
@@ -558,9 +555,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 			
 		// Check angle excess of the target's position
 		vector angleExcess = turretComp.GetAimingAngleExcess(targetPos);
-			
+		
 		//PrintFormat("Excess angle: %1", angleExcess);
-			
+		
 		return angleExcess.Length() > TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG;
 	}
 	

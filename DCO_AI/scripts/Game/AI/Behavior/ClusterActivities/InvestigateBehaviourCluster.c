@@ -40,7 +40,7 @@ modded class SCR_AIInvestigateClusterActivity : SCR_AIFireteamsClusterActivity
 				if (!agent)
 					continue;
 				
-				SCR_AIMessage_AttackCluster msg = SCR_AIMessage_AttackCluster.Create(m_ClusterState, true);
+				SCR_AIMessage_Investigate msg = SCR_AIMessage_Investigate.Create(pos, radius * 1.5, true, duration: 10000);
 				msg.m_RelatedGroupActivity = this;
 				msg.SetReceiver(agent);
 				comms.RequestBroadcast(msg, agent);

@@ -317,7 +317,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	//------------------------------------------------------------------------------------------------
 	// returns skill corrected by current threat level and if AI can shoot under such suppression
-	override EAISkill GetSkillFromThreat(EAISkill inSkill, EAIThreatState threat)
+	EAISkill GetSkillFromThreat(EAISkill inSkill, EAIThreatState threat)
 	{
 		switch (threat)
 		{

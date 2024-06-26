@@ -9,7 +9,7 @@ modded class SCR_AIGroupTargetClusterProcessor : Managed
 	override void AllocateMoreFireteams(SCR_AITargetClusterState s, notnull TFireteamLockRefArray inOutFtLocksMain, notnull TFireteamLockRefArray ftLocksAux)
 	{
 		// We slightly overestimate amount of enemies to allocate even more people
-		float fEnemies = 1 * (float)s.m_iCountDetected + 1*s.m_iCountIdentified + 1*s.m_iCountLost + 1*s.m_iCountDestroyed;
+		float fEnemies = 1.3 * (float)s.m_iCountDetected + 1.3*s.m_iCountIdentified + 1.3*s.m_iCountLost + 0.5*s.m_iCountDestroyed;
 		
 		int nEnemies = Math.Ceil(fEnemies);
 		
@@ -22,7 +22,7 @@ modded class SCR_AIGroupTargetClusterProcessor : Managed
 		
 		// Allocate fireteams
 		array<SCR_AIGroupFireteam> freeFireteams = {};
-		m_Utility.m_FireteamMgr.GetFreeFireteams(freeFireteams);
+		m_Utility.m_FireteamMgr.GetFreeFireteams(freeFireteams, SCR_AIGroupFireteam);
 		while (nSoldiersAllocated < nEnemies && !freeFireteams.IsEmpty())
 		{
 			SCR_AIGroupFireteam newFireteam = freeFireteams[0];

@@ -42,7 +42,7 @@ class SCR_AICreateBasicAngeledCoverQueryProps : AITaskScripted
 			return ENodeResult.FAIL;
 		
 		m_CoverQueryProps.m_vSectorPos = queryPos;
-		m_CoverQueryProps.m_vAgentPos = queryPos;
+		m_CoverQueryProps.m_vSectorPos = queryPos;
 		m_CoverQueryProps.m_vSectorDir = threatPos;
 		m_CoverQueryProps.m_vThreatPos = threatPos; // Threat pos is not provided here, it's a basic query in radius
 		m_CoverQueryProps.m_fQuerySectorAngleCosMin = -1.0;
@@ -51,9 +51,8 @@ class SCR_AICreateBasicAngeledCoverQueryProps : AITaskScripted
 		m_CoverQueryProps.m_fCoverToThreatAngleCosMin = COVER_QUERY_SECTOR_ANGLE_RAD;
 		m_CoverQueryProps.m_fScoreWeightDirection = 0.0;
 		m_CoverQueryProps.m_fScoreWeightDistance = 1.0;
-		m_CoverQueryProps.m_bCheckVisibility = true;
+		m_CoverQueryProps.m_bCheckVisibility = false;
 		m_CoverQueryProps.m_bSelectHighestScore = m_bSelectHighestScoreCover;
-		m_CoverQueryProps.m_iMaxCoversToCheck = SCR_CoverQueryComponent.MAX_COVERS_LOW_PRIORITY;
 		
 		if (m_bSelectHighestScoreCover)
 			m_CoverQueryProps.m_fScoreWeightNavmeshRay = 0.2;
