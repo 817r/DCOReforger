@@ -23,7 +23,7 @@ modded class SCR_AIGroupTargetClusterProcessor : Managed
 		// Allocate fireteams
 		array<SCR_AIGroupFireteam> freeFireteams = {};
 		m_Utility.m_FireteamMgr.GetFreeFireteams(freeFireteams, SCR_AIGroupFireteam);
-		while (nSoldiersAllocated < nEnemies && !freeFireteams.IsEmpty())
+		while (nSoldiersAllocated <= nEnemies * 4 && !freeFireteams.IsEmpty())
 		{
 			SCR_AIGroupFireteam newFireteam = freeFireteams[0];
 			SCR_AIGroupFireteamLock newFtLock = newFireteam.TryLock();
@@ -33,30 +33,4 @@ modded class SCR_AIGroupTargetClusterProcessor : Managed
 			nSoldiersAllocated += newFireteam.GetMemberCount();
 		}
 	}	
-	
-	//! Calculates how long we should investigate this target cluster
-	override float CalculateMaxAgeThreshold_s(SCR_AITargetClusterState s, EAITargetClusterState newState)
-	{
-		int countAlive = s.m_iCountLost + s.m_iCountDetected + s.m_iCountIdentified;
-		
-		if (countAlive > 0)
-		{
-			// If some targets are still alive
-			return MAX_CLUSTER_AGE_S;
-		}
-		else
-		{
-			// Everything is destroyed, investigation time is lower
-			vector ourPos = m_Utility.m_Owner.GetCenterOfMass();
-			vector tgtPos = 0.5 * (s.m_vBBMin + s.m_vBBMax);
-			float distance = vector.DistanceXZ(ourPos, tgtPos);
-			float tgtCount = s.m_iCountDestroyed + s.m_iCountIdentified;
-			
-			const float movementSpeed = 1.0; // Speed in m/s
-			float duration_s = distance / movementSpeed + 10.0 * tgtCount;
-			duration_s = Math.Max(20.0, duration_s);
-			
-			return duration_s;
-		}
-	}
 }

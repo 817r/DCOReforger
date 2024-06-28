@@ -53,10 +53,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 	bool selectedTargetChanged = false;
 	
 	override protected void EOnInit(IEntity owner)
-	{
-		GetAiAgent();
-		
+	{		
 		super.EOnInit(owner);
+		GetAiAgent();
 		
 		if (m_Agent)
 		{
@@ -70,7 +69,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 						
 			m_DCO_Skill = m_Utility.m_DCO_Skill.GetCharacterSkillRankComponent(m_Utility.m_OwnerEntity);
 			
-			m_SCR_ChimeraAIAgent = SCR_ChimeraAIAgent.Cast(m_Agent);
+			m_SCR_ChimeraAIAgent = m_Agent;
 			
 			m_DCO_AIInfoComponent = DCO_AIInfoComponent.Cast(m_Agent.FindComponent(DCO_AIInfoComponent));
 			
@@ -462,105 +461,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 		
 		return false;
 	}
-	
-	protected void Event_OnDamageOverTimeAdded(EDamageType dType, float dps, HitZone hz)
-	{
-		if (dType != EDamageType.BLEEDING || !m_Utility || !m_Utility.m_AIInfo)
-			return;
-		
-		SCR_AIActionBase currentAction = SCR_AIActionBase.Cast(m_Utility.GetCurrentAction());
-		if (!currentAction)
-			return;
-		float priorityLevelClamped = currentAction.GetRestrictedPriorityLevel();
-		
-		if (m_Utility.m_AIInfo.HasRole(EUnitRole.MEDIC))
-		{
-			if (!m_Utility.HasActionOfType(SCR_AIHealBehavior))
-			{
-				// If we can heal ourselves, add Heal Behavior.
-				SCR_AIHealBehavior behavior = new SCR_AIHealBehavior(m_Utility, null, m_Utility.m_OwnerEntity, true, priorityLevel: priorityLevelClamped);
-				m_Utility.AddAction(behavior);
-			}
-		}
-		else if (m_Agent)
-		{
-			// If we immediately know that we can't heal ourselves, report to group
-			AIGroup myGroup = m_Agent.GetParentGroup();
-			if (myGroup)
-			{
-				SCR_MailboxComponent myMailbox = SCR_MailboxComponent.Cast(m_Agent.FindComponent(SCR_MailboxComponent));
-				SCR_AIMessage_Wounded msg = SCR_AIMessage_Wounded.Create(m_Utility.m_OwnerEntity);
-				myMailbox.RequestBroadcast(msg, myGroup);
-			}
-		}
-	}
-	
-	override bool DismountTurretCondition(inout vector targetPos, bool targetPosProvided)
-	{
-		// False if not in turret
-		if (!m_CurrentTurretController)
-			return false;
-		TurretComponent turretComp = m_CurrentTurretController.GetTurretComponent();
-		if (!turretComp)
-			return false;
-		
-		// False if we have a valid target to attack
-		if (m_SelectedTarget)
-			return false;
-		
-		// False if we have a driver in the vehicle
-		array<BaseCompartmentSlot> compartments = {};
-		m_CurrentVehicleCompartmentManager.GetCompartments(compartments);
-		foreach (BaseCompartmentSlot slot : compartments)
-		{
-			if (PilotCompartmentSlot.Cast(slot) && slot.GetOccupant())
-				return false;
-		}
-		
-		// False if we are in a vehicle and we should not leave turret of this vehicle type
-		// Note that static turrets are not of Vehicle class.
-		Vehicle vehicle = Vehicle.Cast(m_CurrentVehicle);
-		if (vehicle && s_aForbidDismountTurretsOfVehicleTypes.Find(vehicle.m_eVehicleType) != -1)
-			return false;
-		
-		// If target pos is not provided, find a target which we are going to check against
-		if (!targetPosProvided)
-		{
-			BaseTarget target = m_Perception.GetClosestTarget(ETargetCategory.DETECTED, DISMOUNT_TURRET_TARGET_LAST_SEEN_MAX_S, DISMOUNT_TURRET_TARGET_LAST_SEEN_MAX_S);
-			if (target)
-				targetPos = target.GetLastDetectedPosition();
-			else
-			{
-				target = m_Perception.GetClosestTarget(ETargetCategory.ENEMY, DISMOUNT_TURRET_TARGET_LAST_SEEN_MAX_S, DISMOUNT_TURRET_TARGET_LAST_SEEN_MAX_S);
-				if (target)
-					targetPos = target.GetLastSeenPosition();
-			}
-			
-			// False if there is no target which would cause us to dismount
-			if (!target)
-				return false;
-			else
-			{
-				IEntity targetEntity = target.GetTargetEntity();
-				if (!targetEntity)
-					return false;
-				else
-				{
-					vector bmin, bmax;
-					targetEntity.GetBounds(bmin, bmax);
-					targetPos = targetPos + 0.5 * (bmin + bmax);
-				}
-			}
-		}
-			
-		// Check angle excess of the target's position
-		vector angleExcess = turretComp.GetAimingAngleExcess(targetPos);
-		
-		//PrintFormat("Excess angle: %1", angleExcess);
-		
-		return angleExcess.Length() > TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG;
-	}
-	
+
 	float improvementCalcuation()
 	{
 		if (!m_SelectedTarget && selectedTargetChanged)

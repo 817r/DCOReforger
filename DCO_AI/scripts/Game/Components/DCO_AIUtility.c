@@ -7,7 +7,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 
 	protected static const float DISTANCE_HYSTERESIS_FACTOR = 0.2; 	//!< how bigger must be old distance to new in IsInvestigationRelevant()
 	protected static const float NEARBY_DISTANCE_SQ = 150; 			//!< what is the minimal distance of new vs old in IsInvestigationRelevant()
-	protected static const float REACTION_TO_SAME_UNKNOWN_TARGET_INTERVAL_MS = 1200; //!< how often to react to same unknown target if it didn't change
+	protected static const float REACTION_TO_SAME_UNKNOWN_TARGET_INTERVAL_MS = 3000; //!< how often to react to same unknown target if it didn't change
 	
 	override SCR_AIBehaviorBase EvaluateBehavior(BaseTarget unknownTarget)
 	{
@@ -30,7 +30,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_fLastUpdateTime = time;
 
 		// Create events from commands, danger events, new targets
-		m_DCOMoraleSystem.Update(this, deltaTime);
+		m_DCOMoraleSystem.Update(this,deltaTime);
 		m_ThreatSystem.Update(this, deltaTime);
 		m_CombatComponent.UpdatePerceptionFactor(m_PerceptionComponent, m_ThreatSystem);
 
@@ -177,7 +177,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
-		AIAgent agent = AIAgent.Cast(GetOwner());
+		AIAgent agent = GetOwner();
 		m_Owner = SCR_AIGroup.Cast(owner);
 		if (!agent)
 			return;	
@@ -203,6 +203,8 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_Mailbox = SCR_MailboxComponent.Cast(owner.FindComponent(SCR_MailboxComponent));
 		m_CommsHandler = new SCR_AICommsHandler(m_OwnerEntity, agent);
 		m_CombatMoveState = new SCR_AICombatMoveState();
+		m_AIInfo.m_OnCompartmentEntered.Insert(OnCompartmentEntered);
+		m_AIInfo.m_OnCompartmentLeft.Insert(OnCompartmentLeft);
 	}
 	
 	DCO_SkillComponent getSkillComp()

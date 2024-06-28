@@ -202,59 +202,6 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
     }
    }
   }
-  DecoIsInVehicle "Is In Vehicle" {
-   Name "Is In Vehicle"
-   EditorPos -65.5 1347.5
-   Nodes {
-    AITaskGetOutVehicle "Get Out Vehicle" {
-     Name "Get Out Vehicle"
-     EditorPos -34.306 1531.111
-    }
-   }
-   ForceNodeResult Success
-  }
-  SCR_AIDayNightTest "SCR_AI Day Night Test" {
-   Name "SCR_AI Day Night Test"
-   EditorPos 2748.166 419.917
-   Nodes {
-    SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-     Name "SCR_AI Deco Is Above Threat Level"
-     EditorPos 2688.571 605.714
-     Nodes {
-      Sequence Sequence {
-       Name "Sequence"
-       EditorPos 2777.072 803.366
-       Nodes {
-        RunOnce "Run Once" {
-         Name "Run Once"
-         EditorPos 2594.905 948.365
-         Nodes {
-          SCR_AIToggleFlashlightsOnSimulate "SCR_AI Toggle Flashlights On Simulate" {
-           Name "SCR_AI Toggle Flashlights On Simulate"
-           EditorPos 2485.052 1082.262
-           m_bEnable 0
-          }
-         }
-        }
-        SCR_AIToggleFlashlightsOnAbort "SCR_AI Toggle Flashlights On Abort" {
-         Name "SCR_AI Toggle Flashlights On Abort"
-         EditorPos 2870.35 1076.143
-        }
-       }
-      }
-     }
-     InPorts {
-      SingleInputPortContainer SingleInputPortContainer {
-       Port -1
-       PortName "ThresholdIn"
-      }
-     }
-     NegativeCondition 1
-     m_threatThreshold THREATENED
-    }
-   }
-   AbortType AbortChildrenBranch
-  }
  }
  Variables {
   Variable unknownTarget {

@@ -86,11 +86,12 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 
 		// Correct aim point size based on factors
 		float distanceFactor = GetDistanceFactor(distance);
-		float offsetWeaponFactor = GetOffsetWeaponTypeFactor(weaponType);				
+		float offsetWeaponFactor = GetOffsetWeaponTypeFactor(weaponType);
+		float illuminationFactor = GetTargetIlluminationFactor(target);				
 		
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
-		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor;
-		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor;
+		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
+		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
 		
 		tolerance = GetTolerances(entity, targetEntity, angularSize, distance, weaponType, stances);
 		
@@ -112,6 +113,24 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 
 		float distanceCl = Math.Clamp((distance - CLOSE_RANGE_THRESHOLD) / LONG_RANGE_THRESHOLD, 0, 1);
 		return Math.Lerp(AIMING_ERROR_FACTOR_MIN, AIMING_ERROR_FACTOR_MAX, distanceCl);
+	}
+	
+	override float GetTargetIlluminationFactor(BaseTarget tgt)
+	{
+		PerceivableComponent perceivable = tgt.GetPerceivableComponent();
+		if (!perceivable)
+			return 1.0;
+		
+		if (perceivable.GetIlluminationFactor() < 0.8)
+			return 2.2;
+		
+		else if (perceivable.GetIlluminationFactor() < 0.5)
+			return 2.4;
+		
+		else if (perceivable.GetIlluminationFactor() < 0.3)
+			return 2.6;
+		
+		return 1.0;
 	}
 	
 	float GetTolerances(IEntity observer, IEntity target, float angularSize, float distance, EWeaponType weaponType, ECharacterStance stance)

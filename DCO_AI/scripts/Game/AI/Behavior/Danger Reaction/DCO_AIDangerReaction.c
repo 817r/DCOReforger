@@ -113,7 +113,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
 							rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-							rq.m_bAimAtTarget = false; // Don't aim while running
+							rq.m_bAimAtTarget = true; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
 			
 							m_State.ApplyNewRequest(rq);
@@ -166,7 +166,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
 							rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-							rq.m_bAimAtTarget = false; // Don't aim while running
+							rq.m_bAimAtTarget = true; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
 			
 							m_State.ApplyNewRequest(rq);
@@ -215,7 +215,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
 							rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-							rq.m_bAimAtTarget = false; // Don't aim while running
+							rq.m_bAimAtTarget = true; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
 			
 							m_State.ApplyNewRequest(rq);

@@ -1,20 +1,18 @@
 SCR_AIWorld {
  ID "50B2B8F35661FB44"
  components {
-  CoverManagerComponent "{5E3ADC0EA7048548}" {
+  ChimeraCoverManagerComponent "{5E3ADC0EA7048548}" {
    ShootingExposition 0.115
    CrouchingSize 0.2
-   MinDistanceBetweenCovers 3
-   KneelingSize 0.8
+   MinDistanceBetweenCovers 1.5
   }
   NavmeshWorldComponent "{5584F30E67F617AD}" {
    NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
-    "Path stream area" 3
+    "Path stream area" 2
    }
   }
   SCR_AISettingsComponent "{512CCCD0856CB4B9}" {
    m_EnableLeaderStop 1
-   m_EFormation VEE
   }
  }
 }

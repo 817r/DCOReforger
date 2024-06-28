@@ -38,7 +38,12 @@ modded class SCR_AIAttackBehavior : SCR_AIBehaviorBase
 			return 0;
 		
 		// Update m_bUseCombatMove
-		m_bUseCombatMove = !m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET);
+		m_bUseCombatMove = true;
+		
+		if (m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET))
+			m_bUseCombatMove = false;
+		else if (m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE)) // inside vehicle we dont attack unless in turret
+			return 0;
 		
 		targetNow = m_Utility.m_PerceptionComponent.GetClosestTarget(ETargetCategory.ENEMY, 2.0, 5.0);
 		if (targetNow != null)
@@ -46,6 +51,13 @@ modded class SCR_AIAttackBehavior : SCR_AIBehaviorBase
 			float targetNowDistance = targetNow.GetDistance();
 			if (targetNowDistance <= baseTarget.GetDistance())
 				return PRIORITY_BEHAVIOR_ATTACK_HIGH_PRIORITY;
+		}
+		
+		bool closeRange = baseTarget.GetDistance() < SCR_AICombatComponent.CLOSE_RANGE_COMBAT_DISTANCE;
+		if (closeRange != m_bCloseRange)
+		{
+			m_bCloseRange = closeRange;
+			m_CombatComponent.SetTargetSelectionProperties(m_bCloseRange);
 		}
 		
 		float targetScore = m_Utility.m_CombatComponent.m_WeaponTargetSelector.CalculateTargetScore(baseTarget);

@@ -98,9 +98,18 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 	override void OnActionSelected()
 	{
 		super.OnActionSelected();
-		SCR_AITalkRequest rq = new SCR_AITalkRequest(ECommunicationType.REPORT_UNDER_FIRE, null, vector.Zero, 0, false, true, SCR_EAITalkRequestPreset.MEDIUM);
-		m_Utility.m_CommsHandler.AddRequest(rq);
-
+		
+		if (Math.RandomFloat01() < 0.2)
+		{
+			if (!m_Utility.m_CommsHandler.CanBypass())
+			{
+				SCR_AITalkRequest rq = new SCR_AITalkRequest(ECommunicationType.REPORT_UNDER_FIRE, null, vector.Zero, 0, false, true, SCR_EAITalkRequestPreset.IRRELEVANT);
+				m_Utility.m_CommsHandler.AddRequest(rq);
+			}
+		}
+		
+		// If combat move is not used at all here, allow aiming immediately
+		// Because aiming is blocked by combat move aiming decorator
 		if (!m_bUseMovement.m_Value)
 		{
 			m_Utility.m_CombatMoveState.EnableAiming(true);
@@ -117,11 +126,9 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 			return 0;
 		}
 		
-		if (GetActionState() == EAIActionState.COMPLETED)
-		{
-			Complete();
-			return 0;
-		}
+		// If we already looked at this once, lower the priority
+		if (m_bLookedOnce.m_Value)
+			return PRIORITY_BEHAVIOR_OBSERVE_LOW_PRIORITY;
 		
 		return m_fPriority;
 	}

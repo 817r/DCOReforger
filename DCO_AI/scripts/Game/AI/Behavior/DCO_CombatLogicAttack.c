@@ -14,6 +14,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	
 	AIDangerEvent danger;
 	
+	
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
@@ -21,9 +22,10 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			return ENodeResult.RUNNING;
 		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
 		
-		BaseTarget target;
-		GetVariableIn(PORT_BASE_TARGET, target);
-		if (!target || !target.GetTargetEntity() || !m_State || !m_MyEntity || !m_Utility || !m_CombatComp || !m_CharacterController)
+		if (!OnUpdate(owner, dt))
+			return ENodeResult.FAIL;
+		
+		if (!m_State || !m_MyEntity || !m_Utility || !m_CombatComp || !m_CharacterController)
 			return ENodeResult.FAIL;
 		
 		// Don't run combat movement logic if CombatMove BT is not used now (like in turret)
@@ -31,11 +33,9 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
 			return ENodeResult.RUNNING;
 		
-		// Update cached variables
-		m_Target = target;
 		rank = m_Utility.m_DCO_Skill.GetCharacterRank(m_MyEntity);
-		m_fTargetDist = target.GetDistance();
 		morale = m_Utility.m_DCOMoraleSystem.GetMoraleMeasure();
+		m_fTargetDist = GetTargetDistance();
 		m_bCloseRangeCombat = m_fTargetDist < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST;
 		m_eThreatState = m_Utility.m_ThreatSystem.GetState();
 		m_eStance = m_CharacterController.GetStance();
@@ -82,7 +82,10 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		}
 		else if (!m_State.m_bInCover && IsFirstExecution())
 		{
-			CoverManager(target.GetLastDetectedPosition(), SCR_EAICombatMoveDirection.BACKWARD);			
+			if (m_CombatComp.GetCurrentTarget() == null)
+				CoverManager(vector.Zero, SCR_EAICombatMoveDirection.BACKWARD);
+			else
+				CoverManager(m_CombatComp.GetLastSeenEnemy().GetLastDetectedPosition(), SCR_EAICombatMoveDirection.BACKWARD);			
 		}
 		else if (m_State.m_bInCover && m_CharacterController.IsReloading())
 		{
@@ -117,7 +120,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			}
 			
 			if (m_State.m_fTimerStopped_s > Math.RandomFloat(8.0, 11.0) && m_eThreatState >= EAIThreatState.THREATENED && morale == moraleState.ANXIOUS)
-				CoverManager(target.GetLastDetectedPosition(), SCR_EAICombatMoveDirection.BACKWARD);
+				CoverManager(m_CombatComp.GetLastSeenEnemy().GetLastDetectedPosition(), SCR_EAICombatMoveDirection.BACKWARD);
 		}
 		
 		return ENodeResult.RUNNING;
@@ -464,7 +467,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		// Don't get any more closer
 		// Except we should still move closer if we haven't seen target for a long time
 		float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
-		if (m_fTargetDist < optimalDist && m_Target.GetTimeSinceSeen() < 10)
+		if (m_fTargetDist < optimalDist && m_CombatComp.GetLastSeenEnemy().GetTimeLastSeen() < 10)
 			return false;
 			
 		if (m_State.IsExecutingRequest())
@@ -2257,5 +2260,392 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			
 			m_State.ApplyNewRequest(rq);		
 		}
+	}
+}
+
+modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
+{	
+	DCO_CUSTOMRANK rank;
+	moraleState morale;
+	
+	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
+	{
+		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
+		if (currentTime_ms < m_fNextUpdate_ms)
+			return ENodeResult.RUNNING;
+		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
+		
+		if (!OnUpdate(owner, dt))
+			return ENodeResult.FAIL;
+		
+		if (!m_State || !m_MyEntity || !m_Utility || !m_CombatComp || !m_CharacterController)
+			return ENodeResult.FAIL;
+		
+		// Don't run combat movement logic if CombatMove BT is not used now (like in turret)
+		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_Utility.GetExecutedAction());
+		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
+			return ENodeResult.RUNNING;
+		
+		rank = m_Utility.m_DCO_Skill.GetCharacterRank(m_MyEntity);
+		morale = m_Utility.m_DCOMoraleSystem.GetMoraleMeasure();
+		m_fTargetDist = GetTargetDistance();
+		m_bCloseRangeCombat = m_fTargetDist < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST;
+		m_eThreatState = m_Utility.m_ThreatSystem.GetState();
+		m_eStance = m_CharacterController.GetStance();
+		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
+		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
+		
+		
+		/*		
+		//------------------------------------------------------------------------------------
+		Combat movement logic
+		
+		Conditions represent states inside which we want to remain.
+		
+		Conditions are organized based on their priority, highest first.
+		
+		Within each state there can be extra logic which decides if it's worth to
+		send a new request, because even though we have selected a state, we should avoid
+		spamming same request over and over.
+		
+		Conditions for states mostly depend on Combat Move State and its timers.
+		
+		It is important to write logic in such a way that it doesn't depend on state
+		of this node. In this case the state flow also doesn't depend on it, and AI
+		does movement is more fluent when switching to a new behavior which also utilizes
+		combat movement, including attacking a different target.
+		*/
+
+		if (SuppressedInCoverCondition())
+		{
+			SuppressedInCoverLogic();
+		}
+		else if (CurrentCoverUselessCondition())
+		{
+			// Current cover has been compromised, it's not directed at enemy any more
+			// Find a new cover nearby
+			PushRequestLeaveUselessCover();
+		}
+		else if (m_State.m_bInCover && m_CharacterController.IsReloading())
+		{
+			// We're reloading and can't do much else now
+			// Hide in cover
+			if (m_State.m_bExposedInCover)
+				m_State.ApplyRequestChangeStanceInCover(false);
+		}
+		else if (FFAvoidanceCondition())
+		{
+			if (FFAvoidanceNewRequestCondition())
+				PushRequestFFAvoidance();
+		}
+		else if (MoveToNextPosCondition())
+		{
+			// We've waited here too long, move to next place
+			PushRequestMove();
+		}
+		
+		return ENodeResult.RUNNING;
+	}
+	
+
+	override protected void PushRequestMove()
+	{		
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+		
+		// Common values
+		rq.m_vTargetPos = ResolveRequestTargetPos();
+		ResolveMoveRequestMovePosAndDir(rq.m_vTargetPos, rq.m_vMovePos, rq.m_eDirection, rq.m_fCoverSearchSectorHalfAngleRad);
+		rq.m_bTryFindCover = true;
+		rq.m_bUseCoverSearchDirectivity = true;
+		rq.m_bCheckCoverVisibility = true;
+
+		float coverSearchDistMin = 0;
+		float coverSearchDistMax = 30;
+		float moveDistanceMax = 10;
+		if (m_bCloseRangeCombat)
+		{
+			// Close range combat
+			
+			switch (m_eThreatState)
+			{
+				case EAIThreatState.EXHAUSTED:
+				{
+					rq.m_eStanceMoving = ECharacterStance.PRONE;
+					rq.m_eStanceEnd = ECharacterStance.PRONE;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					rq.m_bCheckCoverVisibility = false;
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 5.0;
+					moveDistanceMax = 3.0;
+					break;
+				}
+				case EAIThreatState.PINNED:
+				{
+					rq.m_eStanceMoving = ECharacterStance.PRONE;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					coverSearchDistMin = 5.0;
+					coverSearchDistMax = 7.0;
+					moveDistanceMax = 3.0;
+					break;
+				}
+				case EAIThreatState.THREATENED:
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 8.0;
+					moveDistanceMax = 3.0;
+					break;
+				}
+				case EAIThreatState.ALERTED:
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 8.0;
+					moveDistanceMax = 5.0;
+					break;
+				}
+				case EAIThreatState.VIGILANT:
+				{
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 10.0;
+					moveDistanceMax = 5.0;
+					break;
+				}
+				default:
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 12.0;
+					moveDistanceMax = 7.0;
+					break;
+				}
+			}
+			
+			rq.m_bCheckCoverVisibility = true;
+			rq.m_bFailIfNoCover = false;
+			rq.m_eMovementType = EMovementType.WALK;
+			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
+			rq.m_bAimAtTargetEnd = true;
+		}
+		else
+		{
+			// Long range combat
+			
+			switch (m_eThreatState)
+			{
+				case EAIThreatState.EXHAUSTED:
+				{
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 8.0;
+					moveDistanceMax = 5.0;
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+					rq.m_bCheckCoverVisibility = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+					if (Math.RandomIntInclusive(0, 1) == 1)
+						rq.m_eMovementType = EMovementType.SPRINT;
+					else
+						rq.m_eMovementType = EMovementType.RUN;
+					if (Math.RandomIntInclusive(1, 5) > 2)
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					else
+						rq.m_eStanceEnd = ECharacterStance.PRONE;
+					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					break;
+				}
+				case EAIThreatState.PINNED:
+				{
+					coverSearchDistMin = 10.0;
+					coverSearchDistMax = 15.0;
+					moveDistanceMax = 10.0;
+					if (Math.RandomIntInclusive(0, 1) == 1)
+						rq.m_eStanceMoving = ECharacterStance.STAND;
+					else
+						rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eMovementType = EMovementType.SPRINT;
+					if (Math.RandomIntInclusive(1, 5) > 2)
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					else
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					break;
+				}
+				case EAIThreatState.THREATENED:
+				{
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 8.0;
+					moveDistanceMax = 5.0;
+					if (Math.RandomIntInclusive(0, 1) == 1)
+						rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					else
+						rq.m_eStanceMoving = ECharacterStance.PRONE;
+					rq.m_eMovementType = EMovementType.RUN;
+					if (Math.RandomIntInclusive(1, 5) > 2)
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					else
+						rq.m_eStanceEnd = ECharacterStance.PRONE;
+					rq.m_bAimAtTarget = true;
+					if (Math.RandomIntInclusive(1, 2) == 2)
+						rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+					else
+						rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+					break;
+				}
+				case EAIThreatState.ALERTED:
+				{
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 12.0;
+					moveDistanceMax = 8.0;
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eMovementType = EMovementType.RUN;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+					rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					break;
+				}
+				case EAIThreatState.VIGILANT:
+				{
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 15.0;
+					moveDistanceMax = 10.0;
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+					if (Math.RandomIntInclusive(1, 5) > 2)
+						rq.m_eMovementType = EMovementType.SPRINT;
+					else
+						rq.m_eMovementType = EMovementType.RUN;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+					rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+					break;
+				}
+				default:
+				{
+					coverSearchDistMin = 2.0;
+					coverSearchDistMax = 15.0;
+					moveDistanceMax = 12.0; // Shouldn't be so large because we are sprinting and can't shoot
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+					rq.m_eMovementType = EMovementType.SPRINT;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+					break;
+				}
+			}
+			
+			rq.m_eMovementType = EMovementType.RUN;
+			rq.m_bAimAtTarget = true; // Can't aim at tgt while sprinting
+			rq.m_bAimAtTargetEnd = true;
+		}
+		
+		rq.m_bFailIfNoCover = ResolveFailMoveIfNoCover();
+		
+		// If we are not in cover, min cover search distance is overridden to 0, we should find any cover ASAP
+		if (!m_State.m_bInCover)
+			coverSearchDistMin = 0;
+		
+		rq.m_fCoverSearchDistMin = coverSearchDistMin;
+		rq.m_fCoverSearchDistMax = coverSearchDistMax;
+		rq.m_fMoveDistance = Math.RandomFloat(0.5, 1.0) * moveDistanceMax; // Move distance if cover is not found, randomized
+		
+		// Subscribe to events
+		// We will pronounce voice lines once we start or end moving
+		rq.GetOnMovementStarted().Insert(OnMovementStarted);
+		rq.GetOnCompleted().Insert(OnMovementCompleted);
+		
+		m_State.ApplyNewRequest(rq);
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	protected override bool ResolveFailMoveIfNoCover()
+	{
+		// Don't move out of cover if we already have good vision from current cover
+		if (m_bGoodVision)
+			return true;
+		
+		return false; // We're allowed to move anywhere, including to coverless position. But our own suppression criteria still apply and run above this.
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	protected override float ResolveStoppedWaitTime(bool inCover, EAIThreatState threat, EWeaponType weaponType)
+	{
+		float waitTime = 10.0;
+
+		if (inCover)
+		{
+			// In cover
+			switch (threat)
+			{
+				case EAIThreatState.EXHAUSTED:
+					waitTime = Math.RandomFloat(35.0, 60.0);
+					break;
+				case EAIThreatState.PINNED:
+					waitTime = Math.RandomFloat(15.0, 25.0);
+					break;
+				case EAIThreatState.THREATENED:
+					waitTime = Math.RandomFloat(10.0, 15.0);	// Stay in cover for a long time, until we are not suppressed any more
+					break;
+				default:
+					waitTime = Math.RandomFloat(8.0, 10.0);
+			}
+		}
+		else
+		{
+			// Not in cover
+			switch (threat)
+			{
+				case EAIThreatState.EXHAUSTED:
+					waitTime = Math.RandomFloat(10.0, 20.0);
+					break;
+				case EAIThreatState.PINNED:
+					waitTime = Math.RandomFloat(10.0, 15.0);
+					break;
+				case EAIThreatState.THREATENED:
+					waitTime = Math.RandomFloat(8.0, 12.0);
+					break;
+				default:
+					waitTime = Math.RandomFloat(8.0, 15.0);
+					break;
+			}
+		}
+		
+		waitTime *= Math.RandomFloat(0.7, 1.2);
+		
+		return waitTime;
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	protected override bool MoveToNextPosCondition()
+	{	
+		if (m_State.IsExecutingRequest())
+			return false;
+		
+		if (m_bGoodVision && m_State.m_bInCover)
+		{
+			// We have good vision and we are in cover, just stay here
+			return false;
+		}
+		
+		// If vision is bad, move out until we have good visibility
+		// Here we operate with visibility of the suppression volume, still concept is same as during normal attack.
+		// Most important thing is to exit area with poor vision of target, but beyond that we don't need to move.
+		if (!m_bGoodVision || (m_bGoodVision && !m_State.m_bInCover) || (m_fTargetLastSeenTime_ms == 0))
+		{		
+			float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
+			return m_State.m_fTimerStopped_s > stoppedWaitTime;
+		}
+		
+		return false;
 	}
 }
