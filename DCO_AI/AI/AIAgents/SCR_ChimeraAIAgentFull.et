@@ -1,16 +1,9 @@
 SCR_ChimeraAIAgent {
  ID "50C4E8413B94E8B0"
  components {
-  AIFormationComponent "{50C4E8410B604B4B}" {
-   DefaultFormation "Vee"
-  }
-  DCO_AIInfoComponent "{60DAF5419FFD87E8}" {
-  }
-  DCO_SkillComponent "{60DAF54189CA2E7C}" {
-  }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
-   m_Skill 0.8
-   m_EnableLeaderStop 1
+   m_Skill 0.85
   }
  }
+ DangerEventRange 400
 }

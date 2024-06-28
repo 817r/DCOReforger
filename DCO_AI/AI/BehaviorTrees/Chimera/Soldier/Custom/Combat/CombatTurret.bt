@@ -1,0 +1,61 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/Combat/CombatTurret.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -50 -45
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -50.5 125
+     Nodes {
+      AITaskSetVariable "Set Variable" {
+       Name "Set Variable"
+       EditorPos -746.25 346.25
+       SetValue "10"
+       OutVariable 0
+      }
+      SCR_AIFindTurrets "SCR_AI Find Turrets" {
+       Name "SCR_AI Find Turrets"
+       EditorPos -322.727 348.394
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "OriginIn"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 0
+         PortName "RadiusIn"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "TurretNumber"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "TurretsFound"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable radiusSearch {
+   VariableName "radiusSearch"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference radiusSearch {
+   VariableType 0
+   EditorPos -541.25 463.75
+  }
+ }
+}

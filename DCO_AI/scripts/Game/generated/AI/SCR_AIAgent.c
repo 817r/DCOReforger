@@ -1,18 +1,15 @@
 modded class SCR_ChimeraAIAgent : ChimeraAIAgent
 {
-	AIGroup m_ParentGroup;
-	
 	DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	SCR_AICombatComponent m_SCR_AICombatComponent;
-	DCO_AIInfoGroupComponent m_DCO_AIGroupInfoComponent;
+	ref DCO_Group_Info m_DCO_AIGroupInfoComponent;
+	DCO_AIMoraleSystem m_DCO_AIMoraleSystem;
+	DCO_SkillComponent m_DCO_SkillComponent;
 	
 	protected IEntity m_ControlledEntity;
 	protected SCR_ChimeraAIAgent m_ChimeraAIAgent;
 	protected AICharacterMovementComponent m_CharacterMovementComponent;
 	protected CharacterControllerComponent m_CharacterControllerComponent;
-	
-	protected vector m_vSpawnPositionOrigin;
-	protected float m_fAimAccuracyErrorOriginal;
 	
 	protected ref SCR_AIGroupFireteam m_SCR_AIGroupFireteam;
 	protected ref array<ref SCR_AIGroupFireteam> m_SCR_AIGroupFireteams = {};
@@ -21,35 +18,27 @@ modded class SCR_ChimeraAIAgent : ChimeraAIAgent
 	protected SCR_AISettingsComponent m_SCR_AISettingsComponent;
 	
 	protected SCR_GadgetManagerComponent m_SCR_GadgetManagerComponent;
-
-	void SetFireteam(SCR_AIGroupFireteam fireteam)
-	{
-		m_SCR_AIGroupFireteam = fireteam;
-	}
 	
-	//------------------------------------------------------------------------------------------------
-	SCR_AIGroupFireteam GetFireteam()
+	
+	override void EOnInit(IEntity owner) 
 	{
-		return m_SCR_AIGroupFireteam;
-	}
-
-	ref array<ref SCR_AIGroupFireteam> GetFireteams()
-	{
-		if (m_SCR_AIGroupFireteams.IsEmpty())
-			return null;
+		IEntity controlledEntity = GetControlledEntity();
+		if (!controlledEntity)
+			return;
 		
-		return m_SCR_AIGroupFireteams;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	vector GetSpawnPositinOrigin()
-	{
-		return m_vSpawnPositionOrigin;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	void AddFireteam(SCR_AIGroupFireteam fireteam)
-	{	
-		m_SCR_AIGroupFireteams.Insert(fireteam);
+		ChimeraCharacter character = ChimeraCharacter.Cast(controlledEntity);
+		if (character)
+		{
+			m_CharacterController = SCR_CharacterControllerComponent.Cast(character.GetCharacterController());
+			if (m_CharacterController)
+				m_CharacterController.m_OnLifeStateChanged.Insert(OnLifeStateChanged);
+		}
+			
+		GetGame().GetCallqueue().CallLater(EnsureAILimit, 1, false);
+		
+		m_FactionAffiliationComponent = FactionAffiliationComponent.Cast(controlledEntity.FindComponent(FactionAffiliationComponent));
+		m_InfoComponent = SCR_AIInfoComponent.Cast(FindComponent(SCR_AIInfoComponent));
+		m_UtilityComponent = SCR_AIUtilityComponent.Cast(FindComponent(SCR_AIUtilityComponent));
+		m_DCO_AIGroupInfoComponent = new DCO_Group_Info(SCR_AIGroup.Cast(GetParentGroup()));
 	}
 };

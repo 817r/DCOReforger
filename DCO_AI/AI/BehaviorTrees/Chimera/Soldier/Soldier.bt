@@ -86,8 +86,8 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         AITaskIdle Idle {
          Name "Idle"
          EditorPos -1070.901 811.631
-         Period 1
-         PeriodRandom 0
+         Period 3
+         PeriodRandom 2
          PeriodKey 9
         }
        }
@@ -103,7 +103,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
         RunBT RunBT {
          Name "RunBT"
-         EditorPos -588 640
+         EditorPos -599.667 640
          BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
         }
         AITaskIdle Idle {
@@ -119,7 +119,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
        Nodes {
         DecoTestVariable "Test Variable" {
          Name "Test Variable"
-         EditorPos -265.556 982.333
+         EditorPos -288.413 983.762
          Nodes {
           Sequence Sequence {
            Name "Sequence"
@@ -127,11 +127,11 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
            Nodes {
             SCR_AIUpdateExecutedAction "SCR_AI Update Executed Action" {
              Name "SCR_AI Update Executed Action"
-             EditorPos -584.167 1316.579
+             EditorPos -884.167 1331.579
             }
             AITaskSetVariable "Set Variable" {
              Name "Set Variable"
-             EditorPos -187.936 1320.349
+             EditorPos -523.936 1336.349
              ClearVariable 1
              OutVariable 6
             }
@@ -148,7 +148,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
          Nodes {
           RunBT RunBT {
            Name "RunBT"
-           EditorPos 601.317 1295.4
+           EditorPos 563.936 1194.447
            AlwaysReinit 1
            InBehaviorTree 1
           }
@@ -194,7 +194,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos 2230 418.333
+       EditorPos 2232 418.333
        BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
       }
      }
@@ -238,11 +238,11 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
  VariablesRefs {
   VariableReference unknownTarget {
    VariableType 0
-   EditorPos -2360.88 1014.844
+   EditorPos -2360.88 1016.844
   }
   VariableReference behaviorTree {
    VariableType 1
-   EditorPos 163.737 1187.748
+   EditorPos 333.856 1195.545
   }
   VariableReference updateBehavior {
    VariableType 2
@@ -250,7 +250,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
   }
   VariableReference updateBehavior {
    VariableType 2
-   EditorPos -508.889 1080.25
+   EditorPos -510.318 1094.536
   }
   VariableReference unknownTarget {
    VariableType 0
@@ -262,7 +262,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
   }
   VariableReference updateBehavior {
    VariableType 2
-   EditorPos 24.047 1393.524
+   EditorPos -311.953 1409.524
   }
   VariableReference useCombatMove {
    VariableType 3

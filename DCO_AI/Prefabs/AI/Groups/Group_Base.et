@@ -1,0 +1,9 @@
+SCR_AIGroup {
+ ID "0000000000000001"
+ components {
+  SCR_CoverQueryComponent "{5DD4D299D08686AB}" {
+   CoverPathfindMaxPolys 20
+  }
+ }
+ DangerEventRange 250
+}

@@ -1,0 +1,39 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/Combat/DCO_MarksmanAttack.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -50 -45
+   Nodes {
+    SCR_AIDecoHasWeaponOfType "SCR_AI Deco Has Weapon Of Type" {
+     Name "SCR_AI Deco Has Weapon Of Type"
+     EditorPos -137.889 95.444
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -53.357 332.619
+      }
+     }
+     InPorts {
+      SingleInputPortContainer SingleInputPortContainer {
+       Port -1
+       PortName "WeaponTypeIn"
+      }
+      SingleInputPortContainer SingleInputPortContainer {
+       Port -1
+       PortName "MagazineWell"
+      }
+     }
+     OutPorts {
+      SingleOutputPortContainer SingleOutputPortContainer {
+       Port -1
+       PortName "WeaponTypeOut"
+      }
+     }
+     m_WeaponType WT_SNIPERRIFLE
+     m_bCurrent 1
+    }
+   }
+  }
+ }
+}

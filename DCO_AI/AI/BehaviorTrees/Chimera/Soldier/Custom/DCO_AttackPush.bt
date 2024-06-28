@@ -1,0 +1,133 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_AttackPush.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -53.333 -502.778
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos -73.333 -51.667
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -331.444 193.028
+       Nodes {
+        SCR_AICompleteLookAction "SCR_AI Complete Look Action" {
+         Name "SCR_AI Complete Look Action"
+         EditorPos -964.096 893.198
+        }
+        SCR_AIDCO_AttackPush "SCR_AIDCO_ Attack Push" {
+         Name "SCR_AIDCO_ Attack Push"
+         EditorPos -658.333 895.417
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 0
+           PortName "Position"
+          }
+         }
+        }
+        SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
+         Name "SCR_AI Set Combat Move State"
+         EditorPos -423.75 891.25
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "InCover"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ExposedInCover"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "AimAtTarget"
+          }
+         }
+         m_bReleaseCoverLock 1
+        }
+        SCR_AITalk "SCR_AI Talk" {
+         Name "SCR_AI Talk"
+         EditorPos -123.917 903.555
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "SpeakerIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "TargetIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "LocationIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "EnumIn"
+          }
+         }
+         m_messageType REPORT_MOVING
+         m_ePreset MEDIUM
+        }
+        SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
+         Name "SCR_AI Visualize Debug"
+         EditorPos 20.38 901.639
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "DebugMessage"
+          }
+         }
+         m_sDebugMessage "Attack Push"
+         m_eAICategory BEHAVIOR
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 235.809 900.305
+         Period 3
+        }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 379.786 898.615
+         Result RUNNING
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 161.167 213.972
+       Nodes {
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 89 400.083
+         Period 3
+        }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 263.083 390.694
+         Result RUNNING
+        }
+       }
+      }
+     }
+     UseChildResult 1
+    }
+   }
+  }
+ }
+ Variables {
+  Variable lastSeen {
+   VariableName "lastSeen"
+   VariableTypeName "vector"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference lastSeen {
+   VariableType 0
+   EditorPos -901.442 1027.79
+  }
+ }
+}

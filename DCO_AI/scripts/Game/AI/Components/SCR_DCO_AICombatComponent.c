@@ -6,95 +6,295 @@ modded enum EAISkill
 
 modded class SCR_AICombatComponent : ScriptComponent
 {
-	protected SCR_AIGroup m_SCR_AIGroup;
+	protected DCO_Group_Info m_SCR_AIGroup;
 	protected IEntity m_ControlledEntity;
 	protected SCR_ChimeraAIAgent m_SCR_ChimeraAIAgent;
-	
+	protected DCO_AIMoraleSystem m_DCO_MoraleSystem;
 	protected DCO_AIInfoComponent m_DCO_AIInfoComponent;
+	protected SCR_CharacterDamageManagerComponent damageManager;
+	private DCO_SkillComponent m_DCO_Skill;
+	private DCO_CUSTOMRANK rank;
 	
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
+	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 2.0;
 
-<<<<<<< HEAD
-	protected static const float TARGET_INVESTIGATE_TIME = 1.0;	
+	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.0;
+			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 5.0;
+			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 10.0;
+			  static const float TARGET_MAX_LAST_SEEN = 60.0;
 	
-	protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.5;
+	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 98.0;
+	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.8;
+	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.48;
 	
-=======
->>>>>>> Reforger_1.1
-	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 500.0;
-	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 0.8;
-			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 3.0;
-			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 8.0;
-			  static const float TARGET_MAX_LAST_SEEN = 20.0;
-	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 100.0;
-	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.7;
-	protected const float PERCEPTION_FACTOR_SAFE = 4.0;
-	protected const float PERCEPTION_FACTOR_VIGILANT = 5.0;
-	protected const float PERCEPTION_FACTOR_ALERTED = 6.0; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 5.0;
-	protected const float PERCEPTION_FACTOR_PINNED = 4.0;
-	protected const float PERCEPTION_FACTOR_EXHAUSTED = 4.0;
-	
-	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.0;
+	protected const float PERCEPTION_FACTOR_SAFE = 0.5;
+	protected const float PERCEPTION_FACTOR_VIGILANT = 3.0;
+	protected const float PERCEPTION_FACTOR_ALERTED = 2.8; 
+	protected const float PERCEPTION_FACTOR_THREATENED = 2.5;
+	protected const float PERCEPTION_FACTOR_PINNED = 1.2;
+	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.0;
+
+	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 2.5;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
 	
-	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.6;
+	static const float LONG_RANGE_FIRE_DISTANCE = 200.0;
 	
-<<<<<<< HEAD
-	protected static const float TARGET_SCORE_RETREAT = 75.0;
+	protected const float DISMOUNT_TURRET_TIMER_MS = 1000;
+	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 4.0;
 	
-	protected static const float TARGET_INVISIBLE_TIME = 8.0;
+	private int groupNumber;
+	private int nowGroupNumber;
+	bool alreadyGetMemberCount = false;
 	
-	static const float LONG_RANGE_FIRE_DISTANCE = 100.0;
-=======
-	static const float LONG_RANGE_FIRE_DISTANCE = 300.0;
->>>>>>> Reforger_1.1
-
+	private float AimImprovement;
+	
+	private bool LOW_AMMO = false;
+	bool selectedTargetChanged = false;
+	
 	override protected void EOnInit(IEntity owner)
-	{
-		GetAiAgent();
-		
+	{		
 		super.EOnInit(owner);
+		GetAiAgent();
 		
 		if (m_Agent)
 		{
 			m_ControlledEntity = m_Agent.GetControlledEntity();
 			
-			m_SCR_ChimeraAIAgent = SCR_ChimeraAIAgent.Cast(m_Agent);
+			rank = m_DCO_Skill.GetCharacterRank(m_Utility.m_OwnerEntity);
+			
+			damageManager = SCR_CharacterDamageManagerComponent.Cast(m_ControlledEntity.FindComponent(SCR_CharacterDamageManagerComponent));
+			
+			m_SCR_AIGroup = m_Utility.m_DCO_GroupInfo;
+						
+			m_DCO_Skill = m_Utility.m_DCO_Skill.GetCharacterSkillRankComponent(m_Utility.m_OwnerEntity);
+			
+			m_SCR_ChimeraAIAgent = m_Agent;
 			
 			m_DCO_AIInfoComponent = DCO_AIInfoComponent.Cast(m_Agent.FindComponent(DCO_AIInfoComponent));
+			
+			if (m_DCO_AIInfoComponent)
+			{
+				groupNumber = m_DCO_AIInfoComponent.getMemberNumber();
+			}
 		}
 	}
 	
-	override bool IsFriendlyInAim()
+	override void Update(float timeSliceMs)
 	{
-		IEntity friendlyEntInAim = m_Perception.GetFriendlyInLineOfFire();
-#ifdef WORKBENCH
-		if (friendlyEntInAim && DiagMenu.GetBool(SCR_DebugMenuID.DEBUGUI_AI_SHOW_FRIENDLY_IN_AIM))
-			m_FriendlyAimShape = Shape.CreateSphere(COLOR_RED, ShapeFlags.NOOUTLINE|ShapeFlags.NOZBUFFER|ShapeFlags.TRANSP, friendlyEntInAim.GetOrigin() + Vector(0, 2, 0), 0.1);	
-		else 
-			m_FriendlyAimShape = null;
-#endif		
-		m_bFriendlyAimLastResult = friendlyEntInAim != null;
+		// Evaluate if we must dismount turret - only if we are already in turret
+		if (m_CurrentTurretController)
+			EvaluateDismountTurret(timeSliceMs);
 				
-		return m_bFriendlyAimLastResult;
+		#ifdef WORKBENCH
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, "Group Number Init : " + groupNumber.ToString() + ", Group Number Now : " + nowGroupNumber.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);
+		#endif
 	}
 	
+	int getGroupNumber()
+	{
+		return groupNumber;
+	}
+
 	override void UpdatePerceptionFactor(PerceptionComponent perceptionComp, SCR_AIThreatSystem threatSystem)
 	{
 		EAIThreatState threatState = threatSystem.GetState();
+		
 		float perceptionFactor;
 		switch (threatState)
 		{
 			case EAIThreatState.SAFE:
-				perceptionFactor = PERCEPTION_FACTOR_SAFE; break; 
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_SAFE; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.4;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.6; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_SAFE;
+						break;
+					}
+				}
+				break;
+			}
 			case EAIThreatState.VIGILANT:
-				perceptionFactor = PERCEPTION_FACTOR_VIGILANT; break;
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.45;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.7; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT;
+						break;
+					}
+				}
+				break;
+			}
 			case EAIThreatState.ALERTED:
-				perceptionFactor = PERCEPTION_FACTOR_ALERTED; break; 
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.45;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.7; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED;
+						break;
+					}
+				}
+				break;
+			}
 			case EAIThreatState.THREATENED:
-				perceptionFactor = PERCEPTION_FACTOR_THREATENED; break;
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.45;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.7; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED;
+						break;
+					}
+				}
+				break;
+			}
+			case EAIThreatState.PINNED:
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_PINNED; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.45;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.7; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_PINNED;
+						break;
+					}
+				}
+				break;
+			}
+			case EAIThreatState.EXHAUSTED:
+			{
+				switch (rank)
+				{
+					case DCO_CUSTOMRANK.RECRUIT:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.2; 
+						break;
+					}
+					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.45;
+						break;
+					}
+					case DCO_CUSTOMRANK.SPECIALIST:
+					{
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.7; 
+						break;
+					}
+					default :
+					{
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED;
+						break;
+					}
+				}
+				break;
+			}
 		}
 		
 		perceptionFactor *= m_fEquipmentPerceptionFactor;
@@ -102,28 +302,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 		perceptionComp.SetPerceptionFactor(perceptionFactor);
 	}
 	
-<<<<<<< HEAD
-	override void SetHoldFire(bool isHoldFire)
-	{
-		#ifdef AI_DEBUG
-		AddDebugMessage(string.Format("SetHoldFire: %1", isHoldFire));
-		#endif
-		
-		if (isHoldFire)
-		{ 
-			SetActionAllowed(EAICombatActions.HOLD_FIRE,true);
-			SetActionAllowed(EAICombatActions.BURST_FIRE,false);
-			SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,false);
-		}
-		else
-		{
-			SetCombatType(m_eCombatType);
-		}
-=======
 	//------------------------------------------------------------------------------------------------
-	protected static const float DISTANCE_MAX = 500; 
-	protected static const float DISTANCE_MIN = 5; // Minimal distance when movement is allowed
-	private static const float NEAR_PROXIMITY = 2;
+	protected static const float DISTANCE_MAX = 1500; 
+	protected static const float DISTANCE_MIN = 0; // Minimal distance when movement is allowed
+	private static const float NEAR_PROXIMITY = 10;
+	
+	protected const float m_StopDistance = 30 + Math.RandomFloat(0, 12); 
 	// TODO: add possibility to get cover towards custom position
 	//------------------------------------------------------------------------------------------------
 	override vector FindNextCoverPosition()
@@ -157,7 +341,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 					nextCoverDistance = 0;
 				else	
 					nextCoverDistance = DISTANCE_MIN;
-				
+
 				standardAttack = false;
 			}
 		}
@@ -180,7 +364,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 		newPosition = s_AIRandomGenerator.GenerateRandomPointInRadius(0, NEAR_PROXIMITY, newPositionCenter, true);
 		newPosition[1] = newPositionCenter[1];
 		return newPosition;
->>>>>>> Reforger_1.1
 	}
 	
 	override void SetCombatType(EAICombatType combatType)
@@ -233,20 +416,105 @@ modded class SCR_AICombatComponent : ScriptComponent
 			}
 		}
 		m_eCombatType = combatType;
-#ifdef WORKBENCH
-		SCR_AIDebugVisualization.VisualizeMessage(GetOwner(), typename.EnumToString(EAICombatType,m_eCombatType), EAIDebugCategory.COMBAT, 5);
-#endif
 	}
-<<<<<<< HEAD
 	
-	override void ResetCombatType()
+	override bool EvaluateLowAmmo(BaseWeaponComponent weaponComp, int muzzleId)
 	{
-		#ifdef AI_DEBUG
-		AddDebugMessage("ResetCombatType");
-		#endif
+		if (!weaponComp)
+			return false;
+		array<BaseMuzzleComponent> muzzles = {};
+		weaponComp.GetMuzzlesList(muzzles);
+		if (muzzleId >= muzzles.Count() || muzzleId < 0)
+			return false;
 		
-		SetCombatType(m_eDefaultCombatType);
+		BaseMuzzleComponent muzzleComp = muzzles[muzzleId];
+		if (!muzzleComp)
+			return false;
+				
+		// Ignore disposable weapons
+		if (muzzleComp.IsDisposable())
+			return false;
+		
+		int magCount = m_InventoryManager.GetMagazineCountByWeapon(weaponComp);
+		
+		int lowMagThreshold = 1;
+		
+		// Decide how many remainiing magazines is enough to complain
+		switch (weaponComp.GetWeaponType())
+		{
+			case EWeaponType.WT_RIFLE: lowMagThreshold = 1; break;
+			case EWeaponType.WT_GRENADELAUNCHER: lowMagThreshold = 2; break; // todo now it won't work when we are out of UGL ammo because weapons are not marked with WT_GRENADELAUNCHER
+			case EWeaponType.WT_SNIPERRIFLE: lowMagThreshold = 1; break;
+			case EWeaponType.WT_ROCKETLAUNCHER: lowMagThreshold = 1; break;
+			case EWeaponType.WT_MACHINEGUN: lowMagThreshold = 1; break;
+			case EWeaponType.WT_HANDGUN: lowMagThreshold = 1; break;
+			default: lowMagThreshold = 1;
+		}
+		
+		if( magCount < lowMagThreshold )
+		{
+			LOW_AMMO = true;
+			return true;
+		}
+		
+		LOW_AMMO = false;
+		
+		return false;
 	}
-=======
->>>>>>> Reforger_1.1
+
+	float improvementCalcuation()
+	{
+		if (!m_SelectedTarget && selectedTargetChanged)
+			return 0;
+		
+		vector targetPosition = m_SelectedTarget.GetTargetEntity().GetOrigin();
+		
+		
+		return 0;
+	}
+	
+	bool lowAmmo()
+	{
+		return LOW_AMMO;
+	}
+	
+	ECharacterStance getCharacterStance()
+	{
+		return m_AIInfo.GetStance();
+	}
+	
+	int getTargetCount()
+	{
+		if(m_aAssignedTargets.IsEmpty())
+			return 0;
+		else
+			return m_aAssignedTargets.Count();
+	}
+	
+	float getCurrentHealth()
+	{
+		return damageManager.GetHealth();
+	}
+	
+	float GetMaxHealth()
+	{
+		return damageManager.GetMaxHealth();
+	}
+	
+	void improvement(float improvement)
+	{
+		AimImprovement = improvement;
+	}
+	
+	float getImprovement()
+	{		
+		return AimImprovement;
+	}
+	
+	float resetImprovement()
+	{
+		AimImprovement = 0;
+		
+		return 0;
+	}
 };

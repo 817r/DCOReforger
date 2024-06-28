@@ -1,0 +1,433 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/SmartActions/SA_CoverPost.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -873.333 1926.667
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -883.333 2075.667
+     Nodes {
+      AITaskGetCurrentSmartAction "Get Current Smart Action" {
+       Name "Get Current Smart Action"
+       EditorPos -2605.333 2525.833
+       OutSmartAction 0
+      }
+      SCR_AIGetSmartActionSentinelParams "SCR_AI Get Smart Action Guard Params" {
+       Name "SCR_AI Get Smart Action Guard Params"
+       EditorPos -2165.738 2512.563
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 0
+         PortName "SmartActionGuard"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 1
+         PortName "OutPos"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 12
+         PortName "LookPosition"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 13
+         PortName "LookDirectionRange"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 2
+         PortName "Stance"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "UseBinoculars"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 14
+         PortName "LeaningType"
+        }
+       }
+      }
+      AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+       Name "Character Set Movement Speed"
+       EditorPos -1707.834 2501.5
+       "Movement speed" RUN
+      }
+      Decorator "{58969BEDE78A5462}" {
+       Name "Decorator"
+       EditorPos -1273.703 2476.25
+       Nodes {
+        AITaskMove Move {
+         Name "Move"
+         EditorPos -1304.171 2609.824
+         InTargetLocation 1
+         PrecisionY 1
+        }
+       }
+       ForceNodeResult Success
+      }
+      AITaskChangeStance "Change Stance" {
+       Name "Change Stance"
+       EditorPos -910 2493.333
+       InStance 8
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos -131.905 2398.333
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -647.29 2936.46
+         Nodes {
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos -1757.446 3315.531
+           Nodes {
+            Switch Switch {
+             Name "Switch"
+             EditorPos -1746.227 3495.667
+             Nodes {
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos -2027.525 3716.405
+               Nodes {
+                Sequence Sequence {
+                 Name "Sequence"
+                 EditorPos -1982.568 3923.305
+                 Nodes {
+                  AITaskRequestAction "Request Action" {
+                   Name "Request Action"
+                   EditorPos -2079.711 4071.877
+                   ActionName "CharacterLeanToggleRight"
+                   ActionValue 1
+                   InActionName 15
+                   InActionValue -1
+                  }
+                  AITaskSetVariable "Set Variable" {
+                   Name "Set Variable"
+                   EditorPos -1828.571 4068.572
+                   SetValue "true"
+                   OutVariable 17
+                  }
+                 }
+                }
+               }
+               NegativeCondition 1
+               UseChildResult 1
+               ForceNodeResult Success
+               InVariable 16
+               TestType EqualsValue
+               TestValue "true"
+              }
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos -1315.303 3719.579
+               Nodes {
+                Sequence Sequence {
+                 Name "Sequence"
+                 EditorPos -1273.398 3907.198
+                 Nodes {
+                  AITaskRequestAction "Request Action" {
+                   Name "Request Action"
+                   EditorPos -1394.175 4059.556
+                   ActionName "CharacterLeanToggleRight"
+                   ActionValue 1
+                   InActionName 15
+                   InActionValue -1
+                  }
+                  AITaskSetVariable "Set Variable" {
+                   Name "Set Variable"
+                   EditorPos -1162.857 4061.429
+                   SetValue "false"
+                   OutVariable 18
+                  }
+                 }
+                }
+               }
+               UseChildResult 1
+               ForceNodeResult Success
+               InVariable 16
+               TestType EqualsValue
+               TestValue "true"
+              }
+             }
+             RandomRange {
+              1 5
+             }
+            }
+           }
+           UseChildResult 1
+           ForceNodeResult Success
+           InVariable 15
+          }
+          SCR_AIGetRandomPointInCircularSector "SCR_AI Get Random Point In Circular Sector" {
+           Name "SCR_AI Get Random Point In Circular Sector"
+           EditorPos -1009 3330
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "OriginEntity"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 10
+             PortName "SectorAxisPoint"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 11
+             PortName "AngularRange"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 9
+             PortName "PositionOut"
+            }
+           }
+          }
+          AITaskCharacterAim "Character Aim" {
+           Name "Character Aim"
+           EditorPos -327.522 3308.346
+           InAimAtPosition 9
+           PrecisionXZ 5
+           PrecisionY 5
+           InPrecisionXZ -1
+           Timeout -1
+           AimType Weapon
+           UseADS 0
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos -88.086 3299.308
+           Period 5
+           PeriodRandom 2
+          }
+         }
+        }
+        SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+         Name "SCR_AI Set Weapon Raised"
+         EditorPos -15.667 2632.111
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Raised"
+          }
+         }
+         m_bWeaponRaised 0
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 726.952 2659.905
+         Nodes {
+          SCR_AIDecoCombatMoveControl "SCR_AI Deco Combat Move Control" {
+           Name "SCR_AI Deco Combat Move Control"
+           EditorPos 619.083 2891.111
+           Nodes {
+            DecoTestVariable "Test Variable" {
+             Name "Test Variable"
+             EditorPos 692.5 3103.333
+             Nodes {
+              Selector Selector {
+               Name "Selector"
+               EditorPos 700.916 3320.084
+               Nodes {
+                DecoTestVariable "Test Variable" {
+                 Name "Test Variable"
+                 EditorPos 294.048 3452.738
+                 Nodes {
+                  AITaskChangeStance "Change Stance" {
+                   Name "Change Stance"
+                   EditorPos 290.416 3720
+                   Stance CROUCH
+                   InStance 6
+                  }
+                 }
+                 InVariable 5
+                 TestType EqualsValue
+                 TestValue "0"
+                }
+                AITaskChangeStance "Change Stance" {
+                 Name "Change Stance"
+                 EditorPos 1009.5 3451.5
+                 InStance 7
+                }
+               }
+              }
+             }
+             InVariable 4
+             TestType WasChanged
+            }
+           }
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "AllowStanceStand"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "NextCoverPos"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 3
+             PortName "CombatStance"
+            }
+           }
+           ForceNodeResult Success
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 1113.564 2811.23
+           Period 2
+           PeriodRandom 1
+          }
+         }
+        }
+        SCR_AICharacterLeanOnAbort "SCR_AI Character Lean On Abort" {
+         Name "SCR_AI Character Lean On Abort"
+         EditorPos 2074.214 2772.261
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable smartActionGuard {
+   VariableName "smartActionGuard"
+   VariableTypeName "SCR_AISmartActionSentinelComponent"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable pos {
+   VariableName "pos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable desiredStance {
+   VariableName "desiredStance"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable stance {
+   VariableName "stance"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable aimAtPosition {
+   VariableName "aimAtPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable lookPosition {
+   VariableName "lookPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable range {
+   VariableName "range"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable leaningType {
+   VariableName "leaningType"
+   VariableTypeName "string"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable toggleOn {
+   VariableName "toggleOn"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference smartActionGuard {
+   VariableType 0
+   EditorPos -2569.953 2720.333
+  }
+  VariableReference pos {
+   VariableType 1
+   EditorPos -1680.667 2711.667
+  }
+  VariableReference desiredStance {
+   VariableType 2
+   EditorPos -1678.496 2979.949
+  }
+  VariableReference stance {
+   VariableType 3
+   EditorPos 1040.286 3005.643
+  }
+  VariableReference stance {
+   VariableType 3
+   EditorPos 352 3105
+  }
+  VariableReference stance {
+   VariableType 3
+   EditorPos 97.5 3608.75
+  }
+  VariableReference desiredStance {
+   VariableType 2
+   EditorPos 51.666 3806.25
+  }
+  VariableReference stance {
+   VariableType 3
+   EditorPos 793.75 3559.583
+  }
+  VariableReference desiredStance {
+   VariableType 2
+   EditorPos -1177.083 2802.5
+  }
+  VariableReference aimAtPosition {
+   VariableType 4
+   EditorPos -610 3485.556
+  }
+  VariableReference lookPosition {
+   VariableType 5
+   EditorPos -1321.806 3343.056
+  }
+  VariableReference range {
+   VariableType 6
+   EditorPos -1288.889 3436.667
+  }
+  VariableReference lookPosition {
+   VariableType 5
+   EditorPos -1683 2800.444
+  }
+  VariableReference range {
+   VariableType 6
+   EditorPos -1671.889 2891.556
+  }
+  VariableReference leaningType {
+   VariableType 7
+   EditorPos -1672.524 3079.81
+  }
+  VariableReference leaningType {
+   VariableType 7
+   EditorPos -2405.5 3579
+  }
+  VariableReference toggleOn {
+   VariableType 8
+   EditorPos -2244.286 3874.286
+  }
+  VariableReference toggleOn {
+   VariableType 8
+   EditorPos -1581.429 4120
+  }
+  VariableReference toggleOn {
+   VariableType 8
+   EditorPos -894.286 4177.143
+  }
+ }
+}

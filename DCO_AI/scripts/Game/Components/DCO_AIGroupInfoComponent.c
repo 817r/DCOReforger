@@ -1,199 +1,150 @@
-class DCO_AIInfoGroupComponentClass: ScriptComponentClass
-{
-};
+void SCR_AIOnTeamRemoved(DCO_Group_Info groupInfo);
+typedef func SCR_AIOnTeamRemoved;
 
-enum DCO_EFormationType
-{
-	WEDGE,
-	LINE,
-	STAGGERED_COL,
-	VEE,
-	DIAMOND,
-	AUTONOMOUS
-};
-
-enum DCO_ECombatBehaviorType
-{
-	DEFAULT,
-	DEFENSIVE,
-	OFFENSIVE
-};
-
-enum DCO_ECombatMovementType
-{
-	GROUP,
-	TEAM,
-	INDIVIDUAL,
-	AUTONOMOUS
-};
-
-
-class DCO_AIInfoGroupComponent : ScriptComponent
-{
-	
-	private int unitPrefabSlots;
-	
+class DCO_Group_Info : Managed
+{	
 	private SCR_AIGroup m_SCR_AIGroup;
 	
-	private int m_iCombatMoveChance;
-	private int m_iCombatCoverChance;
-	private int m_iCombatDefendChance;
+	protected ref array<ref DCO_FireTeam> m_aFireteams = {};
 
-	private DCO_ECombatBehaviorType m_eCombatBehaviorType = DCO_ECombatBehaviorType.DEFAULT;
-	private DCO_ECombatMovementType m_eCombatMovementType = DCO_ECombatMovementType.AUTONOMOUS;
-	private DCO_EFormationType m_eFormation;
+	protected ref ScriptInvokerBase<SCR_AIOnTeamRemoved> Event_OnTeamRemoved = new ScriptInvokerBase<SCR_AIOnTeamRemoved>();
 	
-	private AIFormationComponent m_AIFormationComponent;
-	private SCR_AIConfigComponent m_SCR_AIConfigComponent;
-	private SCR_AISettingsComponent m_SCR_AISettingsComponent;
+	private int memberCount;
 	
-	private int m_iWeaponFiredReactionDistance = SCR_AICombatComponent.LONG_RANGE_FIRE_DISTANCE;
-	
-	private float m_fThrowGrenadeTime;
-	private bool m_bThrowGrenade = true;
-	
-	private bool m_bIsAnyFireteamNearby;
-	
-	static DCO_AIInfoGroupComponent m_sInstance;
-	static DCO_AIInfoGroupComponent GetInstance()
-	{
-		return m_sInstance;
-	}
 	
 	//------------------------------------------------------------------------------------------------
-	override void EOnInit(IEntity owner)
+	void DCO_Group_Info(SCR_AIGroup group)
 	{
-		m_SCR_AIGroup = SCR_AIGroup.Cast(owner);
+		m_SCR_AIGroup = group;
 		
 		if (m_SCR_AIGroup)
-		{
-			bool initialize = true;
-			
-			unitPrefabSlots = m_SCR_AIGroup.m_aUnitPrefabSlots.Count();	
-			
-			m_SCR_AISettingsComponent = SCR_AISettingsComponent.GetInstance();
-			
-			m_AIFormationComponent = AIFormationComponent.Cast(m_SCR_AIGroup.FindComponent(AIFormationComponent));
-			
-			m_SCR_AIConfigComponent = SCR_AIConfigComponent.Cast(m_SCR_AIGroup.FindComponent(SCR_AIConfigComponent));
-			
-			DCO_AIGroupInfoComponentInitialize(initialize);
-		}
+			memberCount = group.GetTotalAgentCount();
 	}
 	
-	//------------------------------------------------------------------------------------------------
-	void DCO_AIGroupInfoComponentInitialize(bool initialize)
-	{				
-		if (m_eCombatMovementType == DCO_ECombatMovementType.AUTONOMOUS)
-		{
-			m_eCombatMovementType = DCO_ECombatMovementType.INDIVIDUAL;
-		}
+	ScriptInvokerBase<SCR_AIOnTeamRemoved> GetOnFireteamRemoved()
+	{
+		return Event_OnTeamRemoved;
+	}
+	
+	int getMemberCount()
+	{
+		return memberCount;
+	}
+	
+	
+};
+
+class DCO_FireTeam : Managed
+{
+	protected ref array<AIAgent> m_aAgents = {};
+	protected ref array<SCR_AIInfoComponent> m_aInfoComponents = {};
+	
+	protected bool m_bLocked = false;
+	
+	//--------------------------------------------------------------------------
+	void AddMember(AIAgent agent, SCR_AIInfoComponent infoComponent)
+	{
+		m_aAgents.Insert(agent);
+		m_aInfoComponents.Insert(infoComponent);
+	}
+	
+	//--------------------------------------------------------------------------
+	void RemoveMember(AIAgent agent)
+	{
+		int id = m_aAgents.Find(agent);
+		if (id == -1)
+			return;
+		m_aAgents.Remove(id);
+		m_aInfoComponents.Remove(id);
+	}
+	
+	//--------------------------------------------------------------------------
+	protected void RemoveMember(int id, out AIAgent outAgent, out SCR_AIInfoComponent outInfoComp)
+	{
+		outAgent = m_aAgents[id];
+		outInfoComp = m_aInfoComponents[id];
 		
-		if (m_eCombatBehaviorType == DCO_ECombatBehaviorType.DEFAULT)
+		m_aAgents.Remove(id);
+		m_aInfoComponents.Remove(id);
+	}
+	
+	//--------------------------------------------------------------------------
+	void GetMember(int id, out AIAgent outAgent, out SCR_AIInfoComponent outInfoComp)
+	{
+		if (!m_aAgents.IsIndexValid(id))
+			return;
+		
+		outAgent = m_aAgents[id];
+		outInfoComp = m_aInfoComponents[id];
+	}
+	
+	//--------------------------------------------------------------------------
+	AIAgent GetMember(int id)
+	{
+		if (!m_aAgents.IsIndexValid(id))
+			return null;
+		
+		return m_aAgents[id];
+	}
+	
+	//--------------------------------------------------------------------------
+	IEntity GetFirstMemberEntity()
+	{
+		if (m_aAgents.IsEmpty())
+			return null;
+		foreach (AIAgent agent : m_aAgents)
 		{
-			m_eCombatBehaviorType = DCO_ECombatBehaviorType.OFFENSIVE;
+			if (!agent)
+				continue;
+			IEntity controlledEntity = agent.GetControlledEntity();
+			return controlledEntity;
+		}
+		return null;
+	}
+	
+	//--------------------------------------------------------------------------
+	void GetMembers(notnull array<AIAgent> outAgents)
+	{
+		outAgents.Clear();
+		foreach (auto a : m_aAgents)
+			outAgents.Insert(a);
+	}
+	
+	//--------------------------------------------------------------------------
+	//! Moves 'count' members from other fireteam to this one
+	void MoveMembersFrom(notnull DCO_FireTeam otherFt, int count)
+	{
+		// Bail if wrong count
+		if (count <= 0)
+			return;
+		
+		// Clamp count
+		count = Math.ClampInt(count, 0, otherFt.m_aAgents.Count());
+		
+		// Remove the required amount of members
+		for (int i = 0; i < count; i++)
+		{
+			// Remove last member from other fireteam
+			int lastId = otherFt.m_aAgents.Count() - 1;
+			AIAgent agent;
+			SCR_AIInfoComponent infoComp;
+			otherFt.RemoveMember(lastId, agent, infoComp);
+			
+			// Add the member to our fireteam
+			AddMember(agent, infoComp);
 		}
 	}
 	
-	void SetFormaton(DCO_EFormationType formation)
+	//--------------------------------------------------------------------------
+	bool HasMember(AIAgent agent)
 	{
-		m_eFormation = formation;
-	}
-
-	override protected void OnPostInit(IEntity owner)
-	{
-		m_sInstance = this;
-		super.OnPostInit(owner);
-		SetEventMask(owner, EntityEvent.INIT);
+		return m_aAgents.Find(agent) != -1;
 	}
 	
-	int GetCombatMoveChance()
+	//--------------------------------------------------------------------------
+	int GetMemberCount()
 	{
-		return m_iCombatMoveChance;
+		return m_aAgents.Count();
 	}
 	
-	void SetCombatMoveChance(int combatMoveChance)
-	{
-		m_iCombatMoveChance = combatMoveChance;
-	}
-	
-	int GetCombatCoverChance()
-	{
-		return m_iCombatCoverChance;
-	}
-	
-	void SetCombatCoverChance(int combatCoverChance)
-	{
-		m_iCombatCoverChance = combatCoverChance;
-	}
-	
-	int GetCombatDefendChance()
-	{
-		return m_iCombatDefendChance;
-	}
-	
-	void SetCombatDefendChance(int combatDefendChance)
-	{
-		m_iCombatDefendChance = combatDefendChance;
-	}
-	
-	DCO_ECombatBehaviorType GetCombatBehaviorType()
-	{
-		return m_eCombatBehaviorType;
-	}
-	
-	void SetCombatBehaviorType(DCO_ECombatBehaviorType combatBehaviorType)
-	{
-		m_eCombatBehaviorType = combatBehaviorType;
-	}
-	
-	DCO_ECombatMovementType GetCombatMovementType()
-	{
-		return m_eCombatMovementType;
-	}
-	
-	void SetCombatMovementType(DCO_ECombatMovementType combatMovementType)
-	{
-		m_eCombatMovementType = combatMovementType;
-	}
-	
-	int GetWeaponFiredReactionDistance()
-	{
-		return m_iWeaponFiredReactionDistance;
-	}
-	
-	void SetWeaponFiredReactionDistance(int weaponFiredReactionDistance)
-	{
-		m_iWeaponFiredReactionDistance = weaponFiredReactionDistance;
-	}
-	
-	bool GetIsAnyFireteamNearby()
-	{
-		return m_bIsAnyFireteamNearby;
-	}
-	
-	void SetIsAnyFireteamNearby(bool isAnyFireteamNearby)
-	{
-		m_bIsAnyFireteamNearby = isAnyFireteamNearby;
-	}
-
-	bool GetThrowGrenade()
-	{
-		return m_bThrowGrenade;
-	}
-	
-	void SetThrowGrenade(bool throwGrenade)
-	{
-		m_bThrowGrenade = throwGrenade;
-	}
-	
-	float GetThrowGrenadeTime()
-	{
-		return m_fThrowGrenadeTime;
-	}
-	
-	void SetThrowGrenadeTime(float throwGrenadeTime)
-	{
-		m_fThrowGrenadeTime = throwGrenadeTime;
-	}
 };

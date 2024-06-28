@@ -1,5 +1,4 @@
 enum DCO_CUSTOMRANK{
-	TRAITOR,
 	RECRUIT,
 	PRIVATE,
 	PRIVATE_FIRST_CLASS,
@@ -22,58 +21,65 @@ enum DCO_CUSTOMRANK{
 
 class DCO_SkillComponentClass : ScriptComponentClass
 {
-	
 }
 
 
 class DCO_SkillComponent : ScriptComponent
 {
-	
 	[Attribute(defvalue: "1", uiwidget: UIWidgets.ComboBox, desc: "DCO Custom Ranks", enums: ParamEnumArray.FromEnum(DCO_CUSTOMRANK))]
-	protected DCO_CUSTOMRANK m_ERank;
+	DCO_CUSTOMRANK m_ERank;
 	protected IEntity m_Owner;
+	
+	static DCO_CUSTOMRANK setSkill(IEntity unit, DCO_CUSTOMRANK rank)
+	{
+		if (!unit)
+			return DCO_CUSTOMRANK.RECRUIT;
+		
+		DCO_SkillComponent comp = GetCharacterSkillRankComponent(unit);
+		
+		if (!comp)
+			return DCO_CUSTOMRANK.RECRUIT;
+		
+		return comp.SetCharacterRank(rank);
+	}
+
+	static DCO_CUSTOMRANK GetCharacterRank(IEntity unit)
+	{
+		if (!unit)
+			return DCO_CUSTOMRANK.RECRUIT;
+		
+		DCO_SkillComponent comp = GetCharacterSkillRankComponent(unit);
+		
+		if (!comp)
+			return DCO_CUSTOMRANK.RECRUIT;
+		
+		return comp.GetCharacterRank();
+	}
 	
 	static DCO_SkillComponent GetCharacterSkillRankComponent(IEntity unit)
 	{
 		return DCO_SkillComponent.Cast(unit.FindComponent(DCO_SkillComponent));
 	}
 	
-}
-
-class DCO_Skill : DCO_AIBase
-{
-	DCO_CUSTOMRANK cusRank;
-	
-	static EAISkill SetSkill(int indexAgent, int countAgent, IEntity entitiy, SCR_AICombatComponent combatComp)
+	void setAISkills(DCO_CUSTOMRANK rank)
 	{
-		EAISkill skill;
-		
-		EAISkill currSkill = combatComp.GetAISkill();
-		
-		SCR_ECharacterRank charRank = getRank(skill, indexAgent, countAgent);
-		
-		SCR_CharacterRankComponent charRankComp = SCR_CharacterRankComponent.Cast(entitiy.FindComponent(SCR_CharacterRankComponent));
-		
-		SCR_ECharacterRank currRank = charRankComp.GetCharacterRank(entitiy);
-		
-		#ifdef Workbench
-		
-		string DebugText = String.Format("%1 > %2", typename.EnumToString(DCO_CUSTOMRANK, cusRank), typename.EnumToString(SCR_ECharacterRank, charRank));
-		
-		#endif
-		
-		return skill;
+		m_ERank = rank;
 	}
 	
-	static SCR_ECharacterRank getRank(out EAISkill skill, int indexAgent, int countAgent)
+	protected DCO_CUSTOMRANK SetCharacterRank(DCO_CUSTOMRANK rank)
 	{
-		SCR_ECharacterRank charRank = SCR_ECharacterRank.PRIVATE;
+		m_ERank = rank;
 		
-		return  charRank;
+		return rank;
 	}
 	
-	void setRank(int cusRanks)
+	protected DCO_CUSTOMRANK GetCharacterRank()
 	{
-		cusRank = cusRanks;
+		return m_ERank;
+	}
+	
+	void DCO_SkillComponent(IEntityComponentSource src, IEntity ent, IEntity parent)
+	{
+		m_Owner = ent;
 	}
 }

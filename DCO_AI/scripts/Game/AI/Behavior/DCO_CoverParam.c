@@ -7,14 +7,19 @@ modded class SCR_AIGetCoverParameters : AITaskScripted
 			outStance = ECharacterStance.STAND;
 			outStanceHide = ECharacterStance.CROUCH;
 		}
-		else if (height > 0.3)
+		else if (height > 0.4)
 		{
 			outStance = ECharacterStance.CROUCH;
-			outStanceHide = ECharacterStance.PRONE;
+			outStanceHide = ECharacterStance.CROUCH;
+		}
+		else if (height > 0.25)
+		{
+			outStance = ECharacterStance.PRONE;
+			outStanceHide = ECharacterStance.PRONE;		
 		}
 		else
 		{
-			outStance = ECharacterStance.PRONE;
+			outStance = ECharacterStance.CROUCH;
 			outStanceHide = ECharacterStance.PRONE;
 		}
 	}
