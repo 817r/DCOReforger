@@ -16,6 +16,17 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float MAXIMAL_TOLERANCE = 12.0;	
 	static const float MINIMAL_TOLERANCE = 0.35;
 	
+	float threatFactor;
+	private SCR_AIInfoComponent m_InfoComponent;
+	
+	override void OnInit(AIAgent owner)
+	{
+		IEntity ent = owner.GetControlledEntity();
+		if (ent)
+			m_CombatComponent = SCR_AICombatComponent.Cast(ent.FindComponent(SCR_AICombatComponent));		
+		m_InfoComponent = SCR_AIInfoComponent.Cast(owner.FindComponent(SCR_AIInfoComponent));
+	}
+	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
     {
 		//if (!m_CombatComponent || !m_InfoComponent)
@@ -24,6 +35,9 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		
 		IEntity entity = owner.GetControlledEntity();
 		if (!entity)
+			return ENodeResult.FAIL;
+		
+		if (!m_InfoComponent)
 			return ENodeResult.FAIL;
 		
 #ifdef AI_DEBUG
@@ -87,11 +101,17 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		// Correct aim point size based on factors
 		float distanceFactor = GetDistanceFactor(distance);
 		float offsetWeaponFactor = GetOffsetWeaponTypeFactor(weaponType);
-		float illuminationFactor = GetTargetIlluminationFactor(target);				
+		float illuminationFactor = GetTargetIlluminationFactor(target);	
+					
 		
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
-		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
-		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
+		EAIThreatState currentThreat = m_InfoComponent.GetThreatState();
+		EAISkill changeSkillTo = GetSkillFromThreat(currentSkill, currentThreat);
+		
+		m_CombatComponent.SetAISkill(changeSkillTo);
+		
+		offsetX = GetRandomFactor(currentSkill, 0.2) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
+		offsetY = GetRandomFactor(currentSkill, 0.2) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
 		
 		tolerance = GetTolerances(entity, targetEntity, angularSize, distance, weaponType, stances);
 		
@@ -338,6 +358,8 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	// returns skill corrected by current threat level and if AI can shoot under such suppression
 	EAISkill GetSkillFromThreat(EAISkill inSkill, EAIThreatState threat)
 	{
+		float sigma;
+		
 		switch (threat)
 		{
 			case EAIThreatState.EXHAUSTED :
@@ -454,6 +476,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				break;
 			}	
 		}	
+		
 		return EAISkill.NONE;
 	}
 	

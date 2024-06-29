@@ -98,18 +98,38 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
        Nodes {
         AITaskIdle Idle {
          Name "Idle"
-         EditorPos -784 652
+         EditorPos -783 653
          Period 3
         }
         RunBT RunBT {
          Name "RunBT"
-         EditorPos -599.667 640
-         BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
+         EditorPos -598.667 640
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "weaponOrMuzzleSwitch"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "weaponReady"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "handleWeaponTree"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "weaponOrMuzzleSwitch"
+          }
+         }
+         BehaviorTree "{648E04634854A4AB}AI/BehaviorTrees/Chimera/Soldier/HandleWeaponSwitching.bt"
         }
         AITaskIdle Idle {
          Name "Idle"
          EditorPos -78.5 657
-         Period 7
+         Period 15
         }
        }
       }
