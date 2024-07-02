@@ -4,6 +4,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	ref DCO_AIMoraleSystem m_DCOMoraleSystem;
 	DCO_SkillComponent m_DCO_Skill;
 	ref DCO_Group_Info m_DCO_GroupInfo;
+	DCO_GroupIdentifierComponent m_GroupIdentifier;
 
 	protected static const float DISTANCE_HYSTERESIS_FACTOR = 0.2; 	//!< how bigger must be old distance to new in IsInvestigationRelevant()
 	protected static const float NEARBY_DISTANCE_SQ = 150; 			//!< what is the minimal distance of new vs old in IsInvestigationRelevant()
@@ -188,6 +189,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		if (!m_OwnerEntity)
 			return;
 		
+		m_GroupIdentifier = DCO_GroupIdentifierComponent.Cast(m_OwnerEntity.FindComponent(DCO_GroupIdentifierComponent));
 		m_DCO_GroupInfo = new DCO_Group_Info(m_Owner);
 		m_DCO_Skill = DCO_SkillComponent.Cast(m_OwnerEntity.FindComponent(DCO_SkillComponent));
 		m_DCOMoraleSystem = new DCO_AIMoraleSystem(this);
@@ -205,6 +207,12 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_CombatMoveState = new SCR_AICombatMoveState();
 		m_AIInfo.m_OnCompartmentEntered.Insert(OnCompartmentEntered);
 		m_AIInfo.m_OnCompartmentLeft.Insert(OnCompartmentLeft);
+		
+		if (m_GroupIdentifier)
+		{
+			m_GroupIdentifier.automaticIdentification();
+		}
+		
 	}
 	
 	DCO_SkillComponent getSkillComp()

@@ -16,6 +16,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float MAXIMAL_TOLERANCE = 12.0;	
 	static const float MINIMAL_TOLERANCE = 0.35;
 	
+	EAISkill defaultSkill;
 	float threatFactor;
 	private SCR_AIInfoComponent m_InfoComponent;
 	
@@ -25,6 +26,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		if (ent)
 			m_CombatComponent = SCR_AICombatComponent.Cast(ent.FindComponent(SCR_AICombatComponent));		
 		m_InfoComponent = SCR_AIInfoComponent.Cast(owner.FindComponent(SCR_AIInfoComponent));
+		defaultSkill = m_CombatComponent.GetAISkill();
 	}
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)

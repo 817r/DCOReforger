@@ -15,6 +15,9 @@ class DCO_AIInfoComponent : ScriptComponent
 	private AIAgent m_Agent;
 	private IEntity m_Entity;
 	private DCO_Group_Info m_GroupInfo;
+	protected SCR_AIGroupUtilityComponent m_UtilityComponent;
+	protected SCR_AIGroupInfoComponent m_GroupInfoComponent;
+	
 	
 	private float m_fPerceptionSafe;
 	private float m_fPerceptionVigilant;
@@ -38,6 +41,7 @@ class DCO_AIInfoComponent : ScriptComponent
 		super.EOnInit(owner);
 		
 		AIAgent agent = AIAgent.Cast(GetOwner());
+		SCR_AIGroup group = SCR_AIGroup.Cast(owner);
 		
 		if (agent)
 		{
@@ -47,6 +51,13 @@ class DCO_AIInfoComponent : ScriptComponent
 			
 			IEntity controlledEntity = agent.GetControlledEntity();
 			
+			if (group)
+			{
+				m_UtilityComponent = SCR_AIGroupUtilityComponent.Cast(group.FindComponent(SCR_AIGroupUtilityComponent));
+				m_GroupInfoComponent = SCR_AIGroupInfoComponent.Cast(group.FindComponent(SCR_AIGroupInfoComponent));
+			}
+				
+
 			if (controlledEntity)
 			{
 				m_Entity = controlledEntity;
