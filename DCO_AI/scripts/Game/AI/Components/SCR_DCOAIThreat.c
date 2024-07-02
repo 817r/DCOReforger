@@ -21,11 +21,11 @@ modded class SCR_AIThreatSystem
 	static const float PINNED_THRESHOLD = 2.2;
 	static const float EXHAUSTED_THRESHOLD = 4.7;
 	
-	private static const float SUPPRESSION_BULLET_INCREMENT = 0.01625;
+	private static const float SUPPRESSION_BULLET_INCREMENT = 0.008125;
 	private static const float ENDANGERED_INCREMENT = 0.45;
 	private static const float BLEEDING_FIXED_INCREMENT = 0.2;
 	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.06;
-	private static const float DISTANT_SHOT_INCREMENT = 0.003;
+	private static const float DISTANT_SHOT_INCREMENT = 0.002;
 	private static const float EXPLOSION_MAX_INCREMENT = 1.0;
 	private static const float EXPLOSION_CLOSE_DISTANCE = 15;	//!< What distance in m is considered close - max increment is used
 	static const float EXPLOSION_MAX_DISTANCE = 300;
@@ -297,6 +297,7 @@ modded class SCR_AIThreatSystem
 		if (utility.m_CurrentBehavior)
 			threatFromBehavior = utility.m_CurrentBehavior.m_fThreat;
 		
+		m_MoraleState = m_moraleSystem.GetMoraleMeasure();
 		rank = m_DCO_Skill.GetCharacterRank(utility.m_OwnerEntity);
 		m_fThreatTotal = Math.Clamp(threatFromBehavior + m_fThreatSuppression + m_fThreatInjury + m_fThreatShotsFired + m_fThreatIsEndangered, 0, 5.5);
 		
@@ -312,7 +313,7 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatBulletImpact: %1", count));
 		#endif
 		
-		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count*SUPPRESSION_BULLET_INCREMENT, 0, 5.5);
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 5.5);
 		decreaseMoraleWeaponFired(count);
 	}
 	
@@ -333,7 +334,7 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
 		#endif
 		
-		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 5.5);
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count/5 * SUPPRESSION_BULLET_INCREMENT, 0, 5.5);
 		decreaseMoraleWeaponFired(count);
 	}
 	

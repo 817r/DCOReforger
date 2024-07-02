@@ -13,7 +13,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	protected SCR_CharacterDamageManagerComponent damageManager;
 	private DCO_SkillComponent m_DCO_Skill;
-	private DCO_CUSTOMRANK rank;
+	private DCO_CUSTOMRANK rank;	
+	
+	DCO_GroupTactic m_Tac;
+	DCO_GroupTacticComponent m_GroupTacticComponent;
 	
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
@@ -77,6 +80,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 			{
 				groupNumber = m_DCO_AIInfoComponent.getMemberNumber();
 			}
+			
+			m_GroupTacticComponent = DCO_GroupTacticComponent.Cast(owner.FindComponent(DCO_GroupTacticComponent));
+			
+			m_Tac = m_GroupTacticComponent.GetGroupTactic(owner);
 		}
 	}
 	

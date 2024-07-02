@@ -3,6 +3,8 @@ SCR_AIGroup {
  components {
   DCO_GroupIdentifierComponent "{61C24346A6DB6C38}" {
   }
+  DCO_GroupTacticComponent "{61C4C3D4291BB441}" {
+  }
  }
  DangerEventRange 250
 }

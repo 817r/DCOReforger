@@ -11,6 +11,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	SCR_ChimeraAIAgent m_Agent;
 	DCO_CUSTOMRANK rank;
 	moraleState morale;
+	DCO_GroupTactic tac;
 	
 	AIDangerEvent danger;
 	
@@ -33,6 +34,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
 			return ENodeResult.RUNNING;
 		
+		tac = m_Utility.dco_GroupTac.GetGroupTactic(m_MyEntity);
 		rank = m_Utility.m_DCO_Skill.GetCharacterRank(m_MyEntity);
 		morale = m_Utility.m_DCOMoraleSystem.GetMoraleMeasure();
 		m_fTargetDist = GetTargetDistance();
@@ -329,10 +331,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 				}
 			}
 			
-			if (IsFirstExecution())
-				rq.m_bFailIfNoCover = false; // On first run we want to move to cover, or stay where we are if there is no cover, and shoot.
-			else
-				rq.m_bFailIfNoCover = m_State.m_bInCover; // Don't leave cover if there is no next cover
+			rq.m_bFailIfNoCover = m_State.m_bInCover; // Don't leave cover if there is no next cover
 
 			// rq.m_bAimAtTarget = false; // Can't aim at tgt while sprinting
 			rq.m_bAimAtTargetEnd = true;
@@ -341,13 +340,544 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		// If we are not in cover, min cover search distance is overridden to 0, we should find any cover ASAP
 		if (!m_State.m_bInCover)
 		{
-			coverSearchDistMin = 3;
+			coverSearchDistMin = 0;
 			coverSearchDistMax = 50;
 		}
-			
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
+		
+		switch(tac)
+		{
+			case DCO_GroupTactic.EVASIVE:
+			{
+				switch(m_eThreatState)
+				{
+					case EAIThreatState.THREATENED:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								int rand = Math.RandomInt(1,2);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else 
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;							
+							}
+							default:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;							
+							}
+						}
+						break;
+					}
+					
+					case EAIThreatState.PINNED:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								int rand = Math.RandomInt(1,2);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else 
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;							
+							}
+							default:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;							
+							}
+						}
+						break;
+					}					
+					
+					case EAIThreatState.EXHAUSTED:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;							
+							}
+							default:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;							
+							}
+						}
+						break;
+					}
+					
+					default:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;							
+							}
+							default:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+								break;							
+							}
+						}
+						break;
+					}
+				}
+				
+				rq.m_bFailIfNoCover = false;
+				moveDistanceMax = 25;
+				break;
+			}
+			
+			case DCO_GroupTactic.DEFENSIVE:
+			{
+				switch(m_eThreatState)
+				{
+					case EAIThreatState.THREATENED:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 10;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_fCoverSearchDistMax = 10;
+								break;							
+							}
+							default:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;							
+							}
+						}
+						break;
+					}
+					
+					case EAIThreatState.PINNED:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								int rand = Math.RandomInt(1,2);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else 
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_fCoverSearchDistMax = 20;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_bFailIfNoCover = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;							
+							}
+							default:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 12;
+								break;							
+							}
+						}
+						break;
+					}					
+					
+					case EAIThreatState.EXHAUSTED:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								int rand = Math.RandomInt(1,2);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else 
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 12;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_fCoverSearchDistMax = 20;
+								break;							
+							}
+							default:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 8;
+								break;							
+							}
+						}
+						break;
+					}
+					
+					default:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								int rand = Math.RandomInt(1,2);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else 
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 5;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_fCoverSearchDistMax = 15;
+								break;							
+							}
+							default:
+							{
+								int rand = Math.RandomInt(1,2);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else 
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 13;
+								break;							
+							}
+						}
+						break;
+					}
+				}
+				break;
+			}
+			
+			case DCO_GroupTactic.AGGRESIVE:
+			{
+				switch(m_eThreatState)
+				{
+					case EAIThreatState.THREATENED:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 10;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_fCoverSearchDistMax = 10;
+								break;							
+							}
+							default:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;							
+							}
+						}
+						break;
+					}
+					
+					case EAIThreatState.PINNED:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_fCoverSearchDistMax = 20;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_bFailIfNoCover = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;							
+							}
+							default:
+							{
+								int rand = Math.RandomInt(1,3);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else if (rand == 2)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								else if (rand == 3)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 18;
+								break;							
+							}
+						}
+						break;
+					}					
+					
+					case EAIThreatState.EXHAUSTED:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								int rand = Math.RandomInt(1,2);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else 
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 12;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_fCoverSearchDistMax = 20;
+								break;							
+							}
+							default:
+							{
+								int rand = Math.RandomInt(1,2);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else 
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 8;
+								break;							
+							}
+						}
+						break;
+					}
+					
+					default:
+					{
+						switch(morale)
+						{
+							case moraleState.MOTIVATED:
+							{
+								int rand = Math.RandomInt(1,3);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else if (rand == 2)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								else if (rand == 3)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 5;
+								break;
+							}
+							case moraleState.ANXIOUS:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 15;
+								break;
+							}
+							case moraleState.BREAK:
+							{
+								rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_fCoverSearchDistMax = 15;
+								break;							
+							}
+							default:
+							{
+								int rand = Math.RandomInt(1,3);
+								if (rand == 1)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+								else if (rand == 2)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+								else if (rand == 3)
+									rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+								rq.m_bTryFindCover = true;
+								rq.m_bCheckCoverVisibility = true;
+								rq.m_fCoverSearchDistMax = 13;
+								break;							
+							}
+						}
+						break;
+					}
+				}
+				rq.m_bFailIfNoCover = false;
+				break;
+			}
+		}
+		
+		if (IsFirstExecution())
+			rq.m_bFailIfNoCover = false;
+		
 		rq.m_fMoveDistance = Math.RandomFloat(0.2, 2.0) * moveDistanceMax; // Move distance if cover is not found, randomized
 		
 		// Subscribe to events
@@ -584,6 +1114,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 	{
 		float waitTime;
 		float CQB;
+		float waitTimeTactics;
 		if (inCover)
 		{
 			// In cover
@@ -690,6 +1221,22 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			}
 		}
 		
+		switch(tac)
+		{
+			case DCO_GroupTactic.EVASIVE:
+			{
+				waitTimeTactics = Math.RandomFloat(-3.0, 1.0); break;
+			}
+			case DCO_GroupTactic.DEFENSIVE:
+			{
+				waitTimeTactics = Math.RandomFloat(5.0, 8.0); break;
+			}
+			case DCO_GroupTactic.AGGRESIVE:
+			{
+				waitTimeTactics = Math.RandomFloat(-8.0, -10.0); break;
+			}
+		}
+		
 		if (longWaitTime)
 			waitTime *= Math.RandomFloat(1.7, 2.0);
 		
@@ -698,6 +1245,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		
 		if(m_bCloseRangeCombat)
 			waitTime += CQB;		
+		
+		waitTime += waitTimeTactics;
 		
 		return waitTime;
 	}

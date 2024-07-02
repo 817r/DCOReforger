@@ -18,7 +18,7 @@ class DCO_GroupIdentifierComponent : ScriptComponent
 	[Attribute(defvalue: "2", uiwidget: UIWidgets.ComboBox, desc: "DCO Group Identifer", enums: ParamEnumArray.FromEnum(DCO_GroupIdentifer))]
 	DCO_GroupIdentifer m_Idf;
 	protected IEntity m_Owner;
-	protected SCR_AIGroup m_Group;
+	SCR_AIGroup m_Group;
 	array<AIAgent> agents;
 	
 	int sniper;
@@ -31,6 +31,9 @@ class DCO_GroupIdentifierComponent : ScriptComponent
 	void automaticIdentification()
 	{
 		m_Group = SCR_AIGroup.Cast(m_Group.FindComponent(SCR_AIGroup));		
+		
+		if (!m_Group) return;
+		
 		m_Group.GetAgents(agents);
 		int groupMem;
 		groupMem = m_Group.GetAgentsCount();
