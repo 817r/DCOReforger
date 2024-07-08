@@ -219,4 +219,9 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	{
 		return m_DCO_Skill.GetCharacterSkillRankComponent(m_OwnerEntity);
 	}
+	
+	DCO_GroupTactic getTactics()
+	{
+		return dco_GroupTac;
+	}
 }

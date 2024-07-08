@@ -86,6 +86,8 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		else if (m_bNewGroupMemberAdded && activity)
 			restartActivity = true;
 			
+		
+		
 		if (restartActivity)
 		{
 			SetCurrentAction(activity);
@@ -121,8 +123,8 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 				m_Perception.Update();
 				UpdateSuppressCluster();
 				UpdateThreatMeasure();
+				//evaluateTactics();
 				EvaluateFlareUsage();
-				
 				if (!m_Perception.m_aTargetClusters.IsEmpty())
 					UpdateClustersState(m_fPerceptionUpdateTimer_ms);
 				
@@ -189,5 +191,25 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 			m_GroupTactics.automaticIdentification();
 		}
 		
+	}
+	
+	void evaluateTactics()
+	{
+		if (!m_Perception.GetOnEnemyDetected())
+			return;
+		
+		if (m_Tac == DCO_GroupTactic.EVASIVE)
+		{
+			if (!HasActionOfType(DCO_AIEvasiveActivity))
+			{
+				auto activity = new DCO_AIEvasiveActivity(this, null);
+				AddAction(activity);
+			}
+		}
+	}
+	
+	DCO_GroupTactic getTactics()
+	{
+		return m_Tac;
 	}
 }

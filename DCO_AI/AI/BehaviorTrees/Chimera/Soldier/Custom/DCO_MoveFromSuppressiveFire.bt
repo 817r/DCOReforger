@@ -206,7 +206,7 @@ BehaviorTree "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Move
         AITaskIdle Idle {
          Name "Idle"
          EditorPos -76.047 890.286
-         Period 1
+         Period 3
          PeriodRandom 0.3
         }
         SCR_AIFailAction "SCR_AI Fail Action" {

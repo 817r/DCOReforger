@@ -5,6 +5,13 @@ SCR_AIGroup {
   }
   DCO_GroupTacticComponent "{61C4C3D4291BB441}" {
   }
+  SCR_AIConfigComponent "{512CC1759AE69D6D}" {
+   m_aGoalReactions {
+    DCO_AIEvasive "{61D07B5DE212AED5}" {
+     m_eType EVADE_TACTICS
+    }
+   }
+  }
  }
  DangerEventRange 250
 }
