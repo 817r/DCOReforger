@@ -443,30 +443,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 			return false;
 		
 		int magCount = m_InventoryManager.GetMagazineCountByWeapon(weaponComp);
+		int lowMagThreshold = GetWeaponLowMagThreshold(weaponComp);
 		
-		int lowMagThreshold = 1;
+		if (magCount < lowMagThreshold)
+			weaponComp.GetCurrentMagazine().SetAmmoCount(magCount + 2);
 		
-		// Decide how many remainiing magazines is enough to complain
-		switch (weaponComp.GetWeaponType())
-		{
-			case EWeaponType.WT_RIFLE: lowMagThreshold = 1; break;
-			case EWeaponType.WT_GRENADELAUNCHER: lowMagThreshold = 2; break; // todo now it won't work when we are out of UGL ammo because weapons are not marked with WT_GRENADELAUNCHER
-			case EWeaponType.WT_SNIPERRIFLE: lowMagThreshold = 1; break;
-			case EWeaponType.WT_ROCKETLAUNCHER: lowMagThreshold = 1; break;
-			case EWeaponType.WT_MACHINEGUN: lowMagThreshold = 1; break;
-			case EWeaponType.WT_HANDGUN: lowMagThreshold = 1; break;
-			default: lowMagThreshold = 1;
-		}
-		
-		if( magCount < lowMagThreshold )
-		{
-			LOW_AMMO = true;
-			return true;
-		}
-		
-		LOW_AMMO = false;
-		
-		return false;
+		return magCount < lowMagThreshold;
 	}
 
 	float improvementCalcuation()

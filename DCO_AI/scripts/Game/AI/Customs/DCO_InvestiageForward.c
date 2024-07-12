@@ -139,13 +139,13 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 			{
 				case EAIThreatState.EXHAUSTED:
 				{
-					rq.m_eStanceMoving = ECharacterStance.PRONE;
-					rq.m_eStanceEnd = ECharacterStance.PRONE;
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					break;
 				}
 				case EAIThreatState.PINNED:
 				{
-					rq.m_eStanceMoving = ECharacterStance.PRONE;
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					break;
 				}
@@ -179,7 +179,7 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 			rq.m_eMovementType = EMovementType.WALK;
 			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
-			rq.m_bAimAtTargetEnd = true;
+			rq.m_bAimAtTargetEnd = false;
 		}
 		else
 		{
@@ -197,7 +197,7 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 					if (Math.RandomIntInclusive(1, 5) > 2)
 						rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					else
-						rq.m_eStanceEnd = ECharacterStance.PRONE;
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 					break;
 				}
@@ -220,12 +220,12 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 					if (Math.RandomIntInclusive(0, 1) == 1)
 						rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					else
-						rq.m_eStanceMoving = ECharacterStance.PRONE;
+						rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eMovementType = EMovementType.RUN;
 					if (Math.RandomIntInclusive(1, 5) > 2)
 						rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					else
-						rq.m_eStanceEnd = ECharacterStance.PRONE;
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					rq.m_bAimAtTarget = true;
 					break;
 				}
@@ -262,14 +262,14 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 			rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 
 			// rq.m_bAimAtTarget = false; // Can't aim at tgt while sprinting
-			rq.m_bAimAtTargetEnd = true;
+			
 		}
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
-		rq.m_bFailIfNoCover = true;
+		rq.m_bFailIfNoCover = false;
 		rq.m_fMoveDistance = Math.RandomFloat(1.0, 2.0) * moveDistanceMax;
-		
+		rq.m_bAimAtTargetEnd = false;
 		rq.GetOnMovementStarted().Insert(OnMovementStarted);
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
 		
