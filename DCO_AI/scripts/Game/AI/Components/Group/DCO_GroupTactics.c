@@ -12,7 +12,7 @@ class DCO_GroupTacticComponentClass : ScriptComponentClass
 
 class DCO_GroupTacticComponent : ScriptComponent
 {
-	[Attribute(defvalue: "1", uiwidget: UIWidgets.ComboBox, desc: "DCO Group Identifer", enums: ParamEnumArray.FromEnum(DCO_GroupTactic))]
+	[Attribute(defvalue: "2", uiwidget: UIWidgets.ComboBox, desc: "DCO Group Identifer", enums: ParamEnumArray.FromEnum(DCO_GroupTactic))]
 	DCO_GroupTactic m_tac;
 	DCO_GroupIdentifer m_idf;
 	
