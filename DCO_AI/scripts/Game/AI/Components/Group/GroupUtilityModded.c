@@ -1,8 +1,11 @@
 modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 {
 	DCO_GroupIdentifierComponent m_GroupIdentifier;
+	DCO_GroupIdentifer m_Idf;
 	DCO_GroupTacticComponent m_GroupTactics;
 	DCO_GroupTactic m_Tac;
+	
+	ref array<SCR_AIUtilityComponent> m_Util = {};
 
 	//------------------------------------------------------------------------------------------------
 	//!
@@ -131,9 +134,17 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 				m_fPerceptionUpdateTimer_ms -= PERCEPTION_UPDATE_TIMER_MS;
 			}
 		}
+		
+		m_Tac = m_GroupTactics.GetGroupTactic(m_Owner);
+		
+		foreach (SCR_AIUtilityComponent util : m_Util)
+		{
+			util.setTactics(m_Tac);
+		}
 			
 		m_fLastUpdateTime = currentTime;
 		m_bNewGroupMemberAdded = false; // resetting reaction on group member added
+
 		
 
 		
@@ -183,11 +194,17 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		
 		if (m_GroupIdentifier)
 		{
+			m_Idf = m_GroupIdentifier.GetGroupIndentification(m_Owner);
 			m_GroupIdentifier.automaticIdentification();
 		}
 		
 		if (m_GroupTactics)
 		{
+			m_Tac = m_GroupTactics.GetGroupTactic(m_Owner);
+			foreach (SCR_AIUtilityComponent util : m_Util)
+			{
+				util.setTactics(m_Tac);
+			}
 			m_GroupTactics.automaticIdentification();
 		}
 		
@@ -205,11 +222,86 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 				auto activity = new DCO_AIEvasiveActivity(this, null);
 				AddAction(activity);
 			}
+		} else if (m_Tac == DCO_GroupTactic.DEFENSIVE)
+		{
+			if (!HasActionOfType(DCO_DefendActivityTactics))
+			{
+				auto activitys = new DCO_DefendActivityTactics(this, null);
+				AddAction(activitys);
+			}
 		}
+	}
+	
+	override void OnAgentAdded(AIAgent agent)
+	{
+		// Add to array of AIInfo
+		SCR_ChimeraAIAgent chimeraAgent = SCR_ChimeraAIAgent.Cast(agent);
+		if (!chimeraAgent)
+			return;
+
+		SCR_AIInfoComponent info = chimeraAgent.m_InfoComponent;
+		
+		if (!info)
+			return;
+		
+		m_aInfoComponents.Insert(info);	
+		m_FireteamMgr.OnAgentAdded(agent);
+
+		info.m_OnCompartmentEntered.Insert(OnAgentCompartmentEntered);
+		info.m_OnCompartmentLeft.Insert(OnAgentCompartmentLeft);
+		info.m_OnAgentLifeStateChanged.Insert(OnAgentLifeStateChanged);
+		m_bNewGroupMemberAdded = true;
+		
+		if (info.HasUnitState(EUnitState.IN_VEHICLE))
+		{
+			OnJoinGroupFromVehicle(agent, info.HasUnitState(EUnitState.PILOT));
+		}
+		
+		SCR_AIUtilityComponent utilityComp = chimeraAgent.m_UtilityComponent;
+		
+		m_Util.Insert(utilityComp);
+	}
+	
+	override void OnAgentRemoved(SCR_AIGroup group, AIAgent agent)
+	{	
+		SCR_AIUtilityComponent utility = SCR_AIUtilityComponent.Cast(agent.FindComponent(SCR_AIUtilityComponent));
+		if(!utility)
+			return Debug.Error("Null AI utility");
+			
+		if(agent)
+			utility.CancelAllGroupActivityBehaviors(this);
+		
+		// Remove from array of AIInfo
+		for (int i = m_aInfoComponents.Count() - 1; i >= 0; i--)
+		{
+			if (!m_aInfoComponents[i])
+			{
+				Debug.Error("Null AI info occured"); // investigate when this happens!
+				m_aInfoComponents.RemoveOrdered(i);
+			}
+			else if (m_aInfoComponents[i].IsOwnerAgent(agent))
+			{
+				// Unsubscribe from compartment event
+				SCR_AIInfoComponent infoComp = m_aInfoComponents[i];
+				infoComp.m_OnCompartmentEntered.Remove(OnAgentCompartmentEntered);
+				infoComp.m_OnCompartmentLeft.Remove(OnAgentCompartmentLeft);
+				
+				m_Util.RemoveOrdered(i);
+				m_aInfoComponents.RemoveOrdered(i);
+				break;
+			}
+		}
+		
+		m_FireteamMgr.OnAgentRemoved(agent);
 	}
 	
 	DCO_GroupTactic getTactics()
 	{
 		return m_Tac;
+	}
+	
+	DCO_GroupIdentifer getIdentifier()
+	{
+		return m_Idf;
 	}
 }

@@ -137,7 +137,7 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
             }
             SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
              Name "SCR_AI Set Combat Move State"
-             EditorPos -1678.927 1070
+             EditorPos -1680.927 1070
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -153,7 +153,6 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
               }
              }
              Group "{60E613E5BDA9470D}"
-             m_bSetRequestState 1
              m_bSetInCover 1
              m_bSetExposedInCover 1
             }
@@ -193,25 +192,25 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
         }
         Switch Switch {
          Name "Switch"
-         EditorPos 142 -810.667
+         EditorPos 62 -740.667
          Nodes {
           AITaskPlayGesture "Play Gesture" {
            Name "Play Gesture"
-           EditorPos -37 -528.667
+           EditorPos -117 -457
            Group "{60E629DB81A11334}"
            Gesture "Look at me"
            Play 1
           }
           AITaskPlayGesture "Play Gesture" {
            Name "Play Gesture"
-           EditorPos 199 -528.524
+           EditorPos 119 -456.857
            Group "{60E629DB81A11334}"
            Gesture "Point finger"
            Play 1
           }
           AITaskPlayGesture "Play Gesture" {
            Name "Play Gesture"
-           EditorPos 432.429 -526.667
+           EditorPos 352.429 -455
            Group "{60E629DB81A11334}"
            Gesture "Point at myself"
            Play 1
@@ -239,22 +238,6 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
    Name "Sequence"
    EditorPos -6351.877 1983.203
    Nodes {
-    SCR_AIGetAllocatedCompartment "SCR_AI Get Allocated Compartment" {
-     Name "SCR_AI Get Allocated Compartment"
-     EditorPos -7081.652 2279.416
-     OutPorts {
-      SingleOutputPortContainer SingleOutputPortContainer {
-       Port -1
-       PortName "CompartmentOut"
-      }
-      SingleOutputPortContainer SingleOutputPortContainer {
-       Port 16
-       PortName "VehicleOut"
-      }
-     }
-     Group "{60E6948FF39D792F}"
-     m_eCompartmentType Turret
-    }
     SCR_AISendGoalMessage_GetIn "SCR_AI Send Goal Message_ Get In" {
      Name "SCR_AI Send Goal Message_ Get In"
      EditorPos -6321.555 2231.893
@@ -274,6 +257,10 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
       SingleInputPortContainer SingleInputPortContainer {
        Port 16
        PortName "VehicleEntity"
+      }
+      SingleInputPortContainer SingleInputPortContainer {
+       Port -1
+       PortName "BoardingParams"
       }
       SingleInputPortContainer SingleInputPortContainer {
        Port -1

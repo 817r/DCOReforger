@@ -4,7 +4,7 @@ modded class SCR_AICombatMoveUtils
 }
 
 
-modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
+modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 {	
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 	
@@ -34,7 +34,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
 			return ENodeResult.RUNNING;
 		
-		tac = m_Utility.dco_GroupTac.GetGroupTactic(m_MyEntity);
+		tac = m_Utility.getTactics();
 		rank = m_Utility.m_DCO_Skill.GetCharacterRank(m_MyEntity);
 		morale = m_Utility.m_DCOMoraleSystem.GetMoraleMeasure();
 		m_fTargetDist = GetTargetDistance();
@@ -85,9 +85,9 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		else if (!m_State.m_bInCover && IsFirstExecution())
 		{
 			if (m_CombatComp.GetCurrentTarget() == null)
-				CoverManager(vector.Zero, SCR_EAICombatMoveDirection.BACKWARD);
+				CoverManager(vector.Zero, SCR_EAICombatMoveDirection.ANYWHERE);
 			else
-				CoverManager(m_CombatComp.GetLastSeenEnemy().GetLastDetectedPosition(), SCR_EAICombatMoveDirection.BACKWARD);			
+				CoverManager(m_CombatComp.GetLastSeenEnemy().GetLastDetectedPosition(), SCR_EAICombatMoveDirection.ANYWHERE);			
 		}
 		else if (m_State.m_bInCover && m_CharacterController.IsReloading())
 		{
@@ -122,7 +122,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			}
 			
 			if (m_State.m_fTimerStopped_s > Math.RandomFloat(8.0, 11.0) && m_eThreatState >= EAIThreatState.THREATENED && morale == moraleState.ANXIOUS)
-				CoverManager(m_CombatComp.GetLastSeenEnemy().GetLastDetectedPosition(), SCR_EAICombatMoveDirection.BACKWARD);
+				CoverManager(m_CombatComp.GetLastSeenEnemy().GetLastDetectedPosition(), SCR_EAICombatMoveDirection.ANYWHERE);
 		}
 		
 		return ENodeResult.RUNNING;
@@ -376,7 +376,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 							}
 							case moraleState.BREAK:
 							{
-								rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+								rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 10;
@@ -753,8 +753,6 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		if (group)
 			wp = group.GetCurrentWaypoint();
 		
-
-		
 		vector movePos;
 		SCR_EAICombatMoveDirection eDirection;
 		float coverSearchSectorHalfAngleRad;
@@ -824,7 +822,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		if (m_State.IsExecutingRequest())
 			return false;
 		
-		if (morale >= moraleState.ANXIOUS && m_eThreatState >= EAIThreatState.THREATENED && !m_State.m_bInCover)
+		if (morale >= moraleState.BREAK && m_eThreatState >= EAIThreatState.PINNED && !m_State.m_bInCover)
 			return m_State.m_fTimerStopped_s > Math.RandomFloat(4.0, 7.0);
 		
 		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
@@ -927,7 +925,8 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		rq.m_fMoveDistance = 7.0;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
-		rq.m_bCheckCoverVisibility = false;
+		rq.m_bCheckCoverVisibility = true;
+		rq.m_bFailIfNoCover = false;
 		m_State.ApplyNewRequest(rq);
 	}
 
@@ -1044,17 +1043,13 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 		
 		switch(tac)
 		{
-			case DCO_GroupTactic.EVASIVE:
-			{
-				waitTimeTactics = Math.RandomFloat(-3.0, 1.0); break;
-			}
 			case DCO_GroupTactic.DEFENSIVE:
 			{
 				waitTimeTactics = Math.RandomFloat(5.0, 8.0); break;
 			}
 			case DCO_GroupTactic.AGGRESIVE:
 			{
-				waitTimeTactics = Math.RandomFloat(-8.0, -10.0); break;
+				waitTimeTactics = Math.RandomFloat(-20.0, -10.0); break;
 			}
 		}
 		
@@ -2597,6 +2592,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			rq.m_eStanceMoving = ECharacterStance.CROUCH;
 			rq.m_eStanceEnd = ECharacterStance.PRONE;
 			rq.m_eMovementType = EMovementType.WALK;
+			rq.m_eDirection	= SCR_EAICombatMoveDirection.BACKWARD;
 			rq.m_fCoverSearchDistMax = 20;
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
@@ -2620,6 +2616,7 @@ modded class SCR_AICombatMoveLogic_Attack : AITaskScripted
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.RUN;
+			rq.m_eDirection	= SCR_EAICombatMoveDirection.ANYWHERE;
 			rq.m_fCoverSearchDistMax = 25;
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 10;
@@ -3075,7 +3072,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
 			return ENodeResult.RUNNING;
 		
-		tac = m_Utility.dco_GroupTac.GetGroupTactic(m_MyEntity);
+		tac = m_Utility.getTactics();
 		rank = m_Utility.m_DCO_Skill.GetCharacterRank(m_MyEntity);
 		morale = m_Utility.m_DCOMoraleSystem.GetMoraleMeasure();
 		m_fTargetDist = GetTargetDistance();

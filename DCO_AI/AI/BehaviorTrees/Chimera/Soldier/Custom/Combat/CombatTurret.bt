@@ -15,6 +15,43 @@ BehaviorTree {
        SetValue "10"
        OutVariable 0
       }
+      SCR_AIFindAvailableVehicle "SCR_AI Find Available Vehicle" {
+       Name "SCR_AI Find Available Vehicle"
+       EditorPos -321 344
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "OriginIn"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 0
+         PortName "RadiusIn"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "SearchParams"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "VehicleIn"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "VehicleOut"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "RoleOut"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "CompartmentOut"
+        }
+       }
+       m_bAddToList 1
+      }
      }
     }
    }
@@ -52,7 +89,7 @@ BehaviorTree {
   }
   SCR_AIGetUsableVehicle "SCR_AI Get Usable Vehicle" {
    Name "SCR_AI Get Usable Vehicle"
-   EditorPos 46 332
+   EditorPos 81 348.25
    InPorts {
     SingleInputPortContainer SingleInputPortContainer {
      Port -1
@@ -71,36 +108,6 @@ BehaviorTree {
    }
    m_eCompartmentType TURRET
    m_bReserveCompartment 1
-  }
-  SCR_AIFindAvailableVehicle "SCR_AI Find Available Vehicle" {
-   Name "SCR_AI Find Available Vehicle"
-   EditorPos -321 344
-   InPorts {
-    SingleInputPortContainer SingleInputPortContainerClass {
-     PortName "OriginIn"
-    }
-    SingleInputPortContainer SingleInputPortContainerClass {
-     Port 0
-     PortName "RadiusIn"
-    }
-    SingleInputPortContainer SingleInputPortContainerClass {
-     PortName "SearchParams"
-    }
-    SingleInputPortContainer SingleInputPortContainerClass {
-     PortName "VehicleIn"
-    }
-   }
-   OutPorts {
-    SingleOutputPortContainer SingleOutputPortContainerClass {
-     PortName "VehicleOut"
-    }
-    SingleOutputPortContainer SingleOutputPortContainerClass {
-     PortName "RoleOut"
-    }
-    SingleOutputPortContainer SingleOutputPortContainerClass {
-     PortName "CompartmentOut"
-    }
-   }
   }
  }
  Variables {

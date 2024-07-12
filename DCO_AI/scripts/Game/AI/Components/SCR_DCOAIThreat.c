@@ -247,8 +247,8 @@ modded class SCR_AIThreatSystem
 		
 		if (m_fThreatTotal > EXHAUSTED_THRESHOLD)
 		{
-			m_fThreatSuppression -= m_fThreatSuppression * (THREAT_SUPPRESSION_DROP_RATE / 2) * timeSlice;
-			m_fThreatShotsFired -= m_fThreatShotsFired * (THREAT_SHOT_DROP_RATE / 2) * timeSlice;
+			m_fThreatSuppression -= m_fThreatSuppression * (THREAT_SUPPRESSION_DROP_RATE / 5) * timeSlice;
+			m_fThreatShotsFired -= m_fThreatShotsFired * timeSlice;
 		} else 
 		{
 			m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESSION_DROP_RATE * timeSlice;

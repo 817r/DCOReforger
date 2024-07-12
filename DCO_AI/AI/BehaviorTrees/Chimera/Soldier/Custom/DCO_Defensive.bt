@@ -1,0 +1,432 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defensive.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 2941.87 -746.512
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos 2938.067 -555.339
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 2630.901 -303.673
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -260.766 209.661
+         Nodes {
+          AITaskGetGroupChildren "Get Group Children" {
+           Name "Get Group Children"
+           EditorPos -420.584 420.772
+           Group "{60E613E529FFF2F9}"
+           IndexTo 0
+           OutEntity 7
+          }
+          SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+           Name "SCR_AI Get Entity Position"
+           EditorPos 10.846 438.328
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 7
+             PortName "Entity"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 8
+             PortName "Position"
+            }
+           }
+           Group "{60E613E529FFF2F9}"
+          }
+         }
+         Group "{60E613E529FFF2F9}"
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 1374.234 830.494
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 289.311 1386.934
+           Nodes {
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos -1259.734 1994.055
+             Group "{60E613E5BDA9470D}"
+             PeriodRandom 4
+            }
+            SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
+             Name "SCR_AI Create Basic Cover Query Props"
+             EditorPos -867.209 2004.661
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "Position"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "Radius"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 4
+               PortName "CoverQueryProps"
+              }
+             }
+             Group "{60E613E5BDA9470D}"
+             m_fRadius 30
+             m_bSelectHighestScoreCover 1
+            }
+            SCR_AIFindCover "SCR_AI Find Cover" {
+             Name "SCR_AI Find Cover"
+             EditorPos -123.876 2000.216
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 4
+               PortName "CoverQueryProps"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 2
+               PortName "CoverLock"
+              }
+             }
+             Group "{60E613E5BDA9470D}"
+            }
+            SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
+             Name "SCR_AI Get Cover Parameters"
+             EditorPos 428.902 2009.66
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 2
+               PortName "CoverLock"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 6
+               PortName "Pos"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 3
+               PortName "Stance"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 9
+               PortName "StanceHide"
+              }
+             }
+             Group "{60E613E5BDA9470D}"
+            }
+            AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+             Name "Character Set Movement Speed"
+             EditorPos 694.179 1833.271
+             Group "{60E613E5BDA9470D}"
+             "Movement speed" RUN
+            }
+            AITaskMove Move {
+             Name "Move"
+             EditorPos 1097.235 1970.494
+             Group "{60E613E5BDA9470D}"
+             InTargetLocation 6
+            }
+            AITaskChangeStance "Change Stance" {
+             Name "Change Stance"
+             EditorPos 1408.571 1972.857
+             InStance 3
+            }
+            SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
+             Name "SCR_AI Set Combat Move State"
+             EditorPos 1632.378 1967.994
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "InCover"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "ExposedInCover"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "AimAtTarget"
+              }
+             }
+             Group "{60E613E5BDA9470D}"
+             m_bSetInCover 1
+             m_bSetExposedInCover 1
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 1985.521 1981.422
+             Group "{60E613E5BDA9470D}"
+            }
+           }
+           Group "{60E613E5BDA9470D}"
+          }
+          AITaskReturnState "Return State" {
+           Name "Return State"
+           EditorPos 1990.901 1369.161
+           Result SUCCESS
+          }
+         }
+         Group "{60E629DB88EB72FA}"
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 3054.234 -118.673
+       Nodes {
+        SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+         Name "SCR_AI Set Weapon Raised"
+         EditorPos 2829.401 144.66
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Raised"
+          }
+         }
+         Group "{60E629DB81A11334}"
+        }
+        Switch Switch {
+         Name "Switch"
+         EditorPos 3246.734 147.327
+         Nodes {
+          AITaskPlayGesture "Play Gesture" {
+           Name "Play Gesture"
+           EditorPos 3067.734 430.994
+           Group "{60E629DB81A11334}"
+           Gesture "Look at me"
+           Play 1
+          }
+          AITaskPlayGesture "Play Gesture" {
+           Name "Play Gesture"
+           EditorPos 3303.734 431.137
+           Group "{60E629DB81A11334}"
+           Gesture "Point finger"
+           Play 1
+          }
+          AITaskPlayGesture "Play Gesture" {
+           Name "Play Gesture"
+           EditorPos 3537.163 432.994
+           Group "{60E629DB81A11334}"
+           Gesture "Point at myself"
+           Play 1
+          }
+         }
+         Group "{60E629DB81A11334}"
+         RandomRange {
+          3 4 5
+         }
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 3707.734 107.327
+         Group "{60E629DB81A11334}"
+         Period 2
+        }
+       }
+       Group "{60E629DB81A11334}"
+      }
+     }
+    }
+   }
+  }
+  AITaskSetVariable "Set Variable" {
+   Name "Set Variable"
+   EditorPos -737.623 442.589
+   Group "{60E613E529FFF2F9}"
+   SetValue "30"
+   OutVariable 0
+  }
+  AITaskSetVariable "Set Variable" {
+   Name "Set Variable"
+   EditorPos -1106.861 435.566
+   Group "{60E613E529FFF2F9}"
+   SetValue "true"
+   OutVariable 1
+  }
+ }
+ Variables {
+  Variable defendPoint {
+   VariableName "defendPoint"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable defensiveLine {
+   VariableName "defensiveLine"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable leader {
+   VariableName "leader"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable lookingAt {
+   VariableName "lookingAt"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable enemyPos {
+   VariableName "enemyPos"
+   VariableTypeName "vector"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable coverQueryProp {
+   VariableName "coverQueryProp"
+   VariableTypeName "CoverQueryProperties"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable covLock {
+   VariableName "covLock"
+   VariableTypeName "SCR_AICoverLock"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverPos {
+   VariableName "coverPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable stance {
+   VariableName "stance"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable where {
+   VariableName "where"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable radius {
+   VariableName "radius"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable radiusOfSearch {
+   VariableName "radiusOfSearch"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable useTurrets {
+   VariableName "useTurrets"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverLock {
+   VariableName "coverLock"
+   VariableTypeName "SCR_AICoverLock"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable stanceNormal {
+   VariableName "stanceNormal"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable coverQuery {
+   VariableName "coverQuery"
+   VariableTypeName "CoverQueryProperties"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable LeaderPos {
+   VariableName "LeaderPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable stanceHide {
+   VariableName "stanceHide"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference radiusOfSearch {
+   VariableType 11
+   EditorPos -523.623 544.922
+   Group "{60E613E529FFF2F9}"
+  }
+  VariableReference useTurrets {
+   VariableType 12
+   EditorPos -862.48 561.292
+   Group "{60E613E529FFF2F9}"
+  }
+  VariableReference coverLock {
+   VariableType 13
+   EditorPos 132.235 2096.327
+   Group "{60E613E5BDA9470D}"
+  }
+  VariableReference stanceNormal {
+   VariableType 14
+   EditorPos 728.004 2083.378
+   Group "{60E613E5BDA9470D}"
+  }
+  VariableReference coverQuery {
+   VariableType 15
+   EditorPos -468.321 2096.883
+   Group "{60E613E5BDA9470D}"
+  }
+  VariableReference LeaderPos {
+   VariableType 16
+   EditorPos -1064.265 1999.744
+   Group "{60E613E5BDA9470D}"
+  }
+  VariableReference coverPos {
+   VariableType 7
+   EditorPos 723.235 2003.379
+   Group "{60E613E5BDA9470D}"
+  }
+  VariableReference leader {
+   VariableType 2
+   EditorPos -171.377 528.55
+   Group "{60E613E529FFF2F9}"
+  }
+  VariableReference LeaderPos {
+   VariableType 16
+   EditorPos 268.623 540.772
+   Group "{60E613E529FFF2F9}"
+  }
+  VariableReference stanceHide {
+   VariableType 17
+   EditorPos 727.235 2161.839
+   Group "{60E613E5BDA9470D}"
+  }
+ }
+ Groups {
+  BTGroup "{60E613E529FFF2F9}" {
+   Name "Init"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{60E613E5BDA9470D}" {
+   Name "Find Cover"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{60E629DB81A11334}" {
+   Name "Idle Action"
+   Color 0.6 0.6 0.6 0.251
+  }
+ }
+}

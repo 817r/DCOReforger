@@ -15,13 +15,6 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
        Nodes {
         AITaskSetVariable "Set Variable" {
          Name "Set Variable"
-         EditorPos -3064.909 1238.506
-         Group "{60E6B86F9CA17457}"
-         SetValue "true"
-         OutVariable 4
-        }
-        AITaskSetVariable "Set Variable" {
-         Name "Set Variable"
          EditorPos -2695.67 1245.53
          Group "{60E6B86F9CA17457}"
          SetValue "30"
@@ -71,11 +64,11 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
          EditorPos -452.695 1273.898
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 5
+           Port 4
            PortName "OriginIn"
           }
           SingleInputPortContainer SingleInputPortContainer {
-           Port 6
+           Port 5
            PortName "RadiusIn"
           }
          }
@@ -93,7 +86,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
         }
         ForEachChild "For Each Child" {
          Name "For Each Child"
-         EditorPos 423.027 1293.76
+         EditorPos 423.027 1292.093
          Nodes {
           Selector Selector {
            Name "Selector"
@@ -105,16 +98,16 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
              Nodes {
               AITaskFindSmartAction "Find Smart Action" {
                Name "Find Smart Action"
-               EditorPos -492.056 2029.898
+               EditorPos -490.389 2029.898
                Group "{60E6B86F9645BFBF}"
                Radius 30
-               OutSmartAction 8
-               InPosition 12
-               InRadius 15
+               OutSmartAction 7
+               InPosition 11
+               InRadius 13
                Tags {
                 "ObservationPost" "CoverPost"
                }
-               TagsTest InOrder
+               TagsTest AnySet
                InTags -1
               }
               SCR_AISetSmartActionReserved "SCR_AI Set Smart Action Reserved" {
@@ -122,11 +115,11 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
                EditorPos 309.492 2090.687
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 11
+                 Port 10
                  PortName "OwnerAgentIn"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 13
+                 Port 12
                  PortName "SmartActionIn"
                 }
                }
@@ -134,10 +127,10 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
               }
               SCR_AISendGoalMessage_PerformAction "SCR_AI Send Goal Message_ Perform Action" {
                Name "SCR_AI Send Goal Message_ Perform Action"
-               EditorPos 810.424 2092.35
+               EditorPos 717.567 2090.922
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 11
+                 Port 10
                  PortName "Receiver"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
@@ -149,7 +142,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
                  PortName "IsWaypointRelated"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 13
+                 Port 12
                  PortName "SmartAction"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
@@ -172,28 +165,22 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
              Name "Sequence"
              EditorPos 1919.944 1955.176
              Nodes {
-              SCR_AIGetAllocatedCompartment "SCR_AI Get Allocated Compartment" {
-               Name "SCR_AI Get Allocated Compartment"
-               EditorPos 1292.717 2312.389
-               OutPorts {
-                SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 14
-                 PortName "CompartmentOut"
-                }
-                SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 10
-                 PortName "VehicleOut"
+              DCO_AllocateDefensiveMember "DCO_ Allocate Defensive Member" {
+               Name "DCO_ Allocate Defensive Member"
+               EditorPos 1530 2204.167
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "PriorityLevel"
                 }
                }
-               Group "{60E6B86F9645BFBF}"
-               m_eCompartmentType Turret
               }
               SCR_AISendGoalMessage_GetIn "SCR_AI Send Goal Message_ Get In" {
                Name "SCR_AI Send Goal Message_ Get In"
                EditorPos 2225.838 2261.866
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 9
+                 Port 8
                  PortName "Receiver"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
@@ -205,8 +192,12 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
                  PortName "IsWaypointRelated"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 10
+                 Port 9
                  PortName "VehicleEntity"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "BoardingParams"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
@@ -226,7 +217,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
           }
          }
          Group "{60E6B86F9645BFBF}"
-         OutEntity 7
+         OutEntity 6
          ReturnControlledEntity 0
         }
        }
@@ -254,7 +245,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
        EditorPos 2935.207 1400.917
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
-         Port 17
+         Port 15
          PortName "Receiver"
         }
         SingleInputPortContainer SingleInputPortContainer {
@@ -266,8 +257,8 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
          PortName "IsWaypointRelated"
         }
         SingleInputPortContainer SingleInputPortContainer {
-         Port 18
-         PortName "DefendLocation"
+         Port -1
+         PortName "DefendDirection"
         }
         SingleInputPortContainer SingleInputPortContainer {
          Port -1
@@ -282,7 +273,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
     }
    }
    Group "{60E6B86F0378742E}"
-   OutEntity 16
+   OutEntity 14
    ReturnControlledEntity 0
   }
  }
@@ -311,24 +302,6 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
    VariableExposedInput 0
    VariableExposedOutput 0
   }
-  Variable useTurrets {
-   VariableName "useTurrets"
-   VariableTypeName "bool"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable fastInit {
-   VariableName "fastInit"
-   VariableTypeName "bool"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable groupMember {
-   VariableName "groupMember"
-   VariableTypeName "AIAgent"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
   Variable smartActionComponent {
    VariableName "smartActionComponent"
    VariableTypeName "SCR_AISmartActionComponent"
@@ -341,51 +314,9 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
    VariableExposedInput 0
    VariableExposedOutput 0
   }
-  Variable waypointRelated {
-   VariableName "waypointRelated"
-   VariableTypeName "bool"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable searchTags {
-   VariableName "searchTags"
-   VariableTypeName "array<string>"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable priorityLevel {
-   VariableName "priorityLevel"
-   VariableTypeName "float"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable turretCompartment {
-   VariableName "turretCompartment"
-   VariableTypeName "BaseCompartmentSlot"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable DefendAngularRange {
-   VariableName "DefendAngularRange"
-   VariableTypeName "float"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable AttackLocation {
-   VariableName "AttackLocation"
-   VariableTypeName "vector"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable DefendDirectionOfAgent {
-   VariableName "DefendDirectionOfAgent"
-   VariableTypeName "vector"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable groupMemberEntity {
-   VariableName "groupMemberEntity"
-   VariableTypeName "IEntity"
+  Variable groupMember {
+   VariableName "groupMember"
+   VariableTypeName "AIAgent"
    VariableExposedInput 0
    VariableExposedOutput 0
   }
@@ -411,11 +342,6 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
    EditorPos -1689.424 1343.713
    Group "{60E6B86F9CA17457}"
   }
-  VariableReference useTurrets {
-   VariableType 4
-   EditorPos -2820.527 1364.232
-   Group "{60E6B86F9CA17457}"
-  }
   VariableReference originOfSearch {
    VariableType 0
    EditorPos -749.52 1259.64
@@ -432,7 +358,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference smartActionComponent {
-   VariableType 7
+   VariableType 4
    EditorPos -585.289 2358.073
    Group "{60E6B86F9645BFBF}"
   }
@@ -442,7 +368,7 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference vehicleWithTurret {
-   VariableType 8
+   VariableType 5
    EditorPos 1824.201 2488.345
    Group "{60E6B86F9645BFBF}"
   }
@@ -457,13 +383,8 @@ BehaviorTree "{05AFAD0F780ED730}AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt" 
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference smartActionComponent {
-   VariableType 7
+   VariableType 4
    EditorPos -77.458 2357.598
-   Group "{60E6B86F9645BFBF}"
-  }
-  VariableReference turretCompartment {
-   VariableType 12
-   EditorPos 1706.648 2275.532
    Group "{60E6B86F9645BFBF}"
   }
   VariableReference radiusOfSearch {

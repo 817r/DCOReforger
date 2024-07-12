@@ -5,7 +5,8 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	DCO_SkillComponent m_DCO_Skill;
 	ref DCO_Group_Info m_DCO_GroupInfo;
 	
-	DCO_GroupTacticComponent dco_GroupTac;
+	DCO_GroupIdentifer identifier;
+	DCO_GroupTactic groupTac;
 
 	protected static const float DISTANCE_HYSTERESIS_FACTOR = 0.2; 	//!< how bigger must be old distance to new in IsInvestigationRelevant()
 	protected static const float NEARBY_DISTANCE_SQ = 150; 			//!< what is the minimal distance of new vs old in IsInvestigationRelevant()
@@ -180,7 +181,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	{
 		super.EOnInit(owner);
 		AIAgent agent = GetOwner();
-		m_Owner = SCR_AIGroup.Cast(owner);
+		m_Owner = SCR_AIGroup.Cast(owner.FindComponent(SCR_AIGroup));
 		if (!agent)
 			return;	
 		
@@ -207,7 +208,6 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_CombatMoveState = new SCR_AICombatMoveState();
 		m_AIInfo.m_OnCompartmentEntered.Insert(OnCompartmentEntered);
 		m_AIInfo.m_OnCompartmentLeft.Insert(OnCompartmentLeft);		
-		dco_GroupTac = DCO_GroupTacticComponent.Cast(owner.FindComponent(DCO_GroupTacticComponent));
 	}
 	
 	DCO_SkillComponent getSkillComp()
@@ -220,8 +220,25 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		return m_DCO_Skill.GetCharacterSkillRankComponent(m_OwnerEntity);
 	}
 	
+	DCO_GroupTactic setTactics(DCO_GroupTactic tactics)
+	{
+		groupTac = tactics;
+		return tactics;
+	}
+	
 	DCO_GroupTactic getTactics()
 	{
-		return dco_GroupTac;
+		return groupTac;
+	}
+	
+	DCO_GroupIdentifer setIdentifier(DCO_GroupIdentifer indentify)
+	{
+		identifier = indentify;
+		return indentify;
+	}
+	
+	DCO_GroupIdentifer getIdentifier()
+	{
+		return identifier;
 	}
 }

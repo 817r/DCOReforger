@@ -14,7 +14,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
 	
 	static const float MAXIMAL_TOLERANCE = 12.0;	
-	static const float MINIMAL_TOLERANCE = 0.35;
+	static const float MINIMAL_TOLERANCE = 0.3;
 	
 	EAISkill defaultSkill;
 	float threatFactor;
@@ -565,7 +565,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	float GetAimImprovement()
 	{
-		return m_CombatComponent.getImprovement();
+		return m_CombatComponent.getImprovement() * 1.2;
 	}
 };
 
