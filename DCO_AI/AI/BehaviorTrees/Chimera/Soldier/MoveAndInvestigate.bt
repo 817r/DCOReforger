@@ -394,149 +394,11 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
         }
         DCO_AIMoveInvestigate "DCO_AI Move Investigate" {
          Name "DCO_AI Move Investigate"
-         EditorPos 4680.333 1559
+         EditorPos 5095.333 -147
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 20
            PortName "Area"
-          }
-         }
-        }
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 7282.634 283.468
-         Nodes {
-          Parallel Parallel {
-           Name "Parallel"
-           EditorPos 6725 614
-           Nodes {
-            Selector Selector {
-             Name "Selector"
-             EditorPos 6173 908
-             Nodes {
-              SCR_AIDecoIsAboveMoraleLevel "SCR_AI Deco Is Above Morale Level" {
-               Name "SCR_AI Deco Is Above Morale Level"
-               EditorPos 5860.19 1223.404
-               Nodes {
-                SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
-                 Name "SCR_AI Set Weapon Raised"
-                 EditorPos 5895.357 1394.571
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "Raised"
-                  }
-                 }
-                }
-               }
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "ThresholdIn"
-                }
-               }
-               m_MoraleThreshold ANXIOUS
-              }
-              SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
-               Name "SCR_AI Set Weapon Raised"
-               EditorPos 6290.424 1224.243
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "Raised"
-                }
-               }
-               m_bWeaponRaised 0
-              }
-             }
-            }
-            Selector Selector {
-             Name "Selector"
-             EditorPos 7315 882
-             Nodes {
-              SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-               Name "SCR_AI Deco Is Above Threat Level"
-               EditorPos 6592.072 1164.127
-               Nodes {
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos 6675.152 1391.916
-                 Nodes {
-                  AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-                   Name "Character Set Movement Speed"
-                   EditorPos 6428.071 1614.02
-                   "Movement speed" WALK
-                  }
-                  AITaskChangeStance "Change Stance" {
-                   Name "Change Stance"
-                   EditorPos 6806.929 1614.052
-                   Stance CROUCH
-                  }
-                 }
-                }
-               }
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "ThresholdIn"
-                }
-               }
-               AbortType AbortParentNodeFurtherChildren
-               m_threatThreshold PINNED
-              }
-              SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-               Name "SCR_AI Deco Is Above Threat Level"
-               EditorPos 7220.167 1132.476
-               Nodes {
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos 7299.39 1376.444
-                 Nodes {
-                  AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-                   Name "Character Set Movement Speed"
-                   EditorPos 7078.309 1612.548
-                   "Movement speed" WALK
-                  }
-                  AITaskChangeStance "Change Stance" {
-                   Name "Change Stance"
-                   EditorPos 7457.167 1612.58
-                  }
-                 }
-                }
-               }
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "ThresholdIn"
-                }
-               }
-               AbortType AbortParentNodeFurtherChildren
-               m_threatThreshold ALERTED
-              }
-              Sequence Sequence {
-               Name "Sequence"
-               EditorPos 7868.485 1205.765
-               Nodes {
-                AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-                 Name "Character Set Movement Speed"
-                 EditorPos 7617.404 1407.869
-                 "Movement speed" RUN
-                }
-                AITaskChangeStance "Change Stance" {
-                 Name "Change Stance"
-                 EditorPos 7996.263 1407.901
-                }
-               }
-              }
-             }
-            }
-           }
-          }
-          AITaskIdle Idle {
-           Name "Idle"
-           EditorPos 7824.027 738.92
-           Period 2
-           PeriodRandom 0.3
           }
          }
         }
@@ -878,6 +740,144 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
    Name "Selector"
    EditorPos 5002 1027
   }
+  Sequence Sequence {
+   Name "Sequence"
+   EditorPos 7282.634 283.468
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos 6725 614
+     Nodes {
+      Selector Selector {
+       Name "Selector"
+       EditorPos 6173 908
+       Nodes {
+        SCR_AIDecoIsAboveMoraleLevel "SCR_AI Deco Is Above Morale Level" {
+         Name "SCR_AI Deco Is Above Morale Level"
+         EditorPos 5860.19 1223.404
+         Nodes {
+          SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+           Name "SCR_AI Set Weapon Raised"
+           EditorPos 5895.357 1394.571
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Raised"
+            }
+           }
+          }
+         }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ThresholdIn"
+          }
+         }
+         m_MoraleThreshold ANXIOUS
+        }
+        SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+         Name "SCR_AI Set Weapon Raised"
+         EditorPos 6290.424 1224.243
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Raised"
+          }
+         }
+         m_bWeaponRaised 0
+        }
+       }
+      }
+      Selector Selector {
+       Name "Selector"
+       EditorPos 7315 882
+       Nodes {
+        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+         Name "SCR_AI Deco Is Above Threat Level"
+         EditorPos 6592.072 1164.127
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 6675.152 1391.916
+           Nodes {
+            AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+             Name "Character Set Movement Speed"
+             EditorPos 6428.071 1614.02
+             "Movement speed" WALK
+            }
+            AITaskChangeStance "Change Stance" {
+             Name "Change Stance"
+             EditorPos 6806.929 1614.052
+             Stance CROUCH
+            }
+           }
+          }
+         }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ThresholdIn"
+          }
+         }
+         AbortType AbortParentNodeFurtherChildren
+         m_threatThreshold PINNED
+        }
+        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+         Name "SCR_AI Deco Is Above Threat Level"
+         EditorPos 7220.167 1132.476
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 7299.39 1376.444
+           Nodes {
+            AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+             Name "Character Set Movement Speed"
+             EditorPos 7078.309 1612.548
+             "Movement speed" WALK
+            }
+            AITaskChangeStance "Change Stance" {
+             Name "Change Stance"
+             EditorPos 7457.167 1612.58
+            }
+           }
+          }
+         }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ThresholdIn"
+          }
+         }
+         AbortType AbortParentNodeFurtherChildren
+         m_threatThreshold ALERTED
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 7868.485 1205.765
+         Nodes {
+          AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+           Name "Character Set Movement Speed"
+           EditorPos 7617.404 1407.869
+           "Movement speed" RUN
+          }
+          AITaskChangeStance "Change Stance" {
+           Name "Change Stance"
+           EditorPos 7996.263 1407.901
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+    AITaskIdle Idle {
+     Name "Idle"
+     EditorPos 7824.027 738.92
+     Period 2
+     PeriodRandom 0.3
+    }
+   }
+  }
  }
  Variables {
   Variable position {
@@ -1036,7 +1036,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos 4502.055 1631.139
+   EditorPos 4917.055 -74.861
   }
   VariableReference radius {
    VariableType 4

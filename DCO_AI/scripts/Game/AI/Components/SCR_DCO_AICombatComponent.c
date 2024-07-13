@@ -445,9 +445,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 		int magCount = m_InventoryManager.GetMagazineCountByWeapon(weaponComp);
 		int lowMagThreshold = GetWeaponLowMagThreshold(weaponComp);
 		
-		if (magCount < lowMagThreshold)
-			weaponComp.GetCurrentMagazine().SetAmmoCount(magCount + 2);
-		
 		return magCount < lowMagThreshold;
 	}
 
