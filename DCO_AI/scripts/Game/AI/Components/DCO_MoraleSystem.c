@@ -336,12 +336,12 @@ class DCO_AIMoraleSystem
 			}
 			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 			{
-				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/2) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
+				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/5) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
 				break;
 			}
 			case DCO_CUSTOMRANK.SPECIALIST:
 			{
-				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/4) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
+				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/10) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
 				break;
 			}
 		}
@@ -365,12 +365,12 @@ class DCO_AIMoraleSystem
 			}
 			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 			{
-				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/2) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
+				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/5) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
 				break;
 			}
 			case DCO_CUSTOMRANK.SPECIALIST:
 			{
-				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/4) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
+				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/8) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
 				break;
 			}
 		}
@@ -394,12 +394,12 @@ class DCO_AIMoraleSystem
 			}
 			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 			{
-				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier / 0.9, 0, 2.0);
+				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier / 0.8, 0, 2.0);
 				break;
 			}
 			case DCO_CUSTOMRANK.SPECIALIST:
 			{
-				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier / 0.7, 0, 2.0);
+				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier / 0.65, 0, 2.0);
 				break;
 			}
 		}		

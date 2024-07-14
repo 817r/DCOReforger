@@ -1,0 +1,145 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Group/DCO_Activity_Evade.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -50 -45
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -54 99
+     Nodes {
+      DCO_AIEvadeBehaviorParameters "DCO_AI Evade Behavior Parameters" {
+       Name "DCO_AI Evade Behavior Parameters"
+       EditorPos -577 387
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 2
+         PortName "RetreatToPoint"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 1
+         PortName "RetreatFrom"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 0
+         PortName "RetreatTargetFrom"
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 624 255
+       Nodes {
+        ForEachChild "For Each Child" {
+         Name "For Each Child"
+         EditorPos 308.182 533.485
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 335.75 685
+           Nodes {
+            AITaskGetControlledEntity "Get Controlled Entity" {
+             Name "Get Controlled Entity"
+             EditorPos -123.75 930
+             InEntity 4
+             OutControlledEntity 5
+            }
+            DCO_AIEvade "DCO_AI Evade" {
+             Name "DCO_AI Evade"
+             EditorPos 407.267 929.351
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "Receiver"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "PriorityLevel"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "IsWaypointRelated"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 0
+               PortName "Target"
+              }
+             }
+            }
+           }
+          }
+         }
+         OutEntity 3
+        }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 821.667 538.333
+         Result RUNNING
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable targetRetreat {
+   VariableName "targetRetreat"
+   VariableTypeName "BaseTarget"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable dangerPos {
+   VariableName "dangerPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable retreatTo {
+   VariableName "retreatTo"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable groupMem {
+   VariableName "groupMem"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable agentMember {
+   VariableName "agentMember"
+   VariableTypeName "AIAgent"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference targetRetreat {
+   VariableType 0
+   EditorPos -195.034 567.292
+  }
+  VariableReference dangerPos {
+   VariableType 1
+   EditorPos -175.966 464.495
+  }
+  VariableReference retreatTo {
+   VariableType 2
+   EditorPos -171.117 378.208
+  }
+  VariableReference groupMem {
+   VariableType 3
+   EditorPos 506.364 567.841
+  }
+  VariableReference groupMem {
+   VariableType 3
+   EditorPos -333.25 973.25
+  }
+  VariableReference agentMember {
+   VariableType 4
+   EditorPos 150 1048.75
+  }
+ }
+}

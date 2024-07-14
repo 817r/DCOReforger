@@ -66,7 +66,7 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
              PortName "Delay"
             }
             SingleOutputPortContainer SingleOutputPortContainerClass {
-             Port 10
+             Port -1
              PortName "UseMovement"
             }
            }
@@ -189,7 +189,6 @@ BehaviorTree "{AD1A56AE2A7ADFE8}AI/BehaviorTrees/Chimera/Soldier/ObservePosition
                PortName "Delay"
               }
               SingleOutputPortContainer SingleOutputPortContainerClass {
-               Port 11
                PortName "UseMovement"
               }
              }

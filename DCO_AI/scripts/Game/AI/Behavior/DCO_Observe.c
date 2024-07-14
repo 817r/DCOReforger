@@ -33,7 +33,7 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 		m_bResetLook = true;
 		m_bUseCombatMove = useMovement;
 		SetIsUniqueInActionQueue(true);
-		m_fThreat = 1.01 * SCR_AIThreatSystem.VIGILANT_THRESHOLD;
+		m_fThreat = 0.45;
 		m_fPriority = priority;
 		m_fPriorityLevel.m_Value = priorityLevel;
 		

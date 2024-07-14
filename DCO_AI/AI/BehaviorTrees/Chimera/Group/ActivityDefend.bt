@@ -3,15 +3,15 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos 5714.333 -2052.353
+   EditorPos 5069.333 -1997.353
    Nodes {
     Sequence Sequence {
      Name "Sequence"
-     EditorPos 5707.527 -1907.861
+     EditorPos 5062.527 -1852.861
      Nodes {
       SCR_AITalk "SCR_AI Talk" {
        Name "SCR_AI Talk"
-       EditorPos 4247.096 -1385.904
+       EditorPos 4257.096 -1380.904
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port -1
@@ -36,107 +36,73 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
       }
       SCR_AIGetDefendActivityParameters "SCR_AI Get Defend Activity Parameters" {
        Name "SCR_AI Get Defend Activity Parameters"
-       EditorPos 4467.722 -1392.139
+       EditorPos 4469.151 -1382.139
        OutPorts {
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 23
+         Port 8
          PortName "WaypointRelated"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 0
-         PortName "Waypoint"
+         Port 9
+         PortName "DefendDirection"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 29
-         PortName "AttackLocation"
-        }
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port 19
+         Port 7
          PortName "PriorityLevel"
         }
        }
       }
       Sequence Sequence {
        Name "Sequence"
-       EditorPos 6072.945 -1339.389
+       EditorPos 5746.278 -1134.389
        Nodes {
-        AITaskCreatePosition "Create Position" {
-         Name "Create Position"
-         EditorPos 966.777 -240.333
-         InEntity 18
-         OutPosition 8
-        }
-        SCR_AIGetDefendWaypoint "SCR_AI Get Defend Waypoint" {
-         Name "SCR_AI Get Defend Waypoint"
-         EditorPos 1375.091 -234.71
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 12
-           PortName "WaypointIn"
-          }
-         }
-         OutPorts {
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 1
-           PortName "RadiusOut"
-          }
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 14
-           PortName "UseTurrets"
-          }
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 15
-           PortName "SearchTags"
-          }
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 30
-           PortName "FastInit"
-          }
-         }
-        }
         DecoTestVariable "Test Variable" {
          Name "Test Variable"
-         EditorPos 2814 -236.929
+         EditorPos 3366.5 -228.929
          Nodes {
           ForEachChild "For Each Child" {
            Name "For Each Child"
-           EditorPos 2836 -43.5
+           EditorPos 3386.5 -23.5
            Nodes {
             Sequence Sequence {
              Name "Sequence"
-             EditorPos 2861.428 138.857
+             EditorPos 3413.928 158.857
              Nodes {
               AITaskGetControlledEntity "Get Controlled Entity" {
                Name "Get Controlled Entity"
-               EditorPos 2389.667 336.357
+               EditorPos 2942.167 356.357
                Group "{5C5AEE08369D7087}"
-               InEntity 43
+               InEntity 17
                OutControlledEntity -1
-               OutAgent 40
+               OutAgent 14
               }
               DecoIsInVehicle "Is In Vehicle" {
                Name "Is In Vehicle"
-               EditorPos 3061.333 285.881
+               EditorPos 3613.833 305.881
                Nodes {
                 SCR_AISendGoalMessage_GetOut "SCR_AI Send Goal Message_ Get Out" {
                  Name "SCR_AI Send Goal Message_ Get Out"
-                 EditorPos 3027.905 469.119
+                 EditorPos 3580.405 489.119
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
-                   Port 42
+                   Port 16
                    PortName "Receiver"
                   }
                   SingleInputPortContainer SingleInputPortContainer {
-                   Port 41
+                   Port 15
                    PortName "PriorityLevel"
                   }
                   SingleInputPortContainer SingleInputPortContainer {
-                   Port 45
+                   Port 19
                    PortName "IsWaypointRelated"
                   }
                   SingleInputPortContainer SingleInputPortContainer {
                    Port -1
                    PortName "VehicleEntity"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "BoardingParams"
                   }
                  }
                  Group "{5C5AEE08369D7087}"
@@ -145,456 +111,226 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
                 }
                }
                Group "{5C5AEE08369D7087}"
-               EntityIn 39
+               EntityIn 13
               }
              }
              Group "{5C5AEE08369D7087}"
             }
            }
            Group "{5C5AEE08369D7087}"
-           OutEntity 39
+           OutEntity 13
           }
          }
          Group "{5C5AEE08369D7087}"
          NegativeCondition 1
          ForceNodeResult Success
-         InVariable 44
+         InVariable 18
          TestType EqualsValue
          TestValue "true"
         }
-        SCR_AIFindTurrets "SCR_AI Find Turrets" {
-         Name "SCR_AI Find Turrets"
-         EditorPos 3802.778 -129.444
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 13
-           PortName "OriginIn"
-          }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 9
-           PortName "RadiusIn"
-          }
-         }
-         OutPorts {
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port -1
-           PortName "TurretNumber"
-          }
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port -1
-           PortName "TurretsFound"
-          }
-         }
-         Group "{5C5ACDCFBB6EB794}"
-        }
-        ForEachChild "For Each Child" {
-         Name "For Each Child"
-         EditorPos 5423.833 -226.249
-         Nodes {
-          Selector Selector {
-           Name "Selector"
-           EditorPos 5453.667 -62.61
-           Nodes {
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 5115.75 133.501
-             Nodes {
-              DecoTestVariable "Test Variable" {
-               Name "Test Variable"
-               EditorPos 3836.834 328.655
-               Nodes {
-                SCR_AIGetAllocatedCompartment "SCR_AI Get Allocated Compartment" {
-                 Name "SCR_AI Get Allocated Compartment"
-                 EditorPos 3765.476 530.714
-                 OutPorts {
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 31
-                   PortName "CompartmentOut"
-                  }
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 3
-                   PortName "VehicleOut"
-                  }
-                 }
-                 Group "{5C5ACDCFBB6EB794}"
-                 m_eCompartmentType Turret
-                }
-               }
-               Group "{5C5ACDCFBB6EB794}"
-               UseChildResult 1
-               InVariable 16
-               TestType EqualsValue
-               TestValue "true"
-              }
-              Selector Selector {
-               Name "Selector"
-               EditorPos 4770.333 289.334
-               Nodes {
-                DecoTestVariable "Test Variable" {
-                 Name "Test Variable"
-                 EditorPos 4575.333 401.834
-                 Nodes {
-                  SCR_AISetPosition "SCR_AI Set Position" {
-                   Name "SCR_AI Set Position"
-                   EditorPos 4576.046 564.929
-                   InPorts {
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port -1
-                     PortName "EntitytIn"
-                    }
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port 32
-                     PortName "AgentIn"
-                    }
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port 31
-                     PortName "DestinationIn"
-                    }
-                   }
-                   Group "{5C5ACDCFBB6EB794}"
-                  }
-                 }
-                 Group "{5C5ACDCFBB6EB794}"
-                 InVariable 34
-                 TestType EqualsValue
-                 TestValue "true"
-                }
-                DecoTestVariable "Test Variable" {
-                 Name "Test Variable"
-                 EditorPos 4826.167 399.167
-                 Nodes {
-                  AITaskReturnState "Return  State" {
-                   Name "Return  State"
-                   EditorPos 4826.833 568.001
-                   Group "{5C5ACDCFBB6EB794}"
-                   Result SUCCESS
-                  }
-                 }
-                 Group "{5C5ACDCFBB6EB794}"
-                 NegativeCondition 1
-                 InVariable 34
-                 TestType EqualsValue
-                 TestValue "true"
-                }
-               }
-               Group "{5C5ACDCFBB6EB794}"
-              }
-              SCR_AISendGoalMessage_GetIn "SCR_AI Send Goal Message_ Get In" {
-               Name "SCR_AI Send Goal Message_ Get In"
-               EditorPos 5146.644 382.191
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 4
-                 PortName "Receiver"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 20
-                 PortName "PriorityLevel"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 46
-                 PortName "IsWaypointRelated"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 3
-                 PortName "VehicleEntity"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "RoleInVehicle"
-                }
-               }
-               Group "{5C5ACDCFBB6EB794}"
-               m_sText "Get in to turret"
-               m_bIsWaypointRelated 1
-               m_eRoleInVehicle Turret
-              }
-             }
-             Group "{5C5ACDCFBB6EB794}"
-            }
-            SCR_AIDecoIsArrayEmpty "SCR_AI Deco Is Array Empty" {
-             Name "SCR_AI Deco Is Array Empty"
-             EditorPos 6066.75 195.75
-             Nodes {
-              Sequence Sequence {
-               Name "Sequence"
-               EditorPos 6109.917 362.028
-               Nodes {
-                AITaskFindSmartAction "Find Smart Action" {
-                 Name "Find Smart Action"
-                 EditorPos 5809.083 526.556
-                 Group "{5C5ACDCFBB6EB794}"
-                 OutSmartAction 6
-                 InPosition 10
-                 InRadius 11
-                 Tags {
-                  "ObservationPost" "CoverPost"
-                 }
-                 TagsTest InOrder
-                 InTags 17
-                }
-                Selector Selector {
-                 Name "Selector"
-                 EditorPos 6179.083 556.251
-                 Nodes {
-                  DecoTestVariable "Test Variable" {
-                   Name "Test Variable"
-                   EditorPos 5984.083 668.751
-                   Nodes {
-                    SCR_AISetPosition "SCR_AI Set Position" {
-                     Name "SCR_AI Set Position"
-                     EditorPos 5984.477 861.858
-                     InPorts {
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port -1
-                       PortName "EntitytIn"
-                      }
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port 33
-                       PortName "AgentIn"
-                      }
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port 6
-                       PortName "DestinationIn"
-                      }
-                     }
-                     Group "{5C5ACDCFBB6EB794}"
-                    }
-                   }
-                   Group "{5C5ACDCFBB6EB794}"
-                   InVariable 35
-                   TestType EqualsValue
-                   TestValue "true"
-                  }
-                  DecoTestVariable "Test Variable" {
-                   Name "Test Variable"
-                   EditorPos 6234.917 666.084
-                   Nodes {
-                    AITaskReturnState "Return  State" {
-                     Name "Return  State"
-                     EditorPos 6243.5 873.001
-                     Group "{5C5ACDCFBB6EB794}"
-                     Result SUCCESS
-                    }
-                   }
-                   Group "{5C5ACDCFBB6EB794}"
-                   NegativeCondition 1
-                   InVariable 35
-                   TestType EqualsValue
-                   TestValue "true"
-                  }
-                 }
-                 Group "{5C5ACDCFBB6EB794}"
-                }
-                SCR_AISetSmartActionReserved "SCR_AI Set Smart Action Reserved" {
-                 Name "SCR_AI Set Smart Action Reserved"
-                 EditorPos 6716.964 589.345
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 5
-                   PortName "OwnerAgentIn"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 36
-                   PortName "SmartActionIn"
-                  }
-                 }
-                 Group "{5C5ACDCFBB6EB794}"
-                }
-                SCR_AISendGoalMessage_PerformAction "SCR_AI Send Goal Message_ Perform Action" {
-                 Name "SCR_AI Send Goal Message_ Perform Action"
-                 EditorPos 7210.992 589.008
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 5
-                   PortName "Receiver"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 22
-                   PortName "PriorityLevel"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 47
-                   PortName "IsWaypointRelated"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 36
-                   PortName "SmartAction"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "SmartActionEntity"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "SmartActionTag"
-                  }
-                 }
-                 Group "{5C5ACDCFBB6EB794}"
-                 m_sText "ActivityDefend"
-                }
-               }
-               Group "{5C5ACDCFBB6EB794}"
-              }
-             }
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 17
-               PortName "VariableIn"
-              }
-             }
-             Group "{5C5ACDCFBB6EB794}"
-             NegativeCondition 1
-            }
-            SCR_AIAddAgentToRadialCover "SCR_AI Add Agent To Radial Cover" {
-             Name "SCR_AI Add Agent To Radial Cover"
-             EditorPos 7216.247 145.841
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 24
-               PortName "Agent"
-              }
-             }
-             Group "{5C5ACDCFBB6EB794}"
-            }
-           }
-           Group "{5C5ACDCFBB6EB794}"
-          }
-         }
-         Group "{5C5ACDCFBB6EB794}"
-         OutEntity 2
-         ReturnControlledEntity 0
-        }
-        DecoTestVariable "Test Variable" {
-         Name "Test Variable"
-         EditorPos 7973 -218.833
-         Nodes {
-          SCR_AISetDefendWaypoint "SCR_AI Set Defend Waypoint" {
-           Name "SCR_AI Set Defend Waypoint"
-           EditorPos 7957.167 -14.833
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 37
-             PortName "WaypointIn"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "PresetIndexIn"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "FastInitIn"
-            }
-           }
-           Group "{5C5ACDC775AFB7BA}"
-           m_iNewFastInit 0
-          }
-         }
-         Group "{5C5ACDC775AFB7BA}"
-         ForceNodeResult Success
-         InVariable 38
-         TestType EqualsValue
-         TestValue "true"
-        }
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 8634.5 -273.333
-         Nodes {
-          SCR_AIDrawDebugVector "SCR_AI Draw Debug Vector" {
-           Name "SCR_AI Draw Debug Vector"
-           EditorPos 8595.714 -47.143
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 49
-             PortName "StartPosIn"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 50
-             PortName "EndPosIn"
-            }
-           }
-          }
-         }
-        }
-        ForEachChild "For Each Child" {
-         Name "For Each Child"
-         EditorPos 9339.5 -286.334
+        Repeater Repeater {
+         Name "Repeater"
+         EditorPos 6182.5 -950
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 9351.667 -116.429
+           EditorPos 6183.667 -747
            Nodes {
-            SCR_AIGetRadialAngleForAgent "SCR_AI Get Radial Angle For Agent" {
-             Name "SCR_AI Get Radial Angle For Agent"
-             EditorPos 8970.985 160.757
+            SCR_AIOnWaypointPropertiesChange "SCR_AI On Waypoint Properties Change" {
+             Name "SCR_AI On Waypoint Properties Change"
+             EditorPos 4072.5 -87.5
+             m_fTimeout_Base_ms 150000
+             m_fTimeout_Random_ms 30000
+            }
+            SCR_AIGetDefendWaypointParameters "SCR_AI Get Defend Waypoint Parameters" {
+             Name "SCR_AI Get Defend Waypoint Parameters"
+             EditorPos 4506.786 -80
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 25
-               PortName "AgentIn"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 28
-               PortName "AttackLocationIn"
+               Port -1
+               PortName "WaypointIn"
               }
              }
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 27
-               PortName "AgentDiractionOut"
+               Port 6
+               PortName "WaypointOut"
               }
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 26
-               PortName "AngularRangeOut"
+               Port 0
+               PortName "Radius"
               }
-             }
-             Group "{5B1CE3194EA954CC}"
-            }
-            SCR_AISendGoalMessage_Defend "SCR_AI Send Goal Message_ Defend" {
-             Name "SCR_AI Send Goal Message_ Defend"
-             EditorPos 9820 206.666
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 7
-               PortName "Receiver"
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 1
+               PortName "Origin"
               }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 21
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
                PortName "PriorityLevel"
               }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 48
-               PortName "IsWaypointRelated"
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 4
+               PortName "UseTurrets"
               }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 27
-               PortName "DefendLocation"
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 5
+               PortName "SearchTags"
               }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 26
-               PortName "DefendAngularRange"
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 10
+               PortName "FastInit"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
+               PortName "HoldingTime"
               }
              }
-             Group "{5B1CE3194EA954CC}"
+            }
+            SCR_AIClearActionsForDefendActivity "SCR_AI Clear Actions For Defend Activity" {
+             Name "SCR_AI Clear Actions For Defend Activity"
+             EditorPos 5757.5 -132.778
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 26
+               PortName "WaypointIn"
+              }
+             }
+             m_bKeepSectorCovers 0
+            }
+            DecoTestVariable "Test Variable" {
+             Name "Test Variable"
+             EditorPos 6436.667 -254.444
+             Nodes {
+              SCR_AIFindTurrets "SCR_AI Find Turrets" {
+               Name "SCR_AI Find Turrets"
+               EditorPos 6445.278 -68.444
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 3
+                 PortName "OriginIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 2
+                 PortName "RadiusIn"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "TurretNumber"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "TurretsFound"
+                }
+               }
+               Group "{5C5ACDCFBB6EB794}"
+              }
+             }
+             ForceNodeResult Success
+             InVariable 4
+             TestType EqualsValue
+             TestValue "true"
+            }
+            SCR_AIDecoIsArrayEmpty "SCR_AI Deco Is Array Empty" {
+             Name "SCR_AI Deco Is Array Empty"
+             EditorPos 6825.714 -248.571
+             Nodes {
+              SCR_AIFindSmartActions "SCR_AI Find Smart Actions" {
+               Name "SCR_AI Find Smart Actions"
+               EditorPos 6799.355 -67.143
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 21
+                 PortName "OriginIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 20
+                 PortName "RadiusIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 22
+                 PortName "SmartActionTags"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "SmartActionNumber"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "SmartActionsFound"
+                }
+               }
+               Group "{5C5ACDCFBB6EB794}"
+              }
+             }
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "VariableIn"
+              }
+             }
+             NegativeCondition 1
+             ForceNodeResult Success
+            }
+            SCR_AIAllocateActionsForDefendActivity "SCR_AI Allocate Actions For Defend Activity" {
+             Name "SCR_AI Allocate Actions For Defend Activity"
+             EditorPos 7208.929 -65.25
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 23
+               PortName "WaypointIn"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 24
+               PortName "WaypointRelated"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 25
+               PortName "PriorityLevel"
+              }
+             }
+            }
+            DecoTestVariable "Test Variable" {
+             Name "Test Variable"
+             EditorPos 7898.25 -67.25
+             Nodes {
+              SCR_AISetDefendWaypointParameters "SCR_AI Set Defend Waypoint Parameters" {
+               Name "SCR_AI Set Defend Waypoint Parameters"
+               EditorPos 7877.083 139.321
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 11
+                 PortName "WaypointIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "PresetIndexIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "FastInitIn"
+                }
+               }
+               Group "{5C5ACDC775AFB7BA}"
+               m_iNewFastInit 0
+               m_bCallInvoker 0
+              }
+             }
+             Group "{5C5ACDC775AFB7BA}"
+             ForceNodeResult Success
+             InVariable 12
+             TestType EqualsValue
+             TestValue "true"
             }
            }
-           Group "{5B1CE3194EA954CC}"
           }
          }
-         Group "{5B1CE3194EA954CC}"
-         OutEntity 25
-         ReturnControlledEntity 0
-        }
-        SCR_AIClearAgentsForRadialCover "SCR_AI Clear Agents For Radial Cover" {
-         Name "SCR_AI Clear Agents For Radial Cover"
-         EditorPos 9667.167 -296.667
-         Group "{5B1CE3194EA954CC}"
+         RepeatTimes -1
         }
        }
-      }
-      AITaskReturnState "Return State" {
-       Name "Return State"
-       EditorPos 6530.476 -1368.047
-       Result RUNNING
       }
      }
     }
@@ -614,15 +350,15 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
    VariableExposedInput 0
    VariableExposedOutput 0
   }
-  Variable vehicleWithTurret {
-   VariableName "vehicleWithTurret"
-   VariableTypeName "IEntity"
+  Variable waypointRelated {
+   VariableName "waypointRelated"
+   VariableTypeName "bool"
    VariableExposedInput 0
    VariableExposedOutput 0
   }
-  Variable smartActionComponent {
-   VariableName "smartActionComponent"
-   VariableTypeName "SCR_AISmartActionComponent"
+  Variable defendDirection {
+   VariableName "defendDirection"
+   VariableTypeName "vector"
    VariableExposedInput 0
    VariableExposedOutput 0
   }
@@ -650,9 +386,9 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
    VariableExposedInput 0
    VariableExposedOutput 0
   }
-  Variable leaderAgent {
-   VariableName "leaderAgent"
-   VariableTypeName "AIAgent"
+  Variable fastInit {
+   VariableName "fastInit"
+   VariableTypeName "bool"
    VariableExposedInput 0
    VariableExposedOutput 0
   }
@@ -668,296 +404,137 @@ BehaviorTree "{87F8618AA19A90F5}AI/BehaviorTrees/Chimera/Group/ActivityDefend.bt
    VariableExposedInput 0
    VariableExposedOutput 0
   }
-  Variable waypointRelated {
-   VariableName "waypointRelated"
-   VariableTypeName "bool"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable DefendDirectionOfAgent {
-   VariableName "DefendDirectionOfAgent"
-   VariableTypeName "vector"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable DefendAngularRange {
-   VariableName "DefendAngularRange"
-   VariableTypeName "float"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable AttackLocation {
-   VariableName "AttackLocation"
-   VariableTypeName "vector"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable fastInit {
-   VariableName "fastInit"
-   VariableTypeName "bool"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
-  Variable turretCompartment {
-   VariableName "turretCompartment"
-   VariableTypeName "BaseCompartmentSlot"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
  }
  VariablesRefs {
-  VariableReference waypoint {
-   VariableType 0
-   EditorPos 4971.778 -1259.421
-  }
   VariableReference radiusOfSearch {
    VariableType 5
-   EditorPos 1689.919 -269.595
-  }
-  VariableReference groupMember {
-   VariableType 1
-   EditorPos 5692.5 -120.666
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference vehicleWithTurret {
-   VariableType 2
-   EditorPos 4157.96 771.908
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference groupMember {
-   VariableType 1
-   EditorPos 4824.095 683.56
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference groupMember {
-   VariableType 1
-   EditorPos 6428.2 653.016
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference smartActionComponent {
-   VariableType 3
-   EditorPos 5482.184 1009.731
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference groupMember {
-   VariableType 1
-   EditorPos 9573.618 150.17
-   Group "{5B1CE3194EA954CC}"
-  }
-  VariableReference originOfSearch {
-   VariableType 4
-   EditorPos 1369.322 -92.424
-  }
-  VariableReference radiusOfSearch {
-   VariableType 5
-   EditorPos 3519.501 -36.817
+   EditorPos 5211.585 -67.706
    Group "{5C5ACDCFBB6EB794}"
   }
   VariableReference originOfSearch {
    VariableType 4
-   EditorPos 5551.667 301.751
+   EditorPos 5193.377 -3.091
    Group "{5C5ACDCFBB6EB794}"
   }
   VariableReference radiusOfSearch {
    VariableType 5
-   EditorPos 5463.5 744.445
+   EditorPos 6242.001 117.933
    Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference waypoint {
-   VariableType 0
-   EditorPos 1000 -82.639
   }
   VariableReference originOfSearch {
    VariableType 4
-   EditorPos 3509.62 -143.702
+   EditorPos 6202.12 18.548
    Group "{5C5ACDCFBB6EB794}"
   }
   VariableReference useTurrets {
    VariableType 6
-   EditorPos 1702 -164.788
-  }
-  VariableReference searchTags {
-   VariableType 7
-   EditorPos 1656.341 -49.56
-  }
-  VariableReference useTurrets {
-   VariableType 6
-   EditorPos 3588.945 441.655
+   EditorPos 5227.222 79.129
    Group "{5C5ACDCFBB6EB794}"
   }
   VariableReference searchTags {
    VariableType 7
-   EditorPos 5453.917 440.251
+   EditorPos 5144.757 152.273
    Group "{5C5ACDCFBB6EB794}"
   }
   VariableReference waypoint {
    VariableType 0
-   EditorPos 746.833 -211.5
-  }
-  VariableReference priorityLevel {
-   VariableType 10
-   EditorPos 4971.821 -1077.083
-  }
-  VariableReference priorityLevel {
-   VariableType 10
-   EditorPos 4886.999 767.43
+   EditorPos 5239.833 -156
    Group "{5C5ACDCFBB6EB794}"
   }
   VariableReference priorityLevel {
    VariableType 10
-   EditorPos 9594.476 256.424
-   Group "{5B1CE3194EA954CC}"
-  }
-  VariableReference priorityLevel {
-   VariableType 10
-   EditorPos 6437.356 731.477
-   Group "{5C5ACDCFBB6EB794}"
+   EditorPos 4970.25 -1066.797
   }
   VariableReference waypointRelated {
-   VariableType 11
-   EditorPos 4968.045 -1361.477
+   VariableType 2
+   EditorPos 4976.795 -1287.727
   }
-  VariableReference groupMember {
-   VariableType 1
-   EditorPos 6834.5 212.31
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference groupMember {
-   VariableType 1
-   EditorPos 8968.633 -28.017
-   Group "{5B1CE3194EA954CC}"
-  }
-  VariableReference DefendAngularRange {
-   VariableType 13
-   EditorPos 9264.604 294.444
-   Group "{5B1CE3194EA954CC}"
-  }
-  VariableReference DefendDirectionOfAgent {
-   VariableType 12
-   EditorPos 9271.561 198.773
-   Group "{5B1CE3194EA954CC}"
-  }
-  VariableReference AttackLocation {
-   VariableType 14
-   EditorPos 8964.586 320.059
-   Group "{5B1CE3194EA954CC}"
-  }
-  VariableReference AttackLocation {
-   VariableType 14
+  VariableReference defendDirection {
+   VariableType 3
    EditorPos 4966.5 -1166.25
   }
   VariableReference fastInit {
-   VariableType 15
-   EditorPos 1645.714 64.286
-  }
-  VariableReference turretCompartment {
-   VariableType 16
-   EditorPos 4150.311 645.286
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference groupMember {
-   VariableType 1
-   EditorPos 4270.057 539.813
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference groupMember {
-   VariableType 1
-   EditorPos 5515.316 922.985
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference fastInit {
-   VariableType 15
-   EditorPos 4385.333 396.834
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference fastInit {
-   VariableType 15
-   EditorPos 5794.083 663.751
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference smartActionComponent {
-   VariableType 3
-   EditorPos 6244.777 1005.446
+   VariableType 8
+   EditorPos 5217.88 239.953
    Group "{5C5ACDCFBB6EB794}"
   }
   VariableReference waypoint {
    VariableType 0
-   EditorPos 7735.167 131.167
+   EditorPos 7631.417 257.75
    Group "{5C5ACDC775AFB7BA}"
   }
   VariableReference fastInit {
-   VariableType 15
-   EditorPos 7791.667 -132.833
+   VariableType 8
+   EditorPos 7716.917 18.75
    Group "{5C5ACDC775AFB7BA}"
   }
   VariableReference groupMemberEntity {
    VariableType 9
-   EditorPos 3075.322 46
+   EditorPos 3627.822 66
    Group "{5C5AEE08369D7087}"
   }
   VariableReference groupMember {
    VariableType 1
-   EditorPos 2735.964 386.821
+   EditorPos 3288.464 406.821
    Group "{5C5AEE08369D7087}"
   }
   VariableReference priorityLevel {
    VariableType 10
-   EditorPos 2751.476 645.452
+   EditorPos 3303.976 665.452
    Group "{5C5AEE08369D7087}"
   }
   VariableReference groupMember {
    VariableType 1
-   EditorPos 2711.809 558.786
+   EditorPos 3264.309 578.786
    Group "{5C5AEE08369D7087}"
   }
   VariableReference groupMemberEntity {
    VariableType 9
-   EditorPos 2098.833 370.25
+   EditorPos 2645 395.25
    Group "{5C5AEE08369D7087}"
   }
   VariableReference fastInit {
-   VariableType 15
-   EditorPos 2649.072 -101.143
+   VariableType 8
+   EditorPos 3201.572 -81.143
    Group "{5C5AEE08369D7087}"
   }
   VariableReference waypointRelated {
-   VariableType 11
-   EditorPos 2734.5 741
+   VariableType 2
+   EditorPos 3287 761
    Group "{5C5AEE08369D7087}"
   }
-  VariableReference waypointRelated {
-   VariableType 11
-   EditorPos 4885.893 858.929
+  VariableReference radiusOfSearch {
+   VariableType 5
+   EditorPos 6477.881 134.693
    Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference waypointRelated {
-   VariableType 11
-   EditorPos 6446.39 905.834
-   Group "{5C5ACDCFBB6EB794}"
-  }
-  VariableReference waypointRelated {
-   VariableType 11
-   EditorPos 9519.445 401.666
-   Group "{5B1CE3194EA954CC}"
   }
   VariableReference originOfSearch {
    VariableType 4
-   EditorPos 8328.571 -51.429
+   EditorPos 6467.583 53.641
+   Group "{5C5ACDCFBB6EB794}"
   }
-  VariableReference AttackLocation {
-   VariableType 14
-   EditorPos 8324.286 130
+  VariableReference searchTags {
+   VariableType 7
+   EditorPos 6458.5 215.083
+  }
+  VariableReference waypoint {
+   VariableType 0
+   EditorPos 6847.333 84.75
+  }
+  VariableReference waypointRelated {
+   VariableType 2
+   EditorPos 6836 182
+  }
+  VariableReference priorityLevel {
+   VariableType 10
+   EditorPos 6889.25 271.75
+  }
+  VariableReference waypoint {
+   VariableType 0
+   EditorPos 5485.904 -28.804
   }
  }
  Groups {
-  BTGroup "{5B1CE3194EA954CC}" {
-   Name "Unassigned agents defend by radial cover"
-   Color 0.6 0.6 0.6 0.251
-  }
-  BTGroup "{5C5ACDCFBB6EB794}" {
-   Name "Assigning turrets and smart actions"
-   Color 0.6 0.6 0.6 0.251
-  }
   BTGroup "{5C5ACDC775AFB7BA}" {
    Name "If teleport, then disable teleport"
    Color 0.6 0.6 0.6 0.251

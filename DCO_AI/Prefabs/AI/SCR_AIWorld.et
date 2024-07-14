@@ -11,8 +11,7 @@ SCR_AIWorld {
     "Path stream area" 2
    }
   }
-  SCR_AISettingsComponent "{512CCCD0856CB4B9}" {
-   m_EnableLeaderStop 1
-  }
  }
+ "Accepted Road Types" 254
+ "Collision detection layers" 9437252
 }

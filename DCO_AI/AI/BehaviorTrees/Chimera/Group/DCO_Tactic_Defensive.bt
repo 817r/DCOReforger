@@ -1,0 +1,282 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Group/DCO_Tactic_Defensive.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 265 -1465
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 269.5 -1312.5
+     Nodes {
+      AITaskSetVariable "Set Variable" {
+       Name "Set Variable"
+       EditorPos -644.286 -929.524
+       SetValue "75"
+       OutVariable 8
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 397.486 -690.57
+       Nodes {
+        ForEachChild "For Each Child" {
+         Name "For Each Child"
+         EditorPos -865.292 -267.68
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos -837.864 -85.323
+           Nodes {
+            AITaskGetControlledEntity "Get Controlled Entity" {
+             Name "Get Controlled Entity"
+             EditorPos -1309.625 112.177
+             Group "{5C5AEE08369D7087}"
+             InEntity 0
+             OutControlledEntity -1
+             OutAgent 11
+            }
+            DecoIsInVehicle "Is In Vehicle" {
+             Name "Is In Vehicle"
+             EditorPos -637.958 61.701
+             Nodes {
+              SCR_AISendGoalMessage_GetOut "SCR_AI Send Goal Message_ Get Out" {
+               Name "SCR_AI Send Goal Message_ Get Out"
+               EditorPos -671.386 244.938
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 7
+                 PortName "Receiver"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 9
+                 PortName "PriorityLevel"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 10
+                 PortName "IsWaypointRelated"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "VehicleEntity"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "BoardingParams"
+                }
+               }
+               Group "{5C5AEE08369D7087}"
+               m_sText "Leave vehicle"
+               m_bIsWaypointRelated 1
+              }
+             }
+             Group "{5C5AEE08369D7087}"
+             EntityIn 1
+            }
+           }
+           Group "{5C5AEE08369D7087}"
+          }
+         }
+         Group "{5C5AEE08369D7087}"
+         OutEntity 1
+        }
+        Repeater Repeater {
+         Name "Repeater"
+         EditorPos 601.208 -416.18
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 602.375 -213.18
+           Nodes {
+            SCR_AIFindTurrets "SCR_AI Find Turrets" {
+             Name "SCR_AI Find Turrets"
+             EditorPos 161.986 47.376
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 12
+               PortName "OriginIn"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 2
+               PortName "RadiusIn"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
+               PortName "TurretNumber"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
+               PortName "TurretsFound"
+              }
+             }
+             Group "{5C5ACDCFBB6EB794}"
+            }
+            DCO_AllocateDefensiveMember "DCO_ Allocate Defensive Member" {
+             Name "DCO_ Allocate Defensive Member"
+             EditorPos 650.476 68.904
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 6
+               PortName "PriorityLevel"
+              }
+             }
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 1153.214 72.857
+             Period 60
+             PeriodRandom 0.3
+            }
+           }
+          }
+         }
+         RepeatTimes -1
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+  SCR_AIFindSmartActions "SCR_AI Find Smart Actions" {
+   Name "SCR_AI Find Smart Actions"
+   EditorPos 43.063 535.606
+   InPorts {
+    SingleInputPortContainer SingleInputPortContainer {
+     Port 4
+     PortName "OriginIn"
+    }
+    SingleInputPortContainer SingleInputPortContainer {
+     Port 3
+     PortName "RadiusIn"
+    }
+    SingleInputPortContainer SingleInputPortContainer {
+     Port 5
+     PortName "SmartActionTags"
+    }
+   }
+   OutPorts {
+    SingleOutputPortContainer SingleOutputPortContainer {
+     Port -1
+     PortName "SmartActionNumber"
+    }
+    SingleOutputPortContainer SingleOutputPortContainer {
+     Port -1
+     PortName "SmartActionsFound"
+    }
+   }
+   Group "{5C5ACDCFBB6EB794}"
+  }
+ }
+ Variables {
+  Variable waypointRelated {
+   VariableName "waypointRelated"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable groupMember {
+   VariableName "groupMember"
+   VariableTypeName "AIAgent"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable originOfSearch {
+   VariableName "originOfSearch"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable groupMemberEntity {
+   VariableName "groupMemberEntity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable searchTags {
+   VariableName "searchTags"
+   VariableTypeName "array<string>"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable radiusOfSearch {
+   VariableName "radiusOfSearch"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable priorityLevel {
+   VariableName "priorityLevel"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference groupMemberEntity {
+   VariableType 3
+   EditorPos -1606.792 151.07
+   Group "{5C5AEE08369D7087}"
+  }
+  VariableReference groupMemberEntity {
+   VariableType 3
+   EditorPos -623.969 -178.18
+   Group "{5C5AEE08369D7087}"
+  }
+  VariableReference radiusOfSearch {
+   VariableType 5
+   EditorPos -41.291 233.753
+  }
+  VariableReference radiusOfSearch {
+   VariableType 5
+   EditorPos -284.125 738.87
+  }
+  VariableReference originOfSearch {
+   VariableType 2
+   EditorPos -294.422 657.818
+  }
+  VariableReference searchTags {
+   VariableType 4
+   EditorPos -303.506 819.26
+  }
+  VariableReference priorityLevel {
+   VariableType 6
+   EditorPos 452.72 186.522
+  }
+  VariableReference groupMember {
+   VariableType 1
+   EditorPos -987.482 334.606
+   Group "{5C5AEE08369D7087}"
+  }
+  VariableReference priorityLevel {
+   VariableType 6
+   EditorPos -416.637 -826.31
+  }
+  VariableReference priorityLevel {
+   VariableType 6
+   EditorPos -947.815 421.271
+   Group "{5C5AEE08369D7087}"
+  }
+  VariableReference waypointRelated {
+   VariableType 0
+   EditorPos -964.792 516.82
+   Group "{5C5AEE08369D7087}"
+  }
+  VariableReference groupMember {
+   VariableType 1
+   EditorPos -963.327 162.641
+   Group "{5C5AEE08369D7087}"
+  }
+  VariableReference originOfSearch {
+   VariableType 2
+   EditorPos -81.171 134.368
+  }
+ }
+ Groups {
+  BTGroup "{5C5AEE08369D7087}" {
+   Name "Get out of vehicle if in vehicle before"
+   Color 0.6 0.6 0.6 0.251
+  }
+ }
+}

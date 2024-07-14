@@ -15,9 +15,9 @@ BehaviorTree {
        SetValue "10"
        OutVariable 0
       }
-      SCR_AIFindTurrets "SCR_AI Find Turrets" {
-       Name "SCR_AI Find Turrets"
-       EditorPos -322.727 348.394
+      SCR_AIFindAvailableVehicle "SCR_AI Find Available Vehicle" {
+       Name "SCR_AI Find Available Vehicle"
+       EditorPos -321 344
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port -1
@@ -27,21 +27,87 @@ BehaviorTree {
          Port 0
          PortName "RadiusIn"
         }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "SearchParams"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "VehicleIn"
+        }
        }
        OutPorts {
         SingleOutputPortContainer SingleOutputPortContainer {
          Port -1
-         PortName "TurretNumber"
+         PortName "VehicleOut"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
          Port -1
-         PortName "TurretsFound"
+         PortName "RoleOut"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "CompartmentOut"
         }
        }
+       m_bAddToList 1
       }
      }
     }
    }
+  }
+  SCR_AISendGoalMessage_GetIn "SCR_AI Send Goal Message_ Get In" {
+   Name "SCR_AI Send Goal Message_ Get In"
+   EditorPos 730 354
+   InPorts {
+    SingleInputPortContainer SingleInputPortContainer {
+     Port -1
+     PortName "Receiver"
+    }
+    SingleInputPortContainer SingleInputPortContainer {
+     Port -1
+     PortName "PriorityLevel"
+    }
+    SingleInputPortContainer SingleInputPortContainer {
+     Port -1
+     PortName "IsWaypointRelated"
+    }
+    SingleInputPortContainer SingleInputPortContainer {
+     Port -1
+     PortName "VehicleEntity"
+    }
+    SingleInputPortContainer SingleInputPortContainer {
+     Port -1
+     PortName "BoardingParams"
+    }
+    SingleInputPortContainer SingleInputPortContainer {
+     Port -1
+     PortName "RoleInVehicle"
+    }
+   }
+   m_eRoleInVehicle Turret
+  }
+  SCR_AIGetUsableVehicle "SCR_AI Get Usable Vehicle" {
+   Name "SCR_AI Get Usable Vehicle"
+   EditorPos 81 348.25
+   InPorts {
+    SingleInputPortContainer SingleInputPortContainer {
+     Port -1
+     PortName "CompartmentTypeIn"
+    }
+   }
+   OutPorts {
+    SingleOutputPortContainer SingleOutputPortContainer {
+     Port -1
+     PortName "VehicleOut"
+    }
+    SingleOutputPortContainer SingleOutputPortContainer {
+     Port -1
+     PortName "CompartmentOut"
+    }
+   }
+   m_eCompartmentType TURRET
+   m_bReserveCompartment 1
   }
  }
  Variables {

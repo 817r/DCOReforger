@@ -19,6 +19,9 @@ class SCR_AICreateBasicAngeledCoverQueryProps : AITaskScripted
 	[Attribute("0", UIWidgets.CheckBox)]
 	protected bool m_bSelectHighestScoreCover;
 	
+	[Attribute("1", UIWidgets.CheckBox)]
+	protected bool m_MaintainVisibility;
+	
 	//---------------------------------------------------------------
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
@@ -41,6 +44,8 @@ class SCR_AICreateBasicAngeledCoverQueryProps : AITaskScripted
 		if (threatPos == vector.Zero)
 			return ENodeResult.FAIL;
 		
+		m_CoverQueryProps.m_vNearestPolyHalfExtend = SCR_AIFindCover.NEAREST_POLY_HALF_EXTEND;
+		m_CoverQueryProps.m_fNmAreaCostScale = SCR_AIFindCover.NAVMESH_AREA_COST_SCALE;
 		m_CoverQueryProps.m_vSectorPos = queryPos;
 		m_CoverQueryProps.m_vSectorPos = queryPos;
 		m_CoverQueryProps.m_vSectorDir = threatPos;
@@ -51,8 +56,9 @@ class SCR_AICreateBasicAngeledCoverQueryProps : AITaskScripted
 		m_CoverQueryProps.m_fCoverToThreatAngleCosMin = COVER_QUERY_SECTOR_ANGLE_RAD;
 		m_CoverQueryProps.m_fScoreWeightDirection = 0.0;
 		m_CoverQueryProps.m_fScoreWeightDistance = 1.0;
-		m_CoverQueryProps.m_bCheckVisibility = false;
+		m_CoverQueryProps.m_bCheckVisibility = m_MaintainVisibility;
 		m_CoverQueryProps.m_bSelectHighestScore = m_bSelectHighestScoreCover;
+		m_CoverQueryProps.m_iMaxCoversToCheck = SCR_AIFindCover.MAX_COVERS_LOW_PRIORITY;
 		
 		if (m_bSelectHighestScoreCover)
 			m_CoverQueryProps.m_fScoreWeightNavmeshRay = 0.2;

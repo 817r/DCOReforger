@@ -4,6 +4,9 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	ref DCO_AIMoraleSystem m_DCOMoraleSystem;
 	DCO_SkillComponent m_DCO_Skill;
 	ref DCO_Group_Info m_DCO_GroupInfo;
+	
+	DCO_GroupIdentifer identifier;
+	DCO_GroupTactic groupTac;
 
 	protected static const float DISTANCE_HYSTERESIS_FACTOR = 0.2; 	//!< how bigger must be old distance to new in IsInvestigationRelevant()
 	protected static const float NEARBY_DISTANCE_SQ = 150; 			//!< what is the minimal distance of new vs old in IsInvestigationRelevant()
@@ -178,7 +181,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	{
 		super.EOnInit(owner);
 		AIAgent agent = GetOwner();
-		m_Owner = SCR_AIGroup.Cast(owner);
+		m_Owner = SCR_AIGroup.Cast(owner.FindComponent(SCR_AIGroup));
 		if (!agent)
 			return;	
 		
@@ -187,7 +190,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_OwnerEntity = GenericEntity.Cast(agent.GetControlledEntity());
 		if (!m_OwnerEntity)
 			return;
-		
+
 		m_DCO_GroupInfo = new DCO_Group_Info(m_Owner);
 		m_DCO_Skill = DCO_SkillComponent.Cast(m_OwnerEntity.FindComponent(DCO_SkillComponent));
 		m_DCOMoraleSystem = new DCO_AIMoraleSystem(this);
@@ -204,7 +207,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_CommsHandler = new SCR_AICommsHandler(m_OwnerEntity, agent);
 		m_CombatMoveState = new SCR_AICombatMoveState();
 		m_AIInfo.m_OnCompartmentEntered.Insert(OnCompartmentEntered);
-		m_AIInfo.m_OnCompartmentLeft.Insert(OnCompartmentLeft);
+		m_AIInfo.m_OnCompartmentLeft.Insert(OnCompartmentLeft);		
 	}
 	
 	DCO_SkillComponent getSkillComp()
@@ -215,5 +218,27 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	DCO_CUSTOMRANK getRanks()
 	{
 		return m_DCO_Skill.GetCharacterSkillRankComponent(m_OwnerEntity);
+	}
+	
+	DCO_GroupTactic setTactics(DCO_GroupTactic tactics)
+	{
+		groupTac = tactics;
+		return tactics;
+	}
+	
+	DCO_GroupTactic getTactics()
+	{
+		return groupTac;
+	}
+	
+	DCO_GroupIdentifer setIdentifier(DCO_GroupIdentifer indentify)
+	{
+		identifier = indentify;
+		return indentify;
+	}
+	
+	DCO_GroupIdentifer getIdentifier()
+	{
+		return identifier;
 	}
 }

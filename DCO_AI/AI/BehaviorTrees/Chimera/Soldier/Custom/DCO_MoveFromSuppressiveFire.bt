@@ -84,7 +84,7 @@ BehaviorTree "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Move
           }
           SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
            Name "SCR_AI Set Weapon Raised"
-           EditorPos -2438 1518
+           EditorPos -2435.5 1518
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -176,7 +176,6 @@ BehaviorTree "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Move
                PortName "ResultVector"
               }
              }
-             m_Radius 4
             }
            }
            Group "{61050D1979E955DB}"
@@ -185,16 +184,16 @@ BehaviorTree "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Move
         }
         AITaskMove Move {
          Name "Move"
-         EditorPos -1449.96 1201.555
+         EditorPos -1290.46 1250.055
          InTargetLocation 8
         }
         SCR_AICompleteAction "SCR_AI Complete Action" {
          Name "SCR_AI Complete Action"
-         EditorPos -1095.293 1204.389
+         EditorPos -967.793 1258.889
         }
         AITaskReturnState "Return State" {
          Name "Return State"
-         EditorPos -882.405 1202.501
+         EditorPos -722.905 1251.001
          Result SUCCESS
         }
        }
@@ -206,7 +205,7 @@ BehaviorTree "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Move
         AITaskIdle Idle {
          Name "Idle"
          EditorPos -76.047 890.286
-         Period 1
+         Period 5
          PeriodRandom 0.3
         }
         SCR_AIFailAction "SCR_AI Fail Action" {
@@ -290,7 +289,7 @@ BehaviorTree "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Move
   }
   VariableReference dangerPos {
    VariableType 1
-   EditorPos -4077.261 1567.191
+   EditorPos -4077.261 1565.762
    Group "{61050D19B62AEA10}"
   }
   VariableReference coverQue {
@@ -325,7 +324,7 @@ BehaviorTree "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Move
   }
   VariableReference movePos {
    VariableType 4
-   EditorPos -1646.96 1272.75
+   EditorPos -1487.46 1321.25
   }
   VariableReference coverStance {
    VariableType 7

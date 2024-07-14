@@ -13,7 +13,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	protected SCR_CharacterDamageManagerComponent damageManager;
 	private DCO_SkillComponent m_DCO_Skill;
-	private DCO_CUSTOMRANK rank;
+	private DCO_CUSTOMRANK rank;	
+	
+	DCO_GroupTactic m_Tac;
+	DCO_GroupTacticComponent m_GroupTacticComponent;
 	
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
@@ -77,6 +80,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 			{
 				groupNumber = m_DCO_AIInfoComponent.getMemberNumber();
 			}
+			
+			m_GroupTacticComponent = DCO_GroupTacticComponent.Cast(owner.FindComponent(DCO_GroupTacticComponent));
+			
+			m_Tac = m_GroupTacticComponent.GetGroupTactic(owner);
 		}
 	}
 	
@@ -436,30 +443,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 			return false;
 		
 		int magCount = m_InventoryManager.GetMagazineCountByWeapon(weaponComp);
+		int lowMagThreshold = GetWeaponLowMagThreshold(weaponComp);
 		
-		int lowMagThreshold = 1;
-		
-		// Decide how many remainiing magazines is enough to complain
-		switch (weaponComp.GetWeaponType())
-		{
-			case EWeaponType.WT_RIFLE: lowMagThreshold = 1; break;
-			case EWeaponType.WT_GRENADELAUNCHER: lowMagThreshold = 2; break; // todo now it won't work when we are out of UGL ammo because weapons are not marked with WT_GRENADELAUNCHER
-			case EWeaponType.WT_SNIPERRIFLE: lowMagThreshold = 1; break;
-			case EWeaponType.WT_ROCKETLAUNCHER: lowMagThreshold = 1; break;
-			case EWeaponType.WT_MACHINEGUN: lowMagThreshold = 1; break;
-			case EWeaponType.WT_HANDGUN: lowMagThreshold = 1; break;
-			default: lowMagThreshold = 1;
-		}
-		
-		if( magCount < lowMagThreshold )
-		{
-			LOW_AMMO = true;
-			return true;
-		}
-		
-		LOW_AMMO = false;
-		
-		return false;
+		return magCount < lowMagThreshold;
 	}
 
 	float improvementCalcuation()

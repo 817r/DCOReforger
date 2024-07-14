@@ -53,7 +53,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 	protected SCR_AICombatMoveState m_State;
 	protected SCR_AICombatComponent m_CombatComp;
 	protected SCR_AICombatMoveLogic_Attack m_CombatLogic;
-	protected static const float COVER_SEARCH_DIST_MAX = 10.0;
+	protected static const float COVER_SEARCH_DIST_MAX = 15.0;
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 	protected bool m_bPushedMoveRequest = false;
 	
@@ -94,11 +94,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				if (distanceToDanger < 1 && bulletCount > 5)
 				{
 					if(m_State != null)
-					{
-						int randomizer = Math.RandomInt(1,3);
-						
-						if (randomizer == 1)
-						{						
+					{					
 							rq.m_vTargetPos = shooterPos;
 							rq.m_vMovePos = rq.m_vTargetPos;
 							rq.m_bTryFindCover = true;
@@ -120,18 +116,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							m_bPushedMoveRequest = true;
 
 							return true;		
-						}
-						else
-						{
-							SCR_AIMoveFromSuppressBehavior aiMovefromSuppress = SCR_AIMoveFromSuppressBehavior.Cast(utility.FindActionOfType(SCR_AIMoveFromSuppressBehavior));
 						
-							if(aiMovefromSuppress) return true;
-						
-							utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, shooterPos, shooter));
-							
-							return true;
-						}
-
 					}
 					else
 					{
@@ -148,10 +133,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				{
 					if(m_State != null)
 					{
-						int randomizer = Math.RandomInt(1,3);
-						
-						if (randomizer == 1)
-						{						
+											
 							rq.m_vTargetPos = shooterPos;
 							rq.m_vMovePos = rq.m_vTargetPos;
 							rq.m_bTryFindCover = true;
@@ -173,17 +155,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							m_bPushedMoveRequest = true;
 
 							return true;		
-						}
-						else
-						{
-							SCR_AIMoveFromSuppressBehavior aiMovefromSuppress = SCR_AIMoveFromSuppressBehavior.Cast(utility.FindActionOfType(SCR_AIMoveFromSuppressBehavior));
 						
-							if(aiMovefromSuppress) return true;
-						
-							utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, shooterPos, shooter));
-							
-							return true;
-						}
 					}
 					else
 					{
@@ -196,11 +168,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				else if (isNullTarget && distanceToDanger < 3)
 				{
 					if(m_State != null)
-					{
-						int randomizer = Math.RandomInt(1,4);
-						
-						if (randomizer == 1)
-						{						
+					{						
 							rq.m_vTargetPos = shooterPos;
 							rq.m_vMovePos = rq.m_vTargetPos;
 							rq.m_bTryFindCover = true;
@@ -222,17 +190,6 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							m_bPushedMoveRequest = true;
 
 							return true;		
-						}
-						else
-						{
-							SCR_AIMoveFromSuppressBehavior aiMovefromSuppress = SCR_AIMoveFromSuppressBehavior.Cast(utility.FindActionOfType(SCR_AIMoveFromSuppressBehavior));
-						
-							if(aiMovefromSuppress) return true;
-						
-							utility.AddAction(new SCR_AIMoveFromSuppressBehavior(null, null, shooterPos, shooter));
-							
-							return true;
-						}
 					}
 					else
 					{
