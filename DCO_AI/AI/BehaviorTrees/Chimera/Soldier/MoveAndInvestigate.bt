@@ -62,7 +62,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
              Nodes {
               RunBT RunBT {
                Name "RunBT"
-               EditorPos -1009.567 1033.822
+               EditorPos -1009.567 1163.822
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
@@ -70,7 +70,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                 }
                }
                BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defensive.bt"
-               AlwaysReinit 1
               }
              }
              ForceNodeResult Success
@@ -283,6 +282,14 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
        m_messageType REPORT_MOVING
        m_ePreset MEDIUM
       }
+      AITaskChangeStance "Change Stance" {
+       Name "Change Stance"
+       EditorPos 1077.5 -202.5
+      }
+      AITaskCharacterRaiseWeapon "Character Raise Weapon" {
+       Name "Character Raise Weapon"
+       EditorPos 1305 -196.667
+      }
       Parallel Parallel {
        Name "Parallel"
        EditorPos 4704.167 -577.5
@@ -297,7 +304,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
            Group "{6102CBD0379B285D}"
            Period 10
            PeriodRandom 10
-           PeriodKey 24
+           PeriodKey 23
           }
           Sequence Sequence {
            Name "Sequence"
@@ -312,7 +319,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                PortName "Waypoint"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 25
+               Port 24
                PortName "Origin"
               }
               SingleInputPortContainer SingleInputPortContainer {
@@ -322,7 +329,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
              }
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 23
+               Port 22
                PortName "ResultVector"
               }
              }
@@ -333,7 +340,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
              EditorPos 3941.041 259.603
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 23
+               Port 22
                PortName "PositionIn"
               }
               SingleInputPortContainer SingleInputPortContainer {
@@ -349,18 +356,9 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
              }
              Group "{6102CBD0379B285D}"
             }
-            AITaskMove Move {
-             Name "Move"
-             EditorPos 4246.97 305.264
-             Group "{6102CBD0379B285D}"
-             InTargetLocation 22
-             InTargetOrientation -1
-             PrecisionXZ 1
-             PrecisionY -1
-            }
             AITaskIdle Idle {
              Name "Idle"
-             EditorPos 4617.312 295.111
+             EditorPos 4221.312 269.111
              Group "{6102CBD0379B285D}"
              Period 3
              PeriodRandom 3
@@ -378,7 +376,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
         }
         SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
          Name "SCR_AI Get Entity Position"
-         EditorPos 4420.667 -50.278
+         EditorPos 4503.167 -62.778
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -387,7 +385,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 27
+           Port 26
            PortName "Position"
           }
          }
@@ -517,11 +515,11 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
    EditorPos 4446.333 1081.167
    InPorts {
     SingleInputPortContainer SingleInputPortContainer {
-     Port 26
+     Port 25
      PortName "Vector0"
     }
     SingleInputPortContainer SingleInputPortContainer {
-     Port 28
+     Port 27
      PortName "Vector1"
     }
     SingleInputPortContainer SingleInputPortContainer {
@@ -1032,19 +1030,15 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos 200.333 1413.25
+   EditorPos 199.083 1448.25
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos 4917.055 -74.861
+   EditorPos 4908.484 -76.29
   }
   VariableReference radius {
    VariableType 4
    EditorPos 3132.189 391.317
-  }
-  VariableReference position {
-   VariableType 0
-   EditorPos 3981.553 479.635
   }
   VariableReference position {
    VariableType 0
@@ -1064,7 +1058,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   VariableReference myPos {
    VariableType 9
-   EditorPos 4647.333 22.222
+   EditorPos 4729.833 9.722
   }
   VariableReference myPos {
    VariableType 9

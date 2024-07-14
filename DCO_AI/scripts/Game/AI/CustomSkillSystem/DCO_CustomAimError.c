@@ -14,7 +14,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
 	
 	static const float MAXIMAL_TOLERANCE = 12.0;	
-	static const float MINIMAL_TOLERANCE = 0.3;
+	static const float MINIMAL_TOLERANCE = 0.1;
 	
 	EAISkill defaultSkill;
 	float threatFactor;
@@ -161,6 +161,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		bool setMaxTolerance;
 		float maxTOl;
 		float minTOl;
+		float ADSFactor;
 	
 		// Always use max tolerance in close range
 		if (distance < CLOSE_RANGE_THRESHOLD)
@@ -170,13 +171,13 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				case EWeaponType.WT_GRENADELAUNCHER:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 300;
+					minTOl = MINIMAL_TOLERANCE * 12;
 					break;
 				}
 				default:
 				{
-					maxTOl = MAXIMAL_TOLERANCE - 2.0;
-					minTOl = MINIMAL_TOLERANCE * 30;
+					maxTOl = MAXIMAL_TOLERANCE / 2;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 			}
@@ -189,31 +190,31 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				case EWeaponType.WT_RIFLE:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 30;
+					minTOl = MINIMAL_TOLERANCE * 15;
 					break;
 				}
 				case EWeaponType.WT_MACHINEGUN:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.25;
-					minTOl = MINIMAL_TOLERANCE * 50;
+					minTOl = MINIMAL_TOLERANCE * 20;
 					break;
 				}
 				case EWeaponType.WT_ROCKETLAUNCHER:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.2;
-					minTOl = MINIMAL_TOLERANCE * 50;
+					minTOl = MINIMAL_TOLERANCE * 20;
 					break;
 				}
 				case EWeaponType.WT_SNIPERRIFLE:
 				{
-					maxTOl = MAXIMAL_TOLERANCE / 5;
-					minTOl = MINIMAL_TOLERANCE * 30;
+					maxTOl = MAXIMAL_TOLERANCE / 6;
+					minTOl = MINIMAL_TOLERANCE * 8;
 					break;
 				}
 				case EWeaponType.WT_GRENADELAUNCHER:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 50;
+					minTOl = MINIMAL_TOLERANCE * 40;
 					break;
 				}
 				default:
@@ -233,31 +234,31 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				case EWeaponType.WT_RIFLE:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 300;
+					minTOl = MINIMAL_TOLERANCE * 25;
 					break;
 				}
 				case EWeaponType.WT_MACHINEGUN:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.25;
-					minTOl = MINIMAL_TOLERANCE * 350;
+					minTOl = MINIMAL_TOLERANCE * 30;
 					break;
 				}
 				case EWeaponType.WT_ROCKETLAUNCHER:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.2;
-					minTOl = MINIMAL_TOLERANCE * 320;
+					minTOl = MINIMAL_TOLERANCE * 27;
 					break;
 				}
 				case EWeaponType.WT_SNIPERRIFLE:
 				{
 					maxTOl = MAXIMAL_TOLERANCE / 4;
-					minTOl = MINIMAL_TOLERANCE * 200;
+					minTOl = MINIMAL_TOLERANCE * 12;
 					break;
 				}
 				case EWeaponType.WT_GRENADELAUNCHER:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 350;
+					minTOl = MINIMAL_TOLERANCE * 55;
 					break;
 				}
 				default:
@@ -279,7 +280,10 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		else 
 		{
 			// weapon type tolerance modifier
-			tolerance = (tolerance * (GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor())) - GetAimImprovement();
+			if(m_CombatComponent.GetCurrentWeapon())
+				ADSFactor = getADSFactor(m_CombatComponent.GetCurrentWeapon());
+			
+			tolerance = (tolerance * (GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor())) - (GetAimImprovement() + ADSFactor);
 		};
 		return Math.Clamp(tolerance, minTOl, maxTOl);
 	}	
@@ -519,6 +523,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				return 3.2;
 			}
 		}
+		
 		return 1.2;
 	}
 	
@@ -565,7 +570,18 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	float GetAimImprovement()
 	{
-		return m_CombatComponent.getImprovement() * 1.2;
+		return m_CombatComponent.getImprovement() * 1.25;
+	}
+	
+	float getADSFactor(BaseWeaponComponent weapon)
+	{
+		bool adsActive;
+		adsActive = weapon.GetSights().IsSightADSActive();
+		
+		if(!adsActive)
+		 return 0;
+
+		return 0.8;
 	}
 };
 

@@ -55,7 +55,7 @@ modded class SCR_AICombatMoveLogic_HideFromUnknownFire : AITaskScripted
 				{
 					ECharacterStance newStance;
 				
-					if (threat == EAIThreatState.THREATENED)
+					if (threat >= EAIThreatState.THREATENED)
 						newStance = ECharacterStance.PRONE;
 					else
 						newStance = ECharacterStance.CROUCH;
@@ -68,7 +68,7 @@ modded class SCR_AICombatMoveLogic_HideFromUnknownFire : AITaskScripted
 			{
 				ECharacterStance newStance;
 				
-				if (threat == EAIThreatState.THREATENED)
+				if (threat >= EAIThreatState.ALERTED)
 					newStance = ECharacterStance.PRONE;
 				else
 					newStance = ECharacterStance.CROUCH;
