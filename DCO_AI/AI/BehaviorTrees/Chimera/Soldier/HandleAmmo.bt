@@ -152,10 +152,25 @@ BehaviorTree {
              m_sText "Need Ammo"
             }
             AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 3064.572 1249.429
+            }
+            DCO_MagicAmmo "DCO_ Magic Ammo" {
+             Name "DCO_ Magic Ammo"
+             EditorPos 3260 1260
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "MagazineWell"
+              }
+             }
+             m_iMagazineCount 2
+            }
+            AITaskIdle Idle {
              Name "Idle - Wait for a long time"
-             EditorPos 3093.416 1251.416
-             Period 6
-             PeriodRandom 4
+             EditorPos 3645.916 1261.916
+             Period 8
+             PeriodRandom 3
             }
            }
           }

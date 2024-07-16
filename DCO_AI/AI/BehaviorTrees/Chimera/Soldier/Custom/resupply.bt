@@ -1,0 +1,70 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/resupply.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -50 -45
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -53 86
+     Nodes {
+      SCR_AIGetMagazineWell "SCR_AI Get Magazine Well" {
+       Name "SCR_AI Get Magazine Well"
+       EditorPos -516 361
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 0
+         PortName "MagazineWellOut"
+        }
+       }
+      }
+      SCR_AISpawnMagazines "SCR_AI Spawn Magazines" {
+       Name "SCR_AI Spawn Magazines"
+       EditorPos -53 380
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 0
+         PortName "MagazineWell"
+        }
+       }
+      }
+      SCR_AIPickMagazines "SCR_AI Pick Magazines" {
+       Name "SCR_AI Pick Magazines"
+       EditorPos 272 386
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 0
+         PortName "MagazineWell"
+        }
+       }
+      }
+      AITaskReturnState "Return State" {
+       Name "Return State"
+       EditorPos 519 387
+       Result SUCCESS
+      }
+      SCR_AICompleteAction "SCR_AI Complete Action" {
+       Name "SCR_AI Complete Action"
+       EditorPos 714 396
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable magazineWell {
+   VariableName "magazineWell"
+   VariableTypeName "typename"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference magazineWell {
+   VariableType 0
+   EditorPos -290 473
+  }
+ }
+}
