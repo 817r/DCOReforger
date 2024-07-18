@@ -137,23 +137,13 @@ BehaviorTree {
          EditorPos 2886.122 1775.686
          InTargetLocation 10
         }
-        SCR_AISpawnMagazines "SCR_AI Spawn Magazines" {
-         Name "SCR_AI Spawn Magazines"
-         EditorPos 3212 1776
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainerClass {
-           Port 12
-           PortName "MagazineWell"
-          }
-         }
-        }
         SCR_AICompleteAction "SCR_AI Complete Action" {
          Name "SCR_AI Complete Action"
-         EditorPos 3480.216 1765.119
+         EditorPos 3198.216 1773.119
         }
         AITaskReturnState "Return State" {
          Name "Return State"
-         EditorPos 3658.377 1766.444
+         EditorPos 3430.377 1764.444
          Result RUNNING
         }
        }
@@ -249,10 +239,6 @@ BehaviorTree {
   VariableReference controlledEntity {
    VariableType 4
    EditorPos 2215.151 1980.072
-  }
-  VariableReference magazineWellType {
-   VariableType 3
-   EditorPos 2910.25 1988.25
   }
  }
 }

@@ -130,9 +130,9 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	
 	override protected bool SuppressedInCoverCondition()
 	{
-		//float currMorale = m_DCOMorale.GetMoraleMeasure();
+		//float currMorale = m_DCOMorale.GetMoraleMeasure();		
 		
-		return m_State.m_bInCover && (m_eThreatState >= EAIThreatState.PINNED || morale >= moraleState.ANXIOUS);
+		return m_State.m_bInCover && (m_eThreatState >= EAIThreatState.THREATENED || morale >= moraleState.MANIAC);
 	}
 
 	override protected void PushRequestMove()
@@ -840,7 +840,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				PushRequestMove();
 			suppressedTimes ++;
 			
-			if (suppressedTimes > 4)
+			if (suppressedTimes > 2)
 			{
 				PushRequestMove();
 				suppressedTimes = 0;
@@ -850,7 +850,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		{
 			float newWaitTime = Math.RandomFloat(1.0, 5.0); // Expose out of cover for this time
 			PushRequestChangeStanceInCover(true, SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER, newWaitTime);
-			suppressedTimes +1;
+			suppressedTimes ++;
 			
 			if (suppressedTimes > 6)
 			{
