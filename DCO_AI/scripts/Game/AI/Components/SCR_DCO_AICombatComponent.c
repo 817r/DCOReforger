@@ -35,8 +35,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_VIGILANT = 3.0;
 	protected const float PERCEPTION_FACTOR_ALERTED = 2.8; 
 	protected const float PERCEPTION_FACTOR_THREATENED = 2.5;
-	protected const float PERCEPTION_FACTOR_PINNED = 1.2;
-	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.0;
+	protected const float PERCEPTION_FACTOR_PINNED = 1.7;
+	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.5;
 
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 2.5;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
@@ -502,5 +502,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 		AimImprovement = 0;
 		
 		return 0;
+	}	
+	
+	DCO_GroupTactic getTactics()
+	{
+		return m_Tac;
 	}
 };

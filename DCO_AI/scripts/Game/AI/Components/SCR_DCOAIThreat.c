@@ -38,6 +38,7 @@ modded class SCR_AIThreatSystem
 	private static const float THREAT_SHOT_DROP_RATE = 	0.084 * 0.001; // Falloff (percentual drop per milisecond)
 	private static const float THREAT_SUPPRESSION_DROP_RATE = 0.03 * 0.001;
 	private static const float THREAT_ENDANGERED_DROP_RATE = 	0.005 * 0.001;
+	private float THREAT_SUPPRESION_DROPS;
 	
 	private static const float SAFE_MORALE = 0;
 	private static const float VIGILANT_MORALE = 0.1;
@@ -48,7 +49,7 @@ modded class SCR_AIThreatSystem
 	
 	private EAIThreatState m_States;
 	private moraleState m_MoraleState;
-	
+	private DCO_GroupTactic tac;
 	private DCO_CUSTOMRANK rank;
 	
 	private ref SCR_AIThreatStatesChangedInvoker m_OnThreatStatesChanged = new SCR_AIThreatStatesChangedInvoker();
@@ -63,6 +64,7 @@ modded class SCR_AIThreatSystem
 		m_Config = utility.m_ConfigComponent;	
 		m_Combat = utility.m_CombatComponent;
 		m_moraleSystem = utility.m_DCOMoraleSystem;
+		tac = utility.getTactics();
 		m_DCO_Skill = utility.m_DCO_Skill.GetCharacterSkillRankComponent(utility.m_OwnerEntity);
 		m_DamageManager = SCR_ExtendedDamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_ExtendedDamageManagerComponent));
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
@@ -77,7 +79,7 @@ modded class SCR_AIThreatSystem
 			m_DamageManager.GetOnDamageEffectRemoved().Insert(OnDamageEffectRemoved);
 		}
 		
-		
+		THREAT_SUPPRESION_DROPS = THREAT_SUPPRESSION_DROP_RATE;
 		m_States = EAIThreatState.SAFE;
 	}
 	
@@ -247,13 +249,17 @@ modded class SCR_AIThreatSystem
 		
 		if (m_fThreatTotal > EXHAUSTED_THRESHOLD)
 		{
-			m_fThreatSuppression -= m_fThreatSuppression * (THREAT_SUPPRESSION_DROP_RATE / 5) * timeSlice;
+			m_fThreatSuppression -= m_fThreatSuppression * (THREAT_SUPPRESION_DROPS / 5) * timeSlice;
 			m_fThreatShotsFired -= m_fThreatShotsFired * timeSlice;
 		} else 
 		{
-			m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESSION_DROP_RATE * timeSlice;
+			m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESION_DROPS * timeSlice;
 			m_fThreatShotsFired -= m_fThreatShotsFired * THREAT_SHOT_DROP_RATE * timeSlice;
 		}
+		
+		if (tac == DCO_GroupTactic.AGGRESIVE)
+			THREAT_SUPPRESION_DROPS = THREAT_SUPPRESSION_DROP_RATE * 5;
+		else THREAT_SUPPRESION_DROPS = THREAT_SUPPRESSION_DROP_RATE;
 
 		
 		if (m_Combat)

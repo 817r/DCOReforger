@@ -37,6 +37,8 @@ class DCO_MagicAmmo : AITaskScripted
 		m_mTypenameToResourceName.Insert("MagazineWellM249","{06D722FC2666EB83}Prefabs/Weapons/Magazines/Box_556x45_M249_200rnd_4Ball_1Tracer.et");
 		m_mTypenameToResourceName.Insert("MagazineWellRPG7","{32E12D322E107F1C}Prefabs/Weapons/Ammo/Ammo_Rocket_PG7VM.et");
 		
+		// Feel Free to add more Magazine Typename To Resource Name Above here if you want to make a Compatibility
+		
 		m_OwnerEntity = owner.GetControlledEntity();
 		if (!m_OwnerEntity)
 			Debug.Error("Owner must be a character!");

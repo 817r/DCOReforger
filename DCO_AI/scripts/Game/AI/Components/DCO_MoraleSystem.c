@@ -76,6 +76,7 @@ class DCO_AIMoraleSystem
 	private EAIThreatState m_ThreatState;
 	private moraleState m_State;
 	private DCO_CUSTOMRANK rank;
+	private DCO_GroupTactic tacs;
 	
 	private ref SCR_AIMoraleStateChangedInvoker m_OnThreatStateChanged = new SCR_AIMoraleStateChangedInvoker();
 	
@@ -86,6 +87,7 @@ class DCO_AIMoraleSystem
 		m_Config = utility.m_ConfigComponent;
 		m_Combat = utility.m_CombatComponent;
 		m_Skill = utility.m_DCO_Skill;
+		tacs = utility.getTactics();
 		m_DamageManager = SCR_DamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 		if (!agent)

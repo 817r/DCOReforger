@@ -49,6 +49,9 @@ modded class SCR_AIAttackBehavior : SCR_AIBehaviorBase
 		if (targetNow != null)
 		{
 			float targetNowDistance = targetNow.GetDistance();
+			bool cqb = targetNowDistance < SCR_AICombatComponent.CLOSE_RANGE_COMBAT_DISTANCE;
+			m_bCloseRange = cqb;
+			m_CombatComponent.SetTargetSelectionProperties(m_bCloseRange);
 			if (targetNowDistance <= baseTarget.GetDistance())
 				return PRIORITY_BEHAVIOR_ATTACK_HIGH_PRIORITY;
 		}

@@ -1,6 +1,7 @@
 enum DCO_GroupTactic{
 	EVASIVE,
 	DEFENSIVE,
+	OFFENSIVE,
 	AGGRESIVE
 };
 
@@ -36,7 +37,7 @@ class DCO_GroupTacticComponent : ScriptComponent
 			}
 			case DCO_GroupIdentifer.INFANTRY:
 			{
-				SetGroupTactic(DCO_GroupTactic.AGGRESIVE); break;
+				SetGroupTactic(DCO_GroupTactic.OFFENSIVE); break;
 			}
 			case DCO_GroupIdentifer.MACHINEGUN_TEAM:
 			{
@@ -60,12 +61,12 @@ class DCO_GroupTacticComponent : ScriptComponent
 	static DCO_GroupTactic SetTactic(IEntity unit, DCO_GroupTactic groups)
 	{
 		if (!unit)
-			return DCO_GroupTactic.DEFENSIVE;
+			return DCO_GroupTactic.OFFENSIVE;
 		
 		DCO_GroupTacticComponent comp = GetGroupTacticComponent(unit);
 		
 		if (!comp)
-			return DCO_GroupTactic.DEFENSIVE;
+			return DCO_GroupTactic.OFFENSIVE;
 		
 		return comp.SetGroupTactic(groups);
 	}
@@ -73,12 +74,12 @@ class DCO_GroupTacticComponent : ScriptComponent
 	static DCO_GroupTactic GetGroupTactic(IEntity unit)
 	{		
 		if (!unit)
-			return DCO_GroupTactic.DEFENSIVE;
+			return DCO_GroupTactic.OFFENSIVE;
 		
 		DCO_GroupTacticComponent comp = GetGroupTacticComponent(unit);
 		
 		if (!comp)
-			return DCO_GroupTactic.DEFENSIVE;
+			return DCO_GroupTactic.OFFENSIVE;
 		
 		return comp.GetGroupTactic();
 	}

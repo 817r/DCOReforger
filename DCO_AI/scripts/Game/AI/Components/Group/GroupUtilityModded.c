@@ -143,11 +143,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		}
 			
 		m_fLastUpdateTime = currentTime;
-		m_bNewGroupMemberAdded = false; // resetting reaction on group member added
-
-		
-
-		
+		m_bNewGroupMemberAdded = false; // resetting reaction on group member OnAgentAdded
 		return m_CurrentActivity;
 	}
 	
@@ -195,6 +191,10 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		if (m_GroupIdentifier)
 		{
 			m_Idf = m_GroupIdentifier.GetGroupIndentification(m_Owner);
+			foreach (SCR_AIUtilityComponent util : m_Util)
+			{
+				util.setIdentifier(m_Idf);
+			}
 			m_GroupIdentifier.automaticIdentification();
 		}
 		
@@ -205,31 +205,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 			{
 				util.setTactics(m_Tac);
 			}
-			m_GroupTactics.automaticIdentification();
-		}
-		
-	}
-	
-	void evaluateTactics()
-	{
-		if (!m_Perception.GetOnEnemyDetected())
-			return;
-		
-		if (m_Tac == DCO_GroupTactic.EVASIVE)
-		{
-			if (!HasActionOfType(DCO_AIEvasiveActivity))
-			{
-				auto activity = new DCO_AIEvasiveActivity(this, null);
-				AddAction(activity);
-			}
-		} else if (m_Tac == DCO_GroupTactic.DEFENSIVE)
-		{
-			if (!HasActionOfType(DCO_DefendActivityTactics))
-			{
-				auto activitys = new DCO_DefendActivityTactics(this, null);
-				AddAction(activitys);
-			}
-		}
+		}		
 	}
 	
 	override void OnAgentAdded(AIAgent agent)
@@ -303,5 +279,10 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	DCO_GroupIdentifer getIdentifier()
 	{
 		return m_Idf;
+	}
+	
+	SCR_AIGroupPerception getGroupPerception()
+	{
+		return m_Perception;
 	}
 }

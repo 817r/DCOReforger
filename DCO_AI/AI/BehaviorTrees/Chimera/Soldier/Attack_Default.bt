@@ -113,11 +113,11 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          Nodes {
           DecoratorEntity Entity {
            Name "Entity"
-           EditorPos -462.286 1350.44
+           EditorPos -490.619 1372.107
            Nodes {
             SCR_AICombatMoveLogic_MovingCommander "SCR_AI Combat Move Logic_ Moving Commander" {
              Name "SCR_AI Combat Move Logic_ Moving Commander"
-             EditorPos -510.929 1526.179
+             EditorPos -539.262 1547.846
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 29
@@ -134,11 +134,11 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
           SCR_AIDecoTactics "SCR_AI Deco Tactics" {
            Name "SCR_AI Deco Tactics"
-           EditorPos 111.25 1323.25
+           EditorPos 82.917 1344.917
            Nodes {
             CombatLogic_Evasive_Tactics "Combat Logic_ Evasive_ Tactics" {
              Name "Combat Logic_ Evasive_ Tactics"
-             EditorPos 28.889 1534
+             EditorPos 0.556 1555.667
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 30
@@ -528,7 +528,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos -642.046 861.543
+   EditorPos -620.379 858.21
   }
   VariableReference baseTarget {
    VariableType 5
@@ -648,11 +648,11 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos -754.786 1610.143
+   EditorPos -783.119 1631.81
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos -219.444 1634.361
+   EditorPos -247.777 1656.028
   }
  }
  Groups {

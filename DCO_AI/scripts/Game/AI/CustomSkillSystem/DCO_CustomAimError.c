@@ -176,7 +176,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				}
 				default:
 				{
-					maxTOl = MAXIMAL_TOLERANCE / 3;
+					maxTOl = MAXIMAL_TOLERANCE / 5;
 					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}

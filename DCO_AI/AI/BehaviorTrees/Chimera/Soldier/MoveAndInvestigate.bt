@@ -92,7 +92,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
         }
         SCR_AIDecoTactics "SCR_AI Deco Tactics" {
          Name "SCR_AI Deco Tactics"
-         EditorPos -42.857 222
+         EditorPos -12.857 224
          Nodes {
           Sequence Sequence {
            Name "Sequence"
@@ -170,11 +170,11 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
            PortName "Tactics"
           }
          }
-         m_TacticsTreshold AGGRESIVE
+         m_TacticsTreshold OFFENSIVE
         }
         SCR_AIDecoTactics "SCR_AI Deco Tactics" {
          Name "SCR_AI Deco Tactics"
-         EditorPos 651.94 223.726
+         EditorPos 655.94 219.726
          Nodes {
           DecoTestVariable "Test Variable" {
            Name "Test Variable"
@@ -182,7 +182,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
            Nodes {
             SCR_AIDecoIsAboveMoraleLevel "SCR_AI Deco Is Above Morale Level" {
              Name "SCR_AI Deco Is Above Morale Level"
-             EditorPos 597.301 751.587
+             EditorPos 601.301 755.92
              Nodes {
               Parallel Parallel {
                Name "Parallel"
@@ -236,6 +236,24 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
          }
          m_TacticsTreshold EVASIVE
         }
+        SCR_AIDecoTactics "SCR_AI Deco Tactics" {
+         Name "SCR_AI Deco Tactics"
+         EditorPos 943.5 228.571
+         Nodes {
+          Decorator Decorator {
+           Name "Decorator"
+           EditorPos 937.143 558.571
+           ForceNodeResult Success
+          }
+         }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Tactics"
+          }
+         }
+         m_TacticsTreshold AGGRESIVE
+        }
        }
       }
       SCR_AILookAtPosition "SCR_AI Look At Position" {
@@ -288,7 +306,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
       }
       AITaskCharacterRaiseWeapon "Character Raise Weapon" {
        Name "Character Raise Weapon"
-       EditorPos 1305 -196.667
+       EditorPos 1306.429 -196.667
       }
       Parallel Parallel {
        Name "Parallel"

@@ -162,7 +162,7 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 				case EAIThreatState.EXHAUSTED:
 				{
 					rq.m_eStanceMoving = ECharacterStance.STAND;
-					if (Math.RandomIntInclusive(0, 1) == 1)
+					if (Math.RandomIntInclusive(0, 2) == 1)
 						rq.m_eMovementType = EMovementType.SPRINT;
 					else
 						rq.m_eMovementType = EMovementType.RUN;
@@ -259,22 +259,59 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 		
 		rq.m_vMovePos = ResolveRequestTargetPos();
 		rq.m_eMovementType = EMovementType.WALK;
-		rq.m_eStanceMoving = ECharacterStance.STAND;
-		rq.m_eStanceEnd = ECharacterStance.CROUCH;
+
 		rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-		rq.m_fMoveDistance = 7.0;
+		rq.m_fMoveDistance = Math.RandomFloatInclusive(3.0, 7.0);
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
 		rq.m_bCheckCoverVisibility = true;
 		rq.m_bFailIfNoCover = true;
+		
+		switch(tac)
+		{
+			case DCO_GroupTactic.AGGRESIVE:
+			{
+				rq.m_eStanceMoving = ECharacterStance.CROUCH;
+				rq.m_eStanceEnd = ECharacterStance.CROUCH;	
+				break;		
+			}
+			case DCO_GroupTactic.OFFENSIVE:
+			{
+				rq.m_eStanceMoving = ECharacterStance.STAND;
+				rq.m_eStanceEnd = ECharacterStance.CROUCH;
+				break;
+			}
+			default:
+			{
+				rq.m_eStanceMoving = ECharacterStance.STAND;
+				int rand = Math.RandomIntInclusive(1,2);
+				if (rand == 1)
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+				else if (rand == 2)
+					rq.m_eStanceEnd = ECharacterStance.STAND;
+				break;		
+			}
+		}
+		
 		m_State.ApplyNewRequest(rq);
 	}
 
 	override protected float ResolveStoppedWaitTime(bool inCover, EAIThreatState threat, EWeaponType weaponType)
 	{
 		float waitTime;
-		waitTime = Math.RandomFloat(3.0, 5.0);
+		
+		if (tac == DCO_GroupTactic.AGGRESIVE)
+		{
+			waitTime = Math.RandomFloat(3.0, 5.0);
+			
+			if(!m_State.IsInValidCover())
+				waitTime -= Math.RandomFloat(0.5, 1.0);
+			
+			return waitTime;
+		}
+
+		waitTime = Math.RandomFloat(7.0, 10.0);
 
 		// When using those weapons we want to move much less
 		bool longWaitTime = false;
@@ -296,10 +333,13 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 		}
 		
 		if (longWaitTime)
-			waitTime *= Math.RandomFloat(1.3, 1.8);
+			waitTime *= Math.RandomFloat(1.0, 1.3);
 		
 		if(specialistTime)
-			waitTime += Math.RandomFloat(1.0, 3.0);	
+			waitTime += Math.RandomFloat(3.0, 5.0);	
+		
+		if(!m_State.IsInValidCover())
+			waitTime -= 1.5;
 
 		return waitTime;
 	}

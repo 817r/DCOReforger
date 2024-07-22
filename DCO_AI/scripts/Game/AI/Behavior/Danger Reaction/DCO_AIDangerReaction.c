@@ -81,6 +81,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		float shooterDistance = vector.Distance(utility.GetOrigin(), shooterRoot.GetOrigin());
 		float distanceToDanger = vector.Distance(utility.GetOrigin(), dangerEvent.GetPosition());
 		bool isNullTarget = utility.m_CombatComponent.GetCurrentTarget() == null;
+		m_State = utility.m_CombatMoveState;
 		
 		if (!agent || !agent.IsEnemy(shooterRoot))
 			return false;
@@ -88,9 +89,9 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		float distanceToShooter = vector.Distance(utility.GetOrigin(), shooterPos);
 		
 		int bulletCount = dangerEvent.GetCount();
-		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+		rq.m_eReason = SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER;
 		
-		if(distanceToDanger < 1 && m_State.m_bInCover == false && bulletCount == 3)
+		if(distanceToDanger < 1 && !m_State.IsInValidCover() && bulletCount >= 3)
 		{
 			rq.m_vTargetPos = shooterPos;
 			rq.m_vMovePos = rq.m_vTargetPos;
@@ -104,7 +105,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			rq.m_fCoverSearchDistMax = 12;
 			rq.m_fCoverSearchDistMin = 5;
 			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
-			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+			int rand = Math.RandomIntInclusive(1,3);
+			if (rand == 1) rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+			else if (rand == 2) rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+			else if (rand == 3)	rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
@@ -115,14 +119,40 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			return true;	
 		}
 		
-		if (m_State.m_bInCover == true && shooterDistance > 10 && bulletCount >= 4)
+		if (m_State.IsInValidCover() && shooterDistance > 10 && bulletCount >= 4)
 		{
-			int randomizer = Math.RandomInt(1,2);
+			int randomizer = Math.RandomIntInclusive(1,2);
 			
-			if (randomizer == 1)
+			if (randomizer == 1 && m_State.m_bExposedInCover)
 			{
 				ApplyRequestChangeStanceInCover(true);
 				return true;
+			} else if (randomizer == 1)
+			{
+				rq.m_vTargetPos = shooterPos;
+				rq.m_vMovePos = rq.m_vTargetPos;
+				rq.m_bTryFindCover = true;
+				rq.m_bUseCoverSearchDirectivity = true;
+				rq.m_bCheckCoverVisibility = true;
+				rq.m_bFailIfNoCover = true;
+				rq.m_eStanceMoving = ECharacterStance.STAND;
+				rq.m_eStanceEnd = ECharacterStance.CROUCH;
+				rq.m_eMovementType = EMovementType.RUN;
+				rq.m_fCoverSearchDistMax = 12;
+				rq.m_fCoverSearchDistMin = 5;
+				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
+				int rand = Math.RandomIntInclusive(1,3);
+				if (rand == 1) rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+				else if (rand == 2) rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+				else if (rand == 3)	rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+				rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
+				rq.m_bAimAtTarget = true; // Don't aim while running
+				rq.m_bAimAtTargetEnd = true;
+			
+				m_State.ApplyNewRequest(rq);
+				m_bPushedMoveRequest = true;
+			
+				return true;			
 			} else if (randomizer == 2)
 			{
 				rq.m_vTargetPos = shooterPos;
@@ -130,14 +160,17 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				rq.m_bTryFindCover = true;
 				rq.m_bUseCoverSearchDirectivity = true;
 				rq.m_bCheckCoverVisibility = true;
-				rq.m_bFailIfNoCover = false;
-				rq.m_eStanceMoving = ECharacterStance.STAND;
-				rq.m_eStanceEnd = ECharacterStance.CROUCH;
-				rq.m_eMovementType = EMovementType.RUN;
+				rq.m_bFailIfNoCover = true;
+				rq.m_eStanceMoving = ECharacterStance.CROUCH;
+				rq.m_eStanceEnd = ECharacterStance.PRONE;
+				rq.m_eMovementType = EMovementType.WALK;
 				rq.m_fCoverSearchDistMax = 12;
 				rq.m_fCoverSearchDistMin = 5;
-				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
-				rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 4;
+				int rand = Math.RandomIntInclusive(1,3);
+				if (rand == 1) rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+				else if (rand == 2) rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+				else if (rand == 3)	rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 				rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 				rq.m_bAimAtTarget = true; // Don't aim while running
 				rq.m_bAimAtTargetEnd = true;
@@ -149,7 +182,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			}
 		}
 		
-		if (m_State.m_bInCover == false && shooterDistance > 10 && distanceToDanger < 5 && bulletCount > 3)
+		if (!m_State.IsInValidCover() && shooterDistance > 10 && distanceToDanger < 5 && bulletCount > 3)
 		{
 			rq.m_vTargetPos = shooterPos;
 			rq.m_vMovePos = rq.m_vTargetPos;
@@ -163,7 +196,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			rq.m_fCoverSearchDistMax = 12;
 			rq.m_fCoverSearchDistMin = 5;
 			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
-			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+			rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
@@ -195,7 +228,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 							rq.m_fCoverSearchDistMin = 2;
 							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
-							rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+							rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = false; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
@@ -226,7 +259,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 							rq.m_fCoverSearchDistMin = 2;
 							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
-							rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+							rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = true; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
@@ -254,7 +287,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 							rq.m_fCoverSearchDistMin = 2;
 							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
-							rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+							rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = false; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
@@ -289,7 +322,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 {
 	private static const float EXPLOSION_OBSERVE_DISTANCE = 50; // Maximal distance from explosion to trigger observe behavior
-	private static const float EXPLOSION_REACTION = 7;
+	private static const float EXPLOSION_REACTION = 10;
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 	
 	override void CreateObserveUnknownBehavior(SCR_AIUtilityComponent utility, vector observeReactionPosition)
@@ -324,11 +357,22 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 			return false;
 		
 		protected SCR_AICombatMoveState m_State;
-		vector position = dangerEvent.GetPosition();
+		vector position = dangerEvent.GetPosition();	
 		float distance = vector.Distance(ownerEntity.GetOrigin(), position);
+		m_State = utility.m_CombatMoveState;
 		
 		if (distance > SCR_AIThreatSystem.EXPLOSION_MAX_DISTANCE)
 			return false;
+		
+		IEntity instigatorRoot = dangerEvent.GetObject();
+		if (instigatorRoot)
+		{
+			instigatorRoot = instigatorRoot.GetRootParent();
+			bool isMilitary = utility.IsMilitary();
+			SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
+			if (isMilitary && (!agent || !agent.IsEnemy(instigatorRoot)))
+				return false;
+		}
 		
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
@@ -346,8 +390,11 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_fCoverSearchDistMax = 15;
 			rq.m_fCoverSearchDistMin = 2;
-			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 10;
-			rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 8;
+			int rand = Math.RandomIntInclusive(1,3);
+			if (rand == 1) rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+			else if (rand == 2) rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+			else if (rand == 3)	rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = false; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
