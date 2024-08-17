@@ -1,0 +1,8 @@
+GenericEntity : "{53EB8BF116A99F3B}Prefabs/Props/Military/Sandbags/Sandbag_01_short_high_base.et" {
+ ID "F0DBA538AC2A0552"
+ components {
+  NavmeshCustomLinkComponent "{598EA1E3CAB97DB9}" {
+   Enabled 1
+  }
+ }
+}

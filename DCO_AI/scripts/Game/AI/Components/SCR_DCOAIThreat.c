@@ -269,6 +269,9 @@ modded class SCR_AIThreatSystem
 			else
 				m_fThreatIsEndangered -= m_fThreatIsEndangered * THREAT_ENDANGERED_DROP_RATE * timeSlice;
 		}
+		
+		
+		
 
 		// Process all danger events and clear the array
 		if (m_Agent && m_Config.m_EnableDangerEvents)

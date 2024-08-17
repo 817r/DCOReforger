@@ -31,9 +31,6 @@ SCR_FactionManager FactionManager_USxUSSR1 : "{589540B35EBA8CDC}Prefabs/MP/Manag
 RadioManagerEntity : "{B8E09FAB91C4ECCD}Prefabs/Radio/RadioManager.et" {
  coords 6477.897 162.032 6462.204
 }
-HitRegistrationManager HitRegManager1 : "{0EDA3D48791120DD}Prefabs/MP/HitRegManager.et" {
- coords 4863.705 28.594 11849.931
-}
 SCR_LoadoutManager : "{97EF4C1A41F63DDB}Prefabs/MP/Managers/Loadouts/LoadoutManager_USxUSSR.et" {
  coords 4861.387 28.594 11839.631
 }

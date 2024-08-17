@@ -11,4 +11,5 @@ SCR_ChimeraAIAgent {
   }
  }
  DangerEventRange 1000
+ DynamicsimLastlodDistance 1200
 }

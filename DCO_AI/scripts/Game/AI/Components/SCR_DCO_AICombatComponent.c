@@ -43,8 +43,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	static const float LONG_RANGE_FIRE_DISTANCE = 200.0;
 	
-	protected const float DISMOUNT_TURRET_TIMER_MS = 1000;
-	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 4.0;
+	protected const float DISMOUNT_TURRET_TIMER_MS = 800;
+	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 3.5;
+	
+	protected const float FRAG_GRENADE_MAX_THREAT = 4.0;
 	
 	private int groupNumber;
 	private int nowGroupNumber;

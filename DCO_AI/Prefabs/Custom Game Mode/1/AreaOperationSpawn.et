@@ -1,0 +1,20 @@
+AOSpawn {
+ ID "6212A50E836BAE43"
+ components {
+  MissionModuleComponent "{6212A50E9C273B2A}" {
+  }
+  SCR_ScenarioFrameworkLayerTaskClearArea "{62131BE37A46362F}" {
+   m_eActivationType ON_INIT
+   m_sTaskTitle "Secure Area"
+   m_sTaskPrefab "{CDC0845AD90BA073}Prefabs/ScenarioFramework/Components/LayerTaskClearArea.et"
+  }
+  SCR_SeizingComponent "{6215350C63E17701}" {
+   m_fMaximumSeizingTime 300
+   m_fMinimumSeizingTime 60
+   m_iMaximumSeizingCharacters 30
+   m_bGradualTimerReset 1
+  }
+  Hierarchy "{62131BE026CED3A3}" {
+  }
+ }
+}

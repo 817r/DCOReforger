@@ -127,19 +127,13 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 				UpdateSuppressCluster();
 				UpdateThreatMeasure();
 				//evaluateTactics();
+				UpdateTactics();
 				EvaluateFlareUsage();
 				if (!m_Perception.m_aTargetClusters.IsEmpty())
 					UpdateClustersState(m_fPerceptionUpdateTimer_ms);
 				
 				m_fPerceptionUpdateTimer_ms -= PERCEPTION_UPDATE_TIMER_MS;
 			}
-		}
-		
-		m_Tac = m_GroupTactics.GetGroupTactic(m_Owner);
-		
-		foreach (SCR_AIUtilityComponent util : m_Util)
-		{
-			util.setTactics(m_Tac);
 		}
 			
 		m_fLastUpdateTime = currentTime;
@@ -284,5 +278,18 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	SCR_AIGroupPerception getGroupPerception()
 	{
 		return m_Perception;
+	}
+	
+	protected void UpdateTactics()
+	{
+		// Exit if no agents
+		float count = m_Util.Count();
+		if (count == 0)
+			return;
+		
+		m_Tac = m_GroupTactics.GetGroupTactic(m_Owner);
+		
+		foreach (SCR_AIUtilityComponent util : m_Util)
+			util.setTactics(m_Tac);
 	}
 }

@@ -191,7 +191,6 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		if (!m_OwnerEntity)
 			return;
 
-		m_DCO_GroupInfo = new DCO_Group_Info(m_Owner);
 		m_DCO_Skill = DCO_SkillComponent.Cast(m_OwnerEntity.FindComponent(DCO_SkillComponent));
 		m_DCOMoraleSystem = new DCO_AIMoraleSystem(this);
 		m_AIInfo = SCR_AIInfoComponent.Cast(agent.FindComponent(SCR_AIInfoComponent));

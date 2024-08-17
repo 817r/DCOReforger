@@ -1,0 +1,11 @@
+GenericEntity {
+ ID "62131BE32CC9FBA8"
+ components {
+  SCR_ScenarioFrameworkLayerTaskClearArea "{62131BE32CC9FB96}" {
+   m_sTaskPrefab "{A5E8E68E46D3E064}Prefabs/ScenarioFramework/Tasks/TaskClearArea.et"
+  }
+  Hierarchy "{62131BE32CC9FB87}" {
+  }
+ }
+ coords 78.56 1.001 185.618
+}

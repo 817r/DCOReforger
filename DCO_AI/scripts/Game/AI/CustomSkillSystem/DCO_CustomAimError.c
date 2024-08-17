@@ -190,31 +190,31 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				case EWeaponType.WT_RIFLE:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 15;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_MACHINEGUN:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.25;
-					minTOl = MINIMAL_TOLERANCE * 20;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_ROCKETLAUNCHER:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.2;
-					minTOl = MINIMAL_TOLERANCE * 20;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_SNIPERRIFLE:
 				{
 					maxTOl = MAXIMAL_TOLERANCE / 6;
-					minTOl = MINIMAL_TOLERANCE * 8;
+					minTOl = MINIMAL_TOLERANCE;
 					break;
 				}
 				case EWeaponType.WT_GRENADELAUNCHER:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 40;
+					minTOl = MINIMAL_TOLERANCE * 45;
 					break;
 				}
 				default:
@@ -234,25 +234,25 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				case EWeaponType.WT_RIFLE:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 25;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_MACHINEGUN:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.25;
-					minTOl = MINIMAL_TOLERANCE * 30;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_ROCKETLAUNCHER:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.2;
-					minTOl = MINIMAL_TOLERANCE * 27;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_SNIPERRIFLE:
 				{
 					maxTOl = MAXIMAL_TOLERANCE / 4;
-					minTOl = MINIMAL_TOLERANCE * 12;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_GRENADELAUNCHER:
@@ -570,7 +570,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	float GetAimImprovement()
 	{
-		return m_CombatComponent.getImprovement() * 1.25;
+		return m_CombatComponent.getImprovement() * 1.5;
 	}
 	
 	float getADSFactor(BaseWeaponComponent weapon)
