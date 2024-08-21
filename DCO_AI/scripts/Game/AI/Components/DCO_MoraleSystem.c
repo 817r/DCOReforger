@@ -315,7 +315,7 @@ class DCO_AIMoraleSystem
 		
 		rank = m_Skill.GetCharacterRank(utility.m_OwnerEntity);
 		m_fMoraleTotal = Math.Clamp(m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered + m_fMoraleSupply + m_fMoraleThreatMod, 0, 4.0);
-		aimImprovementTotal = Math.Clamp(improvementAims, 0, 5 - aimDecrase);
+		aimImprovementTotal = Math.Clamp(improvementAims, 0, 10 - aimDecrase);
 		UpdateState();
 #ifdef WORKBENCH
 		ShowDebug();

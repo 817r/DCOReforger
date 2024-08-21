@@ -1,6 +1,7 @@
 modded enum EMessageType_Goal
 {
-	EVADE_TACTICS
+	EVADE_TACTICS,
+	BUILD_FORTIFICATION
 };
 
 [BaseContainerProps()]
@@ -30,6 +31,41 @@ class DCO_AIEvadeFrom : SCR_AIMessageGoal
 	static DCO_AIEvadeFrom Create(vector position, BaseTarget target)
 	{
 		DCO_AIEvadeFrom msg = new DCO_AIEvadeFrom();
+		msg.m_vTargetPosition = position;
+		msg.m_bTarget = target;
+		return msg;
+	}
+};
+
+// FORITICATION
+
+[BaseContainerProps()]
+class DCO_Fortify : SCR_AIGoalReaction
+{
+	override void PerformReaction(notnull SCR_AIUtilityComponent utility, SCR_AIMessageBase message)
+	{
+		DCO_Fortification msg = DCO_Fortification.Cast(message);
+		if (!msg)
+			return;
+		
+		DCO_FortifyBehavior behavior = new DCO_FortifyBehavior(utility, msg.m_RelatedGroupActivity, msg.m_vTargetPosition, msg.m_bTarget, msg.m_fPriorityLevel);
+		utility.AddAction(behavior);
+	}
+};
+
+class DCO_Fortification : SCR_AIMessageGoal
+{
+	vector m_vTargetPosition;
+	BaseTarget m_bTarget;
+	
+	void DCO_Fortification()
+	{
+		m_MessageType = EMessageType_Goal.BUILD_FORTIFICATION;
+	}
+
+	static DCO_Fortification Create(vector position, BaseTarget target)
+	{
+		DCO_Fortification msg = new DCO_Fortification();
 		msg.m_vTargetPosition = position;
 		msg.m_bTarget = target;
 		return msg;

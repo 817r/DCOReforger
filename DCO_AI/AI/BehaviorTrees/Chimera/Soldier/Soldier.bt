@@ -139,7 +139,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
        Nodes {
         DecoTestVariable "Test Variable" {
          Name "Test Variable"
-         EditorPos -288.413 983.762
+         EditorPos -278.036 985.179
          Nodes {
           Sequence Sequence {
            Name "Sequence"
@@ -158,7 +158,6 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
            }
           }
          }
-         UseChildResult 1
          AbortType AbortParentNodeFurtherChildren
          InVariable 3
         }

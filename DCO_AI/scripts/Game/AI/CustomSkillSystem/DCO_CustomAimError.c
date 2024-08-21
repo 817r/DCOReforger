@@ -19,6 +19,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	EAISkill defaultSkill;
 	float threatFactor;
 	private SCR_AIInfoComponent m_InfoComponent;
+	private CharacterControllerComponent m_char;
 	
 	override void OnInit(AIAgent owner)
 	{
@@ -27,6 +28,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			m_CombatComponent = SCR_AICombatComponent.Cast(ent.FindComponent(SCR_AICombatComponent));		
 		m_InfoComponent = SCR_AIInfoComponent.Cast(owner.FindComponent(SCR_AIInfoComponent));
 		defaultSkill = m_CombatComponent.GetAISkill();
+		m_char = m_InfoComponent.getCharCont();
 	}
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
@@ -143,17 +145,17 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		if (!perceivable)
 			return 1.0;
 		
-		if (perceivable.GetIlluminationFactor() < 0.8)
-			return 2.2;
+		if (perceivable.GetIlluminationFactor() < 0.7)
+			return 1.5;
 		
 		else if (perceivable.GetIlluminationFactor() < 0.5)
 			return 2.4;
 		
 		else if (perceivable.GetIlluminationFactor() < 0.3)
-			return 2.6;
+			return 2.7;
 		
 		return 1.0;
-	}
+	} 
 	
 	float GetTolerances(IEntity observer, IEntity target, float angularSize, float distance, EWeaponType weaponType, ECharacterStance stance)
 	{
@@ -281,7 +283,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			// weapon type tolerance modifier
 			if(m_CombatComponent.GetCurrentWeapon())
-				ADSFactor = getADSFactor(m_CombatComponent.GetCurrentWeapon());
+				ADSFactor = getADSFactor();
 			
 			tolerance = (tolerance * (GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor())) - (GetAimImprovement() + ADSFactor);
 		};
@@ -570,18 +572,18 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	float GetAimImprovement()
 	{
-		return m_CombatComponent.getImprovement() * 1.5;
+		return m_CombatComponent.getImprovement();
 	}
 	
-	float getADSFactor(BaseWeaponComponent weapon)
+	float getADSFactor()
 	{
 		bool adsActive;
-		adsActive = weapon.GetSights().IsSightADSActive();
+		adsActive = m_char.IsWeaponADS();
 		
 		if(!adsActive)
 		 return 0;
 
-		return 0.8;
+		return 2.5;
 	}
 };
 

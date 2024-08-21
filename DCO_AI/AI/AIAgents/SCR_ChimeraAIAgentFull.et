@@ -3,11 +3,6 @@ SCR_ChimeraAIAgent {
  components {
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
    m_Skill 0.85
-   m_aGoalReactions {
-    DCO_AIEvasive "{61CEFE02F6D80CA3}" {
-     m_eType EVADE_TACTICS
-    }
-   }
   }
  }
  DangerEventRange 1000

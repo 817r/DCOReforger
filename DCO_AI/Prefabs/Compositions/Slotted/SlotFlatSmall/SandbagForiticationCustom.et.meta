@@ -1,5 +1,5 @@
 MetaFileClass {
- Name "{F54F6C453A8CB478}Prefabs/Weapons/Core/MachineGun_Base.et"
+ Name "{C1A9D4CA4756B0A6}Prefabs/Compositions/Slotted/SlotFlatSmall/SandbagForiticationCustom.et"
  Configurations {
   EntityTemplateResourceClass PC {
   }

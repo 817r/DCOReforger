@@ -15,7 +15,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
        Nodes {
         SCR_AISetAIState "SCR_AI SetAI State" {
          Name "SCR_AI SetAI State"
-         EditorPos -1644.611 831.833
+         EditorPos -1645.722 831.833
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -75,7 +75,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
         }
         SCR_AIGetBaseTargetProperties "SCR_AI Get Base Target Properties" {
          Name "SCR_AI Get Base Target Properties"
-         EditorPos -387.841 828.083
+         EditorPos -388.952 828.083
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 3

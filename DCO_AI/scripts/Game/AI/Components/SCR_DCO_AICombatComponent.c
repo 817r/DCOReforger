@@ -22,31 +22,41 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
 	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 2.0;
 
-	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.0;
-			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 5.0;
-			  static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 10.0;
-			  static const float TARGET_MAX_LAST_SEEN = 60.0;
+	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.3;
+	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK_CLOSE = 4.5;
+			  static const float TARGET_MIN_LAST_SEEN_INDIRECT_ATTACK = 2.0;
+	          static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK = 7.0;
+	          static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 12.0;
+	          static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_CLOSE = 10.0;
 	
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 98.0;
 	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.8;
 	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.48;
 	
 	protected const float PERCEPTION_FACTOR_SAFE = 0.5;
-	protected const float PERCEPTION_FACTOR_VIGILANT = 3.0;
-	protected const float PERCEPTION_FACTOR_ALERTED = 2.8; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 2.5;
+	protected const float PERCEPTION_FACTOR_VIGILANT = 3.1;
+	protected const float PERCEPTION_FACTOR_ALERTED = 2.9; 
+	protected const float PERCEPTION_FACTOR_THREATENED = 2.6;
 	protected const float PERCEPTION_FACTOR_PINNED = 1.7;
 	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.5;
 
-	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 2.5;
+	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.2;
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
 	
-	static const float LONG_RANGE_FIRE_DISTANCE = 200.0;
+	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 700.0;
+	protected static const float TARGET_MAX_DISTANCE_VEHICLE = 1000.0;
+	
+	//! Within this distance AI considers combat as 'close range', used in firing times
+	static const float CLOSE_RANGE_COMBAT_DISTANCE = 35.0;
+	static const float CLOSE_RANGE_COMBAT_DISTANCE_SQ = CLOSE_RANGE_COMBAT_DISTANCE * CLOSE_RANGE_COMBAT_DISTANCE;
+	
+	//! Beyond this distance AI considers combat as 'long range', used for danger events and firing times
+	static const float LONG_RANGE_COMBAT_DISTANCE = 250.0;
 	
 	protected const float DISMOUNT_TURRET_TIMER_MS = 800;
 	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 3.5;
 	
-	protected const float FRAG_GRENADE_MAX_THREAT = 4.0;
+	protected const float FRAG_GRENADE_MAX_THREAT = 3.0;
 	
 	private int groupNumber;
 	private int nowGroupNumber;
@@ -402,7 +412,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 			case EAICombatType.SUPPRESSIVE:
 			{
 				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
-				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,true);
 				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,true);
 				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,true);
 				break;
@@ -450,14 +460,226 @@ modded class SCR_AICombatComponent : ScriptComponent
 		return magCount < lowMagThreshold;
 	}
 
+	override void EvaluateWeaponAndTarget(out bool outWeaponEvent, out bool outSelectedTargetChanged,
+		out BaseTarget outPrevTarget, out BaseTarget outCurrentTarget,
+		out bool outRetreatTargetChanged, out bool outCompartmentChanged)
+	{
+		float worldTime = GetGame().GetWorld().GetWorldTime();
+		if (worldTime < m_fNextWeaponTargetEvaluation_ms)
+		{
+			outWeaponEvent = false;
+			outSelectedTargetChanged = false;
+			return;
+		}
+		
+		m_fNextWeaponTargetEvaluation_ms = worldTime + WEAPON_TARGET_UPDATE_PERIOD_MS;
+		
+		SCR_ChimeraAIAgent myAgent = GetAiAgent();
+		float agentThreat = m_Utility.m_ThreatSystem.GetThreatMeasure();
+
+		AIGroup myGroup = myAgent.GetParentGroup();
+		SCR_AIGroupInfoComponent groupInfoComp;
+		if (myGroup)
+			groupInfoComp = SCR_AIGroupInfoComponent.Cast(myGroup.FindComponent(SCR_AIGroupInfoComponent));
+		
+		BaseTarget newTarget = null;
+		bool weaponEvent = false;
+		bool retreatTargetChanged = false;
+		bool compartmentChanged = false;
+		
+		// Resolve if we want to think of throwing grenade
+		// Grenade throw is synchronized via group
+		array<EWeaponType> weaponBlacklist;
+		if (groupInfoComp)
+		{
+			if (agentThreat > FRAG_GRENADE_MAX_THREAT || !groupInfoComp.IsGrenadeThrowAllowed(myAgent))
+				weaponBlacklist = s_aWeaponBlacklistFragGrenades;
+		}
+		
+		bool useCompartmentWeapons = m_AIInfo.HasUnitState(EUnitState.IN_TURRET); // True when we are in a turret
+		
+		// Which assigned targets array to use?
+		array<IEntity> assignedTargets;
+		if (m_TargetClusterState && m_TargetClusterState.m_Cluster && m_TargetClusterState.m_Cluster.m_aEntities)
+			assignedTargets = m_TargetClusterState.m_Cluster.m_aEntities;
+		else
+			assignedTargets = m_aAssignedTargets;
+		
+		bool selectedWpnTarget = m_WeaponTargetSelector.SelectWeaponAndTarget(assignedTargets,
+			ASSIGNED_TARGETS_SCORE_INCREMENT, ENDANGERING_TARGETS_SCORE_INCREMENT,
+			useCompartmentWeapons, weaponTypesBlacklist: weaponBlacklist);
+		
+		m_eUnitTypesCanAttack = m_WeaponTargetSelector.GetUnitTypesCanAttack();
+		if (selectedWpnTarget)
+		{
+			BaseWeaponComponent newWeaponComp;
+			BaseMagazineComponent newMagazineComp;
+			int newMuzzleId;
+			
+			newTarget = m_WeaponTargetSelector.GetSelectedTarget();
+			m_WeaponTargetSelector.GetSelectedWeapon(newWeaponComp, newMuzzleId, newMagazineComp);
+			m_WeaponTargetSelector.GetSelectedWeaponProperties(m_fSelectedWeaponMinDist, m_fSelectedWeaponMaxDist, m_bSelectedWeaponDirectDamage);
+			
+			
+			weaponEvent = newWeaponComp != m_SelectedWeaponComp ||
+							newMuzzleId != m_iSelectedMuzzle ||
+							newMagazineComp != m_SelectedMagazineComp;
+			
+			bool weaponOrMuzzleChanged = newWeaponComp != m_SelectedWeaponComp ||
+									newMuzzleId != m_iSelectedMuzzle;
+			
+			if (weaponOrMuzzleChanged)
+			{
+				ref array<BaseMuzzleComponent> muzzles = {};
+				newWeaponComp.GetMuzzlesList(muzzles);
+				if (newMuzzleId >= muzzles.Count() || newMuzzleId < 0)
+					m_SelectedWeaponResource = m_ConfigComponent.GetTreeNameForWeaponType(newWeaponComp.GetWeaponType(),0);	
+				else 
+					m_SelectedWeaponResource = m_ConfigComponent.GetTreeNameForWeaponType(newWeaponComp.GetWeaponType(),muzzles[newMuzzleId].GetMuzzleType());
+				
+				if (newWeaponComp)
+				{
+					EWeaponType weaponType = newWeaponComp.GetWeaponType();
+					if (groupInfoComp && weaponType == EWeaponType.WT_FRAGGRENADE)
+					{
+						// We want to throw a grenade
+						// Notify group immediately
+						groupInfoComp.OnAgentSelectedGrenade(myAgent);
+					}
+				}
+			}
+			
+			m_SelectedWeaponComp = newWeaponComp;
+			m_iSelectedMuzzle = newMuzzleId;
+			m_SelectedMagazineComp = newMagazineComp;
+		}
+		
+		BaseTarget prevTarget = m_SelectedTarget;
+		if (newTarget != m_SelectedTarget)
+		{
+			#ifdef AI_DEBUG
+			AddDebugMessage(string.Format("Target has changed. New: %1, Previous: %2", newTarget, m_SelectedTarget));
+			#endif
+			m_SelectedTarget = newTarget;
+			selectedTargetChanged = true;
+		}
+		
+		// Check if we must retreat from some target
+		BaseTarget targetCantAttack;
+		float targetCantAttackScore;
+		m_WeaponTargetSelector.GetMostRelevantTargetCantAttack(targetCantAttack, targetCantAttackScore);
+		if (targetCantAttackScore < TARGET_SCORE_RETREAT)
+			targetCantAttack = null;
+		if (targetCantAttack != m_SelectedRetreatTarget)
+		{
+			m_SelectedRetreatTarget = targetCantAttack;
+			retreatTargetChanged = true;
+		}
+		
+		// Check if compartment has changed
+		BaseCompartmentSlot currentCompartment = m_CompartmentAccess.GetCompartment();
+		if (currentCompartment != m_WeaponEvaluationCompartment)
+		{
+			compartmentChanged = true;
+			m_WeaponEvaluationCompartment = currentCompartment;
+		}
+		
+		// Reset last velocity if target changed
+		if (selectedTargetChanged)
+		{
+			m_SelectedTargetVisible = false;
+			m_SelectedTargetDestinationPos = vector.Zero;
+		}
+			
+		if (newTarget)
+		{
+			bool visible = IsTargetVisible(newTarget);
+			IEntity targetEntity = newTarget.GetTargetEntity();
+			
+			if (visible != m_SelectedTargetVisible)
+			{
+				m_SelectedTargetVisible = visible;
+				
+				// Save position (destination) of target pos at the time we figured we've lost LOS
+				// Note: this solution is dependent on update rate of EvaluateWeaponAndTarget
+				if (!visible && targetEntity)
+					m_SelectedTargetDestinationPos = targetEntity.GetOrigin();
+			}
+		}
+				
+		outWeaponEvent = weaponEvent;
+		outSelectedTargetChanged = selectedTargetChanged;
+		outRetreatTargetChanged = retreatTargetChanged;
+		outCompartmentChanged = compartmentChanged;
+		outCurrentTarget = newTarget;
+		outPrevTarget = prevTarget;
+	}
+	
+	protected override void EvaluateDismountTurret(float timeSliceMs)
+	{
+		vector targetPos;
+		bool mustDismount = DismountTurretCondition(targetPos, false);
+		bool outofMagDismount = turretOutOfMag();
+		
+		if (mustDismount || outofMagDismount)
+		{
+			// Do nothing if already requested to dismount
+			if (m_fDismountTurretTimer == -1.0)
+				return;
+			
+			m_fDismountTurretTimer += timeSliceMs;
+			
+			if (m_fDismountTurretTimer > DISMOUNT_TURRET_TIMER_MS)
+			{
+				m_fDismountTurretTimer = -1.0;
+				
+				TryAddDismountTurretActions(targetPos);
+			}
+		}
+		else
+		{
+			m_fDismountTurretTimer = 0;
+		}
+	}
+	
+	bool turretOutOfMag()
+	{
+		// False if not in turret
+		if (!m_CurrentTurretController)
+			return false;
+		TurretComponent turretComp = m_CurrentTurretController.GetTurretComponent();
+		if (!turretComp)
+			return false;
+		
+		// False if we have a valid target to attack
+		if (m_SelectedTarget)
+			return false;
+		
+		// False if we have a driver in the vehicle
+		array<BaseCompartmentSlot> compartments = {};
+		m_CurrentVehicleCompartmentManager.GetCompartments(compartments);
+		foreach (BaseCompartmentSlot slot : compartments)
+		{
+			if (PilotCompartmentSlot.Cast(slot) && slot.GetOccupant())
+				return false;
+		}
+		
+		// False if we are in a vehicle and we should not leave turret of this vehicle type
+		// Note that static turrets are not of Vehicle class.
+		Vehicle vehicle = Vehicle.Cast(m_CurrentVehicle);
+		if (vehicle && s_aForbidDismountTurretsOfVehicleTypes.Find(vehicle.m_eVehicleType) != -1)
+			return false;
+		
+		return m_CurrentTurretController.GetWeaponManager().GetCurrentWeapon().GetCurrentMagazine().GetAmmoCount() < 1;
+	}
+	
 	float improvementCalcuation()
 	{
 		if (!m_SelectedTarget && selectedTargetChanged)
 			return 0;
 		
 		vector targetPosition = m_SelectedTarget.GetTargetEntity().GetOrigin();
-		
-		
+
 		return 0;
 	}
 	
