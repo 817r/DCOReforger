@@ -1,25 +1,25 @@
 SCR_ChimeraCharacter {
  ID "520EC961A090B1EE"
  components {
-  SCR_CharacterInventoryStorageComponent "{520EA1D2DB118DAC}" {
-   components {
-    DCO_SkillComponent "{61AABE0631CC77EC}" {
-    }
-   }
-  }
   ChimeraAIControlComponent "{520EA1D2DB109F34}" {
    components {
+    DCO_AIAwareness "{622CC334048DFDE9}" {
+     searchRad 20
+    }
+    DCO_SkillComponent "{622CC33401065CAF}" {
+    }
     PerceptionComponent "{54A2CBC75F06064B}" {
      SensorsList {
       EyesSensor "{520EA1D2DB109AAD}" {
-       MaxRange 600
        FOVNormal 120
        FOVPeripheral 200
       }
       EarsSensor "{520EA1D2DB109AA9}" {
-       SoundIntensityMin_db 12
       }
      }
+    }
+    SCR_AICombatComponent "{55A2C9BE343B2EA1}" {
+     m_eAISkillDefault VETERAN
     }
    }
   }

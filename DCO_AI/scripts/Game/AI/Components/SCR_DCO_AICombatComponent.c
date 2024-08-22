@@ -10,7 +10,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected IEntity m_ControlledEntity;
 	protected SCR_ChimeraAIAgent m_SCR_ChimeraAIAgent;
 	protected DCO_AIMoraleSystem m_DCO_MoraleSystem;
-	protected DCO_AIInfoComponent m_DCO_AIInfoComponent;
 	protected SCR_CharacterDamageManagerComponent damageManager;
 	private DCO_SkillComponent m_DCO_Skill;
 	private DCO_CUSTOMRANK rank;	
@@ -69,8 +68,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	override protected void EOnInit(IEntity owner)
 	{		
-		super.EOnInit(owner);
-		GetAiAgent();
+		vanilla.EOnInit(owner);
+		
+		ChimeraCharacter character = ChimeraCharacter.Cast(owner);
+		
 		
 		if (m_Agent)
 		{
@@ -78,20 +79,13 @@ modded class SCR_AICombatComponent : ScriptComponent
 			
 			rank = m_DCO_Skill.GetCharacterRank(m_Utility.m_OwnerEntity);
 			
-			damageManager = SCR_CharacterDamageManagerComponent.Cast(m_ControlledEntity.FindComponent(SCR_CharacterDamageManagerComponent));
+			damageManager = m_Utility.m_AIInfo.getCharDamageComp();
 			
 			m_SCR_AIGroup = m_Utility.m_DCO_GroupInfo;
 						
 			m_DCO_Skill = m_Utility.m_DCO_Skill.GetCharacterSkillRankComponent(m_Utility.m_OwnerEntity);
 			
 			m_SCR_ChimeraAIAgent = m_Agent;
-			
-			m_DCO_AIInfoComponent = DCO_AIInfoComponent.Cast(m_Agent.FindComponent(DCO_AIInfoComponent));
-			
-			if (m_DCO_AIInfoComponent)
-			{
-				groupNumber = m_DCO_AIInfoComponent.getMemberNumber();
-			}
 			
 			m_GroupTacticComponent = DCO_GroupTacticComponent.Cast(owner.FindComponent(DCO_GroupTacticComponent));
 			
@@ -329,62 +323,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float m_StopDistance = 30 + Math.RandomFloat(0, 12); 
 	// TODO: add possibility to get cover towards custom position
 	//------------------------------------------------------------------------------------------------
-	override vector FindNextCoverPosition()
-	{
-		if (!m_SelectedTarget)
-			return vector.Zero;
-		
-		vector ownerPos = GetOwner().GetOrigin();
-		vector lastSeenPos = m_SelectedTarget.GetLastSeenPosition();
-		float distanceToTarget = vector.Distance(ownerPos, lastSeenPos);
 
-		if (m_StopDistance > distanceToTarget)
-			return vector.Zero;
-		
-		// Create randomized position
-		SCR_ChimeraAIAgent agent = GetAiAgent();
-		SCR_DefendWaypoint defendWp = SCR_DefendWaypoint.Cast(agent.m_GroupWaypoint);
-		vector direction;
-		bool standardAttack = true;
-		float nextCoverDistance;
-		
-		// If target is outside defend waypoint, run towards center of it
-		if (defendWp)
-		{
-			if (!defendWp.IsWithinCompletionRadius(lastSeenPos) &&
-				!defendWp.IsWithinCompletionRadius(ownerPos))
-			{
-				direction = vector.Direction(ownerPos, defendWp.GetOrigin());	// Direction towards center of defend wp
-				
-				if (vector.Distance(defendWp.GetOrigin(), ownerPos) < DISTANCE_MIN)
-					nextCoverDistance = 0;
-				else	
-					nextCoverDistance = DISTANCE_MIN;
-
-				standardAttack = false;
-			}
-		}
-		
-		if (standardAttack)
-		{
-			nextCoverDistance = Math.RandomFloat(DISTANCE_MIN, DISTANCE_MAX);
-
-			// If close enough, get directly to the target
-			if (nextCoverDistance > (distanceToTarget - DISTANCE_MIN))
-				nextCoverDistance = distanceToTarget - DISTANCE_MIN;
-			
-			direction = vector.Direction(ownerPos, m_SelectedTarget.GetLastSeenPosition());
-		}
-			
-		direction.Normalize();
-		vector newPositionCenter = direction * nextCoverDistance + ownerPos, newPosition;
-		// yes possibly it could lead to end up in target position but lets ignore it for now
-		
-		newPosition = s_AIRandomGenerator.GenerateRandomPointInRadius(0, NEAR_PROXIMITY, newPositionCenter, true);
-		newPosition[1] = newPositionCenter[1];
-		return newPosition;
-	}
-	
 	override void SetCombatType(EAICombatType combatType)
 	{
 		#ifdef AI_DEBUG
@@ -435,184 +374,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 			}
 		}
 		m_eCombatType = combatType;
-	}
-	
-	override bool EvaluateLowAmmo(BaseWeaponComponent weaponComp, int muzzleId)
-	{
-		if (!weaponComp)
-			return false;
-		array<BaseMuzzleComponent> muzzles = {};
-		weaponComp.GetMuzzlesList(muzzles);
-		if (muzzleId >= muzzles.Count() || muzzleId < 0)
-			return false;
-		
-		BaseMuzzleComponent muzzleComp = muzzles[muzzleId];
-		if (!muzzleComp)
-			return false;
-				
-		// Ignore disposable weapons
-		if (muzzleComp.IsDisposable())
-			return false;
-		
-		int magCount = m_InventoryManager.GetMagazineCountByWeapon(weaponComp);
-		int lowMagThreshold = GetWeaponLowMagThreshold(weaponComp);
-		
-		return magCount < lowMagThreshold;
-	}
-
-	override void EvaluateWeaponAndTarget(out bool outWeaponEvent, out bool outSelectedTargetChanged,
-		out BaseTarget outPrevTarget, out BaseTarget outCurrentTarget,
-		out bool outRetreatTargetChanged, out bool outCompartmentChanged)
-	{
-		float worldTime = GetGame().GetWorld().GetWorldTime();
-		if (worldTime < m_fNextWeaponTargetEvaluation_ms)
-		{
-			outWeaponEvent = false;
-			outSelectedTargetChanged = false;
-			return;
-		}
-		
-		m_fNextWeaponTargetEvaluation_ms = worldTime + WEAPON_TARGET_UPDATE_PERIOD_MS;
-		
-		SCR_ChimeraAIAgent myAgent = GetAiAgent();
-		float agentThreat = m_Utility.m_ThreatSystem.GetThreatMeasure();
-
-		AIGroup myGroup = myAgent.GetParentGroup();
-		SCR_AIGroupInfoComponent groupInfoComp;
-		if (myGroup)
-			groupInfoComp = SCR_AIGroupInfoComponent.Cast(myGroup.FindComponent(SCR_AIGroupInfoComponent));
-		
-		BaseTarget newTarget = null;
-		bool weaponEvent = false;
-		bool retreatTargetChanged = false;
-		bool compartmentChanged = false;
-		
-		// Resolve if we want to think of throwing grenade
-		// Grenade throw is synchronized via group
-		array<EWeaponType> weaponBlacklist;
-		if (groupInfoComp)
-		{
-			if (agentThreat > FRAG_GRENADE_MAX_THREAT || !groupInfoComp.IsGrenadeThrowAllowed(myAgent))
-				weaponBlacklist = s_aWeaponBlacklistFragGrenades;
-		}
-		
-		bool useCompartmentWeapons = m_AIInfo.HasUnitState(EUnitState.IN_TURRET); // True when we are in a turret
-		
-		// Which assigned targets array to use?
-		array<IEntity> assignedTargets;
-		if (m_TargetClusterState && m_TargetClusterState.m_Cluster && m_TargetClusterState.m_Cluster.m_aEntities)
-			assignedTargets = m_TargetClusterState.m_Cluster.m_aEntities;
-		else
-			assignedTargets = m_aAssignedTargets;
-		
-		bool selectedWpnTarget = m_WeaponTargetSelector.SelectWeaponAndTarget(assignedTargets,
-			ASSIGNED_TARGETS_SCORE_INCREMENT, ENDANGERING_TARGETS_SCORE_INCREMENT,
-			useCompartmentWeapons, weaponTypesBlacklist: weaponBlacklist);
-		
-		m_eUnitTypesCanAttack = m_WeaponTargetSelector.GetUnitTypesCanAttack();
-		if (selectedWpnTarget)
-		{
-			BaseWeaponComponent newWeaponComp;
-			BaseMagazineComponent newMagazineComp;
-			int newMuzzleId;
-			
-			newTarget = m_WeaponTargetSelector.GetSelectedTarget();
-			m_WeaponTargetSelector.GetSelectedWeapon(newWeaponComp, newMuzzleId, newMagazineComp);
-			m_WeaponTargetSelector.GetSelectedWeaponProperties(m_fSelectedWeaponMinDist, m_fSelectedWeaponMaxDist, m_bSelectedWeaponDirectDamage);
-			
-			
-			weaponEvent = newWeaponComp != m_SelectedWeaponComp ||
-							newMuzzleId != m_iSelectedMuzzle ||
-							newMagazineComp != m_SelectedMagazineComp;
-			
-			bool weaponOrMuzzleChanged = newWeaponComp != m_SelectedWeaponComp ||
-									newMuzzleId != m_iSelectedMuzzle;
-			
-			if (weaponOrMuzzleChanged)
-			{
-				ref array<BaseMuzzleComponent> muzzles = {};
-				newWeaponComp.GetMuzzlesList(muzzles);
-				if (newMuzzleId >= muzzles.Count() || newMuzzleId < 0)
-					m_SelectedWeaponResource = m_ConfigComponent.GetTreeNameForWeaponType(newWeaponComp.GetWeaponType(),0);	
-				else 
-					m_SelectedWeaponResource = m_ConfigComponent.GetTreeNameForWeaponType(newWeaponComp.GetWeaponType(),muzzles[newMuzzleId].GetMuzzleType());
-				
-				if (newWeaponComp)
-				{
-					EWeaponType weaponType = newWeaponComp.GetWeaponType();
-					if (groupInfoComp && weaponType == EWeaponType.WT_FRAGGRENADE)
-					{
-						// We want to throw a grenade
-						// Notify group immediately
-						groupInfoComp.OnAgentSelectedGrenade(myAgent);
-					}
-				}
-			}
-			
-			m_SelectedWeaponComp = newWeaponComp;
-			m_iSelectedMuzzle = newMuzzleId;
-			m_SelectedMagazineComp = newMagazineComp;
-		}
-		
-		BaseTarget prevTarget = m_SelectedTarget;
-		if (newTarget != m_SelectedTarget)
-		{
-			#ifdef AI_DEBUG
-			AddDebugMessage(string.Format("Target has changed. New: %1, Previous: %2", newTarget, m_SelectedTarget));
-			#endif
-			m_SelectedTarget = newTarget;
-			selectedTargetChanged = true;
-		}
-		
-		// Check if we must retreat from some target
-		BaseTarget targetCantAttack;
-		float targetCantAttackScore;
-		m_WeaponTargetSelector.GetMostRelevantTargetCantAttack(targetCantAttack, targetCantAttackScore);
-		if (targetCantAttackScore < TARGET_SCORE_RETREAT)
-			targetCantAttack = null;
-		if (targetCantAttack != m_SelectedRetreatTarget)
-		{
-			m_SelectedRetreatTarget = targetCantAttack;
-			retreatTargetChanged = true;
-		}
-		
-		// Check if compartment has changed
-		BaseCompartmentSlot currentCompartment = m_CompartmentAccess.GetCompartment();
-		if (currentCompartment != m_WeaponEvaluationCompartment)
-		{
-			compartmentChanged = true;
-			m_WeaponEvaluationCompartment = currentCompartment;
-		}
-		
-		// Reset last velocity if target changed
-		if (selectedTargetChanged)
-		{
-			m_SelectedTargetVisible = false;
-			m_SelectedTargetDestinationPos = vector.Zero;
-		}
-			
-		if (newTarget)
-		{
-			bool visible = IsTargetVisible(newTarget);
-			IEntity targetEntity = newTarget.GetTargetEntity();
-			
-			if (visible != m_SelectedTargetVisible)
-			{
-				m_SelectedTargetVisible = visible;
-				
-				// Save position (destination) of target pos at the time we figured we've lost LOS
-				// Note: this solution is dependent on update rate of EvaluateWeaponAndTarget
-				if (!visible && targetEntity)
-					m_SelectedTargetDestinationPos = targetEntity.GetOrigin();
-			}
-		}
-				
-		outWeaponEvent = weaponEvent;
-		outSelectedTargetChanged = selectedTargetChanged;
-		outRetreatTargetChanged = retreatTargetChanged;
-		outCompartmentChanged = compartmentChanged;
-		outCurrentTarget = newTarget;
-		outPrevTarget = prevTarget;
 	}
 	
 	protected override void EvaluateDismountTurret(float timeSliceMs)
@@ -699,16 +460,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 			return 0;
 		else
 			return m_aAssignedTargets.Count();
-	}
-	
-	float getCurrentHealth()
-	{
-		return damageManager.GetHealth();
-	}
-	
-	float GetMaxHealth()
-	{
-		return damageManager.GetMaxHealth();
 	}
 	
 	void improvement(float improvement)

@@ -89,7 +89,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		float distanceToShooter = vector.Distance(utility.GetOrigin(), shooterPos);
 		
 		int bulletCount = dangerEvent.GetCount();
-		rq.m_eReason = SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER;
+		rq.m_eReason = SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER;		
 		
 		if(distanceToDanger < 1 && !m_State.IsInValidCover() && bulletCount >= 3)
 		{

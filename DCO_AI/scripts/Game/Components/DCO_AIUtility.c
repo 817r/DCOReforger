@@ -4,6 +4,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	ref DCO_AIMoraleSystem m_DCOMoraleSystem;
 	DCO_SkillComponent m_DCO_Skill;
 	ref DCO_Group_Info m_DCO_GroupInfo;
+	DCO_AIAwareness m_Awareness;
 	
 	DCO_GroupIdentifer identifier;
 	DCO_GroupTactic groupTac;
@@ -33,6 +34,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_fLastUpdateTime = time;
 
 		// Create events from commands, danger events, new targets
+		m_Awareness.Update();
 		m_DCOMoraleSystem.Update(this,deltaTime);
 		m_ThreatSystem.Update(this, deltaTime);
 		m_CombatComponent.UpdatePerceptionFactor(m_PerceptionComponent, m_ThreatSystem);
@@ -191,6 +193,9 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		if (!m_OwnerEntity)
 			return;
 
+		m_Awareness = DCO_AIAwareness.Cast(m_OwnerEntity.FindComponent(DCO_AIAwareness));
+		if (m_Awareness)
+			m_Awareness.initialize(this);
 		m_DCO_Skill = DCO_SkillComponent.Cast(m_OwnerEntity.FindComponent(DCO_SkillComponent));
 		m_DCOMoraleSystem = new DCO_AIMoraleSystem(this);
 		m_AIInfo = SCR_AIInfoComponent.Cast(agent.FindComponent(SCR_AIInfoComponent));
@@ -239,5 +244,10 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	DCO_GroupIdentifer getIdentifier()
 	{
 		return identifier;
+	}
+	
+	CharacterControllerComponent getCharCon()
+	{
+		return m_OwnerController;
 	}
 }

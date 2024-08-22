@@ -48,196 +48,69 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
        Name "Selector"
        EditorPos 18 -181
        Nodes {
-        DecoTestVariable "Test Variable" {
-         Name "Test Variable"
-         EditorPos -691 47
+        SCR_AIDecoTactics "SCR_AI Deco Tactics" {
+         Name "SCR_AI Deco Tactics"
+         EditorPos -674.976 237.845
          Nodes {
-          SCR_AIDecoTactics "SCR_AI Deco Tactics" {
-           Name "SCR_AI Deco Tactics"
-           EditorPos -674.976 240.524
+          Parallel Parallel {
+           Name "Parallel"
+           EditorPos -662.857 515
            Nodes {
-            Parallel Parallel {
-             Name "Parallel"
-             EditorPos -662.857 515
+            Decorator Decorator {
+             Name "Decorator"
+             EditorPos -901.429 805.714
              Nodes {
-              Decorator Decorator {
-               Name "Decorator"
-               EditorPos -901.429 805.714
-               Nodes {
-                RunBT RunBT {
-                 Name "RunBT"
-                 EditorPos -1011.234 1002.155
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "enemyPos"
-                  }
-                 }
-                 BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defensive.bt"
+              RunBT RunBT {
+               Name "RunBT"
+               EditorPos -1009.012 1002.155
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "enemyPos"
                 }
                }
-               ForceNodeResult Success
-              }
-              AITaskReturnState "Return  State" {
-               Name "Return  State"
-               EditorPos -518.111 819.556
-               Result RUNNING
+               BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defensive.bt"
               }
              }
-             UseChildResult 1
+             ForceNodeResult Success
+            }
+            AITaskReturnState "Return  State" {
+             Name "Return  State"
+             EditorPos -518.111 819.556
+             Result RUNNING
             }
            }
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Tactics"
-            }
-           }
+           UseChildResult 1
           }
          }
-         ForceNodeResult Success
-         InVariable -1
-         TestType EqualsValue
-         TestValue "true"
-        }
-        DecoTestVariable "Test Variable" {
-         Name "Test Variable"
-         EditorPos -27 33
-         Nodes {
-          SCR_AIDecoTactics "SCR_AI Deco Tactics" {
-           Name "SCR_AI Deco Tactics"
-           EditorPos -12.857 224
-           Nodes {
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 12.838 433.416
-             Nodes {
-              DecoTestVariable "Test Variable" {
-               Name "Test Variable"
-               EditorPos -251.756 648.547
-               Nodes {
-                SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-                 Name "SCR_AI Deco Is Above Threat Level"
-                 EditorPos -289.4 845.869
-                 Nodes {
-                  AITaskReturnState "Return  State" {
-                   Name "Return  State"
-                   EditorPos -226.399 1038.583
-                   Group "{61D07B5227D663B0}"
-                   Result RUNNING
-                  }
-                 }
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "ThresholdIn"
-                  }
-                 }
-                 Group "{61D07B5227D663B0}"
-                 m_threatThreshold EXHAUSTED
-                }
-               }
-               Group "{61D07B5227D663B0}"
-               ForceNodeResult Success
-               InVariable -1
-               TestType EqualsValue
-               TestValue "true"
-              }
-              DecoTestVariable "Test Variable" {
-               Name "Test Variable"
-               EditorPos 163.806 669.154
-               Nodes {
-                SCR_AIDecoIsAboveMoraleLevel "SCR_AI Deco Is Above Morale Level" {
-                 Name "SCR_AI Deco Is Above Morale Level"
-                 EditorPos 120.4 842.737
-                 Nodes {
-                  AITaskReturnState "Return  State" {
-                   Name "Return  State"
-                   EditorPos 189.123 1006.822
-                   Group "{61D07B5227D663B0}"
-                   Result RUNNING
-                  }
-                 }
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "ThresholdIn"
-                  }
-                 }
-                 Group "{61D07B5227D663B0}"
-                 m_MoraleThreshold BREAK
-                }
-               }
-               Group "{61D07B5227D663B0}"
-               ForceNodeResult Success
-               InVariable -1
-               TestType EqualsValue
-               TestValue "true"
-              }
-             }
-             Group "{61D07B5227D663B0}"
-            }
-           }
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Tactics"
-            }
-           }
-           m_TacticsTreshold OFFENSIVE
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Tactics"
           }
          }
-         ForceNodeResult Success
-         InVariable -1
-         TestType EqualsValue
-         TestValue "true"
         }
-        DecoTestVariable "Test Variable" {
-         Name "Test Variable"
-         EditorPos 643 75
+        SCR_AIDecoTactics "SCR_AI Deco Tactics" {
+         Name "SCR_AI Deco Tactics"
+         EditorPos -12.857 224
          Nodes {
-          SCR_AIDecoTactics "SCR_AI Deco Tactics" {
-           Name "SCR_AI Deco Tactics"
-           EditorPos 661.94 323.726
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 12.838 433.416
            Nodes {
             DecoTestVariable "Test Variable" {
              Name "Test Variable"
-             EditorPos 639.143 558.651
+             EditorPos -251.756 648.547
              Nodes {
-              SCR_AIDecoIsAboveMoraleLevel "SCR_AI Deco Is Above Morale Level" {
-               Name "SCR_AI Deco Is Above Morale Level"
-               EditorPos 601.301 755.92
+              SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+               Name "SCR_AI Deco Is Above Threat Level"
+               EditorPos -289.4 845.869
                Nodes {
-                Parallel Parallel {
-                 Name "Parallel"
-                 EditorPos 671.071 931.143
-                 Nodes {
-                  Decorator Decorator {
-                   Name "Decorator"
-                   EditorPos 518.429 1136.857
-                   Nodes {
-                    RunBT RunBT {
-                     Name "RunBT"
-                     EditorPos 411.19 1306.477
-                     InPorts {
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port 19
-                       PortName "enemyLastSeenPos"
-                      }
-                     }
-                     BehaviorTree "{02DD73D389B16330}AI/BehaviorTrees/Chimera/Soldier/Custom/RetreatCustom.bt"
-                     AlwaysReinit 1
-                    }
-                   }
-                   ForceNodeResult Success
-                  }
-                  AITaskReturnState "Return  State" {
-                   Name "Return  State"
-                   EditorPos 896.222 1132.889
-                   Result RUNNING
-                  }
-                 }
-                 UseChildResult 1
+                AITaskReturnState "Return  State" {
+                 Name "Return  State"
+                 EditorPos -226.399 1038.583
+                 Group "{61D07B5227D663B0}"
+                 Result RUNNING
                 }
                }
                InPorts {
@@ -246,53 +119,140 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                  PortName "ThresholdIn"
                 }
                }
+               Group "{61D07B5227D663B0}"
+               m_threatThreshold EXHAUSTED
               }
              }
+             Group "{61D07B5227D663B0}"
              ForceNodeResult Success
              InVariable -1
+             TestType EqualsValue
+             TestValue "true"
             }
-           }
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Tactics"
-            }
-           }
-           m_TacticsTreshold EVASIVE
-          }
-         }
-         ForceNodeResult Success
-         InVariable -1
-         TestType EqualsValue
-         TestValue "true"
-        }
-        DecoTestVariable "Test Variable" {
-         Name "Test Variable"
-         EditorPos 921 83
-         Nodes {
-          SCR_AIDecoTactics "SCR_AI Deco Tactics" {
-           Name "SCR_AI Deco Tactics"
-           EditorPos 949.5 312.571
-           Nodes {
-            Decorator Decorator {
-             Name "Decorator"
-             EditorPos 937.143 558.571
+            DecoTestVariable "Test Variable" {
+             Name "Test Variable"
+             EditorPos 163.806 669.154
+             Nodes {
+              SCR_AIDecoIsAboveMoraleLevel "SCR_AI Deco Is Above Morale Level" {
+               Name "SCR_AI Deco Is Above Morale Level"
+               EditorPos 120.4 842.737
+               Nodes {
+                AITaskReturnState "Return  State" {
+                 Name "Return  State"
+                 EditorPos 189.123 1006.822
+                 Group "{61D07B5227D663B0}"
+                 Result RUNNING
+                }
+               }
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "ThresholdIn"
+                }
+               }
+               Group "{61D07B5227D663B0}"
+               m_MoraleThreshold BREAK
+              }
+             }
+             Group "{61D07B5227D663B0}"
              ForceNodeResult Success
+             InVariable -1
+             TestType EqualsValue
+             TestValue "true"
             }
            }
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Tactics"
-            }
-           }
-           m_TacticsTreshold AGGRESIVE
+           Group "{61D07B5227D663B0}"
           }
          }
-         ForceNodeResult Success
-         InVariable -1
-         TestType EqualsValue
-         TestValue "true"
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Tactics"
+          }
+         }
+         m_TacticsTreshold OFFENSIVE
+        }
+        SCR_AIDecoTactics "SCR_AI Deco Tactics" {
+         Name "SCR_AI Deco Tactics"
+         EditorPos 661.94 323.726
+         Nodes {
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 639.143 558.651
+           Nodes {
+            SCR_AIDecoIsAboveMoraleLevel "SCR_AI Deco Is Above Morale Level" {
+             Name "SCR_AI Deco Is Above Morale Level"
+             EditorPos 601.301 755.92
+             Nodes {
+              Parallel Parallel {
+               Name "Parallel"
+               EditorPos 671.071 931.143
+               Nodes {
+                Decorator Decorator {
+                 Name "Decorator"
+                 EditorPos 518.429 1136.857
+                 Nodes {
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos 411.19 1306.477
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 19
+                     PortName "enemyLastSeenPos"
+                    }
+                   }
+                   BehaviorTree "{02DD73D389B16330}AI/BehaviorTrees/Chimera/Soldier/Custom/RetreatCustom.bt"
+                   AlwaysReinit 1
+                  }
+                 }
+                 ForceNodeResult Success
+                }
+                AITaskReturnState "Return  State" {
+                 Name "Return  State"
+                 EditorPos 896.222 1132.889
+                 Result RUNNING
+                }
+               }
+               UseChildResult 1
+              }
+             }
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "ThresholdIn"
+              }
+             }
+            }
+           }
+           ForceNodeResult Success
+           InVariable -1
+          }
+         }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Tactics"
+          }
+         }
+         m_TacticsTreshold EVASIVE
+        }
+        SCR_AIDecoTactics "SCR_AI Deco Tactics" {
+         Name "SCR_AI Deco Tactics"
+         EditorPos 949.5 312.571
+         Nodes {
+          Decorator Decorator {
+           Name "Decorator"
+           EditorPos 937.143 558.571
+           ForceNodeResult Success
+          }
+         }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Tactics"
+          }
+         }
+         m_TacticsTreshold AGGRESIVE
         }
        }
       }
@@ -388,6 +348,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
               }
              }
              Group "{6102CBD0379B285D}"
+             m_Radius 25
             }
             SCR_AILookAtPosition "SCR_AI Look At Position" {
              Name "SCR_AI Look At Position"

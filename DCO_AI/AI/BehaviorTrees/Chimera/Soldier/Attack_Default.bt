@@ -57,7 +57,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          EditorPos -1015 818.778
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port -1
+           Port 3
            PortName "Target"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
@@ -213,23 +213,23 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          Nodes {
           DecoTestVariable "Test Variable" {
            Name "Test Variable"
-           EditorPos 1266.053 1884.386
+           EditorPos 1351.053 2089.386
            Nodes {
             Selector Selector {
              Name "Selector"
-             EditorPos 1368.226 2079.833
+             EditorPos 1453.226 2284.833
              Nodes {
               SCR_AIDecoTimeSinceTargetDetected "SCR_AI Deco Time Since Target Detected" {
                Name "SCR_AI Deco Time Since Target Detected"
-               EditorPos 983.583 2236.1
+               EditorPos 1068.583 2441.1
                Nodes {
                 Parallel Parallel {
                  Name "Parallel"
-                 EditorPos 1073.666 2386
+                 EditorPos 1158.666 2591
                  Nodes {
                   AITaskCharacterAim "Character Aim" {
                    Name "Character Aim"
-                   EditorPos 933.995 2504.662
+                   EditorPos 1018.995 2709.662
                    Group "{6104A9A7B6BA75BB}"
                    InAimAtPosition -1
                    InEntity 9
@@ -238,7 +238,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
                   }
                   AITaskReturnState "Return  State" {
                    Name "Return  State"
-                   EditorPos 1103.055 2508.5
+                   EditorPos 1188.055 2713.5
                    Group "{6104A9A7B6BA75BB}"
                    Result RUNNING
                   }
@@ -258,15 +258,15 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
               }
               Sequence Sequence {
                Name "Sequence"
-               EditorPos 1674.071 2396.618
+               EditorPos 1759.071 2601.618
                Nodes {
                 Parallel Parallel {
                  Name "Parallel"
-                 EditorPos 1538.5 2519.476
+                 EditorPos 1623.5 2724.476
                  Nodes {
                   AITaskCharacterAim "Character Aim" {
                    Name "Character Aim"
-                   EditorPos 1451.808 2663.513
+                   EditorPos 1536.808 2868.513
                    Group "{6104A9A7B6BA75BB}"
                    InAimAtPosition 2
                    PrecisionXZ 0
@@ -275,7 +275,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
                   }
                   AITaskIdle Idle {
                    Name "Idle"
-                   EditorPos 1632.607 2665.547
+                   EditorPos 1717.607 2870.547
                    Group "{6104A9A7B6BA75BB}"
                    Period 0.8
                    PeriodRandom 0
@@ -286,7 +286,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
                 }
                 SCR_AIAllowLookAction "SCR_AI Allow Look Action" {
                  Name "SCR_AI Allow Look Action"
-                 EditorPos 1768.797 2661.011
+                 EditorPos 1853.797 2866.011
                  Group "{6104A9A7B6BA75BB}"
                 }
                }
@@ -304,11 +304,11 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
           DecoTestVariable "Test Variable" {
            Name "Test Variable"
-           EditorPos 2300.182 1886.468
+           EditorPos 2385.182 2091.468
            Nodes {
             RunBT RunBT {
              Name "RunBT"
-             EditorPos 2293.961 2077.632
+             EditorPos 2378.961 2282.632
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 5
@@ -335,11 +335,11 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
           DecoTestVariable "Test Variable" {
            Name "Test Variable"
-           EditorPos 2939.199 1888.063
+           EditorPos 3024.199 2093.063
            Nodes {
             RunBT RunBT {
              Name "RunBT"
-             EditorPos 2930.003 2058.773
+             EditorPos 3015.003 2263.773
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 6
@@ -366,15 +366,15 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
           DecoTestVariable "Test Variable" {
            Name "Test Variable"
-           EditorPos 3950.095 1891.024
+           EditorPos 4035.095 2096.024
            Nodes {
             Sequence Sequence {
              Name "Sequence"
-             EditorPos 4049.917 2065.167
+             EditorPos 4134.917 2270.167
              Nodes {
               SCR_AIGetTargetSuppressionVolume "SCR_AI Get Target Suppression Volume" {
                Name "SCR_AI Get Target Suppression Volume"
-               EditorPos 3588.916 2249.266
+               EditorPos 3673.916 2454.266
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port 7
@@ -391,7 +391,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
               }
               RunBT RunBT {
                Name "RunBT"
-               EditorPos 4370.364 2220.897
+               EditorPos 4455.364 2425.897
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port 26
@@ -418,11 +418,11 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
           }
           DecoTestVariable "Test Variable" {
            Name "Test Variable"
-           EditorPos 5049.423 1899.712
+           EditorPos 5134.423 2104.712
            Nodes {
             RunBT RunBT {
              Name "RunBT"
-             EditorPos 5040.354 2071.238
+             EditorPos 5125.354 2276.238
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 1
@@ -447,6 +447,11 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
      }
     }
    }
+  }
+  RunBT RunBT {
+   Name "RunBT"
+   EditorPos 1951.904 1155.762
+   BehaviorTree "{E57FC0277F3C9438}AI/BehaviorTrees/Chimera/Soldier/Custom/ThrowSmoke.bt"
   }
  }
  Variables {
@@ -518,17 +523,17 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference targetEntity {
    VariableType 0
-   EditorPos 4827.916 2148.709
+   EditorPos 4912.916 2353.709
    Group "{6104A9A79618AE3B}"
   }
   VariableReference targetLastSeenPosition {
    VariableType 1
-   EditorPos 1161.097 2694.666
+   EditorPos 1246.097 2899.666
    Group "{6104A9A7B6BA75BB}"
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos -620.379 858.21
+   EditorPos -619.268 845.988
   }
   VariableReference baseTarget {
    VariableType 5
@@ -536,27 +541,27 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 2054.969 2087.532
+   EditorPos 2139.969 2292.532
    Group "{6104A9A7FBF7849F}"
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 2700.2 2073.102
+   EditorPos 2785.2 2278.102
    Group "{6104A9A7E61EB5D4}"
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 3341.278 2317.242
+   EditorPos 3426.278 2522.242
    Group "{6104A9A7E952BF07}"
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 748.616 2292.707
+   EditorPos 833.616 2497.707
    Group "{6104A9A7B6BA75BB}"
   }
   VariableReference targetEntity {
    VariableType 0
-   EditorPos 732.12 2572.279
+   EditorPos 817.12 2777.279
    Group "{6104A9A7B6BA75BB}"
   }
   VariableReference baseTarget {
@@ -577,47 +582,47 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 1101.091 1958.909
+   EditorPos 1186.091 2163.909
    Group "{6104A9A7B6BA75BB}"
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 2136.111 1964.999
+   EditorPos 2221.111 2169.999
    Group "{6104A9A7FBF7849F}"
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 2776.262 1964.54
+   EditorPos 2861.262 2169.54
    Group "{6104A9A7E61EB5D4}"
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 3758.226 1987.357
+   EditorPos 3843.226 2192.357
    Group "{6104A9A7E952BF07}"
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 4881.984 1975.818
+   EditorPos 4966.984 2180.818
    Group "{6104A9A79618AE3B}"
   }
   VariableReference eAimpointType0 {
    VariableType 7
-   EditorPos 2082.108 2161.452
+   EditorPos 2167.108 2366.452
    Group "{6104A9A7FBF7849F}"
   }
   VariableReference eAimpointType1 {
    VariableType 3
-   EditorPos 2085.858 2235.202
+   EditorPos 2170.858 2440.202
    Group "{6104A9A7FBF7849F}"
   }
   VariableReference eAimpointType0 {
    VariableType 7
-   EditorPos 2721.182 2146.823
+   EditorPos 2806.182 2351.823
    Group "{6104A9A7E61EB5D4}"
   }
   VariableReference eAimpointType1 {
    VariableType 3
-   EditorPos 2721.728 2219.066
+   EditorPos 2806.728 2424.066
    Group "{6104A9A7E61EB5D4}"
   }
   VariableReference eAimpointType0 {
@@ -634,7 +639,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference suppressionVolume {
    VariableType 8
-   EditorPos 3927.528 2236.487
+   EditorPos 4012.528 2441.487
    Group "{6104A9A7E952BF07}"
   }
   VariableReference fireRate {
@@ -643,7 +648,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference fireRate {
    VariableType 9
-   EditorPos 4225.123 2325.491
+   EditorPos 4310.123 2530.491
    Group "{6104A9A7E952BF07}"
   }
   VariableReference baseTarget {

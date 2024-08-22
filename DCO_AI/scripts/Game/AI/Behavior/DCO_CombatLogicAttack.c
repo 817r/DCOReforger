@@ -2787,7 +2787,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			rq.m_eStanceMoving = ECharacterStance.CROUCH;
 			rq.m_eStanceEnd = ECharacterStance.PRONE;
 			rq.m_eMovementType = EMovementType.WALK;
-			rq.m_fCoverSearchDistMax = 20;
+			rq.m_fCoverSearchDistMax = 50;
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
 			rq.m_eDirection = dir;

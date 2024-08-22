@@ -15,48 +15,7 @@ class DCO_GroupTacticComponent : ScriptComponent
 {
 	[Attribute(defvalue: "2", uiwidget: UIWidgets.ComboBox, desc: "DCO Group Identifer", enums: ParamEnumArray.FromEnum(DCO_GroupTactic))]
 	DCO_GroupTactic m_tac;
-	DCO_GroupIdentifer m_idf;
-	
-	DCO_GroupIdentifierComponent m_IdentifierComponent;
-	protected IEntity m_Owner;
 	protected SCR_AIGroup m_Group;
-	array<AIAgent> agents;
-	
-	void automaticIdentification()
-	{
-		m_Group = SCR_AIGroup.Cast(m_Group.FindComponent(SCR_AIGroup));		
-		m_IdentifierComponent = DCO_GroupIdentifierComponent.Cast(m_Group.FindComponent(DCO_GroupIdentifierComponent));
-		m_idf = m_IdentifierComponent.GetGroupIndentification(m_Owner);
-		
-		switch(m_idf)
-		{
-			case DCO_GroupIdentifer.PATROL:
-			{
-				SetGroupTactic(DCO_GroupTactic.EVASIVE);
-				break;
-			}
-			case DCO_GroupIdentifer.INFANTRY:
-			{
-				SetGroupTactic(DCO_GroupTactic.OFFENSIVE); break;
-			}
-			case DCO_GroupIdentifer.MACHINEGUN_TEAM:
-			{
-				SetGroupTactic(DCO_GroupTactic.DEFENSIVE); break;
-			}
-			case DCO_GroupIdentifer.SNIPER_TEAM:
-			{
-				SetGroupTactic(DCO_GroupTactic.EVASIVE); break;
-			}
-			case DCO_GroupIdentifer.SAPPER:
-			{
-				SetGroupTactic(DCO_GroupTactic.EVASIVE); break;
-			}
-			case DCO_GroupIdentifer.INFANTRY_AT:
-			{
-				SetGroupTactic(DCO_GroupTactic.DEFENSIVE); break;
-			}
-		}
-	}
 	
 	static DCO_GroupTactic SetTactic(IEntity unit, DCO_GroupTactic groups)
 	{

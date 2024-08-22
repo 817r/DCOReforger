@@ -62,5 +62,10 @@ modded class SCR_AIInfoComponent : SCR_AIInfoBaseComponent
 	{
 		return m_CharacterController;
 	}
+	
+	SCR_CharacterDamageManagerComponent getCharDamageComp()
+	{
+		return m_DamageManager;
+	}
 
 }

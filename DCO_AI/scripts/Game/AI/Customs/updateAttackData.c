@@ -215,7 +215,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				target.GetTimeSinceSeen() < lastSeenThreshold &&
 				target.GetTraceFraction() > 0.4)
 			{
-				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE * 2, 3, 1));
+				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 1));
 				if (threat > 3.5)	fireRate = maxFireRate * (threat - 0.5);
 				else fireRate = maxFireRate * threat;
 								

@@ -13,7 +13,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.2;
 	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
 	
-	static const float MAXIMAL_TOLERANCE = 12.0;	
+	static const float MAXIMAL_TOLERANCE = 10.0;	
 	static const float MINIMAL_TOLERANCE = 0.1;
 	
 	EAISkill defaultSkill;
@@ -191,19 +191,19 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			{
 				case EWeaponType.WT_RIFLE:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.1;
+					maxTOl = MAXIMAL_TOLERANCE * 1;
 					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_MACHINEGUN:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.25;
+					maxTOl = MAXIMAL_TOLERANCE * 1;
 					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_ROCKETLAUNCHER:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.2;
+					maxTOl = MAXIMAL_TOLERANCE * 1;
 					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
@@ -235,19 +235,19 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			{
 				case EWeaponType.WT_RIFLE:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.1;
+					maxTOl = MAXIMAL_TOLERANCE;
 					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_MACHINEGUN:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.25;
+					maxTOl = MAXIMAL_TOLERANCE;
 					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_ROCKETLAUNCHER:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.2;
+					maxTOl = MAXIMAL_TOLERANCE;
 					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
@@ -278,7 +278,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		tolerance *= GetAngularSpeedFactor(observer, target, setMaxTolerance);
 				
 		if (setMaxTolerance)
-			return MAXIMAL_TOLERANCE;
+			return MAXIMAL_TOLERANCE/2;
 		else 
 		{
 			// weapon type tolerance modifier
@@ -325,37 +325,37 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case EAISkill.RECRUIT :
 			{
-				sigma = 2.75;
+				sigma = 2.73;
 				break;
 			}
 			case EAISkill.ROOKIE :
 			{
-				sigma = 1.45;
+				sigma = 1.43;
 				break;
 			}
 			case EAISkill.REGULAR :
 			{
-				sigma = 1.05;
+				sigma = 1.03;
 				break;
 			}
 			case EAISkill.TRAINED :
 			{
-				sigma = 1.35;
+				sigma = 1.33;
 				break;
 			}
 			case EAISkill.VETERAN :
 			{
-				sigma = 0.77;
+				sigma = 0.75;
 				break;
 			}
 			case EAISkill.EXPERT :
 			{
-				sigma = 0.52;
+				sigma = 0.5;
 				break;
 			}
 			case EAISkill.CYLON :
 			{
-				return 0.42;
+				return 0.4;
 			}
 		}
 		
@@ -494,15 +494,15 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case EWeaponType.WT_RIFLE:
 			{
-				return 1.1;
+				return 1;
 			}
 			case EWeaponType.WT_MACHINEGUN:
 			{
-				return 3.1;
+				return 3;
 			}
 			case EWeaponType.WT_HANDGUN:
 			{
-				return 1.35;
+				return 1;
 			}
 			case EWeaponType.WT_FRAGGRENADE:
 			{
@@ -535,15 +535,15 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case ECharacterStance.STAND:
 			{
-				return 1.4;
+				return 1.2;
 			}
 			case ECharacterStance.CROUCH:
 			{
-				return 1.2;
+				return 1.0;
 			}
 			case ECharacterStance.PRONE:
 			{
-				return 2.0;
+				return 1.4;
 			}
 		}
 		return 1.0;
@@ -551,28 +551,14 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	float GetHealthTypeFactor()
 	{
-		float currHealth = m_CombatComponent.getCurrentHealth();
-		float maxHealth = m_CombatComponent.GetMaxHealth();
-		
-		if (currHealth < maxHealth)
-		{
-			return 0.5;
-		} 
-		else if (currHealth < (maxHealth - maxHealth/4))
-		{
-			return 1.1;
-		} 
-		else if (currHealth < maxHealth/2)
-		{
-			return 1.4;
-		}
-
-		return 0;
+		float rightArm = m_CombatComponent.GetAIInfoComponent().getCharDamageComp().GetGroupHealthScaled(ECharacterHitZoneGroup.RIGHTARM);
+		float leftArm = m_CombatComponent.GetAIInfoComponent().getCharDamageComp().GetGroupHealthScaled(ECharacterHitZoneGroup.LEFTARM);
+		return 2 - (rightArm + leftArm);
 	}
 	
 	float GetAimImprovement()
 	{
-		return m_CombatComponent.getImprovement();
+		return m_CombatComponent.getImprovement() * 2;
 	}
 	
 	float getADSFactor()
@@ -580,10 +566,10 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		bool adsActive;
 		adsActive = m_char.IsWeaponADS();
 		
-		if(!adsActive)
-		 return 0;
-
-		return 2.5;
+		if (adsActive)
+			return 2.5;
+		
+		return 0;
 	}
 };
 

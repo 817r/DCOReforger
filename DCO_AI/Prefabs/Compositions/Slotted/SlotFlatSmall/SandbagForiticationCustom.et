@@ -84,7 +84,7 @@ GenericEntity : "{6E9190BC2713551D}Prefabs/Compositions/Slotted/BuildableComposi
       Enabled 1
      }
     }
-    coords 0.349 0.696 0.006
+    coords 0.349 0.447 0.006
     angleY -0.884
    }
   }
@@ -96,8 +96,8 @@ GenericEntity : "{6E9190BC2713551D}Prefabs/Compositions/Slotted/BuildableComposi
       Enabled 1
      }
     }
-    coords -3.75 0 0
-    angleY 176.675
+    coords -3.601 0 -0.262
+    angleY 150.398
    }
    {
     ID "622A14DD8ACDEA53"
