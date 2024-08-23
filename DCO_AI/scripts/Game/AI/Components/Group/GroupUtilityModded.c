@@ -1,11 +1,20 @@
 modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 {
-	DCO_GroupIdentifierComponent m_GroupIdentifier;
-	DCO_GroupIdentifer m_Idf;
-	DCO_GroupTacticComponent m_GroupTactics;
-	DCO_GroupTactic m_Tac;
+	int Internalmembers;
+	int groupMember;
+	int targetCount;
+	ref array<IEntity> tempTarget = new array<IEntity>;
+	
+	protected const float PERCEPTION_UPDATE_TIMER_MS = 1200.0;
+	
+	protected DCO_GroupIdentifierComponent m_GroupIdentifier;
+	protected DCO_GroupIdentifer m_Idf;
+	protected DCO_GroupTacticComponent m_GroupTactics;
+	protected DCO_GroupTactic m_Tac;
+	bool groupAutomatecTac;
 	
 	ref array<SCR_AIUtilityComponent> m_Util = {};
+	ref SCR_AIGroupTargetCluster m_TargetCluster;	
 
 	//------------------------------------------------------------------------------------------------
 	//!
@@ -18,6 +27,15 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		
 		if (!m_ConfigComponent)
 			return null;
+		
+		if (m_GroupTactics.getAuto())
+			evaluateTactics();
+		
+		targetCount = tempTarget.Count();
+		groupMember = friendlyOutsideGroup();
+		setEF();
+		m_TargetCluster = m_Perception.m_MostDangerousCluster;
+		Internalmembers = m_Owner.GetAgentCountIncludingMasterAndSlaves();
 		
 		float currentTime = GetGame().GetWorld().GetWorldTime();
 		float deltaTime_ms = 0;
@@ -125,13 +143,11 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 			{
 				m_Perception.Update();
 				UpdateSuppressCluster();
-				UpdateThreatMeasure();
-				//evaluateTactics();
+				UpdateThreatMeasure();				
 				EvaluateFlareUsage();
 				if (!m_Perception.m_aTargetClusters.IsEmpty())
 					UpdateClustersState(m_fPerceptionUpdateTimer_ms);
 				
-				UpdateTactics();
 				m_fPerceptionUpdateTimer_ms -= PERCEPTION_UPDATE_TIMER_MS;
 			}
 		}
@@ -162,9 +178,8 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		
 		m_GroupInfo = SCR_AIGroupInfoComponent.Cast(m_Owner.FindComponent(SCR_AIGroupInfoComponent));
 		
-		
 		m_GroupIdentifier = DCO_GroupIdentifierComponent.Cast(m_Owner.FindComponent(DCO_GroupIdentifierComponent));
-		m_GroupTactics = DCO_GroupTacticComponent.Cast(m_Owner.FindComponent(DCO_GroupTactic));
+		m_GroupTactics = DCO_GroupTacticComponent.Cast(m_Owner.FindComponent(DCO_GroupTacticComponent));
 		
 		m_TargetClusterProcessor = new SCR_AIGroupTargetClusterProcessor(this);
 		m_TargetClusterProcessor.m_OnClusterStateChanged.Insert(OnTargetClusterStateChanged);
@@ -199,6 +214,13 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 				util.setIdentifier(m_Idf);
 			}
 		}
+		
+		foreach (SCR_AIUtilityComponent util : m_Util)
+		{
+			util.setMyGroup(m_Owner);
+		}
+		
+		Internalmembers = m_Owner.GetAgentCountIncludingMasterAndSlaves();
 	}
 	
 	override void OnAgentAdded(AIAgent agent)
@@ -229,6 +251,10 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		SCR_AIUtilityComponent utilityComp = chimeraAgent.m_UtilityComponent;
 		
 		m_Util.Insert(utilityComp);
+		foreach (SCR_AIUtilityComponent util : m_Util)
+		{
+			util.setMyGroup(m_Owner);
+		}
 	}
 	
 	override void OnAgentRemoved(SCR_AIGroup group, AIAgent agent)
@@ -279,13 +305,104 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		return m_Perception;
 	}
 	
-	protected void UpdateTactics()
+	void UpdateTactics()
+	{
+		groupAutomatecTac = m_GroupTactics.getAuto();
+		
+		if (groupAutomatecTac)
+			automaticTacticsEvaluation();
+		else 
+		{
+			m_Tac = m_GroupTactics.GetGroupTactic(m_Owner);
+
+			foreach (SCR_AIUtilityComponent util : m_Util)
+			{
+				util.setTactics(m_Tac);
+			}
+		}
+	}
+	
+	protected void automaticTacticsEvaluation()
 	{
 		m_Tac = m_GroupTactics.GetGroupTactic(m_Owner);
 		
 		foreach (SCR_AIUtilityComponent util : m_Util)
 		{
 			util.setTactics(m_Tac);
+		}
+	}
+	
+	protected void evaluateTactics()
+	{		
+		bool isOutnumbered = groupMember < targetCount;
+		bool isAbleToDefend = groupMember + Math.RandomInt(0,5) >= targetCount;
+		bool isAbleToAttack = groupMember >= targetCount * 2;
+		bool isHoldingPosition = m_fThreatMeasure < 5.0;
+		bool inCombat = m_fThreatMeasure > 0.01;
+		bool isHighMorale = moraleValue() < 4.0;
+		
+		if (isAbleToAttack && inCombat)
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.AGGRESIVE);
+			UpdateTactics();
+		} else if (isAbleToDefend && isHoldingPosition && inCombat)
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.DEFENSIVE);
+			UpdateTactics();
+		} else if (isOutnumbered && inCombat && isHighMorale)
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.DEFENSIVE);
+			UpdateTactics();
+		} else if ((isHighMorale || isHoldingPosition) && inCombat)
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.AGGRESIVE);
+			UpdateTactics();	
+		} else if (isOutnumbered && inCombat && (!isHighMorale || !isHoldingPosition))
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.EVASIVE);
+			UpdateTactics();
+		}else
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.OFFENSIVE);
+			UpdateTactics();
+		}
+	}
+	
+	protected int friendlyOutsideGroup()
+	{
+		int friendlyNumber = 0;
+		float fNum = 0;
+		
+		foreach (SCR_AIUtilityComponent utility : m_Util)
+		{
+			fNum += utility.m_Awareness.getNumberFriendlyRecognized();
+		}
+		
+		friendlyNumber = Math.Round(fNum / m_Util.Count());
+		
+		return friendlyNumber;
+	}
+	
+	protected float moraleValue()
+	{
+		float morVal = 0;
+		float totVal = 0;
+		foreach (SCR_AIUtilityComponent utility : m_Util)
+		{
+			morVal += utility.m_DCOMoraleSystem.GetMoraleMeasure();
+		}
+		
+		totVal = Math.Round(morVal/m_Util.Count());
+		
+		return totVal;
+	}
+	
+	void setEF()
+	{
+		foreach(SCR_AIUtilityComponent utilities : m_Util)
+		{
+			utilities.setF(groupMember);
+			utilities.setE(targetCount);
 		}
 	}
 }

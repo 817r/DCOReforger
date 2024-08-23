@@ -12,7 +12,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	DCO_CUSTOMRANK rank;
 	moraleState morale;
 	DCO_GroupTactic tac;
-	array<vector> knownPosition;
 	
 	AIDangerEvent danger;
 	
@@ -3284,6 +3283,9 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 	DCO_GroupTactic tac;
 	
 	AIDangerEvent danger;
+	SCR_AIGroup group;
+	
+	bool strayed = false;
 	
 	protected static const string PORT_BASE_TARGET = "BaseTarget";
 	
@@ -3340,7 +3342,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 		m_eStance = m_CharacterController.GetStance();
 		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
 		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
-		
+		group = m_Utility.getMyGroup();
 		
 		/*		
 		//------------------------------------------------------------------------------------
@@ -3601,31 +3603,43 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 			
 			rq.GetOnMovementStarted().Insert(OnMovementStarted);
 			rq.GetOnCompleted().Insert(OnMovementCompleted);
+			
+			if (strayed) rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 		
 			m_State.ApplyNewRequest(rq);
 		}
 	}
 	
-	protected float ResolveStoppedWaitTimes(bool inCover, moraleState morales, EWeaponType weaponType)
+	protected override bool MoveToNextPosCondition()
+	{	
+		if (m_State.IsExecutingRequest())
+			return false;
+		
+		float stoppedWaitTime = ResolveStoppedWaitTimes(m_State.m_bInCover, morale, m_eThreatState, m_eWeaponType);	
+		return m_State.m_fTimerStopped_s > stoppedWaitTime;
+	}
+	
+	protected float ResolveStoppedWaitTimes(bool inCover, moraleState morales, EAIThreatState threat, EWeaponType weaponType)
 	{
 		float waitTime;
 		float specialTime = 0;
+		float faster;
 		if (inCover)
 		{
 			// In cover
 			switch (morales)
 			{
 				case moraleState.BREAK:
-					waitTime = Math.RandomFloat(20.0, 30.0);
+					waitTime = Math.RandomFloat(14.0, 21.0);
 					break;
 				case moraleState.MANIAC:
-					waitTime = Math.RandomFloat(15.0, 30.0);
+					waitTime = Math.RandomFloat(12.0, 18.0);
 					break;
 				case moraleState.ANXIOUS:
-					waitTime = Math.RandomFloat(10.0, 20.0);	// Stay in cover for a long time, until we are not suppressed any more
+					waitTime = Math.RandomFloat(10.0, 15.0);	// Stay in cover for a long time, until we are not suppressed any more
 					break;
 				default:
-					waitTime = Math.RandomFloat(8.0, 10.0);
+					waitTime = Math.RandomFloat(8.0, 12.0);
 			}
 		}
 		else
@@ -3634,10 +3648,10 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 			switch (morales)
 			{
 				case moraleState.BREAK:
-					waitTime = Math.RandomFloat(10.0, 20.0);
+					waitTime = Math.RandomFloat(15.0, 20.0);
 					break;
 				case moraleState.MANIAC:
-					waitTime = Math.RandomFloat(10.0, 15.0);
+					waitTime = Math.RandomFloat(12.0, 17.0);
 					break;
 				case moraleState.ANXIOUS:
 					waitTime = Math.RandomFloat(8.0, 12.0);
@@ -3658,13 +3672,22 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 		
 		switch (weaponType)
 		{
-			case EWeaponType.WT_HANDGUN:
 			case EWeaponType.WT_SNIPERRIFLE:
-				specialTime = -3;
+				specialTime += 3;
+		}
+		
+		switch (threat)
+		{
+			case EAIThreatState.SAFE: faster = 0; break;
+			case EAIThreatState.VIGILANT: faster = Math.RandomFloat(1, 2); break;
+			case EAIThreatState.ALERTED: faster = Math.RandomFloat(3, 5); break;
+			case EAIThreatState.THREATENED: faster = Math.RandomFloat(5, 8); break;
+			case EAIThreatState.PINNED: faster = Math.RandomFloat(7, 11); break;
+			case EAIThreatState.EXHAUSTED: faster = Math.RandomFloat(5, 10); break;
 		}
 		
 		
-		return waitTime + specialTime;
+		return (waitTime + specialTime) - faster;
 	}	
 	
 	protected static ECharacterStance ResolveStanceOutsideCover(bool closeRange, EAIThreatState threat, moraleState morales, DCO_CUSTOMRANK ranks)
@@ -5121,18 +5144,17 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 		return ECharacterStance.STAND;
 	}
 	
-	//--------------------------------------------------------------------------------------------
-	protected override bool MoveToNextPosCondition()
-	{	
-		if (m_State.IsExecutingRequest())
-			return false;
-		
-		float stoppedWaitTime = ResolveStoppedWaitTimes(m_State.m_bInCover, morale, m_eWeaponType);	
-		return m_State.m_fTimerStopped_s > stoppedWaitTime;
-	}
-	
 	protected override vector ResolveRequestTargetPos()
 	{
+		float distToLead = vector.Distance(m_Utility.m_OwnerEntity.GetOrigin(), group.GetLeaderEntity().GetOrigin());
+		strayed = false;
+		
+		if (distToLead > 100)
+		{
+			strayed = true;
+			return group.GetLeaderEntity().GetOrigin();
+		} 
+		
 		if (m_CombatComp.IsTargetVisible(m_Target))
 		{
 			IEntity tgtEntity = m_Target.GetTargetEntity(); // We've checked already
@@ -5148,12 +5170,15 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 			vector pos = tgtEntity.GetOrigin();
 			pos = pos + Vector(0, 2.0, 0);
 			return pos;
+		} else 
+		{
+			// Target is not visible, use last seen position
+			vector lastSeenPos = m_Target.GetLastSeenPosition();
+			lastSeenPos = lastSeenPos + Vector(0, 1.8, 0);
+			return lastSeenPos;	
 		}
 		
-		// Target is not visible, use last seen position
-		vector lastSeenPos = m_Target.GetLastSeenPosition();
-		lastSeenPos = lastSeenPos + Vector(0, 1.8, 0);
-		return lastSeenPos;		
+	
 	}
 	
 	protected static ref TStringArray s_aVarsIn = {

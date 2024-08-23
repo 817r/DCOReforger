@@ -54,6 +54,7 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
           AITaskGetControlledEntity "Get Controlled Entity" {
            Name "Get Controlled Entity"
            EditorPos -2696.623 -436.623
+           CharacterOnly 1
            OutControlledEntity 12
           }
          }
@@ -237,7 +238,7 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
                Nodes {
                 DecoratorEntity Entity {
                  Name "Entity"
-                 EditorPos -1125.143 1073.036
+                 EditorPos -1125.143 1071.925
                  Nodes {
                   Sequence Sequence {
                    Name "Sequence"

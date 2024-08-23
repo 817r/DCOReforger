@@ -16,6 +16,7 @@ BehaviorTree "{02DD73D389B16330}AI/BehaviorTrees/Chimera/Soldier/Custom/RetreatC
         SCR_AISetBehaviorAllowLook "SCR_AI Set Behavior Allow Look" {
          Name "SCR_AI Set Behavior Allow Look"
          EditorPos -1962.549 -668.747
+         m_bAllowLook 1
         }
         AITaskSetVariable "Set Variable" {
          Name "Set Variable"
@@ -120,7 +121,7 @@ BehaviorTree "{02DD73D389B16330}AI/BehaviorTrees/Chimera/Soldier/Custom/RetreatC
             }
             SCR_AISetCombatType "SCR_AI Set Combat Type" {
              Name "SCR_AI Set Combat Type"
-             EditorPos -1151.346 829.278
+             EditorPos -1159.679 829.278
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -131,7 +132,7 @@ BehaviorTree "{02DD73D389B16330}AI/BehaviorTrees/Chimera/Soldier/Custom/RetreatC
             }
             AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
              Name "Character Set Movement Speed"
-             EditorPos -972.049 825.086
+             EditorPos -943.716 825.086
              "Movement speed" RUN
             }
             SCR_AISetStance "SCR_AI Set Stance" {

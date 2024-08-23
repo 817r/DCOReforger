@@ -15,7 +15,12 @@ class DCO_GroupTacticComponent : ScriptComponent
 {
 	[Attribute(defvalue: "2", uiwidget: UIWidgets.ComboBox, desc: "DCO Group Identifer", enums: ParamEnumArray.FromEnum(DCO_GroupTactic))]
 	DCO_GroupTactic m_tac;
-	protected SCR_AIGroup m_Group;
+	DCO_GroupTactic automatedTac = 2;
+	
+	[Attribute(defvalue: "1", uiwidget: UIWidgets.Auto, desc: "is Tactics Automated?")]
+	bool AutomatedTactics;
+	
+	SCR_AIGroup m_Group;
 	
 	static DCO_GroupTactic SetTactic(IEntity unit, DCO_GroupTactic groups)
 	{
@@ -23,11 +28,12 @@ class DCO_GroupTacticComponent : ScriptComponent
 			return DCO_GroupTactic.OFFENSIVE;
 		
 		DCO_GroupTacticComponent comp = GetGroupTacticComponent(unit);
+		SCR_AIGroupUtilityComponent gUtil = GetGroupUtilComp(unit);
 		
 		if (!comp)
 			return DCO_GroupTactic.OFFENSIVE;
 		
-		return comp.SetGroupTactic(groups);
+		return comp.SetGroupTactic(groups, gUtil);
 	}
 
 	static DCO_GroupTactic GetGroupTactic(IEntity unit)
@@ -43,26 +49,96 @@ class DCO_GroupTacticComponent : ScriptComponent
 		return comp.GetGroupTactic();
 	}
 	
+	static DCO_GroupTactic setAutomated(IEntity unit, bool tf)
+	{
+		if (!unit)
+			return true;
+		
+		DCO_GroupTacticComponent comp = GetGroupTacticComponent(unit);
+		SCR_AIGroupUtilityComponent gUtil = GetGroupUtilComp(unit);
+		
+		if (!comp)
+			return true;
+		
+		
+		return comp.setAuto(tf, gUtil);
+	}
+
+	static DCO_GroupTactic getAutomated(IEntity unit)
+	{		
+		if (!unit)
+			return true;
+		
+		DCO_GroupTacticComponent comp = GetGroupTacticComponent(unit);
+		
+		if (!comp)
+			return true;
+		
+		return comp.getAuto();
+	}
+	
 	static DCO_GroupTacticComponent GetGroupTacticComponent(IEntity unit)
 	{
 		return DCO_GroupTacticComponent.Cast(unit.FindComponent(DCO_GroupTacticComponent));
 	}
 	
-	void setIdentifier(DCO_GroupTactic groups)
+	static SCR_AIGroupUtilityComponent GetGroupUtilComp(IEntity unit)
 	{
-		m_tac = groups;
+		return SCR_AIGroupUtilityComponent.Cast(unit.FindComponent(SCR_AIGroupUtilityComponent));
 	}
-	
-	protected DCO_GroupTactic SetGroupTactic(DCO_GroupTactic groups)
+
+	protected DCO_GroupTactic SetGroupTactic(DCO_GroupTactic groups, SCR_AIGroupUtilityComponent gutil)
 	{
-		m_tac = groups;
-		
+		if (AutomatedTactics)
+		{
+			automatedTac = groups;
+			gutil.UpdateTactics();
+			return groups;
+		} else if (!AutomatedTactics)
+		{
+			m_tac = groups;
+			gutil.UpdateTactics();
+			return groups;
+		}
+			
 		return groups;
 	}
 	
 	protected DCO_GroupTactic GetGroupTactic()
 	{
-		return m_tac;
+		if (AutomatedTactics)
+		{
+			return automatedTac;
+		} else if (!AutomatedTactics)
+		{
+			return m_tac;
+		}
+		
+		return automatedTac;
+	}
+	
+	DCO_GroupTactic setAutomatedTac(DCO_GroupTactic tacs, SCR_AIGroupUtilityComponent gutil)
+	{
+		automatedTac = tacs;
+		gutil.UpdateTactics();
+		return tacs;
+	}
+	
+	DCO_GroupTactic getAutomatedTac()
+	{
+		return automatedTac;
+	}
+	
+	bool setAuto(bool tf, SCR_AIGroupUtilityComponent gutil)
+	{
+		AutomatedTactics = tf;
+		gutil.UpdateTactics();
+		return tf;
+	}
+	
+	bool getAuto()
+	{
+		return AutomatedTactics;
 	}
 	
 	void DCO_GroupTacticComponent(IEntityComponentSource src, IEntity ent, IEntity parent)

@@ -3,8 +3,11 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	SCR_AIGroup m_Owner;
 	ref DCO_AIMoraleSystem m_DCOMoraleSystem;
 	DCO_SkillComponent m_DCO_Skill;
-	ref DCO_Group_Info m_DCO_GroupInfo;
+	protected SCR_AIGroup m_MyGroup;
 	DCO_AIAwareness m_Awareness;
+	
+	int groupMember;
+	int targetCount;
 	
 	DCO_GroupIdentifer identifier;
 	DCO_GroupTactic groupTac;
@@ -34,10 +37,10 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_fLastUpdateTime = time;
 
 		// Create events from commands, danger events, new targets
-		m_Awareness.Update();
-		m_DCOMoraleSystem.Update(this,deltaTime);
 		m_ThreatSystem.Update(this, deltaTime);
+		m_DCOMoraleSystem.Update(this,deltaTime);
 		m_CombatComponent.UpdatePerceptionFactor(m_PerceptionComponent, m_ThreatSystem);
+		m_Awareness.Update();
 
 		// Read messages
 		AIMessage msgBase = m_Mailbox.ReadMessage(true);
@@ -158,7 +161,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 			SetCurrentAction(selectedAction);
 			m_CurrentBehavior = SCR_AIBehaviorBase.Cast(selectedAction);
 #ifdef WORKBENCH
-			SCR_AIDebugVisualization.VisualizeMessage(m_OwnerEntity, SCR_AIDebug.GetBehaviorName(m_CurrentBehavior), EAIDebugCategory.BEHAVIOR, 5);
+			//SCR_AIDebugVisualization.VisualizeMessage(m_OwnerEntity, SCR_AIDebug.GetBehaviorName(m_CurrentBehavior), EAIDebugCategory.BEHAVIOR, 5);
 #endif
 		}
 		
@@ -176,12 +179,13 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		AddDebugMessage("EvaluateBehavior END\n");
 		#endif
 		
+		m_DCOMoraleSystem.setTac(groupTac);
 		return m_CurrentBehavior;
 	}
 	
 	override void EOnInit(IEntity owner)
 	{
-		super.EOnInit(owner);
+		vanilla.EOnInit(owner);
 		AIAgent agent = GetOwner();
 		m_Owner = SCR_AIGroup.Cast(owner.FindComponent(SCR_AIGroup));
 		if (!agent)
@@ -197,12 +201,12 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		if (m_Awareness)
 			m_Awareness.initialize(this);
 		m_DCO_Skill = DCO_SkillComponent.Cast(m_OwnerEntity.FindComponent(DCO_SkillComponent));
-		m_DCOMoraleSystem = new DCO_AIMoraleSystem(this);
 		m_AIInfo = SCR_AIInfoComponent.Cast(agent.FindComponent(SCR_AIInfoComponent));
 		m_CombatComponent = SCR_AICombatComponent.Cast(m_OwnerEntity.FindComponent(SCR_AICombatComponent));
 		m_PerceptionComponent = PerceptionComponent.Cast(m_OwnerEntity.FindComponent(PerceptionComponent));
 		m_OwnerController = SCR_CharacterControllerComponent.Cast(m_OwnerEntity.FindComponent(SCR_CharacterControllerComponent));
 		m_ThreatSystem = new SCR_AIThreatSystem(this);
+		m_DCOMoraleSystem = new DCO_AIMoraleSystem(this);
 		m_AIInfo.InitMoraleSystem(m_DCOMoraleSystem);
 		m_AIInfo.InitThreatSystem(m_ThreatSystem); // let the AIInfo know about the threat system - move along with creating threat system instance!
 		m_LookAction = new SCR_AILookAction(this, false); // LookAction is not regular behavior and is evaluated separately
@@ -249,5 +253,33 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	CharacterControllerComponent getCharCon()
 	{
 		return m_OwnerController;
+	}
+	
+	SCR_AIGroup setMyGroup(SCR_AIGroup group)
+	{
+		m_MyGroup = group;
+		return group;
+	}
+	
+	SCR_AIGroup getMyGroup()
+	{
+		return m_MyGroup;
+	}
+	
+	FactionAffiliationComponent getFactionComp()
+	{
+		return m_FactionComponent;
+	}
+	
+	int setE(int e)
+	{
+		targetCount = e;
+		return e;
+	}
+	
+	int setF(int f)
+	{
+		groupMember = f;
+		return f;
 	}
 }

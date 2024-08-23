@@ -1,10 +1,10 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class DCO_AIGroupTacticEditor : SCR_BaseFloatValueHolderEditorAttribute
+class DCO_AIGetAutomated : SCR_BaseFloatValueHolderEditorAttribute
 {
 	//------------------------------------------------------------------------------------------------
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		int GroupTac;
+		int automated;
 		
 		SCR_EditableEntityComponent editableEntity = SCR_EditableEntityComponent.Cast(item);
 		
@@ -16,13 +16,10 @@ class DCO_AIGroupTacticEditor : SCR_BaseFloatValueHolderEditorAttribute
 		{
 			SCR_AIGroup aiGroup = SCR_AIGroup.Cast(editableEntity.GetOwner()); 
 			if (!aiGroup) return null;
-			GroupTac = DCO_GroupTacticComponent.GetGroupTactic(aiGroup);
-			bool automated = DCO_GroupTacticComponent.getAutomated(aiGroup);
-			if (automated)
-				return null;
+			automated = DCO_GroupTacticComponent.getAutomated(aiGroup);
 		} else return null;
 		
-		return SCR_BaseEditorAttributeVar.CreateInt(GroupTac);
+		return SCR_BaseEditorAttributeVar.CreateInt(automated);
 	}
 	
 	//------------------------------------------------------------------------------------------------
@@ -37,11 +34,11 @@ class DCO_AIGroupTacticEditor : SCR_BaseFloatValueHolderEditorAttribute
 		
 		if (editableEntity.GetEntityType() == EEditableEntityType.GROUP)
 		{
-			int GroupTac = var.GetInt();
+			int automated = var.GetInt();
 		
-			DCO_GroupTacticComponent.SetTactic(editableEntity.GetOwner(), GroupTac);
+			DCO_GroupTacticComponent.setAutomated(editableEntity.GetOwner(), automated);
 			
-			GroupTac = DCO_GroupTacticComponent.GetGroupTactic(editableEntity.GetOwner());
+			automated = DCO_GroupTacticComponent.getAutomated(editableEntity.GetOwner());
 		
 		} else return;
 	}

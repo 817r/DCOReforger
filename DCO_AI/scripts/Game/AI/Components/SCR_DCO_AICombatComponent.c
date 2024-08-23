@@ -6,7 +6,7 @@ modded enum EAISkill
 
 modded class SCR_AICombatComponent : ScriptComponent
 {
-	protected DCO_Group_Info m_SCR_AIGroup;
+	protected SCR_AIGroup m_SCR_AIGroup;
 	protected IEntity m_ControlledEntity;
 	protected SCR_ChimeraAIAgent m_SCR_ChimeraAIAgent;
 	protected DCO_AIMoraleSystem m_DCO_MoraleSystem;
@@ -79,9 +79,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 			
 			rank = m_DCO_Skill.GetCharacterRank(m_Utility.m_OwnerEntity);
 			
-			damageManager = m_Utility.m_AIInfo.getCharDamageComp();
+			m_SCR_AIGroup = m_Utility.getMyGroup();
 			
-			m_SCR_AIGroup = m_Utility.m_DCO_GroupInfo;
+			damageManager = m_Utility.m_AIInfo.getCharDamageComp();
 						
 			m_DCO_Skill = m_Utility.m_DCO_Skill.GetCharacterSkillRankComponent(m_Utility.m_OwnerEntity);
 			
@@ -100,7 +100,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 			EvaluateDismountTurret(timeSliceMs);
 				
 		#ifdef WORKBENCH
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, "Group Number Init : " + groupNumber.ToString() + ", Group Number Now : " + nowGroupNumber.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);
+		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, "Group Number Init : " + groupNumber.ToString() + ", Group Number Now : " + nowGroupNumber.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);
 		#endif
 	}
 	
@@ -127,17 +127,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 					}
 					case DCO_CUSTOMRANK.PRIVATE:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.2; 
+						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.3; 
 						break;
 					}
 					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.4;
+						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.5;
 						break;
 					}
 					case DCO_CUSTOMRANK.SPECIALIST:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.6; 
+						perceptionFactor = PERCEPTION_FACTOR_SAFE * 1.8; 
 						break;
 					}
 					default :
@@ -159,17 +159,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 					}
 					case DCO_CUSTOMRANK.PRIVATE:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.2; 
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.3; 
 						break;
 					}
 					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.45;
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.5;
 						break;
 					}
 					case DCO_CUSTOMRANK.SPECIALIST:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.7; 
+						perceptionFactor = PERCEPTION_FACTOR_VIGILANT * 1.8; 
 						break;
 					}
 					default :
@@ -191,17 +191,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 					}
 					case DCO_CUSTOMRANK.PRIVATE:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.2; 
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.3; 
 						break;
 					}
 					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.45;
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.5;
 						break;
 					}
 					case DCO_CUSTOMRANK.SPECIALIST:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.7; 
+						perceptionFactor = PERCEPTION_FACTOR_ALERTED * 1.8; 
 						break;
 					}
 					default :
@@ -223,17 +223,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 					}
 					case DCO_CUSTOMRANK.PRIVATE:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.2; 
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.3; 
 						break;
 					}
 					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.45;
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.5;
 						break;
 					}
 					case DCO_CUSTOMRANK.SPECIALIST:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.7; 
+						perceptionFactor = PERCEPTION_FACTOR_THREATENED * 1.8; 
 						break;
 					}
 					default :
@@ -255,17 +255,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 					}
 					case DCO_CUSTOMRANK.PRIVATE:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.2; 
+						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.3; 
 						break;
 					}
 					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.45;
+						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.5;
 						break;
 					}
 					case DCO_CUSTOMRANK.SPECIALIST:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.7; 
+						perceptionFactor = PERCEPTION_FACTOR_PINNED * 1.8; 
 						break;
 					}
 					default :
@@ -287,17 +287,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 					}
 					case DCO_CUSTOMRANK.PRIVATE:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.2; 
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.3; 
 						break;
 					}
 					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.45;
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.5;
 						break;
 					}
 					case DCO_CUSTOMRANK.SPECIALIST:
 					{
-						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.7; 
+						perceptionFactor = PERCEPTION_FACTOR_EXHAUSTED * 1.8; 
 						break;
 					}
 					default :

@@ -9,40 +9,75 @@ class DCO_AIAwareness : ScriptComponent
 	protected SCR_AICombatComponent m_CombatComp;
 	protected PerceptionComponent m_Perceptions;
 	
-	ref array<BaseTarget> friendly = new array<BaseTarget>;
+	ref array<ref SCR_AITargetInfo> friendly = new array<ref SCR_AITargetInfo>;
+	ref array<IEntity> friendlyBTarget = new array<IEntity>;
 	
-	[Attribute(defvalue: "100", uiwidget: UIWidgets.Auto, desc: "Awareness Friendly Radius")]
+	[Attribute(defvalue: "150", uiwidget: UIWidgets.Auto, desc: "Awareness Friendly Radius")]
 	float searchRad;
 	
 	protected void getFriendlyEvaluation()
 	{
-		ref array<BaseTarget> friendlyDetected = new array<BaseTarget>;
-		ref array<BaseTarget> detected = new array<BaseTarget>; 
-		m_Perceptions.GetTargetsList(friendlyDetected, ETargetCategory.FRIENDLY);
-		m_Perceptions.GetTargetsList(detected, ETargetCategory.DETECTED);
-		
-		foreach (BaseTarget target : friendlyDetected)
-		{
-			if (target.GetDistance() < searchRad)
-			{
-				if (!friendly.Contains(target))
-					friendly.Insert(target);
-			} else if (target.GetDistance() > searchRad + 50)
-			{
-				if (friendly.Contains(target))
-					friendly.RemoveItem(target);
-			}
-		}
-		
+		ref array<BaseTarget> detected = new array<BaseTarget>;
+		m_Perceptions.GetTargetsList(detected, ETargetCategory.FRIENDLY);
 		foreach (BaseTarget target : detected)
 		{
-			if (friendly.Contains(target))
+			IEntity ent = target.GetTargetEntity();
+			if(!ent) 
+				return;
+			
+			SCR_AITargetInfo targetInfo = new SCR_AITargetInfo();
+			targetInfo.InitFromBaseTarget(target);
+			
+			if(!targetInfo)
+				return;
+			
+			if (target.GetDistance() < searchRad)
 			{
-				friendly.RemoveItem(target);
+				if (!friendlyBTarget.Contains(ent))
+				{
+					friendlyBTarget.Insert(ent);
+					friendly.Insert(targetInfo);
+				}
+								
+			} else if (target.GetDistance() > searchRad + 50)
+			{
+				if (friendlyBTarget.Contains(ent))
+				{
+					friendlyBTarget.RemoveItem(ent);
+					friendly.RemoveItem(targetInfo);
+				}
 			}
 		}
 	}
-
+	
+	protected void MaintainFriendly()
+	{		
+		for (int i = friendly.Count()-1; i >= 0; i--)
+		{
+			SCR_AITargetInfo tarinfo = friendly[i];
+			if(!tarinfo.m_Entity)
+			{
+				friendly.Remove(i);
+				friendlyBTarget.Remove(i);
+				return;
+			}		
+			
+			bool destroyed = tarinfo.m_DamageManager.IsDestroyed();
+			if (destroyed)
+			{
+				friendly.Remove(i);
+				friendlyBTarget.Remove(i);
+				return;
+			}
+			
+			if (vector.Distance(tarinfo.m_Entity.GetOrigin(), m_UtilityComp.m_OwnerEntity.GetOrigin()) > searchRad + 50)
+			{
+				friendlyBTarget.Remove(i);
+				friendly.Remove(i);
+				return;
+			}
+		}
+	}
 	
 	void initialize(SCR_AIUtilityComponent util)
 	{
@@ -55,14 +90,11 @@ class DCO_AIAwareness : ScriptComponent
 	void Update()
 	{
 		getFriendlyEvaluation();
-		#ifdef Workbench
-		float friendlyNumber = friendly.Count();
-		//SCR_AIDebugVisualization.VisualizeMessage(m_UtilityComp.m_OwnerEntity, friendlyNumber.ToString(), EAIDebugCategory.INFO, 1.4, Color.White);
-		#endif	
+		MaintainFriendly();;
 	}
 	
 	float getNumberFriendlyRecognized()
 	{
-		return friendly.Count();
+		return friendlyBTarget.Count();
 	}
 }

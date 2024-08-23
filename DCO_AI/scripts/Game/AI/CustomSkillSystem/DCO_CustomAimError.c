@@ -13,7 +13,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.2;
 	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
 	
-	static const float MAXIMAL_TOLERANCE = 10.0;	
+	static const float MAXIMAL_TOLERANCE = 8.0;	
 	static const float MINIMAL_TOLERANCE = 0.1;
 	
 	EAISkill defaultSkill;

@@ -18,8 +18,8 @@ class DCO_AIMoraleSystem
 	// Courage is the resistance to Morale 
 	// Round classification (EWeaponType) classification
 	
-	private static const float MORALE_SHOT_RECOVERY 				= 			0.005 * 0.001;	//!< Falloff (percentual drop per milisecond)
-	private static const float MORALE_SUPPRESSION_RECOVERY 			= 			0.2 * 0.001;
+	private static const float MORALE_SHOT_RECOVERY 				= 			0.02 * 0.001;	//!< Falloff (percentual drop per milisecond)
+	private static const float MORALE_SUPPRESSION_RECOVERY 			= 			0.04 * 0.001;
 	private static const float MORALE_ENDANGERED_RECOVERY 			= 			0.02 * 0.001;
 	private static const float LOW_SUPPLY_RECOVERY					=			0.02 * 0.001;
 	private static const float MORALE_RECOVERY_THREAT_STATE			=			0.003 * 0.001;
@@ -29,6 +29,7 @@ class DCO_AIMoraleSystem
 	
 	private static const float MORALE_BOOST_LEADER_VALUE			=			0.11;
 	private static const float MORALE_BOOST_FRIENDLY_VALUE			=			0.05 * 0.001;
+	private static const float MORALE_BOOST_FIXED_FRIENDLY_VALUE	=			0.4;
 	
 	private static const float MORALE_DROP_SUPPRESSION				=			0.12;
 	private static const float MORALE_DROP_FIREFIGHT_FIXED			=			0.2;
@@ -39,14 +40,14 @@ class DCO_AIMoraleSystem
 	private static const float MOTIVATED_THRESHOLD 					= 			0.4;
 	private static const float ANXIOUS_THRESHOLD					=			1.5;
 	private static const float MANIAC_THRESHOLD						=			1.8;
-	private static const float BREAK_THRESHOLD						=			3.5;
+	private static const float BREAK_THRESHOLD						=			3.7;
 	
-	private static const float ENDANGERED_INCREMENT 				= 			0.003 * 0.001;
-	private static const float SUPPRESSION_BULLET_INCREMENT			=			0.002;
+	private static const float ENDANGERED_INCREMENT 				= 			0.000003 * 0.001;
+	private static const float SUPPRESSION_BULLET_INCREMENT			=			0.0002;
 	private static const float LOW_SUPPLY							=			0.05;
 	
 	private static const float aimImprovementPerSecond				=			0.035 * 0.001;
-	private static const float aimRecoveryPerSecond					=			0.005 * 0.001;
+	private static const float aimRecoveryPerSecond					=			0.003 * 0.001;
 	
 	private float aimImprovementTotal;
 	private float aimImprovement;
@@ -66,7 +67,6 @@ class DCO_AIMoraleSystem
 	private float friendlys;
 	
 	private SCR_AIUtilityComponent				m_Utility;
-	private SCR_AIConfigComponent				m_Config;
 	private SCR_AICombatComponent				m_Combat;
 	private SCR_DamageManagerComponent			m_DamageManager;
 	private SCR_AIThreatSystem					m_Threat;
@@ -84,9 +84,9 @@ class DCO_AIMoraleSystem
 	void DCO_AIMoraleSystem(SCR_AIUtilityComponent utility)
 	{
 		m_Utility = utility;
-		m_Config = utility.m_ConfigComponent;
 		m_Combat = utility.m_CombatComponent;
 		m_Skill = utility.m_DCO_Skill;
+		m_Threat = utility.m_ThreatSystem;
 		tacs = utility.getTactics();
 		m_DamageManager = SCR_DamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
@@ -192,7 +192,7 @@ class DCO_AIMoraleSystem
 		}
 		
 		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.INFO, 1.4, color);	
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity,"Morale Total : " + m_fMoraleTotal.ToString() + " | Friendly : " + friendlys.ToString(), EAIDebugCategory.INFO, 1.4, Color.White);	
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity,"Morale Total : " + m_fMoraleTotal.ToString() + " | Friendly : " + friendlys.ToString() + " | TAC : " + typename.EnumToString(DCO_GroupTactic, tacs) + " | Threat : " + m_Threat.GetThreatTotal().ToString() + " | E:F = " + m_Utility.targetCount.ToString() + ":" + m_Utility.groupMember.ToString(), EAIDebugCategory.INFO, 1.4, Color.White);	
 	}
 	#endif // WORKBENCH
 	
@@ -227,7 +227,7 @@ class DCO_AIMoraleSystem
 	{
 		friendlys = m_Utility.m_Awareness.getNumberFriendlyRecognized();
 		
-		m_fMoraleSuppression -= m_fMoraleSuppression * MORALE_SUPPRESSION_RECOVERY * friendlys * timeSlice;
+		m_fMoraleSuppression -= m_fMoraleSuppression * (MORALE_SUPPRESSION_RECOVERY + (friendlys * MORALE_BOOST_FRIENDLY_VALUE)) * timeSlice;
 		aimDecrase -= aimDecrase * aimRecoveryPerSecond * timeSlice;
 
 		if (m_Combat)
@@ -284,17 +284,15 @@ class DCO_AIMoraleSystem
 					}
 					case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 					{
-						improvementAims += aimImprovementPerSecond * 1.5 * timeSlice;
+						improvementAims += aimImprovementPerSecond * 2 * timeSlice;
 						break;
 					}
 					case DCO_CUSTOMRANK.SPECIALIST:
 					{
-						improvementAims += aimImprovementPerSecond * 2 * timeSlice;
+						improvementAims += aimImprovementPerSecond * 4 * timeSlice;
 						break;
 					}
 				}
-				
-				m_Combat.improvement(aimImprovementTotal);
 			} else 
 			{
 				aimImprovement = 0;
@@ -317,8 +315,9 @@ class DCO_AIMoraleSystem
 		}
 		
 		rank = m_Skill.GetCharacterRank(utility.m_OwnerEntity);
-		m_fMoraleTotal = Math.Clamp((m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered + m_fMoraleSupply + m_fMoraleThreatMod) - friendlyMoraleBoost(), 0, 4.0);
+		m_fMoraleTotal = Math.Clamp((m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered + m_fMoraleSupply + m_fMoraleThreatMod) - friendlyMoraleBoost(), 0, 4.2);
 		aimImprovementTotal = Math.Clamp(improvementAims, 0, 10 - aimDecrase);
+		m_Combat.improvement(aimImprovementTotal);
 		UpdateState();
 #ifdef WORKBENCH
 		ShowDebug();
@@ -350,7 +349,7 @@ class DCO_AIMoraleSystem
 				break;
 			}
 		}
-		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + m_fMoraleSuppressionPlus, 0, 4.0);
+		m_fMoraleSuppression += Math.Clamp(m_fMoraleSuppression + m_fMoraleSuppressionPlus, 0, 2.0);
 		aimDecrase = Math.Clamp(aimDecrase + count * SUPPRESSION_BULLET_INCREMENT/10, 0, 1.0);
 	}
 	
@@ -360,26 +359,26 @@ class DCO_AIMoraleSystem
 		{
 			case DCO_CUSTOMRANK.RECRUIT:
 			{
-				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count * 1.2) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
+				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count * 1.2) * SUPPRESSION_BULLET_INCREMENT, 0, 3.2);
 				break;
 			}
 			case DCO_CUSTOMRANK.PRIVATE:
 			{
-				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + count * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
+				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.2);
 				break;
 			}
 			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 			{
-				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/5) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
+				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/5) * SUPPRESSION_BULLET_INCREMENT, 0, 3.2);
 				break;
 			}
 			case DCO_CUSTOMRANK.SPECIALIST:
 			{
-				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/8) * SUPPRESSION_BULLET_INCREMENT, 0, 4.0);
+				m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + (count/8) * SUPPRESSION_BULLET_INCREMENT, 0, 3.2);
 				break;
 			}
 		}
-		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + m_fMoraleSuppressionPlus, 0, 4.0);
+		m_fMoraleSuppression += Math.Clamp(m_fMoraleSuppression + m_fMoraleSuppressionPlus, 0, 4.0);
 		aimDecrase = Math.Clamp(aimDecrase + count * SUPPRESSION_BULLET_INCREMENT/5, 0, 1.0);
 	}
 	
@@ -389,22 +388,22 @@ class DCO_AIMoraleSystem
 		{
 			case DCO_CUSTOMRANK.RECRUIT:
 			{
-				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier * 1.2, 0, 2.0);
+				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier * 1.2, 0, 1.0);
 				break;
 			}
 			case DCO_CUSTOMRANK.PRIVATE:
 			{
-				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier, 0, 2.0);
+				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier, 0, 1.0);
 				break;
 			}
 			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 			{
-				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier / 0.8, 0, 2.0);
+				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier / 0.8, 0, 1.0);
 				break;
 			}
 			case DCO_CUSTOMRANK.SPECIALIST:
 			{
-				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier / 0.65, 0, 2.0);
+				m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod + modifier / 0.65, 0, 1.0);
 				break;
 			}
 		}		
@@ -412,6 +411,12 @@ class DCO_AIMoraleSystem
 	
 	float friendlyMoraleBoost()
 	{
-		return friendlys * MORALE_BOOST_FRIENDLY_VALUE;
+		return friendlys * MORALE_BOOST_FIXED_FRIENDLY_VALUE;
+	}
+	
+	DCO_GroupTactic setTac(DCO_GroupTactic tactics)
+	{
+		tacs = tactics;
+		return tactics;
 	}
 }
