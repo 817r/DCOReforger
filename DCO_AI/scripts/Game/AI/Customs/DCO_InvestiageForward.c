@@ -270,13 +270,13 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 		
 		switch(tac)
 		{
-			case DCO_GroupTactic.AGGRESIVE:
+			case DCO_GroupTactic.ASSAULT:
 			{
 				rq.m_eStanceMoving = ECharacterStance.CROUCH;
 				rq.m_eStanceEnd = ECharacterStance.CROUCH;	
 				break;		
 			}
-			case DCO_GroupTactic.OFFENSIVE:
+			case DCO_GroupTactic.BALANCE:
 			{
 				rq.m_eStanceMoving = ECharacterStance.STAND;
 				rq.m_eStanceEnd = ECharacterStance.CROUCH;
@@ -301,7 +301,7 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 	{
 		float waitTime;
 		
-		if (tac == DCO_GroupTactic.AGGRESIVE)
+		if (tac == DCO_GroupTactic.ASSAULT)
 		{
 			waitTime = Math.RandomFloat(3.0, 5.0);
 			
@@ -629,13 +629,13 @@ class DCO_AITravelMove : SCR_AICombatMoveLogicBase
 		
 		switch(tac)
 		{
-			case DCO_GroupTactic.AGGRESIVE:
+			case DCO_GroupTactic.ASSAULT:
 			{
 				rq.m_eStanceMoving = ECharacterStance.CROUCH;
 				rq.m_eStanceEnd = ECharacterStance.CROUCH;	
 				break;		
 			}
-			case DCO_GroupTactic.OFFENSIVE:
+			case DCO_GroupTactic.BALANCE:
 			{
 				rq.m_eStanceMoving = ECharacterStance.STAND;
 				rq.m_eStanceEnd = ECharacterStance.CROUCH;

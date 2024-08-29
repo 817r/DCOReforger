@@ -156,7 +156,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		}	
 		
-		if (tac == DCO_GroupTactic.AGGRESIVE)
+		if (tac == DCO_GroupTactic.ASSAULT)
 		{
 			rq.m_vMovePos = rq.m_vTargetPos;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
@@ -520,7 +520,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				break;
 			}
 			
-			case DCO_GroupTactic.AGGRESIVE:
+			case DCO_GroupTactic.ASSAULT:
 			{
 				switch(m_eThreatState)
 				{
@@ -699,7 +699,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				break;
 			}
 			
-			case DCO_GroupTactic.OFFENSIVE:
+			case DCO_GroupTactic.BALANCE:
 			{
 				switch(m_eThreatState)
 				{
@@ -889,7 +889,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		else 
 			rq.m_bFailIfNoCover = m_State.m_bInCover;
 		
-		if(tac == DCO_GroupTactic.AGGRESIVE)
+		if(tac == DCO_GroupTactic.ASSAULT)
 		{
 			int rand = Math.RandomIntInclusive(1,2);
 			if (rand == 1) 	rq.m_bFailIfNoCover = false;
@@ -1211,11 +1211,11 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			{
 				waitTimeTactics = Math.RandomFloat(8.0, 12.0); break;
 			}
-			case DCO_GroupTactic.OFFENSIVE:
+			case DCO_GroupTactic.BALANCE:
 			{
 				waitTimeTactics = Math.RandomFloat(3.0, 5.0); break;
 			}
-			case DCO_GroupTactic.AGGRESIVE:
+			case DCO_GroupTactic.ASSAULT:
 			{
 				waitTimeTactics = Math.RandomFloat(-5.0, -2.0); break;
 			}
@@ -2746,12 +2746,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				treshold = 55;
 				break;
 			}
-			case DCO_GroupTactic.OFFENSIVE:
+			case DCO_GroupTactic.BALANCE:
 			{
 				treshold = 20;
 				break;
 			}
-			case DCO_GroupTactic.AGGRESIVE:
+			case DCO_GroupTactic.ASSAULT:
 			{
 				treshold = 5;
 				break;
@@ -3167,7 +3167,7 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 				}
 			}
 			
-			if (tac == DCO_GroupTactic.AGGRESIVE) rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+			if (tac == DCO_GroupTactic.ASSAULT) rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 			
 			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_bAimAtTarget = true; // Can't aim at tgt while sprinting

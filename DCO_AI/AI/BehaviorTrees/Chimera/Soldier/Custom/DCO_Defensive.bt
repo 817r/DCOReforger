@@ -46,13 +46,13 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
            EditorPos 408.324 431.627
            Group "{622E19FADDD03EA4}"
            CharacterOnly 1
-           OutControlledEntity 9
+           OutControlledEntity 8
           }
           AITaskSetVariable "Set Variable" {
            Name "Set Variable"
            EditorPos 789.262 433.964
            ClearVariable 1
-           OutVariable 12
+           OutVariable 11
           }
          }
          Group "{622E19FADDD03EA4}"
@@ -78,13 +78,13 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
                  EditorPos -747.444 1877.695
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
-                   Port 14
+                   Port 13
                    PortName "Entity"
                   }
                  }
                  OutPorts {
                   SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 15
+                   Port 14
                    PortName "Position"
                   }
                  }
@@ -146,7 +146,7 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
            }
            Group "{622E1C12856F3FAF}"
            UseChildResult 0
-           InVariable 13
+           InVariable 12
            TestType EqualsValue
            TestValue "1"
           }
@@ -183,7 +183,7 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
              EditorPos 2653.214 1770
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 7
+               Port -1
                PortName "InCover"
               }
               SingleOutputPortContainer SingleOutputPortContainer {
@@ -192,93 +192,6 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
               }
              }
              Group "{622E1C12D0A820AA}"
-            }
-            DecoTestVariable "Test Variable" {
-             Name "Test Variable"
-             EditorPos 3084.723 1748.055
-             Nodes {
-              Selector Selector {
-               Name "Selector"
-               EditorPos 3104.167 1908.75
-               Nodes {
-                DecoratorEntity Entity {
-                 Name "Entity"
-                 EditorPos 2837.901 2067.432
-                 Nodes {
-                  Sequence Sequence {
-                   Name "Sequence"
-                   EditorPos 2869.917 2269.166
-                   Nodes {
-                    DCO_GetBuildingType "DCO_ Get Building Type" {
-                     Name "DCO_ Get Building Type"
-                     EditorPos 2397.064 2491.904
-                     OutPorts {
-                      SingleOutputPortContainer SingleOutputPortContainer {
-                       Port 8
-                       PortName "Building Types"
-                      }
-                     }
-                     Group "{622E1C12D0A820AA}"
-                    }
-                    DCO_AIFortification "DCO_AI Fortification" {
-                     Name "DCO_AI Fortification"
-                     EditorPos 2815.303 2489.469
-                     InPorts {
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port 8
-                       PortName "Building Name"
-                      }
-                     }
-                     Group "{622E1C12D0A820AA}"
-                    }
-                    AITaskSetVariable "Set Variable" {
-                     Name "Set Variable"
-                     EditorPos 3130.155 2485.571
-                     Group "{622E1C12D0A820AA}"
-                     SetValue "1"
-                     OutVariable 16
-                    }
-                   }
-                   Group "{622E1C12D0A820AA}"
-                  }
-                 }
-                 Group "{622E1C12D0A820AA}"
-                 InEntity 10
-                 TEST {
-                  SCR_AIDecoTestIsLeader "{622A14DEC465A419}" {
-                  }
-                 }
-                }
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos 3247 2072.143
-                 Nodes {
-                  AITaskIdle Idle {
-                   Name "Idle"
-                   EditorPos 3181.857 2251.107
-                   Group "{622E1C12D0A820AA}"
-                   Period 5
-                   PeriodRandom 0
-                  }
-                  AITaskSetVariable "Set Variable" {
-                   Name "Set Variable"
-                   EditorPos 3357.143 2230.714
-                   Group "{622E1C12D0A820AA}"
-                   SetValue "1"
-                   OutVariable 11
-                  }
-                 }
-                 Group "{622E1C12D0A820AA}"
-                }
-               }
-               Group "{622E1C12D0A820AA}"
-              }
-             }
-             Group "{622E1C12D0A820AA}"
-             UseChildResult 0
-             InVariable 7
-             TestType EqualsValue
-             TestValue "false"
             }
             AITaskIdle Idle {
              Name "Idle"
@@ -297,7 +210,7 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
          EditorPos 2814.834 -50.972
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 17
+           Port 16
            PortName "Position"
           }
          }
@@ -327,6 +240,93 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
    Group "{60E613E529FFF2F9}"
    SetValue "true"
    OutVariable 1
+  }
+  DecoTestVariable "Test Variable" {
+   Name "Test Variable"
+   EditorPos 3084.723 1748.055
+   Nodes {
+    Selector Selector {
+     Name "Selector"
+     EditorPos 3104.167 1908.75
+     Nodes {
+      DecoratorEntity Entity {
+       Name "Entity"
+       EditorPos 2837.901 2067.432
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 2869.917 2269.166
+         Nodes {
+          DCO_GetBuildingType "DCO_ Get Building Type" {
+           Name "DCO_ Get Building Type"
+           EditorPos 2397.064 2491.904
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 7
+             PortName "Building Types"
+            }
+           }
+           Group "{622E1C12D0A820AA}"
+          }
+          DCO_AIFortification "DCO_AI Fortification" {
+           Name "DCO_AI Fortification"
+           EditorPos 2815.303 2489.469
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 7
+             PortName "Building Name"
+            }
+           }
+           Group "{622E1C12D0A820AA}"
+          }
+          AITaskSetVariable "Set Variable" {
+           Name "Set Variable"
+           EditorPos 3130.155 2485.571
+           Group "{622E1C12D0A820AA}"
+           SetValue "1"
+           OutVariable 15
+          }
+         }
+         Group "{622E1C12D0A820AA}"
+        }
+       }
+       Group "{622E1C12D0A820AA}"
+       InEntity 9
+       TEST {
+        SCR_AIDecoTestIsLeader "{622A14DEC465A419}" {
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 3247 2072.143
+       Nodes {
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 3181.857 2251.107
+         Group "{622E1C12D0A820AA}"
+         Period 5
+         PeriodRandom 0
+        }
+        AITaskSetVariable "Set Variable" {
+         Name "Set Variable"
+         EditorPos 3357.143 2230.714
+         Group "{622E1C12D0A820AA}"
+         SetValue "1"
+         OutVariable 10
+        }
+       }
+       Group "{622E1C12D0A820AA}"
+      }
+     }
+     Group "{622E1C12D0A820AA}"
+    }
+   }
+   Group "{622E1C12D0A820AA}"
+   UseChildResult 0
+   InVariable -1
+   TestType EqualsValue
+   TestValue "false"
   }
  }
  Variables {
@@ -425,11 +425,6 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
   VariableReference threatPos {
    VariableType 4
    EditorPos 1983.5 1862.667
-   Group "{622E1C12D0A820AA}"
-  }
-  VariableReference inCover {
-   VariableType 7
-   EditorPos 2920.833 1766.389
    Group "{622E1C12D0A820AA}"
   }
   VariableReference bType {

@@ -21,11 +21,11 @@ modded class SCR_AIThreatSystem
 	static const float PINNED_THRESHOLD = 2.2;
 	static const float EXHAUSTED_THRESHOLD = 4.7;
 	
-	private static const float SUPPRESSION_BULLET_INCREMENT = 0.08;
-	private static const float ENDANGERED_INCREMENT = 0.45;
+	private static const float SUPPRESSION_BULLET_INCREMENT = 0.03;
+	private static const float ENDANGERED_INCREMENT = 0.4;
 	private static const float BLEEDING_FIXED_INCREMENT = 0.2;
-	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.008;
-	private static const float DISTANT_SHOT_INCREMENT = 0.0015;
+	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.006;
+	private static const float DISTANT_SHOT_INCREMENT = 0.001;
 	private static const float EXPLOSION_MAX_INCREMENT = 1.0;
 	private static const float EXPLOSION_CLOSE_DISTANCE = 15;	//!< What distance in m is considered close - max increment is used
 	static const float EXPLOSION_MAX_DISTANCE = 300;
@@ -35,9 +35,9 @@ modded class SCR_AIThreatSystem
 	//private static const float THREAT_ENDANGERED_DROP_RATE  = 0.12 * 0.001;
 	//private static const float THREAT_SUPPRESSION_DROP_RATE = 0.25 * 0.001; 
 	
-	private static const float THREAT_SHOT_DROP_RATE = 	0.1 * 0.001; // Falloff (percentual drop per milisecond)
-	private static const float THREAT_SUPPRESSION_DROP_RATE = 0.04 * 0.001;
-	private static const float THREAT_ENDANGERED_DROP_RATE = 	0.02 * 0.001;
+	private static const float THREAT_SHOT_DROP_RATE = 	0.13 * 0.001; // Falloff (percentual drop per milisecond)
+	private static const float THREAT_SUPPRESSION_DROP_RATE = 0.1 * 0.001;
+	private static const float THREAT_ENDANGERED_DROP_RATE = 	0.3 * 0.001;
 	private float THREAT_SUPPRESION_DROPS;
 	
 	private static const float SAFE_MORALE = 0;
@@ -174,22 +174,22 @@ modded class SCR_AIThreatSystem
 			}
 			case moraleState.ANXIOUS:
 			{
-				m_fMoraleEffect = 0.15;
+				m_fMoraleEffect = 0.05;
 				break;
 			}
 			case moraleState.MOTIVATED:
 			{
-				m_fMoraleEffect = 0.3;
+				m_fMoraleEffect = 0.1;
 				break;
 			}
 			case moraleState.MANIAC:
 			{
-				m_fMoraleEffect = 0.45;
+				m_fMoraleEffect = 0.2;
 				break;
 			}
 			case moraleState.BREAK:
 			{
-				m_fMoraleEffect = 0.6;
+				m_fMoraleEffect = 0.4;
 				break;
 			}
 		}
@@ -251,7 +251,7 @@ modded class SCR_AIThreatSystem
 		m_fThreatShotsFired -= m_fThreatShotsFired * THREAT_SHOT_DROP_RATE * timeSlice;
 		
 		
-		if (tac == DCO_GroupTactic.AGGRESIVE)
+		if (tac == DCO_GroupTactic.ASSAULT)
 			m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESION_DROPS * 10 * timeSlice;
 		else m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESION_DROPS * timeSlice;
 
@@ -328,7 +328,7 @@ modded class SCR_AIThreatSystem
 		
 		// google can show you the increment function if you write it in
 		
-		m_fThreatShotsFired = Math.Clamp(m_fThreatShotsFired + count*(DISTANT_SHOT_INCREMENT + ZERO_DISTANCE_SHOT_INCREMENT/(distance + 1)), 0, 1.1);
+		m_fThreatShotsFired = Math.Clamp(m_fThreatShotsFired + count*(DISTANT_SHOT_INCREMENT + ZERO_DISTANCE_SHOT_INCREMENT/(distance + 1)), 0, 1.0);
 	}
 	
 	override void ThreatProjectileFlyby(int count)

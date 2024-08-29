@@ -10,11 +10,11 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	static const float AIMING_ERROR_SCALE = 1.0; // TODO: game master and server option
 	static const float AIMING_ERROR_FACTOR_MIN = 0.45; 
-	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.2;
-	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.02;
+	static const float AIMING_ERROR_FACTOR_MAX = 1.5;
 	
-	static const float MAXIMAL_TOLERANCE = 8.0;	
-	static const float MINIMAL_TOLERANCE = 0.1;
+	static const float MAXIMAL_TOLERANCE = 5.0;	
+	static const float MINIMAL_TOLERANCE = 0.003;
 	
 	EAISkill defaultSkill;
 	float threatFactor;

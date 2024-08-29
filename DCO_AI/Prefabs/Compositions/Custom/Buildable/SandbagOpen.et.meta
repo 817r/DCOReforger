@@ -1,5 +1,5 @@
 MetaFileClass {
- Name "{FE454DE1B0EB916C}Prefabs/Custom Game Mode/1/AreaOperationSpawn.et"
+ Name "{E73ABDB44EF08C06}Prefabs/Compositions/Custom/Buildable/SandbagOpen.et"
  Configurations {
   EntityTemplateResourceClass PC {
   }

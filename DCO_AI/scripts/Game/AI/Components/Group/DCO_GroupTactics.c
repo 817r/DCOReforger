@@ -1,8 +1,9 @@
 enum DCO_GroupTactic{
 	EVASIVE,
 	DEFENSIVE,
-	OFFENSIVE,
-	AGGRESIVE
+	BALANCE,
+	ASSAULT,
+	FALLBACK
 };
 
 class DCO_GroupTacticComponentClass : ScriptComponentClass
@@ -25,28 +26,55 @@ class DCO_GroupTacticComponent : ScriptComponent
 	static DCO_GroupTactic SetTactic(IEntity unit, DCO_GroupTactic groups)
 	{
 		if (!unit)
-			return DCO_GroupTactic.OFFENSIVE;
+			return DCO_GroupTactic.BALANCE;
 		
 		DCO_GroupTacticComponent comp = GetGroupTacticComponent(unit);
 		SCR_AIGroupUtilityComponent gUtil = GetGroupUtilComp(unit);
 		
 		if (!comp)
-			return DCO_GroupTactic.OFFENSIVE;
+			return DCO_GroupTactic.BALANCE;
 		
 		return comp.SetGroupTactic(groups, gUtil);
+	}
+	
+	static DCO_GroupTactic SetManualTactics(IEntity unit, DCO_GroupTactic groups)
+	{
+		if (!unit)
+			return DCO_GroupTactic.BALANCE;
+		
+		DCO_GroupTacticComponent comp = GetGroupTacticComponent(unit);
+		SCR_AIGroupUtilityComponent gUtil = GetGroupUtilComp(unit);
+		
+		if (!comp)
+			return DCO_GroupTactic.BALANCE;
+		
+		return comp.SetManualTactic(groups, gUtil);
 	}
 
 	static DCO_GroupTactic GetGroupTactic(IEntity unit)
 	{		
 		if (!unit)
-			return DCO_GroupTactic.OFFENSIVE;
+			return DCO_GroupTactic.BALANCE;
 		
 		DCO_GroupTacticComponent comp = GetGroupTacticComponent(unit);
 		
 		if (!comp)
-			return DCO_GroupTactic.OFFENSIVE;
+			return DCO_GroupTactic.BALANCE;
 		
 		return comp.GetGroupTactic();
+	}
+	
+	static DCO_GroupTactic GetManualTactic(IEntity unit)
+	{		
+		if (!unit)
+			return DCO_GroupTactic.BALANCE;
+		
+		DCO_GroupTacticComponent comp = GetGroupTacticComponent(unit);
+		
+		if (!comp)
+			return DCO_GroupTactic.BALANCE;
+		
+		return comp.GetManualTac();
 	}
 	
 	static DCO_GroupTactic setAutomated(IEntity unit, bool tf)
@@ -104,6 +132,13 @@ class DCO_GroupTacticComponent : ScriptComponent
 		return groups;
 	}
 	
+	protected DCO_GroupTactic SetManualTactic(DCO_GroupTactic groups, SCR_AIGroupUtilityComponent gutil)
+	{
+		m_tac = groups;
+		gutil.UpdateTactics();
+		return groups;
+	}
+	
 	protected DCO_GroupTactic GetGroupTactic()
 	{
 		if (AutomatedTactics)
@@ -115,6 +150,11 @@ class DCO_GroupTacticComponent : ScriptComponent
 		}
 		
 		return automatedTac;
+	}
+	
+	protected DCO_GroupTactic GetManualTac()
+	{
+		return m_tac;
 	}
 	
 	DCO_GroupTactic setAutomatedTac(DCO_GroupTactic tacs, SCR_AIGroupUtilityComponent gutil)

@@ -16,10 +16,7 @@ class DCO_AIGroupTacticEditor : SCR_BaseFloatValueHolderEditorAttribute
 		{
 			SCR_AIGroup aiGroup = SCR_AIGroup.Cast(editableEntity.GetOwner()); 
 			if (!aiGroup) return null;
-			GroupTac = DCO_GroupTacticComponent.GetGroupTactic(aiGroup);
-			bool automated = DCO_GroupTacticComponent.getAutomated(aiGroup);
-			if (automated)
-				return null;
+			GroupTac = DCO_GroupTacticComponent.GetManualTactic(aiGroup);
 		} else return null;
 		
 		return SCR_BaseEditorAttributeVar.CreateInt(GroupTac);
@@ -39,9 +36,9 @@ class DCO_AIGroupTacticEditor : SCR_BaseFloatValueHolderEditorAttribute
 		{
 			int GroupTac = var.GetInt();
 		
-			DCO_GroupTacticComponent.SetTactic(editableEntity.GetOwner(), GroupTac);
+			DCO_GroupTacticComponent.SetManualTactics(editableEntity.GetOwner(), GroupTac);
 			
-			GroupTac = DCO_GroupTacticComponent.GetGroupTactic(editableEntity.GetOwner());
+			GroupTac = DCO_GroupTacticComponent.GetManualTactic(editableEntity.GetOwner());
 		
 		} else return;
 	}

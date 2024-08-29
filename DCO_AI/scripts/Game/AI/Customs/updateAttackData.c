@@ -1,117 +1,5 @@
 modded class SCR_AIUpdateTargetAttackData : AITaskScripted
-{	
-	// Inputs
-	protected static const string BASE_TARGET_PORT = "BaseTarget";
-	protected static const string WEAPON_IS_READY = "WeaponReady";
-	
-	// Outputs
-	protected static const string PORT_LAST_SEEN_POSITION = "LastSeenPosition";
-	protected static const string PORT_VISIBLE = "Visible";
-	protected static const string PORT_FIRE_TREE_ID = "FireTreeId";
-	protected static const string PORT_FIRE_RATE = "FireRate";
-	static const string PORT_AIMPOINT_TYPE_0 = "AimpointType0";
-	static const string PORT_AIMPOINT_TYPE_1 = "AimpointType1";
-	
-	
-	// These IDs must match to actual trees in attack tree
-	protected const int FIRE_TREE_INVALID 		= -1;	// No aiming or firing is allowed at all
-	protected const int FIRE_TREE_LOOK			= 0;	// Looking at target without firing
-	protected const int FIRE_TREE_BURST			= 1;
-	protected const int FIRE_TREE_SINGLE		= 2;
-	protected const int FIRE_TREE_SUPPRESSIVE	= 3;
-	protected const int FIRE_TREE_MELEE			= 4;
-	
-	protected const float MELEE_MAX_DISTANCE = 2.0;
-	protected const float BURST_FIRE_MAX_DISTANCE = 50.0;
-	
-	protected SCR_ChimeraAIAgent m_Agent;
-	protected SCR_AICombatComponent m_CombatComponent;
-	protected CharacterControllerComponent m_CharacterController;
-	protected PerceptionComponent m_PerceptionComponent;
-	protected SCR_AIUtilityComponent m_UtilityComponent;
-	
-	// Flag for executing some logic only once at start
-	protected bool m_bFirstSimulate = true;
-	
-	protected bool m_bWeaponHasBurstOrAuto; // Cached on first run
-	
-	//-----------------------------------------------------------------------------------------------------
-	override void OnInit(AIAgent owner)
-	{
-		m_UtilityComponent = SCR_AIUtilityComponent.Cast(owner.FindComponent(SCR_AIUtilityComponent));
-		m_Agent = SCR_ChimeraAIAgent.Cast(owner);
-		
-		IEntity myEntity = owner.GetControlledEntity();
-		if (myEntity)
-		{
-			m_CombatComponent = SCR_AICombatComponent.Cast(myEntity.FindComponent(SCR_AICombatComponent));
-			
-			m_PerceptionComponent = PerceptionComponent.Cast(myEntity.FindComponent(PerceptionComponent));
-			m_CharacterController = CharacterControllerComponent.Cast(myEntity.FindComponent(CharacterControllerComponent));
-		}
-		
-		m_bFirstSimulate = true;
-	}
-	
-	//-----------------------------------------------------------------------------------------------------
-	override void OnAbort(AIAgent owner, Node nodeCausingAbort)
-	{
-		m_bFirstSimulate = true;
-	}
-	
-	//-----------------------------------------------------------------------------------------------------
-	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
-	{
-		BaseTarget target;
-		GetVariableIn(BASE_TARGET_PORT, target);
-		
-		bool weaponReady;
-		GetVariableIn(WEAPON_IS_READY, weaponReady);
-		
-		if (!target || !m_CombatComponent || !m_PerceptionComponent || !m_CharacterController || !m_UtilityComponent)
-			return ENodeResult.FAIL;
-		
-		if (m_bFirstSimulate)
-		{
-			BaseWeaponComponent selectedWeaponComp;
-			int selectedMuzzleId;
-			m_CombatComponent.GetSelectedWeapon(selectedWeaponComp, selectedMuzzleId);
-			m_bWeaponHasBurstOrAuto = WeaponHasBurstOrAutoMode(selectedWeaponComp, selectedMuzzleId);
-		}
-		
-		// Last seen pos
-		SetVariableOut(PORT_LAST_SEEN_POSITION, target.GetLastSeenPosition());
-		
-		// Visible?
-		bool visible = m_CombatComponent.IsTargetVisible(target);
-		SetVariableOut(PORT_VISIBLE, visible);
-		
-		// Fire rate modifier (modified in ResolveFireTree)
-		float fireRate = 1;
-		
-		// Which fire tree to use?
-		// This must be reevaluated periodically
-		int fireTreeId = ResolveFireTree(target, visible, weaponReady, fireRate);
-		SetVariableOut(PORT_FIRE_TREE_ID, fireTreeId);
-		SetVariableOut(PORT_FIRE_RATE, fireRate);
-		
-		// Which aimpoints to use?
-		// We run this only once, since it's not going to change much
-		if (m_bFirstSimulate)
-		{
-			EAimPointType aimpointType0;
-			EAimPointType aimpointType1;
-			ResolveAimpointTypes(target, aimpointType0, aimpointType1);
-			SetVariableOut(PORT_AIMPOINT_TYPE_0, aimpointType0);
-			SetVariableOut(PORT_AIMPOINT_TYPE_1, aimpointType1);
-		}
-		
-		// Reset m_bFirstSimulate flag
-		m_bFirstSimulate = false;
-		
-		return ENodeResult.SUCCESS;
-	}
-	
+{		
 	//-----------------------------------------------------------------------------------------------------
 	// Evaluates which fire tree should be used
 	override int ResolveFireTree(BaseTarget target, bool visible, bool weaponReady, out float fireRate)
@@ -164,7 +52,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			// Outside weapon usage range
 			// Look at target
 			
-			if(threat > 3.5)
+			if(threat > 4.0)
 				return FIRE_TREE_BURST;
 			
 			
@@ -178,7 +66,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			// Visible
 			// If machinegun, always use burst at any range
 			// For regular weapons, use burst at short range if available, otherwise single
-			if (weaponType == EWeaponType.WT_MACHINEGUN && targetDistance < 50)
+			if (weaponType == EWeaponType.WT_MACHINEGUN && targetDistance > SCR_AICombatComponent.CLOSE_RANGE_COMBAT_DISTANCE)
 				return FIRE_TREE_BURST;
 			else if (weaponType == EWeaponType.WT_MACHINEGUN)
 				return FIRE_TREE_SUPPRESSIVE;
@@ -215,40 +103,20 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				target.GetTimeSinceSeen() < lastSeenThreshold &&
 				target.GetTraceFraction() > 0.4)
 			{
-				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 1));
-				if (threat > 3.5)	fireRate = maxFireRate * (threat - 0.5);
-				else fireRate = maxFireRate * threat;
+				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 2, 1));
+				fireRate = maxFireRate * threat;
 								
 				return FIRE_TREE_SUPPRESSIVE;
 			}
-			else if (targetDistance < 50 && target.GetTimeSinceSeen() < lastSeenThreshold)
+			else if (targetDistance > SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE * 2)
 				return FIRE_TREE_BURST;
 			else
 				return FIRE_TREE_LOOK;
 		}
 		
+		if (weaponType == EWeaponType.WT_SNIPERRIFLE)
+			return FIRE_TREE_SINGLE;
+		
 		return FIRE_TREE_LOOK;
 	}
-		
-	//-----------------------------------------------------------------------------------------------------
-	protected ref TStringArray s_aVarsIn = {
-		BASE_TARGET_PORT,
-		WEAPON_IS_READY
-	};
-	override TStringArray GetVariablesIn() { return s_aVarsIn; }
-	
-	protected ref TStringArray s_aVarsOut = {
-		PORT_VISIBLE,
-		PORT_LAST_SEEN_POSITION,
-		PORT_FIRE_TREE_ID,
-		PORT_AIMPOINT_TYPE_0,
-		PORT_AIMPOINT_TYPE_1,
-		PORT_FIRE_RATE
-	};
-	override TStringArray GetVariablesOut() { return s_aVarsOut; }
-	
-	override bool VisibleInPalette() { return true; }
-	
-	override string GetOnHoverDescription() { return "Special node which is used in attack behavior"; };
-
 }

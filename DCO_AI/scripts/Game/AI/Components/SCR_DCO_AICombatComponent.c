@@ -17,9 +17,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	DCO_GroupTactic m_Tac;
 	DCO_GroupTacticComponent m_GroupTacticComponent;
 	
-	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
+	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 25.0;
+	
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
-	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 2.0;
+	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 3.0;
 
 	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.3;
 	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK_CLOSE = 4.5;
@@ -28,9 +29,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	          static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG = 12.0;
 	          static const float TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_CLOSE = 10.0;
 	
-	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 98.0;
+	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 90.0;
 	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.8;
-	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.48;
+	
+	static const float TARGET_MAX_LAST_SEEN = 15.0;
 	
 	protected const float PERCEPTION_FACTOR_SAFE = 0.5;
 	protected const float PERCEPTION_FACTOR_VIGILANT = 3.1;
@@ -38,10 +40,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_THREATENED = 2.6;
 	protected const float PERCEPTION_FACTOR_PINNED = 1.7;
 	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.5;
-
-	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.2;
-	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;
-	
+		
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 700.0;
 	protected static const float TARGET_MAX_DISTANCE_VEHICLE = 1000.0;
 	
@@ -52,10 +51,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	//! Beyond this distance AI considers combat as 'long range', used for danger events and firing times
 	static const float LONG_RANGE_COMBAT_DISTANCE = 250.0;
 	
-	protected const float DISMOUNT_TURRET_TIMER_MS = 800;
-	protected static const float TURRET_TARGET_EXCESS_ANGLE_THRESHOLD_DEG = 3.5;
-	
-	protected const float FRAG_GRENADE_MAX_THREAT = 3.0;
+	protected const float FRAG_GRENADE_MAX_THREAT = 3.2;
 	
 	private int groupNumber;
 	private int nowGroupNumber;
@@ -71,8 +67,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 		vanilla.EOnInit(owner);
 		
 		ChimeraCharacter character = ChimeraCharacter.Cast(owner);
-		
-		
 		if (m_Agent)
 		{
 			m_ControlledEntity = m_Agent.GetControlledEntity();
@@ -311,6 +305,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 		}
 		
 		perceptionFactor *= m_fEquipmentPerceptionFactor;
+		perceptionFactor *= m_fPerceptionFactor;
 		
 		perceptionComp.SetPerceptionFactor(perceptionFactor);
 	}

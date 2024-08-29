@@ -6,7 +6,7 @@ modded class SCR_AIGroupPerception : Managed
 	
 	// Time till target is totally forgotten and is removed from memory.
 	// This doesn't need to be much longer than MAX_CLUSTER_AGE_S
-	const float TARGET_FORGET_THRESHOLD_S = 170.0;	
+	const float TARGET_FORGET_THRESHOLD_S = 180.0;	
 	
 	override protected void RemoveTarget(IEntity enemy)
 	{
@@ -144,15 +144,5 @@ modded class SCR_AIGroupPerception : Managed
 			m_aTargetEntities.Insert(shooter);
 			m_Utility.tempTarget.Insert(shooter);
 		}
-	}
-	
-	override void Update()
-	{
-		vanilla.Update();
-	}
-	
-	void getTargetClusterArray(out array<SCR_AIGroupTargetCluster> gtcarr)
-	{
-		//gtcarr = m_aTargetClusters;
 	}
 }

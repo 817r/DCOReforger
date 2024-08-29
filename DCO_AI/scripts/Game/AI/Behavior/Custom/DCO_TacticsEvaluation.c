@@ -5,8 +5,8 @@ class DCO_TacticsEvaluation : AITaskScripted
 	// These IDs must match to actual trees in attack tree
 	protected const int DEFENSIVE 		= 0;
 	protected const int EVASIVE			= 1;
-	protected const int OFFENSIVE		= 2;
-	protected const int AGGRESIVE		= 3;
+	protected const int BALANCE			= 2;
+	protected const int ASSAULT			= 3;
 	
 	protected SCR_AIUtilityComponent m_UtilityComponent;
 	
@@ -26,8 +26,8 @@ class DCO_TacticsEvaluation : AITaskScripted
 		{
 			case DCO_GroupTactic.DEFENSIVE: tacTreeId = 0; break;
 			case DCO_GroupTactic.EVASIVE: tacTreeId = 1; break;
-			case DCO_GroupTactic.OFFENSIVE: tacTreeId = 2; break;
-			case DCO_GroupTactic.AGGRESIVE: tacTreeId = 3; break;
+			case DCO_GroupTactic.BALANCE: tacTreeId = 2; break;
+			case DCO_GroupTactic.ASSAULT: tacTreeId = 3; break;
 		}
 		
 		SetVariableOut(PORT_TAC_TREE_ID, tacTreeId);

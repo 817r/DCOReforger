@@ -335,35 +335,50 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	protected void evaluateTactics()
 	{		
 		bool isOutnumbered = groupMember < targetCount;
-		bool isAbleToDefend = groupMember + Math.RandomInt(0,5) >= targetCount;
-		bool isAbleToAttack = groupMember >= targetCount * 2;
+		bool isWinNumber = groupMember > targetCount;
 		bool isHoldingPosition = m_fThreatMeasure < 5.0;
-		bool inCombat = m_fThreatMeasure > 0.01;
+		bool inCombat = m_fThreatMeasure > 0.001;
 		bool isHighMorale = moraleValue() < 4.0;
 		
-		if (isAbleToAttack && inCombat)
+		// DEFENSIVE MAIN FACTOR = isWinNumber && isHoldingPosition
+		// EVASIVE MAIN FACTOR = isOutnumbered
+		// AGGRESIVE MAIN FACTOR = isWinNumber
+		
+		if (isWinNumber && isHoldingPosition && inCombat)
 		{
-			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.AGGRESIVE);
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.ASSAULT);
 			UpdateTactics();
-		} else if (isAbleToDefend && isHoldingPosition && inCombat)
+		} else if (isHighMorale && isHoldingPosition && inCombat)
 		{
-			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.DEFENSIVE);
-			UpdateTactics();
-		} else if (isOutnumbered && inCombat && isHighMorale)
-		{
-			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.DEFENSIVE);
-			UpdateTactics();
-		} else if ((isHighMorale || isHoldingPosition) && inCombat)
-		{
-			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.AGGRESIVE);
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.ASSAULT);
 			UpdateTactics();	
-		} else if (isOutnumbered && inCombat && (!isHighMorale || !isHoldingPosition))
+		} else if (isWinNumber && inCombat)
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
+			UpdateTactics();
+		} else if (inCombat && isHighMorale)
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
+			UpdateTactics();
+		} else if (isWinNumber && !isHoldingPosition && inCombat)
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
+			UpdateTactics();
+		}    else if (isOutnumbered && inCombat && isHighMorale)
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.DEFENSIVE);
+			UpdateTactics();
+		} else if (isOutnumbered && inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.EVASIVE);
 			UpdateTactics();
-		}else
+		}  else if (inCombat)
 		{
-			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.OFFENSIVE);
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
+			UpdateTactics();	
+		} else
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
 			UpdateTactics();
 		}
 	}

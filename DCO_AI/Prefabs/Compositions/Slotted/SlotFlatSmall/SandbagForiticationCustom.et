@@ -1,9 +1,6 @@
 GenericEntity : "{6E9190BC2713551D}Prefabs/Compositions/Slotted/BuildableComposition_Base.et" {
  ID "5282DCB5DFC8538F"
  components {
-  FactionAffiliationComponent "{622A14DD8ACF9F69}" {
-   "faction affiliation" "US"
-  }
   RigidBody "{5E96A067A67C5029}" {
    Geometries {
     PhysicsBoxGeometry UserAction {
@@ -12,11 +9,18 @@ GenericEntity : "{6E9190BC2713551D}Prefabs/Compositions/Slotted/BuildableComposi
    }
   }
   SCR_CampaignBuildingCompositionComponent "{5E96A067C097D570}" {
-   m_AudioSourceConfigurationSpawn SCR_AudioSourceConfiguration "{5E96A067C355978C}" {
-    m_sSoundEventName "SOUND_BUILD_SANDBAG_BARBWIRE"
-   }
    m_AudioSourceConfigurationDespawn SCR_AudioSourceConfiguration "{5E96A0643BAAEAF8}" {
     m_sSoundEventName "SOUND_DESTROY_SANDBAG"
+   }
+  }
+  SCR_EditableEntityComponent "{62330D8FC17D3FB0}" {
+   m_Flags PLACEABLE
+  }
+  ActionsManagerComponent "{5D66ED1096104FD8}" {
+   additionalActions {
+    SCR_CampaignBuildingDisassemblyUserAction "{5D66ED1086234C38}" {
+     ActionTitle "Disassembly"
+    }
    }
   }
   Hierarchy "{622A14DD8ACF9E8B}" {

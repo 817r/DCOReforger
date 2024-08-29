@@ -1,5 +1,5 @@
 MetaFileClass {
- Name "{740B233F756AB02F}Prefabs/ScenarioFramework/Components/MissionSecureArea.et"
+ Name "{DA9FAB3D1F6CF01D}Prefabs/MP/Modes/AIComGameMode.et"
  Configurations {
   EntityTemplateResourceClass PC {
   }

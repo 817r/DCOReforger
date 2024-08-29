@@ -1,0 +1,15 @@
+DCO_ObjectiveArea {
+ ID "623138F5DF59FF4B"
+ components {
+  SCR_MapDescriptorComponent "{623251E6572E4BB3}" {
+  }
+  RplComponent "{623138F5EDCD5D68}" {
+  }
+ }
+ TriggerShapeType "Oriented Bounding Box"
+ BoxMins -5 -0.5 -5
+ BoxMaxs 5 5 5
+ DrawShape 1
+ TriggerActivationType "Every query"
+ PeriodicQueries 1
+}
