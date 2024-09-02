@@ -1,0 +1,417 @@
+BehaviorTree "{F86FF905B2478F3C}AI/BehaviorTrees/Chimera/Soldier/Fire_Single.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Fire_Single.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 1823.25 866.702
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 1813.737 1038.384
+     Nodes {
+      SCR_AIGetBaseTargetProperties "SCR_AI Get Base Target Properties" {
+       Name "SCR_AI Get Base Target Properties"
+       EditorPos 1257.115 1351.266
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 13
+         PortName "BaseTarget"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 14
+         PortName "Entity"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "LastSeenPosition"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "TimeSinceSeen"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "IsEndangering"
+        }
+       }
+      }
+      SCR_AISelectFireMode "SCR_AI Select Fire Mode" {
+       Name "SCR_AI Select Fire Mode"
+       EditorPos 1571.884 1349.03
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos 2567.167 1492.166
+       Nodes {
+        DecoratorEntity Entity {
+         Name "Entity"
+         EditorPos 1872.334 1693.556
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 1914.5 1890.001
+           Nodes {
+            SCR_AIGetAimErrorOffset "SCR_AI Get Aim Error Offset" {
+             Name "SCR_AI Get Aim Error Offset"
+             EditorPos 387.583 2318.076
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "BaseTargetIn"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 15
+               PortName "AimpointType0"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 16
+               PortName "AimpointType1"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 7
+               PortName "ErrorOffset"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 8
+               PortName "AimPoint"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 9
+               PortName "AimingTolerance"
+              }
+             }
+             Group "{6112B96C56165631}"
+            }
+            SCR_AIGetAimDistanceCompensation "SCR_AI Get Aim Range Compensation" {
+             Name "SCR_AI Get Aim Distance Compensation"
+             EditorPos 916.273 2307.264
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 10
+               PortName "TargetEntity"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "TargetPosition"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 7
+               PortName "VectorIn"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "InitialSpeedCoefficient"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 6
+               PortName "VectorOut"
+              }
+             }
+             Group "{6112B96C56165631}"
+            }
+            SCR_AIGetFireTimes "SCR_AI Get Fire Times" {
+             Name "SCR_AI Get Fire Times"
+             EditorPos 1270.5 2307.917
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "TargetEntity"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "TargetPosition"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "FireRateCoef"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 17
+               PortName "FireTime"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 11
+               PortName "StabilizationTime"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 12
+               PortName "RejectAimingTime"
+              }
+              SingleOutputPortContainer SingleOutputPortContainerClass {
+               PortName "ShotSpan"
+              }
+             }
+             Group "{6112B96C56165631}"
+            }
+            Selector Selector {
+             Name "Selector"
+             EditorPos 2501.393 2307.917
+             Nodes {
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 2244.85 2739.017
+               Nodes {
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos 2119.798 2871.596
+                 Group "{6112B96C407BA270}"
+                 Period 0.5
+                 PeriodRandom 0
+                 PeriodKey 19
+                }
+                SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
+                 Name "SCR_AI Deco Weapon Unobstructed"
+                 EditorPos 2287.393 2860.06
+                 Nodes {
+                  AITaskFire Fire {
+                   Name "Fire"
+                   EditorPos 2381.362 2970.185
+                   Group "{6112B96C407BA270}"
+                   Period 1
+                   KeepFiring 1
+                   PeriodKey 18
+                  }
+                 }
+                 Group "{6112B96C407BA270}"
+                }
+               }
+               Group "{6112B96C407BA270}"
+              }
+              AITaskIdle Idle {
+               Name "Idle"
+               EditorPos 2701.929 2441.69
+               Group "{6112B96C407BA270}"
+               PeriodKey 0
+              }
+             }
+             Group "{6112B96C407BA270}"
+            }
+           }
+          }
+         }
+         NegativeCondition 1
+         AbortType AbortChildrenBranch
+         TEST {
+          SCR_AIDecoTestIsReloading "{5A308E2E01FB6022}" {
+          }
+         }
+        }
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 3318.19 1696.536
+         Nodes {
+          AITaskCharacterAim "Character Aim" {
+           Name "Character Aim"
+           EditorPos 3313.104 1855.757
+           Group "{6112B96CAC67C4E3}"
+           InAimAtPosition -1
+           InAimPoint 3
+           InEntity 4
+           PrecisionXZ 0
+           PrecisionY 0
+           InPrecisionXZ -1
+           InPrecisionY -1
+           InAimOffset 2
+           AimType Weapon
+          }
+         }
+         Group "{6112B96CAC67C4E3}"
+         InVariable 2
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+  DecoAiming Aiming {
+   Name "Aiming"
+   EditorPos 2190.738 2507.214
+   Group "{6112B96C407BA270}"
+   AbortType AbortParentNodeFurtherChildren
+   InAimThreshold 1
+  }
+ }
+ Variables {
+  Variable entity {
+   VariableName "entity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable aimingTolerance {
+   VariableName "aimingTolerance"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable aimErrorOffset {
+   VariableName "aimErrorOffset"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable rejectedAimingTime {
+   VariableName "rejectedAimingTime"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable stabilizationTime {
+   VariableName "stabilizationTime"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable offsetCompensated {
+   VariableName "offsetCompensated"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable aimPoint {
+   VariableName "aimPoint"
+   VariableTypeName "AimPoint"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable baseTarget {
+   VariableName "baseTarget"
+   VariableTypeName "BaseTarget"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable eAimpointType0 {
+   VariableName "eAimpointType0"
+   VariableTypeName "int"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable eAimpointType1 {
+   VariableName "eAimpointType1"
+   VariableTypeName "int"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable fireTime {
+   VariableName "fireTime"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference rejectedAimingTime {
+   VariableType 3
+   EditorPos 2458.262 2521.119
+   Group "{6112B96C407BA270}"
+  }
+  VariableReference aimingTolerance {
+   VariableType 1
+   EditorPos 1943.976 2667.914
+   Group "{6112B96C407BA270}"
+  }
+  VariableReference offsetCompensated {
+   VariableType 5
+   EditorPos 2930.347 2107.679
+   Group "{6112B96CAC67C4E3}"
+  }
+  VariableReference aimPoint {
+   VariableType 6
+   EditorPos 3013.809 1924.333
+   Group "{6112B96CAC67C4E3}"
+  }
+  VariableReference entity {
+   VariableType 0
+   EditorPos 3027.262 2017.131
+   Group "{6112B96CAC67C4E3}"
+  }
+  VariableReference baseTarget {
+   VariableType 7
+   EditorPos 135.926 2325.037
+   Group "{6112B96C56165631}"
+  }
+  VariableReference offsetCompensated {
+   VariableType 5
+   EditorPos 1267.561 2443.147
+   Group "{6112B96C56165631}"
+  }
+  VariableReference aimErrorOffset {
+   VariableType 2
+   EditorPos 688.391 2392.022
+   Group "{6112B96C56165631}"
+  }
+  VariableReference aimPoint {
+   VariableType 6
+   EditorPos 685.286 2483.119
+   Group "{6112B96C56165631}"
+  }
+  VariableReference aimingTolerance {
+   VariableType 1
+   EditorPos 679.357 2569.869
+   Group "{6112B96C56165631}"
+  }
+  VariableReference entity {
+   VariableType 0
+   EditorPos 712.929 2307.5
+   Group "{6112B96C56165631}"
+  }
+  VariableReference stabilizationTime {
+   VariableType 4
+   EditorPos 1553.584 2401.111
+   Group "{6112B96C56165631}"
+  }
+  VariableReference rejectedAimingTime {
+   VariableType 3
+   EditorPos 1543.723 2487.917
+   Group "{6112B96C56165631}"
+  }
+  VariableReference baseTarget {
+   VariableType 7
+   EditorPos 989.457 1498.806
+  }
+  VariableReference entity {
+   VariableType 0
+   EditorPos 1566.19 1545.904
+  }
+  VariableReference eAimpointType0 {
+   VariableType 8
+   EditorPos 154.532 2414.468
+   Group "{6112B96C56165631}"
+  }
+  VariableReference eAimpointType1 {
+   VariableType 9
+   EditorPos 157.919 2505.034
+   Group "{6112B96C56165631}"
+  }
+  VariableReference fireTime {
+   VariableType 10
+   EditorPos 1557.173 2317.692
+   Group "{6112B96C56165631}"
+  }
+  VariableReference fireTime {
+   VariableType 10
+   EditorPos 2221.879 3004.394
+   Group "{6112B96C407BA270}"
+  }
+  VariableReference stabilizationTime {
+   VariableType 4
+   EditorPos 1884.167 2879.917
+   Group "{6112B96C407BA270}"
+  }
+ }
+ Groups {
+  BTGroup "{6112B96CAC67C4E3}" {
+   Name "Aim"
+   Color 0.6 0.6 0.6 0.251
+  }
+ }
+}

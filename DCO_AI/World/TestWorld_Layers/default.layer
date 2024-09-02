@@ -34,6 +34,19 @@ SCR_FactionManager FactionManager_USxUSSR1 : "{589540B35EBA8CDC}Prefabs/MP/Manag
 RadioManagerEntity : "{B8E09FAB91C4ECCD}Prefabs/Radio/RadioManager.et" {
  coords 6477.897 162.032 6462.204
 }
+DCO_ObjectiveArea : "{3821C6E92BC34E86}Prefabs/Custom Game Mode/1/Objective_Area.et" {
+ components {
+  SCR_MapDescriptorComponent "{623251E6572E4BB3}" {
+   DisplayName "Factory"
+   MainType Task
+  }
+ }
+ coords 6427.983 160.182 6472.407
+ BoxMins -20 -0.5 -20
+ BoxMaxs 20 5 20
+ DrawShape 0
+ m_sAreaName "Factory"
+}
 SCR_LoadoutManager : "{97EF4C1A41F63DDB}Prefabs/MP/Managers/Loadouts/LoadoutManager_USxUSSR.et" {
  coords 4861.387 28.594 11839.631
 }

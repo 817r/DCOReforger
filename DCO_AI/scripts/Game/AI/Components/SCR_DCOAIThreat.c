@@ -21,7 +21,7 @@ modded class SCR_AIThreatSystem
 	static const float PINNED_THRESHOLD = 2.2;
 	static const float EXHAUSTED_THRESHOLD = 4.7;
 	
-	private static const float SUPPRESSION_BULLET_INCREMENT = 0.03;
+	private static const float SUPPRESSION_BULLET_INCREMENT = 0.06;
 	private static const float ENDANGERED_INCREMENT = 0.4;
 	private static const float BLEEDING_FIXED_INCREMENT = 0.2;
 	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.006;

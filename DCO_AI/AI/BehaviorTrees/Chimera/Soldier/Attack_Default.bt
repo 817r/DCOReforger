@@ -57,7 +57,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          EditorPos -1015 818.778
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 3
+           Port -1
            PortName "Target"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
@@ -447,11 +447,6 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
      }
     }
    }
-  }
-  RunBT RunBT {
-   Name "RunBT"
-   EditorPos 1951.904 1155.762
-   BehaviorTree "{E57FC0277F3C9438}AI/BehaviorTrees/Chimera/Soldier/Custom/ThrowSmoke.bt"
   }
  }
  Variables {

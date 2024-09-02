@@ -1,5 +1,5 @@
 MetaFileClass {
- Name "{E62CB3068511E731}AI/BehaviorTrees/Chimera/Group/DCO_Activity_Evade.bt"
+ Name "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressive.bt"
  Configurations {
   BehaviorTreeResourceClass PC {
   }

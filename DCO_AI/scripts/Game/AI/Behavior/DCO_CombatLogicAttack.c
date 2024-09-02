@@ -1,6 +1,6 @@
 modded class SCR_AICombatMoveUtils
 {
-	static const float CLOSE_RANGE_COMBAT_DIST = 50.0;
+	static const float CLOSE_RANGE_COMBAT_DIST = 40.0;
 }
 
 
@@ -12,9 +12,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	DCO_CUSTOMRANK rank;
 	moraleState morale;
 	DCO_GroupTactic tac;
-	
-	AIDangerEvent danger;
-	
 	
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
@@ -3282,7 +3279,6 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 	moraleState morale;
 	DCO_GroupTactic tac;
 	
-	AIDangerEvent danger;
 	SCR_AIGroup group;
 	
 	bool strayed = false;

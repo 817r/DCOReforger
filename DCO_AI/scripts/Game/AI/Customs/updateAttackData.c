@@ -45,16 +45,10 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		
 		// Not melee
 		
-		float threat = m_UtilityComponent.m_ThreatSystem.GetThreatTotal();
-		
 		if (targetDistance < weaponMinDist || targetDistance > weaponMaxDist)
 		{
 			// Outside weapon usage range
 			// Look at target
-			
-			if(threat > 4.0)
-				return FIRE_TREE_BURST;
-			
 			
 			return FIRE_TREE_LOOK;
 		}
@@ -66,10 +60,10 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			// Visible
 			// If machinegun, always use burst at any range
 			// For regular weapons, use burst at short range if available, otherwise single
-			if (weaponType == EWeaponType.WT_MACHINEGUN && targetDistance > SCR_AICombatComponent.CLOSE_RANGE_COMBAT_DISTANCE)
+			if (weaponType == EWeaponType.WT_MACHINEGUN)
 				return FIRE_TREE_BURST;
-			else if (weaponType == EWeaponType.WT_MACHINEGUN)
-				return FIRE_TREE_SUPPRESSIVE;
+			else if (weaponType == EWeaponType.WT_SNIPERRIFLE)
+				return FIRE_TREE_SINGLE;
 			else if (targetDistance < BURST_FIRE_MAX_DISTANCE && m_bWeaponHasBurstOrAuto)
 				return FIRE_TREE_BURST;
 			else
@@ -86,9 +80,12 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			// except for rocket launchers, their ammo is too valuable
 			// Also ensure we don't do suppressive fire into a wall in front of us
 			
+			float threat = m_UtilityComponent.m_ThreatSystem.GetThreatMeasure();
 			float lastSeenThreshold;
 			if (weaponType == EWeaponType.WT_MACHINEGUN)
 				lastSeenThreshold = SCR_AICombatComponent.TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG;
+			else if (weaponType == EWeaponType.WT_SNIPERRIFLE)
+				lastSeenThreshold = SCR_AICombatComponent.TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK;
 			else
 			{
 				if (targetDistance < SCR_AICombatComponent.CLOSE_RANGE_COMBAT_DISTANCE)
@@ -101,21 +98,16 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			
 			if ((!directDamage || weaponType != EWeaponType.WT_ROCKETLAUNCHER) &&
 				target.GetTimeSinceSeen() < lastSeenThreshold &&
-				target.GetTraceFraction() > 0.4)
+				target.GetTraceFraction() > 0.5)
 			{
 				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 2, 1));
 				fireRate = maxFireRate * threat;
 								
 				return FIRE_TREE_SUPPRESSIVE;
 			}
-			else if (targetDistance > SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE * 2)
-				return FIRE_TREE_BURST;
 			else
 				return FIRE_TREE_LOOK;
 		}
-		
-		if (weaponType == EWeaponType.WT_SNIPERRIFLE)
-			return FIRE_TREE_SINGLE;
 		
 		return FIRE_TREE_LOOK;
 	}

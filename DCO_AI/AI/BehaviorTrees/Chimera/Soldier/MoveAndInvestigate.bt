@@ -92,11 +92,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
        Name "Parallel"
        EditorPos 2456.667 -330.833
        Nodes {
-        AITaskReturnState "Return  State" {
-         Name "Return  State"
-         EditorPos 1416.286 20.429
-         Result RUNNING
-        }
         DCO_TacticsEvaluation "DCO_ Tactics Evaluation" {
          Name "DCO_ Tactics Evaluation"
          EditorPos 1657.238 41.833
@@ -139,10 +134,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                EditorPos 1565.559 1372.084
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "enemyPos"
-                }
-                SingleInputPortContainer SingleInputPortContainerClass {
                  Port 29
                  PortName "threatPos"
                 }
@@ -326,6 +317,11 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
          }
          Group "{622E04EC36FF0830}"
         }
+        AITaskReturnState "Return  State" {
+         Name "Return  State"
+         EditorPos 3446.286 67.572
+         Result RUNNING
+        }
         DecoTestVariable "Test Variable" {
          Name "Test Variable"
          EditorPos 6786.5 490.5
@@ -497,7 +493,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
          TestValue "1"
         }
        }
-       UseChildResult 0
+       UseChildResult 3
       }
      }
     }

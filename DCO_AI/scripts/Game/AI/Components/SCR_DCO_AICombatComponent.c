@@ -17,10 +17,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	DCO_GroupTactic m_Tac;
 	DCO_GroupTacticComponent m_GroupTacticComponent;
 	
-	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 25.0;
+	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 15.0;
 	
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 30.0;
-	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 3.0;
+	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.5;
 
 	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK = 1.3;
 	protected static const float TARGET_MAX_LAST_SEEN_DIRECT_ATTACK_CLOSE = 4.5;
@@ -32,22 +32,18 @@ modded class SCR_AICombatComponent : ScriptComponent
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 90.0;
 	static const float TARGET_MAX_LAST_SEEN_VISIBLE = 0.8;
 	
-	static const float TARGET_MAX_LAST_SEEN = 15.0;
+	static const float TARGET_MAX_LAST_SEEN = 8.0;
 	
 	protected const float PERCEPTION_FACTOR_SAFE = 0.5;
-	protected const float PERCEPTION_FACTOR_VIGILANT = 3.1;
-	protected const float PERCEPTION_FACTOR_ALERTED = 2.9; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 2.6;
-	protected const float PERCEPTION_FACTOR_PINNED = 1.7;
-	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.5;
+	protected const float PERCEPTION_FACTOR_VIGILANT = 4.0;
+	protected const float PERCEPTION_FACTOR_ALERTED = 3.8; 
+	protected const float PERCEPTION_FACTOR_THREATENED = 3.5;
+	protected const float PERCEPTION_FACTOR_PINNED = 3.5;
+	protected const float PERCEPTION_FACTOR_EXHAUSTED = 3.2;
 		
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 700.0;
 	protected static const float TARGET_MAX_DISTANCE_VEHICLE = 1000.0;
-	
-	//! Within this distance AI considers combat as 'close range', used in firing times
-	static const float CLOSE_RANGE_COMBAT_DISTANCE = 35.0;
-	static const float CLOSE_RANGE_COMBAT_DISTANCE_SQ = CLOSE_RANGE_COMBAT_DISTANCE * CLOSE_RANGE_COMBAT_DISTANCE;
-	
+
 	//! Beyond this distance AI considers combat as 'long range', used for danger events and firing times
 	static const float LONG_RANGE_COMBAT_DISTANCE = 250.0;
 	
@@ -92,10 +88,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 		// Evaluate if we must dismount turret - only if we are already in turret
 		if (m_CurrentTurretController)
 			EvaluateDismountTurret(timeSliceMs);
-				
-		#ifdef WORKBENCH
-		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, "Group Number Init : " + groupNumber.ToString() + ", Group Number Now : " + nowGroupNumber.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);
-		#endif
+		
+		rank = m_DCO_Skill.GetCharacterRank(m_Utility.m_OwnerEntity);
 	}
 	
 	int getGroupNumber()
@@ -307,6 +301,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 		perceptionFactor *= m_fEquipmentPerceptionFactor;
 		perceptionFactor *= m_fPerceptionFactor;
 		
+		#ifdef WORKBENCH
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, "Perception : " + perceptionFactor.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);
+		#endif
+		
 		perceptionComp.SetPerceptionFactor(perceptionFactor);
 	}
 	
@@ -329,10 +327,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 		{
 			case EAICombatType.NONE:
 			{
-				SetActionAllowed(EAICombatActions.HOLD_FIRE,true);
-				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,false);
-				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,false);
-				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,false);
+				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,true);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,true);
 				break;
 			}
 			case EAICombatType.NORMAL:
@@ -362,7 +360,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 			case EAICombatType.SINGLE_SHOT:
 			{
 				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
-				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,false);
+				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,true);
 				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,false);
 				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,false);
 				break;
@@ -418,6 +416,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 		{
 			if (PilotCompartmentSlot.Cast(slot) && slot.GetOccupant())
 				return false;
+			
+			if (TurretCompartmentSlot.Cast(slot))
+			{
+				IEntity turrets = slot.GetOccupant();
+				if (turrets)
+				{
+					DamageManagerComponent dmg = DamageManagerComponent.Cast(turrets.FindComponent(DamageManagerComponent));
+					if (dmg.IsDestroyed())
+						return true;
+				} if(!turrets) return true;
+			}
 		}
 		
 		// False if we are in a vehicle and we should not leave turret of this vehicle type

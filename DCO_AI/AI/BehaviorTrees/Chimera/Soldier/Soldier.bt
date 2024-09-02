@@ -147,11 +147,11 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
            Nodes {
             SCR_AIUpdateExecutedAction "SCR_AI Update Executed Action" {
              Name "SCR_AI Update Executed Action"
-             EditorPos -884.167 1331.579
+             EditorPos -472.738 1355.865
             }
             AITaskSetVariable "Set Variable" {
              Name "Set Variable"
-             EditorPos -523.936 1336.349
+             EditorPos -145.365 1333.492
              ClearVariable 1
              OutVariable 6
             }
@@ -281,7 +281,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
   }
   VariableReference updateBehavior {
    VariableType 2
-   EditorPos -311.953 1409.524
+   EditorPos 66.618 1406.667
   }
   VariableReference useCombatMove {
    VariableType 3

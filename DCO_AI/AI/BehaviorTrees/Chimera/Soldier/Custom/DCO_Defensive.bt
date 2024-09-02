@@ -152,7 +152,7 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
           }
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 2479.311 1251.934
+           EditorPos 2189.311 1359.434
            Nodes {
             AITaskIdle Idle {
              Name "Idle"
@@ -160,45 +160,22 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
              Group "{622E1C12D0A820AA}"
              PeriodRandom 4
             }
-            SCR_AIDCO_COVERMANAGER SCR_AIDCO_COVERMANAGER {
-             Name "SCR_AIDCO_COVERMANAGER"
-             EditorPos 2173.834 1783.667
+            DCO_DEFENSIVE_EVALUATION_COVER DCO_DEFENSIVE_EVALUATION_COVER {
+             Name "DCO_DEFENSIVE_EVALUATION_COVER"
+             EditorPos 2069.667 1778
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 6
                PortName "Position"
               }
              }
-             Group "{622E1C12D0A820AA}"
             }
             AITaskIdle Idle {
              Name "Idle"
              EditorPos 2480.786 1782.714
              Group "{622E1C12D0A820AA}"
-             Period 15
-             PeriodRandom 5
-            }
-            SCR_AIGetCombatMoveState "SCR_AI Get Combat Move State" {
-             Name "SCR_AI Get Combat Move State"
-             EditorPos 2653.214 1770
-             OutPorts {
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port -1
-               PortName "InCover"
-              }
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port -1
-               PortName "CoverLock"
-              }
-             }
-             Group "{622E1C12D0A820AA}"
-            }
-            AITaskIdle Idle {
-             Name "Idle"
-             EditorPos 3286.409 1758.752
-             Group "{622E1C12D0A820AA}"
-             Period 7
-             PeriodRandom 10
+             Period 50
+             PeriodRandom 20
             }
            }
            Group "{622E1C12D0A820AA}"
@@ -328,6 +305,28 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
    TestType EqualsValue
    TestValue "false"
   }
+  SCR_AIGetCombatMoveState "SCR_AI Get Combat Move State" {
+   Name "SCR_AI Get Combat Move State"
+   EditorPos 2653.214 1770
+   OutPorts {
+    SingleOutputPortContainer SingleOutputPortContainer {
+     Port -1
+     PortName "InCover"
+    }
+    SingleOutputPortContainer SingleOutputPortContainer {
+     Port -1
+     PortName "CoverLock"
+    }
+   }
+   Group "{622E1C12D0A820AA}"
+  }
+  AITaskIdle Idle {
+   Name "Idle"
+   EditorPos 3286.409 1758.752
+   Group "{622E1C12D0A820AA}"
+   Period 7
+   PeriodRandom 10
+  }
  }
  Variables {
   Variable LeaderPos {
@@ -424,7 +423,7 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
   }
   VariableReference threatPos {
    VariableType 4
-   EditorPos 1983.5 1862.667
+   EditorPos 1896.833 1851
    Group "{622E1C12D0A820AA}"
   }
   VariableReference bType {

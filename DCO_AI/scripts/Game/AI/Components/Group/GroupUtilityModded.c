@@ -3,9 +3,16 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	int Internalmembers;
 	int groupMember;
 	int targetCount;
+	
+	bool isFirstContact = true;
+	
 	ref array<IEntity> tempTarget = new array<IEntity>;
 	
 	protected const float PERCEPTION_UPDATE_TIMER_MS = 1200.0;
+	protected const float TACTICS_FIRSTTIME_EVAL = 60000.0;
+	
+	float m_fTacticsEvalLast = -1;
+	float m_fTacticsEvaluations;
 	
 	protected DCO_GroupIdentifierComponent m_GroupIdentifier;
 	protected DCO_GroupIdentifer m_Idf;
@@ -334,37 +341,48 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	
 	protected void evaluateTactics()
 	{		
+		
+		float currentTime = GetGame().GetWorld().GetWorldTime();
+		float deltaTime_ms = 0;
+		
 		bool isOutnumbered = groupMember < targetCount;
 		bool isWinNumber = groupMember > targetCount;
-		bool isHoldingPosition = m_fThreatMeasure < 5.0;
-		bool inCombat = m_fThreatMeasure > 0.001;
-		bool isHighMorale = moraleValue() < 4.0;
+		bool isHoldingPosition = m_fThreatMeasure < 4.0;
+		bool inCombat = m_fThreatMeasure > 0.00001;
+		bool isHighMorale = moraleValue() < 3.5;
 		
 		// DEFENSIVE MAIN FACTOR = isWinNumber && isHoldingPosition
 		// EVASIVE MAIN FACTOR = isOutnumbered
 		// AGGRESIVE MAIN FACTOR = isWinNumber
 		
-		if (isWinNumber && isHoldingPosition && inCombat)
+		if (isFirstContact && inCombat)
+		{
+			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.DEFENSIVE);
+			UpdateTactics();
+			
+			if (m_fTacticsEvalLast != -1.0)
+				deltaTime_ms = currentTime - m_fTacticsEvalLast;
+			
+			m_fTacticsEvaluations += deltaTime_ms;
+
+			if (m_fTacticsEvaluations > TACTICS_FIRSTTIME_EVAL)
+			{
+				isFirstContact = false;
+				m_fTacticsEvaluations -= TACTICS_FIRSTTIME_EVAL;
+			}
+		} else if (isWinNumber && isHoldingPosition && inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.ASSAULT);
 			UpdateTactics();
 		} else if (isHighMorale && isHoldingPosition && inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.ASSAULT);
-			UpdateTactics();	
+			UpdateTactics();
 		} else if (isWinNumber && inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
 			UpdateTactics();
-		} else if (inCombat && isHighMorale)
-		{
-			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
-			UpdateTactics();
-		} else if (isWinNumber && !isHoldingPosition && inCombat)
-		{
-			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
-			UpdateTactics();
-		}    else if (isOutnumbered && inCombat && isHighMorale)
+		} else if (isOutnumbered && inCombat && isHoldingPosition)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.DEFENSIVE);
 			UpdateTactics();
@@ -376,11 +394,15 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
 			UpdateTactics();	
-		} else
+		} else if (!inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
 			UpdateTactics();
+			isFirstContact = true;
+			m_fTacticsEvalLast = -1;
 		}
+		
+		m_fTacticsEvalLast = currentTime;
 	}
 	
 	protected int friendlyOutsideGroup()

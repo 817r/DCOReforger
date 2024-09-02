@@ -18,18 +18,14 @@ class DCO_AIMoraleSystem
 	// Courage is the resistance to Morale 
 	// Round classification (EWeaponType) classification
 	
-	private static const float MORALE_SHOT_RECOVERY 				= 			0.02 * 0.001;	//!< Falloff (percentual drop per milisecond)
+	private static const float MORALE_SHOT_RECOVERY 				= 			0.008 * 0.001;	//!< Falloff (percentual drop per milisecond)
 	private static const float MORALE_SUPPRESSION_RECOVERY 			= 			0.04 * 0.001;
 	private static const float MORALE_ENDANGERED_RECOVERY 			= 			0.02 * 0.001;
 	private static const float LOW_SUPPLY_RECOVERY					=			0.02 * 0.001;
 	private static const float MORALE_RECOVERY_THREAT_STATE			=			0.003 * 0.001;
-	
-	private static const float MORALE_BOOST_LEADER_DISTANCE			=			50;
-	private static const float MORALE_BOOST_FRIENDLY_DISTANCE		=			10;
-	
-	private static const float MORALE_BOOST_LEADER_VALUE			=			0.11;
+
 	private static const float MORALE_BOOST_FRIENDLY_VALUE			=			0.05 * 0.001;
-	private static const float MORALE_BOOST_FIXED_FRIENDLY_VALUE	=			0.4;
+	private static const float MORALE_BOOST_FIXED_FRIENDLY_VALUE	=			0.08;
 	
 	private static const float MORALE_DROP_SUPPRESSION				=			0.12;
 	private static const float MORALE_DROP_FIREFIGHT_FIXED			=			0.2;
@@ -42,8 +38,8 @@ class DCO_AIMoraleSystem
 	private static const float MANIAC_THRESHOLD						=			1.8;
 	private static const float BREAK_THRESHOLD						=			3.7;
 	
-	private static const float ENDANGERED_INCREMENT 				= 			0.000003 * 0.001;
-	private static const float SUPPRESSION_BULLET_INCREMENT			=			0.0002;
+	private static const float ENDANGERED_INCREMENT 				= 			0.0003 * 0.001;
+	private static const float SUPPRESSION_BULLET_INCREMENT			=			0.1;
 	private static const float LOW_SUPPLY							=			0.05;
 	
 	private static const float aimImprovementPerSecond				=			0.035 * 0.001;
@@ -192,7 +188,7 @@ class DCO_AIMoraleSystem
 		}
 		
 		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.INFO, 1.4, color);	
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity,"Morale Total : " + m_fMoraleTotal.ToString() + " | Friendly : " + friendlys.ToString() + " | TAC : " + typename.EnumToString(DCO_GroupTactic, tacs) + " | Threat : " + m_Threat.GetThreatTotal().ToString() + " | E:F = " + m_Utility.targetCount.ToString() + ":" + m_Utility.groupMember.ToString(), EAIDebugCategory.INFO, 1.4, Color.White);	
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity,"Morale Total : " + m_fMoraleTotal.ToString() + " | TAC : " + typename.EnumToString(DCO_GroupTactic, tacs) + " | Threat : " + m_Threat.GetThreatTotal().ToString() + " | E:F = " + m_Utility.targetCount.ToString() + ":" + m_Utility.groupMember.ToString(), EAIDebugCategory.INFO, 1.4, Color.White);	
 	}
 	#endif // WORKBENCH
 	
@@ -313,7 +309,7 @@ class DCO_AIMoraleSystem
 			improvementAims = 0;
 			aimImprovement = 0;
 		}
-		
+		tacs = utility.getTactics();
 		rank = m_Skill.GetCharacterRank(utility.m_OwnerEntity);
 		m_fMoraleTotal = Math.Clamp((m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered + m_fMoraleSupply + m_fMoraleThreatMod) - friendlyMoraleBoost(), 0, 4.2);
 		aimImprovementTotal = Math.Clamp(improvementAims, 0, 10 - aimDecrase);

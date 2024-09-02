@@ -17,9 +17,10 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float MINIMAL_TOLERANCE = 0.003;
 	
 	EAISkill defaultSkill;
+	DCO_CUSTOMRANK ranks;
 	float threatFactor;
-	private SCR_AIInfoComponent m_InfoComponent;
-	private CharacterControllerComponent m_char;
+	SCR_AIInfoComponent m_InfoComponent;
+	CharacterControllerComponent m_char;
 	
 	override void OnInit(AIAgent owner)
 	{
@@ -29,6 +30,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		m_InfoComponent = SCR_AIInfoComponent.Cast(owner.FindComponent(SCR_AIInfoComponent));
 		defaultSkill = m_CombatComponent.GetAISkill();
 		m_char = m_InfoComponent.getCharCont();
+		ranks = DCO_SkillComponent.GetCharacterRank(ent);
 	}
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
@@ -119,6 +121,8 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		
 		tolerance = GetTolerances(entity, targetEntity, angularSize, distance, weaponType, stances);
 		
+		tolerance = Math.Clamp(tolerance,MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE);
+		
 		SetVariableOut(PORT_ERROR_OFFSET, offsetX + offsetY);
 		SetVariableOut(PORT_AIM_POINT, aimPoint);
 		SetVariableOut(PORT_TOLERANCE, tolerance);
@@ -164,6 +168,8 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		float maxTOl;
 		float minTOl;
 		float ADSFactor;
+		float minTOlEx = MINIMAL_TOLERANCE;
+		float maxTOlEx = MAXIMAL_TOLERANCE;
 	
 		// Always use max tolerance in close range
 		if (distance < CLOSE_RANGE_THRESHOLD)
@@ -287,7 +293,38 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			
 			tolerance = (tolerance * (GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor())) - (GetAimImprovement() + ADSFactor);
 		};
-		return Math.Clamp(tolerance, minTOl, maxTOl);
+		
+		switch(ranks)
+		{
+			case DCO_CUSTOMRANK.RECRUIT:
+			{
+				minTOlEx = minTOl * 1.3;
+				maxTOlEx = maxTOl * 1.3;
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE:
+			{
+				minTOlEx = minTOl;
+				maxTOlEx = maxTOl;
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+			{
+				minTOlEx = minTOl / 1.5;
+				maxTOlEx = maxTOl / 1.5;
+				break;
+			}
+			case DCO_CUSTOMRANK.SPECIALIST:
+			{
+				minTOlEx = minTOl / 2;
+				maxTOlEx = maxTOl / 2;
+				break;
+			}
+		}
+		
+		tolerance = Math.Clamp(tolerance, minTOlEx, maxTOlEx);
+		
+		return tolerance;
 	}	
 	
 	override float GetAngularSpeedFactor(IEntity observer, IEntity enemy, out bool setBigTolerance)
@@ -558,7 +595,33 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	float GetAimImprovement()
 	{
-		return m_CombatComponent.getImprovement() * 2;
+		float improvement;
+		
+		switch(ranks)
+		{
+			case DCO_CUSTOMRANK.RECRUIT:
+			{
+				improvement = m_CombatComponent.getImprovement();
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE:
+			{
+				improvement = m_CombatComponent.getImprovement() * 2;
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+			{
+				improvement = m_CombatComponent.getImprovement() * 4;
+				break;
+			}
+			case DCO_CUSTOMRANK.SPECIALIST:
+			{
+				improvement = m_CombatComponent.getImprovement() * 8;
+				break;
+			}
+		}
+		
+		return improvement;
 	}
 	
 	float getADSFactor()
@@ -567,7 +630,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		adsActive = m_char.IsWeaponADS();
 		
 		if (adsActive)
-			return 2.5;
+			return 3;
 		
 		return 0;
 	}

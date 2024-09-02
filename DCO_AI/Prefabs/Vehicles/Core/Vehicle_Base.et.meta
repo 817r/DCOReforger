@@ -1,5 +1,5 @@
 MetaFileClass {
- Name "{93291E72AC23930F}Prefabs/AI/Waypoints/AIWaypoint_Defend.et"
+ Name "{4085446E2B406849}Prefabs/Vehicles/Core/Vehicle_Base.et"
  Configurations {
   EntityTemplateResourceClass PC {
   }

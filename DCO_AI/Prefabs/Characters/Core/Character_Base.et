@@ -3,26 +3,26 @@ SCR_ChimeraCharacter {
  components {
   ChimeraAIControlComponent "{520EA1D2DB109F34}" {
    components {
-    DCO_AIAwareness "{622CC334048DFDE9}" {
+    DCO_AIAwareness "{623C1A41A5DF568F}" {
     }
-    DCO_SkillComponent "{622CC33401065CAF}" {
+    DCO_GroupTacticComponent "{623C1A41B2B4C1B3}" {
+    }
+    DCO_SkillComponent "{623C1A404A2C5F5E}" {
     }
     PerceptionComponent "{54A2CBC75F06064B}" {
-     ForgetDetectedTime 15
      SensorsList {
       EyesSensor "{520EA1D2DB109AAD}" {
        MaxRange 800
        FOVNormal 120
        FOVPeripheral 200
       }
-      EarsSensor "{520EA1D2DB109AA9}" {
-      }
      }
     }
    }
   }
-  SCR_CharacterDamageManagerComponent "{55872AD7B4E959F2}" {
-   m_fRegenScale 1.1
+  SCR_CharacterPerceivableComponent "{566CCE2397E28600}" {
+   VisualFactorStance_Prone 0.1
+   VisualFactorStance_Crouch 0.3
   }
  }
 }
