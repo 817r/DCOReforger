@@ -145,7 +145,8 @@ BehaviorTree "{F86FF905B2478F3C}AI/BehaviorTrees/Chimera/Soldier/Fire_Single.bt"
                Port 12
                PortName "RejectAimingTime"
               }
-              SingleOutputPortContainer SingleOutputPortContainerClass {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
                PortName "ShotSpan"
               }
              }
@@ -161,7 +162,7 @@ BehaviorTree "{F86FF905B2478F3C}AI/BehaviorTrees/Chimera/Soldier/Fire_Single.bt"
                Nodes {
                 AITaskIdle Idle {
                  Name "Idle"
-                 EditorPos 2119.798 2871.596
+                 EditorPos 2121.048 2871.596
                  Group "{6112B96C407BA270}"
                  Period 0.5
                  PeriodRandom 0
@@ -234,7 +235,7 @@ BehaviorTree "{F86FF905B2478F3C}AI/BehaviorTrees/Chimera/Soldier/Fire_Single.bt"
   }
   DecoAiming Aiming {
    Name "Aiming"
-   EditorPos 2190.738 2507.214
+   EditorPos 2145.024 2331.5
    Group "{6112B96C407BA270}"
    AbortType AbortParentNodeFurtherChildren
    InAimThreshold 1
@@ -316,7 +317,7 @@ BehaviorTree "{F86FF905B2478F3C}AI/BehaviorTrees/Chimera/Soldier/Fire_Single.bt"
   }
   VariableReference aimingTolerance {
    VariableType 1
-   EditorPos 1943.976 2667.914
+   EditorPos 1898.262 2492.2
    Group "{6112B96C407BA270}"
   }
   VariableReference offsetCompensated {

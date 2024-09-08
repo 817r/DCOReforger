@@ -4,7 +4,7 @@ class DCO_AIGetAutomated : SCR_BaseFloatValueHolderEditorAttribute
 	//------------------------------------------------------------------------------------------------
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		int automated;
+		bool automated;
 		
 		SCR_EditableEntityComponent editableEntity = SCR_EditableEntityComponent.Cast(item);
 		
@@ -34,7 +34,7 @@ class DCO_AIGetAutomated : SCR_BaseFloatValueHolderEditorAttribute
 		
 		if (editableEntity.GetEntityType() == EEditableEntityType.GROUP)
 		{
-			int automated = var.GetInt();
+			bool automated = var.GetInt();
 		
 			DCO_GroupTacticComponent.setAutomated(editableEntity.GetOwner(), automated);
 			

@@ -1,0 +1,14 @@
+SCR_ScenarioFrameworkTaskClearArea {
+ ID "624A4E439DDE0A35"
+ components {
+  SCR_MapDescriptorComponent "{624A4E439DDE0A6E}" {
+  }
+ }
+ coords 1345.657 2.058 1072.103
+ m_sName "#AR-CombatScenario_ClearAreaTask_Title"
+ m_sDescription "#AR-CombatScenario_ClearAreaTask_Title"
+ m_sMapIconName "Icon_Task_Seize"
+ m_sTaskListIconName "Icon_Task_Seize"
+ m_bNotifyAssignment 1
+ m_bNotifyUnassign 1
+}

@@ -1,0 +1,195 @@
+SCR_ChimeraAIAgent {
+ ID "6248BD4DE678A5E6"
+ components {
+  AIChimeraBehaviorTreeComponent "{6248BD4DE678A5EE}" {
+  }
+  AIFormationComponent "{6248BD4DE678A5DD}" {
+  }
+  AIPathfindingComponent "{6248BD4DE678A5D9}" {
+   NavmeshProject "Soldiers"
+  }
+  AISmartActionUserComponent "{6248BD4DE678A5DA}" {
+  }
+  DCO_AICommanderPersonality "{6248BD4DD30ED4D7}" {
+  }
+  DCO_BaseAICommander "{6248BD4DD093B972}" {
+   controlledGroup {
+   }
+  }
+  SCR_AICommanderUtilityComponent "{6248BD4DEED8A161}" {
+  }
+  SCR_AIConfigComponent "{6248BD4DE678A5C6}" {
+   m_aDefaultReactions {
+    SCR_AIIdleReaction "{6248BD4DE678A5C2}" {
+    }
+   }
+   m_aDangerReactions {
+    SCR_AIDangerReaction_DamageTaken "{6248BD4DE678A5CF}" {
+     m_eType Danger_DamageTaken
+    }
+    SCR_AIDangerReaction_ProjectileHit "{6248BD4DE678A5C9}" {
+     m_eType Danger_ProjectileHit
+    }
+    SCR_AIDangerReaction_WeaponFired "{6248BD4DE678A5CB}" {
+     m_eType Danger_WeaponFire
+    }
+    SCR_AIDangerReaction_Vehicle "{6248BD4DE678A535}" {
+     m_eType Danger_Vehicle
+    }
+    SCR_AIDangerReaction_Explosion "{6248BD4DE678A537}" {
+     m_eType Danger_Explosion
+    }
+    SCR_AIDangerReaction_GrenadeLanding "{6248BD4DE678A536}" {
+     m_eType Danger_GrenadeLanding
+    }
+    SCR_AIDangerReaction_StartedBleeding "{6248BD4DE678A531}" {
+     m_eType Danger_StartedBleeding
+    }
+    SCR_AIDangerReaction_DoorMovement "{6248BD4DE678A538}" {
+     m_eType Danger_DoorMovement
+    }
+    SCR_AIDangerReaction_VehicleHorn "{6248BD4DE678A53A}" {
+     m_eType Danger_VehicleHorn
+    }
+    SCR_AIDangerReaction_MeleeDamageTaken "{6248BD4DE678A524}" {
+     m_eType Danger_MeleeDamageTaken
+    }
+   }
+   m_aGoalReactions {
+    SCR_AIGoalReaction_Attack "{6248BD4DE678A521}" {
+     m_eType ATTACK
+    }
+    SCR_AIGoalReaction_Defend "{6248BD4DE678A523}" {
+     m_eType DEFEND
+    }
+    SCR_AIGoalReaction_GetOutVehicle "{6248BD4DE678A52D}" {
+     m_eType GET_OUT_VEHICLE
+    }
+    SCR_AIGoalReaction_GetInVehicle "{6248BD4DE678A52F}" {
+     m_eType GET_IN_VEHICLE
+    }
+    SCR_AIGoalReaction_Investigate "{6248BD4DE678A528}" {
+     m_eType INVESTIGATE
+    }
+    SCR_AIGoalReaction_Heal "{6248BD4DE678A52A}" {
+     m_eType HEAL
+    }
+    SCR_AIGoalReaction_HealWait "{6248BD4DE678A515}" {
+     m_eType HEAL_WAIT
+    }
+    SCR_AIGoalReaction_Move "{6248BD4DE678A514}" {
+     m_eType MOVE
+    }
+    SCR_AIGoalReaction_MoveInFormation "{6248BD4DE678A519}" {
+     m_eType MOVE_IN_FORMATION
+    }
+    SCR_AIGoalReaction_PerformAction "{6248BD4DE678A51B}" {
+     m_eType PERFORM_ACTION
+    }
+    SCR_AIGoalReaction_Cancel "{6248BD4DE678A51A}" {
+     m_eType CANCEL
+    }
+    SCR_AIGoalReaction_Retreat "{6248BD4DE678A504}" {
+     m_eType RETREAT
+    }
+    SCR_AIGoalReaction_ThrowGrenadeTo "{6248BD4DE678A507}" {
+     m_eType THROW_GRENADE_TO
+    }
+    SCR_AIGoalReaction_PickupInventoryItems "{6248BD4DE678A501}" {
+     m_eType PICKUP_INVENTORY_ITEMS
+    }
+    SCR_AIGoalReaction_ProvideAmmo "{6248BD4DE678A502}" {
+     m_eType PROVIDE_AMMO
+    }
+    SCR_AIGoalReaction_AttackCluster "{6248BD4DE678A50D}" {
+     m_eType ATTACK_CLUSTER
+    }
+    SCR_AIGoalReaction_CoverCluster "{6248BD4DE678A50C}" {
+     m_eType COVER_CLUSTER
+    }
+    SCR_AIGoalReaction_AttackClusterDone "{6248BD4DE678A50F}" {
+     m_eType ATTACK_CLUSTER_DONE
+    }
+    SCR_AIGoalReaction_Suppress "{6248BD4DE678A509}" {
+     m_eType SUPPRESS
+    }
+    SCR_AIGoalReaction_OpenNavlinkDoor "{6248BD4DE678A508}" {
+     m_eType OPEN_NAVLINK_DOOR
+    }
+    SCR_AIGoalReaction_Follow "{6248BD4DE678A50B}" {
+     m_eType FOLLOW
+    }
+    SCR_AIGoalReaction_FireIllumFlareAt "{6248BD4DE678A50A}" {
+     m_eType FIRE_ILLUM_FLARE
+    }
+   }
+   m_Reaction_UnknownTarget SCR_AITargetReaction_Unknown "{6248BD4DE678A577}" {
+   }
+   m_Reaction_RetreatFromTarget SCR_AITargetReaction_RetreatFromEnemy "{6248BD4DE678A571}" {
+   }
+   m_Reaction_SelectedTargetChanged SCR_AITargetReaction_SelectedTargetChanged "{6248BD4DE678A573}" {
+   }
+   m_aWeaponTypeSelectionConfig {
+    SCR_AIWeaponTypeSelectionConfig "{6248BD4DE678A572}" {
+     m_eWeaponType WT_FRAGGRENADE
+     m_sBehaviorTree "{D899528454AD76C3}AI/BehaviorTrees/Chimera/Soldier/Attack_Throwable.bt"
+    }
+   }
+   m_aWeaponTypeHandlingConfig {
+    SCR_AIWeaponTypeHandlingConfig "{6248BD4DE678A578}" {
+     m_eWeaponType WT_RIFLE
+     m_iLowMagCountThreshold 3
+     m_iMinSuppressiveMagCountThreshold 3
+     m_fBaseStabilizationTime 0.65
+     m_fBaseRejectionTime 0.5
+    }
+    SCR_AIWeaponTypeHandlingConfig "{6248BD4DE678A57A}" {
+     m_eWeaponType WT_MACHINEGUN
+     m_iMinSuppressiveMagCountThreshold 2
+    }
+    SCR_AIWeaponTypeHandlingConfig "{6248BD4DE678A565}" {
+     m_eWeaponType WT_GRENADELAUNCHER
+     m_iLowMagCountThreshold 3
+     m_iMinSuppressiveMagCountThreshold 2
+     m_fBaseStabilizationTime 0.9
+     m_fBaseRejectionTime 10
+    }
+    SCR_AIWeaponTypeHandlingConfig "{6248BD4DE678A567}" {
+     m_eWeaponType WT_SNIPERRIFLE
+     m_iMinSuppressiveMagCountThreshold 2
+     m_fBaseStabilizationTime 1.7
+     m_fBaseRejectionTime 20
+    }
+    SCR_AIWeaponTypeHandlingConfig "{6248BD4DE678A56A}" {
+     m_eWeaponType WT_ROCKETLAUNCHER
+     m_fBaseStabilizationTime 2
+     m_fBaseRejectionTime 10
+    }
+    SCR_AIWeaponTypeHandlingConfig "{6248BD4DE678A554}" {
+     m_eWeaponType WT_HANDGUN
+     m_fBaseStabilizationTime 0.56
+    }
+    SCR_AIWeaponTypeHandlingConfig "{6248BD4DE678A557}" {
+     m_eWeaponType WT_FRAGGRENADE
+     m_fBaseStabilizationTime 3
+     m_fBaseRejectionTime 10
+    }
+    SCR_AIWeaponTypeHandlingConfig "{6248BD4DE678A556}" {
+     m_eWeaponType WT_SMOKEGRENADE
+     m_fBaseStabilizationTime 3
+     m_fBaseRejectionTime 10
+    }
+   }
+   m_DefaultWeaponTypeHandlingConfig SCR_AIWeaponTypeHandlingConfig "{6248BD4DE678A550}" {
+   }
+  }
+  SCR_AIInfoComponent "{6248BD4DE678A55D}" {
+  }
+  SCR_AIUtilityComponent "{624A105F2E47C1BA}" {
+  }
+  SCR_MailboxComponent "{6248BD4DE678A55E}" {
+  }
+ }
+ coords 81.076 2.001 227.147
+ DangerEventRange 1000
+}

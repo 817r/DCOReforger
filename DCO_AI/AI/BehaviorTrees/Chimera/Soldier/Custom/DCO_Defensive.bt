@@ -50,7 +50,7 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
           }
           AITaskSetVariable "Set Variable" {
            Name "Set Variable"
-           EditorPos 789.262 433.964
+           EditorPos 789.262 431.964
            ClearVariable 1
            OutVariable 11
           }
@@ -174,8 +174,8 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
              Name "Idle"
              EditorPos 2480.786 1782.714
              Group "{622E1C12D0A820AA}"
-             Period 50
-             PeriodRandom 20
+             Period 300
+             PeriodRandom 60
             }
            }
            Group "{622E1C12D0A820AA}"
@@ -307,7 +307,7 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
   }
   SCR_AIGetCombatMoveState "SCR_AI Get Combat Move State" {
    Name "SCR_AI Get Combat Move State"
-   EditorPos 2653.214 1770
+   EditorPos 2655.214 1758
    OutPorts {
     SingleOutputPortContainer SingleOutputPortContainer {
      Port -1

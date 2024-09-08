@@ -11,13 +11,15 @@ class DCO_AIAwareness : ScriptComponent
 	protected CharacterVicinityComponent m_charVic;
 	protected SCR_InventoryStorageManagerComponent inventorys;
 	
-	ref array<ref SCR_AITargetInfo> friendly = new array<ref SCR_AITargetInfo>;
-	ref array<IEntity> friendlyBTarget = new array<IEntity>;
+	ref array<ref SCR_AITargetInfo> friendly = {};
+	ref array<IEntity> friendlyBTarget = {};
+	ref array<IEntity> detectedItems = {};
 	
 	[Attribute(defvalue: "150", uiwidget: UIWidgets.Auto, desc: "Awareness Friendly Radius")]
 	float searchRad;
 	
-	float itemDetected;
+	[Attribute(defvalue: "70", uiwidget: UIWidgets.Auto, desc: "Awareness Friendly Radius")]
+	float itemSearchRad;
 	
 	protected void getFriendlyEvaluation()
 	{
@@ -81,13 +83,13 @@ class DCO_AIAwareness : ScriptComponent
 				return;
 			}
 		}
-	}
+	}		
 	
 	void manageDetected()
 	{
-
+		
 	}
-	
+
 	void initialize(SCR_AIUtilityComponent util)
 	{
 		m_UtilityComp = util;
@@ -107,6 +109,6 @@ class DCO_AIAwareness : ScriptComponent
 	
 	float getNumberFriendlyRecognized()
 	{
-		return friendlyBTarget.Count();
+		return detectedItems.Count();
 	}
 }

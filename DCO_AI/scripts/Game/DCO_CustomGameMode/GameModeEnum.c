@@ -1,6 +1,0 @@
-enum missionType {
-	AREA_CAPTURE,
-	ELEMINATE_HVT,
-	DESTROY_SUPPLY,
-	UNDEFINED
-}

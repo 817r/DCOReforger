@@ -5,9 +5,11 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	DCO_SkillComponent m_DCO_Skill;
 	protected SCR_AIGroup m_MyGroup;
 	DCO_AIAwareness m_Awareness;
+	protected DCO_BaseAICommander commander;
 	
 	int groupMember;
 	int targetCount;
+	bool isCommander;
 	
 	DCO_GroupIdentifer identifier;
 	DCO_GroupTactic groupTac;
@@ -41,6 +43,11 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_CombatComponent.UpdatePerceptionFactor(m_PerceptionComponent, m_ThreatSystem);
 		m_DCOMoraleSystem.Update(this, deltaTime);
 		m_Awareness.Update();
+		
+		if (isCommander)
+		{
+			commander.Update(this);
+		}
 
 		// Read messages
 		AIMessage msgBase = m_Mailbox.ReadMessage(true);
@@ -199,6 +206,13 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 			m_Awareness.initialize(this);
 		m_DCO_Skill = DCO_SkillComponent.Cast(m_OwnerEntity.FindComponent(DCO_SkillComponent));
 		m_DCOMoraleSystem = new DCO_AIMoraleSystem(this);	
+		commander = DCO_BaseAICommander.Cast(agent.FindComponent(DCO_BaseAICommander));
+		if (commander)
+		{
+			commander.initialize(owner);
+			isCommander = true;
+		}
+			
 	}
 	
 	DCO_SkillComponent getSkillComp()

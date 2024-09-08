@@ -14,6 +14,7 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 	protected CharacterControllerComponent m_CharacterController;
 	
 	IEntity myEnt;
+	AIGroup myGroup;
 	
 	protected bool m_bPushedMoveRequest = false;
 	
@@ -28,6 +29,8 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 		
 		if (myEntity)
 			m_CharacterController = CharacterControllerComponent.Cast(myEntity.FindComponent(CharacterControllerComponent));
+		
+		myGroup = owner.GetParentGroup();
 	}
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
@@ -55,12 +58,12 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 		{		
 			SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 			
-			vector myPos = myEnt.GetOrigin();
+			vector myLeaderPos = myGroup.GetLeaderEntity().GetOrigin();
 			
 			rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
 			
 			rq.m_vTargetPos = threatPos;
-			rq.m_vMovePos = myPos;
+			rq.m_vMovePos = myLeaderPos;
 			rq.m_bTryFindCover = true;
 			rq.m_bUseCoverSearchDirectivity = true;
 			rq.m_bCheckCoverVisibility = true;
@@ -71,7 +74,7 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 			rq.m_fCoverSearchDistMin = 3;
 			rq.m_fMoveDistance = Math.RandomFloat(0.2, 1.0) * COVER_SEARCH_DIST_MAX;
-			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+			rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;

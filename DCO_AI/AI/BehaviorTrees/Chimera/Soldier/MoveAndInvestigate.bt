@@ -131,7 +131,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
              Nodes {
               RunBT RunBT {
                Name "RunBT"
-               EditorPos 1565.559 1372.084
+               EditorPos 1578.892 1365.417
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port 29

@@ -16,29 +16,28 @@ class DCO_War_GameMode : SCR_BaseGameModeComponent
 
 	//! Array of all areas registered within this manager.
 	protected ref array<DCO_ObjectiveArea> m_aAreas = {};
-
-	//! Array of all spawn areas registered within this manager.
-	protected ref array<DCO_AreaObjectiveSpawn> m_aSpawnAreas = {};
-
+	
 	//! If enabled custom weather Id will be used on session start. Authority only.
-	[Attribute(defvalue: "0", desc: "If enabled, custom weather Id will be used. Authority only.", category: "CaptureAndHold: Environment")]
+	[Attribute(defvalue: "0", desc: "If enabled, custom weather Id will be used. Authority only.", category: "Wargame: Environment")]
 	protected bool m_bUseCustomWeather;
 
 	//! Weather IDs are the same as used in the TimeAndWeatherManager. Weather set on game start. Authority only.
-	[Attribute(defvalue: "", desc: "Weather IDs are the same as used in the TimeAndWeatherManager. Weather set on game start. Authority only.", category: "CaptureAndHold: Environment")]
+	[Attribute(defvalue: "", desc: "Weather IDs are the same as used in the TimeAndWeatherManager. Weather set on game start. Authority only.", category: "Wargame: Environment")]
 	protected string m_sCustomWeatherId;
 
 	//! If enabled custom time of the day will be used on session start. Authority only.
-	[Attribute(defvalue: "0", desc: "If enabled, custom time of the day will be used. Authority only.", category: "CaptureAndHold: Environment")]
+	[Attribute(defvalue: "0", desc: "If enabled, custom time of the day will be used. Authority only.", category: "Wargame: Environment")]
 	protected bool m_bUseCustomTime;
 
 	//! Time of the day set on game start. Authority only.
-	[Attribute(defvalue: "7", desc: "Time of the day set on game start. Authority only.", category: "CaptureAndHold: Environment", params: "0 24 0.01")]
+	[Attribute(defvalue: "7", desc: "Time of the day set on game start. Authority only.", category: "Wargame: Environment", params: "0 24 0.01")]
 	protected float m_fCustomTimeOfTheDay;
 	
 	//! If enabled then capture status is persistent
 	[Attribute(defvalue: "0", desc: "Should actions be persistent (sticky) in the sense that they are not cleared when players leave the area?")]
 	protected bool m_bPersistentAreaFactions;
+	
+	protected ref array<DCO_BaseAICommander> m_lcommander = {};
 
 	//------------------------------------------------------------------------------------------------
 	/*!
@@ -59,26 +58,26 @@ class DCO_War_GameMode : SCR_BaseGameModeComponent
 		if (indexOf != -1)
 			m_aAreas.Remove(indexOf);
 	}
-
+	
 	//------------------------------------------------------------------------------------------------
 	/*!
-		Register a spawn area to this manager. Area must be unique.
+		Register a capture area to this manager. Area must be unique.
 	*/
-	void RegisterSpawnArea(DCO_AreaObjectiveSpawn spawnArea)
+	void RegisterCommander(DCO_BaseAICommander commander)
 	{
-		m_aSpawnAreas.Insert(spawnArea);
+		m_lcommander.Insert(commander);
 	}
 
 	//------------------------------------------------------------------------------------------------
 	/*!
 		Unregisters a capture area from this manager.
 	*/
-	void UnregisterSpawnArea(DCO_AreaObjectiveSpawn spawnArea)
+	void unregisterCommander(DCO_BaseAICommander commander)
 	{
-		int indexOf = m_aSpawnAreas.Find(spawnArea);
+		int indexOf = m_lcommander.Find(commander);
 		if (indexOf != -1)
-			m_aSpawnAreas.Remove(indexOf);
-	}
+			m_lcommander.Remove(indexOf);
+	}	
 
 	//------------------------------------------------------------------------------------------------
 	/*!
@@ -91,29 +90,11 @@ class DCO_War_GameMode : SCR_BaseGameModeComponent
 
 	//------------------------------------------------------------------------------------------------
 	/*!
-		Returns the number of registered spawn areas.
-	*/
-	int GetSpawnAreaCount()
-	{
-		return m_aSpawnAreas.Count();
-	}
-
-	//------------------------------------------------------------------------------------------------
-	/*!
 		Returns an area at given index.
 	*/
 	DCO_ObjectiveArea GetArea(int index)
 	{
 		return m_aAreas[index];
-	}
-
-	//------------------------------------------------------------------------------------------------
-	/*!
-		Returns a spawn area at given index.
-	*/
-	DCO_AreaObjectiveSpawn GetSpawnArea(int index)
-	{
-		return m_aSpawnAreas[index];
 	}
 
 	//------------------------------------------------------------------------------------------------
@@ -133,52 +114,12 @@ class DCO_War_GameMode : SCR_BaseGameModeComponent
 
 	//------------------------------------------------------------------------------------------------
 	/*!
-		Fills the provided array with all registered spawn areas and returns the count.
-	*/
-	int GetAreas(notnull array<DCO_AreaObjectiveSpawn> outAreas)
-	{
-		int count = 0;
-		foreach (DCO_AreaObjectiveSpawn area : m_aSpawnAreas)
-		{
-			outAreas.Insert(area);
-			++count;
-		}
-		return count;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	/*!
 		Returns true when factions should be persistent, ie. left unchanged when last player(s) leave
 		the capture area.
 	*/
 	bool GetIsAreaFactionPersistent()
 	{
 		return m_bPersistentAreaFactions;
-	}
-
-	//------------------------------------------------------------------------------------------------
-	/*!
-		Initializes this manager component and hooks up events.
-	*/
-	protected override void OnPostInit(IEntity owner)
-	{
-		super.OnPostInit(owner);
-		SetEventMask(owner, EntityEvent.INIT);
-
-		// This is not the best way of solving this problem,
-		// but for a small game mode like this it's completely fine.
-		SCR_MapEntity.GetOnMapOpen().Insert(OnMapOpen);
-	}
-
-	//------------------------------------------------------------------------------------------------
-	/*!
-		Unhooks events.
-	*/
-	protected override void OnDelete(IEntity owner)
-	{
-		super.OnDelete(owner);
-
-		SCR_MapEntity.GetOnMapOpen().Remove(OnMapOpen);
 	}
 
 	//------------------------------------------------------------------------------------------------
@@ -193,91 +134,6 @@ class DCO_War_GameMode : SCR_BaseGameModeComponent
 
 		// Zoom and pan to objectives almost immediately
 		mapEntity.ZoomPanSmooth(zoom, x, z, 0.001);
-	}
-
-	//------------------------------------------------------------------------------------------------
-	/*!
-		Finds the average center of all objectives and pans and zooms the map to it.
-	*/
-	protected void OnMapOpen(MapConfiguration config)
-	{
-		// Get average of all positions
-		float x;
-		float z;
-		int count;
-		foreach (DCO_ObjectiveArea area : m_aAreas)
-		{
-			vector worldPos = area.GetWorldObjectiveCenter();
-			x += worldPos[0];
-			z += worldPos[2];
-			++count;
-		}
-
-		// No can do!
-		if (count == 0)
-			return;
-
-		x /= (float)count;
-		z /= (float)count;
-
-		SCR_MapEntity mapEntity = SCR_MapEntity.GetMapInstance();
-		if (!mapEntity)
-			return;
-
-		CanvasWidget mapWidget = mapEntity.GetMapWidget();
-		vector usize = mapWidget.GetSizeInUnits();
-		float zoomVal = usize[0] / (usize[0] * mapWidget.PixelPerUnit());
-
-		// Unfortunately we need to "override" the default respawn menu focus,
-		// currently not aware of a nicer way - perhaps it will begone in some future update :)
-		GetGame().GetCallqueue().CallLater(DoPanZoomMap, 100, false, x, z, zoomVal);
-	}
-
-	//------------------------------------------------------------------------------------------------
-	/*!
-		Called when provided player dies.
-	*/
-	protected override void OnPlayerKilled(int playerId, IEntity playerEntity, IEntity killerEntity, notnull Instigator killer)
-	{
-		super.OnPlayerKilled(playerId, playerEntity, killer);
-
-		SCR_ChimeraCharacter character = SCR_ChimeraCharacter.Cast(playerEntity);
-		if (!character)
-			return;
-
-		Faction faction = character.GetFaction();
-		if (!faction)
-			return;
-
-		foreach (SCR_SpawnArea area : m_aSpawnAreas)
-		{
-			Faction areaFaction = area.GetAffiliatedFaction();
-			if (!areaFaction)
-				continue;
-
-			if (!areaFaction.IsFactionFriendly(faction))
-				continue;
-
-			// We have to query ourselves, the character is dead and filtered out
-			if (!area.QueryEntityInside(character))
-				continue;
-
-			// Character died in a friendly spawn zone, therefore
-			// let's clear their respawn timer to reduce frustration
-			// of spawn / team kills
-			SCR_BaseGameMode gameMode = GetGameMode();
-			if (!gameMode)
-				return;
-
-			// Unless SCR_RespawnTimerComponent handles individual times on top of faction times,
-			// this will have no impact unfortunately
-			SCR_RespawnTimerComponent respawnTimer = SCR_RespawnTimerComponent.Cast(gameMode.FindComponent(SCR_RespawnTimerComponent));
-			if (!respawnTimer)
-				return;
-
-			// Reset to 0
-			respawnTimer.SetRespawnTime(playerId, 0.0);
-		}
 	}
 
 	//------------------------------------------------------------------------------------------------
@@ -350,6 +206,12 @@ class DCO_War_GameMode : SCR_BaseGameModeComponent
 	/*!
 		Initialize the manager.
 	*/
+	
+	void getAllObjectiveArea(out array<DCO_ObjectiveArea> area)
+	{
+		area = m_aAreas;
+	}
+	
 	protected override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
