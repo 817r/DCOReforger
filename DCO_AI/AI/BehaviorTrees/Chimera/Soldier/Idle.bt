@@ -17,8 +17,9 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos -1620.198 -64.543
+       EditorPos -1620.198 -62.876
        BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_IdleCover.bt"
+       AlwaysReinit 1
       }
       RunBT RunBT {
        Name "RunBT"

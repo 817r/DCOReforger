@@ -1,0 +1,140 @@
+GenericEntity : "{6E9190BC2713551D}Prefabs/Compositions/Slotted/BuildableComposition_Base.et" {
+ ID "5282DCB5DFC8538F"
+ components {
+  RigidBody "{5E96A067A67C5029}" {
+   Geometries {
+    PhysicsBoxGeometry UserAction {
+     Extents 10 0.5 5
+    }
+   }
+  }
+  SCR_CampaignBuildingCompositionComponent "{5E96A067C097D570}" {
+   m_AudioSourceConfigurationDespawn SCR_AudioSourceConfiguration "{5E96A0643BAAEAF8}" {
+    m_sSoundEventName "SOUND_DESTROY_SANDBAG"
+   }
+  }
+  SCR_EditableEntityComponent "{62330D8FC17D3FB0}" {
+   m_Flags PLACEABLE
+  }
+  ActionsManagerComponent "{5D66ED1096104FD8}" {
+   additionalActions {
+    SCR_CampaignBuildingDisassemblyUserAction "{5D66ED1086234C38}" {
+     ActionTitle "Disassembly"
+    }
+   }
+  }
+  Hierarchy "{622A14DD8ACF9E8B}" {
+  }
+ }
+ coords 0 0 0
+ {
+  $grp GenericEntity : "{35F2A674E602198F}Prefabs/Props/Military/Sandbags/Sandbag_01_end_high_plastic.et" {
+   {
+    ID "622A14DD8ACD3080"
+    components {
+     Hierarchy "{622A14DD8ACF9E80}" {
+      Enabled 1
+     }
+    }
+    coords -1.48 0 0
+    angleY 3.846
+   }
+   {
+    ID "622A14DD8ACD3083"
+    components {
+     Hierarchy "{622A14DD8ACF9EB8}" {
+      Enabled 1
+     }
+    }
+    coords 3.1 0 0
+    angleY -4.032
+   }
+   {
+    ID "622A14DD8ACD4070"
+    components {
+     Hierarchy "{622A14DD8ACF9EAD}" {
+      Enabled 1
+     }
+    }
+    coords 1.759 0 0
+    angleY -174.818
+   }
+   {
+    ID "622A14DD8ACD407F"
+    components {
+     Hierarchy "{622A14DD8ACF9EB6}" {
+      Enabled 1
+     }
+    }
+    coords -2.841 0 0
+    angleY 175.8
+   }
+  }
+  $grp GenericEntity : "{78AB783E28EDEBD4}Prefabs/Props/Military/Sandbags/Sandbag_01_long_plastic.et" {
+   {
+    ID "622A14DD8ACD8AD0"
+    components {
+     Hierarchy "{622A14DD8ACF9EA4}" {
+      Enabled 1
+     }
+    }
+    coords 0.082 0 0
+    angleY -0.884
+   }
+   {
+    ID "622A14DDCA7BADF7"
+    components {
+     Hierarchy "{622A14DD8ACF9EA4}" {
+      Enabled 1
+     }
+    }
+    coords 0.349 0.447 0.006
+    angleY -0.884
+   }
+  }
+  $grp GenericEntity : "{86BA5E5CD528D5BC}Prefabs/Props/Military/Sandbags/Sandbag_01_end_plastic.et" {
+   {
+    ID "622A14DD8ACD8AD7"
+    components {
+     Hierarchy "{622A14DD8ACF9EA2}" {
+      Enabled 1
+     }
+    }
+    coords -3.601 0 -0.262
+    angleY 150.398
+   }
+   {
+    ID "622A14DD8ACDEA53"
+    components {
+     Hierarchy "{622A14DD8ACF9ED9}" {
+      Enabled 1
+     }
+    }
+    coords 4.032 0 0
+    angleY -1.81
+   }
+  }
+  $grp GenericEntity : "{F76BD5785C7FE191}Prefabs/Systems/Compositions/PatrolPoint/PatrolPoint_ObservationPoint.et" {
+   {
+    ID "622A14DD8ACF9FF4"
+    components {
+     Hierarchy "{622A14DD8ACF9EE7}" {
+      Enabled 1
+     }
+    }
+    coords 2.063 0 -1.298
+    angleY -104.011
+   }
+   {
+    ID "622A14DD8ACF9FF5"
+    components {
+     Hierarchy "{622A14DD8ACF9EE8}" {
+      Enabled 1
+     }
+    }
+    coords -1.536 0 -1.229
+    angleY -90.274
+   }
+  }
+ }
+}

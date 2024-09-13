@@ -1,6 +1,6 @@
 class SCR_AIMoveFromSuppressBehavior : SCR_AIMoveFromDangerBehavior
 {
-	float timeOut = 3000;
+	float timeOut = 2000;
 	float m_fBehaviorTimeout;
 	
 	void SCR_AIMoveFromSuppressBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, vector dangerPos, IEntity dangerEntity)
@@ -10,7 +10,7 @@ class SCR_AIMoveFromSuppressBehavior : SCR_AIMoveFromDangerBehavior
 		m_Stance.m_Value = ECharacterStance.STAND;
 		m_MovementType.m_Value = EMovementType.SPRINT;
 		m_bIsInterruptable = false;
-		m_bAllowLook = false;
+		m_bAllowLook = true;
 
 		m_sBehaviorTree = "{6F9819BF7D1A5A72}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_MoveFromSuppressiveFire.bt";
 	}

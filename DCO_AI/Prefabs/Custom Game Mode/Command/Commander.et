@@ -1,0 +1,16 @@
+SCR_ChimeraCharacter : "{E45F1E163F5CA080}Prefabs/Characters/Factions/BLUFOR/US_Army/Character_US_SL.et" {
+ ID "51FA90A59C87A851"
+ components {
+  ChimeraAIControlComponent "{520EA1D2DB109F34}" {
+   components {
+    DCO_SkillComponent "{623C1A404A2C5F5E}" {
+     m_ERank PRIVATE_FIRST_CLASS
+    }
+   }
+   Agenttemplate "{D7BAD1815F007DFB}AI/AIAgents/DCO_Commander.et"
+   EnableAI 1
+   ParentAIGroupName "Crossroad"
+  }
+ }
+ coords 6425.576 160.906 6431.855
+}

@@ -10,15 +10,17 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	static const float AIMING_ERROR_SCALE = 1.0; // TODO: game master and server option
 	static const float AIMING_ERROR_FACTOR_MIN = 0.45; 
-	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.2;
-	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.02;
+	static const float AIMING_ERROR_FACTOR_MAX = 1.5;
 	
-	static const float MAXIMAL_TOLERANCE = 12.0;	
-	static const float MINIMAL_TOLERANCE = 0.1;
+	static const float MAXIMAL_TOLERANCE = 5.0;	
+	static const float MINIMAL_TOLERANCE = 0.003;
 	
 	EAISkill defaultSkill;
+	DCO_CUSTOMRANK ranks;
 	float threatFactor;
-	private SCR_AIInfoComponent m_InfoComponent;
+	SCR_AIInfoComponent m_InfoComponent;
+	CharacterControllerComponent m_char;
 	
 	override void OnInit(AIAgent owner)
 	{
@@ -27,6 +29,8 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			m_CombatComponent = SCR_AICombatComponent.Cast(ent.FindComponent(SCR_AICombatComponent));		
 		m_InfoComponent = SCR_AIInfoComponent.Cast(owner.FindComponent(SCR_AIInfoComponent));
 		defaultSkill = m_CombatComponent.GetAISkill();
+		m_char = m_InfoComponent.getCharCont();
+		ranks = DCO_SkillComponent.GetCharacterRank(ent);
 	}
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
@@ -117,6 +121,8 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		
 		tolerance = GetTolerances(entity, targetEntity, angularSize, distance, weaponType, stances);
 		
+		tolerance = Math.Clamp(tolerance,MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE);
+		
 		SetVariableOut(PORT_ERROR_OFFSET, offsetX + offsetY);
 		SetVariableOut(PORT_AIM_POINT, aimPoint);
 		SetVariableOut(PORT_TOLERANCE, tolerance);
@@ -143,17 +149,17 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		if (!perceivable)
 			return 1.0;
 		
-		if (perceivable.GetIlluminationFactor() < 0.8)
-			return 2.2;
+		if (perceivable.GetIlluminationFactor() < 0.7)
+			return 1.5;
 		
 		else if (perceivable.GetIlluminationFactor() < 0.5)
 			return 2.4;
 		
 		else if (perceivable.GetIlluminationFactor() < 0.3)
-			return 2.6;
+			return 2.7;
 		
 		return 1.0;
-	}
+	} 
 	
 	float GetTolerances(IEntity observer, IEntity target, float angularSize, float distance, EWeaponType weaponType, ECharacterStance stance)
 	{
@@ -162,6 +168,8 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		float maxTOl;
 		float minTOl;
 		float ADSFactor;
+		float minTOlEx = MINIMAL_TOLERANCE;
+		float maxTOlEx = MAXIMAL_TOLERANCE;
 	
 		// Always use max tolerance in close range
 		if (distance < CLOSE_RANGE_THRESHOLD)
@@ -176,7 +184,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				}
 				default:
 				{
-					maxTOl = MAXIMAL_TOLERANCE / 2;
+					maxTOl = MAXIMAL_TOLERANCE / 5;
 					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
@@ -189,32 +197,32 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			{
 				case EWeaponType.WT_RIFLE:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 15;
+					maxTOl = MAXIMAL_TOLERANCE * 1;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_MACHINEGUN:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.25;
-					minTOl = MINIMAL_TOLERANCE * 20;
+					maxTOl = MAXIMAL_TOLERANCE * 1;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_ROCKETLAUNCHER:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.2;
-					minTOl = MINIMAL_TOLERANCE * 20;
+					maxTOl = MAXIMAL_TOLERANCE * 1;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_SNIPERRIFLE:
 				{
 					maxTOl = MAXIMAL_TOLERANCE / 6;
-					minTOl = MINIMAL_TOLERANCE * 8;
+					minTOl = MINIMAL_TOLERANCE;
 					break;
 				}
 				case EWeaponType.WT_GRENADELAUNCHER:
 				{
 					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 40;
+					minTOl = MINIMAL_TOLERANCE * 45;
 					break;
 				}
 				default:
@@ -233,26 +241,26 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			{
 				case EWeaponType.WT_RIFLE:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.1;
-					minTOl = MINIMAL_TOLERANCE * 25;
+					maxTOl = MAXIMAL_TOLERANCE;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_MACHINEGUN:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.25;
-					minTOl = MINIMAL_TOLERANCE * 30;
+					maxTOl = MAXIMAL_TOLERANCE;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_ROCKETLAUNCHER:
 				{
-					maxTOl = MAXIMAL_TOLERANCE * 1.2;
-					minTOl = MINIMAL_TOLERANCE * 27;
+					maxTOl = MAXIMAL_TOLERANCE;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_SNIPERRIFLE:
 				{
 					maxTOl = MAXIMAL_TOLERANCE / 4;
-					minTOl = MINIMAL_TOLERANCE * 12;
+					minTOl = MINIMAL_TOLERANCE * 3;
 					break;
 				}
 				case EWeaponType.WT_GRENADELAUNCHER:
@@ -276,16 +284,47 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		tolerance *= GetAngularSpeedFactor(observer, target, setMaxTolerance);
 				
 		if (setMaxTolerance)
-			return MAXIMAL_TOLERANCE;
+			return MAXIMAL_TOLERANCE/2;
 		else 
 		{
 			// weapon type tolerance modifier
 			if(m_CombatComponent.GetCurrentWeapon())
-				ADSFactor = getADSFactor(m_CombatComponent.GetCurrentWeapon());
+				ADSFactor = getADSFactor();
 			
 			tolerance = (tolerance * (GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor())) - (GetAimImprovement() + ADSFactor);
 		};
-		return Math.Clamp(tolerance, minTOl, maxTOl);
+		
+		switch(ranks)
+		{
+			case DCO_CUSTOMRANK.RECRUIT:
+			{
+				minTOlEx = minTOl * 1.3;
+				maxTOlEx = maxTOl * 1.3;
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE:
+			{
+				minTOlEx = minTOl;
+				maxTOlEx = maxTOl;
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+			{
+				minTOlEx = minTOl / 1.5;
+				maxTOlEx = maxTOl / 1.5;
+				break;
+			}
+			case DCO_CUSTOMRANK.SPECIALIST:
+			{
+				minTOlEx = minTOl / 2;
+				maxTOlEx = maxTOl / 2;
+				break;
+			}
+		}
+		
+		tolerance = Math.Clamp(tolerance, minTOlEx, maxTOlEx);
+		
+		return tolerance;
 	}	
 	
 	override float GetAngularSpeedFactor(IEntity observer, IEntity enemy, out bool setBigTolerance)
@@ -323,37 +362,37 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case EAISkill.RECRUIT :
 			{
-				sigma = 2.75;
+				sigma = 2.73;
 				break;
 			}
 			case EAISkill.ROOKIE :
 			{
-				sigma = 1.45;
+				sigma = 1.43;
 				break;
 			}
 			case EAISkill.REGULAR :
 			{
-				sigma = 1.05;
+				sigma = 1.03;
 				break;
 			}
 			case EAISkill.TRAINED :
 			{
-				sigma = 1.35;
+				sigma = 1.33;
 				break;
 			}
 			case EAISkill.VETERAN :
 			{
-				sigma = 0.77;
+				sigma = 0.75;
 				break;
 			}
 			case EAISkill.EXPERT :
 			{
-				sigma = 0.52;
+				sigma = 0.5;
 				break;
 			}
 			case EAISkill.CYLON :
 			{
-				return 0.42;
+				return 0.4;
 			}
 		}
 		
@@ -492,15 +531,15 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case EWeaponType.WT_RIFLE:
 			{
-				return 1.1;
+				return 1;
 			}
 			case EWeaponType.WT_MACHINEGUN:
 			{
-				return 3.1;
+				return 3;
 			}
 			case EWeaponType.WT_HANDGUN:
 			{
-				return 1.35;
+				return 1;
 			}
 			case EWeaponType.WT_FRAGGRENADE:
 			{
@@ -533,15 +572,15 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		{
 			case ECharacterStance.STAND:
 			{
-				return 1.4;
+				return 1.2;
 			}
 			case ECharacterStance.CROUCH:
 			{
-				return 1.2;
+				return 1.0;
 			}
 			case ECharacterStance.PRONE:
 			{
-				return 2.0;
+				return 1.4;
 			}
 		}
 		return 1.0;
@@ -549,39 +588,51 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	float GetHealthTypeFactor()
 	{
-		float currHealth = m_CombatComponent.getCurrentHealth();
-		float maxHealth = m_CombatComponent.GetMaxHealth();
-		
-		if (currHealth < maxHealth)
-		{
-			return 0.5;
-		} 
-		else if (currHealth < (maxHealth - maxHealth/4))
-		{
-			return 1.1;
-		} 
-		else if (currHealth < maxHealth/2)
-		{
-			return 1.4;
-		}
-
-		return 0;
+		float rightArm = m_CombatComponent.GetAIInfoComponent().getCharDamageComp().GetGroupHealthScaled(ECharacterHitZoneGroup.RIGHTARM);
+		float leftArm = m_CombatComponent.GetAIInfoComponent().getCharDamageComp().GetGroupHealthScaled(ECharacterHitZoneGroup.LEFTARM);
+		return 2 - (rightArm + leftArm);
 	}
 	
 	float GetAimImprovement()
 	{
-		return m_CombatComponent.getImprovement() * 1.25;
+		float improvement;
+		
+		switch(ranks)
+		{
+			case DCO_CUSTOMRANK.RECRUIT:
+			{
+				improvement = m_CombatComponent.getImprovement();
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE:
+			{
+				improvement = m_CombatComponent.getImprovement() * 2;
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
+			{
+				improvement = m_CombatComponent.getImprovement() * 4;
+				break;
+			}
+			case DCO_CUSTOMRANK.SPECIALIST:
+			{
+				improvement = m_CombatComponent.getImprovement() * 8;
+				break;
+			}
+		}
+		
+		return improvement;
 	}
 	
-	float getADSFactor(BaseWeaponComponent weapon)
+	float getADSFactor()
 	{
 		bool adsActive;
-		adsActive = weapon.GetSights().IsSightADSActive();
+		adsActive = m_char.IsWeaponADS();
 		
-		if(!adsActive)
-		 return 0;
-
-		return 0.8;
+		if (adsActive)
+			return 3;
+		
+		return 0;
 	}
 };
 

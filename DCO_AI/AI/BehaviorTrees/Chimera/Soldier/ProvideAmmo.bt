@@ -34,16 +34,6 @@ BehaviorTree {
           }
          }
         }
-        SCR_AISpawnMagazines "SCR_AI Spawn Magazines" {
-         Name "SCR_AI Spawn Magazines"
-         EditorPos 740.297 1079.429
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 5
-           PortName "MagazineWell"
-          }
-         }
-        }
        }
       }
       Sequence Sequence {
@@ -64,14 +54,13 @@ BehaviorTree {
         }
         SCR_AIDropMagazines "SCR_AI Drop Magazines" {
          Name "SCR_AI Drop Magazines"
-         EditorPos 849.611 1748.806
+         EditorPos 849.611 1750.235
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 9
            PortName "MagazineWell"
           }
          }
-         m_FractionOfMagazines 0.2
         }
         AITaskCreatePosition "Create Position" {
          Name "Create Position"
@@ -106,7 +95,7 @@ BehaviorTree {
           }
          }
          m_sText "ProvideAmmo"
-         m_fPriorityLevel 60
+         m_fPriorityLevel 0
         }
         SCR_AIGetRandomPointWithExclude "SCR_AI Get Random Point With Exclude" {
          Name "SCR_AI Get Random Point With Exclude"
@@ -139,21 +128,22 @@ BehaviorTree {
            PortName "Position"
           }
          }
-         m_fSearchRadius 3
+         m_fSearchRadius 5
          m_fExcludeRadius 1
+         m_iIterationCount 25
         }
         AITaskMove Move {
          Name "Move"
-         EditorPos 2886.122 1777.115
+         EditorPos 2886.122 1775.686
          InTargetLocation 10
         }
         SCR_AICompleteAction "SCR_AI Complete Action" {
          Name "SCR_AI Complete Action"
-         EditorPos 3226.216 1769.119
+         EditorPos 3198.216 1773.119
         }
         AITaskReturnState "Return State" {
          Name "Return State"
-         EditorPos 3470.377 1764.444
+         EditorPos 3430.377 1764.444
          Result RUNNING
         }
        }
@@ -200,12 +190,6 @@ BehaviorTree {
    VariableExposedInput 0
    VariableExposedOutput 0
   }
-  Variable magwell {
-   VariableName "magwell"
-   VariableTypeName "MagazineWellUK59Class"
-   VariableExposedInput 0
-   VariableExposedOutput 0
-  }
  }
  VariablesRefs {
   VariableReference pickupAmmoPosition {
@@ -230,7 +214,7 @@ BehaviorTree {
   }
   VariableReference magazineWellType {
    VariableType 3
-   EditorPos 397.666 1190.262
+   EditorPos 397.666 1188.262
   }
   VariableReference controlledEntity {
    VariableType 4

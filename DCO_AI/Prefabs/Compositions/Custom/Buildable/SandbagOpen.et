@@ -1,0 +1,38 @@
+GenericEntity {
+ ID "62313AEE03DB324F"
+ components {
+  MeshObject "{62313AED12CBA858}" {
+   Object "{54F6EBDEF919657E}Obj/sandbag (1).xob"
+  }
+  SCR_DestructionMultiPhaseComponent "{62313AEE82B337BA}" {
+   "Additional hit zones" {
+    SCR_HitZone Sand {
+     ColliderNames {
+      "UTM_Sandbag"
+     }
+     HZDefault 1
+     MaxHealth 50
+     CriticalDamage 1
+     DamageThreshold 1
+     "Collision multiplier" 35
+     "Fragmentation multiplier" 3
+     "Explosive multiplier" 20
+    }
+   }
+   m_DestroySpawnObjects {
+    SCR_ParticleSpawnable "{62313AEECF02158F}" {
+     m_Particle "{B3F25C62E281ED52}Particles/Props/Dest_Prop_Default_Small.ptc"
+    }
+   }
+   m_eMaterialSoundType BREAK_SANDBAG
+  }
+  SCR_EditableEntityComponent "{62313AED02B37773}" {
+   m_Flags PLACEABLE
+  }
+  RplComponent "{62313AED1AFC65F8}" {
+   Streamable Disabled
+  }
+ }
+ coords 0 0 0
+ angleY 90
+}

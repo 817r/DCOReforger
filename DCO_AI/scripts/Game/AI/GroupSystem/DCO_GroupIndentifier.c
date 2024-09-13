@@ -19,58 +19,6 @@ class DCO_GroupIdentifierComponent : ScriptComponent
 	DCO_GroupIdentifer m_Idf;
 	protected IEntity m_Owner;
 	SCR_AIGroup m_Group;
-	array<AIAgent> agents;
-	
-	int sniper;
-	int rifleman;
-	int mg;
-	int gl;
-	int medic;
-	int at;
-	
-	void automaticIdentification()
-	{
-		m_Group = SCR_AIGroup.Cast(m_Group.FindComponent(SCR_AIGroup));		
-		
-		if (!m_Group) return;
-		
-		m_Group.GetAgents(agents);
-		int groupMem;
-		groupMem = m_Group.GetAgentsCount();
-		
-		for(int i = 0; i < groupMem; i++)
-		{
-			AIAgent nowAgent = agents.Get(i);
-			
-			SCR_AIUtilityComponent util = SCR_AIUtilityComponent.Cast(nowAgent.FindComponent(SCR_AIUtilityComponent));
-			
-			if(!util) return;
-						
-			if (util.m_AIInfo.HasRole(EUnitRole.SNIPER)) sniper++;
-			if (util.m_AIInfo.HasRole(EUnitRole.RIFLEMAN)) rifleman++;
-			if (util.m_AIInfo.HasRole(EUnitRole.MACHINEGUNNER)) mg++;
-			if (util.m_AIInfo.HasRole(EUnitRole.GRENADIER)) gl++;
-			if (util.m_AIInfo.HasRole(EUnitRole.MEDIC)) medic++;
-			if (util.m_AIInfo.HasRole(EUnitRole.AT_SPECIALIST)) at++;
-		}
-		
-		if(sniper > 0 && groupMem < 3)
-		{
-			setIdentifier(DCO_GroupIdentifer.SNIPER_TEAM);
-		} else if (mg > 0 && groupMem > 2)
-		{
-			setIdentifier(DCO_GroupIdentifer.MACHINEGUN_TEAM);
-		} else if (at > 0 && groupMem > 2)
-		{
-			setIdentifier(DCO_GroupIdentifer.INFANTRY_AT);
-		} else if (groupMem > 1 && groupMem < 5)
-		{
-			setIdentifier(DCO_GroupIdentifer.PATROL);
-		} else
-		{
-			setIdentifier(DCO_GroupIdentifer.INFANTRY);
-		}
-	}
 	
 	static DCO_GroupIdentifer SetIdentification(IEntity unit, DCO_GroupIdentifer groups)
 	{

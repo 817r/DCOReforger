@@ -1,0 +1,68 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/ThrowSmoke.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -57.083 -16.944
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -55.5 175.417
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -110.917 389.167
+       Nodes {
+        SCR_AIGetWeaponOfType "SCR_AI Get Weapon Of Type" {
+         Name "SCR_AI Get Weapon Of Type"
+         EditorPos -746.667 604.444
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "WeaponType"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "WeaponComponent"
+          }
+         }
+         m_WeaponType WT_SMOKEGRENADE
+        }
+        SCR_AISwitchWeapon "SCR_AI Switch Weapon" {
+         Name "SCR_AI Switch Weapon"
+         EditorPos -144.444 602.222
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 0
+           PortName "WeaponComponent"
+          }
+         }
+        }
+        DCO_ForceThrowGrenaded "DCO_ Force Throw Grenaded" {
+         Name "DCO_ Force Throw Grenaded"
+         EditorPos 93.333 611.667
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable Smoke {
+   VariableName "Smoke"
+   VariableTypeName "BaseWeaponComponent"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference Smoke {
+   VariableType 0
+   EditorPos -456.667 705.556
+  }
+ }
+}
