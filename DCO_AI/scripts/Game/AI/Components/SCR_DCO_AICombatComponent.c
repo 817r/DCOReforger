@@ -346,7 +346,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
 				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,true);
 				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,true);
-				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,false);
 				break;
 			}
 			case EAICombatType.RETREAT:
@@ -361,8 +361,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 			{
 				SetActionAllowed(EAICombatActions.HOLD_FIRE,false);
 				SetActionAllowed(EAICombatActions.MOVEMENT_WHEN_FIRE,true);
-				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,false);
-				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,false);
+				SetActionAllowed(EAICombatActions.SUPPRESSIVE_FIRE,true);
+				SetActionAllowed(EAICombatActions.MOVEMENT_TO_LAST_SEEN,true);
 				break;
 			}
 		}

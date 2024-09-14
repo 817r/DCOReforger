@@ -57,7 +57,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          EditorPos -1015 818.778
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port -1
+           Port 3
            PortName "Target"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
@@ -88,7 +88,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
            PortName "Entity"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port -1
+           Port 32
            PortName "LastSeenPosition"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
@@ -439,6 +439,64 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
            TestType EqualsValue
            TestValue "4"
           }
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 5932.231 2080.75
+           Nodes {
+            RunBT RunBT {
+             Name "RunBT"
+             EditorPos 5896.833 2295.75
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 35
+               PortName "target"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 33
+               PortName "eAimpointType1"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 34
+               PortName "eAimpointType0"
+              }
+             }
+             BehaviorTree "{E57FC0277F3C9438}AI/BehaviorTrees/Chimera/Soldier/Custom/ThrowSmoke.bt"
+            }
+           }
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           InVariable 31
+           TestType EqualsValue
+           TestValue "5"
+          }
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 6820.305 2085.636
+           Nodes {
+            RunBT RunBT {
+             Name "RunBT"
+             EditorPos 6767.764 2299.208
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 38
+               PortName "target"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 37
+               PortName "eAimpointType1"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 36
+               PortName "eAimpointType0"
+              }
+             }
+             BehaviorTree "{34964EC5967631AE}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_RPG_COVER.bt"
+            }
+           }
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           InVariable 39
+           TestType EqualsValue
+           TestValue "6"
+          }
          }
         }
        }
@@ -653,6 +711,42 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   VariableReference baseTarget {
    VariableType 5
    EditorPos -247.777 1656.028
+  }
+  VariableReference iFireTreeId {
+   VariableType 6
+   EditorPos 5769.769 2162.773
+  }
+  VariableReference targetLastSeenPosition {
+   VariableType 1
+   EditorPos -56.667 946.667
+  }
+  VariableReference eAimpointType0 {
+   VariableType 7
+   EditorPos 5617.444 2377.085
+  }
+  VariableReference eAimpointType1 {
+   VariableType 3
+   EditorPos 5621.194 2450.835
+  }
+  VariableReference baseTarget {
+   VariableType 5
+   EditorPos 5590.305 2303.165
+  }
+  VariableReference eAimpointType1 {
+   VariableType 3
+   EditorPos 6492.125 2454.292
+  }
+  VariableReference eAimpointType0 {
+   VariableType 7
+   EditorPos 6488.375 2380.542
+  }
+  VariableReference baseTarget {
+   VariableType 5
+   EditorPos 6461.236 2306.623
+  }
+  VariableReference iFireTreeId {
+   VariableType 6
+   EditorPos 6640.7 2166.23
   }
  }
  Groups {

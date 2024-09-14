@@ -1,7 +1,8 @@
 modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 {		
-	//-----------------------------------------------------------------------------------------------------
-	// Evaluates which fire tree should be used
+	protected const int FIRE_TREE_GRENADE			= 5;
+	protected const int FIRE_TREE_RPG				= 6;
+	
 	override int ResolveFireTree(BaseTarget target, bool visible, bool weaponReady, out float fireRate)
 	{
 		// Is aiming forbidden by combat move?
@@ -63,12 +64,15 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			if (weaponType == EWeaponType.WT_MACHINEGUN)
 				return FIRE_TREE_BURST;
 			else if (weaponType == EWeaponType.WT_SNIPERRIFLE)
+			{
 				return FIRE_TREE_SINGLE;
+			}	
 			else if (targetDistance < BURST_FIRE_MAX_DISTANCE && m_bWeaponHasBurstOrAuto)
 				return FIRE_TREE_BURST;
+			else if (target.GetPerceivableComponent().IsInCompartment() && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER))
+				return FIRE_TREE_RPG;
 			else
 				return FIRE_TREE_SINGLE;
-			
 		}
 		else
 		{
@@ -100,15 +104,31 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				target.GetTimeSinceSeen() < lastSeenThreshold &&
 				target.GetTraceFraction() > 0.5)
 			{
-				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 2, 1));
-				fireRate = maxFireRate * threat;
-								
+				fireRate = fireRateHandler(target, weaponType);								
 				return FIRE_TREE_SUPPRESSIVE;
+			}
+			else if (target.GetTraceFraction() < 0.5 && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER) && targetDistance > 25)
+			{
+				return FIRE_TREE_RPG;
+			}
+			else if (target.GetTraceFraction() < 0.4 && target.GetTimeLastSeen() < 3 && targetDistance > 10)
+			{
+				return FIRE_TREE_GRENADE;
 			}
 			else
 				return FIRE_TREE_LOOK;
 		}
-		
 		return FIRE_TREE_LOOK;
+	}
+	
+	float fireRateHandler(BaseTarget target,EWeaponType selectedWeaponComp)
+	{		
+		if (selectedWeaponComp == EWeaponType.WT_SNIPERRIFLE) return 0.2;
+		float targetDistance = target.GetDistance();
+		float threat = m_UtilityComponent.m_ThreatSystem.GetThreatMeasure();
+		
+		float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 2, 1));
+		float fireRate = maxFireRate * threat;
+		return 1;
 	}
 }
