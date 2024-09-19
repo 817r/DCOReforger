@@ -140,7 +140,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                }
                Group "{622E04EC36FF0830}"
                BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defensive.bt"
-               AlwaysReinit 1
               }
               AITaskReturnState "Return  State" {
                Name "Return  State"

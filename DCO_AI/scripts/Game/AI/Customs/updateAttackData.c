@@ -63,14 +63,14 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			// For regular weapons, use burst at short range if available, otherwise single
 			if (weaponType == EWeaponType.WT_MACHINEGUN)
 				return FIRE_TREE_BURST;
+			else if (target.GetPerceivableComponent().IsInCompartment() && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER))
+				return FIRE_TREE_RPG;
 			else if (weaponType == EWeaponType.WT_SNIPERRIFLE)
 			{
 				return FIRE_TREE_SINGLE;
 			}	
 			else if (targetDistance < BURST_FIRE_MAX_DISTANCE && m_bWeaponHasBurstOrAuto)
 				return FIRE_TREE_BURST;
-			else if (target.GetPerceivableComponent().IsInCompartment() && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER))
-				return FIRE_TREE_RPG;
 			else
 				return FIRE_TREE_SINGLE;
 		}
@@ -107,13 +107,13 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				fireRate = fireRateHandler(target, weaponType);								
 				return FIRE_TREE_SUPPRESSIVE;
 			}
-			else if (target.GetTraceFraction() < 0.5 && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER) && targetDistance > 25 && m_CombatComponent.getImprovement() > 3)
-			{
-				return FIRE_TREE_RPG;
-			}
 			else if (target.GetTraceFraction() < 0.4 && target.GetTimeLastSeen() < 3 && targetDistance > 5 && targetDistance < 30 && m_UtilityComponent.m_ThreatSystem.GetThreatTotal() < 5.0)
 			{
 				return FIRE_TREE_GRENADE;
+			}
+			else if (target.GetTraceFraction() < 0.5 && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER) && targetDistance > 25 && m_CombatComponent.getImprovement() > 0.5)
+			{
+				return FIRE_TREE_RPG;
 			}
 			else
 				return FIRE_TREE_LOOK;

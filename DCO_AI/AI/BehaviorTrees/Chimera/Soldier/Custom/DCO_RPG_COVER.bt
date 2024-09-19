@@ -109,7 +109,7 @@ BehaviorTree {
         }
         Sequence Sequence {
          Name "Sequence"
-         EditorPos -761.333 583.334
+         EditorPos -689.666 581.667
          Nodes {
           SCR_AIGetWeaponOfType "SCR_AI Get Weapon Of Type" {
            Name "SCR_AI Get Weapon Of Type"
@@ -140,13 +140,22 @@ BehaviorTree {
           }
           AITaskIdle Idle {
            Name "Idle"
-           EditorPos -631 828.667
+           EditorPos -651 822.953
            Period 1.5
           }
           AITaskFire Fire {
            Name "Fire"
-           EditorPos -445 825
+           EditorPos -465 819.286
            Period 2
+          }
+          SCR_AIDropWeapon "SCR_AI Drop Weapon" {
+           Name "SCR_AI Drop Weapon"
+           EditorPos -294.091 830.758
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos -97.667 827.758
+           Period 1
           }
          }
         }

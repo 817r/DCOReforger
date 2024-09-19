@@ -18,12 +18,10 @@ class DCO_GroupIdentifierComponent : ScriptComponent
 	[Attribute(defvalue: "2", uiwidget: UIWidgets.ComboBox, desc: "DCO Group Identifer", enums: ParamEnumArray.FromEnum(DCO_GroupIdentifer))]
 	DCO_GroupIdentifer m_Idf;
 	protected DCO_GroupIdentifer m_aIDF;
-	protected IEntity m_Owner;
 	SCR_AIGroup m_Group;
-	bool isAutomated;
 	
-	// NUMBER MEMBER ROLES REFRENCES
-	protected int rifleman, medic, LAT, MG, Sniper;
+	[Attribute(defvalue: "1", uiwidget: UIWidgets.Auto, desc: "is Identifier Automated?")]
+	bool isAutomated;
 
 	static DCO_GroupIdentifer SetIdentification(IEntity unit, DCO_GroupIdentifer groups)
 	{
@@ -131,11 +129,6 @@ class DCO_GroupIdentifierComponent : ScriptComponent
 	}
 	
 	protected DCO_GroupIdentifer GetAutomated()
-	{
-		return isAutomated;
-	}
-	
-	bool isAutomatic()
 	{
 		return isAutomated;
 	}

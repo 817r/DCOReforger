@@ -40,10 +40,12 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		if (!m_ConfigComponent)
 			return null;
 		
-		if (m_GroupTactics.getAuto())
+		if (m_GroupTactics.getAutomated(m_Owner))
 			evaluateTactics();
 		
-		if (m_GroupIdentifier.isAutomatic())
+		UpdateTactics();
+		
+		if (m_GroupIdentifier.GetAutomated(m_Owner))
 			groupIdentificationProcessing();
 		
 		targetCount = tempTarget.Count();
@@ -212,15 +214,6 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		
 		m_GroupMovementComponent = SCR_AIGroupMovementComponent.Cast(owner.FindComponent(SCR_AIGroupMovementComponent));
 		
-		if (m_GroupTactics)
-		{
-			m_Tac = m_GroupTactics.GetGroupTactic(m_Owner);
-			foreach (SCR_AIUtilityComponent util : m_Util)
-			{
-				util.setTactics(m_Tac);
-			}
-		}
-		
 		if (m_GroupIdentifier)
 		{
 			m_Idf = m_GroupIdentifier.GetGroupIndentification(m_Owner);
@@ -349,7 +342,9 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	
 	protected void evaluateTactics()
 	{		
-		
+		if (!m_GroupTactics.AutomatedTactics)
+			return;
+
 		float currentTime = GetGame().GetWorld().GetWorldTime();
 		float deltaTime_ms = 0;
 		
@@ -457,6 +452,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	protected void groupIdentificationProcessing()
 	{
 		m_Idf = m_GroupIdentifier.GetGroupIndentification(m_Owner);
+
 		for (int i = m_aInfoComponents.Count()-1; i >= 0; i--)
 		{
 			SCR_AICombatComponent combat = m_aInfoComponents[i].GetCombatComponent();
@@ -488,16 +484,24 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		atman = AT.Count();
 		totalmember = rman + mgman + snipman + atman;
 		
+		if (totalmember != Internalmembers)
+		{
+			rifleman.Clear();
+			machinegun.Clear();
+			sniper.Clear();
+			AT.Clear();
+		}
+			
 		if(snipman >= 1 && Internalmembers <= 4)
 			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.SNIPER_TEAM);
 		else if(mgman >= 2 && Internalmembers <= 5)
 			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.MACHINEGUN_TEAM);
 		else if(atman >= 1 && Internalmembers <= 5)
 			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.INFANTRY_AT);
-		else if(Internalmembers <= 5)
-			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.PATROL);
 		else if(Internalmembers < 4)
 			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.RECON);
+		else if(Internalmembers <= 5)
+			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.PATROL);
 		else
 			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.INFANTRY);
 	}
