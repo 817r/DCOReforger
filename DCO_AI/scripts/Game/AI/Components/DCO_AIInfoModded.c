@@ -27,6 +27,8 @@ modded class SCR_AIInfoComponent : SCR_AIInfoBaseComponent
 		if (agent)
 			ent = agent.GetControlledEntity();
 		
+		m_UtilityComponent = SCR_AIUtilityComponent.Cast(agent.FindComponent(SCR_AIUtilityComponent));	
+		
 		if (ent)
 		{
 			m_inventoryManagerComponent = SCR_InventoryStorageManagerComponent.Cast(ent.FindComponent(SCR_InventoryStorageManagerComponent));
@@ -34,8 +36,7 @@ modded class SCR_AIInfoComponent : SCR_AIInfoBaseComponent
 			m_CompartmentAccessComponent = SCR_CompartmentAccessComponent.Cast(ent.FindComponent(SCR_CompartmentAccessComponent));
 			m_DamageManager = SCR_CharacterDamageManagerComponent.Cast(ent.FindComponent(SCR_CharacterDamageManagerComponent));
 			m_CombatComponent = SCR_AICombatComponent.Cast(ent.FindComponent(SCR_AICombatComponent));
-			m_UtilityComponent = SCR_AIUtilityComponent.Cast(ent.FindComponent(SCR_AIUtilityComponent));	
-
+			
 			m_CharacterController = SCR_CharacterControllerComponent.Cast(ent.FindComponent(SCR_CharacterControllerComponent));
 			if (m_CharacterController)
 				m_CharacterController.m_OnLifeStateChanged.Insert(OnLifeStateChanged);
@@ -66,6 +67,11 @@ modded class SCR_AIInfoComponent : SCR_AIInfoBaseComponent
 	SCR_CharacterDamageManagerComponent getCharDamageComp()
 	{
 		return m_DamageManager;
+	}
+	
+	SCR_AIUtilityComponent getUtilityComponent()
+	{
+		return m_UtilityComponent;
 	}
 
 }

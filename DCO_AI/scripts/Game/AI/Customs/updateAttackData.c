@@ -107,11 +107,11 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				fireRate = fireRateHandler(target, weaponType);								
 				return FIRE_TREE_SUPPRESSIVE;
 			}
-			else if (target.GetTraceFraction() < 0.5 && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER) && targetDistance > 25)
+			else if (target.GetTraceFraction() < 0.5 && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER) && targetDistance > 25 && m_CombatComponent.getImprovement() > 3)
 			{
 				return FIRE_TREE_RPG;
 			}
-			else if (target.GetTraceFraction() < 0.4 && target.GetTimeLastSeen() < 3 && targetDistance > 10)
+			else if (target.GetTraceFraction() < 0.4 && target.GetTimeLastSeen() < 3 && targetDistance > 5 && targetDistance < 30 && m_UtilityComponent.m_ThreatSystem.GetThreatTotal() < 5.0)
 			{
 				return FIRE_TREE_GRENADE;
 			}
@@ -123,7 +123,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 	
 	float fireRateHandler(BaseTarget target,EWeaponType selectedWeaponComp)
 	{		
-		if (selectedWeaponComp == EWeaponType.WT_SNIPERRIFLE) return 0.2;
+		if (selectedWeaponComp == EWeaponType.WT_SNIPERRIFLE) return 0.1;
 		float targetDistance = target.GetDistance();
 		float threat = m_UtilityComponent.m_ThreatSystem.GetThreatMeasure();
 		

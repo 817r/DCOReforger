@@ -316,8 +316,8 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case DCO_CUSTOMRANK.SPECIALIST:
 			{
-				minTOlEx = minTOl / 2;
-				maxTOlEx = maxTOl / 2;
+				minTOlEx = minTOl / 4;
+				maxTOlEx = maxTOl / 4;
 				break;
 			}
 		}

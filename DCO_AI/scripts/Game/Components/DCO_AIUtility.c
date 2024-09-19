@@ -7,7 +7,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	DCO_AIAwareness m_Awareness;
 	protected DCO_BaseAICommander commander;
 	
-	int groupMember;
+	int groupMember, gg, hh, ii;
 	int targetCount;
 	bool isCommander;
 	
@@ -278,5 +278,23 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	{
 		groupMember = f;
 		return f;
+	}
+	
+	int setG(int g)
+	{
+		gg = g;
+		return g;
+	}
+	
+	int setH(int h)
+	{
+		hh = h;
+		return h;
+	}
+	
+	int setI(int i)
+	{
+		ii = i;
+		return i;
 	}
 }

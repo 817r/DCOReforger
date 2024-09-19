@@ -26,9 +26,6 @@ class DCO_BaseAICommander : ScriptComponent
 	
 	protected SCR_AIUtilityComponent m_Utility;
 	
-	
-
-	
 	protected Faction m_Factions;
 	
 	void giveAreaToCommander(array<DCO_ObjectiveArea> area)

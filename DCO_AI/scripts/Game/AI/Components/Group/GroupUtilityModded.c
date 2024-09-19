@@ -1,6 +1,6 @@
 modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 {
-	int Internalmembers;
+	protected int Internalmembers;
 	int groupMember;
 	int targetCount;
 	
@@ -21,6 +21,11 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	bool groupAutomatecTac;
 	
 	ref array<SCR_AIUtilityComponent> m_Util = {};
+	ref array<AIAgent> rifleman = new array<AIAgent>;
+	ref array<AIAgent> machinegun = new array<AIAgent>;
+	ref array<AIAgent> AT = new array<AIAgent>;
+	ref array<AIAgent> sniper = new array<AIAgent>;
+	
 	ref SCR_AIGroupTargetCluster m_TargetCluster;	
 
 	//------------------------------------------------------------------------------------------------
@@ -38,11 +43,14 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		if (m_GroupTactics.getAuto())
 			evaluateTactics();
 		
+		if (m_GroupIdentifier.isAutomatic())
+			groupIdentificationProcessing();
+		
 		targetCount = tempTarget.Count();
 		groupMember = friendlyOutsideGroup();
 		setEF();
 		m_TargetCluster = m_Perception.m_MostDangerousCluster;
-		Internalmembers = m_Owner.GetAgentCountIncludingMasterAndSlaves();
+		Internalmembers = m_Owner.GetTotalAgentCount();
 		
 		float currentTime = GetGame().GetWorld().GetWorldTime();
 		float deltaTime_ms = 0;
@@ -227,7 +235,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 			util.setMyGroup(m_Owner);
 		}
 		
-		Internalmembers = m_Owner.GetAgentCountIncludingMasterAndSlaves();
+		Internalmembers = m_Owner.GetTotalAgentCount();
 	}
 	
 	override void OnAgentAdded(AIAgent agent)
@@ -438,8 +446,59 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	{
 		foreach(SCR_AIUtilityComponent utilities : m_Util)
 		{
-			utilities.setF(groupMember);
-			utilities.setE(targetCount);
+			utilities.setF(rifleman.Count());
+			utilities.setE(machinegun.Count());
+			utilities.setG(sniper.Count());
+			utilities.setH(AT.Count());
+			utilities.setI(Internalmembers);
 		}
+	}
+	
+	protected void groupIdentificationProcessing()
+	{
+		m_Idf = m_GroupIdentifier.GetGroupIndentification(m_Owner);
+		for (int i = m_aInfoComponents.Count()-1; i >= 0; i--)
+		{
+			SCR_AICombatComponent combat = m_aInfoComponents[i].GetCombatComponent();
+			SCR_AIUtilityComponent utility = m_aInfoComponents[i].getUtilityComponent();
+			
+			if (combat.HasWeaponOfType(EWeaponType.WT_MACHINEGUN))
+			{
+				if (!machinegun.Contains(utility.GetOwner()))
+					machinegun.Insert(utility.GetOwner());
+			} else if (combat.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER))
+			{
+				if (!AT.Contains(utility.GetOwner()))
+					AT.Insert(utility.GetOwner());
+			} else if (combat.HasWeaponOfType(EWeaponType.WT_SNIPERRIFLE))
+			{
+				if (!sniper.Contains(utility.GetOwner()))
+					sniper.Insert(utility.GetOwner());
+			} else if (combat.HasWeaponOfType(EWeaponType.WT_RIFLE))
+			{
+				if (!rifleman.Contains(utility.GetOwner()))
+					rifleman.Insert(utility.GetOwner());
+			}
+		}
+		
+		int rman, mgman, snipman, atman, totalmember;
+		rman = rifleman.Count();
+		mgman = machinegun.Count();
+		snipman = sniper.Count();
+		atman = AT.Count();
+		totalmember = rman + mgman + snipman + atman;
+		
+		if(snipman >= 1 && Internalmembers <= 4)
+			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.SNIPER_TEAM);
+		else if(mgman >= 2 && Internalmembers <= 5)
+			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.MACHINEGUN_TEAM);
+		else if(atman >= 1 && Internalmembers <= 5)
+			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.INFANTRY_AT);
+		else if(Internalmembers <= 5)
+			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.PATROL);
+		else if(Internalmembers < 4)
+			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.RECON);
+		else
+			m_GroupIdentifier.SetIdentificationAutomatic(m_Owner, DCO_GroupIdentifer.INFANTRY);
 	}
 }

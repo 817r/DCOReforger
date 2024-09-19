@@ -141,7 +141,7 @@ BehaviorTree {
           AITaskIdle Idle {
            Name "Idle"
            EditorPos -631 828.667
-           Period 1
+           Period 1.5
           }
           AITaskFire Fire {
            Name "Fire"

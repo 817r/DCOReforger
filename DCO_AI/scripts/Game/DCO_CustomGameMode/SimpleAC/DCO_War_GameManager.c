@@ -3,12 +3,6 @@ class DCO_War_GameModeClass : SCR_BaseGameModeComponentClass
 {
 }
 
-//------------------------------------------------------------------------------------------------
-/*!
-	Capture & Hold manager that allows registration and management of areas.
-	This component must be attached to a SCR_BaseGameMode entity!
-	There should only be a single manager at any given time.
-*/
 class DCO_War_GameMode : SCR_BaseGameModeComponent
 {
 	//! Manager singleton instance, assigned on first get call
