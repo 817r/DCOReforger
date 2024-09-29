@@ -289,26 +289,21 @@ class DCO_AIMoraleSystem
 						break;
 					}
 				}
-			} else 
-			{
-				aimImprovement -= aimRecoveryPerSecond / 5;
-				improvementAims -= aimRecoveryPerSecond / 5;
 			}
 
 			if (m_Combat.selectedTargetChanged)
 			{
-				m_Combat.resetImprovement();
-				aimImprovement = 0;
-				improvementAims = 0;
+				aimImprovement -= aimRecoveryPerSecond / 50;
+				improvementAims -= aimRecoveryPerSecond / 50;
 			}
 		}
 		else
 		{
 			m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod - 0.001 * 0.0001 * timeSlice, 0, 1.0);
-			m_Combat.resetImprovement();
-			improvementAims = 0;
-			aimImprovement = 0;
+			aimImprovement -= aimRecoveryPerSecond / 20;
+			improvementAims -= aimRecoveryPerSecond / 20;
 		}
+		
 		tacs = utility.getTactics();
 		rank = m_Skill.GetCharacterRank(utility.m_OwnerEntity);
 		m_fMoraleTotal = Math.Clamp((m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered + m_fMoraleSupply + m_fMoraleThreatMod) - friendlyMoraleBoost(), 0, 4.2);

@@ -1,6 +1,6 @@
-class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
+class DCO_Evasive_EVALUATION: AITaskScripted
 {
-	protected static const float COVER_SEARCH_DIST_MAX = 25.0;
+	protected static const float COVER_SEARCH_DIST_MAX = 20.0;
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 	
 	// Inputs
@@ -47,9 +47,12 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 			return ENodeResult.FAIL;
 		
 		float distToThreat = vector.Distance(myEntity.GetOrigin(), threatPos);
-		CombatMoveLogic(threatPos, distToThreat);
+		if (MoveToNextPosCondition())
+		{
+			CombatMoveLogic(threatPos, distToThreat);
+		}
 		
-		return ENodeResult.SUCCESS;
+		return ENodeResult.RUNNING;
 	}
 	
 	void CombatMoveLogic(vector threatPos, float distToThreat)
@@ -57,24 +60,21 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 		if (!m_State.IsInValidCover() && !m_bPushedMoveRequest && !m_State.IsMovingToCover())
 		{		
 			SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-			
-			vector myLeaderPos = myGroup.GetLeaderEntity().GetOrigin();
-			
-			rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+			rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
 			
 			rq.m_vTargetPos = threatPos;
-			rq.m_vMovePos = myLeaderPos;
+			rq.m_vMovePos = threatPos;
 			rq.m_bTryFindCover = true;
 			rq.m_bUseCoverSearchDirectivity = true;
-			rq.m_bCheckCoverVisibility = true;
-			rq.m_bFailIfNoCover = true;
-			rq.m_eStanceMoving = ECharacterStance.STAND;
+			rq.m_bCheckCoverVisibility = false;
+			rq.m_bFailIfNoCover = false;
+			rq.m_eStanceMoving = ECharacterStance.CROUCH;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 			rq.m_fCoverSearchDistMin = 3;
-			rq.m_fMoveDistance = Math.RandomFloat(0.2, 1.0) * COVER_SEARCH_DIST_MAX;
-			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+			rq.m_fMoveDistance = Math.RandomFloat(0.5, 1.0) * COVER_SEARCH_DIST_MAX;
+			rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = false; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
@@ -82,6 +82,27 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 		}
+	}
+	
+	protected bool MoveToNextPosCondition()
+	{			
+		if (m_State.IsExecutingRequest())
+			return false;
+		
+		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover);	
+		return m_State.m_fTimerStopped_s > stoppedWaitTime;
+	}
+	
+	protected float ResolveStoppedWaitTime(bool inCover)
+	{
+		float waitTime;
+		
+		if (inCover)
+			waitTime = Math.RandomFloat(7.0, 10.0);
+		else
+			waitTime = Math.RandomFloat(2.5, 6.0);
+		
+		return waitTime;
 	}
 	
 	protected static ref TStringArray s_aVarsIn = { PORT_POSITION };

@@ -9,13 +9,13 @@ BehaviorTree {
      Name "Parallel"
      EditorPos -771.667 -220
      Nodes {
-      Sequence Sequence {
-       Name "Sequence"
-       EditorPos -1714.667 198.667
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos -1610 109
        Nodes {
         Sequence Sequence {
          Name "Sequence"
-         EditorPos -2267.809 530.667
+         EditorPos -2532.809 580.667
          Nodes {
           SCR_AIGetBaseTargetProperties "SCR_AI Get Base Target Properties" {
            Name "SCR_AI Get Base Target Properties"
@@ -109,11 +109,15 @@ BehaviorTree {
         }
         Sequence Sequence {
          Name "Sequence"
-         EditorPos -689.666 581.667
+         EditorPos -744.666 595
          Nodes {
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos -1495 945
+          }
           SCR_AIGetWeaponOfType "SCR_AI Get Weapon Of Type" {
            Name "SCR_AI Get Weapon Of Type"
-           EditorPos -1477.611 826.93
+           EditorPos -1337.611 946.93
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -130,7 +134,7 @@ BehaviorTree {
           }
           SCR_AISwitchWeapon "SCR_AI Switch Weapon" {
            Name "SCR_AI Switch Weapon"
-           EditorPos -875.388 825.958
+           EditorPos -735.388 945.958
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port 10
@@ -140,21 +144,22 @@ BehaviorTree {
           }
           AITaskIdle Idle {
            Name "Idle"
-           EditorPos -651 822.953
-           Period 1.5
+           EditorPos -511 942.953
+           Period 1
+           PeriodRandom 1
           }
           AITaskFire Fire {
            Name "Fire"
-           EditorPos -465 819.286
+           EditorPos -325 939.286
            Period 2
           }
           SCR_AIDropWeapon "SCR_AI Drop Weapon" {
            Name "SCR_AI Drop Weapon"
-           EditorPos -294.091 830.758
+           EditorPos -154.091 950.758
           }
           AITaskIdle Idle {
            Name "Idle"
-           EditorPos -97.667 827.758
+           EditorPos 42.333 947.758
            Period 1
           }
          }
@@ -280,7 +285,7 @@ BehaviorTree {
   }
   VariableReference Smoke {
    VariableType 1
-   EditorPos -1187.611 928.042
+   EditorPos -1047.611 1048.042
   }
   VariableReference target {
    VariableType 2

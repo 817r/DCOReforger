@@ -103,11 +103,11 @@ BehaviorTree "{E57FC0277F3C9438}AI/BehaviorTrees/Chimera/Soldier/Custom/ThrowSmo
         }
         Sequence Sequence {
          Name "Sequence"
-         EditorPos -755.584 731.834
+         EditorPos -1075.584 769.834
          Nodes {
           SCR_AIGetWeaponOfType "SCR_AI Get Weapon Of Type" {
            Name "SCR_AI Get Weapon Of Type"
-           EditorPos -1924.667 1010.444
+           EditorPos -1796.667 1022.444
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port -1
@@ -124,7 +124,7 @@ BehaviorTree "{E57FC0277F3C9438}AI/BehaviorTrees/Chimera/Soldier/Custom/ThrowSmo
           }
           SCR_AISwitchWeapon "SCR_AI Switch Weapon" {
            Name "SCR_AI Switch Weapon"
-           EditorPos -1322.444 1008.222
+           EditorPos -1168.444 1010.222
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port 0
@@ -134,22 +134,12 @@ BehaviorTree "{E57FC0277F3C9438}AI/BehaviorTrees/Chimera/Soldier/Custom/ThrowSmo
           }
           DCO_ForceThrowGrenaded "DCO_ Force Throw Grenaded" {
            Name "DCO_ Force Throw Grenaded"
-           EditorPos -1061.917 1043.084
+           EditorPos -923.917 1013.084
           }
           AITaskIdle Idle {
            Name "Idle"
-           EditorPos -680.25 1025
-           Period 3
-          }
-          RunBT RunBT {
-           Name "RunBT"
-           EditorPos -498.75 1021.25
-           BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/TrySwitchToExpectedWeapon.bt"
-          }
-          AITaskIdle Idle {
-           Name "Idle"
-           EditorPos 25.25 1035.75
-           Period 5
+           EditorPos -592.25 1017
+           Period 1
           }
          }
         }
@@ -240,7 +230,7 @@ BehaviorTree "{E57FC0277F3C9438}AI/BehaviorTrees/Chimera/Soldier/Custom/ThrowSmo
  VariablesRefs {
   VariableReference Smoke {
    VariableType 0
-   EditorPos -1634.667 1110.306
+   EditorPos -1474.667 1118.306
   }
   VariableReference target {
    VariableType 2

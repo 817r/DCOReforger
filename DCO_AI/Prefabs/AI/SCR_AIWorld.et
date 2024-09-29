@@ -1,11 +1,18 @@
 SCR_AIWorld {
  ID "50B2B8F35661FB44"
  components {
+  AIBirdManagerComponent "{5CC2D99CC5111D80}" {
+   MaxActiveAnimals 5
+  }
   ChimeraCoverManagerComponent "{5E3ADC0EA7048548}" {
-   IncludeFullCover 0
-   ShootingExposition 0.115
+   ShootingExposition 0.12
    CrouchingSize 0.2
    MinDistanceBetweenCovers 1.5
+  }
+  NavmeshWorldComponent "{5584F30E67F617AD}" {
+   NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
+    FilterObjectDuringGeneration 1
+   }
   }
  }
 }

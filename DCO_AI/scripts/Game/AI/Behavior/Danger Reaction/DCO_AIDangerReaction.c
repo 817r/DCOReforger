@@ -321,7 +321,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 [BaseContainerProps()]
 modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 {
-	private static const float EXPLOSION_OBSERVE_DISTANCE = 50; // Maximal distance from explosion to trigger observe behavior
+	private static const float EXPLOSION_OBSERVE_DISTANCE = 30; // Maximal distance from explosion to trigger observe behavior
 	private static const float EXPLOSION_REACTION = 10;
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 	
@@ -396,7 +396,7 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 			else if (rand == 2) rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
 			else if (rand == 3)	rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-			rq.m_bAimAtTarget = false; // Don't aim while running
+			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
 			
 			m_State.ApplyNewRequest(rq);

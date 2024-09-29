@@ -3,6 +3,9 @@ SCR_ChimeraCharacter {
  components {
   ChimeraAIControlComponent "{520EA1D2DB109F34}" {
    components {
+    AICharacterMovementComponent "{520EA1D2DB109F01}" {
+     ObstacleAvoidanceTimer 2
+    }
     DCO_AIAwareness "{623C1A41A5DF568F}" {
     }
     DCO_GroupTacticComponent "{623C1A41B2B4C1B3}" {
