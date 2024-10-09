@@ -162,6 +162,8 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 				UpdateSuppressCluster();
 				UpdateThreatMeasure();				
 				EvaluateFlareUsage();
+				GPUpdate();
+					
 				if (!m_Perception.m_aTargetClusters.IsEmpty())
 					UpdateClustersState(m_fPerceptionUpdateTimer_ms);
 				
@@ -172,6 +174,14 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		m_fLastUpdateTime = currentTime;
 		m_bNewGroupMemberAdded = false; // resetting reaction on group member OnAgentAdded
 		return m_CurrentActivity;
+	}
+	
+	void GPUpdate()
+	{
+		foreach (SCR_AIInfoComponent InfoComp : m_aInfoComponents)
+		{
+			InfoComp.SetGroupPerception(m_Perception);
+		}
 	}
 	
 	//---------------------------------------------------------------------------------------------------	

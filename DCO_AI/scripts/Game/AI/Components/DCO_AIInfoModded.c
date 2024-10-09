@@ -2,9 +2,21 @@ modded class SCR_AIInfoComponent : SCR_AIInfoBaseComponent
 {
 	protected DCO_AIMoraleSystem m_DCOMoraleSystem;
 	SCR_AIUtilityComponent m_UtilityComponent;
+	protected SCR_AIGroupPerception GroupPerception;
+	
 	void InitMoraleSystem(DCO_AIMoraleSystem moraleSystem)
 	{
 		m_DCOMoraleSystem = moraleSystem;	
+	}
+	
+	void SetGroupPerception(SCR_AIGroupPerception perc)
+	{
+		GroupPerception = perc;
+	}
+	
+	SCR_AIGroupPerception getGroupPerception()
+	{
+		return GroupPerception;
 	}
 	
 	moraleState getMoraleState()
@@ -72,6 +84,23 @@ modded class SCR_AIInfoComponent : SCR_AIInfoBaseComponent
 	SCR_AIUtilityComponent getUtilityComponent()
 	{
 		return m_UtilityComponent;
+	}
+	
+	override bool HasRole(EUnitRole role)
+	{
+		switch (role)
+		{
+			case EUnitRole.MEDIC:				return m_inventoryManagerComponent.GetHealthComponentCount() > 4;
+			case EUnitRole.MACHINEGUNNER:		return m_CombatComponent.HasWeaponOfType(EWeaponType.WT_MACHINEGUN);
+			case EUnitRole.RIFLEMAN:			return m_CombatComponent.HasWeaponOfType(EWeaponType.WT_RIFLE);
+			case EUnitRole.AT_SPECIALIST:		return m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER);
+			case EUnitRole.GRENADIER:			return m_CombatComponent.HasWeaponOfType(EWeaponType.WT_GRENADELAUNCHER); // todo right now it will not detect a UGL muzzle, because weapon type is still rifle
+			case EUnitRole.SNIPER:			return m_CombatComponent.HasWeaponOfType(EWeaponType.WT_SNIPERRIFLE);
+			case EUnitRole.HAS_SMOKE_GRENADE:	return m_CombatComponent.HasWeaponOfType(EWeaponType.WT_SMOKEGRENADE);
+			case EUnitRole.HAS_FRAG_GRENADE:	return m_CombatComponent.HasWeaponOfType(EWeaponType.WT_FRAGGRENADE);
+		}
+		
+		return false;
 	}
 
 }

@@ -8,18 +8,22 @@ class DCO_AIAwareness : ScriptComponent
 	protected SCR_AIUtilityComponent m_UtilityComp;
 	protected SCR_AICombatComponent m_CombatComp;
 	protected PerceptionComponent m_Perceptions;
+
 	//protected CharacterVicinityComponent m_charVic;
 	protected SCR_InventoryStorageManagerComponent inventorys;
 	
 	ref array<ref SCR_AITargetInfo> friendly = {};
 	ref array<ref SCR_AITargetInfo> hostile = {};
+	
+	ref array<BaseTarget> hostiless = {};
+	
 	ref array<IEntity> friendlyBTarget = {};
 	ref array<IEntity> hostileEnt = {};
 	
-	[Attribute(defvalue: "150", uiwidget: UIWidgets.Auto, desc: "Awareness Friendly Radius")]
+	[Attribute(defvalue: "100", uiwidget: UIWidgets.Auto, desc: "Awareness Friendly Radius")]
 	float searchRad;
 	
-	[Attribute(defvalue: "200", uiwidget: UIWidgets.Auto, desc: "Awareness Hostile Presence Radius")]
+	[Attribute(defvalue: "120", uiwidget: UIWidgets.Auto, desc: "Awareness Hostile Presence Radius")]
 	float searchRadH;
 	
 	protected void getFriendlyEvaluation()
@@ -106,6 +110,7 @@ class DCO_AIAwareness : ScriptComponent
 			{
 				if (!hostileEnt.Contains(ent))
 				{
+					hostiless.Insert(target);
 					hostileEnt.Insert(ent);
 					hostile.Insert(targetInfo);
 				}
@@ -114,6 +119,7 @@ class DCO_AIAwareness : ScriptComponent
 			{
 				if (hostileEnt.Contains(ent))
 				{
+					hostiless.RemoveItem(target);
 					hostileEnt.RemoveItem(ent);
 					hostile.RemoveItem(targetInfo);
 				}
@@ -128,6 +134,7 @@ class DCO_AIAwareness : ScriptComponent
 			SCR_AITargetInfo tarinfo = hostile[i];
 			if(!tarinfo.m_Entity)
 			{
+				hostiless.Remove(i);
 				hostile.Remove(i);
 				hostileEnt.Remove(i);
 				return;
@@ -136,6 +143,7 @@ class DCO_AIAwareness : ScriptComponent
 			bool destroyed = tarinfo.m_DamageManager.IsDestroyed();
 			if (destroyed)
 			{
+				hostiless.Remove(i);
 				hostile.Remove(i);
 				hostileEnt.Remove(i);
 				return;
@@ -143,6 +151,7 @@ class DCO_AIAwareness : ScriptComponent
 			
 			if (vector.Distance(tarinfo.m_Entity.GetOrigin(), m_UtilityComp.m_OwnerEntity.GetOrigin()) > searchRad + 50)
 			{
+				hostiless.Remove(i);
 				hostileEnt.Remove(i);
 				hostile.Remove(i);
 				return;
@@ -150,9 +159,21 @@ class DCO_AIAwareness : ScriptComponent
 		}
 	}
 	
-	void manageDetected()
+	protected void InfoShare()
 	{
-		
+		foreach (IEntity friends : friendlyBTarget)
+		{
+			AIControlComponent ctrl = AIControlComponent.Cast(friends.FindComponent(AIControlComponent));
+			SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(ctrl.GetAIAgent());
+			SCR_AIUtilityComponent UtilityComp = agent.m_UtilityComponent;
+			for (int i = hostiless.Count()-1; i >= 0; i--)
+			{
+				IEntity ent = hostiless[i].GetTargetEntity();
+				UtilityComp.targets.Insert(ent);
+				if (!m_UtilityComp.targets.Contains(ent))
+					m_UtilityComp.targets.Insert(ent);
+			}
+		}
 	}
 
 	void initialize(SCR_AIUtilityComponent util)
@@ -161,7 +182,6 @@ class DCO_AIAwareness : ScriptComponent
 		m_CombatComp = m_UtilityComp.m_CombatComponent;
 		m_InfoComp = m_UtilityComp.m_AIInfo;
 		m_Perceptions = m_UtilityComp.m_PerceptionComponent;
-		//m_charVic = CharacterVicinityComponent.Cast(m_UtilityComp.GetOwner().GetControlledEntity().FindComponent(CharacterVicinityComponent));
 		inventorys = SCR_InventoryStorageManagerComponent.Cast(m_UtilityComp.GetOwner().GetControlledEntity().FindComponent(SCR_InventoryStorageManagerComponent));
 	}
 	
@@ -170,7 +190,9 @@ class DCO_AIAwareness : ScriptComponent
 		getFriendlyEvaluation();
 		MaintainFriendly();
 		MaintainHostile();
-		manageDetected();
+		if (hostiless.Count() > 0)
+			InfoShare();
+		
 	}
 	
 	float getNumberFriendlyRecognized()

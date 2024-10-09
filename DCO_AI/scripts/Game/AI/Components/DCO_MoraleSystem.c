@@ -67,6 +67,7 @@ class DCO_AIMoraleSystem
 	private SCR_DamageManagerComponent			m_DamageManager;
 	private SCR_AIThreatSystem					m_Threat;
 	private DCO_SkillComponent					m_Skill;
+	private DCO_UnitScanComponent				m_Scanner;
 	
 	private SCR_ChimeraAIAgent m_Agent;
 	
@@ -74,6 +75,7 @@ class DCO_AIMoraleSystem
 	private moraleState m_State;
 	private DCO_CUSTOMRANK rank;
 	private DCO_GroupTactic tacs;
+	protected DCO_IndividualRoles MyRole;
 	
 	private ref SCR_AIMoraleStateChangedInvoker m_OnThreatStateChanged = new SCR_AIMoraleStateChangedInvoker();
 	
@@ -97,7 +99,7 @@ class DCO_AIMoraleSystem
 		}
 			
 		rank = m_Skill.GetCharacterRank(utility.GetOwner());
-		
+		m_Scanner = DCO_UnitScanComponent.Cast(utility.m_OwnerEntity.FindComponent(DCO_UnitScanComponent));
 		m_State = moraleState.NORMAL;
 	}
 	
@@ -188,7 +190,7 @@ class DCO_AIMoraleSystem
 		}
 		
 		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.INFO, 1.4, color);	
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity,"Morale Total : " + m_fMoraleTotal.ToString() + " | TAC : " + typename.EnumToString(DCO_GroupTactic, tacs) + " | Threat : " + m_Threat.GetThreatTotal().ToString() + " | E:F:G:H:I = " + m_Utility.targetCount.ToString() + ":" + m_Utility.groupMember.ToString() + ":" + m_Utility.gg.ToString() + ":" + m_Utility.hh.ToString() + ":" + m_Utility.ii.ToString(), EAIDebugCategory.INFO, 1.4, Color.White);	
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity," Morale Total : " + m_fMoraleTotal.ToString() + " | Roles : " + m_Scanner.GetRoleCount().ToString() + " | TAC : " + typename.EnumToString(DCO_GroupTactic, tacs) + " | Threat : " + m_Threat.GetThreatTotal().ToString() + " | Friend : " + m_Utility.targets.Count().ToString(), EAIDebugCategory.INFO, 1.4, Color.White);	
 	}
 	#endif // WORKBENCH
 	
