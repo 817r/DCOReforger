@@ -52,74 +52,84 @@ BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt" 
        Name "Parallel"
        EditorPos 3258.381 1305.237
        Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 838.667 1921.667
+         Nodes {
+          SCR_AIGetAimErrorOffset "SCR_AI Get Aim Error Offset" {
+           Name "SCR_AI Get Aim Error Offset"
+           EditorPos 485.064 2220.162
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 20
+             PortName "BaseTargetIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 26
+             PortName "AimpointType0"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 27
+             PortName "AimpointType1"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 1
+             PortName "ErrorOffset"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 18
+             PortName "AimPoint"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 0
+             PortName "AimingTolerance"
+            }
+           }
+          }
+          SCR_AIGetAimDistanceCompensation "SCR_AI Get Aim Distance Compensation" {
+           Name "SCR_AI Get Aim Distance Compensation"
+           EditorPos 997.618 2205.381
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 15
+             PortName "TargetEntity"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "TargetPosition"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 1
+             PortName "VectorIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "InitialSpeedCoefficient"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 14
+             PortName "VectorOut"
+            }
+           }
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 1436 2218
+          }
+         }
+        }
         DecoratorEntity Entity {
          Name "Entity"
-         EditorPos 1989.084 1741.571
+         EditorPos 3199.084 1874.904
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 2031.666 1944.668
+           EditorPos 3241.666 2078.001
            Nodes {
-            SCR_AIGetAimErrorOffset "SCR_AI Get Aim Error Offset" {
-             Name "SCR_AI Get Aim Error Offset"
-             EditorPos 1471.731 2320.162
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 20
-               PortName "BaseTargetIn"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 26
-               PortName "AimpointType0"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 27
-               PortName "AimpointType1"
-              }
-             }
-             OutPorts {
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 1
-               PortName "ErrorOffset"
-              }
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 18
-               PortName "AimPoint"
-              }
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 0
-               PortName "AimingTolerance"
-              }
-             }
-            }
-            SCR_AIGetAimDistanceCompensation "SCR_AI Get Aim Distance Compensation" {
-             Name "SCR_AI Get Aim Distance Compensation"
-             EditorPos 1984.285 2305.381
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 15
-               PortName "TargetEntity"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "TargetPosition"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 1
-               PortName "VectorIn"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "InitialSpeedCoefficient"
-              }
-             }
-             OutPorts {
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 14
-               PortName "VectorOut"
-              }
-             }
-            }
             SCR_AIGetFireTimes "SCR_AI Get Fire Times" {
              Name "SCR_AI Get Fire Times"
              EditorPos 2533.698 2326.437
@@ -407,11 +417,11 @@ BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt" 
  VariablesRefs {
   VariableReference aimingTolerance {
    VariableType 1
-   EditorPos 1782.913 2604.027
+   EditorPos 796.246 2504.027
   }
   VariableReference aimErrorOffset {
    VariableType 2
-   EditorPos 1756.138 2371.048
+   EditorPos 769.471 2271.048
   }
   VariableReference aimingTolerance {
    VariableType 1
@@ -463,11 +473,11 @@ BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt" 
   }
   VariableReference offsetCompensated {
    VariableType 7
-   EditorPos 2078.285 2493.992
+   EditorPos 1091.618 2393.992
   }
   VariableReference entity {
    VariableType 0
-   EditorPos 1779.234 2288.905
+   EditorPos 792.567 2188.905
   }
   VariableReference aimPoint {
    VariableType 8
@@ -479,7 +489,7 @@ BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt" 
   }
   VariableReference aimPoint {
    VariableType 8
-   EditorPos 1794.761 2491.072
+   EditorPos 808.094 2391.072
   }
   VariableReference baseTarget {
    VariableType 9
@@ -487,7 +497,7 @@ BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt" 
   }
   VariableReference baseTarget {
    VariableType 9
-   EditorPos 1200 2296.667
+   EditorPos 213.333 2196.667
   }
   VariableReference entity {
    VariableType 0
@@ -511,11 +521,11 @@ BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt" 
   }
   VariableReference eAimpointType0 {
    VariableType 10
-   EditorPos 1224.167 2370.833
+   EditorPos 237.5 2270.833
   }
   VariableReference eAimpointType1 {
    VariableType 11
-   EditorPos 1225 2446.666
+   EditorPos 238.333 2346.666
   }
  }
 }

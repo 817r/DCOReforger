@@ -1,8 +1,10 @@
 modded class SCR_AIUpdateTargetSuppressionData : AITaskScripted
 {
-	protected const int FIRE_TREE_RPG	= 2;
-	protected const float VISIBILITY_CHECK_TRACE_RESULT_THRESHOLD = 0.3;
+	protected const float VISIBILITY_CHECK_TRACE_RESULT_THRESHOLD = 0.2;
 	
+	protected const int FIRE_TREE_RPG				= 6;
+	
+	//---------------------------------------------------------------------------
 	override int ResolveFireTree(bool targetVisible)
 	{
 		// Is aiming forbidden by combat move?

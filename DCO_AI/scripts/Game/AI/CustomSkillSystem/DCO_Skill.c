@@ -46,12 +46,7 @@ class DCO_SkillComponent : ScriptComponent
 	{
 		return DCO_SkillComponent.Cast(unit.FindComponent(DCO_SkillComponent));
 	}
-	
-	void setAISkills(DCO_CUSTOMRANK rank)
-	{
-		m_ERank = rank;
-	}
-	
+
 	protected DCO_CUSTOMRANK SetCharacterRank(DCO_CUSTOMRANK rank)
 	{
 		m_ERank = rank;

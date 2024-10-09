@@ -67,6 +67,7 @@ class DCO_AIMoraleSystem
 	private SCR_DamageManagerComponent			m_DamageManager;
 	private SCR_AIThreatSystem					m_Threat;
 	private DCO_SkillComponent					m_Skill;
+	private DCO_UnitScanComponent				m_Scanner;
 	
 	private SCR_ChimeraAIAgent m_Agent;
 	
@@ -74,6 +75,7 @@ class DCO_AIMoraleSystem
 	private moraleState m_State;
 	private DCO_CUSTOMRANK rank;
 	private DCO_GroupTactic tacs;
+	protected DCO_IndividualRoles MyRole;
 	
 	private ref SCR_AIMoraleStateChangedInvoker m_OnThreatStateChanged = new SCR_AIMoraleStateChangedInvoker();
 	
@@ -97,7 +99,7 @@ class DCO_AIMoraleSystem
 		}
 			
 		rank = m_Skill.GetCharacterRank(utility.GetOwner());
-		
+		m_Scanner = DCO_UnitScanComponent.Cast(utility.m_OwnerEntity.FindComponent(DCO_UnitScanComponent));
 		m_State = moraleState.NORMAL;
 	}
 	
@@ -188,7 +190,7 @@ class DCO_AIMoraleSystem
 		}
 		
 		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.INFO, 1.4, color);	
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity,"Morale Total : " + m_fMoraleTotal.ToString() + " | TAC : " + typename.EnumToString(DCO_GroupTactic, tacs) + " | Threat : " + m_Threat.GetThreatTotal().ToString() + " | E:F = " + m_Utility.targetCount.ToString() + ":" + m_Utility.groupMember.ToString(), EAIDebugCategory.INFO, 1.4, Color.White);	
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity," Morale Total : " + m_fMoraleTotal.ToString() + " | Roles : " + m_Scanner.GetRoleCount().ToString() + " | TAC : " + typename.EnumToString(DCO_GroupTactic, tacs) + " | Threat : " + m_Threat.GetThreatTotal().ToString() + " | Friend : " + m_Utility.targets.Count().ToString(), EAIDebugCategory.INFO, 1.4, Color.White);	
 	}
 	#endif // WORKBENCH
 	
@@ -289,30 +291,25 @@ class DCO_AIMoraleSystem
 						break;
 					}
 				}
-			} else 
-			{
-				aimImprovement = 0;
-				improvementAims = 0;
 			}
 
 			if (m_Combat.selectedTargetChanged)
 			{
-				m_Combat.resetImprovement();
-				aimImprovement = 0;
-				improvementAims = 0;
+				aimImprovement -= aimRecoveryPerSecond / 50;
+				improvementAims -= aimRecoveryPerSecond / 50;
 			}
 		}
 		else
 		{
 			m_fMoraleThreatMod = Math.Clamp(m_fMoraleThreatMod - 0.001 * 0.0001 * timeSlice, 0, 1.0);
-			m_Combat.resetImprovement();
-			improvementAims = 0;
-			aimImprovement = 0;
+			aimImprovement -= aimRecoveryPerSecond / 20;
+			improvementAims -= aimRecoveryPerSecond / 20;
 		}
+		
 		tacs = utility.getTactics();
 		rank = m_Skill.GetCharacterRank(utility.m_OwnerEntity);
 		m_fMoraleTotal = Math.Clamp((m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered + m_fMoraleSupply + m_fMoraleThreatMod) - friendlyMoraleBoost(), 0, 4.2);
-		aimImprovementTotal = Math.Clamp(improvementAims, 0, 10 - aimDecrase);
+		aimImprovementTotal = Math.Clamp(improvementAims, 0, 12 - aimDecrase);
 		m_Combat.improvement(aimImprovementTotal);
 		UpdateState();
 #ifdef WORKBENCH

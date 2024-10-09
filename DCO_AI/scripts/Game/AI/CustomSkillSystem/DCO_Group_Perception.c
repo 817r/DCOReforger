@@ -145,4 +145,14 @@ modded class SCR_AIGroupPerception : Managed
 			m_Utility.tempTarget.Insert(shooter);
 		}
 	}
+	
+	void UpdateFromFriendlys(BaseTarget target)
+	{
+		IEntity enemy = target.GetTargetEntity();
+		SCR_AITargetInfo targetInfo = new SCR_AITargetInfo();
+		
+		targetInfo.InitFromBaseTarget(target);
+		m_aTargetEntities.Insert(enemy);
+		m_aTargets.Insert(targetInfo);
+	}
 }

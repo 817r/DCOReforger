@@ -7,7 +7,9 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	DCO_AIAwareness m_Awareness;
 	protected DCO_BaseAICommander commander;
 	
-	int groupMember;
+	ref array<IEntity> targets = {};
+	
+	int groupMember, gg, hh, ii;
 	int targetCount;
 	bool isCommander;
 	
@@ -186,6 +188,25 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		AddDebugMessage("EvaluateBehavior END\n");
 		#endif
 		
+		if (targets.Count() > 0)
+		{
+			SCR_AIGroupUtilityComponent groupUtilityComp = SCR_AIGroupUtilityComponent.Cast(GetAIAgent().GetParentGroup().FindComponent(SCR_AIGroupUtilityComponent));
+			if (groupUtilityComp)
+			{
+				PerceptionManager pm = GetGame().GetPerceptionManager();
+				if (pm)
+				{
+					float timestamp = pm.GetTime();
+					
+					for (int i = targets.Count()-1; i >= 0; i--)
+					{
+						groupUtilityComp.m_Perception.AddOrUpdateGunshot(targets[i], targets[i].GetOrigin() , timestamp, true);
+					}
+					
+				}
+			}
+		}
+		
 		return m_CurrentBehavior;
 	}
 	
@@ -278,5 +299,23 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	{
 		groupMember = f;
 		return f;
+	}
+	
+	int setG(int g)
+	{
+		gg = g;
+		return g;
+	}
+	
+	int setH(int h)
+	{
+		hh = h;
+		return h;
+	}
+	
+	int setI(int i)
+	{
+		ii = i;
+		return i;
 	}
 }

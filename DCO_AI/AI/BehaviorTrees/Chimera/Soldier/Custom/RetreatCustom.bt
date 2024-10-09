@@ -3,7 +3,7 @@ BehaviorTree "{02DD73D389B16330}AI/BehaviorTrees/Chimera/Soldier/Custom/RetreatC
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos -1056.5 -742
+   EditorPos -1058.5 -738
    Nodes {
     Parallel Parallel {
      Name "Parallel"
@@ -14,114 +14,13 @@ BehaviorTree "{02DD73D389B16330}AI/BehaviorTrees/Chimera/Soldier/Custom/RetreatC
        EditorPos -1243.073 -424.628
        Result RUNNING
       }
-      Sequence Sequence {
-       Name "Sequence - Move To Safe Pos"
-       EditorPos -1155.189 -31.443
-       Nodes {
-        Sequence Sequence {
-         Name "Sequence - Find Random Pos Away From Target"
-         EditorPos -2393.489 435.61
-         Nodes {
-          SCR_AIGetPosForwardToTarget "SCR_AI Get Pos Forward To Target" {
-           Name "SCR_AI Get Pos AWAY From Target "
-           EditorPos -2494.212 621.256
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 3
-             PortName "Target"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Distance"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 1
-             PortName "ResultVector"
-            }
-           }
-           m_Distance -32
-          }
-          SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
-           Name "SCR_AI Get Random Point"
-           EditorPos -1868.715 615.503
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Waypoint"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 1
-             PortName "Origin"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Radius"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 2
-             PortName "ResultVector"
-            }
-           }
-           m_Radius 8
-          }
-         }
-        }
-        Sequence Sequence {
-         Name "Sequence - Run and dont look"
-         EditorPos -822.665 509.653
-         Nodes {
-          SCR_AITalk "SCR_AI Talk" {
-           Name "SCR_AI Talk"
-           EditorPos -986.048 720.837
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "SpeakerIn"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "TargetIn"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "LocationIn"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "EnumIn"
-            }
-           }
-           m_messageType REPORT_NEGATIVE
-           m_bTransmitIfPassenger 0
-          }
-          AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-           Name "Character Set Movement Speed"
-           EditorPos -820.002 728.8
-           "Movement speed" RUN
-          }
-          SCR_AISetStance "SCR_AI Set Stance" {
-           Name "SCR_AI Set Stance"
-           EditorPos -459.882 733.146
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Stance"
-            }
-           }
-          }
-          AITaskMove Move {
-           Name "Move"
-           EditorPos -122.281 717.027
-           InTargetLocation 0
-           InPrecisionXZ -1
-           PrecisionXZ 6
-           AutoOrientation 0
-          }
-         }
+      DCO_Evasive_EVALUATION "DCO_ Evasive_EVALUATION" {
+       Name "DCO_ Evasive_EVALUATION"
+       EditorPos -968.412 -347.936
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 0
+         PortName "Position"
         }
        }
       }
@@ -164,21 +63,9 @@ BehaviorTree "{02DD73D389B16330}AI/BehaviorTrees/Chimera/Soldier/Custom/RetreatC
   }
  }
  VariablesRefs {
-  VariableReference safePos {
-   VariableType 0
-   EditorPos -286.931 750.049
-  }
-  VariableReference posAwayFromTarget {
-   VariableType 1
-   EditorPos -2182.589 766.61
-  }
-  VariableReference safePos {
-   VariableType 0
-   EditorPos -1593.962 779.281
-  }
   VariableReference enemyLastSeenPos {
    VariableType 4
-   EditorPos -2761.187 767.609
+   EditorPos -1232.933 -262.271
   }
  }
 }

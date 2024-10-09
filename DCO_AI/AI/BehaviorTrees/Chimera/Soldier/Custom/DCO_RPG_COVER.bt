@@ -1,0 +1,295 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_RPG_COVER.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -771.667 -326.667
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos -771.667 -220
+     Nodes {
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos -1610 109
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -2532.809 580.667
+         Nodes {
+          SCR_AIGetBaseTargetProperties "SCR_AI Get Base Target Properties" {
+           Name "SCR_AI Get Base Target Properties"
+           EditorPos -3387.698 952.143
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 11
+             PortName "BaseTarget"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 0
+             PortName "Entity"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "LastSeenPosition"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "TimeSinceSeen"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "IsEndangering"
+            }
+           }
+          }
+          SCR_AIGetAimErrorOffset "SCR_AI Get Aim Error Offset" {
+           Name "SCR_AI Get Aim Error Offset"
+           EditorPos -2638.059 949.667
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 1
+             PortName "BaseTargetIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 5
+             PortName "AimpointType0"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 4
+             PortName "AimpointType1"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 3
+             PortName "ErrorOffset"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "AimPoint"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "AimingTolerance"
+            }
+           }
+          }
+          SCR_AIGetAimDistanceCompensation "SCR_AI Get Aim Distance Compensation" {
+           Name "SCR_AI Get Aim Distance Compensation"
+           EditorPos -2134.877 932.552
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 6
+             PortName "TargetEntity"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "TargetPosition"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 3
+             PortName "VectorIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "InitialSpeedCoefficient"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 2
+             PortName "VectorOut"
+            }
+           }
+          }
+         }
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -744.666 595
+         Nodes {
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos -1495 945
+          }
+          SCR_AIGetWeaponOfType "SCR_AI Get Weapon Of Type" {
+           Name "SCR_AI Get Weapon Of Type"
+           EditorPos -1337.611 946.93
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "WeaponType"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 10
+             PortName "WeaponComponent"
+            }
+           }
+           m_WeaponType WT_ROCKETLAUNCHER
+          }
+          SCR_AISwitchWeapon "SCR_AI Switch Weapon" {
+           Name "SCR_AI Switch Weapon"
+           EditorPos -735.388 945.958
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 10
+             PortName "WeaponComponent"
+            }
+           }
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos -511 942.953
+           Period 1
+           PeriodRandom 1
+          }
+          AITaskFire Fire {
+           Name "Fire"
+           EditorPos -325 939.286
+           Period 2
+          }
+          SCR_AIDropWeapon "SCR_AI Drop Weapon" {
+           Name "SCR_AI Drop Weapon"
+           EditorPos -154.091 950.758
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 42.333 947.758
+           Period 1
+          }
+         }
+        }
+       }
+      }
+      DecoTestVariable "Test Variable" {
+       Name "Test Variable"
+       EditorPos -108.702 23.678
+       Nodes {
+        AITaskCharacterAim "Character Aim" {
+         Name "Character Aim"
+         EditorPos -113.788 182.899
+         Group "{6112B96CAC67C4E3}"
+         InAimAtPosition -1
+         InAimPoint 7
+         InEntity 8
+         PrecisionXZ 0
+         PrecisionY 0
+         InPrecisionXZ -1
+         InPrecisionY -1
+         InAimOffset 9
+         AimType Weapon
+        }
+       }
+       InVariable 9
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable entity {
+   VariableName "entity"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable Smoke {
+   VariableName "Smoke"
+   VariableTypeName "BaseWeaponComponent"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable target {
+   VariableName "target"
+   VariableTypeName "BaseTarget"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable offsetCompensated {
+   VariableName "offsetCompensated"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable aimErrorOffset {
+   VariableName "aimErrorOffset"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable eAimpointType1 {
+   VariableName "eAimpointType1"
+   VariableTypeName "int"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable eAimpointType0 {
+   VariableName "eAimpointType0"
+   VariableTypeName "int"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable aimPoint {
+   VariableName "aimPoint"
+   VariableTypeName "AimPoint"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference entity {
+   VariableType 0
+   EditorPos -3031.93 1069.023
+  }
+  VariableReference target {
+   VariableType 2
+   EditorPos -2828.06 958.417
+  }
+  VariableReference offsetCompensated {
+   VariableType 3
+   EditorPos -1793.976 971.25
+  }
+  VariableReference aimErrorOffset {
+   VariableType 4
+   EditorPos -2368.127 1048.599
+  }
+  VariableReference eAimpointType1 {
+   VariableType 5
+   EditorPos -2861.894 1125.833
+  }
+  VariableReference eAimpointType0 {
+   VariableType 6
+   EditorPos -2858.977 1042.5
+  }
+  VariableReference entity {
+   VariableType 0
+   EditorPos -2313.127 962.349
+  }
+  VariableReference aimPoint {
+   VariableType 7
+   EditorPos -413.083 251.475
+  }
+  VariableReference entity {
+   VariableType 0
+   EditorPos -399.63 344.273
+  }
+  VariableReference offsetCompensated {
+   VariableType 3
+   EditorPos -494.545 432.822
+  }
+  VariableReference Smoke {
+   VariableType 1
+   EditorPos -1047.611 1048.042
+  }
+  VariableReference target {
+   VariableType 2
+   EditorPos -3577.167 1008.917
+  }
+ }
+}

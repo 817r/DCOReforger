@@ -37,6 +37,21 @@ class DCO_MagicAmmo : AITaskScripted
 		
 		m_Inventory.ResupplyMagazines(m_iMagazineCount);
 		
+		array<IEntity> items;
+		
+		m_Inventory.GetItems(items);
+		MagazineComponent magComp;
+		
+		foreach(IEntity item : items)
+		{
+			magComp = MagazineComponent.Cast(item.FindComponent(MagazineComponent));
+			if (!magComp)
+				continue;
+			
+			if (magComp.GetMagazineWell().ToString() == m_sMagazineWellType)
+				ChimeraCharacter.Cast(m_OwnerEntity).GetCharacterController().ReloadWeaponWith(item);
+		}
+		
 		return ENodeResult.FAIL;			
 	}	
 		

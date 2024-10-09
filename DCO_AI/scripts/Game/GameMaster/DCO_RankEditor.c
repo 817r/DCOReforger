@@ -39,7 +39,7 @@ class DCO_AIRankEditorAttribute : SCR_BaseFloatValueHolderEditorAttribute
 		if (editableEntity.HasEntityState(EEditableEntityState.PLAYER)) return;
 		
 		int cusRank = var.GetInt();
-		int rankApplication;
+		//int rankApplication;
 		
 		DCO_SkillComponent.setSkill(editableEntity.GetOwner(), cusRank);
 			

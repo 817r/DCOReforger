@@ -16,7 +16,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
       }
       SCR_AIGetInvestigateBehaviorParameters "SCR_AI Get Investigate Behavior Parameters" {
        Name "SCR_AI Get Investigate Behavior Parameters"
-       EditorPos -147.083 -370.278
+       EditorPos -147.083 -371.707
        OutPorts {
         SingleOutputPortContainer SingleOutputPortContainer {
          Port 1
@@ -140,7 +140,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                }
                Group "{622E04EC36FF0830}"
                BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defensive.bt"
-               AlwaysReinit 1
               }
               AITaskReturnState "Return  State" {
                Name "Return  State"
@@ -253,7 +252,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                    }
                    Group "{622E04EC36FF0830}"
                    BehaviorTree "{02DD73D389B16330}AI/BehaviorTrees/Chimera/Soldier/Custom/RetreatCustom.bt"
-                   AlwaysReinit 1
                   }
                   AITaskReturnState "Return  State" {
                    Name "Return  State"

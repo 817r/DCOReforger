@@ -7,11 +7,11 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
    Nodes {
     Parallel Parallel {
      Name "Parallel"
-     EditorPos 2926.956 -556.45
+     EditorPos 2885.289 -543.95
      Nodes {
       Sequence Sequence {
        Name "Sequence"
-       EditorPos 2632.901 -301.673
+       EditorPos 1152.425 -161.673
        Nodes {
         Sequence Sequence {
          Name "Sequence"
@@ -57,146 +57,39 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
          }
          Group "{622E19FADDD03EA4}"
         }
-        Selector Selector {
-         Name "Selector"
-         EditorPos 1712.5 772.5
-         Nodes {
-          DecoTestVariable "Test Variable" {
-           Name "Test Variable"
-           EditorPos 171.071 1257.143
-           Nodes {
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 185.667 1440.667
-             Nodes {
-              RunOnce "Run Once" {
-               Name "Run Once"
-               EditorPos -706.334 1740.667
-               Nodes {
-                SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
-                 Name "SCR_AI Get Entity Position"
-                 EditorPos -747.444 1877.695
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 13
-                   PortName "Entity"
-                  }
-                 }
-                 OutPorts {
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 14
-                   PortName "Position"
-                  }
-                 }
-                 Group "{622E1C12856F3FAF}"
-                }
-               }
-               Group "{622E1C12856F3FAF}"
-              }
-              SCR_AIGetRandomPointWithExclude "SCR_AI Get Random Point With Exclude" {
-               Name "SCR_AI Get Random Point With Exclude"
-               EditorPos -177.297 1725.179
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "Entity"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 4
-                 PortName "SearchCenter"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "SearchRadius"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "ExclusionCenter"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "ExclusionRadius"
-                }
-               }
-               OutPorts {
-                SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 5
-                 PortName "Position"
-                }
-               }
-               Group "{622E1C12856F3FAF}"
-               m_fSearchRadius 20
-              }
-              AITaskMove Move {
-               Name "Move"
-               EditorPos 415.953 1745.429
-               Group "{622E1C12856F3FAF}"
-               InTargetLocation 5
-              }
-              AITaskIdle Idle {
-               Name "Idle"
-               EditorPos 736.619 1787.429
-               Group "{622E1C12856F3FAF}"
-               Period 5
-               PeriodRandom 8
-              }
-             }
-             Group "{622E1C12856F3FAF}"
-            }
-           }
-           Group "{622E1C12856F3FAF}"
-           UseChildResult 0
-           InVariable 12
-           TestType EqualsValue
-           TestValue "1"
-          }
-          Sequence Sequence {
-           Name "Sequence"
-           EditorPos 2189.311 1359.434
-           Nodes {
-            AITaskIdle Idle {
-             Name "Idle"
-             EditorPos 1735.766 1790.055
-             Group "{622E1C12D0A820AA}"
-             PeriodRandom 4
-            }
-            DCO_DEFENSIVE_EVALUATION_COVER DCO_DEFENSIVE_EVALUATION_COVER {
-             Name "DCO_DEFENSIVE_EVALUATION_COVER"
-             EditorPos 2069.667 1778
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 6
-               PortName "Position"
-              }
-             }
-            }
-            AITaskIdle Idle {
-             Name "Idle"
-             EditorPos 2480.786 1782.714
-             Group "{622E1C12D0A820AA}"
-             Period 300
-             PeriodRandom 60
-            }
-           }
-           Group "{622E1C12D0A820AA}"
-          }
-         }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 1835 145
+         Result RUNNING
         }
-        SCR_AIDCO_COVERMANAGER SCR_AIDCO_COVERMANAGER {
-         Name "SCR_AIDCO_COVERMANAGER"
-         EditorPos 2814.834 -50.972
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 16
-           PortName "Position"
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 1598.477 477.767
+         Nodes {
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 1299.099 730.055
+           Group "{622E1C12D0A820AA}"
+           PeriodRandom 4
+          }
+          DCO_DEFENSIVE_EVALUATION_COVER DCO_DEFENSIVE_EVALUATION_COVER {
+           Name "DCO_DEFENSIVE_EVALUATION_COVER"
+           EditorPos 1782.048 674.667
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 6
+             PortName "Position"
+            }
+           }
           }
          }
+         Group "{622E1C12D0A820AA}"
         }
        }
       }
       AITaskReturnState "Return State" {
        Name "Return State"
-       EditorPos 3080.167 -278.667
+       EditorPos 3080.167 -281.167
        Result RUNNING
       }
      }
@@ -220,23 +113,23 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
   }
   DecoTestVariable "Test Variable" {
    Name "Test Variable"
-   EditorPos 3084.723 1748.055
+   EditorPos 2648.056 688.055
    Nodes {
     Selector Selector {
      Name "Selector"
-     EditorPos 3104.167 1908.75
+     EditorPos 2667.5 848.75
      Nodes {
       DecoratorEntity Entity {
        Name "Entity"
-       EditorPos 2837.901 2067.432
+       EditorPos 2401.234 1007.432
        Nodes {
         Sequence Sequence {
          Name "Sequence"
-         EditorPos 2869.917 2269.166
+         EditorPos 2433.25 1209.166
          Nodes {
           DCO_GetBuildingType "DCO_ Get Building Type" {
            Name "DCO_ Get Building Type"
-           EditorPos 2397.064 2491.904
+           EditorPos 1960.397 1431.904
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
              Port 7
@@ -247,7 +140,7 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
           }
           DCO_AIFortification "DCO_AI Fortification" {
            Name "DCO_AI Fortification"
-           EditorPos 2815.303 2489.469
+           EditorPos 2378.636 1429.469
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port 7
@@ -258,7 +151,7 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
           }
           AITaskSetVariable "Set Variable" {
            Name "Set Variable"
-           EditorPos 3130.155 2485.571
+           EditorPos 2693.488 1425.571
            Group "{622E1C12D0A820AA}"
            SetValue "1"
            OutVariable 15
@@ -276,18 +169,18 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
       }
       Sequence Sequence {
        Name "Sequence"
-       EditorPos 3247 2072.143
+       EditorPos 2810.333 1012.143
        Nodes {
         AITaskIdle Idle {
          Name "Idle"
-         EditorPos 3181.857 2251.107
+         EditorPos 2745.19 1191.107
          Group "{622E1C12D0A820AA}"
          Period 5
          PeriodRandom 0
         }
         AITaskSetVariable "Set Variable" {
          Name "Set Variable"
-         EditorPos 3357.143 2230.714
+         EditorPos 2920.476 1170.714
          Group "{622E1C12D0A820AA}"
          SetValue "1"
          OutVariable 10
@@ -307,7 +200,7 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
   }
   SCR_AIGetCombatMoveState "SCR_AI Get Combat Move State" {
    Name "SCR_AI Get Combat Move State"
-   EditorPos 2655.214 1758
+   EditorPos 2218.547 698
    OutPorts {
     SingleOutputPortContainer SingleOutputPortContainer {
      Port -1
@@ -322,10 +215,102 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
   }
   AITaskIdle Idle {
    Name "Idle"
-   EditorPos 3286.409 1758.752
+   EditorPos 2849.742 698.752
    Group "{622E1C12D0A820AA}"
    Period 7
    PeriodRandom 10
+  }
+  SCR_AIDCO_COVERMANAGER SCR_AIDCO_COVERMANAGER {
+   Name "SCR_AIDCO_COVERMANAGER"
+   EditorPos 2707.334 127.778
+   InPorts {
+    SingleInputPortContainer SingleInputPortContainer {
+     Port 16
+     PortName "Position"
+    }
+   }
+  }
+  DecoTestVariable "Test Variable" {
+   Name "Test Variable"
+   EditorPos 171.071 1257.143
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 185.667 1440.667
+     Nodes {
+      RunOnce "Run Once" {
+       Name "Run Once"
+       EditorPos -706.334 1740.667
+       Nodes {
+        SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+         Name "SCR_AI Get Entity Position"
+         EditorPos -747.444 1877.695
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 13
+           PortName "Entity"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 14
+           PortName "Position"
+          }
+         }
+         Group "{622E1C12856F3FAF}"
+        }
+       }
+       Group "{622E1C12856F3FAF}"
+      }
+      SCR_AIGetRandomPointWithExclude "SCR_AI Get Random Point With Exclude" {
+       Name "SCR_AI Get Random Point With Exclude"
+       EditorPos -177.297 1725.179
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "Entity"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 4
+         PortName "SearchCenter"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "SearchRadius"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ExclusionCenter"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ExclusionRadius"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 5
+         PortName "Position"
+        }
+       }
+       Group "{622E1C12856F3FAF}"
+       m_fSearchRadius 20
+      }
+      AITaskMove Move {
+       Name "Move"
+       EditorPos 415.953 1745.429
+       Group "{622E1C12856F3FAF}"
+       InTargetLocation 5
+      }
+     }
+     Group "{622E1C12856F3FAF}"
+    }
+   }
+   Group "{622E1C12856F3FAF}"
+   UseChildResult 0
+   InVariable 12
+   TestType EqualsValue
+   TestValue "1"
   }
  }
  Variables {
@@ -423,12 +408,12 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
   }
   VariableReference threatPos {
    VariableType 4
-   EditorPos 1896.833 1851
+   EditorPos 1613.499 767.667
    Group "{622E1C12D0A820AA}"
   }
   VariableReference bType {
    VariableType 8
-   EditorPos 2651.667 2571.666
+   EditorPos 2215 1511.666
    Group "{622E1C12D0A820AA}"
   }
   VariableReference me {
@@ -438,12 +423,12 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
   }
   VariableReference me {
    VariableType 9
-   EditorPos 2609.321 2116.857
+   EditorPos 2172.654 1056.857
    Group "{622E1C12D0A820AA}"
   }
   VariableReference patrol {
    VariableType 1
-   EditorPos 3613.333 2323.571
+   EditorPos 3176.666 1263.571
    Group "{622E1C12D0A820AA}"
   }
   VariableReference patrol {
@@ -467,12 +452,12 @@ BehaviorTree "{3A681A703B1F9DE2}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defe
   }
   VariableReference patrol {
    VariableType 1
-   EditorPos 3386.345 2578.428
+   EditorPos 2949.678 1518.428
    Group "{622E1C12D0A820AA}"
   }
   VariableReference threatPos {
    VariableType 4
-   EditorPos 2624.5 28.028
+   EditorPos 2527 208.028
   }
  }
  Groups {

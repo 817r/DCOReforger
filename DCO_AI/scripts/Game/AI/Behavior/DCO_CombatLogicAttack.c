@@ -122,7 +122,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				m_State.ApplyRequestChangeStanceOutsideCover(newStance);
 			}
 			
-			if (m_State.m_fTimerStopped_s > Math.RandomFloat(8.0, 11.0) && m_eThreatState >= EAIThreatState.THREATENED && morale == moraleState.ANXIOUS)
+			if (m_State.m_fTimerStopped_s > Math.RandomFloat(8.0, 11.0) && m_eThreatState >= EAIThreatState.PINNED && morale == moraleState.BREAK)
 				CoverManager(m_CombatComp.GetLastSeenEnemy().GetLastDetectedPosition(), SCR_EAICombatMoveDirection.ANYWHERE);
 		}
 		
@@ -2745,7 +2745,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			case DCO_GroupTactic.BALANCE:
 			{
-				treshold = 20;
+				treshold = 15;
 				break;
 			}
 			case DCO_GroupTactic.ASSAULT:
@@ -2755,7 +2755,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			case DCO_GroupTactic.DEFENSIVE:
 			{
-				treshold = 30;
+				treshold = 20;
 				break;
 			}		
 		}
@@ -2807,7 +2807,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.RUN;
-			rq.m_fCoverSearchDistMax = 25;
+			rq.m_fCoverSearchDistMax = 50;
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 10;
 			rq.m_eDirection = dir;
@@ -2841,9 +2841,9 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	
 	protected bool targetInvisibleCondition()
 	{
-		float recognitionFac = m_Target.GetTraceFraction();
+		float recognitionFac = m_Target.GetExposure();
 		
-		return (recognitionFac < 0.3);
+		return (recognitionFac < 0.4);
 	}
 	
 	protected void pushFindTarget()

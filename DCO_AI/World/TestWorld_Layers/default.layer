@@ -57,18 +57,6 @@ RadioManagerEntity : "{B8E09FAB91C4ECCD}Prefabs/Radio/RadioManager.et" {
 SCR_BaseTaskManager : "{1AC69CD7907FB4F8}Prefabs/ScenarioFramework/Tasks/TaskManager.et" {
  coords 6404.38 160.657 6457.227
 }
-SCR_AIGroup : "{84E5BBAB25EA23E5}Prefabs/Groups/BLUFOR/Group_US_FireTeam.et" {
- components {
-  DCO_GroupTacticComponent "{623C1A41ECFCA4DD}" {
-   m_tac EVASIVE
-   AutomatedTactics 0
-  }
- }
- coords 6420.516 160.647 6431.876
- m_aUnitPrefabSlots {
-  "{B43825CE22DB2941}Prefabs/Custom Game Mode/Command/Commander.et"
- }
-}
 SCR_LoadoutManager : "{97EF4C1A41F63DDB}Prefabs/MP/Managers/Loadouts/LoadoutManager_USxUSSR.et" {
  coords 4861.387 28.594 11839.631
 }

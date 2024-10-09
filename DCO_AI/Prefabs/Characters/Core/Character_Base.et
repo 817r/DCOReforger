@@ -3,6 +3,10 @@ SCR_ChimeraCharacter {
  components {
   ChimeraAIControlComponent "{520EA1D2DB109F34}" {
    components {
+    AICharacterMovementComponent "{520EA1D2DB109F01}" {
+     ObstacleAvoidanceTimer 3
+     ObstacleAvoidanceCheckDist 12
+    }
     DCO_AIAwareness "{623C1A41A5DF568F}" {
     }
     DCO_GroupTacticComponent "{623C1A41B2B4C1B3}" {
@@ -15,10 +19,13 @@ SCR_ChimeraCharacter {
        MaxRange 800
        FOVNormal 120
        FOVPeripheral 200
+       RecognitionDetectDecay 0.1
       }
      }
     }
    }
+  }
+  DCO_UnitScanComponent "{628AE55504B43141}" {
   }
   SCR_CharacterPerceivableComponent "{566CCE2397E28600}" {
    VisualFactorStance_Prone 0.1

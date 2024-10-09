@@ -1,7 +1,8 @@
 modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 {		
-	//-----------------------------------------------------------------------------------------------------
-	// Evaluates which fire tree should be used
+	protected const int FIRE_TREE_GRENADE			= 5;
+	protected const int FIRE_TREE_RPG				= 6;
+	
 	override int ResolveFireTree(BaseTarget target, bool visible, bool weaponReady, out float fireRate)
 	{
 		// Is aiming forbidden by combat move?
@@ -25,6 +26,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			return FIRE_TREE_LOOK;
 		
 		EWeaponType weaponType = selectedWeaponComp.GetWeaponType();
+		fireRate = fireRateHandler(target, weaponType);
 		
 		float targetDistance = target.GetDistance();
 		
@@ -60,15 +62,21 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			// Visible
 			// If machinegun, always use burst at any range
 			// For regular weapons, use burst at short range if available, otherwise single
-			if (weaponType == EWeaponType.WT_MACHINEGUN)
+			if (weaponType == EWeaponType.WT_MACHINEGUN && targetDistance < SCR_AICombatComponent.CLOSE_RANGE_COMBAT_DISTANCE * 2)
+				return FIRE_TREE_SUPPRESSIVE;
+			else if (weaponType == EWeaponType.WT_MACHINEGUN)
 				return FIRE_TREE_BURST;
+			else if (target.GetPerceivableComponent().IsInCompartment() && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER) && targetDistance < 450)
+				return FIRE_TREE_RPG;
 			else if (weaponType == EWeaponType.WT_SNIPERRIFLE)
+			{
+				fireRate = 0.01;
 				return FIRE_TREE_SINGLE;
+			}	
 			else if (targetDistance < BURST_FIRE_MAX_DISTANCE && m_bWeaponHasBurstOrAuto)
 				return FIRE_TREE_BURST;
 			else
 				return FIRE_TREE_SINGLE;
-			
 		}
 		else
 		{
@@ -82,10 +90,10 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			
 			float threat = m_UtilityComponent.m_ThreatSystem.GetThreatMeasure();
 			float lastSeenThreshold;
+			if (weaponType == EWeaponType.WT_SNIPERRIFLE)
+				return FIRE_TREE_LOOK;
 			if (weaponType == EWeaponType.WT_MACHINEGUN)
 				lastSeenThreshold = SCR_AICombatComponent.TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_MG;
-			else if (weaponType == EWeaponType.WT_SNIPERRIFLE)
-				lastSeenThreshold = SCR_AICombatComponent.TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK;
 			else
 			{
 				if (targetDistance < SCR_AICombatComponent.CLOSE_RANGE_COMBAT_DISTANCE)
@@ -96,19 +104,35 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			
 			lastSeenThreshold = Math.Max(SCR_AICombatComponent.TARGET_MIN_LAST_SEEN_INDIRECT_ATTACK, lastSeenThreshold * threat);
 			
-			if ((!directDamage || weaponType != EWeaponType.WT_ROCKETLAUNCHER) &&
+			if (target.GetTraceFraction() > 0.3 && target.GetTimeLastSeen() < 7 && targetDistance > 5 && targetDistance < 30 && m_UtilityComponent.m_ThreatSystem.GetThreatTotal() < 5.3)
+			{
+				return FIRE_TREE_GRENADE;
+			}
+			else if (target.GetTraceFraction() > 0.35 && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER) && targetDistance > 25 && targetDistance < 500)
+			{
+				return FIRE_TREE_RPG;
+			}
+			else if ((!directDamage || weaponType != EWeaponType.WT_ROCKETLAUNCHER) &&
 				target.GetTimeSinceSeen() < lastSeenThreshold &&
 				target.GetTraceFraction() > 0.5)
 			{
-				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 2, 1));
-				fireRate = maxFireRate * threat;
-								
+				fireRate = fireRateHandler(target, weaponType);								
 				return FIRE_TREE_SUPPRESSIVE;
 			}
 			else
 				return FIRE_TREE_LOOK;
 		}
-		
 		return FIRE_TREE_LOOK;
+	}
+	
+	float fireRateHandler(BaseTarget target,EWeaponType selectedWeaponComp)
+	{		
+		if (selectedWeaponComp == EWeaponType.WT_SNIPERRIFLE) return 0.01;
+		float targetDistance = target.GetDistance();
+		float threat = m_UtilityComponent.m_ThreatSystem.GetThreatMeasure();
+		
+		float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 2, 1));
+		float fireRate = maxFireRate * threat;
+		return fireRate;
 	}
 }

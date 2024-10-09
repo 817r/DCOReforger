@@ -230,7 +230,7 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
               AITaskIdle Idle {
                Name "Idle"
                EditorPos -1455.139 984.167
-               Period 2
+               Period 30
               }
               Decorator Decorator {
                Name "Decorator"

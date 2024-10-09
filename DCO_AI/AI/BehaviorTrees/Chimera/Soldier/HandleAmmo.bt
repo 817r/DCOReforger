@@ -69,7 +69,7 @@ BehaviorTree {
            Nodes {
             SCR_AIGetMuzzleMagazineWell "SCR_AI Get Muzzle Magazine Well" {
              Name "SCR_AI Get Muzzle Magazine Well"
-             EditorPos 1356.429 1220.106
+             EditorPos 1393.572 1188.677
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port 3
@@ -91,14 +91,25 @@ BehaviorTree {
               }
              }
             }
+            DCO_MagicAmmo "DCO_ Magic Ammo" {
+             Name "DCO_ Magic Ammo"
+             EditorPos 1769.154 1193.857
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "MagazineWell"
+              }
+             }
+             m_iMagazineCount 3
+            }
             AITaskGetControlledEntity "Get Controlled Entity" {
              Name "Get Controlled Entity"
-             EditorPos 1743.381 1195.619
+             EditorPos 2009.095 1178.476
              OutControlledEntity 7
             }
             SCR_AITalk "SCR_AI Talk" {
              Name "SCR_AI Talk"
-             EditorPos 2057.371 1193
+             EditorPos 2278.8 1143
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -121,17 +132,6 @@ BehaviorTree {
              m_ePreset MANDATORY
              m_bSynchronous 1
              m_bTransmitIfPassenger 0
-            }
-            DCO_MagicAmmo "DCO_ Magic Ammo" {
-             Name "DCO_ Magic Ammo"
-             EditorPos 2240.583 1191
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 5
-               PortName "MagazineWell"
-              }
-             }
-             m_iMagazineCount 3
             }
             SCR_AIGetMyGroup "SCR_AI Get My Group" {
              Name "SCR_AI Get My Group"
@@ -231,19 +231,19 @@ BehaviorTree {
   }
   VariableReference lowAmmo {
    VariableType 3
-   EditorPos 1800.825 704.032
+   EditorPos 1750.825 719.746
   }
   VariableReference weaponComp {
    VariableType 0
-   EditorPos 989.214 1200.38
+   EditorPos 989.214 1174.666
   }
   VariableReference muzzleId {
    VariableType 1
-   EditorPos 1200.547 1272.713
+   EditorPos 1174.833 1261.284
   }
   VariableReference magWellType {
    VariableType 2
-   EditorPos 1960.237 1364.058
+   EditorPos 1617.38 1322.629
   }
   VariableReference myGroup {
    VariableType 4
