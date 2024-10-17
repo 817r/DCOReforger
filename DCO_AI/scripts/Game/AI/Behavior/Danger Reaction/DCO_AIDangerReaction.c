@@ -67,6 +67,9 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		if (distanceSq > BULLET_IMPACT_DISTANCE_SQ_MAX)
 			return false;
 		
+		if (utility.m_CombatMoveState.IsExecutingRequest())
+			return false;
+		
 		threatSystem.ThreatBulletImpact(dangerEvent.GetCount());
 		IEntity shooter = dangerEvent.GetObject();
 		
@@ -113,6 +116,17 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
 			
+			if (SCR_AICompartmentHandling.IsInCompartment(utility.GetAIAgent()))
+			{
+				rq.m_bTryFindCover = false;
+				rq.m_bUseCoverSearchDirectivity = false;
+				rq.m_bCheckCoverVisibility = false;
+				rq.m_eMovementType = EMovementType.SPRINT;
+				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+				rq.m_bAimAtTarget = false;
+				rq.m_bAimAtTargetEnd = false;
+			}
+			
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 
@@ -148,7 +162,17 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 				rq.m_bAimAtTarget = true; // Don't aim while running
 				rq.m_bAimAtTargetEnd = true;
-			
+				
+				if (SCR_AICompartmentHandling.IsInCompartment(utility.GetAIAgent()))
+				{
+					rq.m_bTryFindCover = false;
+					rq.m_bUseCoverSearchDirectivity = false;
+					rq.m_bCheckCoverVisibility = false;
+					rq.m_eMovementType = EMovementType.SPRINT;
+					rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+					rq.m_bAimAtTarget = false;
+					rq.m_bAimAtTargetEnd = false;
+				}
 				m_State.ApplyNewRequest(rq);
 				m_bPushedMoveRequest = true;
 			
@@ -174,7 +198,17 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 				rq.m_bAimAtTarget = true; // Don't aim while running
 				rq.m_bAimAtTargetEnd = true;
-			
+				
+				if (SCR_AICompartmentHandling.IsInCompartment(utility.GetAIAgent()))
+				{
+					rq.m_bTryFindCover = false;
+					rq.m_bUseCoverSearchDirectivity = false;
+					rq.m_bCheckCoverVisibility = false;
+					rq.m_eMovementType = EMovementType.SPRINT;
+					rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+					rq.m_bAimAtTarget = false;
+					rq.m_bAimAtTargetEnd = false;
+				}
 				m_State.ApplyNewRequest(rq);
 				m_bPushedMoveRequest = true;
 			
@@ -200,7 +234,16 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
-			
+			if (SCR_AICompartmentHandling.IsInCompartment(utility.GetAIAgent()))
+			{
+				rq.m_bTryFindCover = false;
+				rq.m_bUseCoverSearchDirectivity = false;
+				rq.m_bCheckCoverVisibility = false;
+				rq.m_eMovementType = EMovementType.SPRINT;
+				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+				rq.m_bAimAtTarget = false;
+				rq.m_bAimAtTargetEnd = false;
+			}
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 			
@@ -232,7 +275,16 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = false; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
-			
+							if (SCR_AICompartmentHandling.IsInCompartment(utility.GetAIAgent()))
+							{
+								rq.m_bTryFindCover = false;
+								rq.m_bUseCoverSearchDirectivity = false;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_eMovementType = EMovementType.SPRINT;
+								rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+								rq.m_bAimAtTarget = false;
+								rq.m_bAimAtTargetEnd = false;
+							}
 							m_State.ApplyNewRequest(rq);
 							m_bPushedMoveRequest = true;
 
@@ -263,7 +315,16 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = true; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
-			
+							if (SCR_AICompartmentHandling.IsInCompartment(utility.GetAIAgent()))
+							{
+								rq.m_bTryFindCover = false;
+								rq.m_bUseCoverSearchDirectivity = false;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_eMovementType = EMovementType.SPRINT;
+								rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+								rq.m_bAimAtTarget = false;
+								rq.m_bAimAtTargetEnd = false;
+							}
 							m_State.ApplyNewRequest(rq);
 							m_bPushedMoveRequest = true;
 
@@ -291,7 +352,16 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = false; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
-			
+							if (SCR_AICompartmentHandling.IsInCompartment(utility.GetAIAgent()))
+							{
+								rq.m_bTryFindCover = false;
+								rq.m_bUseCoverSearchDirectivity = false;
+								rq.m_bCheckCoverVisibility = false;
+								rq.m_eMovementType = EMovementType.SPRINT;
+								rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+								rq.m_bAimAtTarget = false;
+								rq.m_bAimAtTargetEnd = false;
+							}
 							m_State.ApplyNewRequest(rq);
 							m_bPushedMoveRequest = true;
 
@@ -398,7 +468,16 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
-			
+			if (SCR_AICompartmentHandling.IsInCompartment(utility.GetAIAgent()))
+			{
+				rq.m_bTryFindCover = false;
+				rq.m_bUseCoverSearchDirectivity = false;
+				rq.m_bCheckCoverVisibility = false;
+				rq.m_eMovementType = EMovementType.SPRINT;
+				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+				rq.m_bAimAtTarget = false;
+				rq.m_bAimAtTargetEnd = false;
+			}
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 		}

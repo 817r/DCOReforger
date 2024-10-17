@@ -5,32 +5,32 @@ modded class SCR_AICombatMoveUtils
 
 
 modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
-{	
+{
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
-	
+
 	SCR_ChimeraAIAgent m_Agent;
 	DCO_CUSTOMRANK rank;
 	moraleState morale;
 	DCO_GroupTactic tac;
-	
+
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
 		if (currentTime_ms < m_fNextUpdate_ms)
 			return ENodeResult.RUNNING;
 		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
-		
+
 		if (!OnUpdate(owner, dt))
 			return ENodeResult.FAIL;
-		
+
 		if (!m_State || !m_MyEntity || !m_Utility || !m_CombatComp || !m_CharacterController)
 			return ENodeResult.FAIL;
-		
+
 		// Don't run combat movement logic if CombatMove BT is not used now (like in turret)
 		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_Utility.GetExecutedAction());
 		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
 			return ENodeResult.RUNNING;
-		
+
 		tac = m_Utility.getTactics();
 		rank = m_Utility.m_DCO_Skill.GetCharacterRank(m_MyEntity);
 		morale = m_Utility.m_DCOMoraleSystem.GetMoraleMeasure();
@@ -40,22 +40,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		m_eStance = m_CharacterController.GetStance();
 		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
 		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
-		
-		
-		/*		
-		//------------------------------------------------------------------------------------
+
+
+		/*
+		//------------------------------------------------------------------------------------------------
 		Combat movement logic
-		
+
 		Conditions represent states inside which we want to remain.
-		
+
 		Conditions are organized based on their priority, highest first.
-		
+
 		Within each state there can be extra logic which decides if it's worth to
 		send a new request, because even though we have selected a state, we should avoid
 		spamming same request over and over.
-		
+
 		Conditions for states mostly depend on Combat Move State and its timers.
-		
+
 		It is important to write logic in such a way that it doesn't depend on state
 		of this node. In this case the state flow also doesn't depend on it, and AI
 		does movement is more fluent when switching to a new behavior which also utilizes
@@ -84,7 +84,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			if (m_CombatComp.GetCurrentTarget() == null)
 				CoverManager(vector.Zero, SCR_EAICombatMoveDirection.ANYWHERE);
 			else
-				CoverManager(m_CombatComp.GetLastSeenEnemy().GetLastDetectedPosition(), SCR_EAICombatMoveDirection.ANYWHERE);			
+				CoverManager(m_CombatComp.GetLastSeenEnemy().GetLastDetectedPosition(), SCR_EAICombatMoveDirection.ANYWHERE);
 		}
 		else if (m_State.m_bInCover && m_CharacterController.IsReloading())
 		{
@@ -105,7 +105,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		}
 		else if (targetInvisibleCondition())
 		{
-			if(!m_State.IsMoving()) pushFindTarget();
+			if (!m_State.IsMoving()) pushFindTarget();
 		}
 		else if (MoveToNextPosCondition())
 		{
@@ -121,45 +121,45 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				// Only let stance go down, no need to get back up
 				m_State.ApplyRequestChangeStanceOutsideCover(newStance);
 			}
-			
+
 			if (m_State.m_fTimerStopped_s > Math.RandomFloat(8.0, 11.0) && m_eThreatState >= EAIThreatState.PINNED && morale == moraleState.BREAK)
 				CoverManager(m_CombatComp.GetLastSeenEnemy().GetLastDetectedPosition(), SCR_EAICombatMoveDirection.ANYWHERE);
 		}
-		
+
 		return ENodeResult.RUNNING;
 	}
-	
+
 	override protected bool SuppressedInCoverCondition()
 	{
-		//float currMorale = m_DCOMorale.GetMoraleMeasure();		
-		
+		//float currMorale = m_DCOMorale.GetMoraleMeasure();
+
 		return m_State.m_bInCover && (m_eThreatState >= EAIThreatState.THREATENED || morale >= moraleState.ANXIOUS);
 	}
 
 	override protected void PushRequestMove()
-	{		
+	{
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
+
 		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
-		
+
 		// Common values
 		rq.m_vTargetPos = ResolveRequestTargetPos();
-		int rands = Math.RandomIntInclusive(1,2);
+		int rands = Math.RandomIntInclusive(1, 2);
 		if (rands == 1)
 			ResolveMoveRequestMovePosAndDir(rq.m_vTargetPos, rq.m_vMovePos, rq.m_fCoverSearchSectorHalfAngleRad, morale);
 		else
 		{
 			rq.m_vMovePos = rq.m_vTargetPos;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-		}	
-		
+		}
+
 		if (tac == DCO_GroupTactic.ASSAULT)
 		{
 			rq.m_vMovePos = rq.m_vTargetPos;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		}
-			
-		
+
+
 		rq.m_bTryFindCover = true;
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility = true;
@@ -169,7 +169,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (m_bCloseRangeCombat)
 		{
 			// Close range combat
-			
+
 			switch (m_eThreatState)
 			{
 				case EAIThreatState.EXHAUSTED:
@@ -216,7 +216,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					break;
 				}
 			}
-			
+
 			rq.m_bCheckCoverVisibility = true;
 			rq.m_eMovementType = EMovementType.WALK;
 			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
@@ -226,7 +226,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		else
 		{
 			// Long range combat
-			
+
 			switch (m_eThreatState)
 			{
 				case EAIThreatState.EXHAUSTED:
@@ -314,13 +314,13 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					break;
 				}
 			}
-			
+
 			rq.m_bFailIfNoCover = m_State.m_bInCover; // Don't leave cover if there is no next cover
 
 			// rq.m_bAimAtTarget = false; // Can't aim at tgt while sprinting
 			rq.m_bAimAtTargetEnd = true;
 		}
-		
+
 		// If we are not in cover, min cover search distance is overridden to 0, we should find any cover ASAP
 		if (!m_State.m_bInCover)
 		{
@@ -331,19 +331,19 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			coverSearchDistMin = 0;
 			coverSearchDistMax = 20;
 		}
-		
+
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
-		
-		switch(tac)
-		{			
+
+		switch (tac)
+		{
 			case DCO_GroupTactic.DEFENSIVE:
 			{
-				switch(m_eThreatState)
+				switch (m_eThreatState)
 				{
 					case EAIThreatState.THREATENED:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
@@ -367,7 +367,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 10;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -375,22 +375,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 15;
-								break;							
+								break;
 							}
 						}
 						break;
 					}
-					
+
 					case EAIThreatState.PINNED:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
-								int rand = Math.RandomIntInclusive(1,2);
+								int rand = Math.RandomIntInclusive(1, 2);
 								if (rand == 1)
 									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-								else 
+								else
 									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
@@ -412,7 +412,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_bFailIfNoCover = true;
 								rq.m_fCoverSearchDistMax = 15;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -420,22 +420,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 12;
-								break;							
+								break;
 							}
 						}
 						break;
-					}					
-					
+					}
+
 					case EAIThreatState.EXHAUSTED:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
-								int rand = Math.RandomIntInclusive(1,2);
+								int rand = Math.RandomIntInclusive(1, 2);
 								if (rand == 1)
 									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-								else 
+								else
 									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
@@ -456,7 +456,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 20;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -464,22 +464,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 8;
-								break;							
+								break;
 							}
 						}
 						break;
 					}
-					
+
 					default:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
-								int rand = Math.RandomIntInclusive(1,2);
+								int rand = Math.RandomIntInclusive(1, 2);
 								if (rand == 1)
 									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-								else 
+								else
 									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
@@ -500,7 +500,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 15;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -508,7 +508,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 13;
-								break;							
+								break;
 							}
 						}
 						break;
@@ -516,14 +516,14 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				}
 				break;
 			}
-			
+
 			case DCO_GroupTactic.ASSAULT:
 			{
-				switch(m_eThreatState)
+				switch (m_eThreatState)
 				{
 					case EAIThreatState.THREATENED:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
@@ -543,15 +543,15 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 							}
 							case moraleState.BREAK:
 							{
-								int rand = Math.RandomIntInclusive(1,2);
+								int rand = Math.RandomIntInclusive(1, 2);
 								if (rand == 1)
 									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-								else 
+								else
 									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 10;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -559,15 +559,15 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 15;
-								break;							
+								break;
 							}
 						}
 						break;
 					}
-					
+
 					case EAIThreatState.PINNED:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
@@ -587,15 +587,15 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 							}
 							case moraleState.BREAK:
 							{
-								int rand = Math.RandomIntInclusive(1,2);
+								int rand = Math.RandomIntInclusive(1, 2);
 								if (rand == 1)
 									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-								else 
+								else
 									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 15;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -603,22 +603,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 18;
-								break;							
+								break;
 							}
 						}
 						break;
-					}					
-					
+					}
+
 					case EAIThreatState.EXHAUSTED:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
-								int rand = Math.RandomIntInclusive(1,2);
+								int rand = Math.RandomIntInclusive(1, 2);
 								if (rand == 1)
 									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-								else 
+								else
 									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
@@ -639,7 +639,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 20;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -647,15 +647,15 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 8;
-								break;							
+								break;
 							}
 						}
 						break;
 					}
-					
+
 					default:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
@@ -679,7 +679,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 15;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -687,7 +687,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 13;
-								break;							
+								break;
 							}
 						}
 						break;
@@ -695,14 +695,14 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				}
 				break;
 			}
-			
+
 			case DCO_GroupTactic.BALANCE:
 			{
-				switch(m_eThreatState)
+				switch (m_eThreatState)
 				{
 					case EAIThreatState.THREATENED:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
@@ -726,7 +726,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 10;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -734,22 +734,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 15;
-								break;							
+								break;
 							}
 						}
 						break;
 					}
-					
+
 					case EAIThreatState.PINNED:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
-								int rand = Math.RandomIntInclusive(1,2);
+								int rand = Math.RandomIntInclusive(1, 2);
 								if (rand == 1)
 									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-								else 
+								else
 									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
@@ -771,7 +771,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_bFailIfNoCover = true;
 								rq.m_fCoverSearchDistMax = 15;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -779,22 +779,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 12;
-								break;							
+								break;
 							}
 						}
 						break;
-					}					
-					
+					}
+
 					case EAIThreatState.EXHAUSTED:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
-								int rand = Math.RandomIntInclusive(1,2);
+								int rand = Math.RandomIntInclusive(1, 2);
 								if (rand == 1)
 									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-								else 
+								else
 									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
@@ -815,7 +815,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 20;
-								break;							
+								break;
 							}
 							default:
 							{
@@ -823,22 +823,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 8;
-								break;							
+								break;
 							}
 						}
 						break;
 					}
-					
+
 					default:
 					{
-						switch(morale)
+						switch (morale)
 						{
 							case moraleState.MOTIVATED:
 							{
-								int rand = Math.RandomIntInclusive(1,2);
+								int rand = Math.RandomIntInclusive(1, 2);
 								if (rand == 1)
 									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-								else 
+								else
 									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
@@ -859,19 +859,19 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_fCoverSearchDistMax = 15;
-								break;							
+								break;
 							}
 							default:
 							{
-								int rand = Math.RandomIntInclusive(1,2);
+								int rand = Math.RandomIntInclusive(1, 2);
 								if (rand == 1)
 									rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-								else 
+								else
 									rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 								rq.m_bTryFindCover = true;
 								rq.m_bCheckCoverVisibility = true;
 								rq.m_fCoverSearchDistMax = 13;
-								break;							
+								break;
 							}
 						}
 						break;
@@ -880,22 +880,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				break;
 			}
 		}
-		
+
 		if (IsFirstExecution())
 			rq.m_bFailIfNoCover = false;
-		else 
+		else
 			rq.m_bFailIfNoCover = m_State.m_bInCover;
-		
-		if(tac == DCO_GroupTactic.ASSAULT)
+
+		if (tac == DCO_GroupTactic.ASSAULT)
 		{
-			int rand = Math.RandomIntInclusive(1,2);
+			int rand = Math.RandomIntInclusive(1, 2);
 			if (rand == 1) 	rq.m_bFailIfNoCover = false;
 			else rq.m_bFailIfNoCover = m_State.m_bInCover;
 		}
-			
-		
+
+
 		rq.m_fMoveDistance = Math.RandomFloat(0.5, 2.0) * moveDistanceMax; // Move distance if cover is not found, randomized
-		
+
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving
 		rq.GetOnMovementStarted().Insert(OnMovementStarted);
@@ -907,17 +907,17 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	// Resolves which move pos and dir. we should use for _MOVE_ request
 	// By now rq.m_vTargetPos must be already calculated!
 	protected void ResolveMoveRequestMovePosAndDir(vector targetPos, out vector outMovePos, out float outCoverSearchSectorHalfAngleRad, moraleState morales)
-	{	
+	{
 		AIWaypoint wp = null;
 		AIAgent agent = m_Utility.GetAIAgent();
 		AIGroup group = agent.GetParentGroup();
 		if (group)
 			wp = group.GetCurrentWaypoint();
-		
+
 		vector movePos;
 		SCR_EAICombatMoveDirection eDirection;
 		float coverSearchSectorHalfAngleRad;
-		
+
 		if (!wp)
 		{
 			// No waypoint, standard move logic
@@ -930,7 +930,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			float wpRadius = wp.GetCompletionRadius();
 			bool tgtInWaypoint = vector.DistanceXZ(wpPos, targetPos) < wpRadius;
 			float myDistToWp = vector.DistanceXZ(wpPos, m_MyEntity.GetOrigin());
-			
+
 			if (myDistToWp > wpRadius)
 			{
 				// We are outside WP, move towards center
@@ -941,7 +941,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			else if (myDistToWp > 0.5 * wpRadius)
 			{
 				// We are between 50% and 100% of wp radius
-				
+
 				if (tgtInWaypoint)
 				{
 					// Towards target
@@ -963,7 +963,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				// Move towards tgt, regardless where tgt is
 				movePos = targetPos;
 				eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
-				
+
 				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 			}
 		}
@@ -971,7 +971,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		outMovePos = movePos;
 		outCoverSearchSectorHalfAngleRad = coverSearchSectorHalfAngleRad;
 	}
-	
+
 	override protected bool MoveToNextPosCondition()
 	{
 		// Don't get any more closer
@@ -979,14 +979,14 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
 		if (m_fTargetDist < optimalDist && m_CombatComp.GetLastSeenEnemy().GetTimeLastSeen() < 10)
 			return false;
-			
+
 		if (m_State.IsExecutingRequest())
 			return false;
-		
+
 		if (morale >= moraleState.BREAK && m_eThreatState >= EAIThreatState.PINNED && !m_State.m_bInCover)
 			return m_State.m_fTimerStopped_s > Math.RandomFloat(4.0, 7.0);
-		
-		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
+
+		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
 	}
 
@@ -994,7 +994,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	{
 		// We're pinned in cover and can't do much else now
 		// Alternate hiding in cover and unhiding
-		
+
 		// How long to wait here? Depends on timer value from previous request.
 		int suppressedTimes;
 		float waitTime_s;
@@ -1008,17 +1008,17 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			else
 				waitTime_s = Math.RandomFloat(4.0, 10.0);
 		}
-		
+
 		if (m_State.m_bExposedInCover && m_State.m_fTimerRequest_s > waitTime_s)
 		{
 			float newWaitTime = Math.RandomFloat(5.0, 10.0); // Hide in cover for this time
-			int randomizer = Math.RandomIntInclusive(1,2);
+			int randomizer = Math.RandomIntInclusive(1, 2);
 			if (randomizer == 1)
 				PushRequestChangeStanceInCover(false, SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER, newWaitTime);
 			else
 				PushRequestMove();
 			suppressedTimes ++;
-			
+
 			if (suppressedTimes > 2)
 			{
 				PushRequestMove();
@@ -1030,10 +1030,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			float newWaitTime = Math.RandomFloat(1.0, 5.0); // Expose out of cover for this time
 			PushRequestChangeStanceInCover(true, SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER, newWaitTime);
 			suppressedTimes ++;
-			
+
 			if (suppressedTimes > 6)
 			{
-				int randomizer = Math.RandomIntInclusive(1,2);
+				int randomizer = Math.RandomIntInclusive(1, 2);
 				if (randomizer == 1)
 					PushRequestChangeStanceInCover(true, SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER, newWaitTime);
 				else
@@ -1048,9 +1048,9 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	override protected void PushRequestLeaveUselessCover()
 	{
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
+
 		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
-		
+
 		rq.m_vTargetPos = ResolveRequestTargetPos();
 		rq.m_vMovePos = rq.m_vTargetPos;
 		rq.m_bTryFindCover = true;
@@ -1064,19 +1064,19 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 		rq.m_bAimAtTargetEnd = true;
-		
+
 		rq.m_fCoverSearchDistMin = Math.RandomFloat(3.0, 5.0);
 		rq.m_fCoverSearchDistMax = Math.RandomFloat(10.0, 30.0);
-		
+
 		m_State.ApplyNewRequest(rq);
 	}
 
 	override protected void PushRequestMoveFromTarget()
 	{
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
+
 		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
-		
+
 		rq.m_vMovePos = ResolveRequestTargetPos();
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_eStanceMoving = ECharacterStance.STAND;
@@ -1085,6 +1085,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_fMoveDistance = 7.0;
 		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+		rq.m_bTryFindCover = true;
 		rq.m_bAimAtTargetEnd = true;
 		rq.m_bCheckCoverVisibility = true;
 		rq.m_bFailIfNoCover = false;
@@ -1133,7 +1134,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					break;
 			}
 		}
-		
+
 		// When using those weapons we want to move much less
 		bool longWaitTime = false;
 		bool specialistTime = false;
@@ -1146,63 +1147,63 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			case EWeaponType.WT_SNIPERRIFLE:
 				longWaitTime = true;
 		}
-		
+
 		switch (weaponType)
 		{
 			case EWeaponType.WT_HANDGUN:
 			case EWeaponType.WT_SNIPERRIFLE:
 				specialistTime = true;
 		}
-		
-		if(m_bCloseRangeCombat)
+
+		if (m_bCloseRangeCombat)
 		{
-			switch(threat)
+			switch (threat)
 			{
 				case EAIThreatState.EXHAUSTED:
 				{
 					CQB = Math.RandomFloat(25.0, 32.0);
 					break;
 				}
-				
+
 				case EAIThreatState.PINNED:
 				{
 					CQB = Math.RandomFloat(18.0, 21.0);
 					break;
 				}
-				
+
 				case EAIThreatState.THREATENED:
 				{
 					CQB = Math.RandomFloat(15.0, 18.0);
 					break;
 				}
-		
+
 				case EAIThreatState.ALERTED:
 				{
 					CQB = Math.RandomFloat(13.0, 18.0);
-					break;				
+					break;
 				}
-				
+
 				case EAIThreatState.VIGILANT:
 				{
 					CQB = Math.RandomFloat(10.0, 12.0);
-					break;				
+					break;
 				}
-				
+
 				case EAIThreatState.SAFE:
 				{
 					CQB = Math.RandomFloat(5.0, 8.0);
-					break;				
+					break;
 				}
-				
+
 				default:
 				{
 					CQB = Math.RandomFloat(10.0, 15.0);
-					break;				
+					break;
 				}
 			}
 		}
-		
-		switch(tac)
+
+		switch (tac)
 		{
 			case DCO_GroupTactic.DEFENSIVE:
 			{
@@ -1217,22 +1218,25 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				waitTimeTactics = Math.RandomFloat(-5.0, -2.0); break;
 			}
 		}
-		
+
 		if (longWaitTime)
 			waitTime *= Math.RandomFloat(1.7, 2.0);
-		
-		if(specialistTime)
+
+		if (specialistTime)
 			waitTime *= Math.RandomFloat(1.2, 1.5);
+
+		if (m_bCloseRangeCombat)
+			waitTime += CQB;
 		
-		if(m_bCloseRangeCombat)
-			waitTime += CQB;		
-		
+		if (m_Target.GetUnitType() == EAIUnitType.UnitType_VehicleMedium)
+			waitTime *= 3;
+
 		waitTime += waitTimeTactics;
-		
+
 		return waitTime;
 	}
-	
-	//--------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------
 	// Returns stance when stopped outside cover
 	protected static ECharacterStance ResolveStanceOutsideCover(bool closeRange, EAIThreatState threat, moraleState morales, DCO_CUSTOMRANK ranks)
 	{
@@ -1382,7 +1386,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.PINNED:
 				{
 					switch (morales)
@@ -1525,7 +1529,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.THREATENED:
 				{
 					switch (morales)
@@ -1668,7 +1672,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.ALERTED:
 				{
 					switch (morales)
@@ -1811,7 +1815,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.VIGILANT:
 				{
 					switch (morales)
@@ -1957,7 +1961,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				default:
 					return ECharacterStance.STAND;
 			}
-			
+
 			return ECharacterStance.CROUCH;
 		}
 		else
@@ -2107,7 +2111,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.PINNED:
 				{
 					switch (morales)
@@ -2250,7 +2254,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.THREATENED:
 				{
 					switch (morales)
@@ -2393,7 +2397,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.ALERTED:
 				{
 					switch (morales)
@@ -2536,7 +2540,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.VIGILANT:
 				{
 					switch (morales)
@@ -2679,7 +2683,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				default:
 					return ECharacterStance.STAND;
 
@@ -2687,21 +2691,21 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		}
 		return ECharacterStance.STAND;
 	}
-	
-	//--------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------
 	// Returns 'optimal' distance
 	// If we are between weaponMinDist and 'optimal' dist, we don't need to move closer to tgt
 	override protected static float ResolveOptimalDistance(float weaponMinDist)
 	{
 		return Math.Max(weaponMinDist + 10.0, 10.0);
 	}
-	
+
 	protected override void PushRequestFFAvoidance()
 	{
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
+
 		rq.m_eReason = SCR_EAICombatMoveReason.FF_AVOIDANCE;
-		
+
 		// If prev. request was FF avoidance too, keep direction.
 		// Otherwise choose a new direction.
 		SCR_AICombatMoveRequest_Move prevRequest = SCR_AICombatMoveRequest_Move.Cast(m_State.GetRequest());
@@ -2716,11 +2720,11 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			else
 				rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
 		}
-		
+
 		rq.m_eStanceMoving = m_CharacterController.GetStance(); // Don't change stance
 		rq.m_eStanceEnd = rq.m_eStanceMoving;
 		rq.m_vMovePos = ResolveRequestTargetPos();
-		int randomizer = Math.RandomIntInclusive(1,2);
+		int randomizer = Math.RandomIntInclusive(1, 2);
 			if (randomizer == 1)
 				rq.m_eMovementType = EMovementType.WALK;
 			else
@@ -2731,12 +2735,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_bCheckCoverVisibility = true;
 		m_State.ApplyNewRequest(rq);
 	}
-	
+
 	override protected bool MoveFromTargetCondition()
 	{
 		float treshold;
-		
-		switch(tac)
+
+		switch (tac)
 		{
 			case DCO_GroupTactic.EVASIVE:
 			{
@@ -2757,23 +2761,50 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			{
 				treshold = 20;
 				break;
-			}		
+			}
 		}
-		
+
+		if (m_Target.GetUnitType() == EAIUnitType.UnitType_VehicleMedium)
+		{
+			switch (tac)
+			{
+			case DCO_GroupTactic.EVASIVE:
+			{
+				treshold = 100;
+				break;
+			}
+			case DCO_GroupTactic.BALANCE:
+			{
+				treshold = 80;
+				break;
+			}
+			case DCO_GroupTactic.ASSAULT:
+			{
+				treshold = 25;
+				break;
+			}
+			case DCO_GroupTactic.DEFENSIVE:
+			{
+				treshold = 45;
+				break;
+			}
+			}
+		}
+
 		return m_fTargetDist < treshold;
 	}
-	
+
 	void CoverManager(vector threatPos, SCR_EAICombatMoveDirection dir)
-	{						
+	{
 		if (m_State.IsExecutingRequest())
 			return;
-		
+
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
+
 		if (m_eWeaponType == EWeaponType.WT_MACHINEGUN)
 		{
 			rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
-			
+
 			rq.m_vTargetPos = threatPos;
 			rq.m_vMovePos = rq.m_vTargetPos;
 			rq.m_bTryFindCover = true;
@@ -2787,17 +2818,17 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
 			rq.m_eDirection = dir;
-			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-			rq.m_bAimAtTarget = true;; // Don't aim while running
+			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD; // - not needed since direction is ANYWHERE
+			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
-			
+
 			m_State.VerifyCurrentCover(m_MyEntity.GetOrigin());
-			m_State.ApplyNewRequest(rq);	
-		} 
+			m_State.ApplyNewRequest(rq);
+		}
 		else
 		{
 			rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
-			
+
 			rq.m_vTargetPos = threatPos;
 			rq.m_vMovePos = rq.m_vTargetPos;
 			rq.m_bTryFindCover = true;
@@ -2811,14 +2842,14 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 10;
 			rq.m_eDirection = dir;
-			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-			rq.m_bAimAtTarget = false;; // Don't aim while running
+			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD; // - not needed since direction is ANYWHERE
+			rq.m_bAimAtTarget = false; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
-			
-			m_State.ApplyNewRequest(rq);		
+
+			m_State.ApplyNewRequest(rq);
 		}
 	}
-	
+
 	protected override bool CurrentCoverUselessCondition()
 	{
 		if (!m_State.m_bInCover || !m_State.IsAssignedCoverValid())
@@ -2827,36 +2858,36 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		vector tgtPos = GetTargetPosition();
 		float cosAngle = m_State.GetAssignedCover().CosAngleToThreat(tgtPos);
 		bool tgtDgr = (cosAngle < 0.5);
-		
+
 		if (m_CombatComp.GetEndangeringEnemy())
 		{
 			vector dangerEnemy = m_CombatComp.GetEndangeringEnemy().GetTargetEntity().GetOrigin();
-			float cosAngles = m_State.GetAssignedCover().CosAngleToThreat(dangerEnemy);		
+			float cosAngles = m_State.GetAssignedCover().CosAngleToThreat(dangerEnemy);
 			bool dangerE = (cosAngles < 0.5);
 			return (tgtDgr || dangerE);
 		}
 
 		return (tgtDgr); // cos 60 deg = 0.5
 	}
-	
+
 	protected bool targetInvisibleCondition()
 	{
 		float recognitionFac = m_Target.GetExposure();
-		
+
 		return (recognitionFac < 0.4);
 	}
-	
+
 	protected void pushFindTarget()
 	{
 		if (m_State.IsExecutingRequest())
 			return;
-		
+
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
+
 		if (m_eWeaponType == EWeaponType.WT_MACHINEGUN || EWeaponType.WT_SNIPERRIFLE) return;
-		
+
 		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
-			
+
 		rq.m_vTargetPos = m_Target.GetLastSeenPosition();
 		rq.m_vMovePos = rq.m_vTargetPos;
 		rq.m_bTryFindCover = true;
@@ -2869,42 +2900,42 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_fCoverSearchDistMax = 25;
 		rq.m_fCoverSearchDistMin = 2;
 		rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
-		int rand = Math.RandomIntInclusive(1,3);
+		int rand = Math.RandomIntInclusive(1, 3);
 		if (rand == 1) rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 		else if (rand == 2) rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
 		else if (rand == 3)	rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
-		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-		rq.m_bAimAtTarget = false;; // Don't aim while running
+		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD; // - not needed since direction is ANYWHERE
+		rq.m_bAimAtTarget = false; // Don't aim while running
 		rq.m_bAimAtTargetEnd = true;
-			
-		m_State.ApplyNewRequest(rq);			
+
+		m_State.ApplyNewRequest(rq);
 	}
 }
 
 modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
-{	
+{
 	DCO_CUSTOMRANK rank;
 	moraleState morale;
 	DCO_GroupTactic tac;
-	
+
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
 		if (currentTime_ms < m_fNextUpdate_ms)
 			return ENodeResult.RUNNING;
 		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
-		
+
 		if (!OnUpdate(owner, dt))
 			return ENodeResult.FAIL;
-		
+
 		if (!m_State || !m_MyEntity || !m_Utility || !m_CombatComp || !m_CharacterController)
 			return ENodeResult.FAIL;
-		
+
 		// Don't run combat movement logic if CombatMove BT is not used now (like in turret)
 		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_Utility.GetExecutedAction());
 		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
 			return ENodeResult.RUNNING;
-		
+
 		rank = m_Utility.m_DCO_Skill.GetCharacterRank(m_MyEntity);
 		morale = m_Utility.m_DCOMoraleSystem.GetMoraleMeasure();
 		m_fTargetDist = GetTargetDistance();
@@ -2914,21 +2945,21 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
 		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
 		tac = m_Utility.getTactics();
-		
-		/*		
-		//------------------------------------------------------------------------------------
+
+		/*
+		//------------------------------------------------------------------------------------------------
 		Combat movement logic
-		
+
 		Conditions represent states inside which we want to remain.
-		
+
 		Conditions are organized based on their priority, highest first.
-		
+
 		Within each state there can be extra logic which decides if it's worth to
 		send a new request, because even though we have selected a state, we should avoid
 		spamming same request over and over.
-		
+
 		Conditions for states mostly depend on Combat Move State and its timers.
-		
+
 		It is important to write logic in such a way that it doesn't depend on state
 		of this node. In this case the state flow also doesn't depend on it, and AI
 		does movement is more fluent when switching to a new behavior which also utilizes
@@ -2962,17 +2993,17 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 			// We've waited here too long, move to next place
 			PushRequestMove();
 		}
-		
+
 		return ENodeResult.RUNNING;
 	}
-	
+
 
 	override protected void PushRequestMove()
-	{		
+	{
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
+
 		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
-		
+
 		// Common values
 		rq.m_vTargetPos = ResolveRequestTargetPos();
 		ResolveMoveRequestMovePosAndDir(rq.m_vTargetPos, rq.m_vMovePos, rq.m_eDirection, rq.m_fCoverSearchSectorHalfAngleRad);
@@ -2986,7 +3017,7 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 		if (m_bCloseRangeCombat)
 		{
 			// Close range combat
-			
+
 			switch (m_eThreatState)
 			{
 				case EAIThreatState.EXHAUSTED:
@@ -3051,7 +3082,7 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 					break;
 				}
 			}
-			
+
 			rq.m_bCheckCoverVisibility = true;
 			rq.m_bFailIfNoCover = false;
 			rq.m_eMovementType = EMovementType.WALK;
@@ -3062,7 +3093,7 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 		else
 		{
 			// Long range combat
-			
+
 			switch (m_eThreatState)
 			{
 				case EAIThreatState.EXHAUSTED:
@@ -3163,43 +3194,51 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 					break;
 				}
 			}
-			
+
 			if (tac == DCO_GroupTactic.ASSAULT) rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
-			
-			rq.m_eMovementType = EMovementType.RUN;
-			rq.m_bAimAtTarget = true; // Can't aim at tgt while sprinting
-			rq.m_bAimAtTargetEnd = true;
+
+			if (m_Utility.m_AIInfo.HasUnitState(EUnitState.PILOT))
+			{
+				rq.m_eMovementType = EMovementType.SPRINT;
+				rq.m_bAimAtTarget = false;
+				rq.m_bAimAtTargetEnd = false;
+			} else
+			{
+				rq.m_eMovementType = EMovementType.RUN;
+				rq.m_bAimAtTarget = true;
+				rq.m_bAimAtTargetEnd = true;
+			}
 		}
-		
+
 		rq.m_bFailIfNoCover = ResolveFailMoveIfNoCover();
-		
+
 		// If we are not in cover, min cover search distance is overridden to 0, we should find any cover ASAP
 		if (!m_State.m_bInCover)
 			coverSearchDistMin = 0;
-		
+
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
 		rq.m_fMoveDistance = Math.RandomFloat(0.5, 1.0) * moveDistanceMax; // Move distance if cover is not found, randomized
-		
+
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving
 		rq.GetOnMovementStarted().Insert(OnMovementStarted);
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
-		
+
 		m_State.ApplyNewRequest(rq);
 	}
-	
-	//--------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------
 	protected override bool ResolveFailMoveIfNoCover()
 	{
 		// Don't move out of cover if we already have good vision from current cover
 		if (m_bGoodVision)
 			return true;
-		
+
 		return false; // We're allowed to move anywhere, including to coverless position. But our own suppression criteria still apply and run above this.
 	}
-	
-	//--------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------
 	protected override float ResolveStoppedWaitTime(bool inCover, EAIThreatState threat, EWeaponType weaponType)
 	{
 		float waitTime = 10.0;
@@ -3241,94 +3280,94 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 					break;
 			}
 		}
-		
+
 		waitTime *= Math.RandomFloat(0.7, 1.2);
-		
+
 		return waitTime;
 	}
-	
-	//--------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------
 	protected override bool MoveToNextPosCondition()
-	{	
+	{
 		if (m_State.IsExecutingRequest())
 			return false;
-		
+
 		if (m_bGoodVision && m_State.m_bInCover)
 		{
 			// We have good vision and we are in cover, just stay here
 			return false;
 		}
-		
+
 		// If vision is bad, move out until we have good visibility
 		// Here we operate with visibility of the suppression volume, still concept is same as during normal attack.
 		// Most important thing is to exit area with poor vision of target, but beyond that we don't need to move.
 		if (!m_bGoodVision || (m_bGoodVision && !m_State.m_bInCover) || (m_fTargetLastSeenTime_ms == 0))
-		{		
-			float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
+		{
+			float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);
 			return m_State.m_fTimerStopped_s > stoppedWaitTime;
 		}
-		
+
 		return false;
 	}
 }
 
 class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
-{	
+{
 	SCR_ChimeraAIAgent m_Agent;
 	DCO_CUSTOMRANK rank;
 	moraleState morale;
 	DCO_GroupTactic tac;
-	
+
 	SCR_AIGroup group;
-	
+
 	bool strayed = false;
-	
+
 	protected static const string PORT_BASE_TARGET = "BaseTarget";
-	
+
 	protected BaseTarget m_Target;
-	
-	//--------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------
 	protected override bool OnUpdate(AIAgent owner, float dt)
 	{
 		GetVariableIn(PORT_BASE_TARGET, m_Target);
-		
+
 		if (!m_Target || !m_Target.GetTargetEntity())
 			return false;
-		
+
 		return true;
 	}
-	
-	//--------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------
 	protected override float GetTargetDistance()
 	{
 		return m_Target.GetDistance();
 	}
-	
-	//--------------------------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------------------------------
 	protected override vector GetTargetPosition()
 	{
 		return m_Target.GetLastSeenPosition();
 	}
-	
-	
+
+
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
 		if (currentTime_ms < m_fNextUpdate_ms)
 			return ENodeResult.RUNNING;
 		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
-		
+
 		if (!OnUpdate(owner, dt))
 			return ENodeResult.FAIL;
-		
+
 		if (!m_State || !m_MyEntity || !m_Utility || !m_CombatComp || !m_CharacterController)
 			return ENodeResult.FAIL;
-		
+
 		// Don't run combat movement logic if CombatMove BT is not used now (like in turret)
 		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_Utility.GetExecutedAction());
 		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
 			return ENodeResult.RUNNING;
-		
+
 		tac = m_Utility.getTactics();
 		rank = m_Utility.m_DCO_Skill.GetCharacterRank(m_MyEntity);
 		morale = m_Utility.m_DCOMoraleSystem.GetMoraleMeasure();
@@ -3339,21 +3378,21 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
 		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
 		group = m_Utility.getMyGroup();
-		
-		/*		
-		//------------------------------------------------------------------------------------
+
+		/*
+		//------------------------------------------------------------------------------------------------
 		Combat movement logic
-		
+
 		Conditions represent states inside which we want to remain.
-		
+
 		Conditions are organized based on their priority, highest first.
-		
+
 		Within each state there can be extra logic which decides if it's worth to
 		send a new request, because even though we have selected a state, we should avoid
 		spamming same request over and over.
-		
+
 		Conditions for states mostly depend on Combat Move State and its timers.
-		
+
 		It is important to write logic in such a way that it doesn't depend on state
 		of this node. In this case the state flow also doesn't depend on it, and AI
 		does movement is more fluent when switching to a new behavior which also utilizes
@@ -3405,24 +3444,24 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 				m_State.ApplyRequestChangeStanceOutsideCover(newStance);
 			}
 		}
-		
+
 		return ENodeResult.RUNNING;
-	}	
-	
+	}
+
 
 	override protected bool SuppressedInCoverCondition()
 	{
 		//float currMorale = m_DCOMorale.GetMoraleMeasure();
-		
+
 		return m_State.m_bInCover && (m_eThreatState >= EAIThreatState.PINNED || morale >= moraleState.ANXIOUS);
 	}
 
 	override protected void PushRequestMove()
-	{		
+	{
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
+
 		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
-		
+
 		// Common values
 		rq.m_vTargetPos = ResolveRequestTargetPos();
 		rq.m_bTryFindCover = true;
@@ -3435,7 +3474,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 		if (m_bCloseRangeCombat)
 		{
 			// Close range combat
-			
+
 			switch (m_eThreatState)
 			{
 				case EAIThreatState.EXHAUSTED:
@@ -3487,7 +3526,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					break;
 				}
 			}
-			
+
 			rq.m_bCheckCoverVisibility = false;
 			rq.m_bFailIfNoCover = false;
 			rq.m_eMovementType = EMovementType.WALK;
@@ -3498,7 +3537,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 		else
 		{
 			// Long range combat
-			
+
 			switch (m_eThreatState)
 			{
 				case EAIThreatState.EXHAUSTED:
@@ -3590,31 +3629,31 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					break;
 				}
 			}
-			
+
 			rq.m_vMovePos = rq.m_vTargetPos;
 			rq.m_fMoveDistance = Math.RandomFloat(7.0, 15.0);
 			rq.m_eStanceMoving = ECharacterStance.CROUCH;
 			rq.m_bFailIfNoCover = false;
 			rq.m_bAimAtTargetEnd = true;
-			
+
 			rq.GetOnMovementStarted().Insert(OnMovementStarted);
 			rq.GetOnCompleted().Insert(OnMovementCompleted);
-			
+
 			if (strayed) rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
-		
+
 			m_State.ApplyNewRequest(rq);
 		}
 	}
-	
+
 	protected override bool MoveToNextPosCondition()
-	{	
+	{
 		if (m_State.IsExecutingRequest())
 			return false;
-		
-		float stoppedWaitTime = ResolveStoppedWaitTimes(m_State.m_bInCover, morale, m_eThreatState, m_eWeaponType);	
+
+		float stoppedWaitTime = ResolveStoppedWaitTimes(m_State.m_bInCover, morale, m_eThreatState, m_eWeaponType);
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
 	}
-	
+
 	protected float ResolveStoppedWaitTimes(bool inCover, moraleState morales, EAIThreatState threat, EWeaponType weaponType)
 	{
 		float waitTime;
@@ -3657,7 +3696,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					break;
 			}
 		}
-		
+
 		switch (weaponType)
 		{
 			case EWeaponType.WT_MACHINEGUN:
@@ -3665,13 +3704,13 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 			case EWeaponType.WT_SNIPERRIFLE:
 				specialTime = 5;
 		}
-		
+
 		switch (weaponType)
 		{
 			case EWeaponType.WT_SNIPERRIFLE:
 				specialTime += 3;
 		}
-		
+
 		switch (threat)
 		{
 			case EAIThreatState.SAFE: faster = 0; break;
@@ -3681,11 +3720,11 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 			case EAIThreatState.PINNED: faster = Math.RandomFloat(7, 11); break;
 			case EAIThreatState.EXHAUSTED: faster = Math.RandomFloat(5, 10); break;
 		}
-		
-		
+
+
 		return (waitTime + specialTime) - faster;
-	}	
-	
+	}
+
 	protected static ECharacterStance ResolveStanceOutsideCover(bool closeRange, EAIThreatState threat, moraleState morales, DCO_CUSTOMRANK ranks)
 	{
 		if (closeRange)
@@ -3834,7 +3873,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.PINNED:
 				{
 					switch (morales)
@@ -3977,7 +4016,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.THREATENED:
 				{
 					switch (morales)
@@ -4120,7 +4159,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.ALERTED:
 				{
 					switch (morales)
@@ -4263,7 +4302,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.VIGILANT:
 				{
 					switch (morales)
@@ -4409,7 +4448,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 				default:
 					return ECharacterStance.STAND;
 			}
-			
+
 			return ECharacterStance.CROUCH;
 		}
 		else
@@ -4559,7 +4598,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.PINNED:
 				{
 					switch (morales)
@@ -4702,7 +4741,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.THREATENED:
 				{
 					switch (morales)
@@ -4845,7 +4884,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.ALERTED:
 				{
 					switch (morales)
@@ -4988,7 +5027,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				case EAIThreatState.VIGILANT:
 				{
 					switch (morales)
@@ -5131,7 +5170,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 					}
 				break;
 				}
-				
+
 				default:
 					return ECharacterStance.STAND;
 
@@ -5139,44 +5178,44 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 		}
 		return ECharacterStance.STAND;
 	}
-	
+
 	protected override vector ResolveRequestTargetPos()
 	{
 		float distToLead = vector.Distance(m_Utility.m_OwnerEntity.GetOrigin(), group.GetLeaderEntity().GetOrigin());
 		strayed = false;
-		
+
 		if (distToLead > 100)
 		{
 			strayed = true;
 			return group.GetLeaderEntity().GetOrigin();
-		} 
-		
+		}
+
 		if (m_CombatComp.IsTargetVisible(m_Target))
 		{
 			IEntity tgtEntity = m_Target.GetTargetEntity(); // We've checked already
-		
+
 			ChimeraCharacter character = ChimeraCharacter.Cast(tgtEntity);
 			if (character)
 			{
 				vector eyePos = character.EyePosition();
 				return eyePos;
 			}
-			
+
 			// It's a vehicle
 			vector pos = tgtEntity.GetOrigin();
 			pos = pos + Vector(0, 2.0, 0);
 			return pos;
-		} else 
+		} else
 		{
 			// Target is not visible, use last seen position
 			vector lastSeenPos = m_Target.GetLastSeenPosition();
 			lastSeenPos = lastSeenPos + Vector(0, 1.8, 0);
-			return lastSeenPos;	
+			return lastSeenPos;
 		}
-		
-	
+
+
 	}
-	
+
 	protected static ref TStringArray s_aVarsIn = {
 		PORT_BASE_TARGET
 	};

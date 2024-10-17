@@ -40,7 +40,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		if (!m_ConfigComponent)
 			return null;
 		
-		if (m_GroupTactics.getAutomated(m_Owner))
+		if (m_GroupTactics.getAutomated(m_Owner) == DCO_PROCESS_STATE.AUTOMATED)
 			evaluateTactics();
 		
 		UpdateTactics();

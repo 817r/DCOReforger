@@ -14,8 +14,8 @@ modded class SCR_AIInvestigateClusterActivity : SCR_AIFireteamsClusterActivity
 				if (!agent)
 					continue;
 				
-				if (SCR_AICompartmentHandling.IsInCompartment(agent))
-					continue;
+				//if (SCR_AICompartmentHandling.IsInCompartment(agent))
+				//	continue;
 				
 				// Duration is large, since soldiers' investigation is tied to this activity
 				SCR_AIMessage_Investigate msg = SCR_AIMessage_Investigate.Create(pos, radius, true, duration: 10000);
@@ -33,8 +33,8 @@ modded class SCR_AIInvestigateClusterActivity : SCR_AIFireteamsClusterActivity
 				if (!agent)
 					continue;
 				
-				if (SCR_AICompartmentHandling.IsInCompartment(agent))
-					continue;
+				//if (SCR_AICompartmentHandling.IsInCompartment(agent))
+				//	continue;
 				
 				SCR_AIMessage_Investigate msg = SCR_AIMessage_Investigate.Create(pos, radius, true, duration: 10000);
 				msg.m_RelatedGroupActivity = this;

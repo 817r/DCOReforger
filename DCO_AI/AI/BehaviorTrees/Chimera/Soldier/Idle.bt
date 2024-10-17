@@ -15,11 +15,18 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
        Period 3
        PeriodRandom 2
       }
-      RunBT RunBT {
-       Name "RunBT"
-       EditorPos -1620.198 -62.876
-       BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_IdleCover.bt"
-       AlwaysReinit 1
+      DecoIsInVehicle "Is In Vehicle" {
+       Name "Is In Vehicle"
+       EditorPos -1432.143 -62.5
+       Nodes {
+        RunBT RunBT {
+         Name "RunBT"
+         EditorPos -1517.698 160.874
+         BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_IdleCover.bt"
+         AlwaysReinit 1
+        }
+       }
+       NegativeCondition 1
       }
       RunBT RunBT {
        Name "RunBT"

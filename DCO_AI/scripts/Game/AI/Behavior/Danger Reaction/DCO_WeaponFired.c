@@ -51,6 +51,9 @@ modded class SCR_AIDangerReaction_WeaponFired : SCR_AIDangerReaction
 		// Ignore if we are a driver inside vehicle
 		if (utility.m_AIInfo.HasUnitState(EUnitState.PILOT))
 			return false;
+		
+		if (utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE) && distance < 20)
+			return false;
 			
 		// Ignore if we have selected a target
 		// Ignore if target is too far

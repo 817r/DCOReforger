@@ -92,13 +92,31 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
        Name "Parallel"
        EditorPos 2456.667 -330.833
        Nodes {
-        DCO_TacticsEvaluation "DCO_ Tactics Evaluation" {
-         Name "DCO_ Tactics Evaluation"
-         EditorPos 1657.238 41.833
-         OutPorts {
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 16
-           PortName "Tactics Tree ID"
+        Selector Selector {
+         Name "Selector"
+         EditorPos 1598 -153.571
+         Nodes {
+          DecoIsInVehicle "Is In Vehicle" {
+           Name "Is In Vehicle"
+           EditorPos 1286.286 33.143
+           Nodes {
+            AITaskSetVariable "Set Variable" {
+             Name "Set Variable"
+             EditorPos 1311.429 220
+             SetValue "3"
+             OutVariable 16
+            }
+           }
+          }
+          DCO_TacticsEvaluation "DCO_ Tactics Evaluation" {
+           Name "DCO_ Tactics Evaluation"
+           EditorPos 1647.238 63.262
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 16
+             PortName "Tactics Tree ID"
+            }
+           }
           }
          }
         }

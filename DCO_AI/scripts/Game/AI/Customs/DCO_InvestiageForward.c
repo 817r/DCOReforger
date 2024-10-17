@@ -585,9 +585,6 @@ class DCO_AITravelMove : SCR_AICombatMoveLogicBase
 			}
 			
 			rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
-
-			// rq.m_bAimAtTarget = false; // Can't aim at tgt while sprinting
-			
 		}
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;

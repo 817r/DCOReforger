@@ -690,12 +690,12 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 			{
-				improvement = m_CombatComponent.getImprovement() * 7;
+				improvement = m_CombatComponent.getImprovement() * 8;
 				break;
 			}
 			case DCO_CUSTOMRANK.SPECIALIST:
 			{
-				improvement = m_CombatComponent.getImprovement() * 80;
+				improvement = m_CombatComponent.getImprovement() * 100;
 				break;
 			}
 		}

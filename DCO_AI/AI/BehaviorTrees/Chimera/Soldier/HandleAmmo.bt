@@ -91,16 +91,23 @@ BehaviorTree {
               }
              }
             }
-            DCO_MagicAmmo "DCO_ Magic Ammo" {
-             Name "DCO_ Magic Ammo"
-             EditorPos 1769.154 1193.857
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 5
-               PortName "MagazineWell"
+            DecoIsInVehicle "Is In Vehicle" {
+             Name "Is In Vehicle"
+             EditorPos 1738.333 1171.667
+             Nodes {
+              DCO_MagicAmmo "DCO_ Magic Ammo" {
+               Name "DCO_ Magic Ammo"
+               EditorPos 1752.487 1342.19
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 5
+                 PortName "MagazineWell"
+                }
+               }
+               m_iMagazineCount 3
               }
              }
-             m_iMagazineCount 3
+             NegativeCondition 1
             }
             AITaskGetControlledEntity "Get Controlled Entity" {
              Name "Get Controlled Entity"
@@ -243,7 +250,7 @@ BehaviorTree {
   }
   VariableReference magWellType {
    VariableType 2
-   EditorPos 1617.38 1322.629
+   EditorPos 1480.713 1434.296
   }
   VariableReference myGroup {
    VariableType 4

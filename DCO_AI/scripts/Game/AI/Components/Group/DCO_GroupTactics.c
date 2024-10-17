@@ -6,6 +6,12 @@ enum DCO_GroupTactic{
 	FALLBACK
 };
 
+enum DCO_PROCESS_STATE{
+	AUTOMATED,
+	MANUAL,
+	COMMANDER
+};
+
 class DCO_GroupTacticComponentClass : ScriptComponentClass
 {
 	
@@ -18,8 +24,8 @@ class DCO_GroupTacticComponent : ScriptComponent
 	DCO_GroupTactic m_tac;
 	DCO_GroupTactic automatedTac = 2;
 	
-	[Attribute(defvalue: "1", uiwidget: UIWidgets.Auto, desc: "is Tactics Automated?")]
-	bool AutomatedTactics;
+	[Attribute(defvalue: "0", uiwidget: UIWidgets.ComboBox, desc: "is Tactics Automated?", enums: ParamEnumArray.FromEnum(DCO_PROCESS_STATE))]
+	DCO_PROCESS_STATE AutomatedTactics;
 	
 	SCR_AIGroup m_Group;
 	
@@ -77,7 +83,7 @@ class DCO_GroupTacticComponent : ScriptComponent
 		return comp.GetManualTac();
 	}
 	
-	static DCO_GroupTactic setAutomated(IEntity unit, bool tf)
+	static DCO_PROCESS_STATE setAutomated(IEntity unit, bool tf)
 	{
 		if (!unit)
 			return true;
@@ -92,7 +98,7 @@ class DCO_GroupTacticComponent : ScriptComponent
 		return comp.setAuto(tf, gUtil);
 	}
 
-	static DCO_GroupTactic getAutomated(IEntity unit)
+	static DCO_PROCESS_STATE getAutomated(IEntity unit)
 	{		
 		if (!unit)
 			return true;
@@ -117,12 +123,12 @@ class DCO_GroupTacticComponent : ScriptComponent
 
 	protected DCO_GroupTactic SetGroupTactic(DCO_GroupTactic groups, SCR_AIGroupUtilityComponent gutil)
 	{
-		if (AutomatedTactics)
+		if (AutomatedTactics == DCO_PROCESS_STATE.AUTOMATED)
 		{
 			automatedTac = groups;
 			gutil.UpdateTactics();
 			return groups;
-		} else if (!AutomatedTactics)
+		} else if (AutomatedTactics == DCO_PROCESS_STATE.MANUAL)
 		{
 			m_tac = groups;
 			gutil.UpdateTactics();
@@ -141,10 +147,10 @@ class DCO_GroupTacticComponent : ScriptComponent
 	
 	protected DCO_GroupTactic GetGroupTactic()
 	{
-		if (AutomatedTactics)
+		if (AutomatedTactics == DCO_PROCESS_STATE.AUTOMATED)
 		{
 			return automatedTac;
-		} else if (!AutomatedTactics)
+		} else if (AutomatedTactics == DCO_PROCESS_STATE.MANUAL)
 		{
 			return m_tac;
 		}
@@ -169,14 +175,14 @@ class DCO_GroupTacticComponent : ScriptComponent
 		return automatedTac;
 	}
 	
-	bool setAuto(bool tf, SCR_AIGroupUtilityComponent gutil)
+	DCO_PROCESS_STATE setAuto(DCO_PROCESS_STATE tf, SCR_AIGroupUtilityComponent gutil)
 	{
 		AutomatedTactics = tf;
 		gutil.UpdateTactics();
 		return tf;
 	}
 	
-	bool getAuto()
+	DCO_PROCESS_STATE getAuto()
 	{
 		return AutomatedTactics;
 	}
