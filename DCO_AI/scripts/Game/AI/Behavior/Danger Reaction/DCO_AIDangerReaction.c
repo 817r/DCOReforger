@@ -59,9 +59,11 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 	
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent)
 	{
+		if (utility.m_AIInfo.GetAIState() == EUnitState.PILOT)
+			return false;
+		
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 		
-
 		float distanceSq = vector.DistanceSq(utility.GetOrigin(), dangerEvent.GetPosition());
 				
 		if (distanceSq > BULLET_IMPACT_DISTANCE_SQ_MAX)
@@ -420,6 +422,9 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 	//------------------------------------------------------------------------------------------------
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent)
 	{
+		if (utility.m_AIInfo.GetAIState() == EUnitState.PILOT)
+			return false;
+		
 		IEntity ownerEntity = utility.m_OwnerEntity;
 		protected bool m_bPushedMoveRequest = false;
 		

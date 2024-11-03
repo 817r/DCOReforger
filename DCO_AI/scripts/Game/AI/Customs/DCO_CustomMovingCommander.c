@@ -5,7 +5,7 @@ modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
 	protected const float WEAPON_MIN_DIST = 5.0;
 	
 	// minimal distance Driver should be from enemy
-	protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 50.0 * 50.0;	// when too close to target, try to move backwards
+	protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 30.0 * 30.0;	// when too close to target, try to move backwards
 	protected const float MAX_MOVE_STEP_TO_TARGET = 100.0; 						// max step to move towards target
 	protected const float MAX_MOVE_STEP_TO_TARGET_THREATENED = 45.0; 			// move less under threat
 	protected const float MIN_MOVE_STEP_TARGET = 20.0; 							// min step to move from target
@@ -58,7 +58,7 @@ modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
 		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
 		
 		rq.m_vMovePos = ResolveRequestTargetPos();
-		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 		rq.m_fMoveDistance = MIN_MOVE_STEP_TARGET;
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
@@ -103,7 +103,7 @@ modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
 		
 		rq.m_eMovementType = EMovementType.SPRINT;
 		rq.m_bAimAtTarget = false; 
-		rq.m_bAimAtTargetEnd = false; // turn towards the target should be true!
+		rq.m_bAimAtTargetEnd = true; // turn towards the target should be true!
 		rq.m_bFailIfNoCover = false;
 		
 		rq.m_fMoveDistance = Math.RandomFloat(0.7, 1.5) * moveDistanceMax; // Move distance randomized
@@ -136,29 +136,17 @@ modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
 			{
 				case EAIThreatState.EXHAUSTED:
 				{
-					eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					break;
 				}
 				case EAIThreatState.PINNED:
 				{
-					int rand = Math.RandomIntInclusive(1, 3);
-					if (rand == 2)
-						eDirection = SCR_EAICombatMoveDirection.LEFT;
-					else if (rand == 1)
-						eDirection = SCR_EAICombatMoveDirection.RIGHT;
-					else
-						eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					break;
 				}	
 				case EAIThreatState.THREATENED:
 				{
-					int rand = Math.RandomIntInclusive(1, 3);
-					if (rand == 2)
-						eDirection = SCR_EAICombatMoveDirection.LEFT;
-					else if (rand == 1)
-						eDirection = SCR_EAICombatMoveDirection.RIGHT;
-					else
-						eDirection = SCR_EAICombatMoveDirection.FORWARD;
+					eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					break;
 				}
 				case EAIThreatState.ALERTED:
@@ -251,7 +239,7 @@ modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
 		rq.m_vMovePos = ResolveRequestTargetPos();
 		rq.m_fMoveDistance = MIN_MOVE_STEP_TARGET/4;
 		rq.m_bAimAtTarget = false;
-		rq.m_bAimAtTargetEnd = false;
+		rq.m_bAimAtTargetEnd = true;
 		
 		m_DriverState.ApplyNewRequest(rq);
 	}
@@ -325,7 +313,7 @@ modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
 	// If we are between weaponMinDist and 'optimal' dist, we don't need to move closer to tgt
 	override protected static float ResolveOptimalDistance(float weaponMinDist)
 	{
-		return Math.Max(weaponMinDist + 5.0, 700);
+		return Math.Max(weaponMinDist + 5.0, 400);
 	}
 }
 
@@ -341,8 +329,6 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 	protected float m_fTargetLastSeenTime_ms = 0; // World time
 	
 	protected bool m_bGoodVision;
-	
-	protected static const float TIME_SINCE_GOOD_VISIBILITY_MIN_MS = 10000.0;
 	
 	protected SCR_AIUtilityComponent m_GunnerUtility;
 	protected SCR_AICombatComponent m_CombatComp;
@@ -398,7 +384,7 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		}
 	}
 	
-	protected bool OnUpdate(AIAgent owner, float dt)
+	protected bool Suppress()
 	{
 		GetVariableIn(PORT_SUPPRESSION_VOLUME, m_SuppressionVolume);
 		
@@ -410,11 +396,8 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		
 		if (!m_SuppressionVolume)
 			return false;
-		
-		// Update m_bGoodVision
-		// The timer criteria is to exclude occlusion due to us hiding in cover
-		float timeSinceLastSeen_ms = GetGame().GetWorld().GetWorldTime() - m_fTargetLastSeenTime_ms;
-		m_bGoodVision = m_bTargetVisible || (timeSinceLastSeen_ms < TIME_SINCE_GOOD_VISIBILITY_MIN_MS);
+
+		m_bGoodVision = m_bTargetVisible;
 		
 		return true;
 	}
@@ -438,6 +421,8 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_DriverUtility.GetExecutedAction());
 		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
 			return ENodeResult.RUNNING;
+		
+		Suppress();
 		
 		m_fTargetDist = GetTargetDistance();
 		m_eThreatState = m_GunnerUtility.m_ThreatSystem.GetState();
@@ -464,19 +449,14 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		combat movement, including attacking a different target.
 		*/
 
-		if (FFAvoidanceCondition())
-		{
-			if (FFAvoidanceNewRequestCondition())
-				PushRequestFFAvoidance();
-		}
-		else if (MoveToNextPosCondition())
+		if (MoveToNextPosCondition())
 		{
 			// We've waited here too long, move to next place
 			PushRequestMove();
 		}
 		else if (!m_DriverState.IsExecutingRequest())
 		{
-			// TODO: We are stopped keep distance, scan the perimeter			
+			PushRequestMove();			
 		}
 		
 		return ENodeResult.RUNNING;
@@ -514,26 +494,6 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		return true;
 	}
 	
-	protected bool FFAvoidanceCondition()
-	{
-		return m_GunnerUtility.m_CombatComponent.IsFriendlyInAim();
-	}
-	
-	//--------------------------------------------------------------------------------------------
-	protected bool FFAvoidanceNewRequestCondition()
-	{
-		if (!m_DriverState.IsExecutingRequest())
-			return true;
-		
-		// Still executing ...
-		// Send new request only if we are executing NOT side-step
-		SCR_AICombatMoveRequest_Move rq = SCR_AICombatMoveRequest_Move.Cast(m_DriverState.GetRequest());
-		if (!rq)
-			return true;
-		
-		return rq.m_eReason != SCR_EAICombatMoveReason.FF_AVOIDANCE;
-	}
-	
 	//--------------------------------------------------------------------------------------------
 	protected bool MoveFromTargetNewRequestCondition()
 	{
@@ -547,23 +507,6 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 			return true;
 		
 		return rq.m_eReason != SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
-	}
-	
-	//--------------------------------------------------------------------------------------------
-	protected void PushRequestMoveFromTarget()
-	{
-		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
-		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
-		
-		rq.m_vMovePos = ResolveRequestTargetPos();
-		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
-		rq.m_fMoveDistance = MIN_MOVE_STEP_TARGET;
-		rq.m_bAimAtTarget = false;
-		rq.m_bAimAtTargetEnd = false;
-		rq.m_fMoveDistance = Math.RandomFloat(0.7, 1.5) * MAX_MOVE_STEP_TO_TARGET_THREATENED;
-		
-		m_DriverState.ApplyNewRequest(rq);
 	}
 	
 	protected vector ResolveRequestTargetPos()
@@ -587,6 +530,7 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		rq.m_bUseCoverSearchDirectivity = false;
 		rq.m_bCheckCoverVisibility = false;
 		
+		
 		float moveDistanceMax = MAX_MOVE_STEP_TO_TARGET;
 		
 		// Long range combat
@@ -607,7 +551,7 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		
 		rq.m_eMovementType = EMovementType.SPRINT;
 		rq.m_bAimAtTarget = false; 
-		rq.m_bAimAtTargetEnd = false; // turn towards the target should be true!
+		rq.m_bAimAtTargetEnd = true; // turn towards the target should be true!
 		rq.m_bFailIfNoCover = false;
 		
 		rq.m_fMoveDistance = Math.RandomFloat(0.7, 1.5) * moveDistanceMax; // Move distance randomized
@@ -631,7 +575,7 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 	
 	//--------------------------------------------------------------------------------------------
 	protected static void OnMovementCompleted(SCR_AIUtilityComponent utility, SCR_AICombatMoveRequestBase rq)
-	{
+	{		
 		if (!utility.m_CommsHandler.CanBypass())
 		{
 			SCR_AITalkRequest talkRq = new SCR_AITalkRequest(ECommunicationType.REPORT_COVERING, null, vector.Zero, 0, false, false, SCR_EAITalkRequestPreset.IRRELEVANT_IMMEDIATE);
@@ -652,36 +596,29 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		
 		vector movePos;
 		SCR_EAICombatMoveDirection eDirection;		
+		
 		movePos = targetPos;
-		if (!wp)
-		{
 			switch(m_eThreatState)
 			{
 				case EAIThreatState.EXHAUSTED:
 				{
-					eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					int rand = Math.RandomIntInclusive(1, 3);
+					if (rand == 2)
+						eDirection = SCR_EAICombatMoveDirection.LEFT;
+					else if (rand == 1)
+						eDirection = SCR_EAICombatMoveDirection.RIGHT;
+					else
+						eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					break;
 				}
 				case EAIThreatState.PINNED:
 				{
-					int rand = Math.RandomIntInclusive(1, 3);
-					if (rand == 2)
-						eDirection = SCR_EAICombatMoveDirection.LEFT;
-					else if (rand == 1)
-						eDirection = SCR_EAICombatMoveDirection.RIGHT;
-					else
-						eDirection = SCR_EAICombatMoveDirection.FORWARD;
+					eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					break;
 				}	
 				case EAIThreatState.THREATENED:
 				{
-					int rand = Math.RandomIntInclusive(1, 3);
-					if (rand == 2)
-						eDirection = SCR_EAICombatMoveDirection.LEFT;
-					else if (rand == 1)
-						eDirection = SCR_EAICombatMoveDirection.RIGHT;
-					else
-						eDirection = SCR_EAICombatMoveDirection.FORWARD;
+					eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					break;
 				}
 				case EAIThreatState.ALERTED:
@@ -699,82 +636,11 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 					eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					break;
 				}
-			}						
-		}
-		else
-		{
-			vector wpPos = wp.GetOrigin();
-			float wpRadius = wp.GetCompletionRadius();
-			bool tgtInWaypoint = vector.DistanceXZ(wpPos, targetPos) < wpRadius;
-			float myDistToWp = vector.DistanceXZ(wpPos, m_MyEntity.GetOrigin());
-			
-			if (myDistToWp > wpRadius)
-			{
-				// We are outside WP, move towards center
-				movePos = wpPos;
-				eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;				
-			}
-			else if (myDistToWp > 0.5 * wpRadius)
-			{
-				// We are between 50% and 100% of wp radius
-				
-				if (tgtInWaypoint)
-				{
-					// Towards target
-					movePos = targetPos;
-					eDirection = SCR_EAICombatMoveDirection.FORWARD;					
-				}
-				else
-				{
-					// Move around current pos.
-					movePos = targetPos;
-					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;					
-				}
-			}
-			else
-			{
-				// We are within 50% radius of wp,
-				// Move towards tgt, regardless where tgt is
-				movePos = targetPos;
-				eDirection = SCR_EAICombatMoveDirection.FORWARD;								
-			}
-		}
-		
+			}		
 		outMovePos = movePos;
 		outDirection = eDirection;		
 	}
-	
-	//--------------------------------------------------------------------------------------------
-	protected void PushRequestFFAvoidance()
-	{
-		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
-		rq.m_eReason = SCR_EAICombatMoveReason.FF_AVOIDANCE;
-		
-		// If prev. request was FF avoidance too, keep direction.
-		// Otherwise choose a new direction.
-		SCR_AICombatMoveRequest_Move prevRequest = SCR_AICombatMoveRequest_Move.Cast(m_DriverState.GetRequest());
-		if (prevRequest && prevRequest.m_eReason == SCR_EAICombatMoveReason.FF_AVOIDANCE)
-		{
-			rq.m_eDirection = prevRequest.m_eDirection;
-		}
-		else
-		{
-			if (Math.RandomIntInclusive(0, 1) == 1)
-				rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
-			else
-				rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
-		}
-		
-		rq.m_vMovePos = ResolveRequestTargetPos();
-		rq.m_fMoveDistance = MIN_MOVE_STEP_TARGET/4;
-		rq.m_bAimAtTarget = false;
-		rq.m_bAimAtTargetEnd = false;
-		
-		m_DriverState.ApplyNewRequest(rq);
-	}
 
-	
 	//--------------------------------------------------------------------------------------------
 	protected float ResolveStoppedWaitTime(EAIThreatState threat)
 	{
@@ -829,20 +695,16 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		if (m_DriverState.IsExecutingRequest())
 			return false;
 		
-		if (m_bGoodVision)
-			return false;
+		if (IsFirstExecution())
+			return true;
 		
-		if (!m_bGoodVision || (m_fTargetLastSeenTime_ms == 0))
-		{
-			if (IsFirstExecution())
-				return true;
+		if (m_DriverState.m_fTimerStopped_s > 30)
+			return true;
 			
-			float stoppedWaitTime = ResolveStoppedWaitTime(m_eThreatState);	
-			return m_DriverState.m_fTimerStopped_s > stoppedWaitTime;
-		}
+		float stoppedWaitTime = ResolveStoppedWaitTime(m_eThreatState);	
+		return m_DriverState.m_fTimerStopped_s > stoppedWaitTime;
 			
 		return false;
-		
 	}
 	
 	//--------------------------------------------------------------------------------------------
@@ -852,6 +714,313 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		PORT_VISIBLE,
 		PORT_TIME_LAST_SEEN,
 		PORT_SUPPRESSION_VOLUME
+	};
+	override TStringArray GetVariablesIn() { return s_aVarsIn; }
+}
+
+class DCO_AITravelCommanderMove : AITaskScripted
+{	
+	// Inputs
+	protected static const string AREA_PORT = "Area Pos";
+	protected BaseTarget m_Target;
+	protected SCR_AIUtilityComponent m_GunnerUtility;
+	protected SCR_AICombatComponent m_CombatComp;
+	protected SCR_CompartmentAccessComponent m_CompartmentAccessComponent;
+	protected BaseWeaponManagerComponent m_WeaponManagerComponent;
+	protected TurretComponent m_TurretComponent;
+	protected IEntity m_MyEntity;
+	protected Vehicle m_MyVehicle;
+	
+	protected vector target;
+	
+	protected SCR_AICombatMoveState m_DriverState;
+	protected SCR_AIUtilityComponent m_DriverUtility;
+	protected const float WEAPON_MIN_DIST = 2.0;
+	
+	// minimal distance Driver should be from enemy
+	protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 60.0 * 60.0;	// when too close to target, try to move backwards
+	protected const float MAX_MOVE_STEP_TO_TARGET = 50.0; 						// max step to move towards target
+	protected const float MAX_MOVE_STEP_TO_TARGET_THREATENED = 10.0; 			// move less under threat
+	protected const float MIN_MOVE_STEP_TARGET = 5.0; 							// min step to move from target
+	
+	// Values updated on each update, to avoid passing them through calls
+	protected EAIThreatState m_eThreatState;
+	protected EWeaponType m_eWeaponType;
+	protected float m_fTargetDist;
+	protected float m_fWeaponMinDist = WEAPON_MIN_DIST;
+	
+	[Attribute("500", UIWidgets.EditBox, "Update interval of the node")]
+	protected float m_fUpdateInterval_ms;
+	protected float m_fNextUpdate_ms;
+	
+	//--------------------------------------------------------------------------------------------
+	protected override void OnInit(AIAgent owner)
+	{
+		m_GunnerUtility = SCR_AIUtilityComponent.Cast(owner.FindComponent(SCR_AIUtilityComponent));
+		m_MyEntity = owner.GetControlledEntity();
+
+		if (m_MyEntity)
+		{
+			m_CompartmentAccessComponent = SCR_CompartmentAccessComponent.Cast(m_MyEntity.FindComponent(SCR_CompartmentAccessComponent));
+			m_CombatComp = SCR_AICombatComponent.Cast(m_MyEntity.FindComponent(SCR_AICombatComponent));		
+			
+			if (m_CompartmentAccessComponent && m_CompartmentAccessComponent.IsInCompartment())
+			{
+				IEntity turretEnt = m_CompartmentAccessComponent.GetCompartment().GetOwner();
+				if (turretEnt)
+				{
+					TurretControllerComponent contr = TurretControllerComponent.Cast(turretEnt.FindComponent(TurretControllerComponent));
+					if (contr)
+						m_TurretComponent = contr.GetTurretComponent();
+					m_WeaponManagerComponent = BaseWeaponManagerComponent.Cast(turretEnt.FindComponent(BaseWeaponManagerComponent));
+				}	
+				m_MyVehicle = Vehicle.Cast(m_CompartmentAccessComponent.GetVehicle());	
+			}	
+		}
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
+	{
+		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
+		if (currentTime_ms < m_fNextUpdate_ms)
+			return ENodeResult.RUNNING;
+		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
+		
+		GetVariableIn(AREA_PORT, target);
+		
+		if (!UpdateDriverAndTarget(owner))
+			return ENodeResult.FAIL;
+		
+		if (!m_DriverState || !m_MyEntity || !m_GunnerUtility)
+			return ENodeResult.FAIL;
+		
+		if (!m_GunnerUtility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET) || m_DriverUtility.m_AIInfo.HasUnitState(EUnitState.UNCONSCIOUS))
+			return ENodeResult.RUNNING;
+				
+		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_DriverUtility.GetExecutedAction());
+		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
+			return ENodeResult.RUNNING;
+		
+		// Update cached variables
+		m_fTargetDist = GetTargetDistance();		
+		m_eThreatState = m_GunnerUtility.m_ThreatSystem.GetState();
+		m_fWeaponMinDist = 2.0;
+		m_eWeaponType = m_WeaponManagerComponent.GetCurrentWeapon().GetWeaponType();		
+
+		if (MoveToNextPosCondition())
+		{
+			// We've waited here too long, move to next place
+			PushRequestMove();
+		}
+		
+		return ENodeResult.RUNNING;
+	}
+	
+	protected void PushRequestMove()
+	{		
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+		
+		// Common values
+		rq.m_vTargetPos = ResolveRequestTargetPos();
+		ResolveMoveRequestMovePosAndDir(rq.m_vTargetPos, rq.m_vMovePos, rq.m_eDirection);
+		rq.m_bTryFindCover = false;
+		rq.m_bUseCoverSearchDirectivity = false;
+		rq.m_bCheckCoverVisibility = false;
+		
+		
+		float moveDistanceMax = MAX_MOVE_STEP_TO_TARGET;
+		
+		// Long range combat
+		
+		switch (m_eThreatState)
+		{
+			case EAIThreatState.THREATENED:
+			{
+				moveDistanceMax = MAX_MOVE_STEP_TO_TARGET_THREATENED;				
+				break;
+			}
+			default:
+			{
+				moveDistanceMax = MAX_MOVE_STEP_TO_TARGET;				
+				break;
+			}
+		}
+		
+		rq.m_eMovementType = EMovementType.SPRINT;
+		rq.m_bAimAtTarget = false; 
+		rq.m_bAimAtTargetEnd = true; // turn towards the target should be true!
+		rq.m_bFailIfNoCover = false;
+		
+		rq.m_fMoveDistance = Math.RandomFloat(0.5, 1.0) * moveDistanceMax; // Move distance randomized
+		
+		// Subscribe to events
+		// We will pronounce voice lines once we start or end moving
+		rq.GetOnMovementStarted().Insert(OnMovementStarted);
+		rq.GetOnCompleted().Insert(OnMovementCompleted);
+		
+		m_DriverState.ApplyNewRequest(rq);
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	protected static void OnMovementStarted(SCR_AIUtilityComponent utility, SCR_AICombatMoveRequest_Move rq, vector pos, bool destinationIsCover)
+	{
+		if (!utility.m_CommsHandler.CanBypass())
+		{
+			SCR_AITalkRequest talkRq = new SCR_AITalkRequest(ECommunicationType.REPORT_MOVING, null, vector.Zero, 0, false, false, SCR_EAITalkRequestPreset.IRRELEVANT_IMMEDIATE);
+			utility.m_CommsHandler.AddRequest(talkRq);
+		}
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	protected static void OnMovementCompleted(SCR_AIUtilityComponent utility, SCR_AICombatMoveRequestBase rq)
+	{
+		if (!utility.m_CommsHandler.CanBypass())
+		{
+			SCR_AITalkRequest talkRq = new SCR_AITalkRequest(ECommunicationType.REPORT_COVERING, null, vector.Zero, 0, false, false, SCR_EAITalkRequestPreset.IRRELEVANT_IMMEDIATE);
+			utility.m_CommsHandler.AddRequest(talkRq);
+		}
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	// Resolves which move pos and dir. we should use for _MOVE_ request
+	// By now rq.m_vTargetPos must be already calculated!
+	protected void ResolveMoveRequestMovePosAndDir(vector targetPos, out vector outMovePos, out SCR_EAICombatMoveDirection outDirection)
+	{	
+		AIWaypoint wp = null;
+		AIAgent agent = m_DriverUtility.GetAIAgent();
+		AIGroup group = agent.GetParentGroup();
+		if (group)
+			wp = group.GetCurrentWaypoint();
+		
+		vector movePos;
+		SCR_EAICombatMoveDirection eDirection;		
+		
+		if (!wp)
+		{
+			// No waypoint, standard move logic
+			eDirection = SCR_EAICombatMoveDirection.FORWARD;			
+			movePos = targetPos;						
+		}
+		else
+		{
+			vector wpPos = wp.GetOrigin();
+			float wpRadius = wp.GetCompletionRadius();
+			bool tgtInWaypoint = vector.DistanceXZ(wpPos, targetPos) < wpRadius;
+			float myDistToWp = vector.DistanceXZ(wpPos, m_MyEntity.GetOrigin());
+			
+			if (myDistToWp > wpRadius)
+			{
+				// We are outside WP, move towards center
+				movePos = wpPos;
+				eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;				
+			}
+			else if (myDistToWp > 0.5 * wpRadius)
+			{
+				// We are between 50% and 100% of wp radius
+				
+				if (tgtInWaypoint)
+				{
+					// Towards target
+					movePos = targetPos;
+					eDirection = SCR_EAICombatMoveDirection.FORWARD;					
+				}
+				else
+				{
+					// Move around current pos.
+					movePos = targetPos;
+					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;					
+				}
+			}
+			else
+			{
+				// We are within 50% radius of wp,
+				// Move towards tgt, regardless where tgt is
+				movePos = targetPos;
+				eDirection = SCR_EAICombatMoveDirection.FORWARD;								
+			}
+		}
+		
+		outMovePos = movePos;
+		outDirection = eDirection;		
+	}
+
+			
+	//--------------------------------------------------------------------------------------------
+	protected bool UpdateDriverAndTarget(AIAgent owner)
+	{
+		if (!m_MyVehicle)
+			return false;
+		IEntity driverEntity = m_MyVehicle.GetPilot();
+		if (!driverEntity)
+			return false;
+		AIControlComponent controlComp = AIControlComponent.Cast(driverEntity.FindComponent(AIControlComponent));
+		if (!controlComp)
+			return false;
+		AIAgent driverAgent = controlComp.GetAIAgent();
+		if (!driverAgent)
+			return false;
+		m_DriverUtility = SCR_AIUtilityComponent.Cast(driverAgent.FindComponent(SCR_AIUtilityComponent));
+		if (!m_DriverUtility)
+			return false;
+				
+		m_DriverState = m_DriverUtility.m_CombatMoveState;
+		
+		if (!m_Target || !m_Target.GetTargetEntity())
+			return false;
+		
+		return true;
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	protected float GetTargetDistance()
+	{
+		return m_Target.GetDistance();
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	protected vector ResolveRequestTargetPos()
+	{
+		return target;		
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	protected float ResolveStoppedWaitTime(EAIThreatState threat)
+	{
+		float waitTime;
+				
+		waitTime = Math.RandomFloat(3.0, 7.0);
+		return waitTime;
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	protected bool MoveToNextPosCondition()
+	{
+		if (m_DriverState.IsExecutingRequest())
+			return false;
+		
+		if (m_DriverState.m_fTimerStopped_s > 10)
+			return true;
+		
+		float stoppedWaitTime = ResolveStoppedWaitTime(m_eThreatState);	
+		return m_DriverState.m_fTimerStopped_s > stoppedWaitTime;
+	}
+
+	
+	//--------------------------------------------------------------------------------------------
+	// Returns true if it's first of combat movement logic. Doesn't mean first execution of this node.
+	protected bool IsFirstExecution()
+	{
+		return !m_DriverState.GetRequest();
+	}
+
+	//--------------------------------------------------------------------------------------------
+	override bool VisibleInPalette() { return true; }
+	
+	protected static ref TStringArray s_aVarsIn = {
+		AREA_PORT
 	};
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 }

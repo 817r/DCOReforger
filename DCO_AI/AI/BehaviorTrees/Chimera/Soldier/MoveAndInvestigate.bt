@@ -449,54 +449,81 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
             }
             Selector Selector {
              Name "Selector"
-             EditorPos 7838.333 1348.333
+             EditorPos 7616 1215
              Nodes {
-              SCR_AIDecoVectorDistance "SCR_AI Deco Vector Distance" {
-               Name "SCR_AI Deco Vector Distance"
-               EditorPos 7476.97 1652.727
+              DecoratorEntity Entity {
+               Name "Entity"
+               EditorPos 7404 1407
                Nodes {
-                DCO_AIMoveInvestigate "DCO_AI Move Investigate" {
-                 Name "DCO_AI Move Investigate"
-                 EditorPos 7460.333 1914.667
+                DCO_AITravelCommanderMove "DCO_AI Travel Commander Move" {
+                 Name "DCO_AI Travel Commander Move"
+                 EditorPos 7401 1614.333
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainerClass {
+                   Port 13
+                   PortName "Area Pos"
+                  }
+                 }
+                }
+               }
+               AbortType AbortChildrenBranchAndParentFurtherChildren
+               TEST {
+                SCR_AIDecoTestIsInTurret "{6108E834918CE585}" {
+                }
+               }
+              }
+              Selector Selector {
+               Name "Selector"
+               EditorPos 8286.333 1614.333
+               Nodes {
+                SCR_AIDecoVectorDistance "SCR_AI Deco Vector Distance" {
+                 Name "SCR_AI Deco Vector Distance"
+                 EditorPos 7924.97 1918.727
+                 Nodes {
+                  DCO_AIMoveInvestigate "DCO_AI Move Investigate" {
+                   Name "DCO_AI Move Investigate"
+                   EditorPos 7908.333 2180.667
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 8
+                     PortName "Area"
+                    }
+                   }
+                   Group "{622E04EC26503B61}"
+                  }
+                 }
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
-                   Port 8
+                   Port 13
+                   PortName "Vector0"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 14
+                   PortName "Vector1"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "Threshold"
+                  }
+                 }
+                 Group "{622E04EC26503B61}"
+                 m_fDistanceThreshold 120
+                }
+                DCO_AITravelMove "DCO_AI Travel Move" {
+                 Name "DCO_AI Travel Move"
+                 EditorPos 8439.333 2002
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 15
                    PortName "Area"
                   }
                  }
                  Group "{622E04EC26503B61}"
                 }
                }
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 13
-                 PortName "Vector0"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 14
-                 PortName "Vector1"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "Threshold"
-                }
-               }
-               Group "{622E04EC26503B61}"
-               m_fDistanceThreshold 120
-              }
-              DCO_AITravelMove "DCO_AI Travel Move" {
-               Name "DCO_AI Travel Move"
-               EditorPos 7991.333 1736
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 15
-                 PortName "Area"
-                }
-               }
                Group "{622E04EC26503B61}"
               }
              }
-             Group "{622E04EC26503B61}"
             }
            }
            Group "{622E04EC26503B61}"
@@ -614,7 +641,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos 7275.15 1985.377
+   EditorPos 7723.15 2251.377
    Group "{622E04EC26503B61}"
   }
   VariableReference radius {
@@ -644,12 +671,12 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos 7257.706 1763.635
+   EditorPos 7705.706 2029.635
    Group "{622E04EC26503B61}"
   }
   VariableReference initPosition {
    VariableType 2
-   EditorPos 7793.25 1805.333
+   EditorPos 8241.25 2071.333
    Group "{622E04EC26503B61}"
   }
   VariableReference tactics {
@@ -712,10 +739,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
  Groups {
   BTGroup "{6102CBD03DBD606B}" {
    Name "Move and Investigate"
-   Color 0.6 0.6 0.6 0.251
-  }
-  BTGroup "{622E04EC26503B61}" {
-   Name "Moving"
    Color 0.6 0.6 0.6 0.251
   }
  }

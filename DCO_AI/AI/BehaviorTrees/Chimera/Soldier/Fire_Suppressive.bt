@@ -188,11 +188,11 @@ BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressiv
            Nodes {
             Sequence Sequence {
              Name "Sequence"
-             EditorPos 1826.976 1794.797
+             EditorPos 941.976 2012.297
              Nodes {
               SCR_AIGetFireTimes "SCR_AI Get Fire Times" {
                Name "SCR_AI Get Fire Times"
-               EditorPos 1561.75 1984.471
+               EditorPos 676.75 2201.971
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
@@ -230,25 +230,66 @@ BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressiv
               }
               AITaskIdle Idle {
                Name "Idle"
-               EditorPos 2059.844 1985.677
+               EditorPos 1174.844 2203.177
                Group "{6124D04FBE0AAADF}"
                PeriodRandom 0
                PeriodKey 0
               }
-              SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
-               Name "SCR_AI Deco Weapon Unobstructed"
-               EditorPos 2207.829 1976.195
+              Selector Selector {
+               Name "Selector"
+               EditorPos 1429.643 2199.286
                Nodes {
-                AITaskFire Fire {
-                 Name "Fire"
-                 EditorPos 2299.022 2106.765
+                DecoratorEntity Entity {
+                 Name "Entity"
+                 EditorPos 952.667 2579.167
+                 Nodes {
+                  DecoAiming Aiming {
+                   Name "Aiming"
+                   EditorPos 950.94 2747.008
+                   Nodes {
+                    SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
+                     Name "SCR_AI Deco Weapon Unobstructed"
+                     EditorPos 967.708 2995.772
+                     Nodes {
+                      AITaskFire Fire {
+                       Name "Fire"
+                       EditorPos 1056.172 3120.682
+                       Period 0.05
+                       KeepFiring 1
+                       PeriodKey 31
+                      }
+                     }
+                    }
+                   }
+                   NegativeCondition 1
+                   AbortType AbortChildrenBranchAndParentFurtherChildren
+                   "Test Type" IsAimed
+                   AimThreshold 0.5
+                   InAimThreshold 32
+                  }
+                 }
+                 AbortType AbortChildrenBranchAndParentFurtherChildren
+                 TEST {
+                  SCR_AIDecoTestIsInTurret "{6108E834918CE585}" {
+                  }
+                 }
+                }
+                SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
+                 Name "SCR_AI Deco Weapon Unobstructed"
+                 EditorPos 1510.329 2526.195
+                 Nodes {
+                  AITaskFire Fire {
+                   Name "Fire"
+                   EditorPos 1601.522 2656.765
+                   Group "{6124D04FBE0AAADF}"
+                   Period 0.1
+                   KeepFiring 1
+                   PeriodKey 15
+                  }
+                 }
                  Group "{6124D04FBE0AAADF}"
-                 Period 0.1
-                 KeepFiring 1
-                 PeriodKey 15
                 }
                }
-               Group "{6124D04FBE0AAADF}"
               }
              }
              Group "{6124D04FBE0AAADF}"
@@ -434,11 +475,23 @@ BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressiv
    VariableExposedInput 0
    VariableExposedOutput 0
   }
+  Variable totalFireBurstTime {
+   VariableName "totalFireBurstTime"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable aimingTolerance {
+   VariableName "aimingTolerance"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
  }
  VariablesRefs {
   VariableReference stabilizationTime {
    VariableType 1
-   EditorPos 1841.791 1991.39
+   EditorPos 956.791 2208.89
    Group "{6124D04FBE0AAADF}"
   }
   VariableReference currentPosition {
@@ -508,12 +561,12 @@ BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressiv
   }
   VariableReference FireRate {
    VariableType 14
-   EditorPos 1408.779 2123.977
+   EditorPos 523.779 2341.477
    Group "{6124D04FBE0AAADF}"
   }
   VariableReference fireTime {
    VariableType 8
-   EditorPos 1841.591 2073.014
+   EditorPos 956.591 2290.514
    Group "{6124D04FBE0AAADF}"
   }
   VariableReference suppressionTime {
@@ -558,12 +611,12 @@ BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressiv
   }
   VariableReference shotSpan {
    VariableType 7
-   EditorPos 1842.914 2159.635
+   EditorPos 957.914 2377.135
    Group "{6124D04FBE0AAADF}"
   }
   VariableReference currentPosition {
    VariableType 5
-   EditorPos 1338.583 2035.25
+   EditorPos 453.583 2252.75
    Group "{6124D04FBE0AAADF}"
   }
   VariableReference shotSpan {
@@ -591,6 +644,14 @@ BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressiv
    EditorPos 997.25 1633.167
    Group "{6124D04F8FAE1A04}"
   }
+  VariableReference totalFireBurstTime {
+   VariableType 18
+   EditorPos 802.238 3209.492
+  }
+  VariableReference aimingTolerance {
+   VariableType 19
+   EditorPos 724.394 3061.104
+  }
  }
  Groups {
   BTGroup "{6124D04F8FAE1A04}" {
@@ -599,10 +660,6 @@ BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressiv
   }
   BTGroup "{6124D04F8B94E4BD}" {
    Name "Aiming"
-   Color 0.6 0.6 0.6 0.251
-  }
-  BTGroup "{6124D04FBE0AAADF}" {
-   Name "Firing"
    Color 0.6 0.6 0.6 0.251
   }
   BTGroup "{6124D04FADD7FE82}" {

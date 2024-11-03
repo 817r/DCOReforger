@@ -14,6 +14,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 	private DCO_SkillComponent m_DCO_Skill;
 	private DCO_CUSTOMRANK rank;	
 	
+	protected SCR_CompartmentAccessComponent m_CompartmentAccessComponent;
+	protected BaseWeaponManagerComponent m_WeaponManagerComponent;
+	protected TurretComponent m_TurretComponent;
+	
+	IEntity m_MyEntity;
+	
 	DCO_GroupTactic m_Tac;
 	DCO_GroupTacticComponent m_GroupTacticComponent;
 	
@@ -374,8 +380,23 @@ modded class SCR_AICombatComponent : ScriptComponent
 		vector targetPos;
 		bool mustDismount = DismountTurretCondition(targetPos, false);
 		bool outofMagDismount = turretOutOfMag();
+		bool noGunner = noGunnerOut();
 		
-		if (mustDismount || outofMagDismount)
+		if (noGunner)
+		{
+			if (m_fDismountTurretTimer == -1.0)
+				return;
+			
+			m_fDismountTurretTimer += timeSliceMs;
+			
+			if (m_fDismountTurretTimer > DISMOUNT_TURRET_TIMER_MS)
+			{
+				m_fDismountTurretTimer = -1.0;
+				
+				TryAddDismountTurretActions(targetPos);
+			}
+		}
+		else if (mustDismount || outofMagDismount)
 		{
 			// Do nothing if already requested to dismount
 			if (m_fDismountTurretTimer == -1.0)
@@ -396,6 +417,52 @@ modded class SCR_AICombatComponent : ScriptComponent
 		}
 	}
 	
+	bool noGunnerOut()
+	{
+		if (!m_CurrentVehicle)
+			return false;
+		
+		SCR_AIUtilityComponent m_DriverUtility;
+		SCR_AIUtilityComponent m_GunnerUtility;
+		Vehicle m_MyVehicle;
+		
+		if (m_ControlledEntity)
+		{
+			m_CompartmentAccessComponent = SCR_CompartmentAccessComponent.Cast(m_ControlledEntity.FindComponent(SCR_CompartmentAccessComponent));
+			
+			if (m_CompartmentAccessComponent && m_CompartmentAccessComponent.IsInCompartment())
+			{
+				IEntity turretEnt = m_CompartmentAccessComponent.GetCompartment().GetOwner();
+				if (turretEnt)
+				{
+					TurretControllerComponent contr = TurretControllerComponent.Cast(turretEnt.FindComponent(TurretControllerComponent));
+					if (contr)
+						m_TurretComponent = contr.GetTurretComponent();
+					m_WeaponManagerComponent = BaseWeaponManagerComponent.Cast(turretEnt.FindComponent(BaseWeaponManagerComponent));
+				}	
+				m_MyVehicle = Vehicle.Cast(m_CompartmentAccessComponent.GetVehicle());	
+			}	
+		}
+		
+		IEntity driverEntity = m_MyVehicle.GetPilot();
+		if (!driverEntity)
+			return false;
+		AIControlComponent controlComp = AIControlComponent.Cast(driverEntity.FindComponent(AIControlComponent));
+		if (!controlComp)
+			return false;
+		AIAgent driverAgent = controlComp.GetAIAgent();
+		if (!driverAgent)
+			return false;
+		m_DriverUtility = SCR_AIUtilityComponent.Cast(driverAgent.FindComponent(SCR_AIUtilityComponent));
+		if (!m_DriverUtility)
+			return false;
+		
+		if (m_GunnerUtility.m_AIInfo.HasUnitState(EUnitState.UNCONSCIOUS) || m_GunnerUtility.m_AIInfo.getCharDamageComp().IsDestroyed())
+			return true;
+		
+		return false;
+	}
+	
 	bool turretOutOfMag()
 	{
 		// False if not in turret
@@ -403,10 +470,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 			return false;
 		TurretComponent turretComp = m_CurrentTurretController.GetTurretComponent();
 		if (!turretComp)
-			return false;
-		
-		// False if we have a valid target to attack
-		if (m_SelectedTarget)
 			return false;
 		
 		// False if we have a driver in the vehicle
@@ -431,11 +494,11 @@ modded class SCR_AICombatComponent : ScriptComponent
 		
 		// False if we are in a vehicle and we should not leave turret of this vehicle type
 		// Note that static turrets are not of Vehicle class.
-		Vehicle vehicle = Vehicle.Cast(m_CurrentVehicle);
-		if (vehicle && s_aForbidDismountTurretsOfVehicleTypes.Find(vehicle.m_eVehicleType) != -1)
-			return false;
+		//Vehicle vehicle = Vehicle.Cast(m_CurrentVehicle);
+		//if (vehicle && s_aForbidDismountTurretsOfVehicleTypes.Find(vehicle.m_eVehicleType) != -1)
+		//	return false;
 		
-		return m_CurrentTurretController.GetWeaponManager().GetCurrentWeapon().GetCurrentMagazine().GetAmmoCount() < 1;
+		return m_CurrentTurretController.GetWeaponManager().GetCurrentWeapon().GetCurrentMagazine().GetAmmoCount() == 0;
 	}
 	
 	float improvementCalcuation()
@@ -486,5 +549,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	DCO_GroupTactic getTactics()
 	{
 		return m_Tac;
+	}
+	
+	TurretControllerComponent GetTurretComponent()
+	{
+		return m_CurrentTurretController;
 	}
 };

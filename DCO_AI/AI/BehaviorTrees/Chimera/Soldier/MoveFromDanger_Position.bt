@@ -3,7 +3,7 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos 368.666 -138.666
+   EditorPos 362.666 -258.222
    Nodes {
     Parallel Parallel {
      Name "Parallel"
@@ -22,33 +22,19 @@ BehaviorTree "{D12937CF422B639B}AI/BehaviorTrees/Chimera/Soldier/MoveFromDanger_
            EditorPos -1931.416 1054.417
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "DangerPosition"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "DangerEntity"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "CharacterStance"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "MovementType"
-            }
-            SingleOutputPortContainer SingleOutputPortContainerClass {
-             Port 1
-             PortName "DangerPosition"
-            }
-            SingleOutputPortContainer SingleOutputPortContainerClass {
              Port 2
              PortName "DangerEntity"
             }
-            SingleOutputPortContainer SingleOutputPortContainerClass {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 1
+             PortName "DangerPosition"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
              PortName "CharacterStance"
             }
-            SingleOutputPortContainer SingleOutputPortContainerClass {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
              PortName "MovementType"
             }
            }

@@ -87,11 +87,11 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
         }
         Selector Selector {
          Name "Selector"
-         EditorPos -1138 75
+         EditorPos -1268 106.667
          Nodes {
           DecoratorEntity Entity {
            Name "Entity"
-           EditorPos -1537.111 470.333
+           EditorPos -1540.747 470.333
            Nodes {
             SCR_AICombatMoveLogic_SuppressiveCommander "SCR_AI Combat Move Logic_ Suppressive Commander" {
              Name "SCR_AI Combat Move Logic_ Suppressive Commander"

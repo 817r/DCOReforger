@@ -203,17 +203,22 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos 1302.38 419.572
+       EditorPos 1459.047 431.239
        BehaviorTree "{98F1144DA724F591}AI/BehaviorTrees/Chimera/Soldier/LookAction.bt"
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos 1742.358 419.214
+       EditorPos 1970 434.444
+       BehaviorTree "{4DBADD830BD641FE}AI/BehaviorTrees/Chimera/Soldier/Custom/SquadCohession.bt"
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos 2550.691 432.547
        BehaviorTree "{8DD322A18236DA18}AI/BehaviorTrees/Chimera/Soldier/HandleOrders.bt"
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos 2232 418.333
+       EditorPos 2992 450
        BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
       }
      }

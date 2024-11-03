@@ -674,3 +674,104 @@ class DCO_AITravelMove : SCR_AICombatMoveLogicBase
 		return m_fTargetDist < 5;
 	}
 }
+
+class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
+{	
+	vector target;
+	
+	protected static const string AREA_PORT = "Area";
+	
+	protected ref TStringArray s_aVarsIn = {AREA_PORT};
+	override TStringArray GetVariablesIn() { return s_aVarsIn; }
+	
+	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
+	{
+		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
+		if (currentTime_ms < m_fNextUpdate_ms)
+			return ENodeResult.RUNNING;
+		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
+		
+		//if (!OnUpdate(owner, dt))
+		//	return ENodeResult.FAIL;
+		
+		//if (!m_State || !m_MyEntity || !m_Utility || !m_CombatComp || !m_CharacterController)
+		//	return ENodeResult.FAIL;
+		
+		// Don't run combat movement logic if CombatMove BT is not used now (like in turret)
+		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_Utility.GetExecutedAction());
+		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
+			return ENodeResult.RUNNING;
+		
+		GetVariableIn(AREA_PORT, target);
+
+		m_fTargetDist = vector.Distance(owner.GetOrigin(), target);
+		m_bCloseRangeCombat = m_fTargetDist < 50;
+		m_eThreatState = m_Utility.m_ThreatSystem.GetState();
+		m_eStance = m_CharacterController.GetStance();
+		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
+		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
+		
+
+		if (MoveToNextPosCondition())
+		{
+			// We've waited here too long, move to next place
+			PushRequestMove();
+		}
+		
+		return ENodeResult.RUNNING;
+	}
+
+
+	override protected void PushRequestMove()
+	{		
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+		
+		// Common values
+		rq.m_vTargetPos = target;
+		rq.m_vMovePos = rq.m_vTargetPos;
+		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+		rq.m_bTryFindCover = true;
+		float coverSearchDistMin = 0;
+		float coverSearchDistMax = 20;
+		float moveDistanceMax = Math.RandomFloat(7.0, 25.0);
+		rq.m_eMovementType = EMovementType.RUN;		
+		rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+		rq.m_fCoverSearchDistMin = coverSearchDistMin;
+		rq.m_fCoverSearchDistMax = coverSearchDistMax;
+		rq.m_bFailIfNoCover = false;
+		rq.m_fMoveDistance = Math.RandomFloat(0.5, 1.5) * moveDistanceMax;
+		rq.GetOnMovementStarted().Insert(OnMovementStarted);
+		rq.GetOnCompleted().Insert(OnMovementCompleted);
+		
+		m_State.ApplyNewRequest(rq);
+	}
+	
+	override protected bool MoveToNextPosCondition()
+	{
+		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover);	
+		
+		if (m_State.IsExecutingRequest())	
+			return false;
+		
+		if (m_fTargetDist > 75)
+			return true;
+		
+		if (m_State.m_fTimerStopped_s > stoppedWaitTime && m_eThreatState < EAIThreatState.EXHAUSTED)
+			return true;
+		
+		return m_State.m_fTimerStopped_s > stoppedWaitTime;
+	}
+
+	protected float ResolveStoppedWaitTime(bool inCover)
+	{
+		float waitTime;
+		waitTime = Math.RandomFloat(0.0, 3.0);		
+		
+		if (m_bCloseRangeCombat)
+			waitTime = 0.5;
+		
+		return waitTime;
+	}
+}

@@ -885,6 +885,16 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			rq.m_bFailIfNoCover = false;
 		else
 			rq.m_bFailIfNoCover = m_State.m_bInCover;
+		
+		if (m_Target.GetUnitType() == EAIUnitType.UnitType_VehicleMedium)
+		{
+			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+			rq.m_bTryFindCover = true;
+			rq.m_bCheckCoverVisibility = false;
+			rq.m_fMoveDistance = Math.RandomFloat(0.5, 1.0) * moveDistanceMax;
+			m_State.ApplyNewRequest(rq);
+			return;
+		}
 
 		if (tac == DCO_GroupTactic.ASSAULT)
 		{
@@ -1229,7 +1239,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			waitTime += CQB;
 		
 		if (m_Target.GetUnitType() == EAIUnitType.UnitType_VehicleMedium)
-			waitTime *= 3;
+			waitTime += 30;
 
 		waitTime += waitTimeTactics;
 

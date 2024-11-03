@@ -122,105 +122,223 @@ BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt" 
           }
          }
         }
-        DecoratorEntity Entity {
-         Name "Entity"
-         EditorPos 3199.084 1874.904
+        Selector Selector {
+         Name "Selector"
+         EditorPos 2940 1670
          Nodes {
-          Sequence Sequence {
-           Name "Sequence"
-           EditorPos 3241.666 2078.001
+          DecoratorEntity Entity {
+           Name "Entity"
+           EditorPos 1869.667 2435
            Nodes {
-            SCR_AIGetFireTimes "SCR_AI Get Fire Times" {
-             Name "SCR_AI Get Fire Times"
-             EditorPos 2533.698 2326.437
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 21
-               PortName "TargetEntity"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "TargetPosition"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "FireRateCoef"
-              }
-             }
-             OutPorts {
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 5
-               PortName "FireTime"
-              }
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 3
-               PortName "StabilizationTime"
-              }
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 12
-               PortName "RejectAimingTime"
-              }
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port -1
-               PortName "ShotSpan"
-              }
-             }
-             m_iFirePattern Burst
-            }
-            Selector Selector {
-             Name "Selector"
-             EditorPos 3706.428 2335
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 1971.244 2639.042
              Nodes {
-              DecoTestVariable "Test Variable" {
-               Name "Test Variable"
-               EditorPos 3435.714 2560.714
+              SCR_AIGetFireTimes "SCR_AI Get Fire Times" {
+               Name "SCR_AI Get Fire Times"
+               EditorPos 1249.943 2887.478
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 28
+                 PortName "TargetEntity"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "TargetPosition"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "FireRateCoef"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 30
+                 PortName "FireTime"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 31
+                 PortName "StabilizationTime"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 32
+                 PortName "RejectAimingTime"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "ShotSpan"
+                }
+               }
+               m_iFirePattern Burst
+              }
+              Selector Selector {
+               Name "Selector"
+               EditorPos 2422.672 2896.041
                Nodes {
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos 3541.5 2768.81
+                DecoTestVariable "Test Variable" {
+                 Name "Test Variable"
+                 EditorPos 2151.958 3121.755
                  Nodes {
-                  AITaskIdle Idle {
-                   Name "Idle"
-                   EditorPos 3407.928 2945.175
-                   Period 0.5
-                   PeriodRandom 0
-                   PeriodKey 4
-                  }
-                  SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
-                   Name "SCR_AI Deco Weapon Unobstructed"
-                   EditorPos 3599.523 2937.936
+                  Sequence Sequence {
+                   Name "Sequence"
+                   EditorPos 2257.744 3329.851
                    Nodes {
-                    AITaskFire Fire {
-                     Name "Fire"
-                     EditorPos 3695.844 3069.274
-                     Period 0.05
-                     KeepFiring 1
-                     PeriodKey 6
+                    AITaskIdle Idle {
+                     Name "Idle"
+                     EditorPos 2124.172 3506.216
+                     Period 0.5
+                     PeriodRandom 0
+                     PeriodKey 34
+                    }
+                    DecoAiming Aiming {
+                     Name "Aiming"
+                     EditorPos 2333.999 3505.688
+                     Nodes {
+                      SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
+                       Name "SCR_AI Deco Weapon Unobstructed"
+                       EditorPos 2362.434 3767.786
+                       Nodes {
+                        AITaskFire Fire {
+                         Name "Fire"
+                         EditorPos 2450.898 3937.696
+                         Period 0.05
+                         KeepFiring 1
+                         PeriodKey 29
+                        }
+                       }
+                      }
+                     }
+                     NegativeCondition 1
+                     AbortType AbortChildrenBranchAndParentFurtherChildren
+                     "Test Type" IsAimed
+                     AimThreshold 0.5
+                     InAimThreshold 2
                     }
                    }
                   }
                  }
+                 AbortType AbortChildrenBranchAndParentFurtherChildren
+                 InVariable 33
+                 TestType EqualsValue
+                 TestValue "true"
+                }
+                AITaskReturnState "Return  State" {
+                 Name "Return  State"
+                 EditorPos 2551.672 3148.041
+                 Result RUNNING
                 }
                }
-               AbortType AbortChildrenBranchAndParentFurtherChildren
-               InVariable 11
-               TestType EqualsValue
-               TestValue "true"
-              }
-              AITaskReturnState "Return  State" {
-               Name "Return  State"
-               EditorPos 3835.428 2587
-               Result RUNNING
               }
              }
             }
            }
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           TEST {
+            SCR_AIDecoTestIsInTurret "{6108E834918CE585}" {
+            }
+           }
           }
-         }
-         NegativeCondition 1
-         AbortType AbortChildrenBranch
-         TEST {
-          SCR_AIDecoTestIsReloading "{5A308E2E01FB6022}" {
+          DecoratorEntity Entity {
+           Name "Entity"
+           EditorPos 3199.084 1874.904
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 3241.666 2078.001
+             Nodes {
+              SCR_AIGetFireTimes "SCR_AI Get Fire Times" {
+               Name "SCR_AI Get Fire Times"
+               EditorPos 2533.698 2326.437
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 21
+                 PortName "TargetEntity"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "TargetPosition"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "FireRateCoef"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 5
+                 PortName "FireTime"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 3
+                 PortName "StabilizationTime"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 12
+                 PortName "RejectAimingTime"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "ShotSpan"
+                }
+               }
+               m_iFirePattern Burst
+              }
+              Selector Selector {
+               Name "Selector"
+               EditorPos 3706.428 2335
+               Nodes {
+                DecoTestVariable "Test Variable" {
+                 Name "Test Variable"
+                 EditorPos 3435.714 2560.714
+                 Nodes {
+                  Sequence Sequence {
+                   Name "Sequence"
+                   EditorPos 3541.5 2768.81
+                   Nodes {
+                    AITaskIdle Idle {
+                     Name "Idle"
+                     EditorPos 3407.928 2945.175
+                     Period 0.5
+                     PeriodRandom 0
+                     PeriodKey 4
+                    }
+                    SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
+                     Name "SCR_AI Deco Weapon Unobstructed"
+                     EditorPos 3599.523 2937.936
+                     Nodes {
+                      AITaskFire Fire {
+                       Name "Fire"
+                       EditorPos 3695.844 3069.274
+                       Period 0.05
+                       KeepFiring 1
+                       PeriodKey 6
+                      }
+                     }
+                    }
+                   }
+                  }
+                 }
+                 AbortType AbortChildrenBranchAndParentFurtherChildren
+                 InVariable 11
+                 TestType EqualsValue
+                 TestValue "true"
+                }
+                AITaskReturnState "Return  State" {
+                 Name "Return  State"
+                 EditorPos 3835.428 2587
+                 Result RUNNING
+                }
+               }
+              }
+             }
+            }
+           }
+           NegativeCondition 1
+           AbortType AbortChildrenBranch
+           TEST {
+            SCR_AIDecoTestIsReloading "{5A308E2E01FB6022}" {
+            }
+           }
           }
          }
         }
@@ -301,15 +419,6 @@ BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt" 
      }
     }
    }
-  }
-  DecoAiming Aiming {
-   Name "Aiming"
-   EditorPos 6005.904 2588.307
-   NegativeCondition 1
-   AbortType AbortChildrenBranchAndParentFurtherChildren
-   "Test Type" IsAimed
-   AimThreshold 0.2
-   InAimThreshold 2
   }
   Sequence Sequence {
    Name "Sequence"
@@ -425,7 +534,7 @@ BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt" 
   }
   VariableReference aimingTolerance {
    VariableType 1
-   EditorPos 5733.524 2812.404
+   EditorPos 2102.453 3709.785
   }
   VariableReference stabilizationTime {
    VariableType 4
@@ -526,6 +635,34 @@ BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt" 
   VariableReference eAimpointType1 {
    VariableType 11
    EditorPos 238.333 2346.666
+  }
+  VariableReference entity {
+   VariableType 0
+   EditorPos 1087.328 2979.54
+  }
+  VariableReference totalFireBurstTime {
+   VariableType 5
+   EditorPos 2198.631 3963.173
+  }
+  VariableReference totalFireBurstTime {
+   VariableType 5
+   EditorPos 1556.308 2909.509
+  }
+  VariableReference stabilizationTime {
+   VariableType 4
+   EditorPos 1557.237 2999.838
+  }
+  VariableReference rejectedAimingTime {
+   VariableType 3
+   EditorPos 1553.11 3088.895
+  }
+  VariableReference startFiring {
+   VariableType 6
+   EditorPos 1945.292 3248.302
+  }
+  VariableReference stabilizationTime {
+   VariableType 4
+   EditorPos 1885.221 3541.85
   }
  }
 }

@@ -1,0 +1,236 @@
+BehaviorTree "{4DBADD830BD641FE}AI/BehaviorTrees/Chimera/Soldier/Custom/SquadCohession.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/SquadCohession.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -38.333 -413.333
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -38 -260
+     Nodes {
+      AITaskGetControlledEntity "Get Controlled Entity" {
+       Name "Get Controlled Entity"
+       EditorPos -768 -9.667
+       CharacterOnly 1
+       OutControlledEntity 4
+      }
+      DecoratorEntity Entity {
+       Name "Entity"
+       EditorPos -79.663 -44.46
+       Nodes {
+        Parallel Parallel {
+         Name "Parallel"
+         EditorPos -45.714 152.143
+         Nodes {
+          Sequence Sequence {
+           Name "Init Sequence"
+           EditorPos -621.571 412.143
+           Nodes {
+            AITaskGetGroupChildren "Get Group Children" {
+             Name "Get Group Children"
+             EditorPos -964.444 677.778
+             IndexTo 0
+             OutEntity 0
+            }
+            SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+             Name "SCR_AI Get Entity Position"
+             EditorPos -415.714 620
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 0
+               PortName "Entity"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 1
+               PortName "Position"
+              }
+             }
+            }
+           }
+          }
+          DecoTestDistanceToEntity "Test Distance To Entity" {
+           Name "Test Distance To Entity"
+           EditorPos -78.857 470
+           ForceNodeResult Success
+           InEntity 0
+           OutDistance 2
+          }
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 430.791 492.484
+           Nodes {
+            DCO_AIMoveToSL "DCO_AI Move ToSL" {
+             Name "DCO_AI Move ToSL"
+             EditorPos 418.262 696.149
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 3
+               PortName "Area"
+              }
+             }
+            }
+           }
+           NegativeCondition 1
+           AbortType AbortChildrenBranch
+           InVariable 2
+           TestType SmallerThanValue
+           TestValue "35"
+          }
+         }
+        }
+       }
+       NegativeCondition 1
+       InEntity 4
+       TEST {
+        SCR_AIDecoTestIsLeader "{622A14DEC465A419}" {
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+  Parallel Parallel {
+   Name "Parallel"
+   EditorPos 986.667 1041.666
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 985 1185
+     Nodes {
+      SCR_AIGetRandomPointWithExclude "SCR_AI Get Random Point With Exclude" {
+       Name "SCR_AI Get Random Point With Exclude"
+       EditorPos 637.778 1404.889
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 5
+         PortName "Entity"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "SearchCenter"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "SearchRadius"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ExclusionCenter"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ExclusionRadius"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 6
+         PortName "Position"
+        }
+       }
+       m_fSearchRadius 100
+      }
+      SCR_AILookAtPosition "SCR_AI Look At Position" {
+       Name "SCR_AI Look At Position"
+       EditorPos 1151.778 1406.889
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 6
+         PortName "PositionIn"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "PriorityIn"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "PositionOut"
+        }
+       }
+      }
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos 1415.556 1410.445
+       Period 4
+       PeriodRandom 2
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable SquadLead {
+   VariableName "SquadLead"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable SLPosition {
+   VariableName "SLPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable distanceToSl {
+   VariableName "distanceToSl"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable Me {
+   VariableName "Me"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable LookAt {
+   VariableName "LookAt"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable me {
+   VariableName "me"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference SquadLead {
+   VariableType 0
+   EditorPos -699.554 759.428
+  }
+  VariableReference SLPosition {
+   VariableType 1
+   EditorPos -107.143 897.143
+  }
+  VariableReference distanceToSl {
+   VariableType 2
+   EditorPos 204 572.857
+  }
+  VariableReference SLPosition {
+   VariableType 1
+   EditorPos 219.405 776.543
+  }
+  VariableReference Me {
+   VariableType 3
+   EditorPos -499.667 103.667
+  }
+  VariableReference Me {
+   VariableType 3
+   EditorPos 476.556 1470.361
+  }
+  VariableReference LookAt {
+   VariableType 4
+   EditorPos 977.778 1468.222
+  }
+ }
+}

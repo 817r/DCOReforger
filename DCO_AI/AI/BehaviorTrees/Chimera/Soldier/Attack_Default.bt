@@ -113,7 +113,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          Nodes {
           DecoratorEntity Entity {
            Name "Entity"
-           EditorPos -490.619 1370.996
+           EditorPos -491.869 1370.996
            Nodes {
             SCR_AICombatMoveLogic_MovingCommander "SCR_AI Combat Move Logic_ Moving Commander" {
              Name "SCR_AI Combat Move Logic_ Moving Commander"

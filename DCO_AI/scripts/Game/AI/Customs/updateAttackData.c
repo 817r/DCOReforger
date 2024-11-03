@@ -75,6 +75,11 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			}	
 			else if (targetDistance < BURST_FIRE_MAX_DISTANCE && m_bWeaponHasBurstOrAuto)
 				return FIRE_TREE_BURST;
+			/*else if (m_UtilityComponent.m_CombatComponent.GetTurretComponent())
+			{
+				TurretControllerComponent turr = m_UtilityComponent.m_CombatComponent.GetTurretComponent();
+				turr.
+			}*/
 			else
 				return FIRE_TREE_SINGLE;
 		}
