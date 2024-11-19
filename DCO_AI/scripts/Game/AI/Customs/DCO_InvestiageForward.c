@@ -678,6 +678,7 @@ class DCO_AITravelMove : SCR_AICombatMoveLogicBase
 class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
 {	
 	vector target;
+	DCO_GroupTactic tactics;
 	
 	protected static const string AREA_PORT = "Area";
 	
@@ -710,23 +711,25 @@ class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
 		m_eStance = m_CharacterController.GetStance();
 		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
 		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
+		tactics = m_Utility.getTactics();
 		
-
-		if (MoveToNextPosCondition())
-		{
-			// We've waited here too long, move to next place
-			PushRequestMove();
-		}
+		PushRequestMove();
 		
-		return ENodeResult.RUNNING;
+		
+		return ENodeResult.SUCCESS;
 	}
 
 
 	override protected void PushRequestMove()
 	{		
+		if (tactics == DCO_GroupTactic.EVASIVE)
+			return;
+		
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 		
 		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+		
+
 		
 		// Common values
 		rq.m_vTargetPos = target;
@@ -734,14 +737,138 @@ class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_bTryFindCover = true;
 		float coverSearchDistMin = 0;
-		float coverSearchDistMax = 20;
-		float moveDistanceMax = Math.RandomFloat(7.0, 25.0);
-		rq.m_eMovementType = EMovementType.RUN;		
-		rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+		float coverSearchDistMax = 30;
+		float moveDistanceMax = Math.RandomFloat(3.0, coverSearchDistMax);
+		rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * moveDistanceMax;
+		
+		switch(m_eThreatState)
+		{
+			case EAIThreatState.EXHAUSTED:
+			{
+				rq.m_eMovementType = EMovementType.SPRINT;	
+				rq.m_eStanceEnd = ECharacterStance.PRONE;
+				rq.m_bFailIfNoCover = true;
+				if (rq.m_fMoveDistance > 15)
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+				} else if (rq.m_fMoveDistance > 10)
+				{
+					rq.m_eStanceMoving = ECharacterStance.PRONE;
+				} else
+				{
+					rq.m_eStanceMoving = ECharacterStance.PRONE;
+				}
+				break;
+			}
+			case EAIThreatState.PINNED:
+			{
+				rq.m_eMovementType = EMovementType.RUN;	
+				rq.m_eStanceEnd = ECharacterStance.PRONE;
+				rq.m_bFailIfNoCover = true;
+				if (rq.m_fMoveDistance > 15)
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+				} else if (rq.m_fMoveDistance > 10)
+				{
+					rq.m_eStanceMoving = ECharacterStance.PRONE;
+				} else
+				{
+					rq.m_eStanceMoving = ECharacterStance.PRONE;
+				}
+				break;
+			}
+			case EAIThreatState.THREATENED:
+			{
+				rq.m_eMovementType = EMovementType.RUN;	
+				rq.m_eStanceEnd = ECharacterStance.PRONE;
+				rq.m_bFailIfNoCover = false;
+				if (rq.m_fMoveDistance > 15)
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+				} else if (rq.m_fMoveDistance > 10)
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+				} else
+				{
+					rq.m_eStanceMoving = ECharacterStance.PRONE;
+				}
+				break;
+			}
+			case EAIThreatState.ALERTED:
+			{
+				rq.m_eMovementType = EMovementType.RUN;	
+				rq.m_eStanceEnd = ECharacterStance.CROUCH;
+				rq.m_bFailIfNoCover = false;
+				if (rq.m_fMoveDistance > 15)
+				{
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+				} else if (rq.m_fMoveDistance > 10)
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+				} else
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+				}
+				break;
+			}
+			case EAIThreatState.VIGILANT:
+			{
+				rq.m_eMovementType = EMovementType.RUN;	
+				rq.m_eStanceEnd = ECharacterStance.CROUCH;
+				rq.m_bFailIfNoCover = false;
+				if (rq.m_fMoveDistance > 15)
+				{
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+				} else if (rq.m_fMoveDistance > 10)
+				{
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+				} else
+				{
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+				}
+				break;
+			}
+			case EAIThreatState.SAFE:
+			{
+				rq.m_eMovementType = EMovementType.SPRINT;	
+				rq.m_eStanceEnd = ECharacterStance.STAND;
+				rq.m_bFailIfNoCover = false;
+				if (rq.m_fMoveDistance > 15)
+				{
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+				} else if (rq.m_fMoveDistance > 10)
+				{
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+				} else
+				{
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+				}
+				break;
+			}
+		}
+		
+		if (m_fTargetDist > 50)
+		{
+			rq.m_bFailIfNoCover = false;
+			rq.m_eMovementType = EMovementType.RUN;	
+			rq.m_eStanceEnd = ECharacterStance.CROUCH;
+			rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+			coverSearchDistMax = 50;
+		} else
+		{
+			int rand = Math.RandomIntInclusive(1,3);
+			if (rand == 1)
+				rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+			else if (rand == 2)
+				rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+			else if (rand == 3)
+				rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+		}
+		
+		rq.m_bAimAtTargetEnd = false;
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
-		rq.m_bFailIfNoCover = false;
-		rq.m_fMoveDistance = Math.RandomFloat(0.5, 1.5) * moveDistanceMax;
+		
 		rq.GetOnMovementStarted().Insert(OnMovementStarted);
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
 		
@@ -755,10 +882,16 @@ class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
 		if (m_State.IsExecutingRequest())	
 			return false;
 		
-		if (m_fTargetDist > 75)
-			return true;
+		if (m_Utility.m_ThreatSystem.GetThreatSuppression() > 2.0)
+			return false;
 		
-		if (m_State.m_fTimerStopped_s > stoppedWaitTime && m_eThreatState < EAIThreatState.EXHAUSTED)
+		if (m_State.IsInValidCover() && m_fTargetDist < 75)
+			return false;
+		
+		if (m_Utility.getTactics() == DCO_GroupTactic.ASSAULT && m_fTargetDist < 150)
+			return false;
+		
+		if (m_fTargetDist > 80)
 			return true;
 		
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
@@ -767,10 +900,11 @@ class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
 	protected float ResolveStoppedWaitTime(bool inCover)
 	{
 		float waitTime;
-		waitTime = Math.RandomFloat(0.0, 3.0);		
+		waitTime = Math.RandomFloat(15.0, 30.0);
 		
-		if (m_bCloseRangeCombat)
-			waitTime = 0.5;
+		if (inCover && m_Utility.m_ThreatSystem.GetThreatMeasureWithoutInjuryFactor() > 2.0)	
+			waitTime *= 2;	
+			
 		
 		return waitTime;
 	}

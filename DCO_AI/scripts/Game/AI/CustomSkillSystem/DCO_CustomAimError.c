@@ -4,7 +4,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const string PORT_BASE_TARGET = "BaseTargetIn";
 	static const string PORT_AIM_POINT = "AimPoint";
 	static const string PORT_TOLERANCE = "AimingTolerance";
-	static const float CLOSE_RANGE_THRESHOLD = 10.0;
+	static const float CLOSE_RANGE_THRESHOLD = 15.0;
 	static const float MEDIUM_RANGE_THRESHOLD = 95.0;
 	static const float LONG_RANGE_THRESHOLD = 200.0;
 	
@@ -14,7 +14,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float AIMING_ERROR_FACTOR_MAX = 1.2;
 	
 	static const float MAXIMAL_TOLERANCE = 9.0;	
-	static const float MINIMAL_TOLERANCE = 0.001;
+	static const float MINIMAL_TOLERANCE = 0.0001;
 
 	DCO_CUSTOMRANK ranks;
 	float threatFactor;
@@ -105,7 +105,8 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		// Correct aim point size based on factors
 		float distanceFactor = GetDistanceFactor(distance);
 		float offsetWeaponFactor = GetOffsetWeaponTypeFactor(weaponType);
-		float illuminationFactor = GetTargetIlluminationFactor(target);	
+		float illuminationFactor = GetTargetIlluminationFactor(target);
+		float recFactor = GetRecognitionTarget(target);	
 					
 		
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
@@ -115,7 +116,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		offsetX = GetRandomFactor(currentSkill, 0.2) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
 		offsetY = GetRandomFactor(currentSkill, 0.2) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
 		
-		tolerance = GetTolerances(entity, targetEntity, angularSize, distance, weaponType, stances);
+		tolerance = GetTolerances(entity, targetEntity, angularSize, distance, weaponType, stances, recFactor);
 		
 		tolerance = Math.Clamp(tolerance + threats, MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE);
 		
@@ -157,7 +158,25 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		return 1.0;
 	} 
 	
-	float GetTolerances(IEntity observer, IEntity target, float angularSize, float distance, EWeaponType weaponType, ECharacterStance stance)
+	float GetRecognitionTarget(BaseTarget tgt)
+	{
+		PerceivableComponent perceivable = tgt.GetPerceivableComponent();
+		if (!perceivable)
+			return 1.0;
+		
+		if (perceivable.GetVisualRecognitionFactor() < 0.7)
+			return 4.0;
+		
+		else if (perceivable.GetVisualRecognitionFactor() < 0.5)
+			return 2.0;
+		
+		else if (perceivable.GetVisualRecognitionFactor() < 0.3)
+			return 1.0;
+		
+		return 1.0;
+	}
+	
+	float GetTolerances(IEntity observer, IEntity target, float angularSize, float distance, EWeaponType weaponType, ECharacterStance stance, float recognition)
 	{
 		float tolerance;
 		bool setMaxTolerance;
@@ -341,7 +360,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			if(m_CombatComponent.GetCurrentWeapon())
 				ADSFactor = getADSFactor();
 			
-			tolerance = (tolerance * (GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor())) - (GetAimImprovement() + ADSFactor);
+			tolerance = (tolerance * (GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor())) - (GetAimImprovement() + ADSFactor + recognition);
 		};
 		
 		switch(ranks)
@@ -690,12 +709,12 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 			{
-				improvement = m_CombatComponent.getImprovement() * 8;
+				improvement = m_CombatComponent.getImprovement() * 15;
 				break;
 			}
 			case DCO_CUSTOMRANK.SPECIALIST:
 			{
-				improvement = m_CombatComponent.getImprovement() * 100;
+				improvement = m_CombatComponent.getImprovement() * 200;
 				break;
 			}
 		}

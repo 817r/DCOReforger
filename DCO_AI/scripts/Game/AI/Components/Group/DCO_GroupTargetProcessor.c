@@ -1,6 +1,6 @@
 modded class SCR_AIGroupTargetClusterProcessor : Managed
 {
-	protected const float INITIAL_DECISION_DELAY_MS = 1000.0;
+	protected const float INITIAL_DECISION_DELAY_MS = 2500.0;
 	
 	// When we don't receive new information from cluster for more than this amount of seconds,
 	// We switch to 'LOST' state.

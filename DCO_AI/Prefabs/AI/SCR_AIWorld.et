@@ -6,22 +6,23 @@ SCR_AIWorld {
   }
   ChimeraCoverManagerComponent "{5E3ADC0EA7048548}" {
    ShootingExposition 0.12
-   CrouchingSize 0.2
-   MinDistanceBetweenCovers 1.5
   }
   NavmeshWorldComponent "{5584F30E67F617AD}" {
    NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
-    "AIAgent lock area" 4
-    FilterObjectDuringGeneration 1
+    RecastConfig NavmeshRecastConfig "{50FC63BEB95B1C06}" {
+    }
+    "AIAgent lock area" 3
+    "Path stream area" 2
    }
   }
   NavmeshWorldComponent "{5584F30EEFEE1223}" {
    NavmeshSettings ChimeraNavmeshWorld "{50FC63BEBE3973C5}" {
     RecastConfig NavmeshRecastConfig "{50FC63BEB95B1C06}" {
-     WalkableRadius 5
     }
-    UseNavmeshStreaming 1
+    "AIAgent lock area" 3
+    "Path stream area" 2
    }
   }
  }
+ m_iActiveAILimit 300
 }

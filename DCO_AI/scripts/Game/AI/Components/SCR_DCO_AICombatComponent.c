@@ -40,12 +40,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	static const float TARGET_MAX_LAST_SEEN = 8.0;
 	
-	protected const float PERCEPTION_FACTOR_SAFE = 0.5;
-	protected const float PERCEPTION_FACTOR_VIGILANT = 4.0;
-	protected const float PERCEPTION_FACTOR_ALERTED = 3.8; 
-	protected const float PERCEPTION_FACTOR_THREATENED = 3.5;
-	protected const float PERCEPTION_FACTOR_PINNED = 3.5;
-	protected const float PERCEPTION_FACTOR_EXHAUSTED = 3.2;
+	protected const float PERCEPTION_FACTOR_SAFE = 0.3;
+	protected const float PERCEPTION_FACTOR_VIGILANT = 3.0;
+	protected const float PERCEPTION_FACTOR_ALERTED = 2.8; 
+	protected const float PERCEPTION_FACTOR_THREATENED = 2.5;
+	protected const float PERCEPTION_FACTOR_PINNED = 2.0;
+	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.2;
 		
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 700.0;
 	protected static const float TARGET_MAX_DISTANCE_VEHICLE = 1000.0;
@@ -57,7 +57,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 	
 	private int groupNumber;
 	private int nowGroupNumber;
-	bool alreadyGetMemberCount = false;
 	
 	private float AimImprovement;
 	
@@ -443,6 +442,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 				m_MyVehicle = Vehicle.Cast(m_CompartmentAccessComponent.GetVehicle());	
 			}	
 		}
+		
+		if (!m_MyVehicle) return false;
 		
 		IEntity driverEntity = m_MyVehicle.GetPilot();
 		if (!driverEntity)

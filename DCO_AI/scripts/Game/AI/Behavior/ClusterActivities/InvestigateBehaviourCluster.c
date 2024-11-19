@@ -1,7 +1,7 @@
 modded class SCR_AIInvestigateClusterActivity : SCR_AIFireteamsClusterActivity
 {
-	protected float YELLOW_AREA = 100;
-	protected float RED_AREA = 30;
+	//protected float YELLOW_AREA = 100;
+	//protected float RED_AREA = 30;
 	
 	override protected void SendInvestigateMessages(AICommunicationComponent comms, vector pos, float radius)
 	{

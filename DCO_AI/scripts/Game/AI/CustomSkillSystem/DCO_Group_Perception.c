@@ -146,13 +146,28 @@ modded class SCR_AIGroupPerception : Managed
 		}
 	}
 	
-	void UpdateFromFriendlys(BaseTarget target)
+	void UpdateFromFriendlys(BaseTarget target,SCR_AIInfoComponent infoComp)
 	{
-		IEntity enemy = target.GetTargetEntity();
-		SCR_AITargetInfo targetInfo = new SCR_AITargetInfo();
+		int id = m_Utility.m_aInfoComponents.Find(infoComp);
+		if (id > -1)
+		{
+			IEntity enemy = target.GetTargetEntity();
+			bool targetIsNew;
+			SCR_AITargetInfo targetInfo = AddOrUpdateTarget(target, targetIsNew);
+			bool invokedEvent = false;
 		
-		targetInfo.InitFromBaseTarget(target);
-		m_aTargetEntities.Insert(enemy);
-		m_aTargets.Insert(targetInfo);
+			if (targetIsNew && !invokedEvent)
+			{
+				if (Event_OnEnemyDetectedFiltered)
+				{
+					AIAgent reporter = AIAgent.Cast(infoComp.GetOwner());
+					Event_OnEnemyDetectedFiltered.Invoke(m_Group, targetInfo, reporter);
+				}
+				
+				invokedEvent = true;
+			}			
+		}
+		else return; 
+	
 	}
 }

@@ -42,8 +42,8 @@ class DCO_AIMoraleSystem
 	private static const float SUPPRESSION_BULLET_INCREMENT			=			0.1;
 	private static const float LOW_SUPPLY							=			0.05;
 	
-	private static const float aimImprovementPerSecond				=			0.035 * 0.001;
-	private static const float aimRecoveryPerSecond					=			0.003 * 0.001;
+	private static const float aimImprovementPerSecond				=			0.0005 * 0.001;
+	private static const float aimRecoveryPerSecond					=			0.0003 * 0.001;
 	
 	private float aimImprovementTotal;
 	private float aimImprovement;
@@ -287,7 +287,7 @@ class DCO_AIMoraleSystem
 					}
 					case DCO_CUSTOMRANK.SPECIALIST:
 					{
-						improvementAims += aimImprovementPerSecond * 4 * timeSlice;
+						improvementAims += aimImprovementPerSecond * 5 * timeSlice;
 						break;
 					}
 				}

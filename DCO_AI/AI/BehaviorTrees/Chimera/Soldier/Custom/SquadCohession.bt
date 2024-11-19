@@ -3,21 +3,21 @@ BehaviorTree "{4DBADD830BD641FE}AI/BehaviorTrees/Chimera/Soldier/Custom/SquadCoh
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos -38.333 -413.333
+   EditorPos -43.333 -660.833
    Nodes {
     Sequence Sequence {
      Name "Sequence"
-     EditorPos -38 -260
+     EditorPos -43 -507.5
      Nodes {
       AITaskGetControlledEntity "Get Controlled Entity" {
        Name "Get Controlled Entity"
-       EditorPos -768 -9.667
+       EditorPos -773 -257.167
        CharacterOnly 1
        OutControlledEntity 4
       }
       DecoratorEntity Entity {
        Name "Entity"
-       EditorPos -79.663 -44.46
+       EditorPos -84.663 -291.96
        Nodes {
         Parallel Parallel {
          Name "Parallel"
@@ -62,13 +62,25 @@ BehaviorTree "{4DBADD830BD641FE}AI/BehaviorTrees/Chimera/Soldier/Custom/SquadCoh
            Name "Test Variable"
            EditorPos 430.791 492.484
            Nodes {
-            DCO_AIMoveToSL "DCO_AI Move ToSL" {
-             Name "DCO_AI Move ToSL"
-             EditorPos 418.262 696.149
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 3
-               PortName "Area"
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 458.667 703.333
+             Nodes {
+              DCO_AIMoveToSL "DCO_AI Move ToSL" {
+               Name "DCO_AI Move ToSL"
+               EditorPos 328.976 927.101
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 3
+                 PortName "Area"
+                }
+               }
+              }
+              AITaskIdle Idle {
+               Name "Idle"
+               EditorPos 631.667 923.333
+               Period 10
+               PeriodRandom 0
               }
              }
             }
@@ -156,7 +168,7 @@ BehaviorTree "{4DBADD830BD641FE}AI/BehaviorTrees/Chimera/Soldier/Custom/SquadCoh
       }
       AITaskIdle Idle {
        Name "Idle"
-       EditorPos 1415.556 1410.445
+       EditorPos 1417.223 1410.445
        Period 4
        PeriodRandom 2
       }
@@ -218,11 +230,11 @@ BehaviorTree "{4DBADD830BD641FE}AI/BehaviorTrees/Chimera/Soldier/Custom/SquadCoh
   }
   VariableReference SLPosition {
    VariableType 1
-   EditorPos 219.405 776.543
+   EditorPos 130.119 1008.924
   }
   VariableReference Me {
    VariableType 3
-   EditorPos -499.667 103.667
+   EditorPos -504.667 -143.833
   }
   VariableReference Me {
    VariableType 3

@@ -234,118 +234,6 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
                TestType SmallerThanValue
                TestValue "35"
               }
-              DecoratorEntity Entity {
-               Name "Entity"
-               EditorPos -1458.571 457.587
-               Nodes {
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos -1436.333 665
-                 Nodes {
-                  SCR_AIGetRandomPointWithExclude "SCR_AI Get Random Point With Exclude" {
-                   Name "SCR_AI Get Random Point With Exclude"
-                   EditorPos -2446.667 958.889
-                   InPorts {
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port -1
-                     PortName "Entity"
-                    }
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port 8
-                     PortName "SearchCenter"
-                    }
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port -1
-                     PortName "SearchRadius"
-                    }
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port -1
-                     PortName "ExclusionCenter"
-                    }
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port -1
-                     PortName "ExclusionRadius"
-                    }
-                   }
-                   OutPorts {
-                    SingleOutputPortContainer SingleOutputPortContainer {
-                     Port 9
-                     PortName "Position"
-                    }
-                   }
-                   m_fSearchRadius 20
-                   m_fExcludeRadius 5
-                  }
-                  AITaskMove Move {
-                   Name "Move"
-                   EditorPos -1867.286 976.143
-                   InTargetLocation 9
-                  }
-                  AITaskIdle Idle {
-                   Name "Idle"
-                   EditorPos -1452.639 981.667
-                   Period 45
-                   PeriodRandom 15
-                  }
-                  Decorator Decorator {
-                   Name "Decorator"
-                   EditorPos -1133.214 935.119
-                   Nodes {
-                    Sequence Sequence {
-                     Name "Sequence"
-                     EditorPos -1093.286 1226.429
-                     Nodes {
-                      SCR_AITakeGadgetInLeftHand "SCR_AI Take Gadget In Left Hand" {
-                       Name "SCR_AI Take Gadget In Left Hand"
-                       EditorPos -1536.666 1528.083
-                       OutPorts {
-                        SingleOutputPortContainer SingleOutputPortContainer {
-                         Port -1
-                         PortName "ItemOut"
-                        }
-                       }
-                       m_eGadgetType BUILDING_TOOL
-                      }
-                      SCR_AIPlayItemGesture "SCR_AI Play Item Gesture" {
-                       Name "SCR_AI Play Item Gesture"
-                       EditorPos -1214.325 1533.401
-                       m_eGesture EItemGesturePickUp
-                      }
-                      DCO_AIFortification "DCO_AI Fortification" {
-                       Name "DCO_AI Fortification"
-                       EditorPos -917.083 1538.678
-                       InPorts {
-                        SingleInputPortContainer SingleInputPortContainer {
-                         Port 10
-                         PortName "Building Name"
-                        }
-                       }
-                       m_BuildingType "SandbagBarrier"
-                      }
-                      SCR_AIUnEquipItems "SCR_AI Un Equip Items" {
-                       Name "SCR_AI Un Equip Items"
-                       EditorPos -685.318 1534.889
-                       m_bKeepRunningUntilAborted 0
-                      }
-                     }
-                    }
-                   }
-                   ForceNodeResult Success
-                  }
-                  AITaskIdle Idle {
-                   Name "Idle"
-                   EditorPos -807.429 1000.095
-                   Period 3
-                  }
-                 }
-                }
-               }
-               InEntity 16
-               TEST {
-                SCR_AIDecoTestIsLeader "{622A14DEC465A419}" {
-                }
-               }
-              }
              }
             }
             AITaskReturnState "Return State" {
@@ -489,6 +377,118 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
        }
       }
      }
+    }
+   }
+  }
+  DecoratorEntity Entity {
+   Name "Entity"
+   EditorPos -1458.571 457.587
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -1436.333 665
+     Nodes {
+      SCR_AIGetRandomPointWithExclude "SCR_AI Get Random Point With Exclude" {
+       Name "SCR_AI Get Random Point With Exclude"
+       EditorPos -2446.667 958.889
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "Entity"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 8
+         PortName "SearchCenter"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "SearchRadius"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ExclusionCenter"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ExclusionRadius"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 9
+         PortName "Position"
+        }
+       }
+       m_fSearchRadius 20
+       m_fExcludeRadius 5
+      }
+      AITaskMove Move {
+       Name "Move"
+       EditorPos -1867.286 976.143
+       InTargetLocation 9
+      }
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos -1452.639 981.667
+       Period 45
+       PeriodRandom 15
+      }
+      Decorator Decorator {
+       Name "Decorator"
+       EditorPos -1133.214 935.119
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -1093.286 1226.429
+         Nodes {
+          SCR_AITakeGadgetInLeftHand "SCR_AI Take Gadget In Left Hand" {
+           Name "SCR_AI Take Gadget In Left Hand"
+           EditorPos -1536.666 1528.083
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "ItemOut"
+            }
+           }
+           m_eGadgetType BUILDING_TOOL
+          }
+          SCR_AIPlayItemGesture "SCR_AI Play Item Gesture" {
+           Name "SCR_AI Play Item Gesture"
+           EditorPos -1214.325 1533.401
+           m_eGesture EItemGesturePickUp
+          }
+          DCO_AIFortification "DCO_AI Fortification" {
+           Name "DCO_AI Fortification"
+           EditorPos -917.083 1538.678
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 10
+             PortName "Building Name"
+            }
+           }
+           m_BuildingType "SandbagBarrier"
+          }
+          SCR_AIUnEquipItems "SCR_AI Un Equip Items" {
+           Name "SCR_AI Un Equip Items"
+           EditorPos -685.318 1534.889
+           m_bKeepRunningUntilAborted 0
+          }
+         }
+        }
+       }
+       ForceNodeResult Success
+      }
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos -807.429 1000.095
+       Period 3
+      }
+     }
+    }
+   }
+   InEntity 16
+   TEST {
+    SCR_AIDecoTestIsLeader "{622A14DEC465A419}" {
     }
    }
   }

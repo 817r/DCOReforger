@@ -20,7 +20,7 @@ class DCO_AIAwareness : ScriptComponent
 	ref array<IEntity> friendlyBTarget = {};
 	ref array<IEntity> hostileEnt = {};
 	
-	[Attribute(defvalue: "100", uiwidget: UIWidgets.Auto, desc: "Awareness Friendly Radius")]
+	[Attribute(defvalue: "80", uiwidget: UIWidgets.Auto, desc: "Awareness Friendly Radius")]
 	float searchRad;
 	
 	[Attribute(defvalue: "120", uiwidget: UIWidgets.Auto, desc: "Awareness Hostile Presence Radius")]
@@ -168,10 +168,9 @@ class DCO_AIAwareness : ScriptComponent
 			SCR_AIUtilityComponent UtilityComp = agent.m_UtilityComponent;
 			for (int i = hostiless.Count()-1; i >= 0; i--)
 			{
-				IEntity ent = hostiless[i].GetTargetEntity();
-				UtilityComp.targets.Insert(ent);
-				if (!m_UtilityComp.targets.Contains(ent))
-					m_UtilityComp.targets.Insert(ent);
+				UtilityComp.targets.Insert(hostiless[i]);
+				if (!m_UtilityComp.targets.Contains(hostiless[i]))
+					m_UtilityComp.targets.Insert(hostiless[i]);
 			}
 		}
 	}

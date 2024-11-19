@@ -7,7 +7,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	DCO_AIAwareness m_Awareness;
 	protected DCO_BaseAICommander commander;
 	
-	ref array<IEntity> targets = {};
+	ref array<BaseTarget> targets = {};
 	
 	int groupMember, gg, hh, ii;
 	int targetCount;
@@ -200,9 +200,8 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 					
 					for (int i = targets.Count()-1; i >= 0; i--)
 					{
-						groupUtilityComp.m_Perception.AddOrUpdateGunshot(targets[i], targets[i].GetOrigin() , timestamp, true);
+						groupUtilityComp.m_Perception.UpdateFromFriendlys(targets[i], m_AIInfo);
 					}
-					
 				}
 			}
 		}

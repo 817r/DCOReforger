@@ -51,8 +51,7 @@ class DCO_AIFortification : AITaskScripted
 			
 			Resource res = Resource.Load(resourceName);
 			IEntity composition = GetGame().SpawnEntityPrefab(res, null, params);
-
-			//composition.SetYawPitchRoll(ang);
+			composition.SetYawPitchRoll(ang);
 			
 			aiWorld.RequestNavmeshRebuildEntity(composition);
 			return ENodeResult.SUCCESS;			

@@ -72,7 +72,7 @@ modded class SCR_AIObserveUnknownFireBehavior : SCR_AIBehaviorBase
 	override void InitTiming(float distance)
 	{
 		float duration_s = Math.Max(DURATION_MIN_S, DURATION_S_PER_METER * distance);	// Linearly increase with distance
-		duration_s = Math.RandomFloat(1*duration_s, 1.5*duration_s);	
+		duration_s = Math.RandomFloat(1*duration_s, 1.5*duration_s);
 		m_fDuration.m_Value = duration_s;
 		
 		float timeout_s = Math.Max(TIMEOUT_S, duration_s);	// Timeout is quite big, but it should be smaller than duration

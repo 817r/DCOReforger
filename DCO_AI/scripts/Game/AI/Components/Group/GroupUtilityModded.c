@@ -9,8 +9,13 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	ref array<IEntity> tempTarget = new array<IEntity>;
 	
 	protected const float PERCEPTION_UPDATE_TIMER_MS = 1200.0;
-	protected const float TACTICS_FIRSTTIME_EVAL = 60000.0;
 	
+	protected const float TACTICS_EVAL = 60000.0;
+	protected const float TACTICS_DEFENSIVE = 75000.0;
+	protected const float TACTICS_AGGRESIVE = 20000.0;
+	protected const float TACTICS_EVASIVE = 90000.0;
+	
+	float m_fTacs;
 	float m_fTacticsEvalLast = -1;
 	float m_fTacticsEvaluations;
 	
@@ -352,7 +357,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	
 	protected void evaluateTactics()
 	{		
-		if (!m_GroupTactics.AutomatedTactics)
+		if (!m_GroupTactics.AutomatedTactics == DCO_PROCESS_STATE.AUTOMATED)
 			return;
 
 		float currentTime = GetGame().GetWorld().GetWorldTime();
@@ -363,53 +368,65 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		bool isHoldingPosition = m_fThreatMeasure < 4.0;
 		bool inCombat = m_fThreatMeasure > 0.00001;
 		bool isHighMorale = moraleValue() < 3.5;
+		float randomMinusTime = Math.RandomFloat(5000, 15000);
 		
 		// DEFENSIVE MAIN FACTOR = isWinNumber && isHoldingPosition
 		// EVASIVE MAIN FACTOR = isOutnumbered
 		// AGGRESIVE MAIN FACTOR = isWinNumber
+		if (m_fTacticsEvalLast != -1.0)
+			deltaTime_ms = currentTime - m_fTacticsEvalLast;
+			
+			m_fTacticsEvaluations += deltaTime_ms;
 		
 		if (isFirstContact && inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.DEFENSIVE);
+			m_fTacs = TACTICS_EVAL;
 			UpdateTactics();
-			
-			if (m_fTacticsEvalLast != -1.0)
-				deltaTime_ms = currentTime - m_fTacticsEvalLast;
-			
-			m_fTacticsEvaluations += deltaTime_ms;
 
-			if (m_fTacticsEvaluations > TACTICS_FIRSTTIME_EVAL)
+			if (m_fTacticsEvaluations > m_fTacs)
 			{
 				isFirstContact = false;
-				m_fTacticsEvaluations -= TACTICS_FIRSTTIME_EVAL;
+				m_fTacticsEvaluations -= m_fTacs;
 			}
-		} else if (isWinNumber && isHoldingPosition && inCombat)
+		}
+		
+		if (m_fTacticsEvaluations < m_fTacs) return;
+		
+		if (isWinNumber && isHoldingPosition && inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.ASSAULT);
+			m_fTacs -= TACTICS_AGGRESIVE + randomMinusTime;
 			UpdateTactics();
 		} else if (isHighMorale && isHoldingPosition && inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.ASSAULT);
+			m_fTacs -= TACTICS_AGGRESIVE + randomMinusTime;
 			UpdateTactics();
 		} else if (isWinNumber && inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
+			m_fTacs -= TACTICS_EVAL + randomMinusTime;
 			UpdateTactics();
 		} else if (isOutnumbered && inCombat && isHoldingPosition)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.DEFENSIVE);
+			m_fTacs -= TACTICS_DEFENSIVE + randomMinusTime;
 			UpdateTactics();
 		} else if (isOutnumbered && inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.EVASIVE);
+			m_fTacs -= TACTICS_EVASIVE + randomMinusTime;
 			UpdateTactics();
 		}  else if (inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
+			m_fTacs -= TACTICS_EVAL + randomMinusTime;
 			UpdateTactics();	
 		} else if (!inCombat)
 		{
 			m_GroupTactics.SetTactic(m_Owner, DCO_GroupTactic.BALANCE);
+			m_fTacs -= TACTICS_EVAL + randomMinusTime;
 			UpdateTactics();
 			isFirstContact = true;
 			m_fTacticsEvalLast = -1;
