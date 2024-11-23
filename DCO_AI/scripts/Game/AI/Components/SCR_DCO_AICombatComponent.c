@@ -18,7 +18,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected BaseWeaponManagerComponent m_WeaponManagerComponent;
 	protected TurretComponent m_TurretComponent;
 	
-	IEntity m_MyEntity;
+	protected IEntity m_MyEntity;
 	
 	DCO_GroupTactic m_Tac;
 	DCO_GroupTacticComponent m_GroupTacticComponent;
@@ -46,6 +46,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_THREATENED = 2.5;
 	protected const float PERCEPTION_FACTOR_PINNED = 2.0;
 	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.2;
+	protected const float PERCEPTION_OVERALL_BASE = 0.25;
 		
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 700.0;
 	protected static const float TARGET_MAX_DISTANCE_VEHICLE = 1000.0;
@@ -85,6 +86,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 			m_GroupTacticComponent = DCO_GroupTacticComponent.Cast(owner.FindComponent(DCO_GroupTacticComponent));
 			
 			m_Tac = m_GroupTacticComponent.GetGroupTactic(owner);
+			
+			m_eAISkill = m_eAISkillDefault;
 		}
 	}
 	
@@ -299,6 +302,45 @@ modded class SCR_AICombatComponent : ScriptComponent
 						break;
 					}
 				}
+				break;
+			}
+		}
+		
+		switch (m_eAISkill)
+		{
+			case EAISkill.RECRUIT :
+			{
+				perceptionFactor += PERCEPTION_OVERALL_BASE / 4;
+				break;
+			}
+			case EAISkill.ROOKIE :
+			{
+				perceptionFactor += PERCEPTION_OVERALL_BASE / 2;
+				break;
+			}
+			case EAISkill.REGULAR :
+			{
+				perceptionFactor += PERCEPTION_OVERALL_BASE;
+				break;
+			}
+			case EAISkill.TRAINED :
+			{
+				perceptionFactor += PERCEPTION_OVERALL_BASE * 1.2;
+				break;
+			}
+			case EAISkill.VETERAN :
+			{
+				perceptionFactor += PERCEPTION_OVERALL_BASE * 1.4;
+				break;
+			}
+			case EAISkill.EXPERT :
+			{
+				perceptionFactor += PERCEPTION_OVERALL_BASE * 1.6;
+				break;
+			}
+			case EAISkill.CYLON :
+			{
+				perceptionFactor += PERCEPTION_OVERALL_BASE * 1.8;
 				break;
 			}
 		}
@@ -538,13 +580,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 	float getImprovement()
 	{		
 		return AimImprovement;
-	}
-	
-	float resetImprovement()
-	{
-		AimImprovement = 0;
-		
-		return 0;
 	}	
 	
 	DCO_GroupTactic getTactics()
@@ -555,5 +590,53 @@ modded class SCR_AICombatComponent : ScriptComponent
 	TurretControllerComponent GetTurretComponent()
 	{
 		return m_CurrentTurretController;
+	}
+	
+	static EAISkill setSkill(IEntity unit, EAISkill skills)
+	{
+		if (!unit)
+			return EAISkill.REGULAR;
+		
+		SCR_AICombatComponent comp = GetCharacterSkillsComponent(unit);
+		
+		if (!comp)
+			return EAISkill.REGULAR;
+		
+		return comp.SetCharacterRank(skills);
+	}
+
+	static EAISkill GetCharacterRank(IEntity unit)
+	{
+		if (!unit)
+			return EAISkill.REGULAR;
+		
+		SCR_AICombatComponent comp = GetCharacterSkillsComponent(unit);
+		
+		if (!comp)
+			return EAISkill.REGULAR;
+		
+		return comp.GetCharacterRank();
+	}
+	
+	static SCR_AICombatComponent GetCharacterSkillsComponent(IEntity unit)
+	{
+		return SCR_AICombatComponent.Cast(unit.FindComponent(SCR_AICombatComponent));
+	}
+
+	protected EAISkill SetCharacterRank(EAISkill skills)
+	{
+		m_eAISkill = skills;
+		
+		return skills;
+	}
+	
+	protected EAISkill GetCharacterRank()
+	{
+		return m_eAISkill;
+	}
+	
+	void SCR_AICombatComponent(IEntityComponentSource src, IEntity ent, IEntity parent)
+	{
+		m_MyEntity = ent;
 	}
 };

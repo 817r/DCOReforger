@@ -13,10 +13,11 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.01;
 	static const float AIMING_ERROR_FACTOR_MAX = 1.2;
 	
-	static const float MAXIMAL_TOLERANCE = 9.0;	
-	static const float MINIMAL_TOLERANCE = 0.0001;
+	static const float MAXIMAL_TOLERANCE = 10.0;	
+	static const float MINIMAL_TOLERANCE = 0.0005;
 
 	DCO_CUSTOMRANK ranks;
+	moraleState morales;
 	float threatFactor;
 	SCR_AIInfoComponent m_InfoComponent;
 	CharacterControllerComponent m_char;
@@ -29,6 +30,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		m_InfoComponent = SCR_AIInfoComponent.Cast(owner.FindComponent(SCR_AIInfoComponent));
 		m_char = m_InfoComponent.getCharCont();
 		ranks = DCO_SkillComponent.GetCharacterRank(ent);
+		morales = m_InfoComponent.getMoraleState();
 	}
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
@@ -111,10 +113,10 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
 		EAIThreatState currentThreat = m_InfoComponent.GetThreatState();
-		float threats = GetSkillFromThreat(currentSkill, currentThreat) / 20;
+		float threats = GetSkillFromThreat(currentSkill, currentThreat);
 		
-		offsetX = GetRandomFactor(currentSkill, 0.2) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
-		offsetY = GetRandomFactor(currentSkill, 0.2) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
+		offsetX = GetRandomFactor(currentSkill, 0.2) * GetRandomFactors(ranks) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
+		offsetY = GetRandomFactor(currentSkill, 0.2) * GetRandomFactors(ranks) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor;
 		
 		tolerance = GetTolerances(entity, targetEntity, angularSize, distance, weaponType, stances, recFactor);
 		
@@ -211,7 +213,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				}
 				case EWeaponType.WT_SNIPERRIFLE:
 				{
-					maxTOl = MAXIMAL_TOLERANCE / 10;
+					maxTOl = MAXIMAL_TOLERANCE / 50;
 					minTOl = MINIMAL_TOLERANCE;
 					break;
 				}
@@ -254,7 +256,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				}
 				case EWeaponType.WT_SNIPERRIFLE:
 				{
-					maxTOl = MAXIMAL_TOLERANCE / 10;
+					maxTOl = MAXIMAL_TOLERANCE / 50;
 					minTOl = MINIMAL_TOLERANCE;
 					break;
 				}
@@ -297,7 +299,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 				}
 				case EWeaponType.WT_SNIPERRIFLE:
 				{
-					maxTOl = MAXIMAL_TOLERANCE / 10;
+					maxTOl = MAXIMAL_TOLERANCE / 50;
 					minTOl = MINIMAL_TOLERANCE;
 					break;
 				}
@@ -338,9 +340,14 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 						maxTOl = MAXIMAL_TOLERANCE / 2;
 						minTOl = MINIMAL_TOLERANCE;
 					}
-					else
+					else if (ranks == DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS)
 					{
-						maxTOl = MAXIMAL_TOLERANCE / 6;
+						maxTOl = MAXIMAL_TOLERANCE - 2;
+						minTOl = MINIMAL_TOLERANCE;
+					}
+					else if (ranks == DCO_CUSTOMRANK.SPECIALIST)
+					{
+						maxTOl = MAXIMAL_TOLERANCE / 10;
 						minTOl = MINIMAL_TOLERANCE;
 					}
 					break;
@@ -360,7 +367,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			if(m_CombatComponent.GetCurrentWeapon())
 				ADSFactor = getADSFactor();
 			
-			tolerance = (tolerance * (GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor())) - (GetAimImprovement() + ADSFactor + recognition);
+			tolerance = (tolerance * (moraleMultiplier() * ((GetWeaponTypeFactor(weaponType) + GetStanceTypeFactor(stance) + GetHealthTypeFactor())))) - (GetAimImprovement() + ADSFactor + recognition);
 		};
 		
 		switch(ranks)
@@ -465,27 +472,27 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EAISkill.ROOKIE :
 			{
-				sigma = 1.4;
+				sigma = 1.7;
 				break;
 			}
 			case EAISkill.REGULAR :
 			{
-				sigma = 1.0;
+				sigma = 1.4;
 				break;
 			}
 			case EAISkill.TRAINED :
 			{
-				sigma = 0.8;
+				sigma = 1.1;
 				break;
 			}
 			case EAISkill.VETERAN :
 			{
-				sigma = 0.5;
+				sigma = 0.8;
 				break;
 			}
 			case EAISkill.EXPERT :
 			{
-				sigma = 0.3;
+				sigma = 0.5;
 				break;
 			}
 			case EAISkill.CYLON :
@@ -495,6 +502,45 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		}
 		
 		return Math.RandomGaussFloat(sigma,mu);
+	}
+	
+	float GetRandomFactors(DCO_CUSTOMRANK skill)
+	{
+		float sigma;
+		float tempMin;
+		switch (skill)
+		{
+			case DCO_CUSTOMRANK.RECRUIT :
+			{
+				sigma = 4.0;
+				tempMin = sigma;
+				tempMin = tempMin - (sigma / 2);
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE :
+			{
+				sigma = 3.0;
+				tempMin = sigma;
+				tempMin = tempMin - (sigma / 2);
+				break;
+			}
+			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS :
+			{
+				sigma = 2.0;
+				tempMin = sigma;
+				tempMin = tempMin - (sigma / 2);
+				break;
+			}
+			case DCO_CUSTOMRANK.SPECIALIST :
+			{
+				sigma = 1.0;
+				tempMin = sigma;
+				tempMin = tempMin - (sigma / 2);
+				break;
+			}
+		}
+		
+		return Math.RandomFloat(tempMin, sigma);
 	}
 	
 	//------------------------------------------------------------------------------------------------
@@ -509,17 +555,25 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			{
 				switch (inSkill)
 				{
+					case EAISkill.RECRUIT :
+					{
+						return 3.5;
+					}
 					case EAISkill.ROOKIE :
 					{
-						return 2;
+						return 3.0;
+					}
+					case EAISkill.TRAINED :
+					{
+						return 2.5;
 					}
 					case EAISkill.REGULAR :
 					{
-						return 1.5;
+						return 2.0;
 					}
 					case EAISkill.VETERAN :
 					{
-						return 1.3;
+						return 1.5;
 					}
 					case EAISkill.EXPERT :
 					{
@@ -536,9 +590,17 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			{
 				switch (inSkill)
 				{
+					case EAISkill.RECRUIT :
+					{
+						return 2.2;
+					}
 					case EAISkill.ROOKIE :
 					{
-						return 1.5;
+						return 1.9;
+					}
+					case EAISkill.TRAINED :
+					{
+						return 1.6;
 					}
 					case EAISkill.REGULAR :
 					{
@@ -550,11 +612,11 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 					}
 					case EAISkill.EXPERT :
 					{
-						return 0.6;
+						return 0.7;
 					}
 					case EAISkill.CYLON :
 					{
-						return 0.3;
+						return 0.4;
 					}
 				};
 				break;
@@ -563,13 +625,21 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			{		 
 				switch (inSkill)
 				{
+					case EAISkill.RECRUIT :
+					{
+						return 1.7;
+					}
 					case EAISkill.ROOKIE :
 					{
-						return 1.1;
+						return 1.45;
+					}
+					case EAISkill.TRAINED :
+					{
+						return 1.2;
 					}
 					case EAISkill.REGULAR :
 					{
-						return 0.9;
+						return 0.95;
 					}
 					case EAISkill.VETERAN :
 					{
@@ -577,7 +647,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 					}
 					case EAISkill.EXPERT :
 					{
-						return 0.5;
+						return 0.55;
 					}
 					case EAISkill.CYLON :
 					{
@@ -590,7 +660,15 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			{
 				switch (inSkill)
 				{
+					case EAISkill.RECRUIT :
+					{
+						return 1.4;
+					}
 					case EAISkill.ROOKIE :
+					{
+						return 1.2;
+					}
+					case EAISkill.TRAINED :
 					{
 						return 1;
 					}
@@ -615,7 +693,37 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			default :
 			{
-				return 0;
+				switch (inSkill)
+				{
+					case EAISkill.RECRUIT :
+					{
+						return 1;
+					}
+					case EAISkill.ROOKIE :
+					{
+						return 0.85;
+					}
+					case EAISkill.TRAINED :
+					{
+						return 0.7;
+					}
+					case EAISkill.REGULAR :
+					{
+						return 0.55;
+					}
+					case EAISkill.VETERAN :
+					{
+						return 0.4;
+					}
+					case EAISkill.EXPERT :
+					{
+						return 0.25;
+					}
+					case EAISkill.CYLON :
+					{
+						return 0.1;
+					}
+				};
 				break;
 			}	
 		}	
@@ -684,6 +792,34 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		return 1.0;
 	}
 	
+	float moraleMultiplier()
+	{	
+		switch (morales)
+		{
+			case moraleState.NORMAL:
+			{
+				return 1;
+			}
+			case moraleState.ANXIOUS:
+			{
+				return 5;
+			}
+			case moraleState.MOTIVATED:
+			{
+				return 10;
+			}
+			case moraleState.MANIAC:
+			{
+				return 15;
+			}
+			case moraleState.BREAK:
+			{
+				return 20;
+			}
+		}
+		return 1;
+	}
+	
 	float GetHealthTypeFactor()
 	{
 		float rightArm = m_CombatComponent.GetAIInfoComponent().getCharDamageComp().GetGroupHealthScaled(ECharacterHitZoneGroup.RIGHTARM);
@@ -709,21 +845,15 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case DCO_CUSTOMRANK.PRIVATE_FIRST_CLASS:
 			{
-				improvement = m_CombatComponent.getImprovement() * 15;
+				improvement = m_CombatComponent.getImprovement() * 8;
 				break;
 			}
 			case DCO_CUSTOMRANK.SPECIALIST:
 			{
-				improvement = m_CombatComponent.getImprovement() * 200;
+				improvement = m_CombatComponent.getImprovement() * 20;
 				break;
 			}
 		}
-		
-		SCR_AIGroup myGrp = m_InfoComponent.m_UtilityComponent.getMyGroup();
-		float distToLead = vector.Distance(m_InfoComponent.m_UtilityComponent.GetOrigin(), myGrp.GetLeaderEntity().GetOrigin());
-		
-		if (distToLead < 50)
-			improvement = improvement * 10;
 		
 		return improvement;
 	}
@@ -734,7 +864,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		adsActive = m_char.IsWeaponADS();
 		
 		if (adsActive)
-			return 10;
+			return 5;
 		
 		return 0;
 	}

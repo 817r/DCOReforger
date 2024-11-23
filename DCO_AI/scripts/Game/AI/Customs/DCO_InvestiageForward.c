@@ -63,14 +63,7 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 		combat movement, including attacking a different target.
 		*/
 		
-		if (MoveFromTargetCondition())
-		{
-			// Too close to target
-			// Step away
-			if (MoveFromTargetNewRequestCondition())
-				PushRequestMoveFromTarget();
-		}
-		else if (MoveToNextPosCondition())
+		if (MoveToNextPosCondition())
 		{
 			// We've waited here too long, move to next place
 			PushRequestMove();
@@ -251,52 +244,6 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
 	}
 
-	override protected void PushRequestMoveFromTarget()
-	{
-		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
-		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
-		
-		rq.m_vMovePos = ResolveRequestTargetPos();
-		rq.m_eMovementType = EMovementType.WALK;
-
-		rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
-		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-		rq.m_fMoveDistance = Math.RandomFloatInclusive(3.0, 7.0);
-		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
-		rq.m_bAimAtTargetEnd = true;
-		rq.m_bCheckCoverVisibility = true;
-		rq.m_bFailIfNoCover = true;
-		
-		switch(tac)
-		{
-			case DCO_GroupTactic.ASSAULT:
-			{
-				rq.m_eStanceMoving = ECharacterStance.CROUCH;
-				rq.m_eStanceEnd = ECharacterStance.CROUCH;	
-				break;		
-			}
-			case DCO_GroupTactic.BALANCE:
-			{
-				rq.m_eStanceMoving = ECharacterStance.STAND;
-				rq.m_eStanceEnd = ECharacterStance.CROUCH;
-				break;
-			}
-			default:
-			{
-				rq.m_eStanceMoving = ECharacterStance.STAND;
-				int rand = Math.RandomIntInclusive(1,2);
-				if (rand == 1)
-					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-				else if (rand == 2)
-					rq.m_eStanceEnd = ECharacterStance.STAND;
-				break;		
-			}
-		}
-		
-		m_State.ApplyNewRequest(rq);
-	}
-
 	override protected float ResolveStoppedWaitTime(bool inCover, EAIThreatState threat, EWeaponType weaponType)
 	{
 		float waitTime;
@@ -422,14 +369,7 @@ class DCO_AITravelMove : SCR_AICombatMoveLogicBase
 		combat movement, including attacking a different target.
 		*/
 		
-		if (MoveFromTargetCondition())
-		{
-			// Too close to target
-			// Step away
-			if (MoveFromTargetNewRequestCondition())
-				PushRequestMoveFromTarget();
-		}
-		else if (MoveToNextPosCondition())
+		if (MoveToNextPosCondition())
 		{
 			// We've waited here too long, move to next place
 			PushRequestMove();
@@ -607,56 +547,10 @@ class DCO_AITravelMove : SCR_AICombatMoveLogicBase
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
 	}
 
-	override protected void PushRequestMoveFromTarget()
-	{
-		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
-		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
-		
-		rq.m_vMovePos = ResolveRequestTargetPos();
-		rq.m_eMovementType = EMovementType.WALK;
-
-		rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
-		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-		rq.m_fMoveDistance = Math.RandomFloatInclusive(3.0, 7.0);
-		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
-		rq.m_bAimAtTargetEnd = true;
-		rq.m_bCheckCoverVisibility = true;
-		rq.m_bFailIfNoCover = true;
-		
-		switch(tac)
-		{
-			case DCO_GroupTactic.ASSAULT:
-			{
-				rq.m_eStanceMoving = ECharacterStance.CROUCH;
-				rq.m_eStanceEnd = ECharacterStance.CROUCH;	
-				break;		
-			}
-			case DCO_GroupTactic.BALANCE:
-			{
-				rq.m_eStanceMoving = ECharacterStance.STAND;
-				rq.m_eStanceEnd = ECharacterStance.CROUCH;
-				break;
-			}
-			default:
-			{
-				rq.m_eStanceMoving = ECharacterStance.STAND;
-				int rand = Math.RandomIntInclusive(1,2);
-				if (rand == 1)
-					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-				else if (rand == 2)
-					rq.m_eStanceEnd = ECharacterStance.STAND;
-				break;		
-			}
-		}
-		
-		m_State.ApplyNewRequest(rq);
-	}
-
 	override protected float ResolveStoppedWaitTime(bool inCover, EAIThreatState threat, EWeaponType weaponType)
 	{
 		float waitTime;
-		waitTime = 0;
+		waitTime = 0.5;
 		
 		return waitTime;
 	}
@@ -713,8 +607,11 @@ class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
 		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
 		tactics = m_Utility.getTactics();
 		
-		PushRequestMove();
-		
+		if (m_CombatComp.GetCurrentTarget())
+		{
+			if (!m_CombatComp.IsTargetVisible(m_CombatComp.GetCurrentTarget()))
+				PushRequestMove();		
+		} else PushRequestMove();	
 		
 		return ENodeResult.SUCCESS;
 	}
@@ -728,9 +625,7 @@ class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 		
 		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
-		
 
-		
 		// Common values
 		rq.m_vTargetPos = target;
 		rq.m_vMovePos = rq.m_vTargetPos;
@@ -738,7 +633,7 @@ class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
 		rq.m_bTryFindCover = true;
 		float coverSearchDistMin = 0;
 		float coverSearchDistMax = 30;
-		float moveDistanceMax = Math.RandomFloat(3.0, coverSearchDistMax);
+		float moveDistanceMax = Math.RandomFloat(coverSearchDistMin, coverSearchDistMax / 10);
 		rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * moveDistanceMax;
 		
 		switch(m_eThreatState)
@@ -865,6 +760,7 @@ class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
 				rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 		}
 		
+		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;

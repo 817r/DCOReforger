@@ -5,6 +5,7 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 	
 	// Inputs
 	protected static const string PORT_POSITION = "Position";
+	protected static const string PORT_LEADER_POS = "LeaderPos";
 	
 	// Outputs
 	protected static const string PORT_COMPLETE_ACTION = "CompleteAction";
@@ -42,17 +43,25 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 		
 		
 		vector threatPos;
+		vector leaderPos;
 		GetVariableIn(PORT_POSITION, threatPos);
 		if (threatPos == vector.Zero)
 			return ENodeResult.FAIL;
 		
+		GetVariableIn(PORT_POSITION, leaderPos);
+		if (leaderPos == vector.Zero)
+			return ENodeResult.FAIL;
+		
 		float distToThreat = vector.Distance(myEntity.GetOrigin(), threatPos);
-		CombatMoveLogic(threatPos, distToThreat);
+		m_bPushedMoveRequest = m_State.IsExecutingRequest();
+		
+		if (!m_bPushedMoveRequest)
+			CombatMoveLogic(threatPos, leaderPos, distToThreat);
 		
 		return ENodeResult.SUCCESS;
 	}
 	
-	void CombatMoveLogic(vector threatPos, float distToThreat)
+	void CombatMoveLogic(vector threatPos, vector leaderPos, float distToThreat)
 	{				
 		if (!m_State.IsInValidCover() && !m_bPushedMoveRequest && !m_State.IsMovingToCover())
 		{		
@@ -63,7 +72,7 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 			rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
 			
 			rq.m_vTargetPos = threatPos;
-			rq.m_vMovePos = myLeaderPos;
+			rq.m_vMovePos = leaderPos;
 			rq.m_bTryFindCover = true;
 			rq.m_bUseCoverSearchDirectivity = true;
 			rq.m_bCheckCoverVisibility = true;
@@ -76,7 +85,7 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 			rq.m_fMoveDistance = Math.RandomFloat(0.2, 1.0) * COVER_SEARCH_DIST_MAX;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-			rq.m_bAimAtTarget = false; // Don't aim while running
+			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
 			
 			m_State.ApplyNewRequest(rq);

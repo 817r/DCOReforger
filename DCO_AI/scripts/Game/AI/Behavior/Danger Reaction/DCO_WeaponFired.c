@@ -1,9 +1,9 @@
 [BaseContainerProps()]
 modded class SCR_AIDangerReaction_WeaponFired : SCR_AIDangerReaction
 {
-	protected static const float PROJECTILE_FLYBY_RADIUS = 13;
+	protected static const float PROJECTILE_FLYBY_RADIUS = 7;
 	protected static const float PROJECTILE_FLYBY_RADIUS_SQ = PROJECTILE_FLYBY_RADIUS * PROJECTILE_FLYBY_RADIUS;
-	protected static const float AI_WEAPONFIRED_REACTION_DISTANCE = 500;
+	protected static const float AI_WEAPONFIRED_REACTION_DISTANCE = 600;
 	
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, notnull DCO_AIMoraleSystem moraleSystem, AIDangerEvent dangerEvent)
 	{

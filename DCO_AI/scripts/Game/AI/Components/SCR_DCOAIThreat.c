@@ -12,6 +12,7 @@ modded class SCR_AIThreatSystem
 {
 	private DCO_AIMoraleSystem m_moraleSystem;
 	private DCO_SkillComponent m_DCO_Skill;
+	private EAISkill overall_Skill;
 	
 	private float m_fMoraleEffect;
 	
@@ -19,9 +20,10 @@ modded class SCR_AIThreatSystem
 	protected static const float ALERTED_THRESHOLD = 0.6;
 	static const float THREATENED_THRESHOLD = 1.3;
 	static const float PINNED_THRESHOLD = 2.2;
-	static const float EXHAUSTED_THRESHOLD = 4.7;
+	static const float EXHAUSTED_THRESHOLD = 5.0;
 	
-	private static const float SUPPRESSION_BULLET_INCREMENT = 0.06;
+	private static const float SUPPRESSION_BULLET_INCREMENT = 0.065;
+	private static const float SUPPRESSION_FLYBY_INCREMENT = 0.012;
 	private static const float ENDANGERED_INCREMENT = 0.4;
 	private static const float BLEEDING_FIXED_INCREMENT = 0.2;
 	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.006;
@@ -30,22 +32,25 @@ modded class SCR_AIThreatSystem
 	private static const float EXPLOSION_CLOSE_DISTANCE = 15;	//!< What distance in m is considered close - max increment is used
 	static const float EXPLOSION_MAX_DISTANCE = 300;
 	
+	private static const float BASE_SUPPRESSION_RESISTANCE = 0.02 * 0.001;
+	private float RESISTANCE_SUPPRESSION;
+	
 	//private static const float THREAT_PINNED_DROP__RATE = 0.08 * 0.001;
 	//private static const float THREAT_EXHAUSTED_DROP_RATE = 0.03 * 0.001;
 	//private static const float THREAT_ENDANGERED_DROP_RATE  = 0.12 * 0.001;
 	//private static const float THREAT_SUPPRESSION_DROP_RATE = 0.25 * 0.001; 
 	
 	private static const float THREAT_SHOT_DROP_RATE = 	0.13 * 0.001; // Falloff (percentual drop per milisecond)
-	private static const float THREAT_SUPPRESSION_DROP_RATE = 0.1 * 0.001;
+	private static const float THREAT_SUPPRESSION_DROP_RATE = 0.02 * 0.001;
 	private static const float THREAT_ENDANGERED_DROP_RATE = 	0.3 * 0.001;
 	private float THREAT_SUPPRESION_DROPS;
 	
 	private static const float SAFE_MORALE = 0;
-	private static const float VIGILANT_MORALE = 0.1;
-	private static const float ALERTED_MORALE = 0.3;
-	private static const float THREATENED_MORALE = 0.5;
-	private static const float PINNED_MORALE = 0.7;
-	private static const float EXHAUSTED_MORALE = 0.9;
+	private static const float VIGILANT_MORALE = 0.001 * 0.001;
+	private static const float ALERTED_MORALE = 0.003 * 0.001;
+	private static const float THREATENED_MORALE = 0.005 * 0.001;
+	private static const float PINNED_MORALE = 0.007 * 0.001;
+	private static const float EXHAUSTED_MORALE = 0.009 * 0.001;
 	
 	private EAIThreatState m_States;
 	private moraleState m_MoraleState;
@@ -238,8 +243,50 @@ modded class SCR_AIThreatSystem
 			m_moraleSystem.threatmodifierToMorale(VIGILANT_MORALE);
 		}
 			
-
 		StateTransitions(newStates);
+	}
+	
+	private void SuppressionResistancesCount()
+	{
+		overall_Skill = m_Combat.GetAISkill();
+		switch(overall_Skill)
+		{
+			case EAISkill.RECRUIT:
+			{
+				RESISTANCE_SUPPRESSION = 0;
+				break;
+			}
+			case EAISkill.TRAINED:
+			{
+				RESISTANCE_SUPPRESSION = BASE_SUPPRESSION_RESISTANCE/4;
+				break;			
+			}
+			case EAISkill.ROOKIE:
+			{
+				RESISTANCE_SUPPRESSION = BASE_SUPPRESSION_RESISTANCE/2;
+				break;			
+			}
+			case EAISkill.REGULAR:
+			{
+				RESISTANCE_SUPPRESSION = BASE_SUPPRESSION_RESISTANCE;
+				break;			
+			}
+			case EAISkill.VETERAN:
+			{
+				RESISTANCE_SUPPRESSION = BASE_SUPPRESSION_RESISTANCE * 1.5;
+				break;			
+			}
+			case EAISkill.EXPERT:
+			{
+				RESISTANCE_SUPPRESSION = BASE_SUPPRESSION_RESISTANCE * 2;
+				break;			
+			}
+			case EAISkill.CYLON:
+			{
+				RESISTANCE_SUPPRESSION = BASE_SUPPRESSION_RESISTANCE * 2.5;
+				break;			
+			}
+		}
 	}
 	
 	override void Update(SCR_AIUtilityComponent utility, float timeSlice)
@@ -249,11 +296,7 @@ modded class SCR_AIThreatSystem
 		
 		// Threat falloff
 		m_fThreatShotsFired -= m_fThreatShotsFired * THREAT_SHOT_DROP_RATE * timeSlice;
-		
-		
-		if (tac == DCO_GroupTactic.ASSAULT)
-			m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESION_DROPS * 10 * timeSlice;
-		else m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESION_DROPS * timeSlice;
+		m_fThreatSuppression -= m_fThreatSuppression * (THREAT_SUPPRESION_DROPS + RESISTANCE_SUPPRESSION) * timeSlice;
 
 		
 		if (m_Combat)
@@ -299,10 +342,10 @@ modded class SCR_AIThreatSystem
 		float threatFromBehavior = 0;
 		if (utility.m_CurrentBehavior)
 			threatFromBehavior = utility.m_CurrentBehavior.m_fThreat;
-		
+		SuppressionResistancesCount();
 		m_MoraleState = m_moraleSystem.GetMoraleMeasure();
 		rank = m_DCO_Skill.GetCharacterRank(utility.m_OwnerEntity);
-		m_fThreatTotal = Math.Clamp(threatFromBehavior + m_fThreatSuppression + m_fThreatInjury + m_fThreatShotsFired + m_fThreatIsEndangered, 0, 5.5);
+		m_fThreatTotal = Math.Clamp(threatFromBehavior + m_fThreatSuppression + m_fThreatInjury + m_fThreatShotsFired + m_fThreatIsEndangered, 0, 6);
 		
 		UpdateStates();
 #ifdef WORKBENCH
@@ -316,7 +359,7 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatBulletImpact: %1", count));
 		#endif
 		
-		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 5.5);
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 6);
 		decreaseMoraleWeaponFired(count);
 	}
 	
@@ -337,7 +380,7 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
 		#endif
 		
-		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count/5 * SUPPRESSION_BULLET_INCREMENT, 0, 5.5);
+		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_FLYBY_INCREMENT, 0, 6);
 		decreaseMoraleWeaponFired(count);
 	}
 	

@@ -241,30 +241,34 @@ BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressiv
                Nodes {
                 DecoratorEntity Entity {
                  Name "Entity"
-                 EditorPos 952.667 2579.167
+                 EditorPos 959.81 2577.739
                  Nodes {
                   DecoAiming Aiming {
                    Name "Aiming"
-                   EditorPos 950.94 2747.008
+                   EditorPos 1031.131 2756.465
                    Nodes {
-                    SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
-                     Name "SCR_AI Deco Weapon Unobstructed"
-                     EditorPos 967.708 2995.772
+                    SCR_AIIsFriendlyInAim "SCR_AI Is Friendly In Aim" {
+                     Name "SCR_AI Is Friendly In Aim"
+                     EditorPos 1025.397 2952.54
                      Nodes {
-                      AITaskFire Fire {
-                       Name "Fire"
-                       EditorPos 1056.172 3120.682
-                       Period 0.05
-                       KeepFiring 1
-                       PeriodKey 31
+                      SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
+                       Name "SCR_AI Deco Weapon Unobstructed"
+                       EditorPos 976.279 3092.915
+                       Nodes {
+                        AITaskFire Fire {
+                         Name "Fire"
+                         EditorPos 1064.743 3217.825
+                         Period 0.05
+                         KeepFiring 1
+                         PeriodKey 31
+                        }
+                       }
                       }
                      }
+                     NegativeCondition 1
                     }
                    }
-                   NegativeCondition 1
-                   AbortType AbortChildrenBranchAndParentFurtherChildren
-                   "Test Type" IsAimed
-                   AimThreshold 0.5
+                   AimThreshold 1
                    InAimThreshold 32
                   }
                  }
@@ -358,12 +362,6 @@ BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressiv
    Group "{6124D04F8FAE1A04}"
    PeriodRandom 0
    PeriodKey 30
-  }
-  DecoAiming Aiming {
-   Name "Aiming"
-   EditorPos 2423.084 981.321
-   AimThreshold 18
-   InAimThreshold -1
   }
  }
  Variables {
@@ -646,11 +644,11 @@ BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressiv
   }
   VariableReference totalFireBurstTime {
    VariableType 18
-   EditorPos 802.238 3209.492
+   EditorPos 810.809 3306.635
   }
-  VariableReference aimingTolerance {
-   VariableType 19
-   EditorPos 724.394 3061.104
+  VariableReference currentPosition {
+   VariableType 5
+   EditorPos 771.364 2899.614
   }
  }
  Groups {
