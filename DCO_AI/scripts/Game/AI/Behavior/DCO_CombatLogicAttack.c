@@ -3049,7 +3049,7 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 	DCO_GroupTactic tac;
 
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
-	{
+	{		
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
 		if (currentTime_ms < m_fNextUpdate_ms)
 			return ENodeResult.RUNNING;
@@ -3481,7 +3481,7 @@ class CombatLogic_Evasive_Tactics : SCR_AICombatMoveLogicBase
 
 
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
-	{
+	{		
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
 		if (currentTime_ms < m_fNextUpdate_ms)
 			return ENodeResult.RUNNING;

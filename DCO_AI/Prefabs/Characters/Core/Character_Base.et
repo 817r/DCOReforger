@@ -27,6 +27,9 @@ SCR_ChimeraCharacter {
       }
      }
     }
+    SCRDCO_AIConfigComponent "{62EF3DAA832AF053}" {
+     stance AUTO
+    }
    }
   }
   DCO_UnitScanComponent "{628AE55504B43141}" {

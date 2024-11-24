@@ -35,7 +35,7 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 	}
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
-	{
+	{		
 		IEntity myEntity = owner.GetControlledEntity();
 		
 		if (!m_State || !myEntity)

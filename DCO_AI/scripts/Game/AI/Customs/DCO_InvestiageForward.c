@@ -13,7 +13,7 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 	
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
-	{
+	{		
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
 		if (currentTime_ms < m_fNextUpdate_ms)
 			return ENodeResult.RUNNING;
@@ -319,7 +319,7 @@ class DCO_AITravelMove : SCR_AICombatMoveLogicBase
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 	
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
-	{
+	{		
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
 		if (currentTime_ms < m_fNextUpdate_ms)
 			return ENodeResult.RUNNING;
@@ -742,9 +742,10 @@ class DCO_AIMoveToSL : SCR_AICombatMoveLogicBase
 			}
 		}
 		
-		if (m_fTargetDist > 50)
+		if (m_fTargetDist > 20)
 		{
 			rq.m_bFailIfNoCover = false;
+			rq.m_eStanceMoving = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.RUN;	
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;

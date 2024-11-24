@@ -3,6 +3,8 @@ modded class SCR_AIInfoComponent : SCR_AIInfoBaseComponent
 	protected DCO_AIMoraleSystem m_DCOMoraleSystem;
 	SCR_AIUtilityComponent m_UtilityComponent;
 	protected SCR_AIGroupPerception GroupPerception;
+	protected DCO_ForceStance m_Stancess;
+	protected ECharacterStance Forcestance;
 	
 	void InitMoraleSystem(DCO_AIMoraleSystem moraleSystem)
 	{
@@ -102,5 +104,16 @@ modded class SCR_AIInfoComponent : SCR_AIInfoBaseComponent
 		
 		return false;
 	}
-
+	
+	void setForced(DCO_ForceStance stance)
+	{
+		m_Stancess = stance;
+	}
+	
+	void SetForceStance(ECharacterStance stance)
+	{
+		Forcestance = stance;
+		m_eStance = stance;
+		SCR_AIStanceHandling.SetStance(this, m_CharacterController, Forcestance);
+	}
 }

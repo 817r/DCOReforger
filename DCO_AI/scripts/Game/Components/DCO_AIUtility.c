@@ -6,6 +6,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	protected SCR_AIGroup m_MyGroup;
 	DCO_AIAwareness m_Awareness;
 	protected DCO_BaseAICommander commander;
+	protected ECharacterStance Forcestance;
 	
 	ref array<BaseTarget> targets = {};
 	
@@ -316,5 +317,12 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	{
 		ii = i;
 		return i;
+	}
+	
+	void restartBehaviour()
+	{
+		SCR_AIBehaviorBase temp = m_CurrentBehavior;
+		m_CurrentBehavior.SetActionState(EAIActionState.COMPLETED);
+		AddAction(temp);
 	}
 }

@@ -108,3 +108,38 @@ class SCR_AIDecoTactics : DecoratorScripted
 		return s_aVarsIn;
 	}
 };
+
+class DCO_AllowMovement : DecoratorScripted
+{
+	SCR_AIInfoComponent m_InfoComponent;
+	
+	[Attribute("1", UIWidgets.ComboBox, "Morale threshold", "", ParamEnumArray.FromEnum(moraleState) )]
+	private bool allowMovement;
+	
+	//------------------------------------------------------------------------------------------------
+	protected override void OnInit(AIAgent owner)
+	{
+		SCR_ChimeraAIAgent chimeraAgent = SCR_ChimeraAIAgent.Cast(owner);
+		if (!chimeraAgent)
+			SCR_AgentMustChimera(this, owner);
+		m_InfoComponent = chimeraAgent.m_InfoComponent;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	protected override bool TestFunction(AIAgent owner)
+	{		
+		if (!m_InfoComponent)
+		{
+			return false;
+		};
+		
+		allowMovement = SCRDCO_AIConfigComponent.GetEnableMovement(owner.GetControlledEntity());
+		return allowMovement;	
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	protected override string GetOnHoverDescription()
+	{
+		return "Returns true if current threat state is higher than given threshold.";
+	}
+};

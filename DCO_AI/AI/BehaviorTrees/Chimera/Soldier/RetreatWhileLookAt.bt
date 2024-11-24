@@ -1,0 +1,134 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/RetreatWhileLookAt.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -2412.227 -919.869
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos -2420.417 -775
+     Nodes {
+      DCO_AllowMovement "DCO_ Allow Movement" {
+       Name "DCO_ Allow Movement"
+       EditorPos -2451.588 -570.25
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -2398.286 -416
+         Nodes {
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos -2888.75 -161.25
+          }
+          RunOnce "Run Once" {
+           Name "Run Once"
+           EditorPos -2590.143 -173.786
+           Nodes {
+            SCR_AIGetRetreatWhileLookAtBehaviorParameters "SCR_AI Get Retreat While Look At Behavior Parameters" {
+             Name "SCR_AI Get Retreat While Look At Behavior Parameters"
+             EditorPos -2774.929 358.643
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 1
+               PortName "RetreatToPoint"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 0
+               PortName "LookAt"
+              }
+             }
+            }
+           }
+          }
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos -1911.298 -179.024
+           Nodes {
+            AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+             Name "Character Set Movement Speed"
+             EditorPos -2444.091 141.591
+             "Movement speed" RUN
+            }
+            SCR_AISetStance "SCR_AI Set Stance" {
+             Name "SCR_AI Set Stance"
+             EditorPos -2053.75 176
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "Stance"
+              }
+             }
+            }
+            AITaskMove Move {
+             Name "Move"
+             EditorPos -1773.019 193.393
+             InTargetLocation 1
+             InTargetOrientation 0
+             InPrecisionXZ -1
+             AutoOrientation 0
+            }
+            AITaskReturnState "Return State" {
+             Name "Return State"
+             EditorPos -1169.571 147.286
+             Result SUCCESS
+            }
+           }
+          }
+          AITaskReturnState "Return  State" {
+           Name "Return  State"
+           EditorPos -1355.5 -168.25
+           Result SUCCESS
+          }
+         }
+        }
+       }
+       UseChildResult 0
+       AbortType AbortChildrenBranch
+      }
+     }
+     UseChildResult 1
+    }
+   }
+  }
+  Sequence Sequence {
+   Name "Sequence"
+   EditorPos -3412.159 -96.786
+   Nodes {
+    SCR_AICompleteAction "SCR_AI Complete Action" {
+     Name "SCR_AI Complete Action"
+     EditorPos -3584.588 101.5
+    }
+    AITaskReturnState "Return  State" {
+     Name "Return  State"
+     EditorPos -3368.08 78.596
+     Result SUCCESS
+    }
+   }
+  }
+ }
+ Variables {
+  Variable LookAtTarget {
+   VariableName "LookAtTarget"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable TargetPos {
+   VariableName "TargetPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference LookAtTarget {
+   VariableType 0
+   EditorPos -2124.429 459.928
+  }
+  VariableReference TargetPos {
+   VariableType 1
+   EditorPos -2111.286 391.357
+  }
+ }
+}

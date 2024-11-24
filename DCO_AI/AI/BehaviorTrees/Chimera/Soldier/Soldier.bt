@@ -176,30 +176,38 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
        }
       }
-      Selector Selector {
-       Name "Selector"
-       EditorPos 1013.571 446.071
+      DCO_AllowMovement "DCO_ Allow Movement" {
+       Name "DCO_ Allow Movement"
+       EditorPos 1133 423
        Nodes {
-        DecoTestVariable "Test Variable" {
-         Name "Test Variable"
-         EditorPos 681.828 601.689
+        Selector Selector {
+         Name "Selector"
+         EditorPos 1192.571 595.071
          Nodes {
-          RunBT RunBT {
-           Name "RunBT"
-           EditorPos 644.964 771.325
-           BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMove.bt"
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 1076.828 886.689
+           Nodes {
+            RunBT RunBT {
+             Name "RunBT"
+             EditorPos 1039.964 1056.325
+             BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMove.bt"
+            }
+           }
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           InVariable 8
+           TestType EqualsValue
+           TestValue "true"
+          }
+          SCR_AIResetCombatMoveState "SCR_AI Reset Combat Move State" {
+           Name "SCR_AI Reset Combat Move State"
+           EditorPos 1439.047 891.547
           }
          }
-         AbortType AbortChildrenBranchAndParentFurtherChildren
-         InVariable 8
-         TestType EqualsValue
-         TestValue "true"
-        }
-        SCR_AIResetCombatMoveState "SCR_AI Reset Combat Move State" {
-         Name "SCR_AI Reset Combat Move State"
-         EditorPos 1044.047 606.547
         }
        }
+       UseChildResult 0
+       AbortType AbortChildrenBranch
       }
       RunBT RunBT {
        Name "RunBT"
@@ -294,7 +302,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
   }
   VariableReference useCombatMove {
    VariableType 3
-   EditorPos 455.357 677.078
+   EditorPos 850.357 962.078
   }
   VariableReference fDecisionUpdateInterval {
    VariableType 4

@@ -10,6 +10,59 @@ modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
 	protected const float MAX_MOVE_STEP_TO_TARGET_THREATENED = 45.0; 			// move less under threat
 	protected const float MIN_MOVE_STEP_TARGET = 20.0; 							// min step to move from target
 
+	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
+	{		
+		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
+		if (currentTime_ms < m_fNextUpdate_ms)
+			return ENodeResult.RUNNING;
+		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
+		
+		if (!UpdateDriverAndTarget(owner))
+			return ENodeResult.FAIL;
+		
+		if (!m_DriverState || !m_MyEntity || !m_GunnerUtility)
+			return ENodeResult.FAIL;
+		
+		if (!m_GunnerUtility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET) || m_DriverUtility.m_AIInfo.HasUnitState(EUnitState.UNCONSCIOUS))
+			return ENodeResult.RUNNING;
+				
+		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_DriverUtility.GetExecutedAction());
+		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
+			return ENodeResult.RUNNING;
+		
+		// Update cached variables
+		m_fTargetDist = GetTargetDistance();		
+		m_eThreatState = m_GunnerUtility.m_ThreatSystem.GetState();
+		m_fWeaponMinDist = 2.0;
+		m_eWeaponType = m_WeaponManagerComponent.GetCurrentWeapon().GetWeaponType();		
+		
+		//------------------------------------------------------------------------------------
+				
+		if (MoveFromTargetCondition())
+		{
+			// Target out of reach for turret or too close
+			// Step backwards
+			if (MoveFromTargetNewRequestCondition())
+				PushRequestMoveFromTarget();
+		}
+		else if (FFAvoidanceCondition())
+		{
+			if (FFAvoidanceNewRequestCondition())
+				PushRequestFFAvoidance();
+		}
+		else if (MoveToNextPosCondition())
+		{
+			// We've waited here too long, move to next place
+			PushRequestMove();
+		}
+		else if (!m_DriverState.IsExecutingRequest())
+		{
+			// TODO: We are stopped keep distance, scan the perimeter			
+		}
+		
+		return ENodeResult.RUNNING;
+	}
+	
 	//--------------------------------------------------------------------------------------------
 	//! decides if we should move backwards from target 
 	override protected bool MoveFromTargetCondition()
@@ -403,7 +456,7 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 	}
 	
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
-	{
+	{		
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
 		if (currentTime_ms < m_fNextUpdate_ms)
 			return ENodeResult.RUNNING;
