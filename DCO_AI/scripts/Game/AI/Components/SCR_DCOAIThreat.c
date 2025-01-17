@@ -291,53 +291,47 @@ modded class SCR_AIThreatSystem
 	
 	override void Update(SCR_AIUtilityComponent utility, float timeSlice)
 	{
-		if(m_moraleSystem == null)
-			m_moraleSystem = utility.m_DCOMoraleSystem;
-		
 		// Threat falloff
+		m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESSION_DROP_RATE * timeSlice;
 		m_fThreatShotsFired -= m_fThreatShotsFired * THREAT_SHOT_DROP_RATE * timeSlice;
-		m_fThreatSuppression -= m_fThreatSuppression * (THREAT_SUPPRESION_DROPS + RESISTANCE_SUPPRESSION) * timeSlice;
-
 		
 		if (m_Combat)
 		{
 			if (m_Combat.GetCurrentTarget())
-				m_fThreatIsEndangered = ENDANGERED_INCREMENT + GetMoraleEffect();
+				m_fThreatIsEndangered = ENDANGERED_INCREMENT;
 			else
 				m_fThreatIsEndangered -= m_fThreatIsEndangered * THREAT_ENDANGERED_DROP_RATE * timeSlice;
 		}
-		
-		
-		
 
 		// Process all danger events and clear the array
 		if (m_Agent && m_Config.m_EnableDangerEvents)
 		{
-			bool handled;
-			int i = 0;
-			for (; i < m_Agent.GetDangerEventsCount(); i++)
+			int i;
+			AIDangerEvent dangerEvent;
+			for (int max = m_Agent.GetDangerEventsCount(); i < max; i++)
 			{
-				AIDangerEvent dangerEvent = m_Agent.GetDangerEvent(i);
+				int dangerEventCount;
+				dangerEvent = m_Agent.GetDangerEvent(i, dangerEventCount);
 				
 				if (dangerEvent)
 				{
 					#ifdef AI_DEBUG
-					AddDebugMessage(string.Format("PerformDangerReaction: %1, %2", dangerEvent, typename.EnumToString(EAIDangerEventType, dangerEvent.GetDangerType())));
+					AddDebugMessage(string.Format("PerformDangerReaction: %1x %2, %3", dangerEventCount, dangerEvent, typename.EnumToString(SCR_EAIDangerEventType, dangerEvent.GetDangerType())));
 					#endif
 					
-					if (m_Config.PerformDangerReaction(m_Utility, dangerEvent))
+					if (m_Config.PerformDangerReaction(m_Utility, dangerEvent, dangerEventCount))
 					{
 #ifdef WORKBENCH	
-						string message = typename.EnumToString(EAIDangerEventType, dangerEvent.GetDangerType());
-						//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, message, EAIDebugCategory.DANGER, 1);	// Show message above AI's head
+						string message = typename.EnumToString(SCR_EAIDangerEventType, dangerEvent.GetDangerType());
+						SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, message, EAIDebugCategory.DANGER, 2);	// Show message above AI's head
 #endif
 						break;
 					}
 				}
 			}
-			m_Agent.ClearDangerEvents(i+1);
-		}		
 
+			m_Agent.ClearDangerEvents(i + 1);
+		}		
 		// Add threat value from current behavior
 		float threatFromBehavior = 0;
 		if (utility.m_CurrentBehavior)

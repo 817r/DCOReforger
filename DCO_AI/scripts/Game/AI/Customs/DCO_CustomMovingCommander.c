@@ -112,10 +112,9 @@ modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
 		
 		rq.m_vMovePos = ResolveRequestTargetPos();
 		rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
-		rq.m_fMoveDistance = MIN_MOVE_STEP_TARGET;
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
-		rq.m_fMoveDistance = Math.RandomFloat(0.7, 1.5) * MAX_MOVE_STEP_TO_TARGET_THREATENED;
+		rq.m_fMoveDuration_s = Math.RandomFloat(3.0, 10.5);
 		
 		m_DriverState.ApplyNewRequest(rq);
 	}
@@ -159,7 +158,7 @@ modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
 		rq.m_bAimAtTargetEnd = true; // turn towards the target should be true!
 		rq.m_bFailIfNoCover = false;
 		
-		rq.m_fMoveDistance = Math.RandomFloat(0.7, 1.5) * moveDistanceMax; // Move distance randomized
+		rq.m_fMoveDuration_s = Math.RandomFloat(3.0, 10.5); // Move distance randomized
 		
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving
@@ -290,7 +289,7 @@ modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
 		}
 		
 		rq.m_vMovePos = ResolveRequestTargetPos();
-		rq.m_fMoveDistance = MIN_MOVE_STEP_TARGET/4;
+		rq.m_fMoveDuration_s = MIN_MOVE_STEP_TARGET/5;
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = true;
 		
@@ -607,7 +606,7 @@ class SCR_AICombatMoveLogic_SuppressiveCommander : AITaskScripted
 		rq.m_bAimAtTargetEnd = true; // turn towards the target should be true!
 		rq.m_bFailIfNoCover = false;
 		
-		rq.m_fMoveDistance = Math.RandomFloat(0.7, 1.5) * moveDistanceMax; // Move distance randomized
+		rq.m_fMoveDuration_s = Math.RandomFloat(3.0, 10.5); // Move distance randomized
 		
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving
@@ -907,7 +906,7 @@ class DCO_AITravelCommanderMove : AITaskScripted
 		rq.m_bAimAtTargetEnd = true; // turn towards the target should be true!
 		rq.m_bFailIfNoCover = false;
 		
-		rq.m_fMoveDistance = Math.RandomFloat(0.5, 1.0) * moveDistanceMax; // Move distance randomized
+		rq.m_fMoveDuration_s = Math.RandomFloat(2.0, 7.0); // Move distance randomized
 		
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving

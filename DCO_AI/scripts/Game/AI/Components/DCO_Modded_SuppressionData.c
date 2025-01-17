@@ -15,7 +15,7 @@ modded class SCR_AIUpdateTargetSuppressionData : AITaskScripted
 		// Friendly in aim?
 		if (m_PerceptionComponent.GetFriendlyInLineOfFire())
 			return FIRE_TREE_LOOK;
-		
+				
 		if (targetVisible)
 			return FIRE_TREE_SUPPRESSIVE;
 		

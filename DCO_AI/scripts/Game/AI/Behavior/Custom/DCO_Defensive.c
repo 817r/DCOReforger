@@ -70,7 +70,6 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 			vector myLeaderPos = myGroup.GetLeaderEntity().GetOrigin();
 			
 			rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
-			
 			rq.m_vTargetPos = threatPos;
 			rq.m_vMovePos = leaderPos;
 			rq.m_bTryFindCover = true;
@@ -82,7 +81,7 @@ class DCO_DEFENSIVE_EVALUATION_COVER: AITaskScripted
 			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 			rq.m_fCoverSearchDistMin = 3;
-			rq.m_fMoveDistance = Math.RandomFloat(0.2, 1.0) * COVER_SEARCH_DIST_MAX;
+			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 3.0);
 			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running

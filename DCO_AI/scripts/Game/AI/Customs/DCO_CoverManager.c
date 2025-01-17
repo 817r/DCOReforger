@@ -65,7 +65,7 @@ class SCR_AIDCO_COVERMANAGER: AITaskScripted
 			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 			rq.m_fCoverSearchDistMin = 2;
-			rq.m_fMoveDistance = Math.RandomFloat(0.2, 1.0) * COVER_SEARCH_DIST_MAX;
+			rq.m_fMoveDuration_s = Math.RandomFloat(0.2, 1.0) * COVER_SEARCH_DIST_MAX;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running

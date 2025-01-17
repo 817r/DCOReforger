@@ -8,7 +8,15 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	protected DCO_BaseAICommander commander;
 	protected ECharacterStance Forcestance;
 	
-	ref array<BaseTarget> targets = {};
+	ref array<BaseTarget> targets = new array<BaseTarget>;
+	
+	protected float INFO_SHARE_UPDATE_TIMER_MS = 30000.0;
+	protected float m_fLastUpdateTime = -1.0;
+	protected float m_fPerceptionUpdateTimer_ms;
+	
+	protected float InvestigationDelayTimer = 0.0;
+	
+	const float TARGET_LOST_THRESHOLD_S = 30.0;
 	
 	int groupMember, gg, hh, ii;
 	int targetCount;
@@ -16,6 +24,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	
 	DCO_GroupIdentifer identifier;
 	DCO_GroupTactic groupTac;
+	protected SCRDCO_AIConfigComponent DCOConfig;
 
 	protected static const float DISTANCE_HYSTERESIS_FACTOR = 0.2; 	//!< how bigger must be old distance to new in IsInvestigationRelevant()
 	protected static const float NEARBY_DISTANCE_SQ = 150; 			//!< what is the minimal distance of new vs old in IsInvestigationRelevant()
@@ -35,6 +44,11 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 			m_bEvaluationBreakpoint = false;
 		}
 		#endif
+		
+		float currentTime = GetGame().GetWorld().GetWorldTime();
+		float deltaTime_ms = 0;
+		if (m_fLastUpdateTime != -1.0)
+			deltaTime_ms = currentTime - m_fLastUpdateTime;
 		
 		// Update delta time and players's position
 		float time = m_OwnerEntity.GetWorld().GetWorldTime();
@@ -112,7 +126,8 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 			#ifdef AI_DEBUG
 			AddDebugMessage(string.Format("PerformReaction: Unknown Target: %1", unknownTarget));
 			#endif
-			
+			if (!targets.Contains(unknownTarget))
+				targets.Insert(unknownTarget);
 			m_ConfigComponent.m_Reaction_UnknownTarget.PerformReaction(this, m_ThreatSystem, unknownTarget, unknownTarget.GetLastSeenPosition());
 			m_fReactionUnknownTargetTime_ms = GetGame().GetWorld().GetWorldTime();
 		}
@@ -188,26 +203,69 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		#ifdef AI_DEBUG
 		AddDebugMessage("EvaluateBehavior END\n");
 		#endif
+		MaintainTarget();
 		
-		if (targets.Count() > 0)
+		m_fPerceptionUpdateTimer_ms += deltaTime_ms;
+		if (m_fPerceptionUpdateTimer_ms > INFO_SHARE_UPDATE_TIMER_MS)
 		{
-			SCR_AIGroupUtilityComponent groupUtilityComp = SCR_AIGroupUtilityComponent.Cast(GetAIAgent().GetParentGroup().FindComponent(SCR_AIGroupUtilityComponent));
-			if (groupUtilityComp)
-			{
-				PerceptionManager pm = GetGame().GetPerceptionManager();
-				if (pm)
-				{
-					float timestamp = pm.GetTime();
-					
-					for (int i = targets.Count()-1; i >= 0; i--)
-					{
-						groupUtilityComp.m_Perception.UpdateFromFriendlys(targets[i], m_AIInfo);
-					}
-				}
-			}
+			InfoShare();
+			m_fPerceptionUpdateTimer_ms -= INFO_SHARE_UPDATE_TIMER_MS;
+			if (m_ThreatSystem.GetState() == EAIThreatState.SAFE)
+				targets.Clear();
 		}
 		
 		return m_CurrentBehavior;
+	}
+	
+	protected void InfoShare()
+	{
+		SCR_AIGroupUtilityComponent groupUtilityComp = SCR_AIGroupUtilityComponent.Cast(GetAIAgent().GetParentGroup().FindComponent(SCR_AIGroupUtilityComponent));
+		if (groupUtilityComp)
+		{
+			PerceptionManager pm = GetGame().GetPerceptionManager();
+			if (pm)
+			{					
+				for (int i = targets.Count()-1; i >= 0; i--)
+				{
+					if (!targets[i]) return;
+					float timeNow = pm.GetTime();		
+					groupUtilityComp.m_Perception.UpdateFromFriendlys(targets[i], m_AIInfo);
+				}
+			}
+		}
+	}
+	
+	protected void MaintainTarget()
+	{
+		hh = targets.Count();
+		if(targets.Count() < 1) return;
+		
+		foreach(BaseTarget targ : targets)
+		{
+			if(!targ) return;
+			
+			if(targ.IsDisarmed())
+			{
+				targets.RemoveItem(targ);
+			}
+			else if	(targ.GetTimeSinceDetected() > 30)
+			{
+				targets.RemoveItem(targ);
+			} else if (targ.GetDamageManagerComponent().IsDestroyed())
+			{
+				targets.RemoveItem(targ);
+			}
+		}
+	}
+	
+	void SetInfoshareTimer(float share)
+	{
+		INFO_SHARE_UPDATE_TIMER_MS = share * 1000;
+	}
+	
+	float GetInfoShare()
+	{
+		return INFO_SHARE_UPDATE_TIMER_MS;
 	}
 	
 	override void EOnInit(IEntity owner)
@@ -215,6 +273,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		vanilla.EOnInit(owner);
 		AIAgent agent = GetOwner();
 		m_Owner = SCR_AIGroup.Cast(owner.FindComponent(SCR_AIGroup));
+		DCOConfig = SCRDCO_AIConfigComponent.Cast(owner.FindComponent(SCRDCO_AIConfigComponent));
 		if (!agent)
 			return;	
 		
@@ -324,5 +383,20 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		SCR_AIBehaviorBase temp = m_CurrentBehavior;
 		m_CurrentBehavior.SetActionState(EAIActionState.COMPLETED);
 		AddAction(temp);
+	}
+	
+	SCRDCO_AIConfigComponent getDCOConfig()
+	{
+		return DCOConfig;
+	}
+	
+	void SetInvestigationDelay(float delay)
+	{
+		InvestigationDelayTimer = delay * 1000;
+	}
+	
+	float GetInvestigationDelay()
+	{
+		return InvestigationDelayTimer;
 	}
 }

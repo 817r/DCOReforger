@@ -17,6 +17,15 @@ class SCRDCO_AIConfigComponent : ScriptComponent
 	[Attribute("0", UIWidgets.ComboBox, "Force Stances In AI", "", ParamEnumArray.FromEnum(DCO_ForceStance) )]
 	DCO_ForceStance m_Estance;	
 	
+	[Attribute("800", UIWidgets.Auto, "Investigation Move")]
+	float InvestigationDistance;	
+	
+	[Attribute("30", UIWidgets.Auto, "Info Share Delay in Second")]
+	float InfoShareTime;
+	
+	[Attribute("3", UIWidgets.Auto, "Investigation Delayed Before They Move")]
+	float InvestigateDelay;
+	
 	protected SCR_AIUtilityComponent m_Utility;
 	protected SCR_AIInfoComponent m_InfoComp;
 	
@@ -44,6 +53,84 @@ class SCRDCO_AIConfigComponent : ScriptComponent
 			return false;
 		
 		return comp.GetEnableMovement();
+	}
+	
+	static bool SetInfoshareDelay(IEntity unit, float rank)
+	{
+		if (!unit)
+			return true;
+		
+		SCRDCO_AIConfigComponent comp = GetDCOAIConfig(unit);
+		
+		if (!comp)
+			return false;
+		
+		return comp.SetInfoTime(rank);
+	}
+
+	static float GetInfoshareDelay(IEntity unit)
+	{
+		if (!unit)
+			return 1;
+		
+		SCRDCO_AIConfigComponent comp = GetDCOAIConfig(unit);
+		
+		if (!comp)
+			return 1;
+		
+		return comp.GetInfoShare();
+	}
+	
+	static float SetInvestigationDist(IEntity unit, float rank)
+	{
+		if (!unit)
+			return 1;
+		
+		SCRDCO_AIConfigComponent comp = GetDCOAIConfig(unit);
+		
+		if (!comp)
+			return 1;
+		
+		return comp.SetInvestigationDist(rank);
+	}
+	
+	static float GetInvestigateDelay(IEntity unit)
+	{
+		if (!unit)
+			return 1;
+		
+		SCRDCO_AIConfigComponent comp = GetDCOAIConfig(unit);
+		
+		if (!comp)
+			return 1;
+		
+		return comp.GetInvestigationDelay();
+	}
+	
+	static float SetInvestigationDelay(IEntity unit, float rank)
+	{
+		if (!unit)
+			return 1;
+		
+		SCRDCO_AIConfigComponent comp = GetDCOAIConfig(unit);
+		
+		if (!comp)
+			return 1;
+		
+		return comp.SetInvestigationDelay(rank);
+	}
+
+	static float GetInvestigationDist(IEntity unit)
+	{
+		if (!unit)
+			return true;
+		
+		SCRDCO_AIConfigComponent comp = GetDCOAIConfig(unit);
+		
+		if (!comp)
+			return false;
+		
+		return comp.GetInvestigationDist();
 	}
 	
 	static DCO_ForceStance SetStances(IEntity unit, DCO_ForceStance rank)
@@ -87,6 +174,40 @@ class SCRDCO_AIConfigComponent : ScriptComponent
 	protected bool GetEnableMovement()
 	{
 		return m_EnableMovement;
+	}
+	
+	protected float SetInvestigationDist(float rank)
+	{
+		InvestigationDistance = rank;
+		return rank;
+	}
+	
+	protected float GetInvestigationDist()
+	{
+		return InvestigationDistance;
+	}
+	
+	protected float SetInvestigationDelay(float rank)
+	{
+		InvestigateDelay = rank;
+		return rank;
+	}
+	
+	protected float GetInvestigationDelay()
+	{
+		return InvestigateDelay;
+	}
+	
+	protected float SetInfoTime(float rank)
+	{
+		InfoShareTime = rank;
+		m_Utility.SetInfoshareTimer(rank);
+		return rank;
+	}
+	
+	protected float GetInfoShare()
+	{
+		return InfoShareTime;
 	}
 	
 	protected DCO_ForceStance SetStances(DCO_ForceStance rank)

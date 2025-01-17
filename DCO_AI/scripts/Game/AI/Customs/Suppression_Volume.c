@@ -6,7 +6,7 @@ modded class SCR_AISuppressionObjectVolumeBox : SCR_AISuppressionVolumeBox
 	protected static const float OBJECT_VOLUME_MIN_SCALE = 1.2;
 	
 	protected static const float TARGET_MIN_SIZE = 1; // Minimal size of target in meters
-	protected static const float OBJECT_VOLUME_MIN_Y = 2.5; // Min vertical size of object volume
+	protected static const float OBJECT_VOLUME_MIN_Y = 3.5; // Min vertical size of object volume
 	protected static const float NOT_RECOGNIZED_CLUSTER_SCALE = 5; // Scale multiplier for cluster volumes of not recognized targets
 	
 	//---------------------------------------------------------------------------------------

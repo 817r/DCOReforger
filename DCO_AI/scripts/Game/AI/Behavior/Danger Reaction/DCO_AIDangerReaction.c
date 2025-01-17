@@ -57,7 +57,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 	protected bool m_bPushedMoveRequest = false;
 	
 	
-	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent)
+	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
 		if (utility.m_AIInfo.GetAIState() == EUnitState.PILOT)
 			return false;
@@ -72,7 +72,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		if (utility.m_CombatMoveState.IsExecutingRequest())
 			return false;
 		
-		threatSystem.ThreatBulletImpact(dangerEvent.GetCount());
+		threatSystem.ThreatBulletImpact(dangerEventCount);
 		IEntity shooter = dangerEvent.GetObject();
 		
 		if (!shooter)
@@ -93,7 +93,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 
 		float distanceToShooter = vector.Distance(utility.GetOrigin(), shooterPos);
 		
-		int bulletCount = dangerEvent.GetCount();
+		int bulletCount = dangerEventCount;
 		rq.m_eReason = SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER;		
 		
 		if(distanceToDanger < 1 && !m_State.IsInValidCover() && bulletCount >= 3)
@@ -109,7 +109,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_fCoverSearchDistMax = 12;
 			rq.m_fCoverSearchDistMin = 5;
-			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
+			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 7.5);
 			int rand = Math.RandomIntInclusive(1,3);
 			if (rand == 1) rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 			else if (rand == 2) rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
@@ -124,7 +124,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				rq.m_bUseCoverSearchDirectivity = false;
 				rq.m_bCheckCoverVisibility = false;
 				rq.m_eMovementType = EMovementType.SPRINT;
-				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+				rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 30.0);
 				rq.m_bAimAtTarget = false;
 				rq.m_bAimAtTargetEnd = false;
 			}
@@ -156,7 +156,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				rq.m_eMovementType = EMovementType.RUN;
 				rq.m_fCoverSearchDistMax = 12;
 				rq.m_fCoverSearchDistMin = 5;
-				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
+				rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 7.5);
 				int rand = Math.RandomIntInclusive(1,3);
 				if (rand == 1) rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 				else if (rand == 2) rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
@@ -171,7 +171,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 					rq.m_bUseCoverSearchDirectivity = false;
 					rq.m_bCheckCoverVisibility = false;
 					rq.m_eMovementType = EMovementType.SPRINT;
-					rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+					rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 30.0);
 					rq.m_bAimAtTarget = false;
 					rq.m_bAimAtTargetEnd = false;
 				}
@@ -192,7 +192,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				rq.m_eMovementType = EMovementType.WALK;
 				rq.m_fCoverSearchDistMax = 12;
 				rq.m_fCoverSearchDistMin = 5;
-				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 4;
+				rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 6.0);
 				int rand = Math.RandomIntInclusive(1,3);
 				if (rand == 1) rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 				else if (rand == 2) rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
@@ -207,7 +207,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 					rq.m_bUseCoverSearchDirectivity = false;
 					rq.m_bCheckCoverVisibility = false;
 					rq.m_eMovementType = EMovementType.SPRINT;
-					rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+					rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 30.0);
 					rq.m_bAimAtTarget = false;
 					rq.m_bAimAtTargetEnd = false;
 				}
@@ -231,7 +231,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_fCoverSearchDistMax = 12;
 			rq.m_fCoverSearchDistMin = 5;
-			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 5;
+			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 7.5);
 			rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running
@@ -242,7 +242,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				rq.m_bUseCoverSearchDirectivity = false;
 				rq.m_bCheckCoverVisibility = false;
 				rq.m_eMovementType = EMovementType.SPRINT;
-				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+				rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 30.0);
 				rq.m_bAimAtTarget = false;
 				rq.m_bAimAtTargetEnd = false;
 			}
@@ -272,7 +272,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_eMovementType = EMovementType.SPRINT;
 							rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 							rq.m_fCoverSearchDistMin = 2;
-							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
+							rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 5.0);
 							rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = false; // Don't aim while running
@@ -283,7 +283,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 								rq.m_bUseCoverSearchDirectivity = false;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_eMovementType = EMovementType.SPRINT;
-								rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+								rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 30.0);
 								rq.m_bAimAtTarget = false;
 								rq.m_bAimAtTargetEnd = false;
 							}
@@ -312,7 +312,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_eMovementType = EMovementType.RUN;
 							rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 							rq.m_fCoverSearchDistMin = 2;
-							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
+							rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 7.5);
 							rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = true; // Don't aim while running
@@ -323,7 +323,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 								rq.m_bUseCoverSearchDirectivity = false;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_eMovementType = EMovementType.SPRINT;
-								rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+								rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 30.0);
 								rq.m_bAimAtTarget = false;
 								rq.m_bAimAtTargetEnd = false;
 							}
@@ -349,7 +349,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_eMovementType = EMovementType.SPRINT;
 							rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 							rq.m_fCoverSearchDistMin = 2;
-							rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
+							rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 7.5);
 							rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = false; // Don't aim while running
@@ -360,7 +360,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 								rq.m_bUseCoverSearchDirectivity = false;
 								rq.m_bCheckCoverVisibility = false;
 								rq.m_eMovementType = EMovementType.SPRINT;
-								rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+								rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 30.0);
 								rq.m_bAimAtTarget = false;
 								rq.m_bAimAtTargetEnd = false;
 							}
@@ -420,7 +420,7 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 	}
 	
 	//------------------------------------------------------------------------------------------------
-	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent)
+	bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent)
 	{
 		if (utility.m_AIInfo.GetAIState() == EUnitState.PILOT)
 			return false;
@@ -465,7 +465,7 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_fCoverSearchDistMax = 15;
 			rq.m_fCoverSearchDistMin = 2;
-			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 8;
+			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 12.0);
 			int rand = Math.RandomIntInclusive(1,3);
 			if (rand == 1) rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 			else if (rand == 2) rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
@@ -479,7 +479,7 @@ modded class SCR_AIDangerReaction_Explosion : SCR_AIDangerReaction
 				rq.m_bUseCoverSearchDirectivity = false;
 				rq.m_bCheckCoverVisibility = false;
 				rq.m_eMovementType = EMovementType.SPRINT;
-				rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * 35;
+				rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 30.0);
 				rq.m_bAimAtTarget = false;
 				rq.m_bAimAtTargetEnd = false;
 			}

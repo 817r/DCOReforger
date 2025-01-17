@@ -196,7 +196,7 @@ class DCO_AIMoraleSystem
 		}
 		
 		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.INFO, 1.4, color);	
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity," Morale Total : " + m_fMoraleTotal.ToString() + " | Suppression Morale : " + m_fMoraleSuppression.ToString(), EAIDebugCategory.INFO, 1.4, Color.White);	
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity," Morale Total : " + m_fMoraleTotal.ToString() + " | Hostile Detected : " + m_Utility.hh.ToString() + " | Friendly Detected : " + m_Utility.gg.ToString(), EAIDebugCategory.INFO, 1.4, Color.White);	
 	}
 	#endif // WORKBENCH
 	

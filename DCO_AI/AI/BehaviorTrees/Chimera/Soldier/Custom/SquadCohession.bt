@@ -79,8 +79,8 @@ BehaviorTree "{4DBADD830BD641FE}AI/BehaviorTrees/Chimera/Soldier/Custom/SquadCoh
               AITaskIdle Idle {
                Name "Idle"
                EditorPos 631.667 923.333
-               Period 10
-               PeriodRandom 0
+               Period 30
+               PeriodRandom 5
               }
              }
             }

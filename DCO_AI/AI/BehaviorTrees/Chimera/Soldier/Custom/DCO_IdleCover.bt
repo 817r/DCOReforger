@@ -26,7 +26,7 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
           }
           SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
            Name "SCR_AI Get Entity Position"
-           EditorPos -3916.388 -254.666
+           EditorPos -3916.388 -255.916
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port 0
@@ -187,15 +187,25 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
                      Group "{60E613E5BDA9470D}"
                      "Movement speed" WALK
                     }
+                    AITaskChangeStance "Change Stance" {
+                     Name "Change Stance"
+                     EditorPos -3640.5 1187.667
+                     InStance -1
+                    }
                     AITaskMove Move {
                      Name "Move"
-                     EditorPos -3627.499 1315.833
+                     EditorPos -3339.166 1214.166
                      Group "{60E613E5BDA9470D}"
                      InTargetLocation 4
                     }
+                    AITaskChangeStance "Change Stance" {
+                     Name "Change Stance"
+                     EditorPos -2937.191 1326.142
+                     InStance 5
+                    }
                     SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
                      Name "SCR_AI Set Combat Move State"
-                     EditorPos -3244.26 1315
+                     EditorPos -2723.927 1308.333
                      InPorts {
                       SingleInputPortContainer SingleInputPortContainer {
                        Port -1
@@ -216,8 +226,10 @@ BehaviorTree "{45343D8AF194D714}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Idle
                     }
                     AITaskIdle Idle {
                      Name "Idle"
-                     EditorPos -2916.832 1328.667
+                     EditorPos -2396.499 1322
                      Group "{60E613E5BDA9470D}"
+                     Period 60
+                     PeriodRandom 30
                     }
                    }
                    Group "{60E613E5BDA9470D}"

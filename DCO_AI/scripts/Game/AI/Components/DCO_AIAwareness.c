@@ -23,8 +23,52 @@ class DCO_AIAwareness : ScriptComponent
 	[Attribute(defvalue: "80", uiwidget: UIWidgets.Auto, desc: "Awareness Friendly Radius")]
 	float searchRad;
 	
-	[Attribute(defvalue: "120", uiwidget: UIWidgets.Auto, desc: "Awareness Hostile Presence Radius")]
+	[Attribute(defvalue: "100", uiwidget: UIWidgets.Auto, desc: "Awareness Hostile Presence Radius")]
 	float searchRadH;
+	
+	static float SetInfoShare(IEntity unit, float tf)
+	{
+		if (!unit)
+			return 50;
+		
+		DCO_AIAwareness comp = GetAIAwarenessComponent(unit);
+		
+		if (!comp)
+			return 20;
+		
+		
+		return comp.SetInfoShare(tf);
+	}
+
+	static float GetInfoShare(IEntity unit)
+	{		
+		if (!unit)
+			return 50;
+		
+		DCO_AIAwareness comp = GetAIAwarenessComponent(unit);
+		
+		if (!comp)
+			return 20;
+		
+		return comp.GetInfoShare();
+	}
+	
+	static DCO_AIAwareness GetAIAwarenessComponent(IEntity unit)
+	{
+		return DCO_AIAwareness.Cast(unit.FindComponent(DCO_AIAwareness));
+	}
+	
+	float SetInfoShare(float tf)
+	{
+		searchRad = tf;
+		return tf;
+	}
+	
+	float GetInfoShare()
+	{
+		return searchRad;
+	}
+	
 	
 	protected void getFriendlyEvaluation()
 	{
@@ -50,14 +94,15 @@ class DCO_AIAwareness : ScriptComponent
 					friendly.Insert(targetInfo);
 				}
 								
-			} else if (target.GetDistance() > searchRad + 50)
+			} 
+			/*else if (target.GetDistance() > searchRad + 50)
 			{
 				if (friendlyBTarget.Contains(ent))
 				{
 					friendlyBTarget.RemoveItem(ent);
 					friendly.RemoveItem(targetInfo);
 				}
-			}
+			}*/
 		}
 	}
 	
@@ -115,7 +160,8 @@ class DCO_AIAwareness : ScriptComponent
 					hostile.Insert(targetInfo);
 				}
 								
-			} else if (target.GetDistance() > searchRadH + 50)
+			} 
+			/*else if (target.GetDistance() > searchRadH + 50)
 			{
 				if (hostileEnt.Contains(ent))
 				{
@@ -123,7 +169,7 @@ class DCO_AIAwareness : ScriptComponent
 					hostileEnt.RemoveItem(ent);
 					hostile.RemoveItem(targetInfo);
 				}
-			}
+			}*/
 		}
 	}
 	
@@ -149,7 +195,7 @@ class DCO_AIAwareness : ScriptComponent
 				return;
 			}
 			
-			if (vector.Distance(tarinfo.m_Entity.GetOrigin(), m_UtilityComp.m_OwnerEntity.GetOrigin()) > searchRad + 50)
+			if (vector.Distance(tarinfo.m_Entity.GetOrigin(), m_UtilityComp.m_OwnerEntity.GetOrigin()) > searchRadH + 20)
 			{
 				hostiless.Remove(i);
 				hostileEnt.Remove(i);
@@ -161,6 +207,7 @@ class DCO_AIAwareness : ScriptComponent
 	
 	protected void InfoShare()
 	{
+		
 		foreach (IEntity friends : friendlyBTarget)
 		{
 			AIControlComponent ctrl = AIControlComponent.Cast(friends.FindComponent(AIControlComponent));
@@ -187,10 +234,12 @@ class DCO_AIAwareness : ScriptComponent
 	void Update()
 	{
 		getFriendlyEvaluation();
+		enemyInfos();
 		MaintainFriendly();
 		MaintainHostile();
 		if (hostiless.Count() > 0)
 			InfoShare();
+		m_UtilityComp.setG(friendlyBTarget.Count());
 		
 	}
 	

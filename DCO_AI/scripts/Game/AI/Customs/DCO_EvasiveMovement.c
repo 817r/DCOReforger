@@ -73,7 +73,7 @@ class DCO_Evasive_EVALUATION: AITaskScripted
 			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 			rq.m_fCoverSearchDistMin = 3;
-			rq.m_fMoveDistance = Math.RandomFloat(0.5, 1.0) * COVER_SEARCH_DIST_MAX;
+			rq.m_fMoveDuration_s = Math.RandomFloat(3.0, 7.0);
 			rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = false; // Don't aim while running
@@ -98,9 +98,9 @@ class DCO_Evasive_EVALUATION: AITaskScripted
 		float waitTime;
 		
 		if (inCover)
-			waitTime = Math.RandomFloat(7.0, 10.0);
+			waitTime = Math.RandomFloat(10.0, 13.0);
 		else
-			waitTime = Math.RandomFloat(2.5, 6.0);
+			waitTime = Math.RandomFloat(5.0, 8.0);
 		
 		return waitTime;
 	}

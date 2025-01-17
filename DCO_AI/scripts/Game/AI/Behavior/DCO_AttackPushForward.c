@@ -65,7 +65,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 			rq.m_fCoverSearchDistMin = 2;
-			rq.m_fMoveDistance = Math.RandomFloat(1.0, 1.5) * COVER_SEARCH_DIST_MAX;
+			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 3.0);
 			rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running

@@ -57,7 +57,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          EditorPos -1015 818.778
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port -1
+           Port 3
            PortName "Target"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
@@ -65,11 +65,18 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
            PortName "WaitTime"
           }
           SingleOutputPortContainer SingleOutputPortContainerClass {
+           PortName "InitialDirToTgt"
+          }
+          SingleOutputPortContainer SingleOutputPortContainerClass {
            Port 3
            PortName "Target"
           }
           SingleOutputPortContainer SingleOutputPortContainerClass {
            PortName "WaitTime"
+          }
+          SingleOutputPortContainer SingleOutputPortContainerClass {
+           Port 40
+           PortName "InitialDirToTgt"
           }
          }
         }
@@ -162,6 +169,10 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
             SingleInputPortContainer SingleInputPortContainer {
              Port 4
              PortName "BaseTarget"
+            }
+            SingleInputPortContainer SingleInputPortContainerClass {
+             Port 41
+             PortName "AvoidStraightPathDir"
             }
            }
           }
@@ -568,6 +579,12 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
    VariableExposedInput 0
    VariableExposedOutput 0
   }
+  Variable vInitialDirToTgt {
+   VariableName "vInitialDirToTgt"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
  }
  VariablesRefs {
   VariableReference targetEntity {
@@ -747,6 +764,14 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   VariableReference iFireTreeId {
    VariableType 6
    EditorPos 6640.7 2166.23
+  }
+  VariableReference vInitialDirToTgt {
+   VariableType 10
+   EditorPos -616.5 963.25
+  }
+  VariableReference vInitialDirToTgt {
+   VariableType 10
+   EditorPos 411.167 1618.25
   }
  }
  Groups {

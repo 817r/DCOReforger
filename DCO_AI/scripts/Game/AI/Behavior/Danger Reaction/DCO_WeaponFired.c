@@ -1,68 +1,87 @@
 [BaseContainerProps()]
 modded class SCR_AIDangerReaction_WeaponFired : SCR_AIDangerReaction
 {
-	protected static const float PROJECTILE_FLYBY_RADIUS = 7;
+	protected static const float PROJECTILE_FLYBY_RADIUS = 13;
 	protected static const float PROJECTILE_FLYBY_RADIUS_SQ = PROJECTILE_FLYBY_RADIUS * PROJECTILE_FLYBY_RADIUS;
-	protected static const float AI_WEAPONFIRED_REACTION_DISTANCE = 600;
+	protected static const float AUDIBLE_DISTANCE_NORMAL = 500.0; // Audible distance for normal gunshots
+	protected static const float AUDIBLE_DISTANCE_SUPPRESSED = 100.0; // Audible distance for suppressed gunshots
 	
-	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, notnull DCO_AIMoraleSystem moraleSystem, AIDangerEvent dangerEvent)
+	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
-		IEntity shooter = dangerEvent.GetObject();
+		AIDangerEventWeaponFire eventWeaponFire = AIDangerEventWeaponFire.Cast(dangerEvent);		
+		IEntity shooter = eventWeaponFire.GetObject();
 		
-		if (!shooter)
+		if (!shooter || !eventWeaponFire)
+			return false;
+		
+		IEntity instigatorEntity = FindInstigatorEntity(shooter);
+		if (!instigatorEntity)
+			return false;
+		
+		// Check faction relations, ignore if not enemy or there is no faction
+		Faction instigatorFaction = SCR_ChimeraAIAgent.GetFaction(instigatorEntity);
+		
+		if (!instigatorFaction)
+			return false;
+		
+		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
+		
+		bool myFactionIsMilitary = utility.IsMilitary();
+		if (myFactionIsMilitary && !agent.IsEnemy(instigatorFaction))
 			return false;
 		
 		// Get root entity of shooter, in case it is turret in vehicle hierarchy
-		IEntity shooterRoot = shooter.GetRootParent();
-		
-		bool isMilitary = utility.IsMilitary();
-		
-		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
-		if (isMilitary && (!agent || !agent.IsEnemy(shooterRoot)))
-			return false;
-		
-		vector min, max;
-		shooter.GetBounds(min, max);
-		vector lookPosition = shooter.GetOrigin() + (min + max) * 0.5;
+		vector shotPos = eventWeaponFire.GetPosition();
+		vector shotDir = eventWeaponFire.GetDirection();
+		bool isShotSuppressed = eventWeaponFire.IsSuppressed();
 		
 		vector myOrigin = utility.m_OwnerEntity.GetOrigin();
-		float distance = vector.Distance(myOrigin, shooter.GetOrigin());
+		float distance = vector.Distance(myOrigin, shotPos);
 		
-		bool flyby = IsFlyby(myOrigin, distance, shooter);
+		// Is it a flyby?
+		bool isFlyby = IsFlyby(myOrigin, shotPos, shotDir, distance);
 		
-		if (flyby)
-			threatSystem.ThreatProjectileFlyby(dangerEvent.GetCount());
+		// Is it audible?
+		float maxAudibleDistance;
+		if (isShotSuppressed)
+			maxAudibleDistance = AUDIBLE_DISTANCE_SUPPRESSED;
 		else
-			threatSystem.ThreatShotFired(distance, dangerEvent.GetCount());
+			maxAudibleDistance = AUDIBLE_DISTANCE_NORMAL;
+		bool isAudible = distance < maxAudibleDistance;
+		
+		if (isFlyby)
+			threatSystem.ThreatProjectileFlyby(dangerEventCount);
+		else if (isAudible)
+			threatSystem.ThreatShotFired(distance, dangerEventCount);
 
 		// Look at shooting position. Even though we add an observe behavior, we can't guarantee that
 		// some other behavior doesn't override observe behavior, in which case we might want to look at shooter in parallel.
-		utility.m_LookAction.LookAt(lookPosition, utility.m_LookAction.PRIO_DANGER_EVENT, 3.0);
+		if (isFlyby || isAudible)
+		utility.m_LookAction.LookAt(shotPos, utility.m_LookAction.PRIO_DANGER_EVENT, 3.0);
 		
 		// Notify our group
 		// ! Only if we are a leader
-		AIGroup myGroup = utility.GetOwner().GetParentGroup();
-		if (myGroup && myGroup.GetLeaderAgent() == agent)
+		if (isFlyby || isAudible)
 		{
-			bool endangeringForGroup = flyby || distance < PROJECTILE_FLYBY_RADIUS;
-			NotifyGroup(myGroup, shooterRoot, lookPosition, endangeringForGroup);
+			AIGroup myGroup = utility.GetOwner().GetParentGroup();
+			if (myGroup && myGroup.GetLeaderAgent() == agent)
+			{
+				bool endangeringForGroup = isFlyby || distance < PROJECTILE_FLYBY_RADIUS;
+				NotifyGroup(myGroup, shooter, instigatorEntity, instigatorFaction, shotPos, endangeringForGroup);
+			}
 		}
 		
 		// Ignore if we are a driver inside vehicle
 		if (utility.m_AIInfo.HasUnitState(EUnitState.PILOT))
 			return false;
-		
-		if (utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE) && distance < 20)
-			return false;
 			
 		// Ignore if we have selected a target
 		// Ignore if target is too far
-		if (utility.m_CombatComponent.GetCurrentTarget() != null ||
-			distance > AI_WEAPONFIRED_REACTION_DISTANCE)
+		if (utility.m_CombatComponent.GetCurrentTarget() != null)
 			return false;
 		
 		// Check if we must dismount the turret
-		vector turretDismountCheckPosition = lookPosition;
+		vector turretDismountCheckPosition = shotPos;
 		bool mustDismountTurret = utility.m_CombatComponent.DismountTurretCondition(turretDismountCheckPosition, true);
 		if (mustDismountTurret)
 		{
@@ -70,64 +89,46 @@ modded class SCR_AIDangerReaction_WeaponFired : SCR_AIDangerReaction
 		}
 		
 		// Stare at gunshot origin
-		bool addObserveBehavior = false;
-		SCR_AIMoveAndInvestigateBehavior investigateBehavior = SCR_AIMoveAndInvestigateBehavior.Cast(utility.FindActionOfType(SCR_AIMoveAndInvestigateBehavior));
-		SCR_AIObserveUnknownFireBehavior oldObserveBehavior = SCR_AIObserveUnknownFireBehavior.Cast(utility.FindActionOfType(SCR_AIObserveUnknownFireBehavior));
-		SCR_AISuppressGroupClusterBehavior suppressGroupClusterBehavior = SCR_AISuppressGroupClusterBehavior.Cast(utility.FindActionOfType(SCR_AISuppressGroupClusterBehavior));
-		if (investigateBehavior && investigateBehavior.GetActionState() == EAIActionState.RUNNING)
+		if (isAudible || isFlyby)
 		{
-			if (SCR_AIObserveUnknownFireBehavior.IsNewPositionMoreRelevant(myOrigin, investigateBehavior.m_vPosition.m_Value, lookPosition))
+			bool addObserveBehavior = false;
+			SCR_AIMoveAndInvestigateBehavior investigateBehavior = SCR_AIMoveAndInvestigateBehavior.Cast(utility.FindActionOfType(SCR_AIMoveAndInvestigateBehavior));
+			SCR_AIObserveUnknownFireBehavior oldObserveBehavior = SCR_AIObserveUnknownFireBehavior.Cast(utility.FindActionOfType(SCR_AIObserveUnknownFireBehavior));
+			SCR_AISuppressGroupClusterBehavior suppressGroupClusterBehavior = SCR_AISuppressGroupClusterBehavior.Cast(utility.FindActionOfType(SCR_AISuppressGroupClusterBehavior));
+			if (investigateBehavior && investigateBehavior.GetActionState() == EAIActionState.RUNNING)
+			{
+				if (SCR_AIObserveUnknownFireBehavior.IsNewPositionMoreRelevant(myOrigin, investigateBehavior.m_vPosition.m_Value, shotPos))
+					addObserveBehavior = true;
+			}
+			else if (suppressGroupClusterBehavior && suppressGroupClusterBehavior.m_SuppressionVolume.m_Value)
+			{
+				if (SCR_AIObserveUnknownFireBehavior.IsNewPositionMoreRelevant(myOrigin, suppressGroupClusterBehavior.m_SuppressionVolume.m_Value.GetCenterPosition(), shotPos))
+					addObserveBehavior = true;
+			}
+			else if (oldObserveBehavior)
+			{
+				if (SCR_AIObserveUnknownFireBehavior.IsNewPositionMoreRelevant(myOrigin, oldObserveBehavior.m_vPosition.m_Value, shotPos))
+					addObserveBehavior = true;
+			}
+			else if (!oldObserveBehavior)
 				addObserveBehavior = true;
-		}
-		else if (suppressGroupClusterBehavior && suppressGroupClusterBehavior.m_SuppressionVolume.m_Value)
-		{
-			if (SCR_AIObserveUnknownFireBehavior.IsNewPositionMoreRelevant(myOrigin, suppressGroupClusterBehavior.m_SuppressionVolume.m_Value.GetCenterPosition(), lookPosition))
-				addObserveBehavior = true;
-		}
-		else if (oldObserveBehavior)
-		{
-			if (SCR_AIObserveUnknownFireBehavior.IsNewPositionMoreRelevant(myOrigin, oldObserveBehavior.m_vPosition.m_Value, lookPosition))
-				addObserveBehavior = true;
-		}
-		else if (!oldObserveBehavior)
-			addObserveBehavior = true;
-			
-		if (addObserveBehavior)
-		{
-			// !!! It's important that priority of this is higher than priority of move and investigate,
-			// !!! So first we look at gunshot origin, then investigate it
-			bool useMovement = flyby && !utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET) && !utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE);
-			SCR_AIObserveUnknownFireBehavior observeBehavior = new SCR_AIObserveUnknownFireBehavior(utility, null,	posWorld: lookPosition, useMovement: useMovement);
-			utility.AddAction(observeBehavior);
-		}
-		else if (oldObserveBehavior && flyby)
-		{
-			// Notify the existing observe behavior, make it execute movement from now on.
-			// Otherwise if first behavior was created without movement, and then a bullet flies by,
-			// the AI does not move.
-			if (!utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET) && !utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
-				oldObserveBehavior.SetUseMovement(true);
-		}
-		
-		return true;
-	}
-	
-	override bool IsFlyby(vector myPos, float distanceToShooter, IEntity shooter)
-	{
-		// !!! Important for turrets - WeaponMgr is on turret entity, not vehicle root
-		BaseWeaponManagerComponent weaponMgr = BaseWeaponManagerComponent.Cast(shooter.FindComponent(BaseWeaponManagerComponent));
-		if (!weaponMgr)
-			return false;
-		
-		vector muzzleTransform[4];
-		weaponMgr.GetCurrentMuzzleTransform(muzzleTransform); // todo Ideally this should come from danger event, together with muzzle dir.
-		vector muzzlePos = muzzleTransform[3];
-		bool flyby = true;
-		if ( distanceToShooter > PROJECTILE_FLYBY_RADIUS &&
-			Math3D.IntersectionPointCylinder(myPos, muzzleTransform[3], muzzleTransform[2], PROJECTILE_FLYBY_RADIUS) )
-		{
-			// Within cylinder, but far enough, react as if projectile flew by
-			return true;
+				
+			if (addObserveBehavior)
+			{
+				// !!! It's important that priority of this is higher than priority of move and investigate,
+				// !!! So first we look at gunshot origin, then investigate it
+				bool useMovement = isFlyby && !utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET) && !utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE);
+				SCR_AIObserveUnknownFireBehavior observeBehavior = new SCR_AIObserveUnknownFireBehavior(utility, null,	posWorld: shotPos, useMovement: useMovement);
+				utility.AddAction(observeBehavior);
+			}
+			else if (oldObserveBehavior && isFlyby)
+			{
+				// Notify the existing observe behavior, make it execute movement from now on.
+				// Otherwise if first behavior was created without movement, and then a bullet flies by,
+				// the AI does not move.
+				if (!utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET) && !utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
+					oldObserveBehavior.SetUseMovement(true);
+			}
 		}
 		
 		return true;

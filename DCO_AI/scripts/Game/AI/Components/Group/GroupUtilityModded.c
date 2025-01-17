@@ -6,8 +6,6 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	
 	bool isFirstContact = true;
 	
-	ref array<IEntity> tempTarget = new array<IEntity>;
-	
 	protected const float PERCEPTION_UPDATE_TIMER_MS = 1200.0;
 	
 	protected const float TACTICS_EVAL = 60000.0;
@@ -53,9 +51,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		if (m_GroupIdentifier.GetAutomated(m_Owner))
 			groupIdentificationProcessing();
 		
-		targetCount = tempTarget.Count();
 		groupMember = friendlyOutsideGroup();
-		setEF();
 		m_TargetCluster = m_Perception.m_MostDangerousCluster;
 		Internalmembers = m_Owner.GetTotalAgentCount();
 		
@@ -462,18 +458,6 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		totVal = Math.Round(morVal/m_Util.Count());
 		
 		return totVal;
-	}
-	
-	void setEF()
-	{
-		foreach(SCR_AIUtilityComponent utilities : m_Util)
-		{
-			utilities.setF(rifleman.Count());
-			utilities.setE(machinegun.Count());
-			utilities.setG(sniper.Count());
-			utilities.setH(AT.Count());
-			utilities.setI(Internalmembers);
-		}
 	}
 	
 	protected void groupIdentificationProcessing()
