@@ -45,8 +45,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_ALERTED = 2.8; 
 	protected const float PERCEPTION_FACTOR_THREATENED = 2.5;
 	protected const float PERCEPTION_FACTOR_PINNED = 2.2;
-	protected const float PERCEPTION_FACTOR_EXHAUSTED = 1.5;
-	protected const float PERCEPTION_OVERALL_BASE = 0.25;
+	protected const float PERCEPTION_FACTOR_EXHAUSTED = 2.0;
+	protected const float PERCEPTION_OVERALL_BASE = 0.5;
 		
 	protected static const float TARGET_MAX_DISTANCE_INFANTRY = 700.0;
 	protected static const float TARGET_MAX_DISTANCE_VEHICLE = 1000.0;

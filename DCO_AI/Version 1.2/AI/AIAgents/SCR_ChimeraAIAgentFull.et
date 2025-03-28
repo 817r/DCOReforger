@@ -1,0 +1,5 @@
+SCR_ChimeraAIAgent {
+ ID "50C4E8413B94E8B0"
+ DangerEventRange 1000
+ DynamicsimLastlodDistance 0
+}

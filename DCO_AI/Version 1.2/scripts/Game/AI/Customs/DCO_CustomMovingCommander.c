@@ -1,4 +1,4 @@
-modded class SCR_AICombatMoveLogic_MovingCommander : AITaskScripted
+modded class SCR_AICombatMoveLogicVehicleGunnerBase : AITaskScripted
 {
 	protected SCR_AICombatMoveState m_DriverState;
 	protected SCR_AIUtilityComponent m_DriverUtility;

@@ -47,12 +47,15 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		
 		// Not melee
 		
-		if (targetDistance < weaponMinDist || targetDistance > weaponMaxDist)
+		if (targetDistance < weaponMinDist)
 		{
-			// Outside weapon usage range
-			// Look at target
-			
-			return FIRE_TREE_LOOK;
+			return FIRE_TREE_SUPPRESSIVE;
+		} else if (targetDistance > weaponMaxDist && weaponType == EWeaponType.WT_MACHINEGUN)
+		{
+			return FIRE_TREE_SUPPRESSIVE;
+		} else if (targetDistance > weaponMaxDist)
+		{
+			return FIRE_TREE_SINGLE;
 		}
 
 		// Within weapon usage range

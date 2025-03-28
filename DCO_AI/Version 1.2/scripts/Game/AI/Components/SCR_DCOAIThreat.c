@@ -395,4 +395,9 @@ modded class SCR_AIThreatSystem
 		;
 	}
 	
+	void SetMoraleSystem(DCO_AIMoraleSystem sys)
+	{
+		m_moraleSystem = sys;
+	}
+	
 };

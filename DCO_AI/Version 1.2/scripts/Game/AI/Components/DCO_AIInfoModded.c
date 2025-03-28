@@ -9,6 +9,7 @@ modded class SCR_AIInfoComponent : SCR_AIInfoBaseComponent
 	void InitMoraleSystem(DCO_AIMoraleSystem moraleSystem)
 	{
 		m_DCOMoraleSystem = moraleSystem;	
+		m_ThreatSystem.SetMoraleSystem(m_DCOMoraleSystem);
 	}
 	
 	void SetGroupPerception(SCR_AIGroupPerception perc)

@@ -235,8 +235,12 @@ class DCO_AIAwareness : ScriptComponent
 	{
 		getFriendlyEvaluation();
 		enemyInfos();
-		MaintainFriendly();
-		MaintainHostile();
+		
+		
+		if (friendlyBTarget.Count() > 0) MaintainFriendly();
+		if (hostiless.Count() > 0) MaintainHostile();
+		
+		
 		if (hostiless.Count() > 0)
 			InfoShare();
 		m_UtilityComp.setG(friendlyBTarget.Count());

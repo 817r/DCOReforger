@@ -127,7 +127,9 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 			AddDebugMessage(string.Format("PerformReaction: Unknown Target: %1", unknownTarget));
 			#endif
 			if (!targets.Contains(unknownTarget))
+			{
 				targets.Insert(unknownTarget);
+			}
 			m_ConfigComponent.m_Reaction_UnknownTarget.PerformReaction(this, m_ThreatSystem, unknownTarget, unknownTarget.GetLastSeenPosition());
 			m_fReactionUnknownTargetTime_ms = GetGame().GetWorld().GetWorldTime();
 		}
@@ -210,8 +212,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		{
 			InfoShare();
 			m_fPerceptionUpdateTimer_ms -= INFO_SHARE_UPDATE_TIMER_MS;
-			if (m_ThreatSystem.GetState() == EAIThreatState.SAFE)
-				targets.Clear();
+			targets.Clear();
 		}
 		
 		return m_CurrentBehavior;
@@ -237,7 +238,6 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	
 	protected void MaintainTarget()
 	{
-		hh = targets.Count();
 		if(targets.Count() < 1) return;
 		
 		foreach(BaseTarget targ : targets)
@@ -256,6 +256,8 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 				targets.RemoveItem(targ);
 			}
 		}
+		
+		hh = targets.Count();
 	}
 	
 	void SetInfoshareTimer(float share)
@@ -286,6 +288,11 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 			m_Awareness.initialize(this);
 		m_DCO_Skill = DCO_SkillComponent.Cast(m_OwnerEntity.FindComponent(DCO_SkillComponent));
 		m_DCOMoraleSystem = new DCO_AIMoraleSystem(this);	
+		if (m_DCOMoraleSystem)
+		{
+			m_AIInfo.InitMoraleSystem(m_DCOMoraleSystem);
+		}
+		
 		commander = DCO_BaseAICommander.Cast(agent.FindComponent(DCO_BaseAICommander));
 		if (commander)
 		{
@@ -294,6 +301,8 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		}
 			
 	}
+	
+	
 	
 	DCO_SkillComponent getSkillComp()
 	{

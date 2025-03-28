@@ -1,12 +1,12 @@
 MetaFileClass {
- Name "{54F6EBDEF919657E}Obj/sandbag (1).xob"
+ Name "{54F6EBDEF919657E}Version 1.2/Obj/sandbag (1).xob"
  Configurations {
   FBXResourceClass PC {
    RemoveLods 1
    MaterialAssigns {
     MaterialAssignClass "{62313AEC5744F136}" {
      SourceMaterial "sandbag"
-     AssignedMaterial "{A08C78E6E4E103AB}Obj/Data/sandbag.emat"
+     AssignedMaterial "{A08C78E6E4E103AB}Version 1.2/Obj/Data/sandbag.emat"
     }
    }
    MeshParams {
