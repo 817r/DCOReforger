@@ -1,0 +1,22 @@
+SCR_ChimeraCharacter {
+ ID "520EC961A090B1EE"
+ components {
+  ChimeraAIControlComponent "{520EA1D2DB109F34}" {
+   components {
+    DCO_AIDetectionSystemComponent "{64FA7A7BB4C98492}" {
+    }
+    DCO_AIMoraleSystemComponent "{64FA7A72BB380AC0}" {
+    }
+    PerceptionComponent "{54A2CBC75F06064B}" {
+     SensorsList {
+      EyesSensor "{520EA1D2DB109AAD}" {
+       FOVNormal 120
+       FOVPeripheral 220
+       RecognitionDetectDecay 0.22
+      }
+     }
+    }
+   }
+  }
+ }
+}

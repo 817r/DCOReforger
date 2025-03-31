@@ -1,9 +1,0 @@
-SCR_AIGroup {
- ID "0000000000000001"
- components {
-  DCO_GroupIdentifierComponent "{623C1A41D2AF3E16}" {
-  }
-  DCO_GroupTacticComponent "{623C1A41ECFCA4DD}" {
-  }
- }
-}

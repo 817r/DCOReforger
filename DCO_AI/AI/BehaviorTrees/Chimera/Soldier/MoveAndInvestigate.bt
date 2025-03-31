@@ -1,0 +1,866 @@
+BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestigate.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestigate.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 1549.167 -894.167
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 1544.144 -705.524
+     Nodes {
+      Selector Selector {
+       Name "Selector"
+       EditorPos -1276.348 -148.019
+       Nodes {
+        RunBT RunBT {
+         Name "RunBT"
+         EditorPos -1710.03 55.997
+         BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/SwitchToExpectedWeapon.bt"
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -1143.911 -4.943
+         Nodes {
+          SCR_AIFailAction "SCR_AI Fail Action" {
+           Name "SCR_AI Fail Action"
+           EditorPos -1263.689 142.279
+           m_eFailReason NO_AMMO
+          }
+          SCR_AITalk "SCR_AI Talk" {
+           Name "SCR_AI Talk"
+           EditorPos -1127.209 142.279
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "SpeakerIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "TargetIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "LocationIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "EnumIn"
+            }
+           }
+           m_messageType REPORT_NO_AMMO
+           m_ePreset MEDIUM
+          }
+          AITaskReturnState "Return  State" {
+           Name "Return  State"
+           EditorPos -1010.578 142.279
+           Result RUNNING
+          }
+         }
+        }
+       }
+      }
+      SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+       Name "SCR_AI Set Weapon Raised"
+       EditorPos -790.098 -45.578
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "Raised"
+        }
+       }
+      }
+      SCR_AIGetInvestigateBehaviorParameters "SCR_AI Get Investigate Behavior Parameters" {
+       Name "SCR_AI Get Investigate Behavior Parameters"
+       EditorPos -512.181 -41.094
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 4
+         PortName "Position"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 1
+         PortName "isDangerous"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 7
+         PortName "Radius"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 10
+         PortName "ResetTimer"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 14
+         PortName "Timeout"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 16
+         PortName "Duration"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 21
+         PortName "StartPos"
+        }
+       }
+      }
+      SCR_AILookAtPosition "SCR_AI Look At Position" {
+       Name "SCR_AI Look At Position"
+       EditorPos 582.295 -38.548
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 9
+         PortName "PositionIn"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "PriorityIn"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "PositionOut"
+        }
+       }
+       m_fPriority 40
+      }
+      SCR_AITalk "SCR_AI Talk" {
+       Name "SCR_AI Talk"
+       EditorPos 870.778 -33.913
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "SpeakerIn"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "TargetIn"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "LocationIn"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "EnumIn"
+        }
+       }
+       m_messageType REPORT_MOVING
+       m_bTransmitIfPassenger 0
+      }
+      SCR_AISetStance "SCR_AI Set Stance" {
+       Name "SCR_AI Set Stance"
+       EditorPos 1091.572 -24.103
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "Stance"
+        }
+       }
+       m_eStance CROUCH
+      }
+      SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
+       Name "SCR_AI Character Set Movement Speed"
+       EditorPos 1313.545 -24.77
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "Speed"
+        }
+       }
+       m_eSpeed RUN
+      }
+      SCR_CreateAIExtraMoveParams "SCR_ CreateAI Extra Move Params" {
+       Name "SCR_ CreateAI Extra Move Params"
+       EditorPos 1801.899 -9.83
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 22
+         PortName "InFlankStartPos"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 20
+         PortName "InFlankEndPos"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 27
+         PortName "OutParams"
+        }
+       }
+       Group "{5C64A805E3F031E4}"
+       m_fStraightPathCostModifier 5
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos 4102.999 -313.79
+       Nodes {
+        Selector Selector {
+         Name "Selector"
+         EditorPos 4098.309 -48.737
+         Nodes {
+          SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+           Name "SCR_AI Deco Is Above Threat Level"
+           EditorPos 3182.355 223.299
+           Nodes {
+            Parallel Parallel {
+             Name "Parallel"
+             EditorPos 3261.736 416.18
+             Nodes {
+              DCO_AIMoveInvestigate "DCO_AI Move Investigate" {
+               Name "DCO_AI Move Investigate"
+               EditorPos 2909.413 600.037
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 23
+                 PortName "Area"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 26
+                 PortName "AvoidStraightPathDir"
+                }
+               }
+              }
+              SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+               Name "SCR_AI Set Weapon Raised"
+               EditorPos 3310.952 602.068
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Raised"
+                }
+               }
+              }
+             }
+            }
+           }
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "ThresholdIn"
+            }
+           }
+           m_threatThreshold ALERTED
+          }
+          SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+           Name "SCR_AI Deco Is Above Threat Level"
+           EditorPos 3877.438 199.385
+           Nodes {
+            Parallel Parallel {
+             Name "Parallel"
+             EditorPos 3954.385 404.034
+             Nodes {
+              DCO_AITravelInvestigate "DCO_AI Travel Investigate" {
+               Name "DCO_AI Travel Investigate"
+               EditorPos 3781.2 545.1
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 24
+                 PortName "Area"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 25
+                 PortName "AvoidStraightPathDir"
+                }
+               }
+              }
+              SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+               Name "SCR_AI Set Weapon Raised"
+               EditorPos 4088.721 531.401
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Raised"
+                }
+               }
+               m_bWeaponRaised 0
+              }
+             }
+            }
+           }
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "ThresholdIn"
+            }
+           }
+          }
+          SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+           Name "SCR_AI Deco Is Above Threat Level"
+           EditorPos 4429.074 172.31
+           Nodes {
+            Parallel Parallel {
+             Name "Parallel"
+             EditorPos 4502.467 544.097
+             Nodes {
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 4268.702 831.213
+               Nodes {
+                Parallel Parallel {
+                 Name "Parallel"
+                 EditorPos 3435.084 1142.827
+                 Nodes {
+                  Selector Selector {
+                   Name "Selector"
+                   EditorPos 1671.858 1524.986
+                   Nodes {
+                    Sequence Sequence {
+                     Name "Sequence"
+                     EditorPos 913.251 1645.16
+                     Nodes {
+                      AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+                       Name "Set Pathfinding Filters"
+                       EditorPos 794.664 1833.002
+                       Group "{5C64A805E3F031E4}"
+                       NavmeshProject "Soldiers"
+                       IgnoreFlags 8
+                      }
+                      AITaskMove Move {
+                       Name "Move"
+                       EditorPos 1324.558 1816.392
+                       Group "{5C64A805E3F031E4}"
+                       InTargetLocation 5
+                       InTargetOrientation -1
+                       InPrecisionXZ 18
+                       PrecisionXZ 1
+                       InExtraMoveParams 19
+                       RequestResult 6
+                      }
+                     }
+                     Group "{5C64A805E3F031E4}"
+                    }
+                    DecoTestVariable "Test Variable" {
+                     Name "Test Variable"
+                     EditorPos 1868.751 1737.827
+                     Nodes {
+                      Sequence Sequence {
+                       Name "Sequence"
+                       EditorPos 1882.203 1904.851
+                       Nodes {
+                        SCR_AIFailAction "SCR_AI Fail Action" {
+                         Name "SCR_AI Fail Action"
+                         EditorPos 1743.751 2087.827
+                         Group "{5C64A805E3F031E4}"
+                        }
+                        AITaskReturnState "Return  State" {
+                         Name "Return  State"
+                         EditorPos 1929.544 2092.55
+                         Group "{5C64A805E3F031E4}"
+                         Result RUNNING
+                        }
+                       }
+                       Group "{5C64A805E3F031E4}"
+                      }
+                     }
+                     Group "{5C64A805E3F031E4}"
+                     InVariable 6
+                     TestType EqualsValue
+                     TestValue "7"
+                    }
+                    DecoTestVariable "Test Variable" {
+                     Name "Test Variable"
+                     EditorPos 2266.302 1740.799
+                     Nodes {
+                      Sequence Sequence {
+                       Name "Sequence"
+                       EditorPos 2281.92 1916.156
+                       Nodes {
+                        SCR_AIFailAction "SCR_AI Fail Action" {
+                         Name "SCR_AI Fail Action"
+                         EditorPos 2143.468 2099.133
+                         Group "{5C64A805E3F031E4}"
+                        }
+                        AITaskReturnState "Return  State" {
+                         Name "Return  State"
+                         EditorPos 2328.761 2093.854
+                         Group "{5C64A805E3F031E4}"
+                         Result RUNNING
+                        }
+                       }
+                       Group "{5C64A805E3F031E4}"
+                      }
+                     }
+                     Group "{5C64A805E3F031E4}"
+                     InVariable 11
+                     TestType EqualsValue
+                     TestValue "4"
+                    }
+                   }
+                   Group "{5C64A805E3F031E4}"
+                  }
+                  Selector Selector {
+                   Name "Selector"
+                   EditorPos 3065.204 1521.398
+                   Nodes {
+                    DecoTestVariable "Test Variable" {
+                     Name "Test Variable"
+                     EditorPos 2749.252 1782.827
+                     Nodes {
+                      Sequence Sequence {
+                       Name "Sequence"
+                       EditorPos 2805.418 1966.16
+                       Nodes {
+                        AITaskSetVariable "Set Variable" {
+                         Name "Set Variable"
+                         EditorPos 2645.418 2153.634
+                         Group "{5C65018B59CAAC0D}"
+                         SetValue "false"
+                         OutVariable 12
+                        }
+                        SCR_AISetInvestigateBehaviorParameters "SCR_AI Set Investigate Behavior Parameters" {
+                         Name "SCR_AI Set Investigate Behavior Parameters"
+                         EditorPos 2924.918 2148.16
+                         InPorts {
+                          SingleInputPortContainer SingleInputPortContainer {
+                           Port -1
+                           PortName "Position"
+                          }
+                          SingleInputPortContainer SingleInputPortContainer {
+                           Port -1
+                           PortName "isDangerous"
+                          }
+                          SingleInputPortContainer SingleInputPortContainer {
+                           Port -1
+                           PortName "Radius"
+                          }
+                          SingleInputPortContainer SingleInputPortContainer {
+                           Port 12
+                           PortName "ResetTimer"
+                          }
+                          SingleInputPortContainer SingleInputPortContainer {
+                           Port -1
+                           PortName "Timeout"
+                          }
+                          SingleInputPortContainer SingleInputPortContainer {
+                           Port -1
+                           PortName "Duration"
+                          }
+                          SingleInputPortContainer SingleInputPortContainer {
+                           Port -1
+                           PortName "StartPos"
+                          }
+                         }
+                         Group "{5C65018B59CAAC0D}"
+                        }
+                       }
+                       Group "{5C65018B59CAAC0D}"
+                      }
+                     }
+                     Group "{5C65018B59CAAC0D}"
+                     AbortType AbortParentNodeFurtherChildren
+                     InVariable 12
+                     TestType EqualsValue
+                     TestValue "true"
+                    }
+                    Sequence Sequence {
+                     Name "Sequence"
+                     EditorPos 3277.918 1812.47
+                     Nodes {
+                      AITaskIdle Idle {
+                       Name "Idle"
+                       EditorPos 3139.944 1998.404
+                       Group "{5C65018B59CAAC0D}"
+                       Period 20
+                       PeriodRandom 30
+                       PeriodKey 15
+                      }
+                      AITaskCharacterStop "Character Stop" {
+                       Name "Character Stop"
+                       EditorPos 3345.585 1990.97
+                       Group "{5C65018B59CAAC0D}"
+                      }
+                     }
+                     Group "{5C65018B59CAAC0D}"
+                    }
+                   }
+                   Group "{5C65018B59CAAC0D}"
+                  }
+                  Sequence Sequence {
+                   Name "Sequence"
+                   EditorPos 3893.418 1529.636
+                   Nodes {
+                    SCR_AIGetInvestigateBehaviorParameters "SCR_AI Get Investigate Behavior Parameters" {
+                     Name "SCR_AI Get Investigate Behavior Parameters"
+                     EditorPos 3642.822 1725.251
+                     OutPorts {
+                      SingleOutputPortContainer SingleOutputPortContainer {
+                       Port -1
+                       PortName "Position"
+                      }
+                      SingleOutputPortContainer SingleOutputPortContainer {
+                       Port -1
+                       PortName "isDangerous"
+                      }
+                      SingleOutputPortContainer SingleOutputPortContainer {
+                       Port -1
+                       PortName "Radius"
+                      }
+                      SingleOutputPortContainer SingleOutputPortContainer {
+                       Port 13
+                       PortName "ResetTimer"
+                      }
+                      SingleOutputPortContainer SingleOutputPortContainer {
+                       Port -1
+                       PortName "Timeout"
+                      }
+                      SingleOutputPortContainer SingleOutputPortContainer {
+                       Port -1
+                       PortName "Duration"
+                      }
+                      SingleOutputPortContainer SingleOutputPortContainer {
+                       Port -1
+                       PortName "StartPos"
+                      }
+                     }
+                     Group "{5C65018A80762E48}"
+                    }
+                    AITaskIdle Idle {
+                     Name "Idle"
+                     EditorPos 4108.917 1729.493
+                     Group "{5C65018A80762E48}"
+                     PeriodRandom 1
+                    }
+                   }
+                   Group "{5C65018A80762E48}"
+                  }
+                 }
+                 UseChildResult 0
+                }
+                Parallel Parallel {
+                 Name "Parallel"
+                 EditorPos 5000.98 1584.35
+                 Nodes {
+                  AITaskIdle Idle {
+                   Name "Idle"
+                   EditorPos 4936.739 1760.611
+                   Period 10
+                   PeriodRandom 10
+                   PeriodKey 17
+                  }
+                  Sequence Sequence {
+                   Name "Sequence"
+                   EditorPos 5122.31 1736.949
+                   Nodes {
+                    SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
+                     Name "SCR_AI Get Random Point"
+                     EditorPos 4362.698 1953.491
+                     InPorts {
+                      SingleInputPortContainer SingleInputPortContainer {
+                       Port -1
+                       PortName "Waypoint"
+                      }
+                      SingleInputPortContainer SingleInputPortContainer {
+                       Port 3
+                       PortName "Origin"
+                      }
+                      SingleInputPortContainer SingleInputPortContainer {
+                       Port 8
+                       PortName "Radius"
+                      }
+                     }
+                     OutPorts {
+                      SingleOutputPortContainer SingleOutputPortContainer {
+                       Port 0
+                       PortName "ResultVector"
+                      }
+                     }
+                     m_Radius 100
+                    }
+                    SCR_AILookAtPosition "SCR_AI Look At Position" {
+                     Name "SCR_AI Look At Position"
+                     EditorPos 4818.96 1930.451
+                     InPorts {
+                      SingleInputPortContainer SingleInputPortContainer {
+                       Port 2
+                       PortName "PositionIn"
+                      }
+                      SingleInputPortContainer SingleInputPortContainer {
+                       Port -1
+                       PortName "PriorityIn"
+                      }
+                     }
+                     OutPorts {
+                      SingleOutputPortContainer SingleOutputPortContainer {
+                       Port -1
+                       PortName "PositionOut"
+                      }
+                     }
+                     m_fPriority 40
+                    }
+                    AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+                     Name "Set Pathfinding Filters"
+                     EditorPos 5041.894 2017.007
+                     NavmeshProject "Soldiers"
+                     IgnoreFlags 8
+                    }
+                    SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
+                     Name "SCR_AI Character Set Movement Speed"
+                     EditorPos 5292.414 1995.811
+                     InPorts {
+                      SingleInputPortContainer SingleInputPortContainer {
+                       Port -1
+                       PortName "Speed"
+                      }
+                     }
+                     m_eSpeed RUN
+                    }
+                    AITaskMove Move {
+                     Name "Move"
+                     EditorPos 5640.183 1995.986
+                     InTargetLocation 0
+                     InTargetOrientation -1
+                     PrecisionXZ 1.5
+                    }
+                    AITaskIdle Idle {
+                     Name "Idle"
+                     EditorPos 5959.285 2001.978
+                     Period 3
+                     PeriodRandom 3
+                    }
+                   }
+                  }
+                 }
+                 UseChildResult 0
+                }
+                SCR_AICompleteAction "SCR_AI Complete Action" {
+                 Name "SCR_AI Complete Action"
+                 EditorPos 5449.37 1576.517
+                }
+                AITaskReturnState "Return  State" {
+                 Name "Return  State"
+                 EditorPos 5716.71 1577.549
+                 Result RUNNING
+                }
+               }
+              }
+              SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+               Name "SCR_AI Set Weapon Raised"
+               EditorPos 4804.553 704.071
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Raised"
+                }
+               }
+               m_bWeaponRaised 0
+              }
+             }
+            }
+           }
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "ThresholdIn"
+            }
+           }
+           NegativeCondition 1
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable position {
+   VariableName "position"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable isDangerous {
+   VariableName "isDangerous"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable inestigateCenterPos {
+   VariableName "inestigateCenterPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable result {
+   VariableName "result"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable radius {
+   VariableName "radius"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable resetTimer {
+   VariableName "resetTimer"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable timerValue {
+   VariableName "timerValue"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable duration {
+   VariableName "duration"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable extraMoveParams {
+   VariableName "extraMoveParams"
+   VariableTypeName "AIExtraMoveParams"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable startPos {
+   VariableName "startPos"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference position {
+   VariableType 0
+   EditorPos 4615.865 2071.913
+  }
+  VariableReference isDangerous {
+   VariableType 1
+   EditorPos 9.286 35.606
+  }
+  VariableReference position {
+   VariableType 0
+   EditorPos 4610.977 1975.658
+  }
+  VariableReference inestigateCenterPos {
+   VariableType 2
+   EditorPos 4091.365 1992.468
+  }
+  VariableReference inestigateCenterPos {
+   VariableType 2
+   EditorPos 3.984 -50.817
+  }
+  VariableReference inestigateCenterPos {
+   VariableType 2
+   EditorPos 1060.942 1834.857
+   Group "{5C64A805E3F031E4}"
+  }
+  VariableReference result {
+   VariableType 3
+   EditorPos 1707.571 1791.89
+   Group "{5C64A805E3F031E4}"
+  }
+  VariableReference radius {
+   VariableType 4
+   EditorPos 7.734 108.35
+  }
+  VariableReference radius {
+   VariableType 4
+   EditorPos 4189.198 2095.801
+  }
+  VariableReference inestigateCenterPos {
+   VariableType 2
+   EditorPos 329.097 42.457
+  }
+  VariableReference resetTimer {
+   VariableType 5
+   EditorPos 7.013 199.184
+  }
+  VariableReference result {
+   VariableType 3
+   EditorPos 2117.288 1796.054
+   Group "{5C64A805E3F031E4}"
+  }
+  VariableReference resetTimer {
+   VariableType 5
+   EditorPos 2543.775 1905.526
+   Group "{5C65018B59CAAC0D}"
+  }
+  VariableReference resetTimer {
+   VariableType 5
+   EditorPos 4094.728 1881.875
+   Group "{5C65018A80762E48}"
+  }
+  VariableReference timerValue {
+   VariableType 6
+   EditorPos 2.023 297.618
+  }
+  VariableReference timerValue {
+   VariableType 6
+   EditorPos 2950.918 1982.827
+   Group "{5C65018B59CAAC0D}"
+  }
+  VariableReference duration {
+   VariableType 7
+   EditorPos -5.098 373.767
+  }
+  VariableReference duration {
+   VariableType 7
+   EditorPos 4779.706 1796.16
+  }
+  VariableReference radius {
+   VariableType 4
+   EditorPos 1179.006 1915.713
+   Group "{5C64A805E3F031E4}"
+  }
+  VariableReference extraMoveParams {
+   VariableType 8
+   EditorPos 830.774 1999.551
+   Group "{5C64A805E3F031E4}"
+  }
+  VariableReference inestigateCenterPos {
+   VariableType 2
+   EditorPos 1511.069 229.249
+   Group "{5C64A805E3F031E4}"
+  }
+  VariableReference startPos {
+   VariableType 9
+   EditorPos -59.416 455.585
+  }
+  VariableReference startPos {
+   VariableType 9
+   EditorPos 1529.744 118.537
+   Group "{5C64A805E3F031E4}"
+  }
+  VariableReference inestigateCenterPos {
+   VariableType 2
+   EditorPos 2628.928 706.512
+  }
+  VariableReference inestigateCenterPos {
+   VariableType 2
+   EditorPos 3524.751 641.025
+  }
+  VariableReference extraMoveParams {
+   VariableType 8
+   EditorPos 3415.05 736.05
+  }
+  VariableReference extraMoveParams {
+   VariableType 8
+   EditorPos 2550.25 813.1
+  }
+  VariableReference extraMoveParams {
+   VariableType 8
+   EditorPos 2170.144 82.233
+  }
+ }
+ Groups {
+  BTGroup "{5C65018B59CAAC0D}" {
+   Name "Timeout for movement towards investigation spot"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{5C65018A80762E48}" {
+   Name "Update for new danger event from the same source"
+   Color 0.6 0.6 0.6 0.251
+  }
+ }
+}
