@@ -1,11 +1,11 @@
 modded class SCR_AIAttackBehavior : SCR_AIBehaviorBase
 {
-	protected static const float WAIT_TIME_UNEXPECTED = 0.1;
-	protected static const float WAIT_TIME_OVERTHREATENED = 0.4;
+	protected static const float WAIT_TIME_UNEXPECTED = 0.2;
+	protected static const float WAIT_TIME_OVERTHREATENED = 0.7;
 	
 	void SCR_AIAttackBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, BaseTarget target, BaseTarget prevTarget, float priorityLevel = PRIORITY_LEVEL_NORMAL)
 	{
-		InitParameters(target, 0.5);
+		InitParameters(target, 1);
 		if (!utility)
 			return;
 		

@@ -155,20 +155,9 @@ BehaviorTree {
                 }
                }
               }
-              DCO_MagicAmmo "DCO_ Magic Ammo" {
-               Name "DCO_ Magic Ammo"
-               EditorPos 2250.895 1618.211
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 5
-                 PortName "MagazineWell"
-                }
-               }
-               m_iMagazineCount 2
-              }
               AITaskIdle Idle {
                Name "Idle - Wait for a long time"
-               EditorPos 2569.072 1623.996
+               EditorPos 2291.505 1619.37
                Period 6
                PeriodRandom 2
               }

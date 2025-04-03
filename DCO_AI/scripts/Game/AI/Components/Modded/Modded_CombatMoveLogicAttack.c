@@ -750,4 +750,19 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		}
 		return ECharacterStance.STAND;
 	}
+	
+	protected override bool MoveFromTargetCondition()
+	{
+		float weaponMinDist = Math.Max(5.0, m_fWeaponMinDist);
+		
+		return m_fTargetDist < weaponMinDist;
+	}
+	
+	protected void CreateUnsafeArea(float radius)
+	{
+		SCR_AIDangerEvent_UnsafeArea unsafe = new SCR_AIDangerEvent_UnsafeArea();
+		unsafe.SetRadius(radius);
+		unsafe.SetPosition(m_Utility.GetOrigin());
+		m_Utility.m_ConfigComponent.PerformDangerReaction(m_Utility, unsafe, 1);
+	}
 }

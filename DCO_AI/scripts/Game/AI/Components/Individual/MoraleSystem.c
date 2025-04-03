@@ -30,9 +30,9 @@ class DCO_AIMoraleSystemComponent : ScriptComponent
 	protected float COMBAT_MORALE_SUPPRESSED				= 0.18;
 	protected float COMBAT_MORALE_ENEMY_NEAR				= 0.35;
 	
-	protected float MORALE_RECOVERY_FIXED					= 0.1;
+	protected float MORALE_RECOVERY_FIXED					= 0.07;
 	protected float MORALE_BOOST_RECOVERY_LEADER_NEAR		= 0.3;
-	protected float MORALE_BOOST_RECOVERY_FRIENDLY_NEAR		= 0.15;
+	protected float MORALE_BOOST_RECOVERY_FRIENDLY_NEAR		= 0.05;
 
 	protected SCR_AIUtilityComponent 				m_Utility;
 	protected SCR_AIInfoComponent					m_AIInfo;
@@ -93,7 +93,7 @@ class DCO_AIMoraleSystemComponent : ScriptComponent
 
         m_fMorale += DCO_DetectionSystem.GetFriendlyNumber() * MORALE_BOOST_RECOVERY_FRIENDLY_NEAR * timeSlice;
 		
-		if (m_AIInfo.GetThreatState() > EAIThreatState.ALERTED)
+		if (m_AIInfo.GetThreatState() > EAIThreatState.VIGILANT)
 		{
 			m_fMorale -= COMBAT_MORALE_SUPPRESSED * timeSlice;
 		}
@@ -162,13 +162,18 @@ class DCO_AIMoraleSystemComponent : ScriptComponent
 			}
 		}
 		
-		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fMorale.ToString(), EAIDebugCategory.COMBAT, 1.4, color);	
+		//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fMorale.ToString(), EAIDebugCategory.COMBAT, 1.4, color);	
 	}
 #endif
 	
 	MoraleState GetMoraleStates()
 	{
 		return m_MoraleState;
+	}
+	
+	float GetMoraleValue()
+	{
+		return m_fMorale;
 	}
 	
 	private void StateTransition(MoraleState newState)

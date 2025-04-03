@@ -12,7 +12,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_SAFE = 1.0;			//!< We are safe and are good at recognising enemies
 	protected const float PERCEPTION_FACTOR_VIGILANT = 2.5;		//!< When vigilant and alert we are very good at recognising enemies
 	protected const float PERCEPTION_FACTOR_ALERTED = 2.5;
-	protected const float PERCEPTION_FACTOR_THREATENED = 0.4;	// We are suppressed and are bad at recognizing enemies
+	protected const float PERCEPTION_FACTOR_THREATENED = 0.8;	// We are suppressed and are bad at recognizing enemies
 	
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.0;	//!< Looking through binoculars
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;		//!< Not using any special equipment, same recognition ability as usual
@@ -24,13 +24,15 @@ modded class SCR_AICombatComponent : ScriptComponent
 	static const float LONG_RANGE_COMBAT_DISTANCE = 300.0;
 	
 	// AIM Improvement Factors
-	protected const float AIM_IMPROVEMENT_BASE_IMPROVEMENT = 0.004;
-	protected const float AIM_IMPROVEMENT_EQUIPMENT = 0.005;
-	protected const float AIM_IMPROVEMENT_INTERVAL_S = 2;
+	protected const float AIM_IMPROVEMENT_BASE_IMPROVEMENT = 0.0055;
+	protected const float AIM_IMPROVEMENT_EQUIPMENT = 0.002;
+	protected const float AIM_IMPROVEMENT_INTERVAL_S = 1;
 	
 	// AIM Decrement Value
-	protected const float AIM_SUPPRESSED_DECREMENT = 0.0038;
-	protected const float AIM_IMPROVEMENT_DECAY = 0.3;
+	protected const float AIM_SUPPRESSED_DECREMENT = 0.012;
+	protected const float AIM_LOW_MORALE_DECREMENT = 0.003;
+	protected const float AIM_IMPROVEMENT_DECAY_NO_TARGET = 0.001;
+	protected const float AIM_IMPROVEMENT_DECAY = 0.03;
 	
 	float m_fImprovementTimer;
 	
@@ -41,6 +43,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float AIM_IMPROVEMENT_THREATENED = 3;
 	
 	protected float AIM_IMPROVEMENT = 1;
+	protected static const float TARGET_MAX_DISTANCE_DISARMED = 1.2;
 
 	protected SCR_ChimeraAIAgent m_Agent;
 	protected SCR_CharacterControllerComponent		m_CharacterController;
@@ -153,40 +156,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 			}
 		}
 	}
-	
-	override bool EvaluateLowAmmo(BaseWeaponComponent weaponComp, int muzzleId)
-	{
-		if (!weaponComp)
-			return false;
-		array<BaseMuzzleComponent> muzzles = {};
-		weaponComp.GetMuzzlesList(muzzles);
-		if (muzzleId >= muzzles.Count() || muzzleId < 0)
-			return false;
-		
-		BaseMuzzleComponent muzzleComp = muzzles[muzzleId];
-		if (!muzzleComp)
-			return false;
-				
-		// Ignore disposable weapons
-		if (muzzleComp.IsDisposable())
-			return false;
-		
-		int magCount = m_InventoryManager.GetMagazineCountByWeapon(weaponComp);
-		int lowMagThreshold = GetWeaponLowMagThreshold(weaponComp);
-		
-		return magCount < lowMagThreshold;
-	}
-	
-	override int GetWeaponLowMagThreshold(BaseWeaponComponent weapon)
-	{
-		EWeaponType wpType = SCR_AIWeaponHandling.GetWeaponType(weapon, true);
-		SCR_AIWeaponTypeHandlingConfig config = m_Utility.m_ConfigComponent.GetWeaponTypeHandlingConfig(wpType);
-		if (!config)
-			return SCR_AIWeaponTypeHandlingConfig.DEFAULT_LOW_MAG_THRESHOLD;
-		
-		return 2;
-	}
-	
+
 	override void UpdatePerceptionFactor(PerceptionComponent perceptionComp, SCR_AIThreatSystem threatSystem)
 	{
 		EAIThreatState threatState = threatSystem.GetState();
@@ -231,7 +201,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 			}
 			case MoraleState.PRESSURED:
 			{
-				return 0.5;
+				return 0.8;
 				break;
 			}
 			case MoraleState.BREAK:
@@ -240,7 +210,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 				break;
 			}
 		}
-			
+		
 		return 1.0;
 	}
 	
@@ -275,27 +245,44 @@ modded class SCR_AICombatComponent : ScriptComponent
 		else
 		{
 			bool Visible = IsTargetVisible(GetCurrentTarget());
-			float Distt = Math.Clamp(GetCurrentTarget().GetDistance(), 0, m_Utility.DCO_ConfComponent.GetAimMaxRangeEffect());
-			float DistanceImprovementMultiplier = Math.Map(Distt, 0, m_Utility.DCO_ConfComponent.GetAimMaxRangeEffect(), m_Utility.DCO_ConfComponent.GetMaxAimImprovement(), 1);			
+			float Distt = Math.Clamp(GetCurrentTarget().GetDistance(), 10, m_Utility.DCO_ConfComponent.GetAimMaxRangeEffect());
+			float DistanceImprovementMultiplier = Math.Map(Distt, 10, m_Utility.DCO_ConfComponent.GetAimMaxRangeEffect(), m_Utility.DCO_ConfComponent.GetMaxAimImprovement(), 1);			
 			
 			m_fImprovementTimer += timeSliceMs;
 			
 			if (isNewTarget)
 			{
-				float random = Math.RandomFloat(1, 2);
-				AIM_IMPROVEMENT = Math.Clamp(AIM_IMPROVEMENT - (AIM_IMPROVEMENT_DECAY * random), 1, 10);
-			} else if (m_fImprovementTimer > AIM_IMPROVEMENT_INTERVAL_S * 1000)
-			{
-				m_fImprovementTimer = 0;
-				float random = Math.RandomFloat(1, 1.5);
-				float suppressionVal = Math.Map(m_Utility.m_ThreatSystem.GetSuppressionMeasure(), 0, 1, 0, AIM_SUPPRESSED_DECREMENT);
-				AIM_IMPROVEMENT = Math.Clamp((AIM_IMPROVEMENT + AIM_IMPROVEMENT_BASE_IMPROVEMENT * DistanceImprovementMultiplier - suppressionVal) * random, 1, 10);
+				float random = Math.RandomFloat(1, 1.2);
+				AIM_IMPROVEMENT = Math.Clamp(AIM_IMPROVEMENT - (AIM_IMPROVEMENT_DECAY * random), 0.5, 10);
 			}
 			
-			if (GetCurrentTarget().GetTimeSinceSeen() > 6)
+			if (m_fImprovementTimer > AIM_IMPROVEMENT_INTERVAL_S * 1000)
 			{
-				AIM_IMPROVEMENT = 1;
+				float random = Math.RandomFloat(1, 2);
+				if (GetCurrentTarget().GetTimeSinceSeen() > 10)
+				{
+					AIM_IMPROVEMENT = Math.Clamp(AIM_IMPROVEMENT - (AIM_IMPROVEMENT_DECAY_NO_TARGET * random), 0.5, 100);
+				} else
+				{
+					float eqMul;
+					float suppressionVal = Math.Map(m_Utility.m_ThreatSystem.GetSuppressionMeasure(), 0, 1, 0, AIM_SUPPRESSED_DECREMENT);
+					float moraleVal = Math.Map(m_Utility.DCO_MoraleSystem.GetMoraleValue(), 0, 100, AIM_LOW_MORALE_DECREMENT, 0);				
+					if (m_Utility.GetCharacterController().IsWeaponADS()) eqMul = AIM_IMPROVEMENT_EQUIPMENT;
+					else eqMul = 0;
+					
+					float Improvement = ((AIM_IMPROVEMENT_BASE_IMPROVEMENT + eqMul) - (moraleVal + suppressionVal)) * random;
+					if (Improvement > 0) Improvement *= DistanceImprovementMultiplier; 
+					
+					AIM_IMPROVEMENT = Math.Clamp(AIM_IMPROVEMENT + Improvement, 0.5, 100);
+				}
+				
+				
+				m_fImprovementTimer = 0;
 			}
+			
+
+			
+			SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, AIM_IMPROVEMENT.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);	
 		}
 	}
 	
@@ -504,5 +491,15 @@ modded class SCR_AICombatComponent : ScriptComponent
 	SCR_AITargetClusterState GetAITargetClusterState()
 	{
 		return m_TargetClusterState;
+	}
+	
+	SCR_InventoryStorageManagerComponent getInventoryStorageMan()
+	{
+		return m_InventoryManager;
+	}
+	
+	SCR_CharacterControllerComponent getCharacterController()
+	{
+		return m_CharacterController;
 	}
 }

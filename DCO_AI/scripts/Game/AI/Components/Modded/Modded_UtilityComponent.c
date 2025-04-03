@@ -2,180 +2,20 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 {
 	SCR_DCO_AIConfigComponent DCO_ConfComponent;
 	DCO_AIMoraleSystemComponent DCO_MoraleSystem;
+	DCO_AIDetectionSystemComponent DCO_AIDetection;
 		
 	ref array<BaseTarget> targets = new array<BaseTarget>;
+	ref array<IEntity> dedAlly;
 	//------------------------------------------------------------------------------------------------
 	//!
 	//! \param[in] unknownTarget
 	//! \return
 	override SCR_AIBehaviorBase EvaluateBehavior(BaseTarget unknownTarget)
 	{
-		if (!m_OwnerController || !m_ConfigComponent || !m_OwnerEntity)
-			return null;
-		
-		#ifdef AI_DEBUG
-		AddDebugMessage("EvaluateBehavior START");
-		if (m_bEvaluationBreakpoint)
-		{
-			Print("EvaluateBehavior breakpoint triggered", LogLevel.NORMAL);
-			debug;
-			m_bEvaluationBreakpoint = false;
-		}
-		#endif
-		
-		// Update delta time and players's position
-		float time = m_OwnerEntity.GetWorld().GetWorldTime();
-		float deltaTime = time - m_fLastUpdateTime;
-		m_fLastUpdateTime = time;
-
-		// Update call queue.
-		// It must be updated before evaluation of behaviors.
-		m_Callqueue.Tick(0.001 * deltaTime);
-		
-		// Create events from commands, danger events, new targets
-		m_ThreatSystem.Update(this, deltaTime);
-		m_SectorThreatFilter.Update(0.001 * deltaTime);
-		m_CombatComponent.UpdatePerceptionFactor(m_PerceptionComponent, m_ThreatSystem);
-
-		// Read messages
-		AIMessage msgBase = m_Mailbox.ReadMessage(true);
-		if (msgBase)
-		{
-			SCR_AIMessageGoal msgGoal = SCR_AIMessageGoal.Cast(msgBase);
-			if (msgGoal)
-			{
-				// Process goal message
-				#ifdef AI_DEBUG
-				AddDebugMessage(string.Format("PerformGoalReaction: %1, from BT: %2", msgGoal, msgGoal.m_sSentFromBt));
-				#endif
-				m_ConfigComponent.PerformGoalReaction(this, msgGoal);
-			}
-			else
-			{
-				SCR_AIMessageInfo msgInfo = SCR_AIMessageInfo.Cast(msgBase);
-				if (msgInfo)
-				{
-					// Process info message
-					
-					// Try to notify actions about the message
-					bool overrideReaction = CallActionsOnMessage(msgInfo);
-		
-					#ifdef AI_DEBUG
-					if (overrideReaction)
-					{
-						AddDebugMessage(string.Format("InfoMessage consumed by action: %1, from BT: %2", msgInfo, msgInfo.m_sSentFromBt));
-					}
-					#endif
-					
-					// If message was not consumed by action, process it
-					if (!overrideReaction)
-					{
-						#ifdef AI_DEBUG
-						AddDebugMessage(string.Format("PerformInfoReaction: %1, from BT: %2", msgInfo, msgInfo.m_sSentFromBt));
-						#endif
-						m_ConfigComponent.PerformInfoReaction(this, msgInfo);
-					}
-				}
-			}
-		}
-		
-		bool reactToUnknownTarget = false;
-		if (unknownTarget)
-		{
-			if (unknownTarget == m_UnknownTarget)
-			{	// Same target
-				if (GetGame().GetWorld().GetWorldTime() - m_fReactionUnknownTargetTime_ms > REACTION_TO_SAME_UNKNOWN_TARGET_INTERVAL_MS)
-					reactToUnknownTarget = true;
-			}
-			else
-			{	// Different target
-				reactToUnknownTarget = true;
-			}
-		}
-		if (reactToUnknownTarget && m_ConfigComponent.m_Reaction_UnknownTarget)
-		{
-			#ifdef AI_DEBUG
-			AddDebugMessage(string.Format("PerformReaction: Unknown Target: %1", unknownTarget));
-			#endif
-			
-			m_ConfigComponent.m_Reaction_UnknownTarget.PerformReaction(this, m_ThreatSystem, unknownTarget, unknownTarget.GetLastSeenPosition());
-			m_fReactionUnknownTargetTime_ms = GetGame().GetWorld().GetWorldTime();
-		}
-		m_UnknownTarget = unknownTarget;
-		
-		//------------------------------------------------------------------------------------------------
-		// Evaluate current weapon and target
-		
-		bool weaponEvent;
-		bool selectedTargetChanged;
-		bool retreatTargetChanged;
-		bool compartmentChanged;
-		BaseTarget prevTarget;
-		BaseTarget selectedTarget;
-		m_CombatComponent.EvaluateWeaponAndTarget(weaponEvent, selectedTargetChanged,
-			prevTarget, selectedTarget, retreatTargetChanged, compartmentChanged);
-		
-		if (selectedTargetChanged && m_ConfigComponent.m_Reaction_SelectedTargetChanged)
-		{
-			#ifdef AI_DEBUG
-			AddDebugMessage(string.Format("PerformReaction: Selected Target Changed: %1", selectedTarget));
-			#endif
-			
-			m_ConfigComponent.m_Reaction_SelectedTargetChanged.PerformReaction(this, prevTarget, selectedTarget);
-		}
-		
-		BaseTarget retreatTarget = m_CombatComponent.GetRetreatTarget();
-		if (retreatTarget &&
-			(compartmentChanged ||
-			(selectedTargetChanged && !selectedTarget && retreatTarget) || // Nothing to attack any more and must retreat from some target
-			(!selectedTarget && retreatTargetChanged))) // Not attacking anything and must retreat from a different target
-		{
-			if (m_ConfigComponent.m_Reaction_RetreatFromTarget)
-			{
-				#ifdef AI_DEBUG
-				AddDebugMessage(string.Format("PerformReaction: Retreat From Target: %1", retreatTarget));
-				#endif
-				
-				m_ConfigComponent.m_Reaction_RetreatFromTarget.PerformReaction(this, m_ThreatSystem, retreatTarget, retreatTarget.GetLastSeenPosition());
-			}
-		}
-		
-		//------------------------------------------------------------------------------------------------
-		// Update combat component
-		m_CombatComponent.Update(deltaTime);
-		
-		// Evaluation: Remove completed behaviors, evaluate, set new behavior
-		RemoveObsoleteActions();
-		AIActionBase selectedAction = EvaluateActions();
-		#ifdef AI_DEBUG
-		DiagIncreaseCounter();
-		DebugLogActionsPriority();
-		#endif
-		
-		if (selectedAction && selectedAction != m_CurrentBehavior && (!m_CurrentBehavior || m_CurrentBehavior.IsActionInterruptable()))
-		{
-			SetCurrentAction(selectedAction);
-			m_CurrentBehavior = SCR_AIBehaviorBase.Cast(selectedAction);
-#ifdef WORKBENCH
-			SCR_AIDebugVisualization.VisualizeMessage(m_OwnerEntity, SCR_AIDebug.GetBehaviorName(m_CurrentBehavior), EAIDebugCategory.BEHAVIOR, 5);
-#endif
-		}
-		
-		m_CurrentBehavior.OnActionExecuted();
-		
-		// Update comms handler
-		if (m_CommsHandler.m_bNeedUpdate)
-			m_CommsHandler.Update(deltaTime);
-		
-		// Update combat move state
-		if (m_CombatMoveState.m_bInCover && m_CombatMoveState.GetAssignedCover())
-			m_CombatMoveState.VerifyCurrentCover(m_OwnerEntity.GetOrigin());
-		
-		#ifdef AI_DEBUG
-		AddDebugMessage("EvaluateBehavior END\n");
-		#endif
+		super.EvaluateBehavior(unknownTarget);
 		
 		MaintainTarget();
+		MagazineHandling();
 		return m_CurrentBehavior;
 	}
 	
@@ -219,11 +59,103 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		}
 	}
 	
+	// Temporary for Magic Magazine
+	protected void MagazineHandling()
+	{
+		BaseWeaponComponent weap = m_CombatComponent.GetCurrentWeaponManager().GetCurrentWeapon();
+		if (!weap) return;
+		bool isReplenishable = false;
+		//SCR_AIDebugVisualization.VisualizeMessage(m_OwnerEntity, weap.GetUIInfo().GetName(), EAIDebugCategory.INFO, 1.4, Color.White);		
+		if (weap.GetWeaponType() == EWeaponType.WT_RIFLE || weap.GetWeaponType() == EWeaponType.WT_MACHINEGUN || weap.GetWeaponType() == EWeaponType.WT_HANDGUN) isReplenishable = true;
+		
+		int magCount = m_CombatComponent.getInventoryStorageMan().GetMagazineCountByWeapon(weap);
+		int lowMagThreshold = m_CombatComponent.GetWeaponLowMagThreshold(weap);
+		
+		if (magCount < lowMagThreshold && isReplenishable)	
+		{
+			BaseMagazineWell m_sMagazineWellType = weap.GetCurrentMagazine().GetMagazineWell();
+			m_CombatComponent.getInventoryStorageMan().ResupplyMagazines(lowMagThreshold + 1);
+			//m_CombatComponent.getCharacterController().ReloadWeapon();		
+		}		
+	}
+	
+	protected void TakeGoodWeaponAndMagazine()
+	{
+		DCO_AIDetection.GetDeadAllies(dedAlly);
+		array<IEntity> itemss;
+		array<IEntity> Weapon;
+		array<IEntity> Magazine;
+
+		foreach (IEntity e : dedAlly)
+		{
+			array<typename> compToFind;
+			compToFind.Insert(BaseWeaponComponent);
+			compToFind.Insert(BaseMagazineComponent);
+			SCR_InventoryStorageManagerComponent m_Inventory = SCR_InventoryStorageManagerComponent.Cast(e.FindComponent(SCR_InventoryStorageManagerComponent));	
+			m_Inventory.FindItemsWithComponents(itemss, compToFind);
+			
+			foreach(IEntity wp : itemss)
+			{
+				BaseWeaponComponent wpC = BaseWeaponComponent.Cast(wp.FindComponent(BaseWeaponComponent));
+				BaseMagazineComponent mgC = BaseMagazineComponent.Cast(wp.FindComponent(BaseMagazineComponent));
+				if (!wpC || !mgC) return;
+				
+				if (wpC)
+				{
+					EWeaponType Wtype = wpC.GetWeaponType();
+					if (Wtype == EWeaponType.WT_ROCKETLAUNCHER)
+					{
+						Weapon.Insert(wp);
+						break;
+					} else if (Wtype == EWeaponType.WT_MACHINEGUN)
+					{
+						Weapon.Insert(wp);
+						break;
+					} else if (Wtype == EWeaponType.WT_GRENADELAUNCHER)
+					{
+						Weapon.Insert(wp);
+						break;					
+					}
+				} else if (mgC)
+				{
+					Magazine.Insert(wp);
+				}
+			}
+			
+			itemss.Clear();
+		}
+		
+		EWeaponType myType = m_CombatComponent.GetCurrentWeaponManager().GetCurrentWeapon().GetWeaponType();
+		
+		switch(myType)
+		{
+			case EWeaponType.WT_RIFLE:
+			{
+				break;
+			}
+		}
+	}
+	
+	void SearchWeapon(array<IEntity> itemss)
+	{
+		
+	}
+	
 	//------------------------------------------------------------------------------------------------
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
+		AIAgent agent = GetOwner();
+		if (!agent)
+			return;	
+		
+		m_OwnerEntity = GenericEntity.Cast(agent.GetControlledEntity());
+		if (!m_OwnerEntity)
+			return;
+		
 		DCO_ConfComponent = SCR_DCO_AIConfigComponent.Cast(owner.FindComponent(SCR_DCO_AIConfigComponent));
+		DCO_MoraleSystem = DCO_AIMoraleSystemComponent.Cast(m_OwnerEntity.FindComponent(DCO_AIMoraleSystemComponent));
+		DCO_AIDetection = DCO_AIDetectionSystemComponent.Cast(m_OwnerEntity.FindComponent(DCO_AIDetectionSystemComponent));
 	}
 	
 	bool IsAimImproved()

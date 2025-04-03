@@ -2,7 +2,6 @@ class DCO_AITravelInvestigate : SCR_AICombatMoveLogicBase
 {	
 	SCR_ChimeraAIAgent m_Agent;
 	vector target;
-	AIDangerEvent danger;
 	protected vector m_vAvoidStraightPathDir;
 	protected MoraleState m_MoraleState;
 	

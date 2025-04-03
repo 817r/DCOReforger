@@ -73,7 +73,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		float illuminationFactor = GetTargetIlluminationFactor(target);
 		
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
-		offsetX = (GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor / GetAimImprovement()) * MoraleFactor();
+		offsetX = ((GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor) / GetAimImprovement()) * MoraleFactor();
 		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor / GetAimImprovement();
 		
 		tolerance = GetTolerance(entity, targetEntity, angularSize, distance, weaponType);

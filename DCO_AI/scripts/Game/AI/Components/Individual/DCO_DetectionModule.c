@@ -11,12 +11,13 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 	protected SCR_AIUtilityComponent 				m_Utility;
 	protected SCR_AIInfoComponent					m_AIInfo;
 	protected SCR_ChimeraAIAgent 					agent;
-		
+	
 	protected float IntervalUpdate = 5000;
 	protected float TimeStamp;
 	
 	protected ref array<IEntity> enemies = {};
 	protected ref array<IEntity> allies = {};
+	protected ref array<IEntity> DeadAllies = {};
 	
 	ref array<BaseTarget> hostiless = {};
 	
@@ -68,7 +69,7 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 		//if (hostiless.Count() > 0)
 		//	InfoShare();
 		
-		SCR_AIDebugVisualization.VisualizeMessage(owner,"Allies : " + allies.Count().ToString() + " |Enemies : " + enemies.Count().ToString(), EAIDebugCategory.INFO, 1.4);
+		// SCR_AIDebugVisualization.VisualizeMessage(owner,"Allies : " + allies.Count().ToString() + " |Enemies : " + enemies.Count().ToString(), EAIDebugCategory.INFO, 1.4);
 		// MaintainDetected(owner);
     }
 	
@@ -221,8 +222,13 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 			bool destroyed = tarinfo.m_DamageManager.IsDestroyed();
 			if (destroyed)
 			{
+				if (!DeadAllies.Contains(allies.Get(i)))
+				{
+					DeadAllies.Insert(allies.Get(i));
+				}
 				friendly.Remove(i);
 				allies.Remove(i);
+
 				return;
 			}
 			
@@ -304,5 +310,10 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 	int GetEnemiesNumber()
 	{
 		return enemies.Count();
+	}
+	
+	bool GetDeadAllies(out array<IEntity> friendlys)
+	{
+		return true;
 	}
 }

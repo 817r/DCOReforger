@@ -12,6 +12,9 @@ enum DCO_SKILL
 
 class SCR_DCO_AIConfigComponent : ScriptComponent
 {
+	[Attribute("", UIWidgets.Object)]
+	ref array<ref DCO_Personality> m_Personality;
+	
 	[Attribute("1", UIWidgets.ComboBox, "AI skill in combat", "", ParamEnumArray.FromEnum(DCO_SKILL) )]
 	DCO_SKILL m_SkillSet;
 	
@@ -21,7 +24,7 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 	[Attribute( defvalue: "1500", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 5000 1" )]
 	float m_MaxRangeAimImprovement;
 	
-	[Attribute( defvalue: "2", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 10 1" )]
+	[Attribute( defvalue: "2", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 5 1" )]
 	float m_MaxAimImprovementBoost;
 
 	bool EnableAimImprovement()
