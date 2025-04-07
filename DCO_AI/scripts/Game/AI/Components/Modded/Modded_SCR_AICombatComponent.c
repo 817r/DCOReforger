@@ -67,32 +67,18 @@ modded class SCR_AICombatComponent : ScriptComponent
 	//! \param[in] timeSliceMs
 	override void Update(float timeSliceMs)
 	{
+		super.Update(timeSliceMs);
 		// Evaluate if we must dismount turret - only if we are already in turret
 		if (m_CurrentTurretController)
 			EvaluateDismountTurret(timeSliceMs);
 		if (m_SelectedTarget)
 			CalculateOverallAimImprovement(timeSliceMs);
 	}
-
-	//------------------------------------------------------------------------------------------------
-	override protected void Event_OnDamage(BaseDamageContext damageContext)
-	{
-		if (damageContext.damageType != EDamageType.FIRE || !m_Utility || !m_CurrentVehicle || m_bCurrentVehicleEvac)
-			return;
-		
-		// Fire damage inside a vehicle - evac vehicle
-		m_bCurrentVehicleEvac = true;
-		
-		SCR_AIGetOutVehicle behaviorGetOut = new SCR_AIGetOutVehicle(m_Utility, null, m_CurrentVehicle, priority: SCR_AIActionBase.PRIORITY_BEHAVIOR_GET_OUT_VEHICLE_HIGH_PRIORITY);
-		m_Utility.AddAction(behaviorGetOut);
-		
-		SCR_AIMoveFromDangerBehavior behaviorMoveFromDanger = new SCR_AIMoveFromDangerBehavior(m_Utility, null, m_CurrentVehicle.GetOrigin(), m_CurrentVehicle);
-		m_Utility.AddAction(behaviorMoveFromDanger);
-	}
 	
 	//------------------------------------------------------------------------------------------------
 	override void EOnInit(IEntity owner)
 	{
+		super.EOnInit(owner);
 		m_eAISkill = m_eAISkillDefault;
 		
 		ChimeraCharacter character = ChimeraCharacter.Cast(owner);
@@ -159,6 +145,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 
 	override void UpdatePerceptionFactor(PerceptionComponent perceptionComp, SCR_AIThreatSystem threatSystem)
 	{
+		super.UpdatePerceptionFactor(m_Perception,threatSystem);
 		EAIThreatState threatState = threatSystem.GetState();
 		float perceptionFactor;
 		switch (threatState)
@@ -282,7 +269,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 			
 
 			
-			SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, AIM_IMPROVEMENT.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);	
+			//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, AIM_IMPROVEMENT.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);	
 		}
 	}
 	

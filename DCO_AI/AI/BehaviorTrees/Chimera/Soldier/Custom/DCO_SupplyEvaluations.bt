@@ -1,0 +1,136 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_SupplyEvaluations.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -61.304 -45.87
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos -58 119
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -452.99 344.344
+       Nodes {
+        DCO_Scavange "DCO_ Scavange" {
+         Name "DCO_ Scavange"
+         EditorPos -724.967 571.357
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "ID To Do"
+          }
+         }
+        }
+       }
+      }
+      Selector Selector {
+       Name "Selector"
+       EditorPos 642.99 403.923
+       Nodes {
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 117.657 718.209
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 221 912
+           Nodes {
+            DCO_LowSupplyEvaluation "DCO_ Low Supply Evaluation" {
+             Name "DCO_ Low Supply Evaluation"
+             EditorPos -628.267 1265.463
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 2
+               PortName "Entity To Pick"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 1
+               PortName "Entity Location"
+              }
+             }
+            }
+            AITaskMove Move {
+             Name "Move"
+             EditorPos -87.873 1249.975
+             InTargetLocation 1
+             PrecisionY 3
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 228.127 1250.975
+            }
+            AITaskChangeStance "Change Stance" {
+             Name "Change Stance"
+             EditorPos 373.127 1247.975
+             Stance CROUCH
+            }
+            DCO_TakeEntityFromVicinity "DCO_ Take Entity From Vicinity" {
+             Name "DCO_ Take Entity From Vicinity"
+             EditorPos 575.971 1254.914
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 4
+               PortName "Entity To Pick"
+              }
+             }
+            }
+           }
+          }
+         }
+         AbortType AbortChildrenBranchAndParentFurtherChildren
+         InVariable 3
+         TestType EqualsValue
+         TestValue "1"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable ID {
+   VariableName "ID"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable Position {
+   VariableName "Position"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable Pick {
+   VariableName "Pick"
+   VariableTypeName "IEntity"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference ID {
+   VariableType 0
+   EditorPos -495.835 677.07
+  }
+  VariableReference Position {
+   VariableType 1
+   EditorPos -294.873 1362.975
+  }
+  VariableReference Pick {
+   VariableType 2
+   EditorPos -293.873 1279.975
+  }
+  VariableReference ID {
+   VariableType 0
+   EditorPos -1.031 847.692
+  }
+  VariableReference Pick {
+   VariableType 2
+   EditorPos 409.447 1399.073
+  }
+ }
+}

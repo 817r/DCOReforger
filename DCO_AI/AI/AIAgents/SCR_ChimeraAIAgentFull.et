@@ -4,4 +4,5 @@ SCR_ChimeraAIAgent {
   SCR_DCO_AIConfigComponent "{64FA7A5E1E048922}" {
   }
  }
+ DynamicsimLastlodDistance 0
 }

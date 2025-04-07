@@ -3,6 +3,8 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	SCR_DCO_AIConfigComponent DCO_ConfComponent;
 	DCO_AIMoraleSystemComponent DCO_MoraleSystem;
 	DCO_AIDetectionSystemComponent DCO_AIDetection;
+	
+	bool takeWeaponAlready = false;
 		
 	ref array<BaseTarget> targets = new array<BaseTarget>;
 	ref array<IEntity> dedAlly;
@@ -60,10 +62,10 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	}
 	
 	// Temporary for Magic Magazine
-	protected void MagazineHandling()
+	protected bool MagazineHandling()
 	{
 		BaseWeaponComponent weap = m_CombatComponent.GetCurrentWeaponManager().GetCurrentWeapon();
-		if (!weap) return;
+		if (!weap) return false;
 		bool isReplenishable = false;
 		//SCR_AIDebugVisualization.VisualizeMessage(m_OwnerEntity, weap.GetUIInfo().GetName(), EAIDebugCategory.INFO, 1.4, Color.White);		
 		if (weap.GetWeaponType() == EWeaponType.WT_RIFLE || weap.GetWeaponType() == EWeaponType.WT_MACHINEGUN || weap.GetWeaponType() == EWeaponType.WT_HANDGUN) isReplenishable = true;
@@ -73,72 +75,61 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		
 		if (magCount < lowMagThreshold && isReplenishable)	
 		{
-			BaseMagazineWell m_sMagazineWellType = weap.GetCurrentMagazine().GetMagazineWell();
-			m_CombatComponent.getInventoryStorageMan().ResupplyMagazines(lowMagThreshold + 1);
+			//BaseMagazineWell m_sMagazineWellType = weap.GetCurrentMagazine().GetMagazineWell();
+			//m_CombatComponent.getInventoryStorageMan().ResupplyMagazines(lowMagThreshold + 1);
 			//m_CombatComponent.getCharacterController().ReloadWeapon();		
+			return true;
 		}		
+		
+		return false;
 	}
 	
-	protected void TakeGoodWeaponAndMagazine()
+	protected bool Emergency()
 	{
-		DCO_AIDetection.GetDeadAllies(dedAlly);
-		array<IEntity> itemss;
-		array<IEntity> Weapon;
-		array<IEntity> Magazine;
+		if (takeWeaponAlready) return false;
+		array<BaseWeaponComponent> weap = {};
+		array<BaseMagazineComponent> mag = {};
+		m_CombatComponent.GetCurrentWeaponManager().GetWeapons(weap);
+		
+		if (!weap) return false;
+		int isReplenishable = 0;
+		int isLowAmmo = 0;
+		
+		//SCR_AIDebugVisualization.VisualizeMessage(m_OwnerEntity, weap.GetUIInfo().GetName(), EAIDebugCategory.INFO, 1.4, Color.White);
+		
+		foreach (BaseWeaponComponent e : weap)
+		{
+			bool replens = false;
+			if (e.GetWeaponType() == EWeaponType.WT_RIFLE || e.GetWeaponType() == EWeaponType.WT_MACHINEGUN || e.GetWeaponType() == EWeaponType.WT_HANDGUN)
+			{
+				replens = true;
+			} 
+			
+			int magCount = m_CombatComponent.getInventoryStorageMan().GetMagazineCountByWeapon(e);
+			int lowMagThreshold = m_CombatComponent.GetWeaponLowMagThreshold(e);
 
-		foreach (IEntity e : dedAlly)
-		{
-			array<typename> compToFind;
-			compToFind.Insert(BaseWeaponComponent);
-			compToFind.Insert(BaseMagazineComponent);
-			SCR_InventoryStorageManagerComponent m_Inventory = SCR_InventoryStorageManagerComponent.Cast(e.FindComponent(SCR_InventoryStorageManagerComponent));	
-			m_Inventory.FindItemsWithComponents(itemss, compToFind);
-			
-			foreach(IEntity wp : itemss)
+			if (magCount < lowMagThreshold && replens && e.GetWeaponType() != EWeaponType.WT_FRAGGRENADE)	
 			{
-				BaseWeaponComponent wpC = BaseWeaponComponent.Cast(wp.FindComponent(BaseWeaponComponent));
-				BaseMagazineComponent mgC = BaseMagazineComponent.Cast(wp.FindComponent(BaseMagazineComponent));
-				if (!wpC || !mgC) return;
-				
-				if (wpC)
-				{
-					EWeaponType Wtype = wpC.GetWeaponType();
-					if (Wtype == EWeaponType.WT_ROCKETLAUNCHER)
-					{
-						Weapon.Insert(wp);
-						break;
-					} else if (Wtype == EWeaponType.WT_MACHINEGUN)
-					{
-						Weapon.Insert(wp);
-						break;
-					} else if (Wtype == EWeaponType.WT_GRENADELAUNCHER)
-					{
-						Weapon.Insert(wp);
-						break;					
-					}
-				} else if (mgC)
-				{
-					Magazine.Insert(wp);
-				}
-			}
-			
-			itemss.Clear();
-		}
-		
-		EWeaponType myType = m_CombatComponent.GetCurrentWeaponManager().GetCurrentWeapon().GetWeaponType();
-		
-		switch(myType)
-		{
-			case EWeaponType.WT_RIFLE:
-			{
-				break;
+				isLowAmmo++;
 			}
 		}
+		
+		if (isLowAmmo > 2)	
+		{
+			return true;
+		}		
+		
+		return false;
 	}
 	
-	void SearchWeapon(array<IEntity> itemss)
+	bool isScavangeWeapon()
 	{
-		
+		return (Emergency()) || (MagazineHandling() && m_ThreatSystem.GetSuppressionMeasure() < 0.7 && DCO_MoraleSystem.GetMoraleValue() > 70);
+	}
+	
+	bool isResupply()
+	{
+		return (MagazineHandling() && m_ThreatSystem.GetState() < EAIThreatState.THREATENED);
 	}
 	
 	//------------------------------------------------------------------------------------------------

@@ -1,0 +1,303 @@
+BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Soldier.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -243.333 -421
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos -242.778 -252.667
+     Nodes {
+      RunOnce "Run Once" {
+       Name "Run Once"
+       EditorPos -2862.073 582.084
+       Nodes {
+        Sequence Sequence {
+         Name "Seq: Default"
+         EditorPos -2873.073 692.754
+         Nodes {
+          SCR_AISetStance "SCR_AI Set Stance" {
+           Name "SCR_AI Set Stance"
+           EditorPos -3111.3 825
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Stance"
+            }
+           }
+           Group "{6266B5D52E23313A}"
+           m_eStance STAND
+          }
+          SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+           Name "SCR_AI Set Weapon Raised"
+           EditorPos -2960.383 825
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Raised"
+            }
+           }
+           Group "{6266B5D52E23313A}"
+           m_bWeaponRaised 0
+          }
+          SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
+           Name "SCR_AI Character Set Movement Speed"
+           EditorPos -2750 825
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Speed"
+            }
+           }
+           Group "{6266B5D52E23313A}"
+           m_eSpeed WALK
+          }
+         }
+         Group "{6266B5D52E23313A}"
+        }
+       }
+       Group "{6266B5D52E23313A}"
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -1575.469 340.841
+       Nodes {
+        Sequence Sequence {
+         Name "Seq: Detection"
+         EditorPos -2313.448 651.715
+         Nodes {
+          Decorator "{50F0D1E5FB473435}" {
+           Name "Decorator"
+           EditorPos -2333.905 768.85
+           Nodes {
+            SCR_AIFindTagetToLookAt "SCR_AI Find Taget To Look At" {
+             Name "SCR_AI Find Taget To Look At"
+             EditorPos -2353.083 907.25
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 0
+               PortName "BaseTarget"
+              }
+             }
+             m_fTimeSinceSeenMax_S 1
+             m_fTimeSinceDetectedMax_S 0.4
+            }
+           }
+           ForceNodeResult Success
+          }
+         }
+        }
+        SCR_AIDecideBehavior "SCR_AI Decide Behavior" {
+         Name "SCR_AI Decide Behavior"
+         EditorPos -1733.143 772.143
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 4
+           PortName "UnknownTarget"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 5
+           PortName "BehaviorTree"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 2
+           PortName "UpdateBehavior"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 7
+           PortName "UseCombatMove"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 9
+           PortName "UpdateInterval"
+          }
+         }
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos -1070.901 811.631
+         Period 1
+         PeriodRandom 0
+         PeriodKey 9
+        }
+       }
+      }
+      Selector Selector {
+       Name "Selector"
+       EditorPos 33.75 787.75
+       Nodes {
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos -265.556 982.333
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos -225.536 1179.179
+           Nodes {
+            SCR_AIUpdateExecutedAction "SCR_AI Update Executed Action" {
+             Name "SCR_AI Update Executed Action"
+             EditorPos -584.167 1316.579
+            }
+            AITaskSetVariable "Set Variable" {
+             Name "Set Variable"
+             EditorPos -187.936 1320.349
+             ClearVariable 1
+             OutVariable 6
+            }
+           }
+          }
+         }
+         UseChildResult 1
+         AbortType AbortParentNodeFurtherChildren
+         InVariable 3
+        }
+        SCR_AIIsValidAction "SCR_AI Is Valid Action" {
+         Name "SCR_AI Is Valid Action"
+         EditorPos 545.25 1002.056
+         Nodes {
+          RunBT RunBT {
+           Name "RunBT"
+           EditorPos 601.317 1295.4
+           AlwaysReinit 1
+           InBehaviorTree 1
+          }
+         }
+         UseChildResult 1
+        }
+       }
+      }
+      Selector Selector {
+       Name "Selector"
+       EditorPos 1013.571 446.071
+       Nodes {
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 681.828 601.689
+         Nodes {
+          RunBT RunBT {
+           Name "RunBT"
+           EditorPos 644.964 771.325
+           BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMove.bt"
+          }
+         }
+         AbortType AbortChildrenBranchAndParentFurtherChildren
+         InVariable 8
+         TestType EqualsValue
+         TestValue "true"
+        }
+        SCR_AIResetCombatMoveState "SCR_AI Reset Combat Move State" {
+         Name "SCR_AI Reset Combat Move State"
+         EditorPos 1044.047 606.547
+        }
+       }
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos 1698.38 393.572
+       BehaviorTree "{98F1144DA724F591}AI/BehaviorTrees/Chimera/Soldier/LookAction.bt"
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos 2090.358 395.214
+       BehaviorTree "{8DD322A18236DA18}AI/BehaviorTrees/Chimera/Soldier/HandleOrders.bt"
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos 2528.947 395.79
+       BehaviorTree "{9E4979419089DA35}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_SupplyEvaluations.bt"
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos 3092.456 397.272
+       BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
+      }
+     }
+     UseChildResult -1
+    }
+   }
+  }
+ }
+ Variables {
+  Variable unknownTarget {
+   VariableName "unknownTarget"
+   VariableTypeName "BaseTarget"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable behaviorTree {
+   VariableName "behaviorTree"
+   VariableTypeName "string"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable updateBehavior {
+   VariableName "updateBehavior"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable useCombatMove {
+   VariableName "useCombatMove"
+   VariableTypeName "bool"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable fDecisionUpdateInterval {
+   VariableName "fDecisionUpdateInterval"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference unknownTarget {
+   VariableType 0
+   EditorPos -2360.88 1014.844
+  }
+  VariableReference behaviorTree {
+   VariableType 1
+   EditorPos 163.737 1187.748
+  }
+  VariableReference updateBehavior {
+   VariableType 2
+   EditorPos -1437.06 821.782
+  }
+  VariableReference updateBehavior {
+   VariableType 2
+   EditorPos -508.889 1080.25
+  }
+  VariableReference unknownTarget {
+   VariableType 0
+   EditorPos -2018.499 805.398
+  }
+  VariableReference behaviorTree {
+   VariableType 1
+   EditorPos -1435.226 752.31
+  }
+  VariableReference updateBehavior {
+   VariableType 2
+   EditorPos 24.047 1393.524
+  }
+  VariableReference useCombatMove {
+   VariableType 3
+   EditorPos -1435.476 892.143
+  }
+  VariableReference useCombatMove {
+   VariableType 3
+   EditorPos 455.357 677.078
+  }
+  VariableReference fDecisionUpdateInterval {
+   VariableType 4
+   EditorPos -1435 965.953
+  }
+ }
+ Groups {
+  BTGroup "{6266B5D52E23313A}" {
+   Name "Same as order 'Return to Default'"
+   Color 0.6 0.6 0.6 0.251
+  }
+ }
+}

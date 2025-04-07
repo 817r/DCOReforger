@@ -30,7 +30,7 @@ class DCO_AIMoraleSystemComponent : ScriptComponent
 	protected float COMBAT_MORALE_SUPPRESSED				= 0.18;
 	protected float COMBAT_MORALE_ENEMY_NEAR				= 0.35;
 	
-	protected float MORALE_RECOVERY_FIXED					= 0.07;
+	protected float MORALE_RECOVERY_FIXED					= 0.08;
 	protected float MORALE_BOOST_RECOVERY_LEADER_NEAR		= 0.3;
 	protected float MORALE_BOOST_RECOVERY_FRIENDLY_NEAR		= 0.05;
 

@@ -23,6 +23,9 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 	
 	ref array<ref SCR_AITargetInfo> friendly = {};
 	ref array<ref SCR_AITargetInfo> hostile = {};
+	
+	protected ref array<BaseTarget> Farenemies = {};
+	protected ref array<BaseTarget> Farallies = {};
 
 	protected IEntity m_OwnerEntity;
 	
@@ -201,9 +204,12 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 				{
 					allies.Insert(ent);
 					friendly.Insert(targetInfo);
-				}
-								
-			} 
+				}				
+			} else
+			{
+				if (!Farallies.Contains(target))
+					Farallies.Insert(target);
+			}
 		}
 	}
 	
@@ -225,10 +231,9 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 				if (!DeadAllies.Contains(allies.Get(i)))
 				{
 					DeadAllies.Insert(allies.Get(i));
+					friendly.Remove(i);
+					allies.Remove(i);
 				}
-				friendly.Remove(i);
-				allies.Remove(i);
-
 				return;
 			}
 			
@@ -265,8 +270,11 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 					enemies.Insert(ent);
 					hostile.Insert(targetInfo);
 				}
-								
-			} 
+			} else
+			{
+				if (!Farenemies.Contains(target))
+					Farenemies.Insert(target);
+			}
 		}
 	}
 	
@@ -286,9 +294,13 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 			bool destroyed = tarinfo.m_DamageManager.IsDestroyed();
 			if (destroyed)
 			{
-				hostiless.Remove(i);
-				hostile.Remove(i);
-				enemies.Remove(i);
+				if (!DeadAllies.Contains(enemies.Get(i)))
+				{
+					DeadAllies.Insert(enemies.Get(i));
+					hostiless.Remove(i);
+					hostile.Remove(i);
+					enemies.Remove(i);
+				}
 				return;
 			}
 			
@@ -302,6 +314,20 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 		}
 	}	
 	
+	protected void FarAwayMaintain()
+	{
+		array<BaseTarget> temp = {};
+		temp.InsertAll(Farallies);
+		temp.InsertAll(Farenemies);
+		foreach(BaseTarget bt : temp)
+		{
+			if (!bt.GetTargetEntity())
+			{
+			
+			}
+		}
+	}
+	
 	int GetFriendlyNumber()
 	{
 		return allies.Count();
@@ -314,6 +340,7 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 	
 	bool GetDeadAllies(out array<IEntity> friendlys)
 	{
+		friendlys = DeadAllies;
 		return true;
 	}
 }
