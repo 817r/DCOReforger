@@ -8,7 +8,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 	
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
-		if (!super.PerformReaction(utility, threatSystem, dangerEvent, dangerEventCount)) return false;
+		if(!super.PerformReaction(utility, threatSystem, dangerEvent, dangerEventCount)) return false;
 
 		vector ShooterPos = dangerEvent.GetObject().GetRootParent().GetOrigin();
 		m_State = utility.m_CombatMoveState;
@@ -16,34 +16,35 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		
 		if (distanceSq < BULLET_IMPACT_MUST_REACT_MAX_DISTANCE_SQ) threatSystem.ThreatBulletClose(dangerEventCount);
 		
-		if (distanceSq < BULLET_IMPACT_MUST_REACT_MAX_DISTANCE_SQ && threatSystem.BulletCloseCount() > 4)
+		if (distanceSq < BULLET_IMPACT_MUST_REACT_MAX_DISTANCE_SQ && threatSystem.BulletCloseCount() > 3)
 		{
 			if (m_State.m_bInCover)
 			{
 				if (!m_State.m_bExposedInCover)
 				{
 					m_State.ApplyRequestChangeStanceInCover(true);
-					return false;
+					return true;
 				}
 				else
 				{
 					SCR_AICombatMoveRequest_Move rq = DangerDamageTakenCombatMove(ShooterPos);
 					
 					m_State.ApplyNewRequest(rq);
-					return false;
+					return true;
 				}
-			} else
+			} 
+			else
 			{
 				if (utility.GetCharacterController().GetStance() == ECharacterStance.PRONE)
 				{
 					utility.GetCharacterController().SetRoll(Math.RandomInt(1,3));
-					return false;
+					return true;
 				} else
 				{				
 					SCR_AICombatMoveRequest_Move rq = DangerDamageTakenCombatMove(ShooterPos);
 					
 					m_State.ApplyNewRequest(rq);				
-					return false;
+					return true;
 				}
 			}
 			return true;

@@ -92,7 +92,6 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		m_CombatComponent.GetCurrentWeaponManager().GetWeapons(weap);
 		
 		if (!weap) return false;
-		int isReplenishable = 0;
 		int isLowAmmo = 0;
 		
 		//SCR_AIDebugVisualization.VisualizeMessage(m_OwnerEntity, weap.GetUIInfo().GetName(), EAIDebugCategory.INFO, 1.4, Color.White);

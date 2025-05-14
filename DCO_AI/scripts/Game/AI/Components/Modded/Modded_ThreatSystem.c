@@ -5,10 +5,10 @@ modded class SCR_AIThreatSystem
 	
 	
 	float timeStampBullClose;
-	const int bulletCloseFixedFlush = 3000;
+	const int bulletCloseFixedFlush = 3500;
 	
 	float timeStampBullHit;
-	const int bulletHitFixedFlush = 5000;
+	const int bulletHitFixedFlush = 6000;
 
 	//------------------------------------------------------------------------------------------------
 	//!

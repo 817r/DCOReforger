@@ -5,9 +5,10 @@ modded class SCR_AIDangerReaction_DamageTaken : SCR_AIDangerReaction
 	
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
-		if (!super.PerformReaction(utility, threatSystem, dangerEvent, dangerEventCount)) return false;
+		if(!super.PerformReaction(utility, threatSystem, dangerEvent, dangerEventCount)) return false;
 		
 		m_State = utility.m_CombatMoveState;
+		threatSystem.BulletHit(dangerEventCount);
 		
 		vector ShooterPos = dangerEvent.GetObject().GetRootParent().GetOrigin();
 		float dist = vector.Distance(utility.GetOrigin(), ShooterPos);
@@ -19,57 +20,75 @@ modded class SCR_AIDangerReaction_DamageTaken : SCR_AIDangerReaction
 				if (m_State.m_bExposedInCover)
 				{
 					m_State.ApplyRequestChangeStanceInCover(true);
-					return false;
+					return true;
 				}
 				else
 				{
 					SCR_AICombatMoveRequest_Move rq = DangerDamageTakenCombatMoveCQB(ShooterPos);
 				
 					m_State.ApplyNewRequest(rq);
-					return false;
+					return true;
 				}
 			} else
 			{
 				if (utility.GetCharacterController().GetStance() == ECharacterStance.PRONE)
 				{
 					utility.GetCharacterController().SetRoll(Math.RandomInt(1,3));
-					return false;
-				} else
-				{				
-					SCR_AICombatMoveRequest_Move rq = DangerDamageTakenCombatMoveNotInCoverCQB(ShooterPos);
-				
-					m_State.ApplyNewRequest(rq);				
-					return false;
+					return true;
+				} 
+				else
+				{
+					int rand = Math.RandomInt(0, 2);
+					if (rand == 1)
+						utility.GetCharacterController().SetStanceChange(3);
+					else
+					{
+						SCR_AICombatMoveRequest_Move rq = DangerDamageTakenCombatMoveNotInCoverCQB(ShooterPos);
+					
+						m_State.ApplyNewRequest(rq);				
+						return true;
+					}
 				}
 			}
 		} else
 		{
 			if (m_State.m_bInCover)
 			{
-				if (!m_State.IsHidingInValidCover())
+				if (!m_State.m_bExposedInCover)
 				{
 					m_State.ApplyRequestChangeStanceInCover(true);
-					return false;
+					return true;
+				}
+				else if (!m_State.m_bExposedInCover)
+				{
+					utility.GetCharacterController().SetStanceChange(3);
 				}
 				else
 				{
 					SCR_AICombatMoveRequest_Move rq = DangerDamageTakenCombatMove(ShooterPos);
-				
+					
 					m_State.ApplyNewRequest(rq);
-					return false;
+					return true;
 				}
 			} else
 			{
 				if (utility.GetCharacterController().GetStance() == ECharacterStance.PRONE)
 				{
 					utility.GetCharacterController().SetRoll(Math.RandomInt(1,3));
-					return false;
-				} else
+					return true;
+				}
+				else
 				{				
-					SCR_AICombatMoveRequest_Move rq = DangerDamageTakenCombatMoveNotInCover(ShooterPos);
-				
-					m_State.ApplyNewRequest(rq);				
-					return false;
+					int rand = Math.RandomInt(0, 2);
+					if (rand == 1)
+						utility.GetCharacterController().SetStanceChange(3);
+					else
+					{
+						SCR_AICombatMoveRequest_Move rq = DangerDamageTakenCombatMoveNotInCover(ShooterPos);
+					
+						m_State.ApplyNewRequest(rq);
+					}
+					return true;
 				}
 			}		
 		}
@@ -115,8 +134,8 @@ modded class SCR_AIDangerReaction_DamageTaken : SCR_AIDangerReaction
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility = true;
 		rq.m_bFailIfNoCover = false;
-		rq.m_eStanceMoving = ECharacterStance.STAND;
-		rq.m_eStanceEnd = ECharacterStance.CROUCH;
+		rq.m_eStanceMoving = ECharacterStance.CROUCH;
+		rq.m_eStanceEnd = ECharacterStance.PRONE;
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_fCoverSearchDistMax = 12;
 		rq.m_fCoverSearchDistMin = 3;				

@@ -6,9 +6,8 @@ class DCO_AITravelInvestigate : SCR_AICombatMoveLogicBase
 	protected MoraleState m_MoraleState;
 	
 	protected static const string AREA_PORT = "Area";
-	protected static const string PORT_AVOID_STRAIGHT_PATH_DIR = "AvoidStraightPathDir";
-	
-	protected ref TStringArray s_aVarsIn = {AREA_PORT, PORT_AVOID_STRAIGHT_PATH_DIR};
+
+	protected ref TStringArray s_aVarsIn = {AREA_PORT};
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 	
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
@@ -30,7 +29,8 @@ class DCO_AITravelInvestigate : SCR_AICombatMoveLogicBase
 			return ENodeResult.RUNNING;
 		
 		GetVariableIn(AREA_PORT, target);
-		GetVariableIn(PORT_AVOID_STRAIGHT_PATH_DIR, m_vAvoidStraightPathDir);
+		m_vAvoidStraightPathDir = target - m_Utility.m_OwnerEntity.GetOrigin();
+		m_vAvoidStraightPathDir.Normalize();
 		
 		m_fTargetDist = vector.Distance(owner.GetOrigin(), target);
 		m_bCloseRangeCombat = m_fTargetDist < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST;
@@ -62,7 +62,7 @@ class DCO_AITravelInvestigate : SCR_AICombatMoveLogicBase
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility = true;
 
-		float coverSearchDistMin = 0;
+		const float coverSearchDistMin = 0;
 		float coverSearchDistMax = Math.RandomFloat(10.0, 30.0);
 		float moveDistanceMax = Math.RandomFloat(3.0, 8.0);
 		if (m_bCloseRangeCombat)
@@ -129,7 +129,7 @@ class DCO_AITravelInvestigate : SCR_AICombatMoveLogicBase
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
-		rq.m_bFailIfNoCover = false;
+		rq.m_bFailIfNoCover = ResolveFailMoveIfNoCover();
 		rq.m_fMoveDuration_s = Math.RandomFloat(5.0, 15.0);
 		rq.m_bAimAtTargetEnd = true;
 		rq.m_vAvoidStraightPathDir = m_vAvoidStraightPathDir;
@@ -137,6 +137,30 @@ class DCO_AITravelInvestigate : SCR_AICombatMoveLogicBase
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
 		
 		m_State.ApplyNewRequest(rq);
+	}
+	
+	protected override bool ResolveFailMoveIfNoCover()
+	{
+		if (m_bCloseRangeCombat)
+		{
+			if (Math.RandomInt(0,101) < m_CombatComp.GetCoverChances())
+				return true;
+			else
+				return false;
+		}
+		else
+		{
+			// Long range combat
+			if (IsFirstExecution())
+				return true; // On first run we want to move to cover, or stay where we are if there is no cover, and shoot.
+			else
+			{
+				if (Math.RandomInt(0,101) < m_CombatComp.GetCoverChances())
+					return m_State.m_bInCover;
+				else
+					return false;			
+			}
+		}
 	}
 	
 	override protected bool MoveToNextPosCondition()

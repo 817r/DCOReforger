@@ -4,7 +4,7 @@ class DCO_AIDetectionSystemComponentClass : ScriptComponentClass
 
 class DCO_AIDetectionSystemComponent : ScriptComponent
 {	
-	[Attribute("100", UIWidgets.Slider, "AI Detection Radius",  desc: "Unit Initial Morale", params: "0 200 1" )]
+	[Attribute("100", UIWidgets.Slider, "AI Detection Radius", params: "0 200 1" )]
 	protected float m_fDetectionRadius;
 	
 	protected PerceptionComponent 					Perc;
@@ -81,8 +81,8 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 		foreach (IEntity friends : allies)
 		{
 			AIControlComponent ctrl = AIControlComponent.Cast(friends.FindComponent(AIControlComponent));
-			SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(ctrl.GetAIAgent());
-			SCR_AIUtilityComponent UtilityComp = agent.m_UtilityComponent;
+			SCR_ChimeraAIAgent agents = SCR_ChimeraAIAgent.Cast(ctrl.GetAIAgent());
+			SCR_AIUtilityComponent UtilityComp = agents.m_UtilityComponent;
 			for (int i = hostiless.Count()-1; i >= 0; i--)
 			{
 				UtilityComp.targets.Insert(hostiless[i]);
@@ -319,11 +319,11 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 		array<BaseTarget> temp = {};
 		temp.InsertAll(Farallies);
 		temp.InsertAll(Farenemies);
-		foreach(BaseTarget bt : temp)
+		for (int i = temp.Count()-1; i >= 0; i--)
 		{
-			if (!bt.GetTargetEntity())
+			if (!temp[i].GetTargetEntity())
 			{
-			
+				temp.Remove(i);
 			}
 		}
 	}

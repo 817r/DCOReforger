@@ -4,10 +4,12 @@ class SCR_DCO_AIConfigComponentClass : ScriptComponentClass
 
 enum DCO_SKILL
 {
-	NOOB,
-	NOVICE,
+	CONSCPRIT,
+	GREEN,
 	REGULAR,
-	SPECIAL_FORCE
+	VETERAN,
+	CRACK,
+	ELITE
 }
 
 class SCR_DCO_AIConfigComponent : ScriptComponent
@@ -15,7 +17,7 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 	[Attribute("", UIWidgets.Object)]
 	ref array<ref DCO_Personality> m_Personality;
 	
-	[Attribute("1", UIWidgets.ComboBox, "AI skill in combat", "", ParamEnumArray.FromEnum(DCO_SKILL) )]
+	[Attribute("", UIWidgets.ComboBox, "AI skill in combat", "", ParamEnumArray.FromEnum(DCO_SKILL) )]
 	DCO_SKILL m_SkillSet;
 	
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.CheckBox, desc: "Alow aim Improvement" )]
@@ -27,6 +29,8 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 	[Attribute( defvalue: "2", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 5 1" )]
 	float m_MaxAimImprovementBoost;
 
+	// Aim Improvement
+	//==========
 	bool EnableAimImprovement()
 	{
 		return m_EnableAimImprovement;
@@ -38,6 +42,8 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 		return TF;
 	}
 	
+	// Aim Max Range
+	//==========
 	float GetAimMaxRangeEffect()
 	{
 		return m_MaxRangeAimImprovement;
@@ -49,6 +55,8 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 		return Ranges;
 	}
 	
+	// Aim Max Boost
+	//==========
 	float GetMaxAimImprovement()
 	{
 		return m_MaxAimImprovementBoost;
@@ -60,7 +68,20 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 		return Max;
 	}
 	
-	static SCR_DCO_AIConfigComponent GetCharacterRankComponent(IEntity unit)
+	// Skill Level
+	//==========
+	DCO_SKILL GetSkillLevel()
+	{
+		return m_SkillSet;
+	}
+	
+	DCO_SKILL SetSkillLevel(DCO_SKILL skills)
+	{
+		m_SkillSet = skills;
+		return skills;
+	}
+	
+	static SCR_DCO_AIConfigComponent GetDCOAIConfigComponent(IEntity unit)
 	{		
 		AIControlComponent ctrl = AIControlComponent.Cast(unit.FindComponent(AIControlComponent));
 		if (ctrl)
@@ -79,11 +100,23 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 		if (!unit)
 			return false;
 		
-		SCR_DCO_AIConfigComponent comp = GetCharacterRankComponent(unit);
+		SCR_DCO_AIConfigComponent comp = GetDCOAIConfigComponent(unit);
 		
 		if (!comp)
 			return false;
 		
 		return comp.EnableAimImprovement();
+	}
+	
+	// Init and Event
+	override void OnPostInit(IEntity owner)
+    {		
+		super.OnPostInit(owner);
+		SetEventMask(owner, EntityEvent.INIT);
+    }
+	
+	override void EOnInit(IEntity owner)
+	{
+		m_SkillSet = Math.RandomInt(DCO_SKILL.CONSCPRIT, DCO_SKILL.ELITE);
 	}
 }

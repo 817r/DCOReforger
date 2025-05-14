@@ -173,7 +173,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	{
 		if (m_bCloseRangeCombat)
 		{
-			return true;
+			if (Math.RandomInt(0,101) < m_CombatComp.GetCoverChances())
+				return true;
+			else
+				return false;
 		}
 		else
 		{
@@ -181,7 +184,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			if (IsFirstExecution())
 				return true; // On first run we want to move to cover, or stay where we are if there is no cover, and shoot.
 			else
-				return m_State.m_bInCover; // Don't leave cover if there is no next cover
+			{
+				if (Math.RandomInt(0,101) < m_CombatComp.GetCoverChances())
+					return m_State.m_bInCover;
+				else
+					return false;			
+			}
 		}
 	}
 	
@@ -233,6 +241,37 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		// Stop time should be more than just a few seconds.
 		if (m_bVeryLongRangeCombat)
 			waitTime *= Math.RandomFloat(1, 3);
+		
+		switch (m_MoraleState)
+		{
+			case MoraleState.FRESH:
+			{
+				waitTime *= 0.3;
+				break;
+			}
+			case MoraleState.NORMAL:
+			{
+				waitTime *= 0.7;
+				break;
+			}
+			case MoraleState.STRESSED:
+			{
+				waitTime *= 1.2;
+				break;
+			}
+			case MoraleState.PRESSURED:
+			{
+				waitTime *= 1.8;
+				break;
+			}
+			case MoraleState.BREAK:
+			{
+				waitTime *= 2.2;
+				break;
+			}
+		}
+		
+		waitTime = Math.Clamp(waitTime, 3, 600);
 		
 		return waitTime;
 	}

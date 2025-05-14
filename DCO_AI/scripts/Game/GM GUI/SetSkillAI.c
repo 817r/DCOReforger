@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class DCO_MaxAimImprovementValue: SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_SkillLevel: SCR_BasePresetsEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -7,23 +7,23 @@ class DCO_MaxAimImprovementValue: SCR_ValidTypeBaseValueListEditorAttribute
 		if (!editableEntity || (editableEntity.GetEntityType() != EEditableEntityType.CHARACTER && editableEntity.GetEntityType() != EEditableEntityType.GROUP)) return null;
 		if (editableEntity.HasEntityState(EEditableEntityState.PLAYER)) return null;
 		
-		float enable;
+		int enable;
 		
 		//If character
 		if (editableEntity.GetEntityType() == EEditableEntityType.CHARACTER)
 		{
 			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetDCOAIConfigComponent(editableEntity.GetOwner());
-			enable = rankComponent.GetMaxAimImprovement();
+			enable = rankComponent.GetSkillLevel();
 		}
 		else 
 		{
 			SCR_AIGroup aiGroup = SCR_AIGroup.Cast(editableEntity.GetOwner()); 
 			if (!aiGroup) return null;
 			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetDCOAIConfigComponent(aiGroup.GetLeaderEntity());
-			enable = rankComponent.GetMaxAimImprovement();
+			enable = rankComponent.GetSkillLevel();
 		}
 		
-		return SCR_BaseEditorAttributeVar.CreateFloat(enable);
+		return SCR_BaseEditorAttributeVar.CreateInt(enable);
 	}
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
@@ -33,14 +33,14 @@ class DCO_MaxAimImprovementValue: SCR_ValidTypeBaseValueListEditorAttribute
 		if (!editableEntity.GetEntityType() == EEditableEntityType.CHARACTER && !editableEntity.GetEntityType() == EEditableEntityType.GROUP) return;
 		if (editableEntity.HasEntityState(EEditableEntityState.PLAYER)) return;
 		
-		float enable = var.GetFloat();
+		float enable = var.GetInt();
 		
 		if (editableEntity.GetEntityType() == EEditableEntityType.CHARACTER)
 		{
 			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetDCOAIConfigComponent(editableEntity.GetOwner());
 			if (!rankComponent) return;
 			
-			rankComponent.SetMaxAimImprovement(enable);
+			rankComponent.SetSkillLevel(enable);
 			
 			enable = SCR_DCO_AIConfigComponent.GetEnableAimImprovement(editableEntity.GetOwner());
 		}

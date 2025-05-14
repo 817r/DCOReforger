@@ -29,9 +29,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float AIM_IMPROVEMENT_INTERVAL_S = 1;
 	
 	// AIM Decrement Value
-	protected const float AIM_SUPPRESSED_DECREMENT = 0.012;
+	protected const float AIM_SUPPRESSED_DECREMENT = 0.01;
 	protected const float AIM_LOW_MORALE_DECREMENT = 0.003;
-	protected const float AIM_IMPROVEMENT_DECAY_NO_TARGET = 0.001;
+	protected const float AIM_IMPROVEMENT_DECAY_NO_TARGET = 0.003;
 	protected const float AIM_IMPROVEMENT_DECAY = 0.03;
 	
 	float m_fImprovementTimer;
@@ -41,6 +41,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float AIM_IMPROVEMENT_VIGILANT = 5;
 	protected const float AIM_IMPROVEMENT_ALERTED = 4;
 	protected const float AIM_IMPROVEMENT_THREATENED = 3;
+	
+	protected const float TAKE_COVER_CHANCES_DEFAULT = 80;
+	protected float TAKE_COVER_CHANCES;
 	
 	protected float AIM_IMPROVEMENT = 1;
 	protected static const float TARGET_MAX_DISTANCE_DISARMED = 1.2;
@@ -73,6 +76,8 @@ modded class SCR_AICombatComponent : ScriptComponent
 			EvaluateDismountTurret(timeSliceMs);
 		if (m_SelectedTarget)
 			CalculateOverallAimImprovement(timeSliceMs);
+		
+		CalculateCoverChances();
 	}
 	
 	//------------------------------------------------------------------------------------------------
@@ -163,6 +168,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 		perceptionFactor *= m_fEquipmentPerceptionFactor;
 		perceptionFactor *= m_fPerceptionFactor;
 		perceptionFactor *= MoralePerception();
+		perceptionFactor *= SkillPerception();
 		
 		perceptionComp.SetPerceptionFactor(perceptionFactor);
 	}
@@ -201,6 +207,45 @@ modded class SCR_AICombatComponent : ScriptComponent
 		return 1.0;
 	}
 	
+	float SkillPerception()
+	{
+		switch(m_Utility.DCO_ConfComponent.GetSkillLevel())
+		{
+			case DCO_SKILL.CONSCPRIT:
+			{
+				return 0.3;
+				break;
+			}
+			case DCO_SKILL.GREEN:
+			{
+				return 0.7;
+				break;
+			}
+			case DCO_SKILL.REGULAR:
+			{
+				return 1;
+				break;
+			}
+			case DCO_SKILL.VETERAN:
+			{
+				return 1.3;
+				break;
+			}
+			case DCO_SKILL.CRACK:
+			{
+				return 1.6;
+				break;
+			}
+			case DCO_SKILL.ELITE:
+			{
+				return 2.0;
+				break;
+			}
+		}
+		
+		return 1.0;
+	}
+	
 	//------------------------------------------------------------------------------------------------
 	override void OnDelete(IEntity owner)
 	{
@@ -227,7 +272,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	{		
 		if (!m_Utility.DCO_ConfComponent.EnableAimImprovement())
 		{
-			AIM_IMPROVEMENT = 1;
+			AIM_IMPROVEMENT = 1 * GetSkillAimFactor();
 		}
 		else
 		{
@@ -246,7 +291,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 			if (m_fImprovementTimer > AIM_IMPROVEMENT_INTERVAL_S * 1000)
 			{
 				float random = Math.RandomFloat(1, 2);
-				if (GetCurrentTarget().GetTimeSinceSeen() > 10)
+				if (GetCurrentTarget().GetTimeSinceSeen() > TARGET_MAX_LAST_SEEN)
 				{
 					AIM_IMPROVEMENT = Math.Clamp(AIM_IMPROVEMENT - (AIM_IMPROVEMENT_DECAY_NO_TARGET * random), 0.5, 100);
 				} else
@@ -260,7 +305,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 					float Improvement = ((AIM_IMPROVEMENT_BASE_IMPROVEMENT + eqMul) - (moraleVal + suppressionVal)) * random;
 					if (Improvement > 0) Improvement *= DistanceImprovementMultiplier; 
 					
-					AIM_IMPROVEMENT = Math.Clamp(AIM_IMPROVEMENT + Improvement, 0.5, 100);
+					AIM_IMPROVEMENT = Math.Clamp((AIM_IMPROVEMENT + Improvement) * GetSkillAimFactor(), 0.5, 100);
 				}
 				
 				
@@ -431,6 +476,54 @@ modded class SCR_AICombatComponent : ScriptComponent
 		outPrevTarget = prevTarget;
 	}
 	
+	protected void CalculateCoverChances()
+	{
+		float coverMorale = Math.Map(m_Morale.GetMoraleValue(), 0, 100, 50, 0);
+		float coverThreat = Math.Map(m_Utility.m_ThreatSystem.GetThreatMeasure(), 0, 1, 0, 50);
+		float coverDefChances = TAKE_COVER_CHANCES_DEFAULT;
+		
+		switch(m_Utility.DCO_ConfComponent.GetSkillLevel())
+		{
+			case DCO_SKILL.CONSCPRIT:
+			{
+				coverDefChances *= 0.1;
+				break;
+			}
+			case DCO_SKILL.GREEN:
+			{
+				coverDefChances *= 0.25;
+				break;
+			}
+			case DCO_SKILL.REGULAR:
+			{
+				coverDefChances *= 0.4;
+				break;
+			}
+			case DCO_SKILL.VETERAN:
+			{
+				coverDefChances *= 0.55;
+				break;
+			}
+			case DCO_SKILL.CRACK:
+			{
+				coverDefChances *= 0.7;
+				break;
+			}
+			case DCO_SKILL.ELITE:
+			{
+				coverDefChances *= 0.85;
+				break;
+			}
+		}
+		
+		TAKE_COVER_CHANCES = Math.Clamp((coverThreat + coverThreat + coverDefChances) / 2,0,100);
+	}
+	
+	float GetCoverChances()
+	{
+		return TAKE_COVER_CHANCES;
+	}
+	
 	float MoraleAimFactor()
 	{
 		switch(m_Morale.GetMoraleStates())
@@ -458,6 +551,45 @@ modded class SCR_AICombatComponent : ScriptComponent
 			case MoraleState.BREAK:
 			{
 				return 3.2;
+				break;
+			}
+		}
+		
+		return 1.0;
+	}
+	
+	float GetSkillAimFactor()
+	{
+		switch(m_Utility.DCO_ConfComponent.GetSkillLevel())
+		{
+			case DCO_SKILL.CONSCPRIT:
+			{
+				return 0.3;
+				break;
+			}
+			case DCO_SKILL.GREEN:
+			{
+				return 0.7;
+				break;
+			}
+			case DCO_SKILL.REGULAR:
+			{
+				return 1.0;
+				break;
+			}
+			case DCO_SKILL.VETERAN:
+			{
+				return 1.4;
+				break;
+			}
+			case DCO_SKILL.CRACK:
+			{
+				return 1.9;
+				break;
+			}
+			case DCO_SKILL.ELITE:
+			{
+				return 2.5;
 				break;
 			}
 		}

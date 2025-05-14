@@ -102,10 +102,8 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		{
 			// Outside weapon usage range
 			// Look at target
-			if (weaponType == EWeaponType.WT_MACHINEGUN)
-				return FIRE_TREE_SUPPRESSIVE;
 			
-			return FIRE_TREE_SINGLE;
+			return FIRE_TREE_LOOK;
 		}
 
 		// Within weapon usage range

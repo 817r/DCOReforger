@@ -16,7 +16,7 @@ class DCO_AIMoraleSystemComponent : ScriptComponent
 	[Attribute("0", UIWidgets.ComboBox, "AI Default Morale", "", ParamEnumArray.FromEnum(MoraleState) )]
 	protected MoraleState m_MoraleState;
 	
-	[Attribute("100", UIWidgets.Slider, "AI Default Morale", desc: "Unit Initial Morale", params: "0 100 1" )]
+	[Attribute("100", UIWidgets.Slider, "AI Default Morale", params: "0 100 1" )]
 	protected float m_fMorale;
 	
 	static const float NORMAL_THRESHOLD = 80;

@@ -35,7 +35,7 @@ class DCO_EnableAimImprovement: SCR_BaseEditorAttribute
 		
 		if (editableEntity.GetEntityType() == EEditableEntityType.CHARACTER)
 		{
-			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetCharacterRankComponent(editableEntity.GetOwner());
+			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetDCOAIConfigComponent(editableEntity.GetOwner());
 			if (!rankComponent) return;
 			
 			rankComponent.SetAimImprovement(enable);

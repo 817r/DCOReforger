@@ -13,14 +13,14 @@ class DCO_MaxRangeAimImprovement: SCR_ValidTypeBaseValueListEditorAttribute
 		//If character
 		if (editableEntity.GetEntityType() == EEditableEntityType.CHARACTER)
 		{
-			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetCharacterRankComponent(editableEntity.GetOwner());
+			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetDCOAIConfigComponent(editableEntity.GetOwner());
 			enable = rankComponent.GetAimMaxRangeEffect();
 		}
 		else 
 		{
 			SCR_AIGroup aiGroup = SCR_AIGroup.Cast(editableEntity.GetOwner()); 
 			if (!aiGroup) return null;
-			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetCharacterRankComponent(aiGroup.GetLeaderEntity());
+			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetDCOAIConfigComponent(aiGroup.GetLeaderEntity());
 			enable = rankComponent.GetAimMaxRangeEffect();
 		}
 		
@@ -38,7 +38,7 @@ class DCO_MaxRangeAimImprovement: SCR_ValidTypeBaseValueListEditorAttribute
 		
 		if (editableEntity.GetEntityType() == EEditableEntityType.CHARACTER)
 		{
-			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetCharacterRankComponent(editableEntity.GetOwner());
+			SCR_DCO_AIConfigComponent rankComponent = SCR_DCO_AIConfigComponent.GetDCOAIConfigComponent(editableEntity.GetOwner());
 			if (!rankComponent) return;
 			
 			rankComponent.SetAimMaxRangeEffect(enable);
