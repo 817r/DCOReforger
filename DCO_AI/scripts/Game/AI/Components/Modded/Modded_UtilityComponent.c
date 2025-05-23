@@ -123,7 +123,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 	
 	bool isScavangeWeapon()
 	{
-		return (Emergency()) || (MagazineHandling() && m_ThreatSystem.GetSuppressionMeasure() < 0.7 && DCO_MoraleSystem.GetMoraleValue() > 70);
+		return (Emergency()) || (MagazineHandling() && m_ThreatSystem.GetSuppressionMeasure() < 0.7 && DCO_MoraleSystem.GetMoraleValue() > 40);
 	}
 	
 	bool isResupply()

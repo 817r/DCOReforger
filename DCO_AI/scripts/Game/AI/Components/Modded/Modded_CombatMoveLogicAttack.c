@@ -580,7 +580,8 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 
-			rq.m_bAimAtTarget = true; // Can't aim at tgt while sprinting
+			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 			rq.m_bAimAtTargetEnd = true;
 		}
 		
@@ -795,13 +796,5 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		float weaponMinDist = Math.Max(5.0, m_fWeaponMinDist);
 		
 		return m_fTargetDist < weaponMinDist;
-	}
-	
-	protected void CreateUnsafeArea(float radius)
-	{
-		SCR_AIDangerEvent_UnsafeArea unsafe = new SCR_AIDangerEvent_UnsafeArea();
-		unsafe.SetRadius(radius);
-		unsafe.SetPosition(m_Utility.GetOrigin());
-		m_Utility.m_ConfigComponent.PerformDangerReaction(m_Utility, unsafe, 1);
 	}
 }

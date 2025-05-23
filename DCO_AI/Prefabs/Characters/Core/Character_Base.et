@@ -12,7 +12,9 @@ SCR_ChimeraCharacter {
       EyesSensor "{520EA1D2DB109AAD}" {
        FOVNormal 120
        FOVPeripheral 220
+       MinIlluminationFactor 0.03
        RecognitionDetectDecay 0.22
+       RecognitionIdentifyDecay 0.07
       }
      }
     }

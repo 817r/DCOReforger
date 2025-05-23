@@ -23,9 +23,6 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 	
 	ref array<ref SCR_AITargetInfo> friendly = {};
 	ref array<ref SCR_AITargetInfo> hostile = {};
-	
-	protected ref array<BaseTarget> Farenemies = {};
-	protected ref array<BaseTarget> Farallies = {};
 
 	protected IEntity m_OwnerEntity;
 	
@@ -69,12 +66,23 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 		if (allies.Count() > 0) MaintainFriendly();
 		if (enemies.Count() > 0) MaintainHostile();
 		
-		//if (hostiless.Count() > 0)
-		//	InfoShare();
+		if (hostiless.Count() > 0)
+			InfoShareCondition(timeSlice);
 		
 		// SCR_AIDebugVisualization.VisualizeMessage(owner,"Allies : " + allies.Count().ToString() + " |Enemies : " + enemies.Count().ToString(), EAIDebugCategory.INFO, 1.4);
 		// MaintainDetected(owner);
     }
+	
+	protected bool InfoShareCondition(float timeSlice)
+	{
+		TimeStamp += timeSlice;
+		if (TimeStamp > IntervalUpdate)
+		{
+			InfoShare();
+			return true;
+		}
+		return false;
+	}
 	
 	protected void InfoShare()
 	{
@@ -205,10 +213,6 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 					allies.Insert(ent);
 					friendly.Insert(targetInfo);
 				}				
-			} else
-			{
-				if (!Farallies.Contains(target))
-					Farallies.Insert(target);
 			}
 		}
 	}
@@ -270,10 +274,6 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 					enemies.Insert(ent);
 					hostile.Insert(targetInfo);
 				}
-			} else
-			{
-				if (!Farenemies.Contains(target))
-					Farenemies.Insert(target);
 			}
 		}
 	}
@@ -313,20 +313,6 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 			}
 		}
 	}	
-	
-	protected void FarAwayMaintain()
-	{
-		array<BaseTarget> temp = {};
-		temp.InsertAll(Farallies);
-		temp.InsertAll(Farenemies);
-		for (int i = temp.Count()-1; i >= 0; i--)
-		{
-			if (!temp[i].GetTargetEntity())
-			{
-				temp.Remove(i);
-			}
-		}
-	}
 	
 	int GetFriendlyNumber()
 	{

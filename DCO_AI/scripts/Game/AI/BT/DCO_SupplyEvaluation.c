@@ -31,8 +31,20 @@ class DCO_LowSupplyEvaluation : AITaskScripted
 		
 		DCO_AIDetections.GetDeadAllies(m_UtilityComponent.dedAlly);
 		if (m_UtilityComponent.dedAlly.IsEmpty()) return ENodeResult.FAIL;
+		float dist = 50;
+		IEntity toPick = null;
+		for(int i = m_UtilityComponent.dedAlly.Count(); i < 0; i--)
+		{
+			IEntity toPickTemp = m_UtilityComponent.dedAlly[i];
+			float temp = vector.Distance(owner.GetOrigin(), toPickTemp.GetOrigin());
+			if (dist > temp)
+			{
+				dist = temp;
+				toPick = toPickTemp;
+			}
+		}
 		
-		IEntity toPick = m_UtilityComponent.dedAlly.GetRandomElement();
+		//IEntity toPick = m_UtilityComponent.dedAlly.GetRandomElement();
 		if (!toPick) return ENodeResult.FAIL;
 		
 		SetVariableOut(PORT_ENTITY_TO_PICK, toPick);

@@ -194,12 +194,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 			}
 			case MoraleState.PRESSURED:
 			{
-				return 0.8;
+				return 0.9;
 				break;
 			}
 			case MoraleState.BREAK:
 			{
-				return 0.5;
+				return 0.75;
 				break;
 			}
 		}
@@ -213,12 +213,12 @@ modded class SCR_AICombatComponent : ScriptComponent
 		{
 			case DCO_SKILL.CONSCPRIT:
 			{
-				return 0.3;
+				return 0.6;
 				break;
 			}
 			case DCO_SKILL.GREEN:
 			{
-				return 0.7;
+				return 0.8;
 				break;
 			}
 			case DCO_SKILL.REGULAR:
@@ -272,13 +272,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 	{		
 		if (!m_Utility.DCO_ConfComponent.EnableAimImprovement())
 		{
-			AIM_IMPROVEMENT = 1 * GetSkillAimFactor();
+			AIM_IMPROVEMENT = 1;
 		}
 		else
 		{
 			bool Visible = IsTargetVisible(GetCurrentTarget());
 			float Distt = Math.Clamp(GetCurrentTarget().GetDistance(), 10, m_Utility.DCO_ConfComponent.GetAimMaxRangeEffect());
-			float DistanceImprovementMultiplier = Math.Map(Distt, 10, m_Utility.DCO_ConfComponent.GetAimMaxRangeEffect(), m_Utility.DCO_ConfComponent.GetMaxAimImprovement(), 1);			
+			float DistanceImprovementMultiplier = Math.Map(Distt, 0, m_Utility.DCO_ConfComponent.GetAimMaxRangeEffect(), m_Utility.DCO_ConfComponent.GetMaxAimImprovement(), 1);
+			if (Distt < 30)
+			{
+				DistanceImprovementMultiplier -= m_Utility.DCO_ConfComponent.GetMaxAimImprovement() / 10;
+			}			
 			
 			m_fImprovementTimer += timeSliceMs;
 			
@@ -305,7 +309,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 					float Improvement = ((AIM_IMPROVEMENT_BASE_IMPROVEMENT + eqMul) - (moraleVal + suppressionVal)) * random;
 					if (Improvement > 0) Improvement *= DistanceImprovementMultiplier; 
 					
-					AIM_IMPROVEMENT = Math.Clamp((AIM_IMPROVEMENT + Improvement) * GetSkillAimFactor(), 0.5, 100);
+					AIM_IMPROVEMENT = Math.Clamp((AIM_IMPROVEMENT + Improvement), 0.5, 100);
 				}
 				
 				
@@ -558,7 +562,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 		return 1.0;
 	}
 	
-	float GetSkillAimFactor()
+	/*float GetSkillAimFactor()
 	{
 		switch(m_Utility.DCO_ConfComponent.GetSkillLevel())
 		{
@@ -595,7 +599,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 		}
 		
 		return 1.0;
-	}
+	}*/
 	
 	DCO_AIMoraleSystemComponent GetMoraleComponent()
 	{

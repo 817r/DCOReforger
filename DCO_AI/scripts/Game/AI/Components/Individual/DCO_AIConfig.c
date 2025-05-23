@@ -117,6 +117,6 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 	
 	override void EOnInit(IEntity owner)
 	{
-		m_SkillSet = Math.RandomInt(DCO_SKILL.CONSCPRIT, DCO_SKILL.ELITE);
+		m_SkillSet = Math.RandomInt(DCO_SKILL.GREEN, DCO_SKILL.VETERAN);
 	}
 }
