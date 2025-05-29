@@ -271,7 +271,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 		}
 		
-		waitTime = Math.Clamp(waitTime, 3, 600);
+		waitTime = Math.Clamp(waitTime, 5, 600);
 		
 		return waitTime;
 	}
@@ -331,7 +331,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				{
 					coverSearchDistMin = 2.0;
 					coverSearchDistMax = 10.0;
-					moveDurationMax = 2;
+					moveDurationMax = 1;
 					
 					switch(m_MoraleState)
 					{
@@ -388,7 +388,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				{
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 15.0;
-					moveDurationMax = 3;
+					moveDurationMax = 2;
 					
 					switch(m_MoraleState)
 					{
@@ -593,7 +593,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
-		rq.m_fMoveDuration_s = Math.RandomFloat(0.5, 1.0) * moveDurationMax;
+		rq.m_fMoveDuration_s = Math.RandomFloat(0.7, 1.0) * moveDurationMax;
 		
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving

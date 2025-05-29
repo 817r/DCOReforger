@@ -16,6 +16,9 @@ SCR_ChimeraCharacter {
        RecognitionDetectDecay 0.22
        RecognitionIdentifyDecay 0.07
       }
+      EarsSensor "{520EA1D2DB109AA9}" {
+       SoundIntensityMin_db 20
+      }
      }
     }
    }

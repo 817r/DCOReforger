@@ -6,8 +6,8 @@ class SCR_DCOAISettingsComponentClass : ScriptComponentClass
 // Obsolete and should be removed eventually
 class SCR_DCOAISettingsComponent : ScriptComponent
 {
-	[Attribute(defvalue: "1", uiwidget: UIWidgets.Auto, desc: "Default AI Skill")]
-	DCO_SKILL m_DcoSkill;
+	[Attribute(defvalue: "1", uiwidget: UIWidgets.Auto, desc: "Default AI Skill", category: "AI Skill",)]
+	bool useRandomSkillDistribution;
 	
 	protected static SCR_DCOAISettingsComponent m_sInstance;
 

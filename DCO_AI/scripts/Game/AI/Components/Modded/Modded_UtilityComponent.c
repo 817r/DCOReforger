@@ -75,9 +75,9 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		
 		if (magCount < lowMagThreshold && isReplenishable)	
 		{
-			//BaseMagazineWell m_sMagazineWellType = weap.GetCurrentMagazine().GetMagazineWell();
-			//m_CombatComponent.getInventoryStorageMan().ResupplyMagazines(lowMagThreshold + 1);
-			//m_CombatComponent.getCharacterController().ReloadWeapon();		
+			BaseMagazineWell m_sMagazineWellType = weap.GetCurrentMagazine().GetMagazineWell();
+			m_CombatComponent.getInventoryStorageMan().ResupplyMagazines(lowMagThreshold + 1);
+			m_CombatComponent.getCharacterController().ReloadWeapon();		
 			return true;
 		}		
 		

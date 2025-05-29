@@ -233,6 +233,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
              PortName "ThresholdIn"
             }
            }
+           m_threatThreshold SAFE
           }
           Parallel Parallel {
            Name "Parallel"

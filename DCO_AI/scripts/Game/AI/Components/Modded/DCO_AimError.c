@@ -100,6 +100,24 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		return m_CombatComponent.MoraleAimFactor();
 	}
 	
+	override float GetTargetIlluminationFactor(BaseTarget tgt)
+	{
+		PerceivableComponent perceivable = tgt.GetPerceivableComponent();
+		if (!perceivable)
+			return 1.0;
+		
+		if (perceivable.GetIlluminationFactor() < 0.2)
+			return 4.0;
+		
+		if (perceivable.GetIlluminationFactor() < 0.4)
+			return 3.0;
+		
+		if (perceivable.GetIlluminationFactor() < 0.7)
+			return 2.0;
+		
+		return 1.0;
+	}
+	
 	//------------------------------------------------------------------------------------------------
     static override bool VisibleInPalette() {return true;}
 	

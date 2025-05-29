@@ -12,13 +12,13 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_SAFE = 1.0;			//!< We are safe and are good at recognising enemies
 	protected const float PERCEPTION_FACTOR_VIGILANT = 2.5;		//!< When vigilant and alert we are very good at recognising enemies
 	protected const float PERCEPTION_FACTOR_ALERTED = 2.5;
-	protected const float PERCEPTION_FACTOR_THREATENED = 0.8;	// We are suppressed and are bad at recognizing enemies
+	protected const float PERCEPTION_FACTOR_THREATENED = 1.0;	// We are suppressed and are bad at recognizing enemies
 	
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.0;	//!< Looking through binoculars
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;		//!< Not using any special equipment, same recognition ability as usual
 	
 	//! Within this distance AI considers combat as 'close range', used in firing times
-	static const float CLOSE_RANGE_COMBAT_DISTANCE = 40.0;
+	static const float CLOSE_RANGE_COMBAT_DISTANCE = 50.0;
 
 	//! Beyond this distance AI considers combat as 'long range', used for danger events and firing times
 	static const float LONG_RANGE_COMBAT_DISTANCE = 300.0;
@@ -37,10 +37,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	float m_fImprovementTimer;
 	
 	// AI Aim Improvement from threat states if its enabled
-	protected const float AIM_IMPROVEMENT_SAFE = 1.0;
-	protected const float AIM_IMPROVEMENT_VIGILANT = 5;
-	protected const float AIM_IMPROVEMENT_ALERTED = 4;
-	protected const float AIM_IMPROVEMENT_THREATENED = 3;
+	//protected const float AIM_IMPROVEMENT_SAFE = 1.0;
+	//protected const float AIM_IMPROVEMENT_VIGILANT = 5;
+	//protected const float AIM_IMPROVEMENT_ALERTED = 4;
+	//protected const float AIM_IMPROVEMENT_THREATENED = 3;
 	
 	protected const float TAKE_COVER_CHANCES_DEFAULT = 80;
 	protected float TAKE_COVER_CHANCES;
@@ -58,6 +58,10 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected SCR_AIInfoComponent					m_AIInfo;
 	protected SCR_AIUtilityComponent				m_Utility;
 	protected DCO_AIMoraleSystemComponent			m_Morale;
+	protected TimeAndWeatherManagerEntity 			m_TimeManager;
+	
+	protected float m_fSunriseTime;
+	protected float m_fSunsetTime;
 	
 	protected SCR_AIConfigComponent m_ConfigComponent;
 	
@@ -85,6 +89,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 	{
 		super.EOnInit(owner);
 		m_eAISkill = m_eAISkillDefault;
+		
+		ChimeraWorld worlds = owner.GetWorld();
+		m_TimeManager = worlds.GetTimeAndWeatherManager();
+		
+		if( !m_TimeManager )
+		{
+			Print("SCR_AIDayNightTest: Could not find a TimeAndWeatherManagerEntity", LogLevel.WARNING);
+		}
+		
+		if (!m_TimeManager.GetSunriseHour(m_fSunriseTime) || !m_TimeManager.GetSunsetHour(m_fSunsetTime))
+			m_TimeManager = null;
 		
 		ChimeraCharacter character = ChimeraCharacter.Cast(owner);
 		if (character)
@@ -170,6 +185,13 @@ modded class SCR_AICombatComponent : ScriptComponent
 		perceptionFactor *= MoralePerception();
 		perceptionFactor *= SkillPerception();
 		
+		float currentTime = m_TimeManager.GetTimeOfTheDay();
+		
+		if (currentTime < m_fSunriseTime && currentTime > m_fSunsetTime)
+		{
+			perceptionFactor *= 0.7;
+		}
+		
 		perceptionComp.SetPerceptionFactor(perceptionFactor);
 	}
 	
@@ -179,27 +201,27 @@ modded class SCR_AICombatComponent : ScriptComponent
 		{
 			case MoraleState.FRESH:
 			{
-				return 2.0;
+				return 1.5;
 				break;
 			}
 			case MoraleState.NORMAL:
 			{
-				return 1.5;
+				return 1.2;
 				break;
 			}
 			case MoraleState.STRESSED:
 			{
-				return 1.2;
+				return 1.0;
 				break;
 			}
 			case MoraleState.PRESSURED:
 			{
-				return 0.9;
+				return 0.7;
 				break;
 			}
 			case MoraleState.BREAK:
 			{
-				return 0.75;
+				return 0.4;
 				break;
 			}
 		}
@@ -281,7 +303,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 			float DistanceImprovementMultiplier = Math.Map(Distt, 0, m_Utility.DCO_ConfComponent.GetAimMaxRangeEffect(), m_Utility.DCO_ConfComponent.GetMaxAimImprovement(), 1);
 			if (Distt < 30)
 			{
-				DistanceImprovementMultiplier -= m_Utility.DCO_ConfComponent.GetMaxAimImprovement() / 10;
+				DistanceImprovementMultiplier -= m_Utility.DCO_ConfComponent.GetMaxAimImprovement() / 50;
 			}			
 			
 			m_fImprovementTimer += timeSliceMs;

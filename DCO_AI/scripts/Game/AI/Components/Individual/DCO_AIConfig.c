@@ -17,16 +17,16 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 	[Attribute("", UIWidgets.Object)]
 	ref array<ref DCO_Personality> m_Personality;
 	
-	[Attribute("", UIWidgets.ComboBox, "AI skill in combat", "", ParamEnumArray.FromEnum(DCO_SKILL) )]
+	[Attribute("", UIWidgets.ComboBox, "AI skill in combat", "", ParamEnumArray.FromEnum(DCO_SKILL), category: "AI General Skill", )]
 	DCO_SKILL m_SkillSet;
 	
-	[Attribute( defvalue: "1", uiwidget: UIWidgets.CheckBox, desc: "Alow aim Improvement" )]
+	[Attribute( defvalue: "1", category: "AI AIM", uiwidget: UIWidgets.CheckBox, desc: "Alow aim Improvement" )]
 	bool m_EnableAimImprovement;
 	
-	[Attribute( defvalue: "1500", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 5000 1" )]
+	[Attribute( defvalue: "1500", category: "AI AIM", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 5000 1" )]
 	float m_MaxRangeAimImprovement;
 	
-	[Attribute( defvalue: "2", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 5 1" )]
+	[Attribute( defvalue: "2", category: "AI AIM", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 10 1" )]
 	float m_MaxAimImprovementBoost;
 
 	// Aim Improvement
@@ -117,6 +117,6 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 	
 	override void EOnInit(IEntity owner)
 	{
-		m_SkillSet = Math.RandomInt(DCO_SKILL.GREEN, DCO_SKILL.VETERAN);
+		m_SkillSet = Math.RandomInt(DCO_SKILL.GREEN, DCO_SKILL.CRACK);
 	}
 }
