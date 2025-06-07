@@ -57,7 +57,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          EditorPos -1015 818.778
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 3
+           Port -1
            PortName "Target"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
@@ -65,7 +65,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
            PortName "WaitTime"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 30
+           Port -1
            PortName "InitialDirToTgt"
           }
           SingleOutputPortContainer SingleOutputPortContainerClass {
@@ -140,17 +140,116 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
             }
            }
           }
-          SCR_AICombatMoveLogic_Attack "SCR_AI Combat Move Logic_ Attack" {
-           Name "SCR_AI Combat Move Logic_ Attack"
-           EditorPos 550.976 1164.488
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 4
-             PortName "BaseTarget"
+          Selector Selector {
+           Name "Selector"
+           EditorPos 515.191 1208.076
+           Nodes {
+            DCO_AIGroupTactics "DCO_AI Group Tactics" {
+             Name "DCO_AI Group Tactics"
+             EditorPos -965.451 1526.62
+             Nodes {
+              SCR_AICombatMoveLogic_Aggressive "SCR_AI Combat Move Logic_ Aggressive" {
+               Name "SCR_AI Combat Move Logic_ Aggressive"
+               EditorPos -1017.465 1738.36
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 38
+                 PortName "BaseTarget"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 39
+                 PortName "AvoidStraightPathDir"
+                }
+               }
+              }
+             }
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "ThresholdIn"
+              }
+             }
+             m_threatThreshold AGGRESSIVE
             }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 31
-             PortName "AvoidStraightPathDir"
+            DCO_AIGroupTactics "DCO_AI Group Tactics" {
+             Name "DCO_AI Group Tactics"
+             EditorPos -494.794 1522.597
+             Nodes {
+              SCR_AICombatMoveLogic_Evasive "SCR_AI Combat Move Logic_ Evasive" {
+               Name "SCR_AI Combat Move Logic_ Evasive"
+               EditorPos -530.998 1731.779
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 38
+                 PortName "BaseTarget"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 39
+                 PortName "AvoidStraightPathDir"
+                }
+               }
+              }
+             }
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "ThresholdIn"
+              }
+             }
+             m_threatThreshold EVASIVE
+            }
+            DCO_AIGroupTactics "DCO_AI Group Tactics" {
+             Name "DCO_AI Group Tactics"
+             EditorPos 4.023 1524.609
+             Nodes {
+              SCR_AICombatMoveLogic_Defensive "SCR_AI Combat Move Logic_ Defensive" {
+               Name "SCR_AI Combat Move Logic_ Defensive"
+               EditorPos -51.71 1733.797
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 38
+                 PortName "BaseTarget"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 39
+                 PortName "AvoidStraightPathDir"
+                }
+               }
+              }
+             }
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "ThresholdIn"
+              }
+             }
+            }
+            DCO_AIGroupTactics "DCO_AI Group Tactics" {
+             Name "DCO_AI Group Tactics"
+             EditorPos 571.55 1466.25
+             Nodes {
+              SCR_AICombatMoveLogic_Attack "SCR_AI Combat Move Logic_ Attack" {
+               Name "SCR_AI Combat Move Logic_ Attack"
+               EditorPos 552.987 1635.146
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 4
+                 PortName "BaseTarget"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 31
+                 PortName "AvoidStraightPathDir"
+                }
+               }
+              }
+             }
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "ThresholdIn"
+              }
+             }
+             m_threatThreshold BALANCED
             }
            }
           }
@@ -206,7 +305,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
          Nodes {
           RunBT RunBT {
            Name "RunBT"
-           EditorPos 2513.695 1164.246
+           EditorPos 2465.027 1165.767
            BehaviorTree "{7BAEE68E09CF9BFE}AI/BehaviorTrees/Chimera/Soldier/AttackDelay.bt"
           }
           Selector Selector {
@@ -656,7 +755,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 338.658 1166.462
+   EditorPos 311.409 1613.18
   }
   VariableReference baseTarget {
    VariableType 5
@@ -780,7 +879,7 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference vInitialDirToTgt {
    VariableType 10
-   EditorPos 337.273 1247.273
+   EditorPos 310.024 1693.99
   }
   VariableReference aimPoint {
    VariableType 11
@@ -808,6 +907,14 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   VariableReference baseTarget {
    VariableType 5
    EditorPos 6012 2099.25
+  }
+  VariableReference baseTarget {
+   VariableType 5
+   EditorPos -1322.5 1897.787
+  }
+  VariableReference vInitialDirToTgt {
+   VariableType 10
+   EditorPos -1320.2 1994.1
   }
  }
  Groups {

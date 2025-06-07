@@ -12,23 +12,25 @@ enum DCO_GroupTactics
 
 class SCR_DCO_AIGroupConfigComponent : ScriptComponent
 {
-	[Attribute("0", UIWidgets.ComboBox, "AI Tactics in combat", "", ParamEnumArray.FromEnum(DCO_GroupTactics), category: "AI Tactics to use", )]
+	[Attribute("3", UIWidgets.ComboBox, "AI Tactics in combat", "", ParamEnumArray.FromEnum(DCO_GroupTactics), category: "AI Tactics to use", )]
 	DCO_GroupTactics m_Tactics;
 	
-	static SCR_DCO_AIGroupConfigComponent GetDCOAIConfigComponent(IEntity unit)
+	static SCR_DCO_AIGroupConfigComponent GetDCOGroupAIConfigComponent(IEntity unit)
 	{		
-		AIControlComponent ctrl = AIControlComponent.Cast(unit.FindComponent(AIControlComponent));
-		if (ctrl)
-		{
-			SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(ctrl.GetAIAgent());
-			if (agent)
-			{
-				AIGroup grp = agent.GetParentGroup();
-				if (grp)
-					return SCR_DCO_AIGroupConfigComponent.Cast(grp.FindComponent(SCR_DCO_AIGroupConfigComponent));
-			}
-		}
+		SCR_DCO_AIGroupConfigComponent comp = SCR_DCO_AIGroupConfigComponent.Cast(unit.FindComponent(SCR_DCO_AIGroupConfigComponent));
+		if (comp) return comp;
 		return null;
+	}
+	
+	DCO_GroupTactics GetTactics()
+	{
+		 return m_Tactics;
+	}
+	
+	DCO_GroupTactics SetTactics(DCO_GroupTactics Tactics)
+	{
+		m_Tactics = Tactics;
+		return Tactics;
 	}
 
 	override void OnPostInit(IEntity owner)

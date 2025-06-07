@@ -214,11 +214,6 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
     }
    }
   }
-  RunBT RunBT {
-   Name "RunBT"
-   EditorPos 2528.947 395.79
-   BehaviorTree "{9E4979419089DA35}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_SupplyEvaluations.bt"
-  }
  }
  Variables {
   Variable unknownTarget {
