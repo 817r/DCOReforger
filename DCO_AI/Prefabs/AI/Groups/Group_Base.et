@@ -1,0 +1,7 @@
+SCR_AIGroup {
+ ID "0000000000000001"
+ components {
+  SCR_DCO_AIGroupConfigComponent "{658E4AB007512321}" {
+  }
+ }
+}
