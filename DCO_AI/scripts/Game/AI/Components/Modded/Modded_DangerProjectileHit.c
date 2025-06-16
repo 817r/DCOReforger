@@ -2,6 +2,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 {
 	protected static const float BULLET_IMPACT_DISTANCE_MAX_SQ = 10*10;
 	protected static const float BULLET_IMPACT_MUST_REACT_MAX_DISTANCE_SQ = 8*8;
+	protected static const float BULLET_IMPACT_MUST_HAVE_REACT_MAX_DISTANCE_SQ = 3*3;
 	
 	protected SCR_AICombatMoveState m_State;
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.3 * Math.PI;
@@ -16,7 +17,12 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		
 		if (distanceSq < BULLET_IMPACT_MUST_REACT_MAX_DISTANCE_SQ) threatSystem.ThreatBulletClose(dangerEventCount);
 		
-		if (distanceSq < BULLET_IMPACT_MUST_REACT_MAX_DISTANCE_SQ && threatSystem.BulletCloseCount() > 3)
+		if (distanceSq < BULLET_IMPACT_MUST_HAVE_REACT_MAX_DISTANCE_SQ)
+		{
+			utility.GetCharacterController().SetStanceChange(3);
+		}
+		
+		if (distanceSq < BULLET_IMPACT_MUST_REACT_MAX_DISTANCE_SQ && threatSystem.BulletCloseCount() > 1)
 		{
 			if (m_State.m_bInCover)
 			{
@@ -41,7 +47,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 					return true;
 				} else
 				{				
-					SCR_AICombatMoveRequest_Move rq = DangerDamageTakenCombatMove(ShooterPos);
+					SCR_AICombatMoveRequest_Move rq = DangerDamageTakenCombatMoveNotInCover(ShooterPos);
 					
 					m_State.ApplyNewRequest(rq);				
 					return true;

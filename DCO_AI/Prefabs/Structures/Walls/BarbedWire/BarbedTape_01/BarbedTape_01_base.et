@@ -1,0 +1,12 @@
+StaticModelEntity : "{CD7A3D7E7A549B63}Prefabs/Structures/Core/Wall_Base.et" {
+ ID "51E2F0F0E96F07CE"
+ components {
+  NavmeshCustomLinkComponent "{5088C72B466E73FA}" {
+   LinkType NavmeshJumpLink "{5088C72B44859B28}" {
+   }
+  }
+  SCR_SpecialCollisionHandlerComponent "{6252F4450481F44C}" {
+   Enabled 0
+  }
+ }
+}

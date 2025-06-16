@@ -1,3 +1,11 @@
 SCR_AIWorld {
  ID "50B2B8F35661FB44"
+ components {
+  NavmeshWorldComponent "{5584F30E67F617AD}" {
+   NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
+    "AIAgent lock area" 3
+    "Path stream area" 2
+   }
+  }
+ }
 }

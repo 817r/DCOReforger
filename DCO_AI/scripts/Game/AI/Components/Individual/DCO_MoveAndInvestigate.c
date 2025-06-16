@@ -241,6 +241,17 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 		if (m_State.IsExecutingRequest())
 			return false;
 		
+		AIAgent agent = m_Utility.GetAIAgent();
+		AIGroup group = agent.GetParentGroup();
+		AIAgent Leader = group.GetLeaderAgent();
+		
+		float distToLeader = vector.Distance(m_MyEntity.GetOrigin(), Leader.GetControlledEntity().GetOrigin());
+			
+		if (distToLeader > 20)
+		{
+			return true;
+		}
+		
 		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
 	}

@@ -780,9 +780,20 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                Name "Parallel"
                EditorPos 7130.046 -99.479
                Nodes {
+                SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
+                 Name "SCR_AI Character Set Movement Speed"
+                 EditorPos 6714.654 103.988
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "Speed"
+                  }
+                 }
+                 m_eSpeed RUN
+                }
                 DCO_AIEvasiveTactics "DCO_AI Evasive Tactics" {
                  Name "DCO_AI Evasive Tactics"
-                 EditorPos 6850.337 78.72
+                 EditorPos 7128.429 118.947
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port 26
@@ -792,7 +803,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                 }
                 SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
                  Name "SCR_AI Set Weapon Raised"
-                 EditorPos 7179.262 86.409
+                 EditorPos 7457.354 126.636
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port -1
@@ -1001,7 +1012,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   VariableReference inestigateCenterPos {
    VariableType 2
-   EditorPos 6575.266 226.56
+   EditorPos 6853.358 266.787
   }
  }
  Groups {

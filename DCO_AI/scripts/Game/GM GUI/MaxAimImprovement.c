@@ -42,7 +42,7 @@ class DCO_MaxAimImprovementValue: SCR_ValidTypeBaseValueListEditorAttribute
 			
 			rankComponent.SetMaxAimImprovement(enable);
 			
-			enable = SCR_DCO_AIConfigComponent.GetEnableAimImprovement(editableEntity.GetOwner());
+			enable = rankComponent.GetMaxAimImprovement();
 		}
 	}
 };

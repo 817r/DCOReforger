@@ -647,4 +647,9 @@ modded class SCR_AICombatComponent : ScriptComponent
 	{
 		return m_CharacterController;
 	}
+	
+	SCR_AIUtilityComponent GetUtilityComponent()
+	{
+		return m_Utility;
+	}
 }

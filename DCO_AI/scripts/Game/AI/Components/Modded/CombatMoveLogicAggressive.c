@@ -238,12 +238,12 @@ class SCR_AICombatMoveLogic_Aggressive : SCR_AICombatMoveLogicBase
 		{
 			case MoraleState.FRESH:
 			{
-				waitTime *= 2.2;
+				waitTime *= 0.3;
 				break;
 			}
 			case MoraleState.NORMAL:
 			{
-				waitTime *= 1.8;
+				waitTime *= 0.7;
 				break;
 			}
 			case MoraleState.STRESSED:
@@ -253,17 +253,17 @@ class SCR_AICombatMoveLogic_Aggressive : SCR_AICombatMoveLogicBase
 			}
 			case MoraleState.PRESSURED:
 			{
-				waitTime *= 0.7;
+				waitTime *= 1.8;
 				break;
 			}
 			case MoraleState.BREAK:
 			{
-				waitTime *= 0.3;
+				waitTime *= 2.2;
 				break;
 			}
 		}
 		
-		waitTime = Math.Clamp(waitTime, 5, 45);
+		waitTime = Math.Clamp(waitTime, 3, 45);
 		
 		return waitTime;
 	}
@@ -603,6 +603,7 @@ class SCR_AICombatMoveLogic_Aggressive : SCR_AICombatMoveLogicBase
 		AIWaypoint wp = null;
 		AIAgent agent = m_Utility.GetAIAgent();
 		AIGroup group = agent.GetParentGroup();
+		AIAgent Leader = group.GetLeaderAgent();
 		if (group)
 			wp = group.GetCurrentWaypoint();
 		
@@ -618,6 +619,19 @@ class SCR_AICombatMoveLogic_Aggressive : SCR_AICombatMoveLogicBase
 			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
 			movePos = targetPos;
 			avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
+			float distToLeader = vector.Distance(m_MyEntity.GetOrigin(), Leader.GetControlledEntity().GetOrigin());
+
+			if (distToLeader > 20)
+			{
+				eDirection = SCR_EAICombatMoveDirection.FORWARD;
+				avoidStraightPathDir = vector.Zero;
+				movePos = Leader.GetControlledEntity().GetOrigin();
+				outMovePos = movePos;
+				outDirection = eDirection;
+				outAvoidStraightPathDir = avoidStraightPathDir;
+				outCoverSearchSectorHalfAngleRad = coverSearchSectorHalfAngleRad;
+				return;
+			}
 			
 			switch(m_eThreatState)
 			{
@@ -654,6 +668,7 @@ class SCR_AICombatMoveLogic_Aggressive : SCR_AICombatMoveLogicBase
 			float wpRadius = wp.GetCompletionRadius();
 			bool tgtInWaypoint = vector.DistanceXZ(wpPos, targetPos) < wpRadius;
 			float myDistToWp = vector.DistanceXZ(wpPos, m_MyEntity.GetOrigin());
+			
 			
 			if (myDistToWp > wpRadius)
 			{

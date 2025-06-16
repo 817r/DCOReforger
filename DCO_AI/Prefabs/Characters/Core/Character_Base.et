@@ -23,10 +23,5 @@ SCR_ChimeraCharacter {
     }
    }
   }
-  SCR_CharacterPerceivableComponent "{566CCE2397E28600}" {
-   VisualFactorStance_Prone 0.15
-   VisualFactorStance_Crouch 0.2
-   VisualFactorStance_Stand 0.9
-  }
  }
 }

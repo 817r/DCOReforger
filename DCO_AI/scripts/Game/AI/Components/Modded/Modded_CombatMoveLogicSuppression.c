@@ -10,7 +10,7 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 		m_MoraleState = m_CombatComp.GetMoraleComponent().GetMoraleStates();
 		float waitTime;
 		const float minRandomTime = 1;
-		const float maxRandomTime = 8;
+		const float maxRandomTime = 4;
 		
 		if (inCover)
 		{
@@ -67,12 +67,12 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 			}
 			case MoraleState.PRESSURED:
 			{
-				waitTime *= 1.8;
+				waitTime *= 1.6;
 				break;
 			}
 			case MoraleState.BREAK:
 			{
-				waitTime *= 2.2;
+				waitTime *= 2.0;
 				break;
 			}
 		}
@@ -173,5 +173,126 @@ modded class SCR_AICombatMoveLogic_Suppressive : SCR_AICombatMoveLogicBase
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
 		
 		m_State.ApplyNewRequest(rq);
+	}
+	
+	protected override void ResolveMoveRequestMovePosAndDir(vector targetPos, out vector outMovePos, out vector outAvoidStraightPathDir, out SCR_EAICombatMoveDirection outDirection, out float outCoverSearchSectorHalfAngleRad)
+	{	
+		AIWaypoint wp = null;
+		AIAgent agent = m_Utility.GetAIAgent();
+		AIGroup group = agent.GetParentGroup();
+		AIAgent Leader = group.GetLeaderAgent();
+		if (group)
+			wp = group.GetCurrentWaypoint();
+		
+		vector movePos;
+		SCR_EAICombatMoveDirection eDirection;
+		float coverSearchSectorHalfAngleRad;
+		vector avoidStraightPathDir;
+		
+		if (!wp || SCR_EntityWaypoint.Cast(wp))
+		{
+			// No waypoint, or it's an entity-associated waypoint, like Follow waypoint.
+			// Therefore use standard movement logic.
+			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
+			movePos = targetPos;
+			avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
+			
+			float distToLeader = vector.Distance(m_MyEntity.GetOrigin(), Leader.GetControlledEntity().GetOrigin());
+			
+			if (distToLeader > 20)
+			{
+				eDirection = SCR_EAICombatMoveDirection.FORWARD;
+				avoidStraightPathDir = vector.Zero;
+				movePos = Leader.GetControlledEntity().GetOrigin();
+				outMovePos = movePos;
+				outDirection = eDirection;
+				outAvoidStraightPathDir = avoidStraightPathDir;
+				outCoverSearchSectorHalfAngleRad = coverSearchSectorHalfAngleRad;
+				return;
+			}
+			
+			switch(m_eThreatState)
+			{
+				case EAIThreatState.SAFE:
+				{
+					eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+					break;
+				}
+				case EAIThreatState.VIGILANT:
+				{
+					eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+					break;		
+				}
+				case EAIThreatState.ALERTED:
+				{
+					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					avoidStraightPathDir = vector.Zero;
+					break;					
+				}
+				case EAIThreatState.THREATENED:
+				{
+					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					avoidStraightPathDir = vector.Zero;
+					break;			
+				}
+			}
+			
+			if (IsFirstExecution())
+					coverSearchSectorHalfAngleRad = Math.PI; // Full circle, on first run we just want any cover if possible
+				else
+					coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+		}
+		else
+		{
+			vector wpPos = wp.GetOrigin();
+			float wpRadius = wp.GetCompletionRadius();
+			bool tgtInWaypoint = vector.DistanceXZ(wpPos, targetPos) < wpRadius;
+			float myDistToWp = vector.DistanceXZ(wpPos, m_MyEntity.GetOrigin());
+			
+			if (myDistToWp > wpRadius)
+			{
+				// We are outside WP, move towards center
+				movePos = wpPos;
+				eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+				avoidStraightPathDir = vector.Zero; // Go straight
+			}
+			else if (myDistToWp > 0.5 * wpRadius)
+			{
+				// We are between 50% and 100% of wp radius
+				
+				if (tgtInWaypoint)
+				{
+					// Towards target
+					movePos = targetPos;
+					eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+					avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
+					coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+				}
+				else
+				{
+					// Move around current pos.
+					movePos = targetPos;
+					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					avoidStraightPathDir = vector.Zero;
+					coverSearchSectorHalfAngleRad = -1.0;
+				}
+			}
+			else
+			{
+				// We are within 50% radius of wp,
+				// Move towards tgt, regardless where tgt is
+				movePos = targetPos;
+				eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+				avoidStraightPathDir = GetAvoidStraightPathDir();
+				
+				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+			}
+		}
+		
+		outMovePos = movePos;
+		outDirection = eDirection;
+		outAvoidStraightPathDir = avoidStraightPathDir;
+		outCoverSearchSectorHalfAngleRad = coverSearchSectorHalfAngleRad;
 	}
 }

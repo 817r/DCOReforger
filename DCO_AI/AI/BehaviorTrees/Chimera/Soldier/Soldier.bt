@@ -194,6 +194,22 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
        }
       }
+      DecoratorEntity Entity {
+       Name "Entity"
+       EditorPos 1494.928 392.139
+       Nodes {
+        SCR_AICombatMoveLogic_SquadCohession "SCR_AI Combat Move Logic_ Squad Cohession" {
+         Name "SCR_AI Combat Move Logic_ Squad Cohession"
+         EditorPos 1394.775 591.455
+        }
+       }
+       NegativeCondition 1
+       UseChildResult 0
+       TEST {
+        SCR_AIDecoTestIsLeader "{659B10E161BB54CD}" {
+        }
+       }
+      }
       RunBT RunBT {
        Name "RunBT"
        EditorPos 1698.38 393.572
@@ -206,7 +222,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos 3092.456 397.272
+       EditorPos 2529.276 385.204
        BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
       }
      }
