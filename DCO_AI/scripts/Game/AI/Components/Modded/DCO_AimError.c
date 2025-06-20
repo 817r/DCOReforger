@@ -1,5 +1,12 @@
 modded class SCR_AIGetAimErrorOffset: AITaskScripted
 {	
+	
+	static const float AIMING_ERROR_FACTOR_MIN = 0.2; 
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.03;
+	static const float AIMING_ERROR_FACTOR_MAX = 1.6;
+	
+	static const float LONG_RANGE_THRESHOLD = 400.0;
+	
     //------------------------------------------------------------------------------------------------
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
     {
@@ -88,7 +95,15 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 		
 		return ENodeResult.SUCCESS;
 	}
+	
+	override float GetDistanceFactor(float distance)
+	{
+		if (distance < CLOSE_RANGE_THRESHOLD)
+			return Math.Map(distance, 0, CLOSE_RANGE_THRESHOLD, AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN, AIMING_ERROR_FACTOR_MIN);
 
+		float distanceCl = Math.Clamp((distance - CLOSE_RANGE_THRESHOLD) / LONG_RANGE_THRESHOLD, 0, 1);
+		return Math.Lerp(AIMING_ERROR_FACTOR_MIN, AIMING_ERROR_FACTOR_MAX, distanceCl);
+	}
 	
 	float GetAimImprovement()
 	{
@@ -120,11 +135,49 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 	
 	float GetMoveSpeedFactor()
 	{
-		SCR_AICombatMoveState m_State = m_CombatComponent.GetUtilityComponent().m_CombatMoveState;
-		if(m_State.IsMoving())
-			return 1.5;
-		else
-			return 1.0;
+		//SCR_AICombatMoveState m_State = m_CombatComponent.GetUtilityComponent().m_CombatMoveState;
+		//if(m_State.IsMoving())
+		//	return 1.5;
+		//else
+		//	return 1.0;
+		
+		return 1.0;
+	}
+	
+	override float GetWeaponTypeFactor(EWeaponType weaponType)
+	{
+		switch(weaponType)
+		{
+			case EWeaponType.WT_RIFLE:
+			{
+				return 1.0;
+			}
+			case EWeaponType.WT_MACHINEGUN:
+			{
+				return 2.5;
+			}
+			case EWeaponType.WT_HANDGUN:
+			{
+				return 1.3;
+			}
+			case EWeaponType.WT_FRAGGRENADE:
+			{
+				return 3.0;
+			}
+			case EWeaponType.WT_SMOKEGRENADE:
+			{
+				return 4.0;
+			}
+			case EWeaponType.WT_ROCKETLAUNCHER:
+			{
+				return 0.7;
+			}
+			case EWeaponType.WT_SNIPERRIFLE:
+			{
+				return 0.3;
+			}
+		}
+		return 1.0;
 	}
 	
 	//------------------------------------------------------------------------------------------------
