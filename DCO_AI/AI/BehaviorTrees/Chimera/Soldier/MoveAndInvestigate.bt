@@ -151,7 +151,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
       }
       Parallel Parallel {
        Name "Parallel"
-       EditorPos 4243.272 -1151.568
+       EditorPos 6968.157 -1571.699
        Nodes {
         Selector Selector {
          Name "Selector"
@@ -252,6 +252,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                        PortName "Raised"
                       }
                      }
+                     m_bWeaponRaised 0
                     }
                    }
                   }
@@ -649,11 +650,11 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                     }
                     SCR_AICompleteAction "SCR_AI Complete Action" {
                      Name "SCR_AI Complete Action"
-                     EditorPos 5449.37 1576.517
+                     EditorPos 5749.952 1358.395
                     }
                     AITaskReturnState "Return  State" {
                      Name "Return  State"
-                     EditorPos 5716.71 1577.549
+                     EditorPos 6017.292 1359.427
                      Result RUNNING
                     }
                    }
@@ -754,62 +755,67 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
            Name "DCO_AI Group Tactics"
            EditorPos 6800.983 -594.606
            Nodes {
-            Selector Selector {
-             Name "Selector"
-             EditorPos 6860.43 -327.766
+            Parallel Parallel {
+             Name "Parallel"
+             EditorPos 6860.699 -270.882
              Nodes {
-              SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-               Name "SCR_AI Deco Is Above Threat Level"
-               EditorPos 6345.645 -116.49
-               Nodes {
-                AITaskReturnState "Return State" {
-                 Name "Return State"
-                 EditorPos 6413.592 55.86
-                 Result RUNNING
-                }
-               }
+              SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
+               Name "SCR_AI Character Set Movement Speed"
+               EditorPos 6445.307 -67.415
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
                  Port -1
-                 PortName "ThresholdIn"
+                 PortName "Speed"
                 }
                }
-               m_threatThreshold THREATENED
+               m_eSpeed RUN
               }
-              Parallel Parallel {
-               Name "Parallel"
-               EditorPos 7130.046 -99.479
+              DCO_AIEvasiveTactics "DCO_AI Evasive Tactics" {
+               Name "DCO_AI Evasive Tactics"
+               EditorPos 6859.082 -52.456
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 26
+                 PortName "Area"
+                }
+               }
+              }
+              Selector Selector {
+               Name "Selector"
+               EditorPos 7301.073 -36.255
                Nodes {
-                SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
-                 Name "SCR_AI Character Set Movement Speed"
-                 EditorPos 6714.654 103.988
+                SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+                 Name "SCR_AI Deco Is Above Threat Level"
+                 EditorPos 6962.469 228.084
+                 Nodes {
+                  SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+                   Name "SCR_AI Set Weapon Raised"
+                   EditorPos 6997.365 448.452
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port -1
+                     PortName "Raised"
+                    }
+                   }
+                  }
+                 }
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port -1
-                   PortName "Speed"
-                  }
-                 }
-                 m_eSpeed RUN
-                }
-                DCO_AIEvasiveTactics "DCO_AI Evasive Tactics" {
-                 Name "DCO_AI Evasive Tactics"
-                 EditorPos 7128.429 118.947
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 26
-                   PortName "Area"
+                   PortName "ThresholdIn"
                   }
                  }
                 }
                 SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
                  Name "SCR_AI Set Weapon Raised"
-                 EditorPos 7457.354 126.636
+                 EditorPos 7383.5 285.307
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port -1
                    PortName "Raised"
                   }
                  }
+                 m_bWeaponRaised 0
                 }
                }
               }
@@ -825,6 +831,61 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
            m_threatThreshold EVASIVE
           }
          }
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 7891.798 -988.157
+         Nodes {
+          SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
+           Name "SCR_AI Get Random Point"
+           EditorPos 7671.068 -775.504
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Waypoint"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 30
+             PortName "Origin"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 27
+             PortName "Radius"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 28
+             PortName "ResultVector"
+            }
+           }
+           Group "{65AC7733413CB98D}"
+           m_Radius 100
+          }
+          SCR_AILookAtPosition "SCR_AI Look At Position" {
+           Name "SCR_AI Look At Position"
+           EditorPos 8127.331 -798.544
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 29
+             PortName "PositionIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "PriorityIn"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "PositionOut"
+            }
+           }
+           Group "{65AC7733413CB98D}"
+           m_fPriority 40
+          }
+         }
+         Group "{65AC7733413CB98D}"
         }
        }
       }
@@ -1012,7 +1073,27 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   VariableReference inestigateCenterPos {
    VariableType 2
-   EditorPos 6853.358 266.787
+   EditorPos 6584.011 95.384
+  }
+  VariableReference radius {
+   VariableType 4
+   EditorPos 7497.568 -633.194
+   Group "{65AC7733413CB98D}"
+  }
+  VariableReference position {
+   VariableType 0
+   EditorPos 7924.235 -657.082
+   Group "{65AC7733413CB98D}"
+  }
+  VariableReference position {
+   VariableType 0
+   EditorPos 7919.348 -753.337
+   Group "{65AC7733413CB98D}"
+  }
+  VariableReference inestigateCenterPos {
+   VariableType 2
+   EditorPos 7399.735 -736.527
+   Group "{65AC7733413CB98D}"
   }
  }
  Groups {
@@ -1022,6 +1103,10 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   BTGroup "{5C65018A80762E48}" {
    Name "Update for new danger event from the same source"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{65AC7733413CB98D}" {
+   Name "Look Around"
    Color 0.6 0.6 0.6 0.251
   }
  }

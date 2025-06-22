@@ -85,7 +85,7 @@ class DCO_AIMoraleSystemComponent : ScriptComponent
 			}
 		}
 		else
-			m_fMorale += MORALE_RECOVERY_FIXED * timeSlice;
+			m_fMorale += MORALE_RECOVERY_FIXED * MoraleRecoverySkill() * timeSlice;
 
         DamageManagerComponent healthComp = DamageManagerComponent.Cast(owner.FindComponent(DamageManagerComponent));
 
@@ -174,6 +174,44 @@ class DCO_AIMoraleSystemComponent : ScriptComponent
 	float GetMoraleValue()
 	{
 		return m_fMorale;
+	}
+	
+	float MoraleRecoverySkill()
+	{
+		switch(m_Utility.DCO_ConfComponent.GetSkillLevel())
+		{
+			case DCO_SKILL.CONSCPRIT:
+			{
+				return 0.5;
+				break;
+			}
+			case DCO_SKILL.GREEN:
+			{
+				return 0.7;
+				break;
+			}
+			case DCO_SKILL.REGULAR:
+			{
+				return 1.0;
+				break;
+			}
+			case DCO_SKILL.VETERAN:
+			{
+				return 1.2;
+				break;
+			}
+			case DCO_SKILL.CRACK:
+			{
+				return 1.5;
+				break;
+			}
+			case DCO_SKILL.ELITE:
+			{
+				return 2.0;
+				break;
+			}
+		}
+		return 1.0;
 	}
 	
 	private void StateTransition(MoraleState newState)

@@ -26,7 +26,7 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 	[Attribute( defvalue: "1500", category: "AI AIM", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 5000 1" )]
 	float m_MaxRangeAimImprovement;
 	
-	[Attribute( defvalue: "2", category: "AI AIM", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 10 1" )]
+	[Attribute( defvalue: "5", category: "AI AIM", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 20 1" )]
 	float m_MaxAimImprovementBoost;
 
 	// Aim Improvement
@@ -117,6 +117,6 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 	
 	override void EOnInit(IEntity owner)
 	{
-		m_SkillSet = Math.RandomInt(DCO_SKILL.GREEN, DCO_SKILL.CRACK);
+		m_SkillSet = Math.RandomInt(DCO_SKILL.REGULAR, DCO_SKILL.CRACK);
 	}
 }

@@ -1,9 +1,9 @@
 modded class SCR_AIGetAimErrorOffset: AITaskScripted
 {	
 	
-	static const float AIMING_ERROR_FACTOR_MIN = 0.2; 
-	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.03;
-	static const float AIMING_ERROR_FACTOR_MAX = 1.6;
+	static const float AIMING_ERROR_FACTOR_MIN = 0.15; 
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.02;
+	static const float AIMING_ERROR_FACTOR_MAX = 2.0;
 	
 	static const float LONG_RANGE_THRESHOLD = 400.0;
 	
@@ -174,7 +174,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EWeaponType.WT_SNIPERRIFLE:
 			{
-				return 0.3;
+				return 0.2;
 			}
 		}
 		return 1.0;

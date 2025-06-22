@@ -619,19 +619,6 @@ class SCR_AICombatMoveLogic_Aggressive : SCR_AICombatMoveLogicBase
 			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
 			movePos = targetPos;
 			avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
-			float distToLeader = vector.Distance(m_MyEntity.GetOrigin(), Leader.GetControlledEntity().GetOrigin());
-
-			if (distToLeader > 20)
-			{
-				eDirection = SCR_EAICombatMoveDirection.FORWARD;
-				avoidStraightPathDir = vector.Zero;
-				movePos = Leader.GetControlledEntity().GetOrigin();
-				outMovePos = movePos;
-				outDirection = eDirection;
-				outAvoidStraightPathDir = avoidStraightPathDir;
-				outCoverSearchSectorHalfAngleRad = coverSearchSectorHalfAngleRad;
-				return;
-			}
 			
 			switch(m_eThreatState)
 			{
@@ -652,7 +639,7 @@ class SCR_AICombatMoveLogic_Aggressive : SCR_AICombatMoveLogicBase
 				}
 				case EAIThreatState.THREATENED:
 				{
-					eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+					eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					break;			
 				}
 			}

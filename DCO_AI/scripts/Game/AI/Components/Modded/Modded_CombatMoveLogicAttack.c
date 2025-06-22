@@ -625,20 +625,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			movePos = targetPos;
 			avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
 			
-			float distToLeader = vector.Distance(m_MyEntity.GetOrigin(), Leader.GetControlledEntity().GetOrigin());
-			
-			if (distToLeader > 20)
-			{
-				eDirection = SCR_EAICombatMoveDirection.FORWARD;
-				avoidStraightPathDir = vector.Zero;
-				movePos = Leader.GetControlledEntity().GetOrigin();
-				outMovePos = movePos;
-				outDirection = eDirection;
-				outAvoidStraightPathDir = avoidStraightPathDir;
-				outCoverSearchSectorHalfAngleRad = coverSearchSectorHalfAngleRad;
-				return;
-			}
-			
 			switch(m_MoraleState)
 			{
 				case MoraleState.FRESH:

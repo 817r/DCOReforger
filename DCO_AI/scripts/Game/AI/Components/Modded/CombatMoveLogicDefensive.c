@@ -9,8 +9,8 @@ class SCR_AICombatMoveLogic_Defensive : SCR_AICombatMoveLogicBase
 	protected vector m_vAvoidStraightPathDir;
 	protected vector m_vMyPosition;
 	
-	protected float minRandomTime = 5;
-	protected float maxRandomTime = 60;
+	protected float minRandomTime = 60;
+	protected float maxRandomTime = 120;
 	
 	protected override void OnInit(AIAgent owner)
 	{
@@ -279,7 +279,7 @@ class SCR_AICombatMoveLogic_Defensive : SCR_AICombatMoveLogicBase
 			}
 		}
 		
-		waitTime = Math.Clamp(waitTime, 5, 45);
+		waitTime = Math.Clamp(waitTime, 120, 600);
 		
 		return waitTime;
 	}
@@ -309,7 +309,7 @@ class SCR_AICombatMoveLogic_Defensive : SCR_AICombatMoveLogicBase
 				return false;
 		}
 		
-		if (m_Target.GetTimeSinceSeen() > 5)
+		if (m_Target.GetTimeSinceSeen() > 20)
 			return true;
 		
 		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
@@ -635,42 +635,29 @@ class SCR_AICombatMoveLogic_Defensive : SCR_AICombatMoveLogicBase
 			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
 			movePos = m_vMyPosition;
 			avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
-			
-			float distToLeader = vector.Distance(m_MyEntity.GetOrigin(), Leader.GetControlledEntity().GetOrigin());
-			
-			if (distToLeader > 20)
-			{
-				eDirection = SCR_EAICombatMoveDirection.FORWARD;
-				avoidStraightPathDir = vector.Zero;
-				movePos = Leader.GetControlledEntity().GetOrigin();
-				outMovePos = movePos;
-				outDirection = eDirection;
-				outAvoidStraightPathDir = avoidStraightPathDir;
-				outCoverSearchSectorHalfAngleRad = coverSearchSectorHalfAngleRad;
-				return;
-			}
+
 			
 			switch(m_eThreatState)
 			{
 				case EAIThreatState.SAFE:
 				{
-					eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					break;
 				}
 				case EAIThreatState.VIGILANT:
 				{
-					eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 					break;		
 				}
 				case EAIThreatState.ALERTED:
 				{
-					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 					avoidStraightPathDir = vector.Zero;
 					break;					
 				}
 				case EAIThreatState.THREATENED:
 				{
-					eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+					eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 					avoidStraightPathDir = vector.Zero;
 					break;			
 				}

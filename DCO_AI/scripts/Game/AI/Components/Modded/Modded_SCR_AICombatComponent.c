@@ -1,18 +1,18 @@
 modded class SCR_AICombatComponent : ScriptComponent
 {
 	// Constants
-	static const int			 TARGET_ENDANGERED_TIMEOUT_S = 10;				//!< How long after last time target was endangering we stop treating it as such
-	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.05;	//!< Multiplier of target score if target is considered endangering
+	static const int			 TARGET_ENDANGERED_TIMEOUT_S = 15;				//!< How long after last time target was endangering we stop treating it as such
+	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.2;	//!< Multiplier of target score if target is considered endangering
 	
 	// Score increments for assigned targets and endangering targets
 	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 0.5;
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 25.0;
 
 	// Perception factors
-	protected const float PERCEPTION_FACTOR_SAFE = 1.0;			//!< We are safe and are good at recognising enemies
-	protected const float PERCEPTION_FACTOR_VIGILANT = 2.5;		//!< When vigilant and alert we are very good at recognising enemies
-	protected const float PERCEPTION_FACTOR_ALERTED = 2.5;
-	protected const float PERCEPTION_FACTOR_THREATENED = 1.0;	// We are suppressed and are bad at recognizing enemies
+	protected const float PERCEPTION_FACTOR_SAFE = 0.8;			//!< We are safe and are good at recognising enemies
+	protected const float PERCEPTION_FACTOR_VIGILANT = 3.0;		//!< When vigilant and alert we are very good at recognising enemies
+	protected const float PERCEPTION_FACTOR_ALERTED = 3.0;
+	protected const float PERCEPTION_FACTOR_THREATENED = 1.5;	// We are suppressed and are bad at recognizing enemies
 	
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.0;	//!< Looking through binoculars
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;		//!< Not using any special equipment, same recognition ability as usual
@@ -168,22 +168,25 @@ modded class SCR_AICombatComponent : ScriptComponent
 		super.UpdatePerceptionFactor(m_Perception,threatSystem);
 		EAIThreatState threatState = threatSystem.GetState();
 		float perceptionFactor;
+		
+		perceptionFactor = SkillPerception();
+		perceptionFactor += MoralePerception();
+		
 		switch (threatState)
 		{
 			case EAIThreatState.SAFE:
-				perceptionFactor = PERCEPTION_FACTOR_SAFE; break; 
+				perceptionFactor *= PERCEPTION_FACTOR_SAFE; break; 
 			case EAIThreatState.VIGILANT:
-				perceptionFactor = PERCEPTION_FACTOR_VIGILANT; break;
+				perceptionFactor *= PERCEPTION_FACTOR_VIGILANT; break;
 			case EAIThreatState.ALERTED:
-				perceptionFactor = PERCEPTION_FACTOR_ALERTED; break; 
+				perceptionFactor *= PERCEPTION_FACTOR_ALERTED; break; 
 			case EAIThreatState.THREATENED:
-				perceptionFactor = PERCEPTION_FACTOR_THREATENED; break; 
+				perceptionFactor *= PERCEPTION_FACTOR_THREATENED; break; 
 		}
 		
 		perceptionFactor *= m_fEquipmentPerceptionFactor;
 		perceptionFactor *= m_fPerceptionFactor;
-		perceptionFactor *= MoralePerception();
-		perceptionFactor *= SkillPerception();
+		
 		
 		float currentTime = m_TimeManager.GetTimeOfTheDay();
 		
@@ -221,7 +224,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 			}
 			case MoraleState.BREAK:
 			{
-				return 0.4;
+				return 0.5;
 				break;
 			}
 		}
@@ -337,9 +340,6 @@ modded class SCR_AICombatComponent : ScriptComponent
 				
 				m_fImprovementTimer = 0;
 			}
-			
-
-			
 			//SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, AIM_IMPROVEMENT.ToString(), EAIDebugCategory.COMBAT, 1.4, Color.White);	
 		}
 	}

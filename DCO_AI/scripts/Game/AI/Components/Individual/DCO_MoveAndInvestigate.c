@@ -3,7 +3,6 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 	SCR_ChimeraAIAgent m_Agent;
 	vector target;
 	protected vector m_vAvoidStraightPathDir;
-	protected MoraleState m_MoraleState;
 	
 	protected static const string AREA_PORT = "Area";
 		
@@ -38,7 +37,6 @@ class DCO_AIMoveInvestigate : SCR_AICombatMoveLogicBase
 		m_eStance = m_CharacterController.GetStance();
 		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
 		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
-		m_MoraleState = m_CombatComp.GetMoraleComponent().GetMoraleStates();
 		
 		/*		
 		//------------------------------------------------------------------------------------

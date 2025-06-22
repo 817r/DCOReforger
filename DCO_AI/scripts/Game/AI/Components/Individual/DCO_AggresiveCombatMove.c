@@ -33,7 +33,7 @@ class DCO_AIAggresiveTactics : SCR_AICombatMoveLogicBase
 		m_vAvoidStraightPathDir.Normalize();
 				
 		m_fTargetDist = vector.Distance(owner.GetOrigin(), target);
-		m_bCloseRangeCombat = m_fTargetDist < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST;
+		m_bCloseRangeCombat = m_fTargetDist < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST / 2;
 		m_eThreatState = m_Utility.m_ThreatSystem.GetState();
 		m_eStance = m_CharacterController.GetStance();
 		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
@@ -219,23 +219,11 @@ class DCO_AIAggresiveTactics : SCR_AICombatMoveLogicBase
 	{
 		if (m_bCloseRangeCombat)
 		{
-			if (Math.RandomInt(0,101) < m_CombatComp.GetCoverChances())
-				return true;
-			else
-				return false;
+			return true;
 		}
 		else
 		{
-			// Long range combat
-			if (IsFirstExecution())
-				return true; // On first run we want to move to cover, or stay where we are if there is no cover, and shoot.
-			else
-			{
-				if (Math.RandomInt(0,101) < m_CombatComp.GetCoverChances())
-					return m_State.m_bInCover;
-				else
-					return false;			
-			}
+			return false;
 		}
 	}
 	
@@ -251,11 +239,32 @@ class DCO_AIAggresiveTactics : SCR_AICombatMoveLogicBase
 	override protected float ResolveStoppedWaitTime(bool inCover, EAIThreatState threat, EWeaponType weaponType)
 	{
 		float waitTime;
-		waitTime = Math.RandomFloat(3.0, 6.0);
-
-		if(m_MoraleState < MoraleState.STRESSED)
-			waitTime = waitTime/4;
-
+		waitTime = Math.RandomFloat(1.0, 5.0);
+		
+			switch (m_eThreatState)
+			{
+				case EAIThreatState.THREATENED:
+				{
+					waitTime *= 1.5;
+					break;
+				}
+				case EAIThreatState.ALERTED:
+				{
+					waitTime += 1.5;
+					break;
+				}
+				case EAIThreatState.VIGILANT:
+				{
+					
+					break;
+				}
+				default:
+				{
+					waitTime /= 10;
+				}
+			}
+		
+		
 		return waitTime;
 	}
 }

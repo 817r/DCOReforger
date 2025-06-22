@@ -5,7 +5,7 @@ modded class SCR_AIAttackBehavior : SCR_AIBehaviorBase
 	
 	void SCR_AIAttackBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, BaseTarget target, BaseTarget prevTarget, float priorityLevel = PRIORITY_LEVEL_NORMAL)
 	{
-		InitParameters(target, 1);
+		InitParameters(target, 0.5);
 		if (!utility)
 			return;
 		

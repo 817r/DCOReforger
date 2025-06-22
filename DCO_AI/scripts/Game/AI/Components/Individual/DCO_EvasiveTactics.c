@@ -112,7 +112,7 @@ class DCO_AIEvasiveTactics : SCR_AICombatMoveLogicBase
 				{
 					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					rq.m_eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 					rq.m_vAvoidStraightPathDir = m_vAvoidStraightPathDir;
 					break;
 				}
@@ -165,7 +165,7 @@ class DCO_AIEvasiveTactics : SCR_AICombatMoveLogicBase
 					else
 						rq.m_eMovementType = EMovementType.WALK;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					rq.m_eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 					rq.m_vAvoidStraightPathDir = m_vAvoidStraightPathDir;
 					break;
 				}
@@ -233,7 +233,7 @@ class DCO_AIEvasiveTactics : SCR_AICombatMoveLogicBase
 	override protected float ResolveStoppedWaitTime(bool inCover, EAIThreatState threat, EWeaponType weaponType)
 	{
 		float waitTime;
-		waitTime = Math.RandomFloat(3.0, 6.0);
+		waitTime = Math.RandomFloat(2.0, 6.0);
 
 		if(m_MoraleState < MoraleState.STRESSED)
 			waitTime = waitTime/5;
