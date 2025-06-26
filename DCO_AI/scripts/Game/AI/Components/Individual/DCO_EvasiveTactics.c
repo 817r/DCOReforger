@@ -112,7 +112,7 @@ class DCO_AIEvasiveTactics : SCR_AICombatMoveLogicBase
 				{
 					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					rq.m_vAvoidStraightPathDir = m_vAvoidStraightPathDir;
 					break;
 				}
@@ -165,7 +165,7 @@ class DCO_AIEvasiveTactics : SCR_AICombatMoveLogicBase
 					else
 						rq.m_eMovementType = EMovementType.WALK;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+					rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 					rq.m_vAvoidStraightPathDir = m_vAvoidStraightPathDir;
 					break;
 				}

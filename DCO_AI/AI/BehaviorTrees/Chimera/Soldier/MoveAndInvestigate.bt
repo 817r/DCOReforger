@@ -832,60 +832,86 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
           }
          }
         }
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 7891.798 -988.157
+        DCO_AIGroupTactics "DCO_AI Group Tactics" {
+         Name "DCO_AI Group Tactics"
+         EditorPos 7836.85 -1206.451
          Nodes {
-          SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
-           Name "SCR_AI Get Random Point"
-           EditorPos 7671.068 -775.504
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Waypoint"
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 7891.258 -981.33
+           Nodes {
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 7733.98 -690.345
+             PeriodRandom 2
             }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 30
-             PortName "Origin"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 27
-             PortName "Radius"
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 8375.237 -646.423
+             Nodes {
+              SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
+               Name "SCR_AI Get Random Point"
+               EditorPos 8154.508 -433.77
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Waypoint"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 30
+                 PortName "Origin"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 27
+                 PortName "Radius"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 28
+                 PortName "ResultVector"
+                }
+               }
+               Group "{65AC7733413CB98D}"
+               m_Radius 100
+              }
+              SCR_AILookAtPosition "SCR_AI Look At Position" {
+               Name "SCR_AI Look At Position"
+               EditorPos 8610.771 -456.81
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 29
+                 PortName "PositionIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "PriorityIn"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "PositionOut"
+                }
+               }
+               Group "{65AC7733413CB98D}"
+               m_fPriority 40
+              }
+             }
+             Group "{65AC7733413CB98D}"
             }
            }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 28
-             PortName "ResultVector"
-            }
-           }
-           Group "{65AC7733413CB98D}"
-           m_Radius 100
-          }
-          SCR_AILookAtPosition "SCR_AI Look At Position" {
-           Name "SCR_AI Look At Position"
-           EditorPos 8127.331 -798.544
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 29
-             PortName "PositionIn"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "PriorityIn"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "PositionOut"
-            }
-           }
-           Group "{65AC7733413CB98D}"
-           m_fPriority 40
           }
          }
-         Group "{65AC7733413CB98D}"
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ThresholdIn"
+          }
+         }
+         NegativeCondition 1
+         UseChildResult 0
+         m_threatThreshold BALANCED
         }
        }
       }
@@ -1077,22 +1103,22 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   VariableReference radius {
    VariableType 4
-   EditorPos 7497.568 -633.194
+   EditorPos 7981.008 -291.46
    Group "{65AC7733413CB98D}"
   }
   VariableReference position {
    VariableType 0
-   EditorPos 7924.235 -657.082
+   EditorPos 8407.675 -315.348
    Group "{65AC7733413CB98D}"
   }
   VariableReference position {
    VariableType 0
-   EditorPos 7919.348 -753.337
+   EditorPos 8402.788 -411.603
    Group "{65AC7733413CB98D}"
   }
   VariableReference inestigateCenterPos {
    VariableType 2
-   EditorPos 7399.735 -736.527
+   EditorPos 7883.175 -394.793
    Group "{65AC7733413CB98D}"
   }
  }
