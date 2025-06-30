@@ -39,7 +39,6 @@ class DCO_AIEvasiveTactics : SCR_AICombatMoveLogicBase
 		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
 		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
 		m_MoraleState = m_CombatComp.GetMoraleComponent().GetMoraleStates();
-		
 		/*		
 		//------------------------------------------------------------------------------------
 		Combat movement logic

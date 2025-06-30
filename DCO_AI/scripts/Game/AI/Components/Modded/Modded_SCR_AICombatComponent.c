@@ -9,7 +9,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 25.0;
 
 	// Perception factors
-	protected const float PERCEPTION_FACTOR_SAFE = 0.8;			//!< We are safe and are good at recognising enemies
+	protected const float PERCEPTION_FACTOR_SAFE = 0.5;			//!< We are safe and are good at recognising enemies
 	protected const float PERCEPTION_FACTOR_VIGILANT = 3.0;		//!< When vigilant and alert we are very good at recognising enemies
 	protected const float PERCEPTION_FACTOR_ALERTED = 3.0;
 	protected const float PERCEPTION_FACTOR_THREATENED = 1.5;	// We are suppressed and are bad at recognizing enemies
@@ -651,5 +651,15 @@ modded class SCR_AICombatComponent : ScriptComponent
 	SCR_AIUtilityComponent GetUtilityComponent()
 	{
 		return m_Utility;
+	}
+	
+	EAIGroupCombatMode SetCombatMode(EAIGroupCombatMode CM)
+	{
+		SCR_AIGroup myGroup = SCR_AIGroup.Cast(GetAiAgent().GetParentGroup());
+		if (!myGroup)
+			return EAIGroupCombatMode.FIRE_AT_WILL;
+		myGroup.GetGroupUtilityComponent().SetCombatMode(CM);
+		
+		return CM;
 	}
 }

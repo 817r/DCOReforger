@@ -7,7 +7,8 @@ enum DCO_GroupTactics
 	AGGRESSIVE,
 	DEFENSIVE,
 	EVASIVE,
-	BALANCED
+	BALANCED,
+	AUTOMATIC
 }
 
 class SCR_DCO_AIGroupConfigComponent : ScriptComponent
