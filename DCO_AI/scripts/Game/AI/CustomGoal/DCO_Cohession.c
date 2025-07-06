@@ -4,9 +4,6 @@ class SCR_AICombatMoveLogic_SquadCohession : SCR_AICombatMoveLogicBase
 	protected AIGroup Group;
 	protected MoraleState m_MoraleState;
 	
-	protected float MinRange = 5;
-	protected float MaxRange = 70;
-	
 
 	protected override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
@@ -103,7 +100,7 @@ class SCR_AICombatMoveLogic_SquadCohession : SCR_AICombatMoveLogicBase
 			if (!m_State.m_bInCover)
 				return true;
 
-		} else if (vector.Distance(m_Utility.GetOrigin(), Group.GetCenterOfMass()) > max/2)
+		} else if (vector.Distance(m_Utility.GetOrigin(), Group.GetCenterOfMass()) > max/3)
 			return true;
 		
 		return false;
@@ -121,8 +118,8 @@ class SCR_AICombatMoveLogic_SquadCohession : SCR_AICombatMoveLogicBase
 		rq.m_bTryFindCover = true;
 		rq.m_bUseCoverSearchDirectivity = true;
 
-		float coverSearchDistMin = 2;
-		float coverSearchDistMax = 15;
+		float coverSearchDistMin = 1;
+		float coverSearchDistMax = 3;
 		float moveDurationMax = 6;
 			switch (m_eThreatState)
 			{
@@ -134,23 +131,23 @@ class SCR_AICombatMoveLogic_SquadCohession : SCR_AICombatMoveLogicBase
 					{
 						case MoraleState.FRESH:
 						{
-							rq.m_eStanceMoving = ECharacterStance.STAND;
-							rq.m_eStanceEnd = ECharacterStance.CROUCH;
+							//rq.m_eStanceMoving = ECharacterStance.STAND;
+							//rq.m_eStanceEnd = ECharacterStance.CROUCH;
 							coverSearchDistMax *= 2;
 							moveDurationMax *= 3;
 							break;
 						}
 						case MoraleState.NORMAL:
 						{
-							rq.m_eStanceMoving = ECharacterStance.CROUCH;
-							rq.m_eStanceEnd = ECharacterStance.CROUCH;
+							//rq.m_eStanceMoving = ECharacterStance.CROUCH;
+							//rq.m_eStanceEnd = ECharacterStance.CROUCH;
 							coverSearchDistMax *= 1.7;
 							moveDurationMax *= 2.5;
 							break;					
 						}
 						case MoraleState.STRESSED:
 						{
-							if (Math.RandomInt(0,2) == 1)
+							/*if (Math.RandomInt(0,2) == 1)
 							{
 								rq.m_eStanceMoving = ECharacterStance.CROUCH;
 								rq.m_eStanceEnd = ECharacterStance.PRONE;
@@ -159,23 +156,23 @@ class SCR_AICombatMoveLogic_SquadCohession : SCR_AICombatMoveLogicBase
 							{
 								rq.m_eStanceMoving = ECharacterStance.STAND;
 								rq.m_eStanceEnd = ECharacterStance.PRONE;
-							}
+							}*/
 							coverSearchDistMax *= 1.5;
 							moveDurationMax *= 2;
 							break;					
 						}
 						case MoraleState.PRESSURED:
 						{
-							rq.m_eStanceMoving = ECharacterStance.CROUCH;
-							rq.m_eStanceEnd = ECharacterStance.PRONE;
+							//rq.m_eStanceMoving = ECharacterStance.CROUCH;
+							//rq.m_eStanceEnd = ECharacterStance.PRONE;
 							coverSearchDistMax *= 1.2;
 							moveDurationMax *= 1.5;
 							break;			
 						}
 						case MoraleState.BREAK:
 						{
-							rq.m_eStanceMoving = ECharacterStance.CROUCH;
-							rq.m_eStanceEnd = ECharacterStance.PRONE;
+							//rq.m_eStanceMoving = ECharacterStance.CROUCH;
+							//rq.m_eStanceEnd = ECharacterStance.PRONE;
 							break;					
 						}
 					}
@@ -189,23 +186,23 @@ class SCR_AICombatMoveLogic_SquadCohession : SCR_AICombatMoveLogicBase
 					{
 						case MoraleState.FRESH:
 						{
-							rq.m_eStanceMoving = ECharacterStance.STAND;
-							rq.m_eStanceEnd = ECharacterStance.CROUCH;
+							//rq.m_eStanceMoving = ECharacterStance.STAND;
+							//rq.m_eStanceEnd = ECharacterStance.CROUCH;
 							coverSearchDistMax *= 2;
 							moveDurationMax *= 3;
 							break;
 						}
 						case MoraleState.NORMAL:
 						{
-							rq.m_eStanceMoving = ECharacterStance.CROUCH;
-							rq.m_eStanceEnd = ECharacterStance.CROUCH;
+							//rq.m_eStanceMoving = ECharacterStance.CROUCH;
+							//rq.m_eStanceEnd = ECharacterStance.CROUCH;
 							coverSearchDistMax *= 1.7;
 							moveDurationMax *= 2.5;
 							break;					
 						}
 						case MoraleState.STRESSED:
 						{
-							if (Math.RandomInt(0,2) == 1)
+							/*if (Math.RandomInt(0,2) == 1)
 							{
 								rq.m_eStanceMoving = ECharacterStance.CROUCH;
 								rq.m_eStanceEnd = ECharacterStance.PRONE;
@@ -214,23 +211,23 @@ class SCR_AICombatMoveLogic_SquadCohession : SCR_AICombatMoveLogicBase
 							{
 								rq.m_eStanceMoving = ECharacterStance.STAND;
 								rq.m_eStanceEnd = ECharacterStance.CROUCH;
-							}
+							}*/
 							coverSearchDistMax *= 1.5;
 							moveDurationMax *= 2;
 							break;					
 						}
 						case MoraleState.PRESSURED:
 						{
-							rq.m_eStanceMoving = ECharacterStance.STAND;
-							rq.m_eStanceEnd = ECharacterStance.PRONE;
+							//rq.m_eStanceMoving = ECharacterStance.STAND;
+							//rq.m_eStanceEnd = ECharacterStance.PRONE;
 							coverSearchDistMax *= 1.2;
 							moveDurationMax *= 1.5;
 							break;			
 						}
 						case MoraleState.BREAK:
 						{
-							rq.m_eStanceMoving = ECharacterStance.CROUCH;
-							rq.m_eStanceEnd = ECharacterStance.PRONE;
+							//rq.m_eStanceMoving = ECharacterStance.CROUCH;
+							//rq.m_eStanceEnd = ECharacterStance.PRONE;
 							break;					
 						}
 					}
@@ -246,7 +243,8 @@ class SCR_AICombatMoveLogic_SquadCohession : SCR_AICombatMoveLogicBase
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
-		rq.m_fMoveDuration_s = Math.RandomFloat(0.7, 1.3) * moveDurationMax;
+		float dur = Math.RandomFloat(1, 1.5) * moveDurationMax;
+		rq.m_fMoveDuration_s = Math.Max(2,dur);
 		
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving

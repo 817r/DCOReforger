@@ -174,7 +174,7 @@ modded class SCR_AIGetAimErrorOffset: AITaskScripted
 			}
 			case EWeaponType.WT_SNIPERRIFLE:
 			{
-				return 0.2;
+				return 0.1;
 			}
 		}
 		return 1.0;

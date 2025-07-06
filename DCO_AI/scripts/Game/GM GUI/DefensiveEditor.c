@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class DCO_GroupTacticsEditor: SCR_BasePresetsEditorAttribute
+class DCO_GroupDefendTacticsRadius: SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -8,10 +8,16 @@ class DCO_GroupTacticsEditor: SCR_BasePresetsEditorAttribute
 		if (editableEntity.GetEntityType() != EEditableEntityType.GROUP) return null;
 		
 		int tactics;
+		float rad;
 		SCR_DCO_AIGroupConfigComponent comp = SCR_DCO_AIGroupConfigComponent.GetDCOGroupAIConfigComponent(editableEntity.GetOwner());
 		tactics = comp.GetTactics();
 		
-		return SCR_BaseEditorAttributeVar.CreateInt(tactics);
+		if (tactics == DCO_GroupTactics.DEFENSIVE)
+			rad = comp.GetDefendRadius();
+		else
+			return null;
+		
+		return SCR_BaseEditorAttributeVar.CreateFloat(rad);
 	}
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
@@ -21,11 +27,11 @@ class DCO_GroupTacticsEditor: SCR_BasePresetsEditorAttribute
 		if (editableEntity.HasEntityState(EEditableEntityState.PLAYER)) return;
 		if (editableEntity.GetEntityType() != EEditableEntityType.GROUP) return;
 		
-		int tactics = var.GetInt();
+		float tactics = var.GetFloat();
 
 		SCR_DCO_AIGroupConfigComponent comp = SCR_DCO_AIGroupConfigComponent.GetDCOGroupAIConfigComponent(editableEntity.GetOwner());
-		comp.SetTactics(tactics);
+		comp.SetDefendRadius(tactics);
 		
-		tactics = comp.GetTactics();
+		tactics = comp.GetDefendRadius();
 	}
 };

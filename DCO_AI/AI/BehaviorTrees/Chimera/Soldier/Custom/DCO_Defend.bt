@@ -1,0 +1,538 @@
+BehaviorTree "{757E07DE6B8DA155}AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defend.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/Custom/DCO_Defend.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -46.975 -45
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -48.569 145.88
+     Nodes {
+      AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+       Name "Set Pathfinding Filters"
+       EditorPos -607.681 976.166
+       NavmeshProject "Soldiers"
+       IgnoreFlags 8
+      }
+      Repeater Repeater {
+       Name "Repeater"
+       EditorPos 967.57 488.269
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 964.57 655.769
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos -213.966 1331.126
+           Nodes {
+            DecoratorEntity Entity {
+             Name "Entity"
+             EditorPos -577.902 1775.88
+             Nodes {
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos -533.402 2014.769
+               Nodes {
+                SCR_AICompleteAction "SCR_AI Complete Action" {
+                 Name "SCR_AI Complete Action"
+                 EditorPos -670.124 2231.991
+                }
+                AITaskReturnState "Return  State" {
+                 Name "Return  State"
+                 EditorPos -414.736 2225.38
+                 Result RUNNING
+                }
+               }
+              }
+             }
+             NegativeCondition 1
+             ForceNodeResult Success
+             InEntity -1
+             TEST {
+              DecoratorTestNotNull "{5C9AE6AE10AB7255}" {
+              }
+             }
+            }
+            SCR_AIGetRandomPointInCircularSector "SCR_AI Get Random Point In Circular Sector" {
+             Name "SCR_AI Get Random Point In Circular Sector"
+             EditorPos 46.955 1789.896
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "OriginEntity"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 7
+               PortName "SectorAxisPoint"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 3
+               PortName "AngularRange"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 4
+               PortName "PositionOut"
+              }
+             }
+             m_bReturnCircumference 0
+             m_bDebugMe 1
+            }
+            AITaskSetVariable "Set Variable" {
+             Name "Set Variable"
+             EditorPos 794.021 1809.079
+             SetValue "45"
+             OutVariable 16
+            }
+           }
+          }
+          SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
+           Name "SCR_AI Character Set Movement Speed"
+           EditorPos 1137.57 1148.269
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Speed"
+            }
+           }
+           m_eSpeed WALK
+          }
+          Parallel Parallel {
+           Name "Parallel"
+           EditorPos 2026.356 1154.948
+           Nodes {
+            AITaskMove Move {
+             Name "Move"
+             EditorPos 1450.903 1537.019
+             InTargetLocation 2
+             PrecisionXZ 1.5
+            }
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 2152.653 1423.102
+             Nodes {
+              AITaskIdle Idle {
+               Name "Idle"
+               EditorPos 1807.292 1675.685
+               Period 2
+               PeriodRandom 10
+              }
+              SCR_AIGetRandomPointWithExclude "SCR_AI Get Random Point With Exclude" {
+               Name "SCR_AI Get Random Point With Exclude"
+               EditorPos 2047.709 1657.436
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "Entity"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "SearchCenter"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "SearchRadius"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "ExclusionCenter"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "ExclusionRadius"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 12
+                 PortName "Position"
+                }
+               }
+               m_fSearchRadius 5
+              }
+              SCR_AILookAtPosition "SCR_AI Look At Position" {
+               Name "SCR_AI Look At Position"
+               EditorPos 2672.635 1635.802
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 12
+                 PortName "PositionIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "PriorityIn"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "PositionOut"
+                }
+               }
+               m_fPriority 1
+              }
+             }
+            }
+           }
+           UseChildResult 0
+          }
+          Parallel Parallel {
+           Name "Parallel"
+           EditorPos 4126.82 1081.936
+           Nodes {
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 3786.677 1408.483
+             Period 20
+             PeriodRandom 160
+            }
+            Selector Selector {
+             Name "Selector"
+             EditorPos 4152.987 1377.793
+             Nodes {
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 3154.272 2276.555
+               Nodes {
+                SCR_AICreateDefendBehaviorCoverQueryProps "SCR_AI Create Defend Behavior Cover Query Props" {
+                 Name "SCR_AI Create Defend Behavior Cover Query Props"
+                 EditorPos 2395.368 2554.816
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 13
+                   PortName "SectorCenterPos"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 6
+                   PortName "SectorAxisPointPos"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 5
+                   PortName "SectorHalfSizeDeg"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 11
+                   PortName "SectorRadius"
+                  }
+                 }
+                 OutPorts {
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port 14
+                   PortName "CoverQueryProps"
+                  }
+                 }
+                }
+                SCR_AIFindCover "SCR_AI Find Cover" {
+                 Name "SCR_AI Find Cover"
+                 EditorPos 2879.963 2599.602
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 14
+                   PortName "CoverQueryProps"
+                  }
+                 }
+                 OutPorts {
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port 10
+                   PortName "CoverLock"
+                  }
+                 }
+                }
+                SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
+                 Name "SCR_AI Get Cover Parameters"
+                 EditorPos 3171.653 2596.007
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 10
+                   PortName "CoverLock"
+                  }
+                 }
+                 OutPorts {
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port 9
+                   PortName "Pos"
+                  }
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port 15
+                   PortName "Stance"
+                  }
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port -1
+                   PortName "StanceHide"
+                  }
+                 }
+                }
+                SCR_AIDrawDebugSphere "SCR_AI Draw Debug Sphere" {
+                 Name "SCR_AI Draw Debug Sphere"
+                 EditorPos 3671.181 2589.185
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 9
+                   PortName "OriginIn"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "RadiusIn"
+                  }
+                 }
+                 m_fRadius 0.5
+                }
+                AITaskMove Move {
+                 Name "Move"
+                 EditorPos 3911.915 2525.662
+                 InTargetLocation 9
+                 PrecisionXZ 0.5
+                 OrientationType ToPoint
+                }
+                SCR_AISetStance "SCR_AI Set Stance" {
+                 Name "SCR_AI Set Stance"
+                 EditorPos 4276.07 2667.269
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 15
+                   PortName "Stance"
+                  }
+                 }
+                }
+                SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
+                 Name "SCR_AI Set Combat Move State"
+                 EditorPos 4485.487 2669.519
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "InCover"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "ExposedInCover"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "AimAtTarget"
+                  }
+                 }
+                 m_bSetInCover 1
+                 m_bInCoverValue 1
+                 m_bSetExposedInCover 1
+                 m_bExposedInCoverValue 1
+                }
+                AITaskReturnState "Return  State" {
+                 Name "Return  State"
+                 EditorPos 4810.32 2510.269
+                 Result RUNNING
+                }
+               }
+              }
+              AITaskReturnState "Return  State" {
+               Name "Return  State"
+               EditorPos 4442.82 1805.269
+               Result RUNNING
+              }
+             }
+            }
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 5178.963 1384.316
+             Nodes {
+              AITaskIdle Idle {
+               Name "Idle"
+               EditorPos 4562.749 1581.888
+               Period 2
+               PeriodRandom 10
+              }
+              SCR_AIGetRandomPointInCircularSector "SCR_AI Get Random Point In Circular Sector" {
+               Name "SCR_AI Get Random Point In Circular Sector"
+               EditorPos 5058.63 1570.566
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "OriginEntity"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 8
+                 PortName "SectorAxisPoint"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 1
+                 PortName "AngularRange"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 0
+                 PortName "PositionOut"
+                }
+               }
+              }
+              SCR_AILookAtPosition "SCR_AI Look At Position" {
+               Name "SCR_AI Look At Position"
+               EditorPos 5629.987 1568.484
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 0
+                 PortName "PositionIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "PriorityIn"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "PositionOut"
+                }
+               }
+               m_fPriority 1
+              }
+             }
+            }
+           }
+           UseChildResult 0
+          }
+         }
+        }
+       }
+       RepeatTimes -1
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  Variable lookAtPosition {
+   VariableName "lookAtPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable angularRangeDeg {
+   VariableName "angularRangeDeg"
+   VariableTypeName "float"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable defendWaypoint {
+   VariableName "defendWaypoint"
+   VariableTypeName "AIWaypoint"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable randomPosition {
+   VariableName "randomPosition"
+   VariableTypeName "vector"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable defendLocation {
+   VariableName "defendLocation"
+   VariableTypeName "vector"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable CoverLock {
+   VariableName "CoverLock"
+   VariableTypeName "SCR_AICoverLock"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable fWaypointRadius {
+   VariableName "fWaypointRadius"
+   VariableTypeName "float"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable vWaypointPos {
+   VariableName "vWaypointPos"
+   VariableTypeName "vector"
+   VariableExposedInput 1
+   VariableExposedOutput 0
+  }
+  Variable coverQueryProps {
+   VariableName "coverQueryProps"
+   VariableTypeName "CoverQueryProperties"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+  Variable stance {
+   VariableName "stance"
+   VariableTypeName "int"
+   VariableExposedInput 0
+   VariableExposedOutput 0
+  }
+ }
+ VariablesRefs {
+  VariableReference lookAtPosition {
+   VariableType 0
+   EditorPos 5407.272 1684.648
+  }
+  VariableReference angularRangeDeg {
+   VariableType 1
+   EditorPos 4815.416 1686.387
+  }
+  VariableReference randomPosition {
+   VariableType 3
+   EditorPos 1123.463 1660.055
+  }
+  VariableReference angularRangeDeg {
+   VariableType 1
+   EditorPos -282.358 1930.412
+  }
+  VariableReference randomPosition {
+   VariableType 3
+   EditorPos 546.784 1836.09
+  }
+  VariableReference angularRangeDeg {
+   VariableType 1
+   EditorPos 2036.57 2664.019
+  }
+  VariableReference defendLocation {
+   VariableType 4
+   EditorPos 2038.57 2583.019
+  }
+  VariableReference defendLocation {
+   VariableType 4
+   EditorPos -301.212 1805.693
+  }
+  VariableReference defendLocation {
+   VariableType 4
+   EditorPos 4769.416 1580.387
+  }
+  VariableReference randomPosition {
+   VariableType 3
+   EditorPos 3434.534 2607.575
+  }
+  VariableReference CoverLock {
+   VariableType 5
+   EditorPos 2890.483 2726.13
+  }
+  VariableReference fWaypointRadius {
+   VariableType 6
+   EditorPos 2055.939 2737.466
+  }
+  VariableReference lookAtPosition {
+   VariableType 0
+   EditorPos 2451.919 1755.965
+  }
+  VariableReference vWaypointPos {
+   VariableType 7
+   EditorPos 2036.549 2507.823
+  }
+  VariableReference coverQueryProps {
+   VariableType 8
+   EditorPos 2493.915 2702.912
+  }
+  VariableReference stance {
+   VariableType 9
+   EditorPos 3441.534 2695.823
+  }
+  VariableReference angularRangeDeg {
+   VariableType 1
+   EditorPos 1011.45 1879.559
+  }
+ }
+}

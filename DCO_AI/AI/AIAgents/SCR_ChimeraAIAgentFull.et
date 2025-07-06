@@ -4,5 +4,6 @@ SCR_ChimeraAIAgent {
   SCR_DCO_AIConfigComponent "{64FA7A5E1E048922}" {
   }
  }
+ DangerEventRange 1200
  DynamicsimLastlodDistance 2500
 }

@@ -12,7 +12,7 @@ modded class SCR_AICombatComponent : ScriptComponent
 	protected const float PERCEPTION_FACTOR_SAFE = 0.5;			//!< We are safe and are good at recognising enemies
 	protected const float PERCEPTION_FACTOR_VIGILANT = 3.0;		//!< When vigilant and alert we are very good at recognising enemies
 	protected const float PERCEPTION_FACTOR_ALERTED = 3.0;
-	protected const float PERCEPTION_FACTOR_THREATENED = 1.5;	// We are suppressed and are bad at recognizing enemies
+	protected const float PERCEPTION_FACTOR_THREATENED = 2.0;	// We are suppressed and are bad at recognizing enemies
 	
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_BINOCULARS = 3.0;	//!< Looking through binoculars
 	protected const float PERCEPTION_FACTOR_EQUIPMENT_NONE = 1.0;		//!< Not using any special equipment, same recognition ability as usual
@@ -204,17 +204,17 @@ modded class SCR_AICombatComponent : ScriptComponent
 		{
 			case MoraleState.FRESH:
 			{
-				return 1.5;
+				return 2.0;
 				break;
 			}
 			case MoraleState.NORMAL:
 			{
-				return 1.2;
+				return 1.7;
 				break;
 			}
 			case MoraleState.STRESSED:
 			{
-				return 1.0;
+				return 1.3;
 				break;
 			}
 			case MoraleState.PRESSURED:

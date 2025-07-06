@@ -4,7 +4,7 @@ class DCO_AIDetectionSystemComponentClass : ScriptComponentClass
 
 class DCO_AIDetectionSystemComponent : ScriptComponent
 {	
-	[Attribute("100", UIWidgets.Slider, "AI Detection Radius", params: "0 200 1" )]
+	[Attribute("120", UIWidgets.Slider, "AI Detection Radius", params: "0 250 1" )]
 	protected float m_fDetectionRadius;
 	
 	protected PerceptionComponent 					Perc;
@@ -13,7 +13,9 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 	protected SCR_ChimeraAIAgent 					agent;
 	
 	protected float IntervalUpdate = 5000;
+	protected float IntervalDetection = 10000;
 	protected float TimeStamp;
+	protected float DetectionTime;
 	
 	protected ref array<IEntity> enemies = {};
 	protected ref array<IEntity> allies = {};
@@ -52,7 +54,13 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 
     override void EOnFrame(IEntity owner, float timeSlice)
     {
-		UpdateDetection(owner, timeSlice);
+		DetectionTime += timeSlice;
+		if (DetectionTime > IntervalUpdate)
+		{
+			UpdateDetection(owner, timeSlice);
+			DetectionTime = 0;
+		}
+		
     }
 	
 	protected void UpdateDetection(IEntity owner, float timeSlice)
@@ -79,6 +87,7 @@ class DCO_AIDetectionSystemComponent : ScriptComponent
 		if (TimeStamp > IntervalUpdate)
 		{
 			InfoShare();
+			TimeStamp = 0;
 			return true;
 		}
 		return false;

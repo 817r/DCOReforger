@@ -279,7 +279,7 @@ class SCR_AICombatMoveLogic_Defensive : SCR_AICombatMoveLogicBase
 			}
 		}
 		
-		waitTime = Math.Clamp(waitTime, 120, 600);
+		waitTime = Math.Clamp(waitTime, 150, 600);
 		
 		return waitTime;
 	}
