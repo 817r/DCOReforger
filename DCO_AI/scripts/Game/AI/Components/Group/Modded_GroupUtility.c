@@ -3,6 +3,8 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	protected SCR_DCO_AIGroupConfigComponent m_GroupConfig;
 	protected float tacticsSuppression = 1;
 	
+	protected DCO_GroupTactics eActualTactics;
+	
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
@@ -197,7 +199,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	
 	protected void TacticsROE()
 	{
-		switch(m_GroupConfig.m_Tactics)
+		switch(m_GroupConfig.m_eActualTactics)
 		{
 			case DCO_GroupTactics.EVASIVE:
 			{
@@ -238,7 +240,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 			}
 			case DCO_GroupTactics.DEFENSIVE:
 			{
-				tacticsSuppression = 1.2;
+				tacticsSuppression = 1.5;
 			}
 			default:
 			{
@@ -246,5 +248,22 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 				break;
 			}
 		}
+	}
+	
+	protected void TacticsEvaluations()
+	{
+		if (m_GroupConfig.m_eExternalTactics != DCO_GroupTactics.AUTOMATIC)
+		{
+			m_GroupConfig.m_eActualTactics = m_GroupConfig.m_eExternalTactics;
+		} 
+		else
+		{
+			
+		}
+	}
+	
+	DCO_GroupTactics GetActualGroupTactics()
+	{
+		return eActualTactics;
 	}
 }

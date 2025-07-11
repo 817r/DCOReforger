@@ -14,7 +14,8 @@ enum DCO_GroupTactics
 class SCR_DCO_AIGroupConfigComponent : ScriptComponent
 {
 	[Attribute("3", UIWidgets.ComboBox, "AI Tactics in combat", "", ParamEnumArray.FromEnum(DCO_GroupTactics), category: "AI Tactics to use", )]
-	DCO_GroupTactics m_Tactics;
+	DCO_GroupTactics m_eExternalTactics;
+	DCO_GroupTactics m_eActualTactics;
 	
 	[Attribute( defvalue: "70", category: "Defensive Tactics", uiwidget: UIWidgets.Slider, desc: "Defend Radius for AI when they are on defensive tactics", params: "1 150 1" )]
 	float m_DefendRadius;
@@ -28,12 +29,17 @@ class SCR_DCO_AIGroupConfigComponent : ScriptComponent
 	
 	DCO_GroupTactics GetTactics()
 	{
-		 return m_Tactics;
+		 return m_eExternalTactics;
+	}
+	
+	DCO_GroupTactics GetActualTactics()
+	{
+		return m_eActualTactics;
 	}
 	
 	DCO_GroupTactics SetTactics(DCO_GroupTactics Tactics)
 	{
-		m_Tactics = Tactics;
+		m_eExternalTactics = Tactics;
 		return Tactics;
 	}
 	

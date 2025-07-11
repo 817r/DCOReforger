@@ -17,7 +17,7 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 	[Attribute("", UIWidgets.Object)]
 	ref array<ref DCO_Personality> m_Personality;
 	
-	[Attribute("", UIWidgets.ComboBox, "AI skill in combat", "", ParamEnumArray.FromEnum(DCO_SKILL), category: "AI General Skill", )]
+	[Attribute("2", UIWidgets.ComboBox, "AI skill in combat", "", ParamEnumArray.FromEnum(DCO_SKILL), category: "AI General Skill", )]
 	DCO_SKILL m_SkillSet;
 	
 	[Attribute( defvalue: "1", category: "AI AIM", uiwidget: UIWidgets.CheckBox, desc: "Alow aim Improvement" )]
@@ -117,6 +117,7 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
 	
 	override void EOnInit(IEntity owner)
 	{
-		m_SkillSet = DCO_SKILL.CRACK;
+		m_SkillSet = SCR_DCOAISettingsComponent.GetInstance().GetDefaultIndividualAIGlobalSkill();
+		m_MaxAimImprovementBoost = SCR_DCOAISettingsComponent.GetInstance().GetDefaultIndividualAIAimImprovementBoost();
 	}
 }
