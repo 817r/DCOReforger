@@ -27,7 +27,7 @@ class DCO_AIGroupTactics : DecoratorScripted
 		if (!GetVariableIn(THRESHOLD_PORT,threshold))
 			threshold = m_threatThreshold;
 		
-		return threshold == groupConfig.GetTactics();	
+		return threshold == groupConfig.GetActualTactics();	
 	}
 	
 	//------------------------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class DCO_GlobalAISkillLevel: SCR_BasePresetsEditorAttribute
+class DCO_GlobalAIMaxAIMBoost: SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -11,10 +11,10 @@ class DCO_GlobalAISkillLevel: SCR_BasePresetsEditorAttribute
 		if (!dcoAIGlobalSetting)
 			return null;
 		
-		int skill;
-		dcoAIGlobalSetting.GetDefaultIndividualAIGlobalSkill();
+		float skill;
+		dcoAIGlobalSetting.GetDefaultIndividualAIAimImprovementBoost();
 		
-		return SCR_BaseEditorAttributeVar.CreateInt(skill);
+		return SCR_BaseEditorAttributeVar.CreateFloat(skill);
 	}
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
@@ -26,9 +26,9 @@ class DCO_GlobalAISkillLevel: SCR_BasePresetsEditorAttribute
 		if (!dcoAIGlobalSetting)
 			return;
 				
-		int skill = var.GetInt();
-		dcoAIGlobalSetting.SetDefaultIndividualAIGlobalSkill(skill);
-		skill = dcoAIGlobalSetting.GetDefaultIndividualAIGlobalSkill();
+		float skill = var.GetFloat();
+		dcoAIGlobalSetting.SetDefaultIndividualAIAimImprovementBoost(skill);
+		skill = dcoAIGlobalSetting.GetDefaultIndividualAIAimImprovementBoost();
 		
 	}
 };

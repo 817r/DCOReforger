@@ -4,6 +4,7 @@ class DCO_GroupTacticsEditor: SCR_BasePresetsEditorAttribute
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
 		SCR_EditableEntityComponent editableEntity = SCR_EditableEntityComponent.Cast(item); 
+		if (!editableEntity) return null;
 		if (editableEntity.HasEntityState(EEditableEntityState.PLAYER)) return null;
 		if (editableEntity.GetEntityType() != EEditableEntityType.GROUP) return null;
 		

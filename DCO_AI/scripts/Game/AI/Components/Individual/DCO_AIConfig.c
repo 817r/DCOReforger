@@ -116,8 +116,18 @@ class SCR_DCO_AIConfigComponent : ScriptComponent
     }
 	
 	override void EOnInit(IEntity owner)
-	{
-		m_SkillSet = SCR_DCOAISettingsComponent.GetInstance().GetDefaultIndividualAIGlobalSkill();
-		m_MaxAimImprovementBoost = SCR_DCOAISettingsComponent.GetInstance().GetDefaultIndividualAIAimImprovementBoost();
+	{		
+		SCR_DCOAISettingsComponent dcoAIGlobalSetting = SCR_DCOAISettingsComponent.GetInstance();
+		if (!dcoAIGlobalSetting)
+			return;
+		
+		if (dcoAIGlobalSetting)
+		{
+			if (dcoAIGlobalSetting.useRandomSkillDistribution)
+				m_SkillSet = Math.RandomInt(DCO_SKILL.CONSCPRIT, DCO_SKILL.ELITE);
+			else
+				m_SkillSet = SCR_DCOAISettingsComponent.GetInstance().GetDefaultIndividualAIGlobalSkill();
+			m_MaxAimImprovementBoost = SCR_DCOAISettingsComponent.GetInstance().GetDefaultIndividualAIAimImprovementBoost();
+		}
 	}
 }

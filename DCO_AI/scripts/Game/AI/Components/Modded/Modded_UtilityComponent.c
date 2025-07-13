@@ -146,6 +146,7 @@ modded class SCR_AIUtilityComponent : SCR_AIBaseUtilityComponent
 		DCO_ConfComponent = SCR_DCO_AIConfigComponent.Cast(owner.FindComponent(SCR_DCO_AIConfigComponent));
 		DCO_MoraleSystem = DCO_AIMoraleSystemComponent.Cast(m_OwnerEntity.FindComponent(DCO_AIMoraleSystemComponent));
 		DCO_AIDetection = DCO_AIDetectionSystemComponent.Cast(m_OwnerEntity.FindComponent(DCO_AIDetectionSystemComponent));
+		m_AIInfo.RegisterUtility(this);
 	}
 	
 	bool IsAimImproved()

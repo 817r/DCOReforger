@@ -2,6 +2,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 {
 	protected SCR_DCO_AIGroupConfigComponent m_GroupConfig;
 	protected float tacticsSuppression = 1;
+	protected float tacticsEvaluationTimeStamp;
 	
 	protected DCO_GroupTactics eActualTactics;
 	
@@ -68,6 +69,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		
 		float currentTime = GetGame().GetWorld().GetWorldTime();
 		float deltaTime_ms = 0;
+		tacticsEvaluationTimeStamp += GetGame().GetWorld().GetTimeSlice();
 		if (m_fLastUpdateTime != -1.0)
 			deltaTime_ms = currentTime - m_fLastUpdateTime;
 		
@@ -191,6 +193,9 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		if (isMilitary)
 			EvaluateCombatMode();
 		
+		if (ReevaluateTactics())
+			TacticsEvaluations();
+		
 		m_fLastUpdateTime = currentTime;
 		m_bNewGroupMemberAdded = false; // resetting reaction on group member added
 		
@@ -250,6 +255,19 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		}
 	}
 	
+	protected bool ReevaluateTactics()
+	{
+		if (tacticsEvaluationTimeStamp > 30000)
+		{
+			tacticsEvaluationTimeStamp = 0;
+		
+			return true;
+		} else if (m_GroupConfig.m_eExternalTactics != DCO_GroupTactics.AUTOMATIC)
+			return true;
+		
+		return false;
+	}
+	
 	protected void TacticsEvaluations()
 	{
 		if (m_GroupConfig.m_eExternalTactics != DCO_GroupTactics.AUTOMATIC)
@@ -258,6 +276,51 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 		} 
 		else
 		{
+			int EnemyCount = 0;
+			float GroupMoraleAverage = 0;
+			float GroupThreatAverage = 0;
+			foreach (SCR_AIGroupTargetCluster c : m_Perception.m_aTargetClusters)
+			{
+				EnemyCount += c.m_State.m_iCountAlive;
+			}
+			foreach (SCR_AIInfoComponent i : m_aInfoComponents)
+			{
+				GroupMoraleAverage += i.m_Utility.DCO_MoraleSystem.GetMoraleValue();
+				GroupThreatAverage += i.m_Utility.m_ThreatSystem.GetThreatMeasureWithoutInjuryFactor();
+			}
+			
+			GroupMoraleAverage = GroupMoraleAverage/m_Owner.GetAgentsCount();
+			GroupThreatAverage = GroupThreatAverage/m_Owner.GetAgentsCount();
+			
+			if (EnemyCount > m_Owner.GetAgentsCount() * 3)
+			{
+				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.EVASIVE;
+				// Change to Fallback
+			}
+			else if (EnemyCount > m_Owner.GetAgentsCount() * 2 && GroupThreatAverage > 0.7)
+			{
+				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.EVASIVE;
+			}
+			else if (GroupThreatAverage > 0.7 && GroupMoraleAverage < 50)
+			{
+				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.DEFENSIVE;
+			}
+			else if (EnemyCount == m_Owner.GetAgentsCount())
+			{
+				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.DEFENSIVE;
+			}
+			else if (EnemyCount < m_Owner.GetAgentsCount())
+			{
+				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.AGGRESSIVE;
+			} 
+			else if (GroupThreatAverage < 0.2 && GroupMoraleAverage > 60)
+			{
+				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.AGGRESSIVE;
+			}
+			else
+			{
+				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.DEFENSIVE;
+			}
 			
 		}
 	}

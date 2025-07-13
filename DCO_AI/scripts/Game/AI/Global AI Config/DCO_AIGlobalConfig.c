@@ -6,10 +6,10 @@ class SCR_DCOAISettingsComponentClass : ScriptComponentClass
 // Obsolete and should be removed eventually
 class SCR_DCOAISettingsComponent : ScriptComponent
 {
-	[Attribute(defvalue: "1", uiwidget: UIWidgets.Auto, desc: "Default AI Skill", category: "AI Skill",)]
+	[Attribute(defvalue: "0", uiwidget: UIWidgets.Auto, desc: "Default AI Skill", category: "AI Skill",)]
 	bool useRandomSkillDistribution;
 	
-	[Attribute("2", UIWidgets.ComboBox, "AI skill in combat",category: "Individual Setting", ParamEnumArray.FromEnum(DCO_SKILL), category: "AI General Skill", )]
+	[Attribute("3", UIWidgets.ComboBox, "AI skill in combat",category: "Individual Setting", ParamEnumArray.FromEnum(DCO_SKILL), category: "AI General Skill", )]
 	protected DCO_SKILL m_eDefaultGlobalSkill;
 	
 	[Attribute( defvalue: "5", category: "Individual Setting", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 20 1" )]
@@ -55,12 +55,5 @@ class SCR_DCOAISettingsComponent : ScriptComponent
 	{
 		super.OnPostInit(owner);
 		m_sInstance = this;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	// destructor
-	void ~SCR_DCOAISettingsComponent()
-	{
-		
 	}
 }
