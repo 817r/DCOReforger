@@ -4,8 +4,6 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	protected float tacticsSuppression = 1;
 	protected float tacticsEvaluationTimeStamp;
 	
-	protected DCO_GroupTactics eActualTactics;
-	
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
@@ -240,12 +238,12 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 			}
 			case DCO_GroupTactics.AGGRESSIVE:
 			{
-				tacticsSuppression = 2.5;
+				tacticsSuppression = 1.5;
 				break;
 			}
 			case DCO_GroupTactics.DEFENSIVE:
 			{
-				tacticsSuppression = 1.5;
+				tacticsSuppression = 2.5;
 			}
 			default:
 			{
@@ -257,7 +255,7 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 	
 	protected bool ReevaluateTactics()
 	{
-		if (tacticsEvaluationTimeStamp > 30000)
+		if (tacticsEvaluationTimeStamp > 3000)
 		{
 			tacticsEvaluationTimeStamp = 0;
 		
@@ -292,41 +290,31 @@ modded class SCR_AIGroupUtilityComponent : SCR_AIBaseUtilityComponent
 			GroupMoraleAverage = GroupMoraleAverage/m_Owner.GetAgentsCount();
 			GroupThreatAverage = GroupThreatAverage/m_Owner.GetAgentsCount();
 			
-			if (EnemyCount > m_Owner.GetAgentsCount() * 3)
+			switch(m_GroupConfig.m_eActualTactics)
 			{
-				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.EVASIVE;
-				// Change to Fallback
-			}
-			else if (EnemyCount > m_Owner.GetAgentsCount() * 2 && GroupThreatAverage > 0.7)
-			{
-				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.EVASIVE;
-			}
-			else if (GroupThreatAverage > 0.7 && GroupMoraleAverage < 50)
-			{
-				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.DEFENSIVE;
-			}
-			else if (EnemyCount == m_Owner.GetAgentsCount())
-			{
-				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.DEFENSIVE;
-			}
-			else if (EnemyCount < m_Owner.GetAgentsCount())
-			{
-				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.AGGRESSIVE;
-			} 
-			else if (GroupThreatAverage < 0.2 && GroupMoraleAverage > 60)
-			{
-				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.AGGRESSIVE;
-			}
-			else
-			{
-				m_GroupConfig.m_eActualTactics = DCO_GroupTactics.DEFENSIVE;
+				case DCO_GroupTactics.EVASIVE :
+				{
+					if (GroupThreatAverage < 0.3 && GroupMoraleAverage > 70) m_GroupConfig.m_eActualTactics = DCO_GroupTactics.AGGRESSIVE;
+					else if (GroupMoraleAverage > 50) m_GroupConfig.m_eActualTactics = DCO_GroupTactics.DEFENSIVE;
+					else return;
+					break;
+				}
+				case DCO_GroupTactics.DEFENSIVE :
+				{
+					if (GroupThreatAverage < 0.3 && GroupMoraleAverage > 80) m_GroupConfig.m_eActualTactics = DCO_GroupTactics.AGGRESSIVE;
+					else if (GroupMoraleAverage > 50 && EnemyCount > m_Owner.GetAgentsCount() * 5) m_GroupConfig.m_eActualTactics = DCO_GroupTactics.EVASIVE;
+					else return;
+					break;
+				}
+				case DCO_GroupTactics.AGGRESSIVE :
+				{
+					if (GroupMoraleAverage < 20) m_GroupConfig.m_eActualTactics = DCO_GroupTactics.EVASIVE;
+					else if (GroupMoraleAverage < 50 && EnemyCount > m_Owner.GetAgentsCount() * 5) m_GroupConfig.m_eActualTactics = DCO_GroupTactics.DEFENSIVE;
+					else return;
+					break;
+				}
 			}
 			
 		}
-	}
-	
-	DCO_GroupTactics GetActualGroupTactics()
-	{
-		return eActualTactics;
 	}
 }
