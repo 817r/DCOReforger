@@ -1,0 +1,253 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 368.75 147.25
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence - Wait For New Selected Weapon"
+     EditorPos 202.738 278.953
+     Nodes {
+      SCR_AIWaitForNewCombatComponentWeapon "SCR_AI Get Combat Component Weapon" {
+       Name "SCR_AI Wait For New Combat Component Weapon"
+       EditorPos -667.656 925.939
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 0
+         PortName "WeaponComponent"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 1
+         PortName "MuzzleId"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "MagazineComponent"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "WeaponHandlingTree"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "WeaponOrMuzzleSwitch"
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 892.358 635.666
+       Nodes {
+        SCR_AICheckLowAmmo "SCR_AI Check Low Ammo" {
+         Name "SCR_AI Check Low Ammo"
+         EditorPos 462.333 961.428
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 0
+           PortName "WeaponComponent"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 1
+           PortName "MuzzleId"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 2
+           PortName "LowAmmo"
+          }
+         }
+        }
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 1227.651 904.206
+         Nodes {
+          SCR_AIDecoHasActionOfType "SCR_AI Deco Has Action Of Type" {
+           Name "SCR_AI Deco Has Action Of Type"
+           EditorPos 1123.476 1083.714
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence - Complain to squad leader"
+             EditorPos 1117.476 1283.512
+             Nodes {
+              SCR_AIGetMuzzleMagazineWell "SCR_AI Get Muzzle Magazine Well" {
+               Name "SCR_AI Get Muzzle Magazine Well"
+               EditorPos 112 1552
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 3
+                 PortName "WeaponComponent"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 4
+                 PortName "MuzzleId"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "MagazineWell"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 5
+                 PortName "MagazineWellType"
+                }
+               }
+              }
+              DCO_MagicAmmo "DCO_ Magic Ammo" {
+               Name "DCO_ Magic Ammo"
+               EditorPos 720 1568
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 5
+                 PortName "MagazineWell"
+                }
+               }
+               m_iMagazineCount 3
+              }
+              AITaskGetControlledEntity "Get Controlled Entity" {
+               Name "Get Controlled Entity"
+               EditorPos 959.381 1537.619
+               OutControlledEntity 7
+              }
+              SCR_AITalk "SCR_AI Talk" {
+               Name "SCR_AI Talk"
+               EditorPos 1273.371 1535
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "SpeakerIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "TargetIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "LocationIn"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port -1
+                 PortName "EnumIn"
+                }
+               }
+               m_messageType REPORT_NO_AMMO
+               m_ePreset MANDATORY
+               m_bSynchronous 1
+               m_bTransmitIfPassenger 0
+              }
+              SCR_AIGetMyGroup "SCR_AI Get My Group" {
+               Name "SCR_AI Get My Group"
+               EditorPos 1449.285 1532.079
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 6
+                 PortName "GroupOut"
+                }
+               }
+              }
+              SCR_AISendInfoMessage_NoAmmo "SCR_AI Send Info Message_ No Ammo" {
+               Name "SCR_AI Send Info Message_ No Ammo"
+               EditorPos 1929.608 1634.477
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 6
+                 PortName "Receiver"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 7
+                 PortName "EntityToSupply"
+                }
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 5
+                 PortName "MagazineWellType"
+                }
+               }
+              }
+              AITaskIdle Idle {
+               Name "Idle - Wait for a long time"
+               EditorPos 2391.13 1529.702
+               Period 6
+               PeriodRandom 2
+              }
+             }
+            }
+           }
+           NegativeCondition 1
+           AbortType AbortChildrenBranch
+           m_sActionType "SCR_AIPickupInventoryItemsBehavior"
+          }
+         }
+         InVariable 2
+         TestType EqualsValue
+         TestValue "true"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableObject weaponComp {
+   Flags 0
+   Desc "BaseWeaponComponent"
+  }
+  BtVariableInteger muzzleId {
+   Flags 0
+   Desc "int"
+  }
+  BtVariableTypename magWellType {
+   Flags 0
+   Desc "typename"
+  }
+  BtVariableBool lowAmmo {
+   Flags 0
+   Desc "bool"
+  }
+  BtVariableGroup myGroup {
+   Flags 0
+   Desc "AIGroup"
+  }
+  BtVariableEntity myEntity {
+   Flags 0
+   Desc "IEntity"
+  }
+ }
+ VariablesRefs {
+  VariableReference weaponComp {
+   VariableType 0
+   EditorPos -183.414 952.164
+  }
+  VariableReference muzzleId {
+   VariableType 1
+   EditorPos -186.293 1026.348
+  }
+  VariableReference lowAmmo {
+   VariableType 3
+   EditorPos 810.825 986.032
+  }
+  VariableReference weaponComp {
+   VariableType 0
+   EditorPos -251.048 1555.607
+  }
+  VariableReference muzzleId {
+   VariableType 1
+   EditorPos -39.715 1627.94
+  }
+  VariableReference magWellType {
+   VariableType 2
+   EditorPos 480 1792
+  }
+  VariableReference myGroup {
+   VariableType 4
+   EditorPos 1643.678 1567.757
+  }
+  VariableReference myEntity {
+   VariableType 5
+   EditorPos 1634.182 1652.12
+  }
+ }
+}

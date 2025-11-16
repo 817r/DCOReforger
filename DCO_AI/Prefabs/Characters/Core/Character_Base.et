@@ -1,6 +1,21 @@
 SCR_ChimeraCharacter {
  ID "520EC961A090B1EE"
  components {
+  ChimeraAIControlComponent "{520EA1D2DB109F34}" {
+   components {
+    PerceptionComponent "{54A2CBC75F06064B}" {
+     SensorsList {
+      EyesSensor "{520EA1D2DB109AAD}" {
+       FOVNormal 120
+       FOVPeripheral 200
+      }
+      EarsSensor "{520EA1D2DB109AA9}" {
+       SoundIntensityMin_db 20
+      }
+     }
+    }
+   }
+  }
   DCO_AIIdentifierComponent "{66C262F3E1E46AFE}" {
    unitType infantry
   }
