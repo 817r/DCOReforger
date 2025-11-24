@@ -4,6 +4,7 @@ modded class SCR_AICombatComponent
 	static const float AIM_IMPROVEMENT_INCREASE = 0.00001;
 	static const float AIM_IMPROVEMENT_DECREASE = 0.000001;
 	static const float AIM_IMPROVEMENT_CONST_DECREASE = AIM_IMPROVEMENT_DECREASE * 12;
+	static const float AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER = 3;
 	
 	float CURRENT_AIM_IMPROVEMENT;
 	
@@ -24,6 +25,13 @@ modded class SCR_AICombatComponent
 		Math.Clamp(CURRENT_AIM_IMPROVEMENT - AIM_IMPROVEMENT_CONST_DECREASE, 0, int.MAX);
 	}
 	
+	void DangerSuppressedDecreaseAIM(float dec)
+	{
+		float decrease = dec * AIM_IMPROVEMENT_DECREASE * AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER;
+		Math.Clamp(CURRENT_AIM_IMPROVEMENT - decrease, 0, int.MAX);
+		
+	}
+	
 	override void Update(float timeSliceMs)
 	{
 		super.Update(timeSliceMs);
@@ -34,7 +42,7 @@ modded class SCR_AICombatComponent
 				ChangeTargetCompensation();
 			}
 			else
-			{
+			{	
 				ImproveAim();
 			}
 		} else if (!m_SelectedTargetVisible)
