@@ -1,0 +1,15 @@
+SCR_AIWorld {
+ ID "50B2B8F35661FB44"
+ components {
+  ChimeraCoverManagerComponent "{5E3ADC0EA7048548}" {
+   IncludeFullCover 1
+   ShootingExposition 0.18
+   MinDistanceBetweenCovers 1.2
+  }
+  NavmeshWorldComponent "{5584F30E67F617AD}" {
+   NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {
+    "AIAgent lock area" 3
+   }
+  }
+ }
+}
