@@ -6,6 +6,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	
 	protected BaseTarget m_Target;
 	protected vector m_vAvoidStraightPathDir;
+	protected DCO_AIMoraleSystem moraleSystem;
 	
 	//--------------------------------------------------------------------------------------------
 	protected override bool OnUpdate(AIAgent owner, float dt)
@@ -16,6 +17,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (!m_Target || !m_Target.GetTargetEntity())
 			return false;
 		
+		moraleSystem = m_Utility.GetMoraleSystem();
 		return true;
 	}
 	
@@ -125,10 +127,13 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (m_bVeryLongRangeCombat)
 			waitTime *= 2.0;
 		else
-			waitTime *= Math.RandomFloat(0.7, 1.2);
+			waitTime *= Math.RandomFloat(0.8, 1.2);
 		
 		if (longWaitTime)
 			waitTime *= 2;
+		
+		float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 0.5, 3);
+		waitTime *= mult;
 		
 		return waitTime;
 	}
@@ -181,10 +186,8 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			// Therefore use standard movement logic.
 			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
 			movePos = targetPos;
-			if (m_eThreatState == EAIThreatState.THREATENED)
-				eDirection = SCR_EAICombatMoveDirection.BACKWARD;
-			else
-				eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS; // Move to target
+			GetMoraleEffects(eDirection);
+			//eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS; // Move to target
 			avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
 			coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		}
@@ -255,7 +258,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility = true;
 
-		float coverSearchDistMin = 3;
+		float coverSearchDistMin = 5;
 		float coverSearchDistMax = 30;
 		float moveDurationMax = 10;
 		if (m_bCloseRangeCombat)
@@ -268,9 +271,9 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				{
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
-					coverSearchDistMin = 2.0;
+					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 10.0;
-					moveDurationMax = 2;
+					moveDurationMax = 3;
 					break;
 				}
 				default:
@@ -279,7 +282,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 15.0;
-					moveDurationMax = 3;
+					moveDurationMax = 4;
 					break;
 				}
 			}
@@ -297,7 +300,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			{
 				case EAIThreatState.THREATENED:
 				{
-					coverSearchDistMin = 2.0;
+					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 20.0;
 					moveDurationMax = 2.5;
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
@@ -324,11 +327,11 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		
 		// If we are not in cover, min cover search distance is overridden to 0, we should find any cover ASAP
 		if (!m_State.m_bInCover)
-			coverSearchDistMin = 0;
+			coverSearchDistMin = 3;
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
-		rq.m_fMoveDuration_s = Math.RandomFloat(0.5, 1.0) * moveDurationMax;
+		rq.m_fMoveDuration_s = moveDurationMax * MoraleAmplifyMove();
 		
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving
@@ -336,6 +339,60 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
 		
 		m_State.ApplyNewRequest(rq);
+	}
+	
+	void GetMoraleEffects(out SCR_EAICombatMoveDirection moveDir)
+	{
+		switch(moraleSystem.GetState())
+		{
+			case moraleState.BREAK:
+			{
+				moveDir = SCR_EAICombatMoveDirection.BACKWARD;
+				break;
+			}
+			case moraleState.MANIAC:
+			{
+				if(Math.RandomFloat(0,1) > 1)
+				{
+					if(Math.RandomFloat(0,1) > 1)
+					{
+						if(Math.RandomFloat(0,1) > 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+					}
+					else
+						moveDir = SCR_EAICombatMoveDirection.BACKWARD;
+				}
+				else
+					moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
+				break;
+			}
+			case moraleState.ANXIOUS:
+			{
+				if(Math.RandomFloat(0,1) > 1)
+				{
+					if(Math.RandomFloat(0,1) > 1)
+						moveDir = SCR_EAICombatMoveDirection.LEFT;
+					else
+						moveDir = SCR_EAICombatMoveDirection.RIGHT;
+				}
+				else
+					moveDir = SCR_EAICombatMoveDirection.BACKWARD;
+				break;
+			}
+			default:
+			{
+				moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
+				break;
+			}
+		}
+		
+	}
+	
+	float MoraleAmplifyMove()
+	{
+		return Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 2, 1);
 	}
 	
 	//--------------------------------------------------------------------------------------------

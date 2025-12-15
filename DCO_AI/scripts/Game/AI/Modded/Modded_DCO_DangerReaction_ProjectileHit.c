@@ -38,7 +38,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		float distanceToShooter = vector.Distance(utility.GetOrigin(), shooterPos);
 		
 		int bulletCount = dangerEventCount;
-		rq.m_eReason = SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER;		
+		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;		
 		
 		if(distanceToDanger < 1 && !m_State.IsInValidCover() && bulletCount >= 3)
 		{
@@ -112,7 +112,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				rq.m_bFailIfNoCover = true;
 				rq.m_eStanceMoving = ECharacterStance.CROUCH;
 				rq.m_eStanceEnd = ECharacterStance.PRONE;
-				rq.m_eMovementType = EMovementType.WALK;
+				rq.m_eMovementType = EMovementType.RUN;
 				rq.m_fCoverSearchDistMax = 12;
 				rq.m_fCoverSearchDistMin = 5;
 				rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * 4;

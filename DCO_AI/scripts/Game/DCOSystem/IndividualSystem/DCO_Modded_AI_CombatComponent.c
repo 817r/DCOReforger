@@ -3,6 +3,7 @@ modded class SCR_AICombatComponent
 	// AIM IMPROVEMENT
 	static const float AIM_IMPROVEMENT_INCREASE = 0.00001;
 	static const float AIM_IMPROVEMENT_DECREASE = 0.000001;
+	static const float AIM_MORALE = 0.00001;
 	static const float AIM_IMPROVEMENT_CONST_DECREASE = AIM_IMPROVEMENT_DECREASE * 12;
 	static const float AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER = 3;
 	
@@ -29,7 +30,11 @@ modded class SCR_AICombatComponent
 	{
 		float decrease = dec * AIM_IMPROVEMENT_DECREASE * AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER;
 		Math.Clamp(CURRENT_AIM_IMPROVEMENT - decrease, 0, int.MAX);
-		
+	}
+	
+	void MoraleDropAIM(float val)
+	{
+		Math.Clamp(CURRENT_AIM_IMPROVEMENT - (val * AIM_MORALE), 0, int.MAX);
 	}
 	
 	override void Update(float timeSliceMs)
