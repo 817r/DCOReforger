@@ -15,7 +15,7 @@ modded class SCR_AISuppressGroupClusterBehavior
 		
 		// Relation between group and soldier threat depends on distance
 		float soldierThreatFactor = Math.Map(distance, 0, FIRE_RATE_SCALING_MAX_DISTANCE, 2, 0.3);
-		float groupThreatFactor = 1.1;
+		const float groupThreatFactor = 1.1;
 		
 		// Get base fire rate
 		float fireRate = 5 * (soldierThreat * soldierThreatFactor + groupThreat * groupThreatFactor);

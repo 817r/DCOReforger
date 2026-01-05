@@ -308,9 +308,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			bool causedDamage = sectorFlags & SCR_EAIThreatSectorFlags.CAUSED_DAMAGE;
 			
 			if (distToThreat < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST)
-			{	
-					ECharacterStance newStance;
-				
+			{					
 				if ((threatState == EAIThreatState.THREATENED) || causedDamage)
 					PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.BACKWARD);
 				else

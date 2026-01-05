@@ -16,8 +16,5 @@ SCR_ChimeraCharacter {
     }
    }
   }
-  DCO_AIIdentifierComponent "{66C262F3E1E46AFE}" {
-   unitType infantry
-  }
  }
 }

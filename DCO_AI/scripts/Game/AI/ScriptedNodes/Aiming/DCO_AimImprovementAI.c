@@ -339,8 +339,8 @@ modded class SCR_AIGetAimErrorOffset
 		float illuminationFactor = GetTargetIlluminationFactor(target);
 		
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
-		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor();
-		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor();
+		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetGlobalModifier();
+		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetGlobalModifier();
 		
 		tolerance = GetTolerance(entity, targetEntity, angularSize, distance, weaponType);
 		
@@ -353,6 +353,21 @@ modded class SCR_AIGetAimErrorOffset
 #endif
 		
 		return ENodeResult.SUCCESS;
+	}
+	
+	float GetGlobalModifier()
+	{
+		SCR_BaseGameMode gamemode = SCR_BaseGameMode.Cast(GetGame().GetGameMode());
+		if (!gamemode)
+			return 1;
+		
+		DCO_GlobalAIComponent dcoAiSetting = DCO_GlobalAIComponent.Cast(gamemode.FindComponent(DCO_GlobalAIComponent));
+		if (!dcoAiSetting)
+			return 1;
+		
+		float val = 1 / dcoAiSetting.GetUnitSkill();	
+		
+		return val;
 	}
 	
 	override void OnInit(AIAgent owner)
