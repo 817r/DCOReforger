@@ -370,7 +370,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                  PortName "Origin"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
+                 Port 8
                  PortName "Radius"
                 }
                }
@@ -438,59 +438,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
           SingleInputPortContainer SingleInputPortContainer {
            Port 24
            PortName "Position"
-          }
-         }
-        }
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 4064 32
-         Nodes {
-          Selector Selector {
-           Name "Selector"
-           EditorPos 3712 256
-           Nodes {
-            DCO_IsAIDistanceMoreThan "DCO_ IsAI Distance More Than" {
-             Name "DCO_ IsAI Distance More Than"
-             EditorPos 3504 512
-             Nodes {
-              SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
-               Name "SCR_AI Character Set Movement Speed"
-               EditorPos 3504 720
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "Speed"
-                }
-               }
-               m_eSpeed RUN
-              }
-             }
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 23
-               PortName "ThresholdIn"
-              }
-             }
-             m_distanceThreshold 30
-            }
-            SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
-             Name "SCR_AI Character Set Movement Speed"
-             EditorPos 3984 512
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "Speed"
-              }
-             }
-             m_eSpeed WALK
-            }
-           }
-          }
-          AITaskIdle Idle {
-           Name "Idle"
-           EditorPos 4282.652 263.824
-           Period 1.5
-           PeriodRandom 0
           }
          }
         }
@@ -691,6 +638,59 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
     }
    }
    m_eSpeed RUN
+  }
+  Sequence Sequence {
+   Name "Sequence"
+   EditorPos 4064 32
+   Nodes {
+    Selector Selector {
+     Name "Selector"
+     EditorPos 3712 256
+     Nodes {
+      DCO_IsAIDistanceMoreThan "DCO_ IsAI Distance More Than" {
+       Name "DCO_ IsAI Distance More Than"
+       EditorPos 3504 512
+       Nodes {
+        SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
+         Name "SCR_AI Character Set Movement Speed"
+         EditorPos 3504 720
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Speed"
+          }
+         }
+         m_eSpeed RUN
+        }
+       }
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 23
+         PortName "ThresholdIn"
+        }
+       }
+       m_distanceThreshold 30
+      }
+      SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
+       Name "SCR_AI Character Set Movement Speed"
+       EditorPos 3984 512
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "Speed"
+        }
+       }
+       m_eSpeed WALK
+      }
+     }
+    }
+    AITaskIdle Idle {
+     Name "Idle"
+     EditorPos 4282.652 263.824
+     Period 1.5
+     PeriodRandom 0
+    }
+   }
   }
  }
  Variables {

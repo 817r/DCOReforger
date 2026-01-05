@@ -1,3 +1,13 @@
+modded enum SCR_EAICombatMoveReason
+{
+	INVESTIGATE
+}
+
+modded enum SCR_EAICombatMoveRequestType
+{
+	INVESTIGATE
+}
+
 modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 {
 	// Inputs
@@ -132,7 +142,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (longWaitTime)
 			waitTime *= 2;
 		
-		float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 0.5, 3);
+		float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 0.5, 10);
 		waitTime *= mult;
 		
 		return waitTime;
@@ -352,9 +362,9 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			case moraleState.MANIAC:
 			{
-				if(Math.RandomFloat(0,1) > 1)
+				if(Math.RandomFloat(0,5) > 4)
 				{
-					if(Math.RandomFloat(0,1) > 1)
+					if(Math.RandomFloat(0,5) > 4)
 					{
 						if(Math.RandomFloat(0,1) > 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -390,9 +400,39 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		
 	}
 	
+	void MoraleAndThreatPushMove()
+	{
+		SCR_EAICombatMoveDirection moveDir;
+		float moveDurationMax;
+		
+		
+		switch (m_eThreatState)
+		{
+			case EAIThreatState.THREATENED:
+			{
+				switch (moraleSystem.GetState())
+				{
+					case moraleState.BREAK:
+					{
+						break;
+					}
+					default:
+					{
+						break;
+					}
+				}
+				break;
+			}
+			default:
+			{
+				break;
+			}
+		}
+	}
+	
 	float MoraleAmplifyMove()
 	{
-		return Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 2, 1);
+		return Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 3, 0.5);
 	}
 	
 	//--------------------------------------------------------------------------------------------

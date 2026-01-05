@@ -1,7 +1,7 @@
 modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 {	
 	protected const float DANGER_HIGH = 3.0;
-	protected const float DANGER_MEDIUM = 1.0;
+	protected const float DANGER_MEDIUM = 0.5;
 	
 	//--------------------------------------------------------------------------------------------
 	override void Update()
@@ -264,6 +264,133 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		rq.GetOnCompleted().Insert(OnMoveRequestCompleted);
 		
 		m_State.ApplyNewRequest(rq);
+		m_LastMoveRequest = rq;
+	}
+	
+	void UpdateVehicle(IEntity m_DriverEntity, SCR_AICombatMoveState m_DriverCombatState, SCR_AIUtilityComponent m_DriverUtilityComp)
+	{
+		// Bail if there's nothing to do, or pointers are invalid
+		if (m_iCurrentSector == -1 || !m_DriverUtilityComp.m_SectorThreatFilter.IsSectorActive(m_iCurrentSector) || !m_DriverEntity)
+			return;
+		
+		if (m_MyEntity == m_DriverEntity)
+			return;
+
+		// Wait until old requests are done, if they are important
+		if (m_DriverCombatState.IsMoving())
+			return;
+		
+		vector threatPos = m_DriverUtilityComp.m_SectorThreatFilter.GetSectorPos(m_iCurrentSector);
+		
+		float sectorDanger = m_DriverUtilityComp.m_SectorThreatFilter.GetSectorDanger(m_iCurrentSector);
+		if (!m_bPushedRequest && !m_bReachedSafety && !m_DriverCombatState.IsMoving())
+		{
+			if (sectorDanger < DANGER_MEDIUM && Math.RandomFloat01() < 0.5)
+			{
+				m_bReachedSafety = true;
+				m_ParentBehavior.OnMovementCompleted(false);
+			}
+			else
+			{
+				SCR_EAIThreatSectorFlags sectorFlags = m_DriverUtilityComp.m_SectorThreatFilter.GetSectorFlags(m_iCurrentSector);
+				PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
+				m_bPushedRequest = true;
+			}
+		}
+		else if (m_bReachedSafety)
+		{
+			// We are not moving, manage our stance based on threat and range
+			
+			EAIThreatState threatState = m_DriverUtilityComp.m_ThreatSystem.GetState();
+			float distToThreat = vector.Distance(m_DriverEntity.GetOrigin(), threatPos);
+			
+			SCR_EAIThreatSectorFlags sectorFlags = m_DriverUtilityComp.m_SectorThreatFilter.GetSectorFlags(m_iCurrentSector);
+			bool causedDamage = sectorFlags & SCR_EAIThreatSectorFlags.CAUSED_DAMAGE;
+			
+			if (distToThreat < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST)
+			{	
+					ECharacterStance newStance;
+				
+				if ((threatState == EAIThreatState.THREATENED) || causedDamage)
+					PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.BACKWARD);
+				else
+				{
+					if (Math.RandomInt(0,2) == 1)
+						PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
+					else
+					{
+						if (Math.RandomInt(0,5) > 1)
+							PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
+						else
+						{
+							if (Math.RandomInt(0,2) == 1)
+								PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.LEFT);
+							else
+								PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.RIGHT);
+						}
+					}
+				}
+						
+				
+			}
+			else if (distToThreat < SCR_AICombatMoveUtils.VERY_LONG_RANGE_COMBAT_DIST)
+			{
+				if ((threatState == EAIThreatState.THREATENED) || causedDamage)
+					PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.BACKWARD);
+				else
+				{
+					if (Math.RandomInt(0,2) == 1)
+						PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
+					else
+					{
+						if (Math.RandomInt(0,5) > 1)
+							PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
+						else
+						{
+							if (Math.RandomInt(0,2) == 1)
+								PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.LEFT);
+							else
+								PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.RIGHT);
+						}
+					}				
+				}
+			}
+			else
+			{
+				SCR_EAIThreatSectorFlags flags = m_Utility.m_SectorThreatFilter.GetSectorFlags(m_iCurrentSector);
+				
+				if ((flags & SCR_EAIThreatSectorFlags.DIRECTED_AT_ME) || causedDamage)
+				{
+					if (Math.RandomInt(0,2) == 1)
+						PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
+					else
+					{
+						if (Math.RandomInt(0,2) == 1)
+							PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.LEFT);
+						else
+							PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.RIGHT);
+					}
+				}
+				else
+					PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
+			}
+		}
+	}
+	
+	void PushRequestVehicleMove(vector threatPos, SCR_AICombatMoveState m_DriverCombatState, SCR_EAICombatMoveDirection dir)
+	{
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+		rq.m_vTargetPos = threatPos;
+		rq.m_vMovePos = threatPos;
+		rq.m_eDirection = dir;
+		rq.m_fMoveDuration_s = 10;
+		rq.m_bAimAtTarget = false;
+		rq.m_bAimAtTargetEnd = false;
+		
+		m_DriverCombatState.ApplyNewRequest(rq);
+		rq.GetOnCompleted().Insert(OnMoveRequestCompleted);
 		m_LastMoveRequest = rq;
 	}
 }

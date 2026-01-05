@@ -1,0 +1,442 @@
+BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMove.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/HandleCombatMove.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 756.075 -1346.396
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 746.999 -1199.166
+     Nodes {
+      AITaskSetVariable "Set Variable" {
+       Name "Set Variable"
+       EditorPos 169.444 -978.333
+       SetValue "0"
+       OutVariable 3
+      }
+      SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
+       Name "SCR_AI Set Combat Move State"
+       EditorPos 607.222 -968.166
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "InCover"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ExposedInCover"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "AimAtTarget"
+        }
+       }
+       m_bSetRequestState 1
+       m_eRequestFailReason MOVEMENT_FAILED
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos 1440.356 -871.171
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 226.294 -226.968
+         Nodes {
+          SCR_AIWaitCombatMoveRequest "SCR_AI Wait Combat Move Request" {
+           Name "SCR_AI Wait Combat Move Request"
+           EditorPos -200.429 -23.19
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 0
+             PortName "Request"
+            }
+           }
+           Group "{5E32C718C7D2785F}"
+          }
+          AITaskSetVariable "Set Variable" {
+           Name "Set Variable"
+           EditorPos 246.191 43.572
+           SetValue "1"
+           OutVariable 9
+          }
+          AITaskSetVariable "Set Variable" {
+           Name "Set Variable"
+           EditorPos 486.905 -27.063
+           Group "{5E32C718C7D2785F}"
+           SetValue "1"
+           OutVariable 1
+          }
+         }
+         Group "{5E32C718C7D2785F}"
+        }
+        Selector Selector {
+         Name "Selector"
+         EditorPos 1706.714 -432.738
+         Nodes {
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 1233.238 -49.976
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 1291.944 134.389
+             Nodes {
+              AITaskSetVariable "Set Variable" {
+               Name "Set Variable"
+               EditorPos 1116.357 336.917
+               SetValue "1"
+               OutVariable 4
+              }
+              AITaskSetVariable "Set Variable" {
+               Name "Set Variable"
+               EditorPos 1344.968 271.112
+               Group "{5E32C718C7D2785F}"
+               SetValue "0"
+               OutVariable 2
+              }
+             }
+            }
+           }
+           Group "{5E32C718C7D2785F}"
+           AbortType AbortParentNodeFurtherChildren
+           InVariable 1
+           TestType EqualsValue
+           TestValue "1"
+          }
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 3265.714 -54.385
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence - Execute request"
+             EditorPos 3194.004 169.901
+             Nodes {
+              Selector Selector {
+               Name "Selector - Request executed or failed?"
+               EditorPos 2760.739 440.988
+               Nodes {
+                Sequence Sequence {
+                 Name "Sequence - Try execute request"
+                 EditorPos 2609.667 711.07
+                 Nodes {
+                  SCR_AIProcessCombatMoveRequest "SCR_AI Process Combat Move Request" {
+                   Name "SCR_AI Process Combat Move Request"
+                   EditorPos 547.083 2039.167
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 7
+                     PortName "Request"
+                    }
+                   }
+                   OutPorts {
+                    SingleOutputPortContainer SingleOutputPortContainer {
+                     Port 8
+                     PortName "Type"
+                    }
+                   }
+                  }
+                  Selector Selector {
+                   Name "Selector - Request type"
+                   EditorPos 2645.75 993.69
+                   Nodes {
+                    DecoTestVariable "Test Variable" {
+                     Name "Test Variable"
+                     EditorPos 1190.75 2141.334
+                     Nodes {
+                      RunBT RunBT {
+                       Name "RunBT"
+                       EditorPos 1036.763 2309.56
+                       InPorts {
+                        SingleInputPortContainer SingleInputPortContainer {
+                         Port 15
+                         PortName "request"
+                        }
+                       }
+                       BehaviorTree "{02803BF87C1DA3A0}AI/BehaviorTrees/Chimera/Soldier/CombatMoveRequest_Move.bt"
+                      }
+                     }
+                     InVariable 8
+                     TestType EqualsValue
+                     TestValue "0"
+                    }
+                    DecoTestVariable "Test Variable" {
+                     Name "Test Variable"
+                     EditorPos 1706.833 2153.833
+                     Nodes {
+                      RunBT RunBT {
+                       Name "RunBT"
+                       EditorPos 1555.416 2399.75
+                       BehaviorTree "{2BE8802BEF507B6D}AI/BehaviorTrees/Chimera/Soldier/CombatMoveRequest_Stop.bt"
+                       InBehaviorTree 16
+                      }
+                     }
+                     InVariable 8
+                     TestType EqualsValue
+                     TestValue "1"
+                    }
+                    DecoTestVariable "Test Variable" {
+                     Name "Test Variable"
+                     EditorPos 2303.651 2174.758
+                     Nodes {
+                      RunBT RunBT {
+                       Name "RunBT"
+                       EditorPos 2094.167 2482.393
+                       InPorts {
+                        SingleInputPortContainer SingleInputPortContainer {
+                         Port 17
+                         PortName "request"
+                        }
+                       }
+                       BehaviorTree "{2336319328BFFD14}AI/BehaviorTrees/Chimera/Soldier/CombatMoveRequest_ChangeStanceInCover.bt"
+                      }
+                     }
+                     InVariable 8
+                     TestType EqualsValue
+                     TestValue "2"
+                    }
+                    DecoTestVariable "Test Variable" {
+                     Name "Test Variable"
+                     EditorPos 2928 2064
+                     Nodes {
+                      RunBT RunBT {
+                       Name "RunBT"
+                       EditorPos 2750.976 2574.452
+                       InPorts {
+                        SingleInputPortContainer SingleInputPortContainer {
+                         Port 18
+                         PortName "request"
+                        }
+                       }
+                       BehaviorTree "{CD3A8A506D5DFC82}AI/BehaviorTrees/Chimera/Soldier/CombatMoveRequest_ChangeStance.bt"
+                      }
+                     }
+                     InVariable 8
+                     TestType EqualsValue
+                     TestValue "3"
+                    }
+                    DecoTestVariable "Test Variable" {
+                     Name "Test Variable"
+                     EditorPos 3456 2064
+                     Nodes {
+                      RunBT RunBT {
+                       Name "RunBT"
+                       EditorPos 3328 2560
+                       InPorts {
+                        SingleInputPortContainer SingleInputPortContainerClass {
+                         Port 19
+                         PortName "Rq"
+                        }
+                       }
+                       BehaviorTree "{EC11D1E185670015}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMoveInvestigate.bt"
+                      }
+                     }
+                     InVariable 8
+                     TestType EqualsValue
+                     TestValue "4"
+                    }
+                   }
+                   Group "{5E32C718C7D2785F}"
+                  }
+                  SCR_AISetCombatMoveRequestState "SCR_AI Set Combat Move Request State" {
+                   Name "SCR_AI Set Combat Move Request State"
+                   EditorPos 3254.951 1158.863
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 13
+                     PortName "Request"
+                    }
+                   }
+                   m_eState SUCCESS
+                  }
+                  SCR_AISetCombatMoveRequestFailReason "SCR_AI Set Combat Move Request Fail Reason" {
+                   Name "SCR_AI Set Combat Move Request Fail Reason"
+                   EditorPos 3621.834 1160.049
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 13
+                     PortName "Request"
+                    }
+                   }
+                  }
+                 }
+                 Group "{5E32C718C7D2785F}"
+                }
+                SCR_AISetCombatMoveRequestState "SCR_AI Set Combat Move Request State" {
+                 Name "SCR_AI Set Combat Move Request State"
+                 EditorPos 3550 798.75
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 14
+                   PortName "Request"
+                  }
+                 }
+                 m_eState FAIL
+                }
+               }
+              }
+              SCR_AIEndProcessCombatMoveRequest "SCR_AI End Process Combat Move Request" {
+               Name "SCR_AI End Process Combat Move Request"
+               EditorPos 3385.833 414.583
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 12
+                 PortName "Request"
+                }
+               }
+              }
+              AITaskSetVariable "Set Variable" {
+               Name "Set Variable"
+               EditorPos 3808.621 410.4
+               SetValue "0"
+               OutVariable 6
+              }
+             }
+            }
+           }
+           InVariable 5
+           TestType EqualsValue
+           TestValue "1"
+          }
+         }
+         Group "{5E32C718C7D2785F}"
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 2995.833 -505.333
+         Nodes {
+          SCR_AIUpdateCombatMoveStateTimers "SCR_AI Update Combat Move State Timers" {
+           Name "SCR_AI Update Combat Move State Timers"
+           EditorPos 2743.059 -351.679
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 10
+             PortName "Reset"
+            }
+           }
+          }
+          AITaskSetVariable "Set Variable" {
+           Name "Set Variable"
+           EditorPos 3147.333 -353.333
+           SetValue "0"
+           OutVariable 11
+          }
+         }
+        }
+       }
+       Group "{5E32C718C7D2785F}"
+      }
+     }
+    }
+   }
+   Group "{5E32C718C7D2785F}"
+  }
+ }
+ Variables {
+  BtVariableObject request {
+   Flags 0
+   Desc "SCR_AICombatMoveRequestBase"
+  }
+  BtVariableInteger restart {
+   Flags 0
+   Desc "int"
+  }
+  BtVariableInteger eRequestType {
+   Flags 0
+   Desc "int"
+  }
+  BtVariableInteger executeRequest {
+   Flags 0
+   Desc "int"
+  }
+  BtVariableInteger restartDelayed {
+   Flags 0
+   Desc "int"
+  }
+ }
+ VariablesRefs {
+  VariableReference request {
+   VariableType 0
+   EditorPos -217.095 84.587
+   Group "{5E32C718C7D2785F}"
+  }
+  VariableReference restart {
+   VariableType 1
+   EditorPos 726.936 29.524
+   Group "{5E32C718C7D2785F}"
+  }
+  VariableReference restart {
+   VariableType 1
+   EditorPos 1546.73 326.564
+   Group "{5E32C718C7D2785F}"
+  }
+  VariableReference executeRequest {
+   VariableType 3
+   EditorPos 371.587 -921.547
+  }
+  VariableReference executeRequest {
+   VariableType 3
+   EditorPos 1341.107 392.667
+  }
+  VariableReference executeRequest {
+   VariableType 3
+   EditorPos 3039.214 1.615
+  }
+  VariableReference executeRequest {
+   VariableType 3
+   EditorPos 4008.386 466.321
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 153.065 2072.867
+  }
+  VariableReference eRequestType {
+   VariableType 2
+   EditorPos 976.357 2088.626
+  }
+  VariableReference restartDelayed {
+   VariableType 4
+   EditorPos 483.096 102.143
+  }
+  VariableReference restartDelayed {
+   VariableType 4
+   EditorPos 2552.424 -319.242
+  }
+  VariableReference restartDelayed {
+   VariableType 4
+   EditorPos 3346.507 -297.54
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 3374.917 510.75
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 3092.144 1290
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 3172.143 855
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 640.833 2383.333
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 1160.833 2457.5
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 1708.833 2553.643
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 2330.5 2647.666
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 3028.408 2767.143
+  }
+ }
+}

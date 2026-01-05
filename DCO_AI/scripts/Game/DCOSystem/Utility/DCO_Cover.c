@@ -18,4 +18,12 @@ modded class SCR_AIGetCoverParameters : AITaskScripted
 			outStanceHide = ECharacterStance.PRONE;
 		}
 	}
+	
+	bool IsIndoor()
+	{
+		
+		
+		
+		return false;
+	}
 }

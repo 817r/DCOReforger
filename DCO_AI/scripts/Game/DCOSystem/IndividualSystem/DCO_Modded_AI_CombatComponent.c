@@ -1,11 +1,32 @@
 modded class SCR_AICombatComponent
 {
+	
+	static const int			 TARGET_ENDANGERED_TIMEOUT_S = 12;				//!< How long after last time target was endangering we stop treating it as such
+	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.5;		//!< Multiplier of target score if target is considered endangering
+	
+	// Score increments for assigned targets and endangering targets
+	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 1.0;
+	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 20.0;
+	
 	// AIM IMPROVEMENT
 	static const float AIM_IMPROVEMENT_INCREASE = 0.00001;
 	static const float AIM_IMPROVEMENT_DECREASE = 0.000001;
 	static const float AIM_MORALE = 0.00001;
 	static const float AIM_IMPROVEMENT_CONST_DECREASE = AIM_IMPROVEMENT_DECREASE * 12;
 	static const float AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER = 3;
+	
+	          static const float TARGET_MAX_LAST_SEEN = 11.0;
+	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.5;	//!< Min value of TraceFraction for indirect attacks. \see BaseTarget.GetTraceFraction.
+	protected static const float TARGET_MAX_DISTANCE_VEHICLE = 1700.0;		//!<
+	protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.2;		//!< Max distance at which disarmed targets are considered for attack. Now it's 0, so they never shoot disarmed targets
+	protected static const float TARGET_MAX_TIME_SINCE_ENDANGERED = 5.0; 	//!< Max time since we were endangered to consider the enemy target endangering
+	protected static const float TARGET_SCORE_RETREAT = 75.0;				//!< Threshold for target score for retreating from that target
+	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 98.5;			//!< Threshold for high priority attack
+		
+	protected const float PERCEPTION_FACTOR_SAFE = 1.0;			//!< We are safe and are good at recognising enemies
+	protected const float PERCEPTION_FACTOR_VIGILANT = 3;		//!< When vigilant and alert we are very good at recognising enemies
+	protected const float PERCEPTION_FACTOR_ALERTED = 3;
+	protected const float PERCEPTION_FACTOR_THREATENED = 1.5;	// We are suppressed and are bad at recognizing enemies
 	
 	float CURRENT_AIM_IMPROVEMENT;
 	

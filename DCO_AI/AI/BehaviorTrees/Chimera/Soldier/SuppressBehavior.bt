@@ -1,0 +1,391 @@
+BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavior.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/SuppressBehavior.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -2316.501 -974.024
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -2318.119 -840.119
+     Nodes {
+      SCR_AIGetSuppressBehaviorParameters "SCR_AI Get Suppress Behavior Parameters" {
+       Name "SCR_AI Get Suppress Behavior Parameters"
+       EditorPos -3271.899 -156.204
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 3
+         PortName "SuppressionVolume"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 1
+         PortName "SuppressionDuration_s"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 9
+         PortName "FireRate"
+        }
+       }
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos -951.262 -469.821
+       Nodes {
+        SCR_AIUpdateTargetSuppressionData "SCR_AI Update Target Suppression Data" {
+         Name "SCR_AI Update Target Suppression Data"
+         EditorPos -2412.965 381.679
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 3
+           PortName "SuppressionVolume"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 2
+           PortName "Visible"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 4
+           PortName "TimeLastSeen_ms"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 6
+           PortName "FireTreeId"
+          }
+         }
+        }
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos -2405 -251.25
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos -2400.827 -67.02
+           Nodes {
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos -2469.616 57.619
+             Group "{6108AD187E6CD406}"
+             Period 1
+             PeriodKey 1
+            }
+            SCR_AICompleteAction "SCR_AI Complete Action" {
+             Name "SCR_AI Complete Action"
+             EditorPos -2330.588 56.952
+             Group "{6108AD187E6CD406}"
+            }
+           }
+           Group "{6108AD187E6CD406}"
+          }
+         }
+         Group "{6108AD187E6CD406}"
+         NegativeCondition 1
+         InVariable 1
+         TestType EqualsValue
+         TestValue "0"
+        }
+        Selector Selector {
+         Name "Selector"
+         EditorPos -1202.083 2.917
+         Nodes {
+          DecoIsInVehicle "Is In Vehicle" {
+           Name "Is In Vehicle"
+           EditorPos -1475.417 132.5
+           Nodes {
+            SCR_AICombatMoveLogic_Suppressive "SCR_AI Combat Move Logic_ Suppressive" {
+             Name "SCR_AI Combat Move Logic_ Suppressive"
+             EditorPos -1482.096 324.108
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "SuppressionVolume"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 2
+               PortName "Visible"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 4
+               PortName "TimeLastSeen_ms"
+              }
+             }
+            }
+           }
+           NegativeCondition 1
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+          }
+          SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO "SCR_AI Combat Move Logic Vehicle Gunner_ SuppressiveDCO" {
+           Name "SCR_AI Combat Move Logic Vehicle Gunner_ SuppressiveDCO"
+           EditorPos -1280 512
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 5
+             PortName "SuppressionVolume"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 2
+             PortName "Visible"
+            }
+           }
+          }
+         }
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -780.893 864.345
+         Nodes {
+          SCR_AIGetSuppressionVolumeCenterPosition "SCR_AI Get Suppression Volume Center Position" {
+           Name "SCR_AI Get Suppression Volume Center Position"
+           EditorPos -1676.091 1211.621
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 11
+             PortName "SuppressionVolume"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "CenterPosition"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 12
+             PortName "Distance_m"
+            }
+           }
+           Group "{6124D04D0D75BCEC}"
+          }
+          Selector Selector {
+           Name "Selector"
+           EditorPos -775.584 1042.751
+           Nodes {
+            RunBT RunBT {
+             Name "RunBT"
+             EditorPos -1117.548 1190.155
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 12
+               PortName "fDistance"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
+               PortName "bWeaponReady"
+              }
+             }
+             Group "{6124D04D0D75BCEC}"
+             BehaviorTree "{6BE9BEE43C929F58}AI/BehaviorTrees/Chimera/Soldier/SwitchToSuppressionWeapon.bt"
+            }
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos -645.084 1196.001
+             Nodes {
+              SCR_AIFailAction "SCR_AI Fail Action" {
+               Name "SCR_AI Fail Action"
+               EditorPos -652.334 1313.001
+               Group "{6124D04D0D75BCEC}"
+              }
+             }
+             Group "{6124D04D0D75BCEC}"
+            }
+           }
+           Group "{6124D04D0D75BCEC}"
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos -428 1198.667
+           Group "{6124D04D0D75BCEC}"
+           Period 0.5
+           PeriodRandom 0
+          }
+         }
+         Group "{6124D04D0D75BCEC}"
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -281.143 150.81
+         Nodes {
+          SCR_AIGetSuppressBehaviorParameters "SCR_AI Get Suppress Behavior Parameters" {
+           Name "SCR_AI Get Suppress Behavior Parameters"
+           EditorPos -514.966 277.886
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "SuppressionVolume"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "SuppressionDuration_s"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 10
+             PortName "FireRate"
+            }
+           }
+           Group "{6124D04F5E82FAD9}"
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos -156.364 295.195
+           Group "{6124D04F5E82FAD9}"
+           Period 0.5
+           PeriodRandom 0
+          }
+         }
+         Group "{6124D04F5E82FAD9}"
+        }
+        Selector Selector {
+         Name "Selector"
+         EditorPos 525.833 199.167
+         Nodes {
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 197.666 405.834
+           Nodes {
+            SCR_AIAllowLookAction "SCR_AI Allow Look Action" {
+             Name "SCR_AI Allow Look Action"
+             EditorPos 259.722 599.445
+            }
+           }
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           InVariable 7
+           TestType EqualsValue
+           TestValue "0"
+          }
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 731.833 411.417
+           Nodes {
+            RunBT RunBT {
+             Name "RunBT"
+             EditorPos 708.988 657.56
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 0
+               PortName "SuppressionVolume"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 10
+               PortName "FireRate"
+              }
+             }
+             BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressive.bt"
+            }
+           }
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           InVariable 8
+           TestType EqualsValue
+           TestValue "1"
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableObject SuppressionVolume {
+   Flags 0
+   Desc "SCR_AISuppressionVolumeBase"
+  }
+  BtVariableScalar duration {
+   Flags 0
+   Desc "float"
+  }
+  BtVariableBool bVisible {
+   Flags 0
+   Desc "bool"
+  }
+  BtVariableScalar fTimeLastSeen_ms {
+   Flags 0
+   Desc "float"
+  }
+  BtVariableInteger iFireTreeId {
+   Flags 0
+   Desc "int"
+  }
+  BtVariableScalar fireRate {
+   Flags 0
+   Desc "float"
+  }
+  BtVariableScalar distance {
+   Flags 0
+   Desc "float"
+  }
+ }
+ VariablesRefs {
+  VariableReference SuppressionVolume {
+   VariableType 0
+   EditorPos 258.148 687.242
+  }
+  VariableReference duration {
+   VariableType 1
+   EditorPos -2836.295 -155.788
+  }
+  VariableReference bVisible {
+   VariableType 2
+   EditorPos -1865.13 357.705
+  }
+  VariableReference SuppressionVolume {
+   VariableType 0
+   EditorPos -2847.834 418.238
+  }
+  VariableReference fTimeLastSeen_ms {
+   VariableType 3
+   EditorPos -1906.13 444.194
+  }
+  VariableReference SuppressionVolume {
+   VariableType 0
+   EditorPos -2001.667 273.667
+  }
+  VariableReference iFireTreeId {
+   VariableType 4
+   EditorPos -1876.445 533.055
+  }
+  VariableReference iFireTreeId {
+   VariableType 4
+   EditorPos 54.404 484.405
+  }
+  VariableReference iFireTreeId {
+   VariableType 4
+   EditorPos 590 490
+  }
+  VariableReference fireRate {
+   VariableType 5
+   EditorPos -2835.523 -71.476
+  }
+  VariableReference fireRate {
+   VariableType 5
+   EditorPos -115.256 752.475
+  }
+  VariableReference SuppressionVolume {
+   VariableType 0
+   EditorPos -2118.667 1246.167
+   Group "{6124D04D0D75BCEC}"
+  }
+  VariableReference distance {
+   VariableType 6
+   EditorPos -1261.429 1262.381
+   Group "{6124D04D0D75BCEC}"
+  }
+ }
+ Groups {
+  BTGroup "{6108AD187E6CD406}" {
+   Name "Wait and complete"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{6124D04D0D75BCEC}" {
+   Name "Handling weapon & reloading"
+   Color 0.6 0.6 0.6 0.251
+  }
+  BTGroup "{6124D04F5E82FAD9}" {
+   Name "Update fire rate"
+   Color 0.6 0.6 0.6 0.251
+  }
+ }
+}

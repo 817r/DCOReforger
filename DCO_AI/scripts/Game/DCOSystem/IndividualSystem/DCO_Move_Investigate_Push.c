@@ -60,8 +60,8 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	{				
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 			
-		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
-			
+		rq.m_eReason = SCR_EAICombatMoveReason.INVESTIGATE;
+		rq.m_eType = SCR_EAICombatMoveRequestType.INVESTIGATE;
 		rq.m_vTargetPos = threatPos;
 		rq.m_vMovePos = rq.m_vTargetPos;
 		rq.m_bTryFindCover = true;
@@ -74,26 +74,43 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			rq.m_bFailIfNoCover = false;
 		else
 			rq.m_bFailIfNoCover = true;
-		if (Math.RandomInt(0,2) == 1)
-			rq.m_eStanceMoving = ECharacterStance.CROUCH;
-		else
-			rq.m_eStanceMoving = ECharacterStance.STAND;
-		if (rq.m_eStanceMoving == ECharacterStance.STAND)
-			rq.m_eStanceEnd = ECharacterStance.CROUCH;
-		else if (rq.m_eStanceMoving == ECharacterStance.CROUCH)
-			rq.m_eStanceEnd = ECharacterStance.PRONE;
+		ResolveMoveandStopStance(rq.m_eStanceMoving, rq.m_eStanceEnd);
 		rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 		rq.m_fCoverSearchDistMin = 10;
-		rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+		if (Math.RandomInt(0,2) == 1)
+			rq.m_eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+		else
+			rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = true;
-		rq.m_fMoveDuration_s = Math.RandomFloat(5,7) * Math.RandomFloat(1,2);
+		rq.m_fMoveDuration_s = Math.RandomFloat(7,10) * Math.RandomFloat(1,2);
+		rq.m_eMovementType = EMovementType.RUN;
 		
 		vector dirToTgt = threatPos - m_Utility.m_OwnerEntity.GetOrigin();
 		rq.m_vAvoidStraightPathDir = dirToTgt;
 			
 		m_State.ApplyNewRequest(rq);			
+	}
+	
+	protected void ResolveMoveandStopStance(out ECharacterStance moving, out ECharacterStance end)
+	{
+		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.6)
+			moving = ECharacterStance.PRONE;
+		else
+		{
+			if (Math.RandomInt(0,2) == 1)
+				moving = ECharacterStance.STAND;
+			else
+				moving = ECharacterStance.CROUCH;
+		}
+		
+		if (moving == ECharacterStance.STAND)
+			end = ECharacterStance.CROUCH;
+		else if (moving == ECharacterStance.CROUCH)
+			end = ECharacterStance.PRONE;
+		else
+			end = ECharacterStance.PRONE;
 	}
 	
 	protected float ResolveStoppedWaitTime(bool inCover)
@@ -108,7 +125,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			waitTime = 5.0;
 		}
 			
-		waitTime = Math.RandomFloat(0.2, 1.2) * waitTime;
+		waitTime = Math.RandomFloat(0.4, 1.2) * waitTime;
 			
 		return waitTime;
 	}
@@ -116,6 +133,9 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	protected bool MoveToNextPosCondition()
 	{
 		if (m_State.IsExecutingRequest())
+			return false;
+		
+		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.6)
 			return false;
 			
 		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover);	

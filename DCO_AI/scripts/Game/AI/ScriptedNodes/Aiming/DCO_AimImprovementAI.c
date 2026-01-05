@@ -1,7 +1,7 @@
 modded class SCR_AIGetAimErrorOffset
 {
-	static const float VERY_CLOSE_RANGE_THRESHOLD = 10.0;
-	static const float CLOSE_RANGE_THRESHOLD = 50.0;
+	static const float VERY_CLOSE_RANGE_THRESHOLD = 30.0;
+	static const float CLOSE_RANGE_THRESHOLD = 60.0;
 	static const float LONG_RANGE_THRESHOLD = 300.0;
 	static const float AIMING_ERROR_SCALE = 1.0;
 
@@ -12,11 +12,13 @@ modded class SCR_AIGetAimErrorOffset
 	static const float MINIMAL_TOLERANCE = 0.003;
 	
 	// AIMING ERROR FACTOR GLOBAL
-	static const float AIMING_ERROR_FACTOR_MIN = 0.1; 
+	static const float AIMING_ERROR_FACTOR_MIN = 0.12; 
 	
 	// AIMING ERROR FACTOR DISTANCE VARIANCE
-	static const float AIMING_ERROR_VERY_CLOSE_RANGE_FACTOR_MIN = 0.001;
+	static const float AIMING_ERROR_VERY_CLOSE_RANGE_FACTOR_MIN = 0.005;
 	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.01;
+	
+	private SCR_AIInfoComponent m_InfoComponent;
 	
 	override float GetDistanceFactor(float distance)
 	{
@@ -211,7 +213,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EAISkill.REGULAR :
 			{
-				sigma = 1.2;
+				sigma = 1.1;
 				break;
 			}
 			case EAISkill.VETERAN :
@@ -230,6 +232,34 @@ modded class SCR_AIGetAimErrorOffset
 			}
 		}
 		return Math.RandomGaussFloat(sigma,mu);
+	}
+	
+	float GetThreatFactor()
+	{
+		switch (m_InfoComponent.GetThreatState())
+		{
+			case EAIThreatState.THREATENED :
+			{
+				return 2.5;
+				break;
+			}
+			case EAIThreatState.ALERTED :
+			{
+				return 1.7;
+				break;
+			}
+			case EAIThreatState.VIGILANT :
+			{
+				return 1.2;
+				break;
+			}
+			case EAIThreatState.SAFE :
+			{
+				return 0.9;
+				break;
+			}
+		}
+		return 1;
 	}
 
 	float GetImprovement()
@@ -309,8 +339,8 @@ modded class SCR_AIGetAimErrorOffset
 		float illuminationFactor = GetTargetIlluminationFactor(target);
 		
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
-		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement();
-		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement();
+		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor();
+		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor();
 		
 		tolerance = GetTolerance(entity, targetEntity, angularSize, distance, weaponType);
 		
@@ -323,5 +353,13 @@ modded class SCR_AIGetAimErrorOffset
 #endif
 		
 		return ENodeResult.SUCCESS;
+	}
+	
+	override void OnInit(AIAgent owner)
+	{
+		IEntity ent = owner.GetControlledEntity();
+		if (ent)
+			m_CombatComponent = SCR_AICombatComponent.Cast(ent.FindComponent(SCR_AICombatComponent));		
+		m_InfoComponent = SCR_AIInfoComponent.Cast(owner.FindComponent(SCR_AIInfoComponent));
 	}
 }

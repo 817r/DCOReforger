@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{EB6F31BFE4C90D27}Prefabs/Structures/Military/Houses/ApartmentBuilding_3I01/ApartmentBuilding_3I01_Ba.et"
+ Configurations {
+  EntityTemplateResourceClass PC {
+  }
+  EntityTemplateResourceClass XBOX_ONE : PC {
+  }
+  EntityTemplateResourceClass XBOX_SERIES : PC {
+  }
+  EntityTemplateResourceClass PS4 : PC {
+  }
+  EntityTemplateResourceClass PS5 : PC {
+  }
+  EntityTemplateResourceClass HEADLESS : PC {
+  }
+ }
+}
