@@ -136,6 +136,7 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
             AITaskMoveToEntity "Move To Entity" {
              Name "Move To Entity"
              EditorPos 2496 1184
+             PrecisionXZ 2
              PrecisionY 1
              InEntity 5
             }
@@ -173,12 +174,16 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
           }
           AITaskIdle Idle {
            Name "Idle"
-           EditorPos 3568 1040
+           EditorPos 3584 1040
            Period 3
+          }
+          AITaskReload Reload {
+           Name "Reload"
+           EditorPos 3776 1056
           }
           SCR_AISetBehaviorInterruptable "SCR_AI Set Behavior Interruptable" {
            Name "SCR_AI Set Behavior Interruptable"
-           EditorPos 3744 1040
+           EditorPos 4000 1040
           }
          }
         }

@@ -36,13 +36,8 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 		else
 			selectedWeaponComp = weaponMgr.GetCurrentWeapon();
 		
-		Print("Selected Weapon Component : " + selectedWeaponComp.GetUIInfo().GetName());
-		Print(selectedWeaponComp.GetOwner());
-		Print(selectedWeaponComp.GetWeaponType());
-		
 		DCO_AIResupplyConfigComponent resConf = DCO_AIResupplyConfigComponent.Cast(selectedWeaponComp.GetOwner().FindComponent(DCO_AIResupplyConfigComponent));
 		m_sQueryResourceName = resConf.GetRandomMagazinePrefab(selectedWeaponComp.GetWeaponType());		
-		Print("Get Prefab : " + m_sQueryResourceName);
 		
 		SetVariableOut(PORT_PREFAB_RESOURCE_NAME, m_sQueryResourceName);
 		

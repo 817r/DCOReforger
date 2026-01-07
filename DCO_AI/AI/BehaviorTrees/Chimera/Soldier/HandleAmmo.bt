@@ -83,37 +83,74 @@ BehaviorTree {
              Name "Parallel"
              EditorPos 1232 1280
              Nodes {
-              Sequence Sequence {
-               Name "Find Nearest Arsenal Box"
-               EditorPos -784 1744
+              Selector Selector {
+               Name "Selector"
+               EditorPos -480 1584
                Nodes {
-                AITaskIdle Idle {
-                 Name "Idle"
-                 EditorPos -1152 2032
-                 Period 2
-                }
-                SCR_AISetAIState "SCR_AI SetAI State" {
-                 Name "SCR_AI SetAI State"
-                 EditorPos -944 2032
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "AIState"
+                Sequence Sequence {
+                 Name "Find Nearest Arsenal Box"
+                 EditorPos -1072 1792
+                 Nodes {
+                  AITaskIdle Idle {
+                   Name "Idle"
+                   EditorPos -1440 2080
+                   Period 2
+                  }
+                  SCR_AISetAIState "SCR_AI SetAI State" {
+                   Name "SCR_AI SetAI State"
+                   EditorPos -1232 2080
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port -1
+                     PortName "AIState"
+                    }
+                   }
+                   m_stateToSet BUSY
+                  }
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos -1024 2048
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 8
+                     PortName "WeaponComp"
+                    }
+                   }
+                   BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNearestArsenal.bt"
+                   AlwaysReinit 1
                   }
                  }
-                 m_stateToSet BUSY
                 }
-                RunBT RunBT {
-                 Name "RunBT"
-                 EditorPos -736 2000
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 8
-                   PortName "WeaponComp"
+                Sequence Sequence {
+                 Name "Sequence"
+                 EditorPos -16 1840
+                 Nodes {
+                  AITaskIdle Idle {
+                   Name "Idle"
+                   EditorPos -304 2048
+                  }
+                  SCR_AISetAIState "SCR_AI SetAI State" {
+                   Name "SCR_AI SetAI State"
+                   EditorPos -160 2064
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainerClass {
+                     PortName "AIState"
+                    }
+                   }
+                   m_stateToSet BUSY
+                  }
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos 32 2048
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainerClass {
+                     Port 13
+                     PortName "weaponComp"
+                    }
+                   }
+                   BehaviorTree "{93DD727B7DB0571B}AI/BehaviorTrees/Chimera/Soldier/DCO_FindMagazineInGround.bt"
                   }
                  }
-                 BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNearestArsenal.bt"
-                 AlwaysReinit 1
                 }
                }
               }
@@ -123,7 +160,7 @@ BehaviorTree {
                Nodes {
                 SCR_AIGetMuzzleMagazineWell "SCR_AI Get Muzzle Magazine Well" {
                  Name "SCR_AI Get Muzzle Magazine Well"
-                 EditorPos 434.524 2044.488
+                 EditorPos 880 2032
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port 3
@@ -147,7 +184,7 @@ BehaviorTree {
                 }
                 AITaskGetControlledEntity "Get Controlled Entity" {
                  Name "Get Controlled Entity"
-                 EditorPos 1281.905 2030.107
+                 EditorPos 1280 2032
                  OutControlledEntity 7
                 }
                 SCR_AITalk "SCR_AI Talk" {
@@ -352,15 +389,15 @@ BehaviorTree {
   }
   VariableReference weaponComp {
    VariableType 0
-   EditorPos 71.476 2048.095
+   EditorPos 516.952 2035.607
   }
   VariableReference muzzleId {
    VariableType 1
-   EditorPos 282.809 2120.428
+   EditorPos 728.285 2107.94
   }
   VariableReference magWellType {
    VariableType 2
-   EditorPos 802.524 2284.488
+   EditorPos 1248 2272
   }
   VariableReference myGroup {
    VariableType 4
@@ -372,7 +409,7 @@ BehaviorTree {
   }
   VariableReference weaponComp {
    VariableType 0
-   EditorPos -960 2144
+   EditorPos -1248 2192
   }
   VariableReference muzzleId {
    VariableType 1
@@ -389,6 +426,10 @@ BehaviorTree {
   VariableReference muzzleId {
    VariableType 1
    EditorPos 2896 1264
+  }
+  VariableReference weaponComp {
+   VariableType 0
+   EditorPos -208 2176
   }
  }
 }

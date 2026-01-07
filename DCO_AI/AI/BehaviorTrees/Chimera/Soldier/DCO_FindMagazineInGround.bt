@@ -1,0 +1,197 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_FindMagazineInGround.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -50 -45
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -48 112
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -368 416
+       Nodes {
+        SCR_AIGetCurrentMagazinePrefab "SCR_AI Get Current Magazine Prefab" {
+         Name "SCR_AI Get Current Magazine Prefab"
+         EditorPos -784 688
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 0
+           PortName "WeaponComponent"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 1
+           PortName "PrefabResourceName"
+          }
+         }
+        }
+        SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+         Name "SCR_AI Get Entity Position"
+         EditorPos -224 704
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Entity"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 2
+           PortName "Position"
+          }
+         }
+        }
+        SCR_AIFindPositionWithPrefab "SCR_AI Find Position With Prefab" {
+         Name "SCR_AI Find Position With Prefab"
+         EditorPos 192 704
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 2
+           PortName "Pos"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 3
+           PortName "PrefabResourceName"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 4
+           PortName "ArsenalEntity"
+          }
+         }
+         m_fSearchRadius 50
+        }
+       }
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 1310.35 605.224
+       Nodes {
+        Decorator Decorator {
+         Name "Decorator"
+         EditorPos 928 1008
+         Nodes {
+          SCR_AISetBehaviorInterruptable "SCR_AI Set Behavior Interruptable" {
+           Name "SCR_AI Set Behavior Interruptable"
+           EditorPos 896 1168
+           m_IsInterruptable 0
+          }
+         }
+         ForceNodeResult Success
+        }
+        Decorator Decorator {
+         Name "Decorator"
+         EditorPos 1248 1008
+         Nodes {
+          AITaskMoveToEntity "Move To Entity" {
+           Name "Move To Entity"
+           EditorPos 1201.91 1180.73
+           PrecisionY 1
+           InEntity 5
+          }
+         }
+         ForceNodeResult Success
+        }
+        SCR_AIPlayItemGesture "SCR_AI Play Item Gesture" {
+         Name "SCR_AI Play Item Gesture"
+         EditorPos 1554.919 1021.653
+         m_eGesture EItemGesturePickUp
+        }
+        SCR_AITakeItemFromInventory "SCR_AI Take Item From Inventory" {
+         Name "SCR_AI Take Item From Inventory"
+         EditorPos 1904 1024
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 6
+           PortName "ArsenalEntity"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 7
+           PortName "PrefabResourceName"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "ItemEntity"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "CountItemsTaken"
+          }
+         }
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 2266.981 1046.512
+         Period 1.5
+        }
+        SCR_AISetBehaviorInterruptable "SCR_AI Set Behavior Interruptable" {
+         Name "SCR_AI Set Behavior Interruptable"
+         EditorPos 2430.277 1033.255
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableObject weaponComp {
+   Flags Input
+   Desc ""
+  }
+  BtVariableResourceName MagPref {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector myPos {
+   Flags 0
+   Desc ""
+  }
+  BtVariableEntity deadEnt {
+   Flags 0
+   Desc ""
+  }
+ }
+ VariablesRefs {
+  VariableReference weaponComp {
+   VariableType 0
+   EditorPos -1008 800
+  }
+  VariableReference MagPref {
+   VariableType 1
+   EditorPos -448 800
+  }
+  VariableReference myPos {
+   VariableType 2
+   EditorPos 0 816
+  }
+  VariableReference MagPref {
+   VariableType 1
+   EditorPos -76 907
+  }
+  VariableReference deadEnt {
+   VariableType 3
+   EditorPos 480 784
+  }
+  VariableReference deadEnt {
+   VariableType 3
+   EditorPos 960.238 1291.173
+  }
+  VariableReference deadEnt {
+   VariableType 3
+   EditorPos 1720.1 1095.8
+  }
+  VariableReference MagPref {
+   VariableType 1
+   EditorPos 1658 1180.9
+  }
+ }
+}
