@@ -7,6 +7,9 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 	protected const int FIRE_TREE_SUPPRESSIVE	= 3;
 	protected const int FIRE_TREE_MELEE			= 4;
 	protected const int FIRE_TREE_LOOK_THREATS	= 5;	// Looking at data from threat system
+	protected const int FIRE_TREE_THROW_GRENADE	= 6;
+	protected const int FIRE_TREE_RPG			= 7;
+	
 	
 	protected const float BURST_FIRE_MAX_DISTANCE = 70.0;
 
@@ -17,7 +20,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		// Is aiming forbidden by combat move?
 		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_UtilityComponent.GetExecutedAction());
 		if (executedBehavior && executedBehavior.m_bUseCombatMove && !m_UtilityComponent.m_CombatMoveState.m_bAimAtTarget)
-			return FIRE_TREE_INVALID;
+			return FIRE_TREE_LOOK_THREATS;
 		
 		// Is looking at threats activated?
 		if (m_bLookAtThreats)
@@ -90,7 +93,6 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				return FIRE_TREE_BURST;
 			else
 				return FIRE_TREE_SINGLE;
-			
 		}
 		else
 		{
@@ -123,6 +125,14 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				fireRate = maxFireRate * threat;
 								
 				return FIRE_TREE_SUPPRESSIVE;
+			}
+			else if (target.GetTimeSinceSeen() > 3 && (target.GetDistance() > 50 && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER)))
+			{
+				return FIRE_TREE_RPG;
+			}
+			else if (target.GetTimeSinceSeen() > 4 && target.GetDistance() < 50)
+			{
+				return FIRE_TREE_THROW_GRENADE;
 			}
 			else
 				return FIRE_TREE_LOOK;

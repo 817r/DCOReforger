@@ -1,12 +1,7 @@
 modded class SCR_AIUtilityComponent
 {
 	ref DCO_AIMoraleSystem moraleSystem;
-	
-	override void EOnInit(IEntity owner)
-	{
-		super.EOnInit(owner);
-		moraleSystem = new DCO_AIMoraleSystem(this);
-	}
+	DCO_AIConfigComponent m_DCOConfig;
 
 	override SCR_AIBehaviorBase EvaluateBehavior(BaseTarget unknownTarget)
 	{
@@ -177,6 +172,17 @@ modded class SCR_AIUtilityComponent
 		#endif
 		
 		return m_CurrentBehavior;
+	}
+	
+	override void EOnInit(IEntity owner)
+	{
+		super.EOnInit(owner);
+		AIAgent agent = GetOwner();
+		if (!agent)
+			return;	
+		
+		moraleSystem = new DCO_AIMoraleSystem(this);
+		m_DCOConfig = DCO_AIConfigComponent.Cast(owner.FindComponent(DCO_AIConfigComponent));
 	}
 	
 	DCO_AIMoraleSystem GetMoraleSystem()

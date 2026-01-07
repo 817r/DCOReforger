@@ -357,15 +357,8 @@ modded class SCR_AIGetAimErrorOffset
 	
 	float GetGlobalModifier()
 	{
-		SCR_BaseGameMode gamemode = SCR_BaseGameMode.Cast(GetGame().GetGameMode());
-		if (!gamemode)
-			return 1;
-		
-		DCO_GlobalAIComponent dcoAiSetting = DCO_GlobalAIComponent.Cast(gamemode.FindComponent(DCO_GlobalAIComponent));
-		if (!dcoAiSetting)
-			return 1;
-		
-		float val = 1 / dcoAiSetting.GetUnitSkill();	
+		float dcoAiSetting = m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAccuracy();
+		float val = 1 / dcoAiSetting;	
 		
 		return val;
 	}

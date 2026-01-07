@@ -33,7 +33,7 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
        Nodes {
         SCR_AIUpdateTargetSuppressionData "SCR_AI Update Target Suppression Data" {
          Name "SCR_AI Update Target Suppression Data"
-         EditorPos -2412.965 381.679
+         EditorPos -2416 384
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 3
@@ -126,6 +126,10 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
             SingleInputPortContainer SingleInputPortContainer {
              Port 2
              PortName "Visible"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 4
+             PortName "TimeLastSeen_ms"
             }
            }
           }
@@ -279,7 +283,114 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
            TestType EqualsValue
            TestValue "1"
           }
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 1328 416
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 1433.104 681.388
+             Nodes {
+              DCO_AIGetSuppressionVolumeRandomPosition "DCO_AI Get Suppression Volume Random Position" {
+               Name "DCO_AI Get Suppression Volume Random Position"
+               EditorPos 921.104 1145.388
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 15
+                 PortName "SuppressionVolume"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 14
+                 PortName "RandomPos"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "Distance_m"
+                }
+               }
+              }
+              RunBT RunBT {
+               Name "RunBT"
+               EditorPos 1769.104 1129.388
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 14
+                 PortName "ThrowPos"
+                }
+               }
+               BehaviorTree "{3E39EEA91E8B92CF}AI/BehaviorTrees/Chimera/Soldier/DCO_Suppress_Grenade.bt"
+              }
+             }
+            }
+           }
+           AbortType AbortChildrenBranchAndParentFurtherChildren
+           InVariable 13
+           TestType EqualsValue
+           TestValue "2"
+          }
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 3056 416
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 3072 768
+             Nodes {
+              DCO_AIGetSuppressionVolumeRandomPosition "DCO_AI Get Suppression Volume Random Position" {
+               Name "DCO_AI Get Suppression Volume Random Position"
+               EditorPos 2528 1072
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 18
+                 PortName "SuppressionVolume"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 17
+                 PortName "RandomPos"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "Distance_m"
+                }
+               }
+              }
+              RunBT RunBT {
+               Name "RunBT"
+               EditorPos 3376 1056
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 17
+                 PortName "ShootPos"
+                }
+               }
+               BehaviorTree "{D8D4622F1DA4F465}AI/BehaviorTrees/Chimera/Soldier/DCO_Suppress_RPG.bt"
+              }
+             }
+            }
+           }
+           InVariable 16
+           TestType EqualsValue
+           TestValue "3"
+          }
          }
+        }
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 1888 -224
+         Nodes {
+          RunBT RunBT {
+           Name "RunBT"
+           EditorPos 1744 -48
+           BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/SwitchToExpectedWeapon.bt"
+          }
+         }
+         InVariable 19
+         TestType SmallerThanValue
+         TestValue "2"
         }
        }
       }
@@ -316,6 +427,10 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
   BtVariableScalar distance {
    Flags 0
    Desc "float"
+  }
+  BtVariableVector SuppressionRandomPos {
+   Flags 0
+   Desc ""
   }
  }
  VariablesRefs {
@@ -372,6 +487,34 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
    VariableType 6
    EditorPos -1261.429 1262.381
    Group "{6124D04D0D75BCEC}"
+  }
+  VariableReference iFireTreeId {
+   VariableType 4
+   EditorPos 1136 496
+  }
+  VariableReference SuppressionRandomPos {
+   VariableType 7
+   EditorPos 1465.104 1289.388
+  }
+  VariableReference SuppressionVolume {
+   VariableType 0
+   EditorPos 560 1200
+  }
+  VariableReference iFireTreeId {
+   VariableType 4
+   EditorPos 2877.233 504.289
+  }
+  VariableReference SuppressionRandomPos {
+   VariableType 7
+   EditorPos 3072 1216
+  }
+  VariableReference SuppressionVolume {
+   VariableType 0
+   EditorPos 2243.537 1182.786
+  }
+  VariableReference iFireTreeId {
+   VariableType 4
+   EditorPos 1691.573 -146.665
   }
  }
  Groups {

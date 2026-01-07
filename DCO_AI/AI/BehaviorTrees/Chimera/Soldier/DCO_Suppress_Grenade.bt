@@ -1,0 +1,350 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_Suppress_Grenade.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -96 -16
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -96 224
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -832 752
+       Nodes {
+        SCR_AIGetWeaponOfType "SCR_AI Get Weapon Of Type" {
+         Name "SCR_AI Get Weapon Of Type"
+         EditorPos -1440 1184
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "WeaponType"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "WeaponComponent"
+          }
+         }
+         m_WeaponType WT_FRAGGRENADE
+        }
+        SCR_AISwitchWeapon "SCR_AI Switch Weapon" {
+         Name "SCR_AI Switch Weapon"
+         EditorPos -901.329 1163.394
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 0
+           PortName "WeaponComponent"
+          }
+         }
+        }
+        AITaskSetVariable "Set Variable" {
+         Name "Set Min Dist"
+         EditorPos -640 1152
+         SetValue "5"
+         OutVariable 1
+        }
+        AITaskSetVariable "Set Variable" {
+         Name "Set Max Dist"
+         EditorPos -416 1152
+         SetValue "40"
+         OutVariable 4
+        }
+       }
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos 464 768
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 96 1440
+         Nodes {
+          SCR_AIGetRandomPoint "SCR_AI Get Random Point" {
+           Name "SCR_AI Get Random Point"
+           EditorPos -592 1728
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Waypoint"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 2
+             PortName "Origin"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Radius"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 10
+             PortName "ResultVector"
+            }
+           }
+           m_Radius 3
+          }
+          SCR_AIGetAimCompensation "SCR_AI Get Aim Compensation" {
+           Name "SCR_AI Get Aim Compensation"
+           EditorPos -240 1712
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "TargetEntity"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 10
+             PortName "TargetPosition"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "AimPoint"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "VectorIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "InitialSpeedCoefficient"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 3
+             PortName "VectorOut"
+            }
+           }
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 144 1648
+          }
+          AITaskCharacterAim "Character Aim" {
+           Name "Character Aim"
+           EditorPos 480 1664
+           InAimAtPosition 11
+           InAimOffset 3
+          }
+         }
+        }
+        DecoTestDistanceToEntity "Test Distance To Entity" {
+         Name "Dist > Min"
+         EditorPos 1216 1216
+         Nodes {
+          DecoTestDistanceToEntity "Test Distance To Entity" {
+           Name "Dist < Max"
+           EditorPos 1216 1488
+           Nodes {
+            Sequence Sequence {
+             Name "Throw Grenade"
+             EditorPos 1232 1808
+             Nodes {
+              AITaskCharacterRaiseWeapon "Character Raise Weapon" {
+               Name "Character Raise Weapon"
+               EditorPos 640 2128
+              }
+              Selector Selector {
+               Name "Selector"
+               EditorPos 1040 2112
+               Nodes {
+                DecoratorEntity Entity {
+                 Name "Entity"
+                 EditorPos 736 2352
+                 Nodes {
+                  AITaskReturnState "Return State" {
+                   Name "Return State"
+                   EditorPos 816 2560
+                   Result RUNNING
+                  }
+                 }
+                 NegativeCondition 1
+                 AbortType AbortChildrenBranchAndParentFurtherChildren
+                 TEST {
+                  DecoratorTestIsWeaponRaised "{684CBC634F0C1805}" {
+                  }
+                 }
+                }
+                AITaskReturnState "Return State" {
+                 Name "Return State"
+                 EditorPos 1200 2368
+                 Result SUCCESS
+                }
+               }
+              }
+              Selector Selector {
+               Name "Selector"
+               EditorPos 1744 2192
+               Nodes {
+                Parallel Parallel {
+                 Name "Parallel"
+                 EditorPos 1536 2464
+                 Nodes {
+                  DecoTestVariable "Test Variable" {
+                   Name "Test Variable"
+                   EditorPos 1328 2688
+                   Nodes {
+                    Sequence Sequence {
+                     Name "Sequence"
+                     EditorPos 1360 2928
+                     Nodes {
+                      AITaskThrowGrenade "Throw Grenade" {
+                       Name "Throw Grenade"
+                       EditorPos 1167.741 3133.655
+                      }
+                      AITaskIdle Idle {
+                       Name "Idle"
+                       EditorPos 1408 3136
+                       Period 2
+                      }
+                      AITaskReturnState "Return State" {
+                       Name "Return State"
+                       EditorPos 1552 3136
+                       Result SUCCESS
+                      }
+                     }
+                    }
+                   }
+                   NegativeCondition 1
+                   AbortType AbortChildrenBranch
+                   InVariable 8
+                   TestType EqualsValue
+                   TestValue "true"
+                  }
+                  Sequence Sequence {
+                   Name "Sequence"
+                   EditorPos 1792 2720
+                   Nodes {
+                    AITaskIdle Idle {
+                     Name "Idle"
+                     EditorPos 1680 2944
+                     Period 6
+                    }
+                    AITaskSetVariable "Set Variable" {
+                     Name "Set Variable"
+                     EditorPos 1872 2944
+                     SetValue "true"
+                     OutVariable 9
+                    }
+                    AITaskReturnState "Return State" {
+                     Name "Return State"
+                     EditorPos 2144 2944
+                     Result RUNNING
+                    }
+                   }
+                  }
+                 }
+                 UseChildResult 0
+                }
+                AITaskReturnState "Return State" {
+                 Name "Return State"
+                 EditorPos 2176 2528
+                 Result FAIL
+                }
+               }
+              }
+             }
+            }
+           }
+           InPosition 5
+           InDistance 7
+           DistanceThreshold 0
+          }
+         }
+         NegativeCondition 1
+         InPosition 5
+         InDistance 6
+         DistanceThreshold 0
+        }
+       }
+       UseChildResult 1
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableObject WeaponComp {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar MinDist {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar MaxDist {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector ThrowPos {
+   Flags Input
+   Desc ""
+  }
+  BtVariableVector PosCompensated {
+   Flags 0
+   Desc ""
+  }
+  BtVariableBool CancelThrow {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector ThrowPosRandomized {
+   Flags 0
+   Desc ""
+  }
+ }
+ VariablesRefs {
+  VariableReference WeaponComp {
+   VariableType 0
+   EditorPos -1174.627 1250.872
+  }
+  VariableReference MinDist {
+   VariableType 1
+   EditorPos -577.324 1272.086
+  }
+  VariableReference ThrowPos {
+   VariableType 3
+   EditorPos -880 1840
+  }
+  VariableReference PosCompensated {
+   VariableType 4
+   EditorPos 77 1798
+  }
+  VariableReference MaxDist {
+   VariableType 2
+   EditorPos -380.112 1275.938
+  }
+  VariableReference ThrowPos {
+   VariableType 3
+   EditorPos 917.862 1436.902
+  }
+  VariableReference MinDist {
+   VariableType 1
+   EditorPos 896 1328
+  }
+  VariableReference MaxDist {
+   VariableType 2
+   EditorPos 890.036 1564.728
+  }
+  VariableReference CancelThrow {
+   VariableType 5
+   EditorPos 1120 2768
+  }
+  VariableReference CancelThrow {
+   VariableType 5
+   EditorPos 1900.803 3056.368
+  }
+  VariableReference ThrowPosRandomized {
+   VariableType 6
+   EditorPos -377.469 1934.832
+  }
+  VariableReference ThrowPosRandomized {
+   VariableType 6
+   EditorPos 208 1728
+  }
+ }
+}

@@ -329,7 +329,8 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 			rq.m_eMovementType = EMovementType.RUN;
-			rq.m_bAimAtTarget = false; // Can't aim at tgt while sprinting
+			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 			rq.m_bAimAtTargetEnd = true;
 		}
 		

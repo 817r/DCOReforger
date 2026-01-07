@@ -1,0 +1,244 @@
+BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNearestArsenal.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNearestArsenal.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 1168 -448
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 1168 -272
+     Nodes {
+      Sequence Sequence {
+       Name "Find Arsenal Prefab"
+       EditorPos -96 0
+       Nodes {
+        SCR_AIGetCurrentMagazinePrefab "SCR_AI Get Current Magazine Prefab" {
+         Name "SCR_AI Get Current Magazine Prefab"
+         EditorPos -752 400
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 1
+           PortName "WeaponComponent"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "PrefabResourceName"
+          }
+         }
+        }
+        SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+         Name "SCR_AI Get Entity Position"
+         EditorPos -49.237 451.803
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "Entity"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 2
+           PortName "Position"
+          }
+         }
+        }
+        SCR_AIFindArsenalWithPrefab "SCR_AI Find Arsenal With Prefab" {
+         Name "SCR_AI Find Arsenal With Prefab"
+         EditorPos 576 480
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 2
+           PortName "Pos"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 3
+           PortName "PrefabResourceName"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 4
+           PortName "ArsenalEntity"
+          }
+         }
+         m_fSearchRadius 70
+        }
+       }
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos 2112 144
+       Nodes {
+        Selector Selector {
+         Name "Selector"
+         EditorPos 1552 528
+         Nodes {
+          SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+           Name "SCR_AI Deco Is Above Threat Level"
+           EditorPos 1232 720
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 1312 896
+             Nodes {
+              AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+               Name "Character Set Movement Speed"
+               EditorPos 1216 1072
+               "Movement speed" WALK
+              }
+             }
+            }
+           }
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "ThresholdIn"
+            }
+           }
+           m_threatThreshold ALERTED
+          }
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 1712 768
+           Nodes {
+            AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+             Name "Character Set Movement Speed"
+             EditorPos 1616 944
+             "Movement speed" RUN
+            }
+           }
+          }
+         }
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 2944 624
+         Nodes {
+          Decorator Decorator {
+           Name "Decorator"
+           EditorPos 2032 1024
+           Nodes {
+            SCR_AISetBehaviorInterruptable "SCR_AI Set Behavior Interruptable" {
+             Name "SCR_AI Set Behavior Interruptable"
+             EditorPos 2000 1248
+             m_IsInterruptable 0
+            }
+           }
+           ForceNodeResult Success
+          }
+          Decorator Decorator {
+           Name "Decorator"
+           EditorPos 2544 1008
+           Nodes {
+            AITaskMoveToEntity "Move To Entity" {
+             Name "Move To Entity"
+             EditorPos 2496 1184
+             PrecisionY 1
+             InEntity 5
+            }
+           }
+           ForceNodeResult Success
+          }
+          SCR_AIPlayItemGesture "SCR_AI Play Item Gesture" {
+           Name "SCR_AI Play Item Gesture"
+           EditorPos 2976 1040
+           m_eGesture EItemGesturePickUp
+          }
+          SCR_AITakeItemFromArsenal "SCR_AI Take Item From Arsenal" {
+           Name "SCR_AI Take Item From Arsenal"
+           EditorPos 3232 1040
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 6
+             PortName "ArsenalEntity"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 7
+             PortName "PrefabResourceName"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "ItemEntity"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "CountItemsTaken"
+            }
+           }
+          }
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 3568 1040
+           Period 3
+          }
+          SCR_AISetBehaviorInterruptable "SCR_AI Set Behavior Interruptable" {
+           Name "SCR_AI Set Behavior Interruptable"
+           EditorPos 3744 1040
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableResourceName MagazinePrefabName {
+   Flags 0
+   Desc ""
+  }
+  BtVariableObject WeaponComp {
+   Flags Input
+   Desc ""
+  }
+  BtVariableVector DesireableMovePos {
+   Flags 0
+   Desc ""
+  }
+  BtVariableEntity ArsenalPrefab {
+   Flags 0
+   Desc ""
+  }
+ }
+ VariablesRefs {
+  VariableReference MagazinePrefabName {
+   VariableType 0
+   EditorPos -400 528
+  }
+  VariableReference WeaponComp {
+   VariableType 1
+   EditorPos -1024 528
+  }
+  VariableReference DesireableMovePos {
+   VariableType 2
+   EditorPos 224 592
+  }
+  VariableReference MagazinePrefabName {
+   VariableType 0
+   EditorPos 144.606 696.9
+  }
+  VariableReference ArsenalPrefab {
+   VariableType 3
+   EditorPos 879.243 570.624
+  }
+  VariableReference ArsenalPrefab {
+   VariableType 3
+   EditorPos 2272 1168
+  }
+  VariableReference ArsenalPrefab {
+   VariableType 3
+   EditorPos 2960 1120
+  }
+  VariableReference MagazinePrefabName {
+   VariableType 0
+   EditorPos 2827.75 1207.4
+  }
+ }
+}

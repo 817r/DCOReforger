@@ -16,5 +16,7 @@ SCR_ChimeraCharacter {
     }
    }
   }
+  DCO_AIResupplyConfigComponent "{684E3B932F31FCBF}" {
+  }
  }
 }

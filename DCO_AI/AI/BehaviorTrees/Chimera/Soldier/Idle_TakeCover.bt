@@ -91,7 +91,7 @@ BehaviorTree {
          Nodes {
           SCR_AIFindCover "SCR_AI Find Cover" {
            Name "SCR_AI Find Cover"
-           EditorPos -256 1024
+           EditorPos -384 1040
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port 7
@@ -107,7 +107,7 @@ BehaviorTree {
           }
           AITaskSetVariable "Set Variable" {
            Name "Set Variable"
-           EditorPos 48 1024
+           EditorPos -128 1024
            OutVariable 10
            InVariable 9
           }
@@ -119,7 +119,7 @@ BehaviorTree {
          Nodes {
           SCR_AIFindCover "SCR_AI Find Cover" {
            Name "SCR_AI Find Cover"
-           EditorPos 352 1024
+           EditorPos 320 1024
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
              Port 4
@@ -135,7 +135,7 @@ BehaviorTree {
           }
           AITaskSetVariable "Set Variable" {
            Name "Set Variable"
-           EditorPos 640.636 1025.661
+           EditorPos 608 1024
            OutVariable 12
            InVariable 11
           }
@@ -295,7 +295,7 @@ BehaviorTree {
   }
   VariableReference CoverQueryProps {
    VariableType 5
-   EditorPos 320 1152
+   EditorPos 256 1168
   }
   VariableReference vLeaderPos {
    VariableType 4
@@ -315,19 +315,19 @@ BehaviorTree {
   }
   VariableReference CoverLockIndoor {
    VariableType 7
-   EditorPos -182.157 1156.456
+   EditorPos -304 1168
   }
   VariableReference CoverLock {
    VariableType 1
-   EditorPos 80 1168
+   EditorPos 32 1168
   }
   VariableReference CoverLockOutdoor {
    VariableType 8
-   EditorPos 608.698 1171.665
+   EditorPos 576 1168
   }
   VariableReference CoverLock {
    VariableType 1
-   EditorPos 848 1056
+   EditorPos 848 1104
   }
  }
 }

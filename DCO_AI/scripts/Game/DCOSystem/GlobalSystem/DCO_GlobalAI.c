@@ -7,7 +7,8 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute("1", UIWidgets.Slider, "Global AI unit skill level", "0.1 10 0.1")]
 	protected float unitAimSkillAccuracy;
 	
-	
+	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0.5 3 0.01" )]
+	protected float m_fAiPerception;
 	
 	static DCO_GlobalAIComponent m_sInstance;
 	
@@ -36,7 +37,23 @@ class DCO_GlobalAIComponent: ScriptComponent
 	float SetUnitSkill(float sk)
 	{
 		unitAimSkillAccuracy = sk;
-		Print(unitAimSkillAccuracy.ToString(), LogLevel.WARNING);
 		return sk;
+	}
+	
+	float GetUnitPerception()
+	{
+		return m_fAiPerception;
+	}
+	
+	float SetUnitPerception(float sk)
+	{
+		m_fAiPerception = sk;
+		return sk;
+	}
+	
+	ResourceName GetResourceNameMagazine()
+	{
+		ResourceName name;
+		return name;
 	}
 }

@@ -8,6 +8,9 @@ class DCO_AIConfigComponent : ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "0.1 10 0.01" )]
 	float m_fAimAccuracy;
 	
+	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "0.1 10 0.01" )]
+	float m_fAiPerception;
+	
 	//------------------------------------------------------------------------------------------------
 	override void OnPostInit(IEntity owner)
 	{
@@ -23,6 +26,7 @@ class DCO_AIConfigComponent : ScriptComponent
 			return;
 		
 		m_fAimAccuracy = settings.GetUnitSkill();
+		m_fAiPerception = settings.GetUnitPerception();
 	}
 	
 	float GetAccuracy()
@@ -33,7 +37,17 @@ class DCO_AIConfigComponent : ScriptComponent
 	float SetAccuracy(float acc)
 	{
 		m_fAimAccuracy = acc;
-		Print("Set Individual Accuracy " + m_fAimAccuracy.ToString(), LogLevel.NORMAL);
 		return acc;
+	}
+	
+	float GetPerception()
+	{
+		return m_fAiPerception;
+	}
+	
+	float SetPerception(float f)
+	{
+		m_fAiPerception = f;
+		return m_fAiPerception;
 	}
 }

@@ -202,8 +202,12 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicVehicleGunner_Suppressive
 {
 	protected static const string PORT_VISIBLE = "Visible";
+	protected static const string PORT_TIME_LAST_SEEN = "TimeLastSeen_ms";
 	
 	protected bool m_bTargetVisible = false;
+	protected bool m_bGoodVision;
+	protected float m_fTargetLastSeenTime_ms = 0;
+	protected static const float TIME_SINCE_GOOD_VISIBILITY_MIN_MS = 15000.0;
 	
 	//-------------------------------------------------------------------------------------------
 	override bool UpdateCombatMoveLogic()
@@ -213,6 +217,10 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 			return false;
 		
 		GetVariableIn(PORT_VISIBLE, m_bTargetVisible);
+		GetVariableIn(PORT_TIME_LAST_SEEN, m_fTargetLastSeenTime_ms);
+		
+		float timeSinceLastSeen_ms = GetGame().GetWorld().GetWorldTime() - m_fTargetLastSeenTime_ms;
+		m_bGoodVision = m_bTargetVisible || (timeSinceLastSeen_ms < TIME_SINCE_GOOD_VISIBILITY_MIN_MS);
 		
 		// Logic for suppressive fire is very simple. We only want to rotate the car until we can aim the turret at target.
 		if (TargetOutsideLimitsCondition())
@@ -230,7 +238,7 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 	override bool TargetOutsideLimitsCondition()
 	{
 		vector targetPos = m_SuppressionVolume.GetCenterPosition();
-		if (!TargetWithinTurretSafeHorizontalLimits(targetPos) || m_bTargetVisible == false)
+		if (!TargetWithinTurretSafeHorizontalLimits(targetPos) || m_bGoodVision == false)
 			return true;
 		
 		return false;
@@ -239,7 +247,8 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 	//-------------------------------------------------------------------------------------------
 	protected static ref TStringArray s_aVarisIn = { 
 		PORT_SUPPRESSION_VOLUME, 
-		PORT_VISIBLE 
+		PORT_VISIBLE,
+		PORT_TIME_LAST_SEEN
 	};	
 	override TStringArray GetVariablesIn() { return s_aVarisIn; }
 }

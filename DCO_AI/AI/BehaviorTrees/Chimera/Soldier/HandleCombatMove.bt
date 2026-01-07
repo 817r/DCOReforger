@@ -223,7 +223,7 @@ BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMov
                        Name "RunBT"
                        EditorPos 3328 2560
                        InPorts {
-                        SingleInputPortContainer SingleInputPortContainerClass {
+                        SingleInputPortContainer SingleInputPortContainer {
                          Port 19
                          PortName "Rq"
                         }

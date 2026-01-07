@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualAIMAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class SCR_AIIndividualPerceptionAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -7,10 +7,10 @@ class SCR_AIIndividualAIMAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 		if (!editableEntity) 
 			return null;
 		
-		if (editableEntity.HasEntityState(EEditableEntityState.PLAYER))
+		if (!IsValidEntityType(editableEntity.GetEntityType()))
 			return null;
 		
-		if (!IsValidEntityType(editableEntity.GetEntityType()))
+		if (editableEntity.HasEntityState(EEditableEntityState.PLAYER))
 			return null;
 		
 		IEntity owner = editableEntity.GetOwner();
@@ -26,7 +26,7 @@ class SCR_AIIndividualAIMAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 		if (!aiConf)
 			return null;		
 		
-		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.GetAccuracy());
+		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.GetPerception());
 	}
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
@@ -50,6 +50,6 @@ class SCR_AIIndividualAIMAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 		if (!aiConf)
 			return;	
 		
-		aiConf.SetAccuracy(var.GetFloat());
+		aiConf.SetPerception(var.GetFloat());
 	}
 }

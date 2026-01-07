@@ -1,0 +1,300 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_Suppress_RPG.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -32 -48
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -32 144
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -784 640
+       Nodes {
+        SCR_AIGetWeaponOfType "SCR_AI Get Weapon Of Type" {
+         Name "SCR_AI Get Weapon Of Type"
+         EditorPos -1970.035 1000.978
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "WeaponType"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "WeaponComponent"
+          }
+         }
+         m_WeaponType WT_ROCKETLAUNCHER
+        }
+        SCR_AISwitchWeapon "SCR_AI Switch Weapon" {
+         Name "SCR_AI Switch Weapon"
+         EditorPos -1378.035 984.978
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 0
+           PortName "WeaponComponent"
+          }
+         }
+        }
+        SCR_AISelectFireMode "SCR_AI Select Fire Mode" {
+         Name "SCR_AI Select Fire Mode"
+         EditorPos -1136 976
+        }
+        SCR_AIGetFireTimes "SCR_AI Get Fire Times" {
+         Name "SCR_AI Get Fire Times"
+         EditorPos -656 976
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "TargetEntity"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 5
+           PortName "TargetPosition"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "FireRateCoef"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 6
+           PortName "FireTime"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 8
+           PortName "StabilizationTime"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "RejectAimingTime"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "ShotSpan"
+          }
+         }
+        }
+       }
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos 528 736
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 80 1120
+         Nodes {
+          SCR_AIGetAimDistanceCompensation "SCR_AI Get Aim Distance Compensation" {
+           Name "SCR_AI Get Aim Distance Compensation"
+           EditorPos -238.507 1373.474
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "TargetEntity"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 1
+             PortName "TargetPosition"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "VectorIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "InitialSpeedCoefficient"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 2
+             PortName "VectorOut"
+            }
+           }
+          }
+          AITaskCharacterAim "Character Aim" {
+           Name "Character Aim"
+           EditorPos 384 1360
+           InAimAtPosition 3
+           InAimPoint -1
+           InAimOffset 2
+          }
+         }
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 1008 1232
+         Nodes {
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 800 1472
+           PeriodRandom 1
+           PeriodKey 9
+          }
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 1024 1696
+           Nodes {
+            SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
+             Name "SCR_AI Deco Weapon Unobstructed"
+             EditorPos 384 1968
+             Nodes {
+              AITaskFire Fire {
+               Name "Fire"
+               EditorPos 464 2112
+               Period 2
+               KeepFiring 1
+               PeriodKey 7
+              }
+             }
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 768 1984
+             Period 2
+            }
+            DCO_IsWeaponDisposeable "DCO_ Is Weapon Disposeable" {
+             Name "DCO_ Is Weapon Disposeable"
+             EditorPos 1040 2016
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 4
+               PortName "WeaponComponent"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 10
+               PortName "IsDisposeable"
+              }
+             }
+            }
+            Selector Selector {
+             Name "Selector"
+             EditorPos 1712 2112
+             Nodes {
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 1569.16 2304.12
+               Nodes {
+                SCR_AIDropWeapon "SCR_AI Drop Weapon" {
+                 Name "SCR_AI Drop Weapon"
+                 EditorPos 1568 2464
+                }
+               }
+               InVariable 10
+               TestType EqualsValue
+               TestValue "true"
+              }
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 1952 2304
+               Nodes {
+                AITaskReload Reload {
+                 Name "Reload"
+                 EditorPos 1872 2496
+                }
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos 2048 2496
+                 Period 10
+                }
+               }
+              }
+             }
+            }
+            AITaskReturnState "Return State" {
+             Name "Return State"
+             EditorPos 2096 2128
+             Result SUCCESS
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableObject WeaponComponent {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector ShootPos {
+   Flags Input
+   Desc ""
+  }
+  BtVariableVector ShootPosCompensated {
+   Flags 0
+   Desc ""
+  }
+  BtVariableBool IsDisposeable {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar FireTime {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar StabilizationTime {
+   Flags 0
+   Desc ""
+  }
+ }
+ VariablesRefs {
+  VariableReference WeaponComponent {
+   VariableType 0
+   EditorPos -1666.035 1080.978
+  }
+  VariableReference ShootPos {
+   VariableType 1
+   EditorPos -435.86 1453.625
+  }
+  VariableReference ShootPosCompensated {
+   VariableType 2
+   EditorPos 96 1536
+  }
+  VariableReference ShootPos {
+   VariableType 1
+   EditorPos 157.713 1430.185
+  }
+  VariableReference WeaponComponent {
+   VariableType 0
+   EditorPos 960 2128
+  }
+  VariableReference ShootPos {
+   VariableType 1
+   EditorPos -879.482 1123.24
+  }
+  VariableReference FireTime {
+   VariableType 4
+   EditorPos -336 976
+  }
+  VariableReference FireTime {
+   VariableType 4
+   EditorPos 288 2192
+  }
+  VariableReference StabilizationTime {
+   VariableType 5
+   EditorPos -374.632 1069.19
+  }
+  VariableReference StabilizationTime {
+   VariableType 5
+   EditorPos 576 1552
+  }
+  VariableReference IsDisposeable {
+   VariableType 3
+   EditorPos 1360 2304
+  }
+ }
+}

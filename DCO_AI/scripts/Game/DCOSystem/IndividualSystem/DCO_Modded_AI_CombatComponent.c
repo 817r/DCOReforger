@@ -82,6 +82,11 @@ modded class SCR_AICombatComponent
 		return CURRENT_AIM_IMPROVEMENT;
 	}
 	
+	SCR_AIUtilityComponent GetUtilityComponent()
+	{
+		return m_Utility;
+	}
+	
 	override void EvaluateWeaponAndTarget(out bool outWeaponEvent, out bool outSelectedTargetChanged,
 		out BaseTarget outPrevTarget, out BaseTarget outCurrentTarget,
 		out bool outRetreatTargetChanged, out bool outCompartmentChanged)
@@ -239,5 +244,28 @@ modded class SCR_AICombatComponent
 		outCompartmentChanged = compartmentChanged;
 		outCurrentTarget = newTarget;
 		outPrevTarget = prevTarget;
+	}
+	
+	override void UpdatePerceptionFactor(PerceptionComponent perceptionComp, SCR_AIThreatSystem threatSystem)
+	{
+		EAIThreatState threatState = threatSystem.GetState();
+		float perceptionFactor;
+		switch (threatState)
+		{
+			case EAIThreatState.SAFE:
+				perceptionFactor = PERCEPTION_FACTOR_SAFE; break; 
+			case EAIThreatState.VIGILANT:
+				perceptionFactor = PERCEPTION_FACTOR_VIGILANT; break;
+			case EAIThreatState.ALERTED:
+				perceptionFactor = PERCEPTION_FACTOR_ALERTED; break; 
+			case EAIThreatState.THREATENED:
+				perceptionFactor = PERCEPTION_FACTOR_THREATENED; break; 
+		}
+		
+		perceptionFactor *= m_fEquipmentPerceptionFactor;
+		perceptionFactor *= m_fPerceptionFactor;
+		perceptionFactor *= m_Utility.m_DCOConfig.GetPerception();
+		
+		perceptionComp.SetPerceptionFactor(perceptionFactor);
 	}
 }
