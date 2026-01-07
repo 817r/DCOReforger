@@ -64,7 +64,23 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
            PortName "ArsenalEntity"
           }
          }
-         m_fSearchRadius 70
+         m_fSearchRadius 100
+        }
+        SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+         Name "SCR_AI Get Entity Position"
+         EditorPos 1104 480
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 4
+           PortName "Entity"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 8
+           PortName "Position"
+          }
+         }
         }
        }
       }
@@ -72,120 +88,72 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
        Name "Parallel"
        EditorPos 2112 144
        Nodes {
-        Selector Selector {
-         Name "Selector"
-         EditorPos 1552 528
-         Nodes {
-          SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-           Name "SCR_AI Deco Is Above Threat Level"
-           EditorPos 1232 720
-           Nodes {
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 1312 896
-             Nodes {
-              AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-               Name "Character Set Movement Speed"
-               EditorPos 1216 1072
-               "Movement speed" WALK
-              }
-             }
-            }
-           }
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "ThresholdIn"
-            }
-           }
-           m_threatThreshold ALERTED
-          }
-          Sequence Sequence {
-           Name "Sequence"
-           EditorPos 1712 768
-           Nodes {
-            AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-             Name "Character Set Movement Speed"
-             EditorPos 1616 944
-             "Movement speed" RUN
-            }
-           }
+        SCR_AIDCO_Ressuplying "SCR_AIDCO_ Ressuplying" {
+         Name "SCR_AIDCO_ Ressuplying"
+         EditorPos 1936 448
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 7
+           PortName "Entity"
           }
          }
         }
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 2944 624
+        DCO_IsAIDistanceLessThan "DCO_ IsAI Distance Less Than" {
+         Name "DCO_ IsAI Distance Less Than"
+         EditorPos 2848 432
          Nodes {
-          Decorator Decorator {
-           Name "Decorator"
-           EditorPos 2032 1024
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 2944 624
            Nodes {
-            SCR_AISetBehaviorInterruptable "SCR_AI Set Behavior Interruptable" {
-             Name "SCR_AI Set Behavior Interruptable"
-             EditorPos 2000 1248
-             m_IsInterruptable 0
+            SCR_AIPlayItemGesture "SCR_AI Play Item Gesture" {
+             Name "SCR_AI Play Item Gesture"
+             EditorPos 2608 1024
+             m_eGesture EItemGesturePickUp
+            }
+            SCR_AITakeItemFromArsenal "SCR_AI Take Item From Arsenal" {
+             Name "SCR_AI Take Item From Arsenal"
+             EditorPos 2864 1024
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "ArsenalEntity"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 6
+               PortName "PrefabResourceName"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
+               PortName "ItemEntity"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
+               PortName "CountItemsTaken"
+              }
+             }
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 3216 1024
+             Period 3
+            }
+            AITaskReload Reload {
+             Name "Reload"
+             EditorPos 3408 1040
             }
            }
-           ForceNodeResult Success
-          }
-          Decorator Decorator {
-           Name "Decorator"
-           EditorPos 2544 1008
-           Nodes {
-            AITaskMoveToEntity "Move To Entity" {
-             Name "Move To Entity"
-             EditorPos 2496 1184
-             PrecisionXZ 2
-             PrecisionY 1
-             InEntity 5
-            }
-           }
-           ForceNodeResult Success
-          }
-          SCR_AIPlayItemGesture "SCR_AI Play Item Gesture" {
-           Name "SCR_AI Play Item Gesture"
-           EditorPos 2976 1040
-           m_eGesture EItemGesturePickUp
-          }
-          SCR_AITakeItemFromArsenal "SCR_AI Take Item From Arsenal" {
-           Name "SCR_AI Take Item From Arsenal"
-           EditorPos 3232 1040
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 6
-             PortName "ArsenalEntity"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 7
-             PortName "PrefabResourceName"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "ItemEntity"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "CountItemsTaken"
-            }
-           }
-          }
-          AITaskIdle Idle {
-           Name "Idle"
-           EditorPos 3584 1040
-           Period 3
-          }
-          AITaskReload Reload {
-           Name "Reload"
-           EditorPos 3776 1056
-          }
-          SCR_AISetBehaviorInterruptable "SCR_AI Set Behavior Interruptable" {
-           Name "SCR_AI Set Behavior Interruptable"
-           EditorPos 4000 1040
           }
          }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 9
+           PortName "ThresholdIn"
+          }
+         }
+         m_distanceThreshold 2
         }
        }
       }
@@ -208,6 +176,10 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
    Desc ""
   }
   BtVariableEntity ArsenalPrefab {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector EntPos {
    Flags 0
    Desc ""
   }
@@ -235,15 +207,23 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
   }
   VariableReference ArsenalPrefab {
    VariableType 3
-   EditorPos 2272 1168
-  }
-  VariableReference ArsenalPrefab {
-   VariableType 3
-   EditorPos 2960 1120
+   EditorPos 2592 1104
   }
   VariableReference MagazinePrefabName {
    VariableType 0
-   EditorPos 2827.75 1207.4
+   EditorPos 2459.75 1191.4
+  }
+  VariableReference ArsenalPrefab {
+   VariableType 3
+   EditorPos 1693.233 544.763
+  }
+  VariableReference EntPos {
+   VariableType 4
+   EditorPos 1328 592
+  }
+  VariableReference EntPos {
+   VariableType 4
+   EditorPos 2672 560
   }
  }
 }

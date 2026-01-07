@@ -10,6 +10,7 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 	protected CharacterControllerComponent m_ControlComp;
 	protected BaseWeaponManagerComponent m_WeaponMgrComp;
 	protected CompartmentAccessComponent m_CompartmentAccessComp;
+	IEntity controlledEnt;
 	
 	//------------------------------------------------------------
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
@@ -36,7 +37,7 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 		else
 			selectedWeaponComp = weaponMgr.GetCurrentWeapon();
 		
-		DCO_AIResupplyConfigComponent resConf = DCO_AIResupplyConfigComponent.Cast(selectedWeaponComp.GetOwner().FindComponent(DCO_AIResupplyConfigComponent));
+		DCO_AIResupplyConfigComponent resConf = DCO_AIResupplyConfigComponent.Cast(controlledEnt.FindComponent(DCO_AIResupplyConfigComponent));
 		m_sQueryResourceName = resConf.GetRandomMagazinePrefab(selectedWeaponComp.GetWeaponType());		
 		
 		SetVariableOut(PORT_PREFAB_RESOURCE_NAME, m_sQueryResourceName);
@@ -46,7 +47,7 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 	
 	override void OnInit(AIAgent owner)
 	{
-		IEntity controlledEnt = owner.GetControlledEntity();
+		controlledEnt = owner.GetControlledEntity();
 		
 		m_WeaponMgrComp = BaseWeaponManagerComponent.Cast(controlledEnt.FindComponent(BaseWeaponManagerComponent));
 		m_ControlComp = CharacterControllerComponent.Cast(controlledEnt.FindComponent(CharacterControllerComponent));

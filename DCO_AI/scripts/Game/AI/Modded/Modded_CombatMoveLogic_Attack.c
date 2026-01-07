@@ -1,11 +1,13 @@
 modded enum SCR_EAICombatMoveReason
 {
-	INVESTIGATE
+	INVESTIGATE,
+	SUPPLYING
 }
 
 modded enum SCR_EAICombatMoveRequestType
 {
-	INVESTIGATE
+	INVESTIGATE,
+	RESUPPLYING
 }
 
 modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase

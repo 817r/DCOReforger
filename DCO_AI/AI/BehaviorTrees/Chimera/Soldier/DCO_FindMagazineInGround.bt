@@ -64,76 +64,92 @@ BehaviorTree {
            PortName "ArsenalEntity"
           }
          }
-         m_fSearchRadius 50
+         m_fSearchRadius 80
         }
-       }
-      }
-      Sequence Sequence {
-       Name "Sequence"
-       EditorPos 1310.35 605.224
-       Nodes {
-        Decorator Decorator {
-         Name "Decorator"
-         EditorPos 928 1008
-         Nodes {
-          SCR_AISetBehaviorInterruptable "SCR_AI Set Behavior Interruptable" {
-           Name "SCR_AI Set Behavior Interruptable"
-           EditorPos 896 1168
-           m_IsInterruptable 0
-          }
-         }
-         ForceNodeResult Success
-        }
-        Decorator Decorator {
-         Name "Decorator"
-         EditorPos 1248 1008
-         Nodes {
-          AITaskMoveToEntity "Move To Entity" {
-           Name "Move To Entity"
-           EditorPos 1201.91 1180.73
-           PrecisionY 1
-           InEntity 5
-          }
-         }
-         ForceNodeResult Success
-        }
-        SCR_AIPlayItemGesture "SCR_AI Play Item Gesture" {
-         Name "SCR_AI Play Item Gesture"
-         EditorPos 1554.919 1021.653
-         m_eGesture EItemGesturePickUp
-        }
-        SCR_AITakeItemFromInventory "SCR_AI Take Item From Inventory" {
-         Name "SCR_AI Take Item From Inventory"
-         EditorPos 1904 1024
+        SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
+         Name "SCR_AI Get Entity Position"
+         EditorPos 608 688
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 6
-           PortName "ArsenalEntity"
-          }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 7
-           PortName "PrefabResourceName"
+           Port 4
+           PortName "Entity"
           }
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port -1
-           PortName "ItemEntity"
-          }
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port -1
-           PortName "CountItemsTaken"
+           Port 7
+           PortName "Position"
           }
          }
         }
-        AITaskIdle Idle {
-         Name "Idle"
-         EditorPos 2266.981 1046.512
-         Period 1.5
+       }
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos 1239.75 459.7
+       Nodes {
+        SCR_AIDCO_Ressuplying "SCR_AIDCO_ Ressuplying" {
+         Name "SCR_AIDCO_ Ressuplying"
+         EditorPos 1143.75 651.7
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 8
+           PortName "Entity"
+          }
+         }
         }
-        SCR_AISetBehaviorInterruptable "SCR_AI Set Behavior Interruptable" {
-         Name "SCR_AI Set Behavior Interruptable"
-         EditorPos 2430.277 1033.255
+        DCO_IsAIDistanceLessThan "DCO_ IsAI Distance Less Than" {
+         Name "DCO_ IsAI Distance Less Than"
+         EditorPos 1664 800
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 1758.35 1021.224
+           Nodes {
+            SCR_AIPlayItemGesture "SCR_AI Play Item Gesture" {
+             Name "SCR_AI Play Item Gesture"
+             EditorPos 1424 1392
+             m_eGesture EItemGesturePickUp
+            }
+            SCR_AITakeItemFromInventory "SCR_AI Take Item From Inventory" {
+             Name "SCR_AI Take Item From Inventory"
+             EditorPos 1717.019 1417.488
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 5
+               PortName "ArsenalEntity"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 6
+               PortName "PrefabResourceName"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
+               PortName "ItemEntity"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
+               PortName "CountItemsTaken"
+              }
+             }
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 2080 1440
+             Period 1.5
+            }
+           }
+          }
+         }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 9
+           PortName "ThresholdIn"
+          }
+         }
+         m_distanceThreshold 2
         }
        }
       }
@@ -159,6 +175,10 @@ BehaviorTree {
    Flags 0
    Desc ""
   }
+  BtVariableVector EntityPos {
+   Flags 0
+   Desc ""
+  }
  }
  VariablesRefs {
   VariableReference weaponComp {
@@ -179,19 +199,27 @@ BehaviorTree {
   }
   VariableReference deadEnt {
    VariableType 3
-   EditorPos 480 784
+   EditorPos 464 784
   }
   VariableReference deadEnt {
    VariableType 3
-   EditorPos 960.238 1291.173
-  }
-  VariableReference deadEnt {
-   VariableType 3
-   EditorPos 1720.1 1095.8
+   EditorPos 1533.119 1489.288
   }
   VariableReference MagPref {
    VariableType 1
-   EditorPos 1658 1180.9
+   EditorPos 1471.019 1574.388
+  }
+  VariableReference EntityPos {
+   VariableType 4
+   EditorPos 848 848
+  }
+  VariableReference deadEnt {
+   VariableType 3
+   EditorPos 966.465 716.845
+  }
+  VariableReference EntityPos {
+   VariableType 4
+   EditorPos 1472 816
   }
  }
 }

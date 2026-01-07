@@ -1,4 +1,4 @@
-class DCO_IsAIDistanceMoreThan : DecoratorScripted
+class DCO_IsAIDistanceLessThan : DecoratorScripted
 {
 	static private string THRESHOLD_PORT = "ThresholdIn";
 	
@@ -21,14 +21,16 @@ class DCO_IsAIDistanceMoreThan : DecoratorScripted
 	{		
 		if (!m_InfoComponent)
 		{
+			//Print("NO INFO COMPONENT");
 			return false;
 		};
 		
 		vector dist;
 		if (!GetVariableIn(THRESHOLD_PORT,dist))
 			return false;
-
-		return m_distanceThreshold < vector.Distance(dist, m_InfoComponent.GetUtilityComp().m_OwnerEntity.GetOrigin());	
+		
+		//Print("DIST : " + vector.Distance(dist, m_InfoComponent.GetUtilityComp().m_OwnerEntity.GetOrigin()).ToString() + " THRESHOLD : " + m_distanceThreshold);
+		return m_distanceThreshold > vector.Distance(dist, m_InfoComponent.GetUtilityComp().m_OwnerEntity.GetOrigin());	
 	}
 	
 	//------------------------------------------------------------------------------------------------

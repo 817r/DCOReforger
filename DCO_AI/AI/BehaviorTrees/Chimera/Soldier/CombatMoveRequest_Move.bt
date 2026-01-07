@@ -438,7 +438,7 @@ BehaviorTree "{02803BF87C1DA3A0}AI/BehaviorTrees/Chimera/Soldier/CombatMoveReque
                 }
                 AITaskSetVariable "Set Variable" {
                  Name "Set Variable"
-                 EditorPos 4623.829 2743.937
+                 EditorPos 4624 2736
                  Group "{615AEE9A67E031E0}"
                  SetValue "0.65"
                  OutVariable 44

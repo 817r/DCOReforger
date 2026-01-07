@@ -81,24 +81,24 @@ BehaviorTree {
            Nodes {
             Parallel Parallel {
              Name "Parallel"
-             EditorPos 1232 1280
+             EditorPos 464 1312
              Nodes {
               Selector Selector {
                Name "Selector"
-               EditorPos -480 1584
+               EditorPos -448 1584
                Nodes {
                 Sequence Sequence {
                  Name "Find Nearest Arsenal Box"
-                 EditorPos -1072 1792
+                 EditorPos -1312 1808
                  Nodes {
                   AITaskIdle Idle {
                    Name "Idle"
-                   EditorPos -1440 2080
+                   EditorPos -1680 2096
                    Period 2
                   }
                   SCR_AISetAIState "SCR_AI SetAI State" {
                    Name "SCR_AI SetAI State"
-                   EditorPos -1232 2080
+                   EditorPos -1472 2096
                    InPorts {
                     SingleInputPortContainer SingleInputPortContainer {
                      Port -1
@@ -109,7 +109,7 @@ BehaviorTree {
                   }
                   RunBT RunBT {
                    Name "RunBT"
-                   EditorPos -1024 2048
+                   EditorPos -1264 2064
                    InPorts {
                     SingleInputPortContainer SingleInputPortContainer {
                      Port 8
@@ -133,7 +133,8 @@ BehaviorTree {
                    Name "SCR_AI SetAI State"
                    EditorPos -160 2064
                    InPorts {
-                    SingleInputPortContainer SingleInputPortContainerClass {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port -1
                      PortName "AIState"
                     }
                    }
@@ -143,7 +144,7 @@ BehaviorTree {
                    Name "RunBT"
                    EditorPos 32 2048
                    InPorts {
-                    SingleInputPortContainer SingleInputPortContainerClass {
+                    SingleInputPortContainer SingleInputPortContainer {
                      Port 13
                      PortName "weaponComp"
                     }
@@ -243,8 +244,8 @@ BehaviorTree {
                 }
                 AITaskIdle Idle {
                  Name "Idle - Wait for a long time"
-                 EditorPos 2610.524 2124.488
-                 Period 6
+                 EditorPos 2608 2128
+                 Period 20
                  PeriodRandom 2
                 }
                }
@@ -268,8 +269,8 @@ BehaviorTree {
           AITaskIdle Idle {
            Name "Idle"
            EditorPos 1744 1120
-           Period 13
-           PeriodRandom 2
+           Period 25
+           PeriodRandom 5
           }
           SCR_AISetAIState "SCR_AI SetAI State" {
            Name "SCR_AI SetAI State"
@@ -409,7 +410,7 @@ BehaviorTree {
   }
   VariableReference weaponComp {
    VariableType 0
-   EditorPos -1248 2192
+   EditorPos -1488 2208
   }
   VariableReference muzzleId {
    VariableType 1
