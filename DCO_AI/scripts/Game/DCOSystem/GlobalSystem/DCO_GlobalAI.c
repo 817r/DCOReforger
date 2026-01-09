@@ -10,6 +10,9 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0.5 3 0.01" )]
 	protected float m_fAiPerception;
 	
+	[Attribute( defvalue: "0", uiwidget: UIWidgets.Auto, desc: "Magical Ammo")]
+	protected bool m_bIsMagicallyResupplied;
+	
 	static DCO_GlobalAIComponent m_sInstance;
 	
 	static DCO_GlobalAIComponent GetInstance()
@@ -51,9 +54,14 @@ class DCO_GlobalAIComponent: ScriptComponent
 		return sk;
 	}
 	
-	ResourceName GetResourceNameMagazine()
+	bool GetUnitMagicMagazine()
 	{
-		ResourceName name;
-		return name;
+		return m_bIsMagicallyResupplied;
+	}
+	
+	bool SetUnitMagicMagazine(bool s)
+	{
+		m_bIsMagicallyResupplied = s;
+		return m_bIsMagicallyResupplied;
 	}
 }

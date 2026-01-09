@@ -1,8 +1,7 @@
 SCR_ChimeraAIAgent {
  ID "50C4E8413B94E8B0"
  components {
-  DCO_AIConfigComponent "{684A984058EF68B7}" {
+  DCO_AIConfigComponent "{6850B0D34B0328C4}" {
   }
  }
- DangerEventRange 1200
 }

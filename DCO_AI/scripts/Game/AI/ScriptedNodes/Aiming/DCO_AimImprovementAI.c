@@ -58,7 +58,7 @@ modded class SCR_AIGetAimErrorOffset
 			// weapon type tolerance modifier
 			tolerance *= GetWeaponTypeFactor(weaponType);
 		};
-		return Math.Clamp(tolerance, MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE);
+		return Math.Clamp(tolerance, MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE * 1.5);
 	}	
 	
 	override float GetAngularSpeedFactor(IEntity observer, IEntity enemy, out bool setBigTolerance)
@@ -134,7 +134,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_AUTOCANNON:
 			{
-				return 2.5;
+				return 3.0;
 			}
 		}
 		return 1.0;
@@ -174,7 +174,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_AUTOCANNON:
 			{
-				return 3;
+				return 3.5;
 			}
 		}
 		

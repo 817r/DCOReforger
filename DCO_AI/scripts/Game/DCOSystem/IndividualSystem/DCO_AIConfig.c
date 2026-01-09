@@ -11,6 +11,9 @@ class DCO_AIConfigComponent : ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "0.1 10 0.01" )]
 	float m_fAiPerception;
 	
+	[Attribute( defvalue: "0", uiwidget: UIWidgets.Auto, desc: "Magical Ammo")]
+	protected bool m_bIsMagicallyResupplied;
+	
 	//------------------------------------------------------------------------------------------------
 	override void OnPostInit(IEntity owner)
 	{
@@ -27,6 +30,7 @@ class DCO_AIConfigComponent : ScriptComponent
 		
 		m_fAimAccuracy = settings.GetUnitSkill();
 		m_fAiPerception = settings.GetUnitPerception();
+		m_bIsMagicallyResupplied = settings.GetUnitMagicMagazine();
 	}
 	
 	float GetAccuracy()
@@ -49,5 +53,16 @@ class DCO_AIConfigComponent : ScriptComponent
 	{
 		m_fAiPerception = f;
 		return m_fAiPerception;
+	}
+	
+	bool GetMagicMag()
+	{
+		return m_bIsMagicallyResupplied;
+	}
+	
+	bool SetMagicMag(bool s)
+	{
+		m_bIsMagicallyResupplied = s;
+		return m_bIsMagicallyResupplied;
 	}
 }

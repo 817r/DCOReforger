@@ -1,25 +1,11 @@
 class DCO_MagicAmmo : AITaskScripted
-{
-	static const string PORT_MAGAZINE_WELL = "MagazineWell";
-	
-	ref map<string, string> m_mTypenameToResourceName;
-	
-	[Attribute("", UIWidgets.EditBox, "Name of magazine well Type" )]
-	protected string m_sMagazineWellType;
-	
+{	
 	[Attribute("2", UIWidgets.Slider, "Amount of magazines", "0 10 1" )]
 	protected int m_iMagazineCount;
 
 	private IEntity m_OwnerEntity;
 	private SCR_InventoryStorageManagerComponent m_Inventory;
-	
-	protected static ref TStringArray s_aVarsIn = {
-		PORT_MAGAZINE_WELL
-	};
-	override TStringArray GetVariablesIn()
-    {
-        return s_aVarsIn;
-    }
+
 	
 	override void OnInit(AIAgent owner)
 	{
@@ -36,23 +22,7 @@ class DCO_MagicAmmo : AITaskScripted
 			ENodeResult.FAIL;		
 		
 		m_Inventory.ResupplyMagazines(m_iMagazineCount);
-		
-		array<IEntity> items;
-		
-		m_Inventory.GetItems(items);
-		MagazineComponent magComp;
-		
-		foreach(IEntity item : items)
-		{
-			magComp = MagazineComponent.Cast(item.FindComponent(MagazineComponent));
-			if (!magComp)
-				continue;
-			
-			if (magComp.GetMagazineWell().ToString() == m_sMagazineWellType)
-				ChimeraCharacter.Cast(m_OwnerEntity).GetCharacterController().ReloadWeaponWith(item);
-		}
-		
-		return ENodeResult.FAIL;			
+		return ENodeResult.SUCCESS;			
 	}	
 		
 	protected override static bool VisibleInPalette()
