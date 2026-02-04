@@ -9,11 +9,11 @@ modded class SCR_AICombatComponent
 	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 20.0;
 	
 	// AIM IMPROVEMENT
-	static const float AIM_IMPROVEMENT_INCREASE = 0.00001;
-	static const float AIM_IMPROVEMENT_DECREASE = 0.000001;
+	static const float AIM_IMPROVEMENT_INCREASE = 0.001;
+	static const float AIM_IMPROVEMENT_DECREASE = 0.005;
 	static const float AIM_MORALE = 0.00001;
-	static const float AIM_IMPROVEMENT_CONST_DECREASE = AIM_IMPROVEMENT_DECREASE * 12;
-	static const float AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER = 3;
+	static const float AIM_IMPROVEMENT_CONST_DECREASE = AIM_IMPROVEMENT_DECREASE * 10;
+	static const float AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER = 2;
 	
 	          static const float TARGET_MAX_LAST_SEEN = 11.0;
 	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.5;	//!< Min value of TraceFraction for indirect attacks. \see BaseTarget.GetTraceFraction.
@@ -32,30 +32,25 @@ modded class SCR_AICombatComponent
 	
 	bool ChangeTarget = false;
 	
-	void ImproveAim()
-	{
-		CURRENT_AIM_IMPROVEMENT += AIM_IMPROVEMENT_INCREASE;
-	}
-	
 	void DecreaseAim()
 	{
-		Math.Clamp(CURRENT_AIM_IMPROVEMENT - AIM_IMPROVEMENT_DECREASE, 0, int.MAX);
+		Math.Clamp(CURRENT_AIM_IMPROVEMENT + AIM_IMPROVEMENT_DECREASE, 0, m_fStartAccuracy);
 	}
 	
 	void ChangeTargetCompensation()
 	{
-		Math.Clamp(CURRENT_AIM_IMPROVEMENT - AIM_IMPROVEMENT_CONST_DECREASE, 0, int.MAX);
+		Math.Clamp(CURRENT_AIM_IMPROVEMENT + AIM_IMPROVEMENT_CONST_DECREASE, 0, m_fStartAccuracy);
 	}
 	
 	void DangerSuppressedDecreaseAIM(float dec)
 	{
 		float decrease = dec * AIM_IMPROVEMENT_DECREASE * AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER;
-		Math.Clamp(CURRENT_AIM_IMPROVEMENT - decrease, 0, int.MAX);
+		Math.Clamp(CURRENT_AIM_IMPROVEMENT + decrease, 0, m_fStartAccuracy);
 	}
 	
 	void MoraleDropAIM(float val)
 	{
-		Math.Clamp(CURRENT_AIM_IMPROVEMENT - (val * AIM_MORALE), 0, int.MAX);
+		Math.Clamp(CURRENT_AIM_IMPROVEMENT + (val * AIM_MORALE), 0, m_fStartAccuracy);
 	}
 	
 	override void Update(float timeSliceMs)
@@ -69,7 +64,7 @@ modded class SCR_AICombatComponent
 			}
 			else
 			{	
-				ImproveAim();
+				UpdateAccuracy(timeSliceMs);
 			}
 		} else if (!m_SelectedTargetVisible)
 		{
@@ -267,5 +262,28 @@ modded class SCR_AICombatComponent
 		perceptionFactor *= m_Utility.m_DCOConfig.GetPerception();
 		
 		perceptionComp.SetPerceptionFactor(perceptionFactor);
+	}
+	
+	float m_fStartAccuracy = SCR_AIGetAimErrorOffset.MAXIMAL_TOLERANCE;
+	float m_fTargetAccuracy = SCR_AIGetAimErrorOffset.MINIMAL_TOLERANCE / m_Utility.m_DCOConfig.GetAccuracy();
+	float m_fTimeElapsed = 0.0;
+	float m_fDurationN = m_Utility.m_DCOConfig.GetAccuracyTime();
+	
+	void UpdateAccuracy(float timeSlice)
+	{
+	    if (m_fTimeElapsed < m_fDurationN)
+	    {
+	        m_fTimeElapsed += timeSlice;
+	        
+	        float progress = m_fTimeElapsed / m_fDurationN;
+	        
+	        progress = Math.Clamp(progress, 0.0, 1.0);
+	        
+	        CURRENT_AIM_IMPROVEMENT = Math.Lerp(m_fStartAccuracy, m_fTargetAccuracy, progress);
+	    }
+	    else
+	    {
+	        CURRENT_AIM_IMPROVEMENT = m_fTargetAccuracy;
+	    }
 	}
 }

@@ -106,7 +106,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					waitTime = 20.0;	// Stay in cover for a long time, until we are not suppressed any more
 					break;
 				default:
-					waitTime = 5.0;
+					waitTime = 12.0;
 			}
 		}
 		else
@@ -115,10 +115,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			switch (threat)
 			{
 				case EAIThreatState.THREATENED:
-					waitTime = 6.0;
+					waitTime = 9.0;
 					break;
 				default:
-					waitTime = 3.0;
+					waitTime = 6.0;
 					break;
 			}
 		}

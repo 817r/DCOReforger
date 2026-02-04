@@ -11,11 +11,11 @@ BehaviorTree {
      Nodes {
       Sequence Sequence {
        Name "Sequence"
-       EditorPos -784 640
+       EditorPos -1072 480
        Nodes {
         SCR_AIGetWeaponOfType "SCR_AI Get Weapon Of Type" {
          Name "SCR_AI Get Weapon Of Type"
-         EditorPos -1970.035 1000.978
+         EditorPos -3072 1008
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port -1
@@ -30,12 +30,42 @@ BehaviorTree {
          }
          m_WeaponType WT_ROCKETLAUNCHER
         }
-        SCR_AISwitchWeapon "SCR_AI Switch Weapon" {
-         Name "SCR_AI Switch Weapon"
-         EditorPos -1378.035 984.978
+        DCO_IsWeaponDisposeable "DCO_ Is Weapon Disposeable" {
+         Name "DCO_ Is Weapon Disposeable"
+         EditorPos -2416 960
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 0
+           PortName "WeaponComponent"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 10
+           PortName "IsDisposeable"
+          }
+         }
+        }
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos -1744 944
+         Nodes {
+          AITaskReturnState "Return State" {
+           Name "Return State"
+           EditorPos -1744 1152
+           Result SUCCESS
+          }
+         }
+         InVariable 10
+         TestType EqualsValue
+         TestValue "true"
+        }
+        SCR_AISwitchWeapon "SCR_AI Switch Weapon" {
+         Name "SCR_AI Switch Weapon"
+         EditorPos -1344 992
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 11
            PortName "WeaponComponent"
           }
          }
@@ -53,7 +83,7 @@ BehaviorTree {
            PortName "TargetEntity"
           }
           SingleInputPortContainer SingleInputPortContainer {
-           Port 5
+           Port 4
            PortName "TargetPosition"
           }
           SingleInputPortContainer SingleInputPortContainer {
@@ -63,11 +93,11 @@ BehaviorTree {
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 6
+           Port 5
            PortName "FireTime"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 8
+           Port 7
            PortName "StabilizationTime"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
@@ -135,7 +165,7 @@ BehaviorTree {
            Name "Idle"
            EditorPos 800 1472
            PeriodRandom 1
-           PeriodKey 9
+           PeriodKey 8
           }
           Sequence Sequence {
            Name "Sequence"
@@ -150,7 +180,7 @@ BehaviorTree {
                EditorPos 464 2112
                Period 2
                KeepFiring 1
-               PeriodKey 7
+               PeriodKey 6
               }
              }
             }
@@ -158,22 +188,6 @@ BehaviorTree {
              Name "Idle"
              EditorPos 768 1984
              Period 2
-            }
-            DCO_IsWeaponDisposeable "DCO_ Is Weapon Disposeable" {
-             Name "DCO_ Is Weapon Disposeable"
-             EditorPos 1040 2016
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 4
-               PortName "WeaponComponent"
-              }
-             }
-             OutPorts {
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port 10
-               PortName "IsDisposeable"
-              }
-             }
             }
             Selector Selector {
              Name "Selector"
@@ -188,7 +202,7 @@ BehaviorTree {
                  EditorPos 1568 2464
                 }
                }
-               InVariable 10
+               InVariable 9
                TestType EqualsValue
                TestValue "true"
               }
@@ -254,7 +268,7 @@ BehaviorTree {
  VariablesRefs {
   VariableReference WeaponComponent {
    VariableType 0
-   EditorPos -1666.035 1080.978
+   EditorPos -2768 1088
   }
   VariableReference ShootPos {
    VariableType 1
@@ -267,10 +281,6 @@ BehaviorTree {
   VariableReference ShootPos {
    VariableType 1
    EditorPos 157.713 1430.185
-  }
-  VariableReference WeaponComponent {
-   VariableType 0
-   EditorPos 960 2128
   }
   VariableReference ShootPos {
    VariableType 1
@@ -295,6 +305,14 @@ BehaviorTree {
   VariableReference IsDisposeable {
    VariableType 3
    EditorPos 1360 2304
+  }
+  VariableReference IsDisposeable {
+   VariableType 3
+   EditorPos -2048 1088
+  }
+  VariableReference IsDisposeable {
+   VariableType 3
+   EditorPos -1552 1088
   }
  }
 }

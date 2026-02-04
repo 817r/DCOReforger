@@ -7,6 +7,9 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute("1", UIWidgets.Slider, "Global AI unit skill level", "0.1 10 0.1")]
 	protected float unitAimSkillAccuracy;
 	
+	[Attribute( defvalue: "5", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 60 0.01" )]
+	float m_fTimeToMaxAccuracy;
+	
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0.5 3 0.01" )]
 	protected float m_fAiPerception;
 	
@@ -30,6 +33,17 @@ class DCO_GlobalAIComponent: ScriptComponent
 		super.OnPostInit(owner);
 		m_sInstance = this;
 		SetEventMask(owner, EntityEvent.INIT);
+	}
+	
+	float GetAccuracyTime()
+	{
+		return m_fTimeToMaxAccuracy;
+	}
+	
+	float SetAccuracyTime(float acc)
+	{
+		m_fTimeToMaxAccuracy = acc;
+		return m_fTimeToMaxAccuracy;
 	}
 	
 	float GetUnitSkill()

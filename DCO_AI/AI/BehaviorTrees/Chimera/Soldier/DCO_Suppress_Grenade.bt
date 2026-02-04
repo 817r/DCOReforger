@@ -128,6 +128,7 @@ BehaviorTree {
            EditorPos 480 1664
            InAimAtPosition 11
            InAimOffset 3
+           AimType Head
           }
          }
         }

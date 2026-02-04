@@ -8,6 +8,9 @@ class DCO_AIConfigComponent : ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "0.1 10 0.01" )]
 	float m_fAimAccuracy;
 	
+	[Attribute( defvalue: "5", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 60 0.01" )]
+	float m_fTimeToMaxAccuracy;
+	
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "0.1 10 0.01" )]
 	float m_fAiPerception;
 	
@@ -31,6 +34,18 @@ class DCO_AIConfigComponent : ScriptComponent
 		m_fAimAccuracy = settings.GetUnitSkill();
 		m_fAiPerception = settings.GetUnitPerception();
 		m_bIsMagicallyResupplied = settings.GetUnitMagicMagazine();
+		m_fTimeToMaxAccuracy = settings.GetAccuracyTime();
+	}
+	
+	float GetAccuracyTime()
+	{
+		return m_fTimeToMaxAccuracy;
+	}
+	
+	float SetAccuracyTime(float acc)
+	{
+		m_fTimeToMaxAccuracy = acc;
+		return m_fTimeToMaxAccuracy;
 	}
 	
 	float GetAccuracy()

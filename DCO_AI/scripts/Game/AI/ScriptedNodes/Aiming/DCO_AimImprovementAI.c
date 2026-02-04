@@ -9,33 +9,33 @@ modded class SCR_AIGetAimErrorOffset
 	
 	// RESERVE FOR FINAL CALCULATION
 	static const float MAXIMAL_TOLERANCE = 10.0;
-	static const float MINIMAL_TOLERANCE = 0.003;
+	static const float MINIMAL_TOLERANCE = 0.001;
 	
 	// AIMING ERROR FACTOR GLOBAL
 	static const float AIMING_ERROR_FACTOR_MIN = 0.12; 
 	
 	// AIMING ERROR FACTOR DISTANCE VARIANCE
-	static const float AIMING_ERROR_VERY_CLOSE_RANGE_FACTOR_MIN = 0.005;
-	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.01;
+	static const float AIMING_ERROR_VERY_CLOSE_RANGE_FACTOR_MIN = 0.05;
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.1;
 	
 	private SCR_AIInfoComponent m_InfoComponent;
 	
 	override float GetDistanceFactor(float distance)
 	{
 		float errorFactor = 0;
-		
+		float MinError = MINIMAL_TOLERANCE / m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAccuracy();
 		if (distance < VERY_CLOSE_RANGE_THRESHOLD)
 		{
-			errorFactor = Math.Map(distance, 0, VERY_CLOSE_RANGE_THRESHOLD, AIMING_ERROR_VERY_CLOSE_RANGE_FACTOR_MIN, AIMING_ERROR_FACTOR_MIN);
+			errorFactor = Math.Map(distance, 0, VERY_CLOSE_RANGE_THRESHOLD, AIMING_ERROR_VERY_CLOSE_RANGE_FACTOR_MIN / m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAccuracy(), MinError);
 			return errorFactor;
 		} else if (distance < CLOSE_RANGE_THRESHOLD)
 		{
-			errorFactor = Math.Map(distance, VERY_CLOSE_RANGE_THRESHOLD, CLOSE_RANGE_THRESHOLD, AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN, AIMING_ERROR_FACTOR_MIN);
+			errorFactor = Math.Map(distance, VERY_CLOSE_RANGE_THRESHOLD, CLOSE_RANGE_THRESHOLD, AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN / m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAccuracy(), MinError);
 			return errorFactor;
 		}
 
 		float distanceCl = Math.Clamp((distance - CLOSE_RANGE_THRESHOLD) / LONG_RANGE_THRESHOLD, 0, 3);
-		return Math.Lerp(AIMING_ERROR_FACTOR_MIN, AIMING_ERROR_FACTOR_MAX, distanceCl);
+		return Math.Lerp(MinError, AIMING_ERROR_FACTOR_MAX, distanceCl);
 	}
 	
 	override float GetTolerance(IEntity observer, IEntity target, float angularSize, float distance, EWeaponType weaponType)
@@ -45,7 +45,7 @@ modded class SCR_AIGetAimErrorOffset
 	
 		// Always use max tolerance in close range
 		if (distance < VERY_CLOSE_RANGE_THRESHOLD)
-			return MAXIMAL_TOLERANCE;
+			return Math.Map(distance, 0, VERY_CLOSE_RANGE_THRESHOLD, MAXIMAL_TOLERANCE, MAXIMAL_TOLERANCE / 10);
 			
 		tolerance = angularSize / 2; // half of the size
 		// angular speed
@@ -58,7 +58,7 @@ modded class SCR_AIGetAimErrorOffset
 			// weapon type tolerance modifier
 			tolerance *= GetWeaponTypeFactor(weaponType);
 		};
-		return Math.Clamp(tolerance, MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE * 1.5);
+		return Math.Clamp(tolerance, MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE);
 	}	
 	
 	override float GetAngularSpeedFactor(IEntity observer, IEntity enemy, out bool setBigTolerance)
@@ -110,7 +110,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_MACHINEGUN:
 			{
-				return 3.0;
+				return 6.0;
 			}
 			case EWeaponType.WT_HANDGUN:
 			{
@@ -146,11 +146,11 @@ modded class SCR_AIGetAimErrorOffset
 		{
 			case EWeaponType.WT_RIFLE:
 			{
-				return 1.0;
+				return 1.2;
 			}
 			case EWeaponType.WT_MACHINEGUN:
 			{
-				return 2.0;
+				return 6.0;
 			}
 			case EWeaponType.WT_HANDGUN:
 			{
@@ -158,23 +158,23 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_FRAGGRENADE:
 			{
-				return 1.2;
+				return 1.5;
 			}
 			case EWeaponType.WT_SMOKEGRENADE:
 			{
-				return 1.0;
+				return 1.3;
 			}
 			case EWeaponType.WT_ROCKETLAUNCHER:
 			{
-				return 0.2;
+				return 0.5;
 			}
 			case EWeaponType.WT_SNIPERRIFLE:
 			{
-				return 0.3;
+				return 0.4;
 			}
 			case EWeaponType.WT_AUTOCANNON:
 			{
-				return 3.5;
+				return 4.0;
 			}
 		}
 		
@@ -185,13 +185,13 @@ modded class SCR_AIGetAimErrorOffset
 	{
 		PerceivableComponent perceivable = tgt.GetPerceivableComponent();
 		if (!perceivable)
-			return 1.5;
+			return 12.0;
 		
 		if (perceivable.GetIlluminationFactor() < 0.2)
-			return 4.0;
+			return 6.0;
 		
 		if (perceivable.GetIlluminationFactor() < 0.5)
-			return 2.0;
+			return 3.0;
 		
 		return 1.0;
 	}
@@ -255,7 +255,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EAIThreatState.SAFE :
 			{
-				return 0.9;
+				return 1;
 				break;
 			}
 		}
@@ -339,8 +339,8 @@ modded class SCR_AIGetAimErrorOffset
 		float illuminationFactor = GetTargetIlluminationFactor(target);
 		
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
-		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetGlobalModifier();
-		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetGlobalModifier();
+		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor();
+		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor();
 		
 		tolerance = GetTolerance(entity, targetEntity, angularSize, distance, weaponType);
 		
@@ -353,14 +353,6 @@ modded class SCR_AIGetAimErrorOffset
 #endif
 		
 		return ENodeResult.SUCCESS;
-	}
-	
-	float GetGlobalModifier()
-	{
-		float dcoAiSetting = m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAccuracy();
-		float val = 1 / dcoAiSetting;	
-		
-		return val;
 	}
 	
 	override void OnInit(AIAgent owner)
