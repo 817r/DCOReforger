@@ -7,7 +7,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute("1", UIWidgets.Slider, "Global AI unit skill level", "0.1 10 0.1")]
 	protected float unitAimSkillAccuracy;
 	
-	[Attribute( defvalue: "5", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 60 0.01" )]
+	[Attribute( defvalue: "15", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 60 0.01" )]
 	float m_fTimeToMaxAccuracy;
 	
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0.5 3 0.01" )]
@@ -15,6 +15,9 @@ class DCO_GlobalAIComponent: ScriptComponent
 	
 	[Attribute( defvalue: "0", uiwidget: UIWidgets.Auto, desc: "Magical Ammo")]
 	protected bool m_bIsMagicallyResupplied;
+	
+	[Attribute("2", UIWidgets.ComboBox, "AI Custom skill in combat", "", ParamEnumArray.FromEnum(DCO_AISKILL) )]
+	protected DCO_AISKILL m_eAISkillDefault;
 	
 	static DCO_GlobalAIComponent m_sInstance;
 	
@@ -33,6 +36,17 @@ class DCO_GlobalAIComponent: ScriptComponent
 		super.OnPostInit(owner);
 		m_sInstance = this;
 		SetEventMask(owner, EntityEvent.INIT);
+	}
+	
+	DCO_AISKILL SetAISkill(DCO_AISKILL ski)
+	{
+		m_eAISkillDefault = ski;
+		return m_eAISkillDefault;
+	}
+	
+	DCO_AISKILL GetAISkill()
+	{
+		return m_eAISkillDefault;
 	}
 	
 	float GetAccuracyTime()

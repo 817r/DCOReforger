@@ -43,13 +43,13 @@ BehaviorTree {
         AITaskSetVariable "Set Variable" {
          Name "Set Min Dist"
          EditorPos -640 1152
-         SetValue "5"
+         SetValue "7"
          OutVariable 1
         }
         AITaskSetVariable "Set Variable" {
          Name "Set Max Dist"
          EditorPos -416 1152
-         SetValue "40"
+         SetValue "25"
          OutVariable 4
         }
        }
@@ -85,7 +85,7 @@ BehaviorTree {
              PortName "ResultVector"
             }
            }
-           m_Radius 3
+           m_Radius 1
           }
           SCR_AIGetAimCompensation "SCR_AI Get Aim Compensation" {
            Name "SCR_AI Get Aim Compensation"
@@ -118,6 +118,7 @@ BehaviorTree {
              PortName "VectorOut"
             }
            }
+           m_bVelocityCompensation 0
           }
           AITaskIdle Idle {
            Name "Idle"
@@ -129,6 +130,7 @@ BehaviorTree {
            InAimAtPosition 11
            InAimOffset 3
            AimType Head
+           UseADS 0
           }
          }
         }
@@ -313,7 +315,7 @@ BehaviorTree {
   }
   VariableReference PosCompensated {
    VariableType 4
-   EditorPos 77 1798
+   EditorPos 112 1840
   }
   VariableReference MaxDist {
    VariableType 2

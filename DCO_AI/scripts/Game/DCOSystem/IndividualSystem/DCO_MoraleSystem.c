@@ -226,7 +226,7 @@ class DCO_AIMoraleSystem
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
 		if (currentTime_ms > m_fNextUpdate_ms)
 		{
-			DropAim();
+			//DropAim();
 		}
 		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
 #ifdef WORKBENCH

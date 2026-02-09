@@ -137,15 +137,15 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		// Note: it's important to let bots enough time to aim at very long range
 		// Stop time should be more than just a few seconds.
 		if (m_bVeryLongRangeCombat)
-			waitTime *= 2.0;
+			waitTime *= 3.0;
 		else
-			waitTime *= Math.RandomFloat(0.8, 1.2);
+			waitTime *= Math.RandomFloat(1.0, 1.5);
 		
 		if (longWaitTime)
 			waitTime *= 2;
 		
 		float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 0.5, 10);
-		waitTime *= mult;
+		waitTime += mult;
 		
 		return waitTime;
 	}
@@ -216,7 +216,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				movePos = wpPos;
 				eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
 				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-				avoidStraightPathDir = vector.Zero; // Go straight
+				avoidStraightPathDir = GetAvoidStraightPathDir(); // Go straight
 			}
 			else if (myDistToWp > 0.5 * wpRadius)
 			{
@@ -281,11 +281,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			{
 				case EAIThreatState.THREATENED:
 				{
+					rq.m_eStanceMoving = ECharacterStance.PRONE;
+					rq.m_eStanceEnd = ECharacterStance.PRONE;
+					coverSearchDistMin = 5.0;
+					coverSearchDistMax = 10.0;
+					moveDurationMax = 2;
+					rq.m_eMovementType = EMovementType.RUN;
+					break;
+				}
+				case EAIThreatState.ALERTED:
+				{
 					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 10.0;
-					moveDurationMax = 3;
+					moveDurationMax = 4;
+					rq.m_eMovementType = EMovementType.WALK;
 					break;
 				}
 				default:
@@ -294,12 +305,13 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 15.0;
-					moveDurationMax = 4;
+					moveDurationMax = 6;
+					rq.m_eMovementType = EMovementType.RUN;
 					break;
 				}
 			}
 			
-			rq.m_eMovementType = EMovementType.WALK;
+			//rq.m_eMovementType = EMovementType.WALK;
 			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 			rq.m_bAimAtTargetEnd = true;
@@ -314,23 +326,35 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				{
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 20.0;
-					moveDurationMax = 2.5;
-					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					moveDurationMax = 5;
+					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eStanceEnd = ECharacterStance.PRONE;
+					rq.m_eMovementType = EMovementType.SPRINT;
+					break;
+				}
+				case EAIThreatState.ALERTED:
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					coverSearchDistMin = 5.0;
+					coverSearchDistMax = 10.0;
+					moveDurationMax = 4;
+					rq.m_eMovementType = EMovementType.RUN;
 					break;
 				}
 				default:
 				{
 					coverSearchDistMin = 10.0;
 					coverSearchDistMax = 30.0;
-					moveDurationMax = 4; // Shouldn't be so large because we are sprinting and can't shoot
-					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					moveDurationMax = 7; // Shouldn't be so large because we are sprinting and can't shoot
+					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_eMovementType = EMovementType.RUN;
 					break;
 				}
 			}
 			
-			rq.m_eMovementType = EMovementType.RUN;
+			//rq.m_eMovementType = EMovementType.RUN;
 			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 			rq.m_bAimAtTargetEnd = true;

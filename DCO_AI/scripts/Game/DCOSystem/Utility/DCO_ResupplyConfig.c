@@ -27,7 +27,6 @@ class DCO_AIResupplyConfigComponent: ScriptComponent
 	
 	ResourceName GetRandomMagazinePrefab(EWeaponType type)
 	{
-		Print("Mag Pref Res Config : " + MagPrefab.Count());
 		array<string> send = {};
 		foreach(ResupplyConfig a : MagPrefab)
 		{

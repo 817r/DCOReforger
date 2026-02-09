@@ -2,17 +2,12 @@ modded class SCR_AICombatComponent
 {
 	
 	static const int			 TARGET_ENDANGERED_TIMEOUT_S = 12;				//!< How long after last time target was endangering we stop treating it as such
-	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.5;		//!< Multiplier of target score if target is considered endangering
-	
-	// Score increments for assigned targets and endangering targets
-	protected static const float ASSIGNED_TARGETS_SCORE_INCREMENT = 1.0;
-	protected static const float ENDANGERING_TARGETS_SCORE_INCREMENT = 20.0;
 	
 	// AIM IMPROVEMENT
 	static const float AIM_IMPROVEMENT_INCREASE = 0.001;
 	static const float AIM_IMPROVEMENT_DECREASE = 0.005;
 	static const float AIM_MORALE = 0.00001;
-	static const float AIM_IMPROVEMENT_CONST_DECREASE = AIM_IMPROVEMENT_DECREASE * 10;
+	static const float AIM_IMPROVEMENT_CONST_DECREASE = AIM_IMPROVEMENT_DECREASE;
 	static const float AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER = 2;
 	
 	          static const float TARGET_MAX_LAST_SEEN = 11.0;
@@ -24,49 +19,67 @@ modded class SCR_AICombatComponent
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 98.5;			//!< Threshold for high priority attack
 		
 	protected const float PERCEPTION_FACTOR_SAFE = 1.0;			//!< We are safe and are good at recognising enemies
-	protected const float PERCEPTION_FACTOR_VIGILANT = 3;		//!< When vigilant and alert we are very good at recognising enemies
+	protected const float PERCEPTION_FACTOR_VIGILANT = 4;		//!< When vigilant and alert we are very good at recognising enemies
 	protected const float PERCEPTION_FACTOR_ALERTED = 3;
-	protected const float PERCEPTION_FACTOR_THREATENED = 1.5;	// We are suppressed and are bad at recognizing enemies
+	protected const float PERCEPTION_FACTOR_THREATENED = 2;	// We are suppressed and are bad at recognizing enemies
 	
 	float CURRENT_AIM_IMPROVEMENT;
 	
 	bool ChangeTarget = false;
 	
+	protected IEntity ownerEntity;
+	
+	const float m_fStartAccuracy = 1;
+	protected float m_fTargetAccuracy;
+	float m_fTimeElapsed = 0.0;
+	protected float m_fDurationN;
+	
+	protected float slicedTime;
+	
 	void DecreaseAim()
 	{
-		Math.Clamp(CURRENT_AIM_IMPROVEMENT + AIM_IMPROVEMENT_DECREASE, 0, m_fStartAccuracy);
+		//Math.Clamp(CURRENT_AIM_IMPROVEMENT + AIM_IMPROVEMENT_DECREASE, 0, m_fStartAccuracy);
+		m_fTimeElapsed -= slicedTime * 1.2;
+    	if (m_fTimeElapsed < 0) 
+			m_fTimeElapsed = 0;
 	}
 	
 	void ChangeTargetCompensation()
 	{
-		Math.Clamp(CURRENT_AIM_IMPROVEMENT + AIM_IMPROVEMENT_CONST_DECREASE, 0, m_fStartAccuracy);
+		//Math.Clamp(CURRENT_AIM_IMPROVEMENT + AIM_IMPROVEMENT_CONST_DECREASE, 0, m_fStartAccuracy);
+		m_fTimeElapsed -= slicedTime * 3.0;
+    	if (m_fTimeElapsed < 0) 
+			m_fTimeElapsed = 0;
 	}
 	
 	void DangerSuppressedDecreaseAIM(float dec)
 	{
-		float decrease = dec * AIM_IMPROVEMENT_DECREASE * AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER;
-		Math.Clamp(CURRENT_AIM_IMPROVEMENT + decrease, 0, m_fStartAccuracy);
+		//float decrease = dec * AIM_IMPROVEMENT_DECREASE * AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER;
+		//Math.Clamp(CURRENT_AIM_IMPROVEMENT + decrease, 0, m_fStartAccuracy);
+		m_fTimeElapsed -= slicedTime * 1.5;
+    	if (m_fTimeElapsed < 0) 
+			m_fTimeElapsed = 0;
 	}
 	
 	void MoraleDropAIM(float val)
 	{
-		Math.Clamp(CURRENT_AIM_IMPROVEMENT + (val * AIM_MORALE), 0, m_fStartAccuracy);
+		//Math.Clamp(CURRENT_AIM_IMPROVEMENT + (val * AIM_MORALE), 0, m_fStartAccuracy);
+		m_fTimeElapsed -= slicedTime * 1.2;
+    	if (m_fTimeElapsed < 0) 
+			m_fTimeElapsed = 0;
 	}
 	
 	override void Update(float timeSliceMs)
 	{
 		super.Update(timeSliceMs);
-		if (m_SelectedTargetVisible)
-		{
+		slicedTime = timeSliceMs;
+		if (m_SelectedTarget)
+		{	
 			if (ChangeTarget)
-			{
 				ChangeTargetCompensation();
-			}
 			else
-			{	
 				UpdateAccuracy(timeSliceMs);
-			}
-		} else if (!m_SelectedTargetVisible)
+		} else
 		{
 			DecreaseAim();
 		}
@@ -170,7 +183,11 @@ modded class SCR_AICombatComponent
 						groupInfoComp.OnAgentSelectedGrenade(myAgent);
 					}
 				}
+				
+				DecreaseAim();
 			}
+			
+			
 			
 			m_SelectedWeaponComp = newWeaponComp;
 			m_iSelectedMuzzle = newMuzzleId;
@@ -184,7 +201,7 @@ modded class SCR_AICombatComponent
 			AddDebugMessage(string.Format("Target has changed. New: %1, Previous: %2", newTarget, m_SelectedTarget));
 			#endif
 			m_SelectedTarget = newTarget;
-			selectedTargetChanged = true;
+			selectedTargetChanged = true;			
 		}
 		
 		// Check if we must retreat from some target
@@ -212,6 +229,7 @@ modded class SCR_AICombatComponent
 		{
 			m_SelectedTargetVisible = false;
 			m_SelectedTargetDestinationPos = vector.Zero;
+			DecreaseAim();
 		}
 			
 		if (newTarget)
@@ -227,6 +245,8 @@ modded class SCR_AICombatComponent
 				// Note: this solution is dependent on update rate of EvaluateWeaponAndTarget
 				if (!visible && targetEntity)
 					m_SelectedTargetDestinationPos = targetEntity.GetOrigin();
+				
+				DecreaseAim();
 			}
 		} else
 		{
@@ -264,26 +284,47 @@ modded class SCR_AICombatComponent
 		perceptionComp.SetPerceptionFactor(perceptionFactor);
 	}
 	
-	float m_fStartAccuracy = SCR_AIGetAimErrorOffset.MAXIMAL_TOLERANCE;
-	float m_fTargetAccuracy = SCR_AIGetAimErrorOffset.MINIMAL_TOLERANCE / m_Utility.m_DCOConfig.GetAccuracy();
-	float m_fTimeElapsed = 0.0;
-	float m_fDurationN = m_Utility.m_DCOConfig.GetAccuracyTime();
+	override void EOnInit(IEntity owner)
+	{
+		super.EOnInit(owner);
+		if (m_Utility)
+		{
+			m_fDurationN = m_Utility.m_DCOConfig.GetAccuracyTime() * 1000;
+			m_fTargetAccuracy = 0.000001 / m_Utility.m_DCOConfig.GetAccuracy();
+		}
+		
+		CURRENT_AIM_IMPROVEMENT = m_fStartAccuracy;
+		ownerEntity = owner;
+	}
 	
 	void UpdateAccuracy(float timeSlice)
 	{
-	    if (m_fTimeElapsed < m_fDurationN)
-	    {
-	        m_fTimeElapsed += timeSlice;
-	        
-	        float progress = m_fTimeElapsed / m_fDurationN;
-	        
-	        progress = Math.Clamp(progress, 0.0, 1.0);
-	        
-	        CURRENT_AIM_IMPROVEMENT = Math.Lerp(m_fStartAccuracy, m_fTargetAccuracy, progress);
-	    }
-	    else
-	    {
-	        CURRENT_AIM_IMPROVEMENT = m_fTargetAccuracy;
-	    }
+		Physics phys = ownerEntity.GetPhysics();
+		if (phys && phys.GetVelocity().Length() > 2)
+		{
+			
+			m_fTimeElapsed -= timeSlice * 1.5;
+    		if (m_fTimeElapsed < 0) 
+				m_fTimeElapsed = 0;
+		} else
+		{
+		
+		    if (m_fTimeElapsed < m_fDurationN)
+		    {
+		        m_fTimeElapsed += timeSlice;
+		        
+				float rawProgress = m_fTimeElapsed / m_fDurationN;
+				rawProgress = Math.Clamp(rawProgress, 0.0, 1.0);
+				float smoothProgress = rawProgress * rawProgress * (3.0 - 2.0 * rawProgress);
+				
+				CURRENT_AIM_IMPROVEMENT = Math.Lerp(m_fStartAccuracy, m_fTargetAccuracy, smoothProgress);
+		    }
+		    else
+		    {
+		        CURRENT_AIM_IMPROVEMENT = m_fTargetAccuracy;
+		    }
+		}
+		PrintString(CURRENT_AIM_IMPROVEMENT.ToString());
+
 	}
 }

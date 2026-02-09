@@ -8,7 +8,7 @@ class DCO_AIConfigComponent : ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "0.1 10 0.01" )]
 	float m_fAimAccuracy;
 	
-	[Attribute( defvalue: "5", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 60 0.01" )]
+	[Attribute( defvalue: "30", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 60 0.01" )]
 	float m_fTimeToMaxAccuracy;
 	
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "0.1 10 0.01" )]
@@ -16,6 +16,9 @@ class DCO_AIConfigComponent : ScriptComponent
 	
 	[Attribute( defvalue: "0", uiwidget: UIWidgets.Auto, desc: "Magical Ammo")]
 	protected bool m_bIsMagicallyResupplied;
+	
+	[Attribute("2", UIWidgets.ComboBox, "AI Custom skill in combat", "", ParamEnumArray.FromEnum(DCO_AISKILL) )]
+	protected DCO_AISKILL m_eAISkillDefault;
 	
 	//------------------------------------------------------------------------------------------------
 	override void OnPostInit(IEntity owner)
@@ -35,6 +38,18 @@ class DCO_AIConfigComponent : ScriptComponent
 		m_fAiPerception = settings.GetUnitPerception();
 		m_bIsMagicallyResupplied = settings.GetUnitMagicMagazine();
 		m_fTimeToMaxAccuracy = settings.GetAccuracyTime();
+		m_eAISkillDefault = settings.GetAISkill();
+	}
+	
+	DCO_AISKILL SetAISkill(DCO_AISKILL ski)
+	{
+		m_eAISkillDefault = ski;
+		return m_eAISkillDefault;
+	}
+	
+	DCO_AISKILL GetAISkill()
+	{
+		return m_eAISkillDefault;
 	}
 	
 	float GetAccuracyTime()

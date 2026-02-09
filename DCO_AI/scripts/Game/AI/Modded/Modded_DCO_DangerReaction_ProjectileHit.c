@@ -66,6 +66,9 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			m_bPushedMoveRequest = true;
 
 			return true;	
+		} else
+		{
+			utility.GetCharacterController().SetStanceChange(3);
 		}
 		
 		if (m_State.IsInValidCover() && shooterDistance > 10 && bulletCount >= 4)
