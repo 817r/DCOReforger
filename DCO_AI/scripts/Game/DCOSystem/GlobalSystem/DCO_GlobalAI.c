@@ -8,7 +8,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 	protected float unitAimSkillAccuracy;
 	
 	[Attribute( defvalue: "15", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 60 0.01" )]
-	float m_fTimeToMaxAccuracy;
+	protected float m_fTimeToMaxAccuracy;
 	
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0.5 3 0.01" )]
 	protected float m_fAiPerception;

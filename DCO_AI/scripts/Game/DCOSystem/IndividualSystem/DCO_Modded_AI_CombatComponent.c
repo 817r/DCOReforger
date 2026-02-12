@@ -36,6 +36,8 @@ modded class SCR_AICombatComponent
 	
 	protected float slicedTime;
 	
+	protected DCO_GroupTactics m_eAICurrentTactics;
+	
 	void DecreaseAim()
 	{
 		//Math.Clamp(CURRENT_AIM_IMPROVEMENT + AIM_IMPROVEMENT_DECREASE, 0, m_fStartAccuracy);
@@ -326,5 +328,12 @@ modded class SCR_AICombatComponent
 		}
 		PrintString(CURRENT_AIM_IMPROVEMENT.ToString());
 
+	}
+	
+	DCO_GroupTactics GetGroupTactics()
+	{
+		SCR_AIGroupTacticsComponent tac = SCR_AIGroupTacticsComponent.Cast(m_AIInfo.GetMyGroup().FindComponent(SCR_AIGroupTacticsComponent));
+		DCO_GroupTactics tacs = tac.GetGroupTactics();
+		return tacs;
 	}
 }

@@ -91,7 +91,12 @@ modded class SCR_AIUpdateTargetSuppressionData
 		else if (!targetVisible && m_UtilityComponent.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER) && vector.Distance(m_UtilityComponent.GetOrigin(), suppressionVolume.GetCenterPosition()) > 50)
 			return FIRE_TREE_RPG;
 		else if (!targetVisible && m_UtilityComponent.m_AIInfo.HasRole(EUnitRole.HAS_FRAG_GRENADE))
-			return FIRE_TREE_GRENADE;
+		{
+			SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, suppressionVolume.GetRandomPosition(m_UtilityComponent.m_CombatComponent.GetOwner()), EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + 
+			SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER);
+			m_UtilityComponent.AddAction(gren);		
+			return FIRE_TREE_LOOK;
+		}
 		
 		return FIRE_TREE_LOOK;
 	}

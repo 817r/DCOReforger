@@ -126,13 +126,16 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 								
 				return FIRE_TREE_SUPPRESSIVE;
 			}
-			else if (target.GetTimeSinceSeen() > 3 && (target.GetDistance() > 50 && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER)))
+			//else if (target.GetTimeSinceSeen() > 3 && (target.GetDistance() > 50 && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER)))
+			//{
+			//	return FIRE_TREE_RPG;
+			//}
+			else if (target.GetTimeSinceSeen() > 4 && target.GetDistance() < 15)
 			{
-				return FIRE_TREE_RPG;
-			}
-			else if (target.GetTimeSinceSeen() > 4 && target.GetDistance() < 50)
-			{
-				return FIRE_TREE_THROW_GRENADE;
+				SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, target.GetLastSeenPosition(), EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + 
+				SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER);
+				m_UtilityComponent.AddAction(gren);
+				return FIRE_TREE_LOOK;
 			}
 			else
 				return FIRE_TREE_LOOK;

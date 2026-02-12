@@ -8,7 +8,7 @@ modded class SCR_AIGetCoverParameters : AITaskScripted
 			outStance = ECharacterStance.STAND;
 			outStanceHide = ECharacterStance.CROUCH;
 		}
-		else if (height > 0.5)
+		else if (height > 0.3)
 		{
 			outStance = ECharacterStance.CROUCH;
 			outStanceHide = ECharacterStance.PRONE;
@@ -19,11 +19,9 @@ modded class SCR_AIGetCoverParameters : AITaskScripted
 		}
 	}
 	
-	bool IsIndoor()
+	protected bool FilterCallback(IEntity e)
 	{
 		
-		
-		
-		return false;
+		return true;
 	}
 }

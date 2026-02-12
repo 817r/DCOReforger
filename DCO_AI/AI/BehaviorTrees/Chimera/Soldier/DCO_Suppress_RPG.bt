@@ -41,7 +41,7 @@ BehaviorTree {
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 10
+           Port 9
            PortName "IsDisposeable"
           }
          }
@@ -56,7 +56,7 @@ BehaviorTree {
            Result SUCCESS
           }
          }
-         InVariable 10
+         InVariable 9
          TestType EqualsValue
          TestValue "true"
         }
@@ -65,7 +65,7 @@ BehaviorTree {
          EditorPos -1344 992
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 11
+           Port 10
            PortName "WeaponComponent"
           }
          }
@@ -193,19 +193,6 @@ BehaviorTree {
              Name "Selector"
              EditorPos 1712 2112
              Nodes {
-              DecoTestVariable "Test Variable" {
-               Name "Test Variable"
-               EditorPos 1569.16 2304.12
-               Nodes {
-                SCR_AIDropWeapon "SCR_AI Drop Weapon" {
-                 Name "SCR_AI Drop Weapon"
-                 EditorPos 1568 2464
-                }
-               }
-               InVariable 9
-               TestType EqualsValue
-               TestValue "true"
-              }
               Sequence Sequence {
                Name "Sequence"
                EditorPos 1952 2304
@@ -304,15 +291,11 @@ BehaviorTree {
   }
   VariableReference IsDisposeable {
    VariableType 3
-   EditorPos 1360 2304
-  }
-  VariableReference IsDisposeable {
-   VariableType 3
    EditorPos -2048 1088
   }
-  VariableReference IsDisposeable {
-   VariableType 3
-   EditorPos -1552 1088
+  VariableReference WeaponComponent {
+   VariableType 0
+   EditorPos -1567.338 1116.239
   }
  }
 }

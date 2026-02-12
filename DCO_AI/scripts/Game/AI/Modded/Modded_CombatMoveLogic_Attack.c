@@ -7,7 +7,8 @@ modded enum SCR_EAICombatMoveReason
 modded enum SCR_EAICombatMoveRequestType
 {
 	INVESTIGATE,
-	RESUPPLYING
+	RESUPPLYING,
+	BUILDING
 }
 
 modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
@@ -80,7 +81,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	{
 		if (m_bCloseRangeCombat)
 		{
-			return false;
+			if (m_State && m_State.IsMovingToBuilding())
+				return true;
+			else
+				return true;
 		}
 		else
 		{
@@ -144,6 +148,9 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (longWaitTime)
 			waitTime *= 2;
 		
+		if (m_State && m_State.IsMovingToBuilding())
+			waitTime *= 5;
+		
 		float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 0.5, 10);
 		waitTime += mult;
 		
@@ -198,7 +205,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			// Therefore use standard movement logic.
 			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
 			movePos = targetPos;
-			GetMoraleEffects(eDirection);
+			MoraleAndThreatPushMove(eDirection);
 			//eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS; // Move to target
 			avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
 			coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
@@ -360,6 +367,11 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			rq.m_bAimAtTargetEnd = true;
 		}
 		
+		if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+			rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+		else
+			rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
+		
 		rq.m_bFailIfNoCover = ResolveFailMoveIfNoCover();
 		
 		// If we are not in cover, min cover search distance is overridden to 0, we should find any cover ASAP
@@ -369,6 +381,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
 		rq.m_fMoveDuration_s = moveDurationMax * MoraleAmplifyMove();
+		
+		if (m_State && m_State.IsMovingToBuilding())
+		{
+			coverSearchDistMin = 0;
+			coverSearchDistMax = 2;
+		}
 		
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving
@@ -427,9 +445,8 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		
 	}
 	
-	void MoraleAndThreatPushMove()
+	void MoraleAndThreatPushMove(out SCR_EAICombatMoveDirection moveDir)
 	{
-		SCR_EAICombatMoveDirection moveDir;
 		float moveDurationMax;
 		
 		
@@ -441,10 +458,155 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				{
 					case moraleState.BREAK:
 					{
-						break;
+						moveDir = SCR_EAICombatMoveDirection.BACKWARD;
+						break;					
+					}
+					case moraleState.MANIAC:
+					{
+						moveDir = SCR_EAICombatMoveDirection.BACKWARD;
+						break;					
+					}
+					case moraleState.ANXIOUS:
+					{
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;					
+					}
+					case moraleState.NORMAL:
+					{
+						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
+						break;					
+					}
+					case moraleState.MOTIVATED:
+					{
+						moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
+						break;					
 					}
 					default:
 					{
+						moveDir = SCR_EAICombatMoveDirection.BACKWARD;
+						break;
+					}
+				}
+				break;
+			}
+			case EAIThreatState.ALERTED:
+			{
+				switch (moraleSystem.GetState())
+				{
+					case moraleState.BREAK:
+					{
+						moveDir = SCR_EAICombatMoveDirection.BACKWARD;
+						break;					
+					}
+					case moraleState.MANIAC:
+					{
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;					
+					}
+					case moraleState.ANXIOUS:
+					{
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;					
+					}
+					case moraleState.NORMAL:
+					{
+						moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
+						break;					
+					}
+					case moraleState.MOTIVATED:
+					{
+						moveDir = SCR_EAICombatMoveDirection.FORWARD;
+						break;					
+					}
+					default:
+					{
+						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
+						break;
+					}
+				}
+				break;
+			}
+			case EAIThreatState.VIGILANT:
+			{
+				switch (moraleSystem.GetState())
+				{
+					case moraleState.BREAK:
+					{
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;					
+					}
+					case moraleState.MANIAC:
+					{
+						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
+						break;					
+					}
+					case moraleState.ANXIOUS:
+					{
+						moveDir = SCR_EAICombatMoveDirection.FORWARD;
+						break;					
+					}
+					case moraleState.NORMAL:
+					{
+						moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
+						break;					
+					}
+					case moraleState.MOTIVATED:
+					{
+						moveDir = SCR_EAICombatMoveDirection.FORWARD;
+						break;					
+					}
+					default:
+					{
+						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
+						break;
+					}
+				}
+				break;
+			}
+			case EAIThreatState.SAFE:
+			{
+				switch (moraleSystem.GetState())
+				{
+					case moraleState.BREAK:
+					{
+						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
+						break;									
+					}
+					case moraleState.MANIAC:
+					{
+						moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
+						break;					
+					}
+					case moraleState.ANXIOUS:
+					{
+						moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
+						break;					
+					}
+					case moraleState.NORMAL:
+					{
+						moveDir = SCR_EAICombatMoveDirection.FORWARD;
+						break;					
+					}
+					case moraleState.MOTIVATED:
+					{
+						moveDir = SCR_EAICombatMoveDirection.FORWARD;
+						break;					
+					}
+					default:
+					{
+						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;
 					}
 				}

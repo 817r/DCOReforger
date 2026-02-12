@@ -84,12 +84,14 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = true;
-		rq.m_fMoveDuration_s = Math.RandomFloat(7,10) * Math.RandomFloat(1,2);
+		rq.m_fMoveDuration_s = Math.RandomFloat(2,5);
 		rq.m_eMovementType = EMovementType.RUN;
+		
+		if (m_Utility.m_ThreatSystem.GetState() < EAIThreatState.ALERTED)
+			rq.m_fMoveDuration_s *= 3;
 		
 		vector dirToTgt = threatPos - m_Utility.m_OwnerEntity.GetOrigin();
 		rq.m_vAvoidStraightPathDir = dirToTgt;
-			
 		m_State.ApplyNewRequest(rq);			
 	}
 	
@@ -124,8 +126,11 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		{
 			waitTime = 5.0;
 		}
+		
+		if (m_State && m_State.IsMovingToBuilding())
+			waitTime *= 5;
 			
-		waitTime = Math.RandomFloat(0.4, 1.2) * waitTime;
+		waitTime = Math.RandomFloat(0.8, 1.2) * waitTime;
 			
 		return waitTime;
 	}
@@ -136,6 +141,9 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			return false;
 		
 		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.6)
+			return false;
+		
+		if (m_Utility.m_ThreatSystem.GetState() == EAIThreatState.THREATENED)
 			return false;
 			
 		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover);	

@@ -255,6 +255,26 @@ BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMov
                      TestType EqualsValue
                      TestValue "5"
                     }
+                    DecoTestVariable "Test Variable" {
+                     Name "Test Variable"
+                     EditorPos 5024 2080
+                     Nodes {
+                      RunBT RunBT {
+                       Name "RunBT"
+                       EditorPos 4880 2528
+                       InPorts {
+                        SingleInputPortContainer SingleInputPortContainer {
+                         Port 21
+                         PortName "Rq"
+                        }
+                       }
+                       BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuildingIndoor.bt"
+                      }
+                     }
+                     InVariable 8
+                     TestType EqualsValue
+                     TestValue "6"
+                    }
                    }
                    Group "{5E32C718C7D2785F}"
                   }
@@ -412,7 +432,7 @@ BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMov
   }
   VariableReference eRequestType {
    VariableType 2
-   EditorPos 976.357 2088.626
+   EditorPos 944 2096
   }
   VariableReference restartDelayed {
    VariableType 4
@@ -461,6 +481,10 @@ BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMov
   VariableReference request {
    VariableType 0
    EditorPos 3888 2688
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 4672 2640
   }
  }
 }

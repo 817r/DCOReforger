@@ -1,4 +1,4 @@
-BehaviorTree {
+BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt" {
  Name "AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
  Nodes {
   RootNode Root {
@@ -37,139 +37,120 @@ BehaviorTree {
         }
        }
       }
-      SCR_AICreateBasicCoverQueryPropsIndoor "SCR_AI Create Basic Cover Query Props Indoor" {
-       Name "SCR_AI Create Basic Cover Query Props Indoor"
-       EditorPos -832 448
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port 5
-         PortName "Position"
-        }
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "Radius"
-        }
-       }
-       OutPorts {
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port 7
-         PortName "CoverQueryProps"
-        }
-       }
-       m_fRadius 16
-       m_bSelectHighestScoreCover 1
-      }
-      SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
-       Name "SCR_AI Create Basic Cover Query Props"
-       EditorPos -256 448
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port 5
-         PortName "Position"
-        }
-        SingleInputPortContainer SingleInputPortContainer {
-         Port -1
-         PortName "Radius"
-        }
-       }
-       OutPorts {
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port 8
-         PortName "CoverQueryProps"
-        }
-       }
-       m_fRadius 16
-       m_bSelectHighestScoreCover 1
-      }
       Selector Selector {
        Name "Selector"
-       EditorPos 304 432
+       EditorPos 80 272
        Nodes {
+        DCO_FindIndoorPosition "DCO_ Find Indoor Position" {
+         Name "DCO_ Find Indoor Position"
+         EditorPos -429.773 632.909
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 5
+           PortName "OriginIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "RadiusIn"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 10
+           PortName "Position Found"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "Is Position Found"
+          }
+         }
+         m_fRadius 10
+        }
         Sequence Sequence {
          Name "Sequence"
-         EditorPos -80 880
+         EditorPos 352 608
          Nodes {
-          SCR_AIFindCover "SCR_AI Find Cover" {
-           Name "SCR_AI Find Cover"
-           EditorPos -384 1040
+          SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
+           Name "SCR_AI Create Basic Cover Query Props"
+           EditorPos -208.419 1000.323
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
+             Port 5
+             PortName "Position"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "Radius"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
              Port 7
              PortName "CoverQueryProps"
             }
            }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 9
-             PortName "CoverLock"
+           m_fRadius 16
+           m_bSelectHighestScoreCover 1
+          }
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 335.581 1048.323
+           Nodes {
+            SCR_AIFindCover "SCR_AI Find Cover" {
+             Name "SCR_AI Find Cover"
+             EditorPos 79.581 1432.323
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 4
+               PortName "CoverQueryProps"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 8
+               PortName "CoverLock"
+              }
+             }
+            }
+            AITaskSetVariable "Set Variable" {
+             Name "Set Variable"
+             EditorPos 367.581 1432.323
+             OutVariable 9
+             InVariable 8
             }
            }
           }
-          AITaskSetVariable "Set Variable" {
-           Name "Set Variable"
-           EditorPos -128 1024
-           OutVariable 10
-           InVariable 9
-          }
-         }
-        }
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 560 832
-         Nodes {
-          SCR_AIFindCover "SCR_AI Find Cover" {
-           Name "SCR_AI Find Cover"
-           EditorPos 320 1024
+          SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
+           Name "SCR_AI Get Cover Parameters"
+           EditorPos 864 992
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
-             Port 4
-             PortName "CoverQueryProps"
+             Port 6
+             PortName "CoverLock"
             }
            }
            OutPorts {
             SingleOutputPortContainer SingleOutputPortContainer {
-             Port 11
-             PortName "CoverLock"
+             Port 2
+             PortName "Pos"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 1
+             PortName "Stance"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port -1
+             PortName "StanceHide"
             }
            }
           }
-          AITaskSetVariable "Set Variable" {
-           Name "Set Variable"
-           EditorPos 608 1024
-           OutVariable 12
-           InVariable 11
-          }
          }
-        }
-       }
-      }
-      SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
-       Name "SCR_AI Get Cover Parameters"
-       EditorPos 816.419 439.677
-       InPorts {
-        SingleInputPortContainer SingleInputPortContainer {
-         Port 6
-         PortName "CoverLock"
-        }
-       }
-       OutPorts {
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port 2
-         PortName "Pos"
-        }
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port 1
-         PortName "Stance"
-        }
-        SingleOutputPortContainer SingleOutputPortContainer {
-         Port -1
-         PortName "StanceHide"
         }
        }
       }
       SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
        Name "SCR_AI Character Set Movement Speed"
-       EditorPos 1152 320
+       EditorPos 912 464
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port -1
@@ -180,7 +161,7 @@ BehaviorTree {
       }
       SCR_AISetStance "SCR_AI Set Stance" {
        Name "SCR_AI Set Stance"
-       EditorPos 1484.752 451.094
+       EditorPos 1296 464
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port -1
@@ -188,17 +169,21 @@ BehaviorTree {
         }
        }
       }
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos 1526.784 468.654
+       PeriodRandom 10
+      }
       AITaskMove Move {
        Name "Move"
        EditorPos 1716.824 405.019
        InTargetLocation 2
        PrecisionXZ 0.5
        PrecisionY 1
-       OrientationType ToPoint
       }
       SCR_AISetStance "SCR_AI Set Stance" {
        Name "SCR_AI Set Stance"
-       EditorPos 2134.752 391.094
+       EditorPos 2144 400
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
          Port 3
@@ -283,11 +268,11 @@ BehaviorTree {
   }
   VariableReference stance {
    VariableType 3
-   EditorPos 1099.062 527.355
+   EditorPos 1146.643 1079.678
   }
   VariableReference coverPos {
    VariableType 2
-   EditorPos 1089.536 444.693
+   EditorPos 1137.117 997.016
   }
   VariableReference stance {
    VariableType 3
@@ -295,7 +280,7 @@ BehaviorTree {
   }
   VariableReference CoverQueryProps {
    VariableType 5
-   EditorPos 256 1168
+   EditorPos 15.581 1576.323
   }
   VariableReference vLeaderPos {
    VariableType 4
@@ -303,31 +288,23 @@ BehaviorTree {
   }
   VariableReference CoverLock {
    VariableType 1
-   EditorPos 608 656
-  }
-  VariableReference CoverIndoor {
-   VariableType 6
-   EditorPos -352 640
+   EditorPos 655.581 1208.323
   }
   VariableReference CoverQueryProps {
    VariableType 5
-   EditorPos -176 576
-  }
-  VariableReference CoverLockIndoor {
-   VariableType 7
-   EditorPos -304 1168
-  }
-  VariableReference CoverLock {
-   VariableType 1
-   EditorPos 32 1168
+   EditorPos -128.419 1128.323
   }
   VariableReference CoverLockOutdoor {
    VariableType 8
-   EditorPos 576 1168
+   EditorPos 335.581 1576.323
   }
   VariableReference CoverLock {
    VariableType 1
-   EditorPos 848 1104
+   EditorPos 607.581 1512.323
+  }
+  VariableReference coverPos {
+   VariableType 2
+   EditorPos -64 672
   }
  }
 }

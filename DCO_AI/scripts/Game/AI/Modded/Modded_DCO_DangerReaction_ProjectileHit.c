@@ -61,6 +61,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
+			if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+				rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+			else
+				rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
 			
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
@@ -100,7 +104,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 				rq.m_bAimAtTarget = true; // Don't aim while running
 				rq.m_bAimAtTargetEnd = true;
-			
+				if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+					rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+				else
+					rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;			
 				m_State.ApplyNewRequest(rq);
 				m_bPushedMoveRequest = true;
 			
@@ -126,7 +133,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 				rq.m_bAimAtTarget = true; // Don't aim while running
 				rq.m_bAimAtTargetEnd = true;
-			
+				if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+					rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+				else
+					rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
 				m_State.ApplyNewRequest(rq);
 				m_bPushedMoveRequest = true;
 			
@@ -152,7 +162,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 			rq.m_bAimAtTarget = true; // Don't aim while running
 			rq.m_bAimAtTargetEnd = true;
-			
+			if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+				rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+			else
+				rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;			
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 			
@@ -184,7 +197,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = false; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
-			
+							if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+								rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+							else
+								rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;			
 							m_State.ApplyNewRequest(rq);
 							m_bPushedMoveRequest = true;
 
@@ -215,7 +231,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = true; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
-			
+							if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+								rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+							else
+								rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;			
 							m_State.ApplyNewRequest(rq);
 							m_bPushedMoveRequest = true;
 
@@ -243,7 +262,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 							rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
 							rq.m_bAimAtTarget = false; // Don't aim while running
 							rq.m_bAimAtTargetEnd = true;
-			
+							if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+								rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+							else
+								rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;			
 							m_State.ApplyNewRequest(rq);
 							m_bPushedMoveRequest = true;
 

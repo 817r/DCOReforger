@@ -1,3 +1,10 @@
 SCR_DestructibleBuildingEntity {
  ID "F0DBA538AC2A0552"
+ components {
+  DCO_BuildingPositionComponent "{68968A370BE3D35E}" {
+   LOS_TRACER_EXCLUDED_PREFABS {
+    "{86834A0D5920F32F}Prefabs/Structures/Core/DestructibleGlass_Base.et" "{2B188379767C8461}Prefabs/Structures/Core/DestructibleWindow_Base.et" "{F1793FE006FDF888}Prefabs/Structures/BuildingParts/Doors/Door_Base.et"
+   }
+  }
+ }
 }

@@ -1,3 +1,7 @@
 SCR_AIGroup {
  ID "0000000000000001"
+ components {
+  SCR_AIGroupTacticsComponent "{68945DBEC21D70DA}" {
+  }
+ }
 }

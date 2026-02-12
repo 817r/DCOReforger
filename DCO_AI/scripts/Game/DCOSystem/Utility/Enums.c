@@ -14,3 +14,10 @@ enum DCO_EAISkill
 	Veteran,
 	Elite,
 }
+
+enum DCO_BuildingPosCreation
+{
+	SUCCESS,
+	RUNNING,
+	FAIL
+}
