@@ -2,6 +2,7 @@ modded class SCR_AICombatComponent
 {
 	
 	static const int			 TARGET_ENDANGERED_TIMEOUT_S = 12;				//!< How long after last time target was endangering we stop treating it as such
+	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.1;
 	
 	// AIM IMPROVEMENT
 	static const float AIM_IMPROVEMENT_INCREASE = 0.001;
@@ -328,6 +329,11 @@ modded class SCR_AICombatComponent
 		}
 		PrintString(CURRENT_AIM_IMPROVEMENT.ToString());
 
+	}
+	
+	SCR_CharacterControllerComponent GetCharacterController()
+	{
+		return m_CharacterController;
 	}
 	
 	DCO_GroupTactics GetGroupTactics()

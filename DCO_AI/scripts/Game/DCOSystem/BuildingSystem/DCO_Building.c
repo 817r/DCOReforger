@@ -5,18 +5,21 @@ class DCO_BuildingPositionComponentClass: ScriptComponentClass
 
 // CREDITS TO GME TEAM TO ALLOW ME ABLE TO MODIFY THIS SCRIPT FROM GARRISON
 
+// DO NOT USE THIS SCRIPT AS IT OFTEN BREAKS THE GAME ENTIRELY
+
+// NEED HELP OPTIMIZING THIS
+
+
+
 class DCO_BuildingPositionComponent: ScriptComponent
-{
-	[Attribute("", UIWidgets.Auto, "FrontDoor", "")]
-	protected vector m_vFrontDoor;
-	
+{	
 	[Attribute("1.51", UIWidgets.Slider, "Eye Level", "0.1 2 0.1")]
 	protected float EYE_POS;
 	
-	[Attribute("30", UIWidgets.Slider, "Line of Sight Range To Calculate", "1 50 1")]
+	[Attribute("10", UIWidgets.Slider, "Line of Sight Range To Calculate", "1 50 1")]
 	protected float LOS_TRACER_LENGTH;
 	
-	[Attribute("15", UIWidgets.Slider, "How many Position to be Created", "1 50 1")]
+	[Attribute("10", UIWidgets.Slider, "How many Position to be Created", "1 50 1")]
 	protected float m_iMaxPos;
 	
 	[Attribute("", UIWidgets.ResourceAssignArray, "Line of sight exclude what kind of prefab")]
@@ -32,31 +35,52 @@ class DCO_BuildingPositionComponent: ScriptComponent
 	
 	bool isInitialized = false;
 	
-	protected ref array<vector> m_aIndoorPos = {};
+	protected ref array<vector> m_aIndoorPos = new array<vector>;
+	protected ref array<IEntity> m_aQueryFoundEntities = new array<IEntity>;
 	
+	static const int maxAttempt = 30;
+	protected int attempt;
+	
+	#ifdef WORKBENCH
 	// DEBUGER
 	protected ref array<ref Shape> m_aDebugShapes = {};
 	
+	#endif
 	override void OnPostInit(IEntity owner)
 	{
-		super.OnPostInit(owner);
+		//super.OnPostInit(owner);
 		//m_DestroyableBuildingEntity = SCR_DestructibleBuildingEntity.Cast(owner.FindComponent(SCR_DestructibleBuildingEntity));
-		SetEventMask(owner, EntityEvent.INIT);
-		GetGame().GetCallqueue().CallLater(Initialize, 2, false, owner);
+		//SetEventMask(owner, EntityEvent.INIT);
+		m_Building = owner;
 	}
 	
-	void Initialize(IEntity owner)
+	IEntity GetBuildingEntity()
 	{
+		return m_Building;
+	}
+	
+	override void EOnInit(IEntity owner)
+	{
+		/*
 		m_Building = owner;
 		owner.GetBounds(m_vLocalMins, m_vLocalMaxs);
 		float myR = 0.5*(m_vLocalMaxs[0] - m_vLocalMins[0]);
-		if (myR < 5) return;
-		m_pNavmesh = GetGame().GetAIWorld().GetNavmeshWorldComponent("Soldiers");
-		GetGame().GetCallqueue().CallLater(RandomQueryStep, 5, true);
+		if (myR < 5) return;	
+		GetGame().GetCallqueue().CallLater(RandomQueryStep, 200, false); 
+		/*s_aGenerationQueue.Insert(this);
+		if (!s_bIsProcessingQueue)
+        {
+			PrintString("Initalizing Building");
+            s_bIsProcessingQueue = true;
+            GetGame().GetCallqueue().CallLater(ProcessGlobalQueue, 100, false); 
+        }*/
 	}
 	
-	protected void RandomQueryStep()
+	bool RandomQueryStep()
 	{
+		
+		if (!m_pNavmesh)
+			m_pNavmesh = GetGame().GetAIWorld().GetNavmeshWorldComponent("Soldiers");
 		vector outPos, outDir;
 		m_vCurrentQueryPos = GetRandomPosInBounds();
 		DCO_BuildingPosCreation result = QueryPos(m_vCurrentQueryPos, outPos);
@@ -64,8 +88,12 @@ class DCO_BuildingPositionComponent: ScriptComponent
 		{
 			case DCO_BuildingPosCreation.SUCCESS:
 			{
+				#ifdef WORKBENCH
 				m_aDebugShapes.Insert(Shape.CreateSphere(COLOR_BLUE_A, ShapeFlags.NOZBUFFER | ShapeFlags.TRANSP, outPos, 0.2));
-				m_aIndoorPos.Insert(outPos);
+				#endif
+				if (!IsPositionCloseToOther(outPos))
+					m_aIndoorPos.Insert(outPos);
+				
 				m_vCurrentQueryPos = GetRandomPosInBounds();
 				break;
 			}
@@ -77,11 +105,29 @@ class DCO_BuildingPositionComponent: ScriptComponent
 			}
 		}
 		
-		if (m_aIndoorPos.Count() >= m_iMaxPos)
+		attempt++;
+		
+		if (m_aIndoorPos.Count() >= m_iMaxPos || attempt > maxAttempt)
 		{
 			GetGame().GetCallqueue().Remove(RandomQueryStep);
-			isInitialized = true;
+			
+			return true;
+		} else
+		{
+			GetGame().GetCallqueue().CallLater(RandomQueryStep, 200, false); 
 		}
+		
+		return false;
+	}
+	
+	protected bool IsPositionCloseToOther(vector pos)
+	{
+		for (int i = m_aIndoorPos.Count() - 1; i >= 0; i--)
+		{
+			if (vector.Distance(pos, m_aIndoorPos[i]) <= 2.5)
+				return true;
+		}
+		return false;
 	}
 	
 	protected vector GetRandomPosInBounds()
@@ -91,6 +137,10 @@ class DCO_BuildingPositionComponent: ScriptComponent
 		{
 			localPos[i] = Math.RandomFloatInclusive(m_vLocalMins[i], m_vLocalMaxs[i]);
 		};
+		
+		float groundHeight = GetGame().GetWorld().GetSurfaceY(localPos[0], localPos[2]);
+		if (localPos[1] < groundHeight)
+			localPos[1] = groundHeight;
 		
 		return m_Building.CoordToParent(localPos);
 	}
@@ -131,70 +181,82 @@ class DCO_BuildingPositionComponent: ScriptComponent
 				return DCO_BuildingPosCreation.FAIL;
 		}
 		
-		vector.FromYaw(ComputeBestLoSYaw(outPos));
+		if (GetGame().GetWorld().GetSurfaceY(outPos[0], outPos[2]) < 0)
+			return DCO_BuildingPosCreation.FAIL;
+		
 		return DCO_BuildingPosCreation.SUCCESS;
 	}
 	
-	protected float ComputeBestLoSYaw(vector pos)
+	bool QueryCallback(IEntity e)
 	{
-		vector eyePos = pos + EYE_POS * vector.Up;
+		SCR_CharacterDamageManagerComponent comp = SCR_CharacterDamageManagerComponent.Cast(e.FindComponent(SCR_CharacterDamageManagerComponent));
 		
-		array<float> yaws = {};
-		yaws.Reserve(36);
-		
-		for (int y = 0; y < 360; y += 10)
-		{
-			yaws.Insert(y);
-		}
-		
-		SCR_ArrayHelperT<float>.Shuffle(yaws);
-		
-		float bestDistance = 0;
-		float bestYaw = 0;
-		TraceParam params = new TraceParam();
-		params.Flags = TraceFlags.ENTS;
-		params.Start = eyePos;
-		
-		foreach (float yaw : yaws)
-		{
-			float distance = LOS_TRACER_LENGTH;
-			params.End = eyePos + LOS_TRACER_LENGTH * vector.FromYaw(yaw);
-			float percentage = GetGame().GetWorld().TraceMove(params, LoSTracerEntityCallback);
-			
-			if (percentage < 1)
-			{
-				distance *= percentage;
-			}
-			
-			if (distance > bestDistance)
-			{
-				bestDistance = distance;
-				bestYaw = yaw;
-			}
-		}
-		
-		return bestYaw;
-	}
-	
-	protected bool LoSTracerEntityCallback(IEntity entity)
-	{
-		EntityPrefabData data = entity.GetPrefabData();
-		if (!data)
-			return false;
-		
-		BaseContainer container = data.GetPrefab();
-		
-		foreach (ResourceName res : LOS_TRACER_EXCLUDED_PREFABS)
-		{
-			if (SCR_BaseContainerTools.IsKindOf(container, res))
-				return false;
-		}
+		if (comp && !comp.IsDestroyed())
+			m_aQueryFoundEntities.Insert(e);
 		
 		return true;
 	}
 	
+	protected bool IsPositionOccupied(vector pos)
+	{
+		GetGame().GetWorld().QueryEntitiesBySphere(pos, 1, QueryCallback);
+		
+		foreach (IEntity e : m_aQueryFoundEntities)
+		{
+			return true;
+		}
+		
+		m_aQueryFoundEntities.Clear();
+		return false;
+	}
+	
 	vector GetRandomPositionInside()
 	{
-		return m_aIndoorPos[Math.RandomIntInclusive(0, m_aIndoorPos.Count() - 1)];
+		vector pos = m_aIndoorPos[Math.RandomIntInclusive(0, m_aIndoorPos.Count() - 1)];
+		while (IsPositionOccupied(pos))
+		{
+			pos = m_aIndoorPos[Math.RandomIntInclusive(0, m_aIndoorPos.Count() - 1)];
+		}
+		return pos;
 	}
+	
+	vector GetPosClose(vector pos)
+	{
+		
+	}
+	
+	// CENTRALIZED QUEUE
+	
+	// THIS IS NOT WORKING THAT WELL
+	
+	static ref array<DCO_BuildingPositionComponent> s_aGenerationQueue = {};
+    static bool s_bIsProcessingQueue = false;
+	
+	static void ProcessGlobalQueue()
+    {
+		PrintString("s_aGenerationQueue : " + s_aGenerationQueue.Count().ToString());
+        if (s_aGenerationQueue.IsEmpty())
+        {
+            s_bIsProcessingQueue = false;
+            return;
+        }
+
+        DCO_BuildingPositionComponent currentBuilding = s_aGenerationQueue[0];
+
+        if (!currentBuilding)
+        {
+            s_aGenerationQueue.Remove(0);
+            GetGame().GetCallqueue().CallLater(ProcessGlobalQueue, 5, false);
+            return;
+        }
+
+        bool isFinished = currentBuilding.RandomQueryStep();
+
+        if (isFinished)
+        {
+            s_aGenerationQueue.RemoveOrdered(0);
+        }
+        
+        GetGame().GetCallqueue().CallLater(ProcessGlobalQueue, 20, false);
+    }	
 }

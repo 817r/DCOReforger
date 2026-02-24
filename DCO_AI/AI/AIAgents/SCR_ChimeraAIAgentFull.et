@@ -1,7 +1,7 @@
 SCR_ChimeraAIAgent {
  ID "50C4E8413B94E8B0"
  components {
-  DCO_AIConfigComponent "{6850B0D34B0328C4}" {
+  DCO_AIConfigComponent "{68B10290AA2AA4DA}" {
   }
  }
 }

@@ -130,7 +130,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			//{
 			//	return FIRE_TREE_RPG;
 			//}
-			else if (target.GetTimeSinceSeen() > 4 && target.GetDistance() < 15)
+			else if (target.GetTimeSinceSeen() > 4 && target.GetDistance() < 10 && target.GetTraceFraction() > 0.5)
 			{
 				SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, target.GetLastSeenPosition(), EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + 
 				SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER);

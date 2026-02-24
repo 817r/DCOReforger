@@ -175,7 +175,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_AUTOCANNON:
 			{
-				return 3.5;
+				return 3;
 			}
 		}
 		

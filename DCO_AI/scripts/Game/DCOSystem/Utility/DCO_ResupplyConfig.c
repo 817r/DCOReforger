@@ -9,32 +9,32 @@ class DCO_AIResupplyConfigComponent: ScriptComponent
 	//------------------------------------------------------------------------------------------------
 	override void OnPostInit(IEntity owner)
 	{
-		super.OnPostInit(owner);
-		SetEventMask(owner, EntityEvent.INIT);
+		//super.OnPostInit(owner);
+		//SetEventMask(owner, EntityEvent.INIT);
 	}
 	
 	override void EOnInit(IEntity owner)
 	{
-		super.EOnInit(owner);
+		//super.EOnInit(owner);
 	}
 	
 	
 	void AddResupplyConfig(EWeaponType type, array<string> magPref)
 	{
-		ResupplyConfig res = new ResupplyConfig(type, magPref);		
-		MagPrefab.Insert(res);
+		//ResupplyConfig res = new ResupplyConfig(type, magPref);		
+		//MagPrefab.Insert(res);
 	}
 	
 	ResourceName GetRandomMagazinePrefab(EWeaponType type)
 	{
-		array<string> send = {};
-		foreach(ResupplyConfig a : MagPrefab)
-		{
-			if (a.weaponType == type)
-				send.InsertAll(a.MagazinePrefab);
-		}
+		//array<string> send = {};
+		//foreach(ResupplyConfig a : MagPrefab)
+		//{
+		//	if (a.weaponType == type)
+		//		send.InsertAll(a.MagazinePrefab);
+		//}
 		
-		return send.GetRandomElement();
+		//return send.GetRandomElement();
 	}
 }
 

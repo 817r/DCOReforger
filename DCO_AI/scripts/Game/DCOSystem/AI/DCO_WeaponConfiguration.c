@@ -7,26 +7,27 @@ class DCO_AIWeaponConfigComponent: ScriptComponent
 	[Attribute(UIWidgets.Auto, "Magazine Prefab")]
 	protected ref array<string> MagPrefab = {};
 	
-	EWeaponType weapType = EWeaponType.WT_NONE;
+	protected EWeaponType weapType = EWeaponType.WT_NONE;
 	
-	SCR_CharacterControllerComponent m_CharacterController;
-	DCO_AIResupplyConfigComponent resConf;
-	BaseWeaponComponent weap;
+	protected SCR_CharacterControllerComponent m_CharacterController;
+	protected DCO_AIResupplyConfigComponent resConf;
+	protected BaseWeaponComponent weap;
 	
 	//------------------------------------------------------------------------------------------------
 	override void OnPostInit(IEntity owner)
 	{
-		super.OnPostInit(owner);
-		SetEventMask(owner, EntityEvent.INIT);
+		//super.OnPostInit(owner);
+		//SetEventMask(owner, EntityEvent.INIT);
 		
 	}
 	
 	//------------------------------------------------------------------------------------------------
 	override void EOnInit(IEntity owner)
 	{
-		weap = BaseWeaponComponent.Cast(owner.FindComponent(BaseWeaponComponent));
+		CharacterWeaponManagerComponent charWpn = CharacterWeaponManagerComponent.Cast(owner.FindComponent(CharacterWeaponManagerComponent));
+		weap = SCR_AIWeaponHandling.GetCurrentWeaponComponent(charWpn);
 		
-		if (!weap.GetWeaponType() == EWeaponType.WT_RIFLE || !weap.GetWeaponType() == EWeaponType.WT_HANDGUN || !weap.GetWeaponType() == EWeaponType.WT_MACHINEGUN
+		if (!weap.GetWeaponType() == EWeaponType.WT_RIFLE || !weap.GetWeaponType() == EWeaponType.WT_HANDGUN || !weap.GetWeaponType() == EWeaponType.WT_MACHINEGUN || !weap.GetWeaponType() == EWeaponType.WT_ROCKETLAUNCHER
 				|| !weap.GetWeaponType() == EWeaponType.WT_SNIPERRIFLE)
 		return;
 

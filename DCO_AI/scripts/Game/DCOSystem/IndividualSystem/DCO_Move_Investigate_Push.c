@@ -70,22 +70,28 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			rq.m_bCheckCoverVisibility = true;
 		else
 			rq.m_bCheckCoverVisibility = false;
-		if (Math.RandomInt(0,3) == 2)
-			rq.m_bFailIfNoCover = false;
-		else
-			rq.m_bFailIfNoCover = true;
+		rq.m_bFailIfNoCover = false;
 		ResolveMoveandStopStance(rq.m_eStanceMoving, rq.m_eStanceEnd);
 		rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 		rq.m_fCoverSearchDistMin = 10;
-		if (Math.RandomInt(0,2) == 1)
-			rq.m_eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+		if (vector.Distance(m_Utility.GetOrigin(), threatPos) > 20)
+		{
+			if (Math.RandomInt(0,2) == 1)
+				rq.m_eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+			else
+				rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+		}
 		else
 			rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-		rq.m_bAimAtTarget = false;
+		rq.m_bAimAtTarget = true;
 		rq.m_bAimAtTargetEnd = true;
 		rq.m_fMoveDuration_s = Math.RandomFloat(2,5);
-		rq.m_eMovementType = EMovementType.RUN;
+		
+		if (vector.Distance(m_Utility.GetOrigin(), threatPos) < 15)
+			rq.m_eMovementType = EMovementType.WALK;
+		else
+			rq.m_eMovementType = EMovementType.RUN;
 		
 		if (m_Utility.m_ThreatSystem.GetState() < EAIThreatState.ALERTED)
 			rq.m_fMoveDuration_s *= 3;

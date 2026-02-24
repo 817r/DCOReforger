@@ -94,7 +94,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		rq.m_bAimAtTarget = false; 
 		rq.m_bAimAtTargetEnd = false; // turn towards the target should be true!
 		rq.m_bFailIfNoCover = false;
-		
+		rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 		rq.m_fMoveDuration_s = Math.RandomFloat(0.5, 1.0) * moveDurationMax; // Move distance randomized
 		vector dirToTgt = m_Target.GetLastSeenPosition() - m_DriverUtility.m_OwnerEntity.GetOrigin();
 		dirToTgt.Normalize();
@@ -242,6 +242,21 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 			return true;
 		
 		return false;
+	}
+	
+	override void PushRequestRotateToTarget()
+	{
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+		rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+		rq.m_vMovePos = m_SuppressionVolume.GetCenterPosition();
+		rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+		rq.m_fMoveDuration_s = 3;
+		rq.m_bAimAtTarget = false;
+		rq.m_bAimAtTargetEnd = false;
+		
+		ApplyNewRequest(rq);
 	}
 	
 	//-------------------------------------------------------------------------------------------

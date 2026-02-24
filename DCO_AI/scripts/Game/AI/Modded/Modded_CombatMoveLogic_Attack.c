@@ -447,9 +447,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	
 	void MoraleAndThreatPushMove(out SCR_EAICombatMoveDirection moveDir)
 	{
-		float moveDurationMax;
-		
-		
 		switch (m_eThreatState)
 		{
 			case EAIThreatState.THREATENED:

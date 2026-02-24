@@ -161,48 +161,12 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
            Name "Parallel"
            EditorPos 420.833 286.667
            Nodes {
-            Selector Selector {
-             Name "Selector"
-             EditorPos -1568 576
-             Nodes {
-              Sequence Sequence {
-               Name "Sequence"
-               EditorPos -2101 789
-               Nodes {
-                SCR_CreateAIExtraMoveParams "SCR_ CreateAI Extra Move Params" {
-                 Name "SCR_ CreateAI Extra Move Params"
-                 EditorPos -2575.428 1063.714
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 22
-                   PortName "InFlankStartPos"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 20
-                   PortName "InFlankEndPos"
-                  }
-                 }
-                 OutPorts {
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 19
-                   PortName "OutParams"
-                  }
-                 }
-                 Group "{5C64A805E3F031E4}"
-                 m_fStraightPathCostModifier 4.5
-                }
-                AITaskSetPathfindingFilters "Set Pathfinding Filters" {
-                 Name "Set Pathfinding Filters"
-                 EditorPos -2048 992
-                 Group "{5C64A805E3F031E4}"
-                 NavmeshProject "Soldiers"
-                 IgnoreFlags 0x8 0
-                }
-               }
-               Group "{5C64A805E3F031E4}"
-              }
-             }
-             Group "{5C64A805E3F031E4}"
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 16 480
+             Period 10
+             PeriodRandom 10
+             PeriodKey 25
             }
             Selector Selector {
              Name "Selector"
@@ -692,6 +656,49 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
     }
    }
   }
+  Selector Selector {
+   Name "Selector"
+   EditorPos -1568 576
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -2101 789
+     Nodes {
+      SCR_CreateAIExtraMoveParams "SCR_ CreateAI Extra Move Params" {
+       Name "SCR_ CreateAI Extra Move Params"
+       EditorPos -2575.428 1063.714
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 22
+         PortName "InFlankStartPos"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 20
+         PortName "InFlankEndPos"
+        }
+       }
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 19
+         PortName "OutParams"
+        }
+       }
+       Group "{5C64A805E3F031E4}"
+       m_fStraightPathCostModifier 4.5
+      }
+      AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+       Name "Set Pathfinding Filters"
+       EditorPos -2048 992
+       Group "{5C64A805E3F031E4}"
+       NavmeshProject "Soldiers"
+       IgnoreFlags 0x8 0
+      }
+     }
+     Group "{5C64A805E3F031E4}"
+    }
+   }
+   Group "{5C64A805E3F031E4}"
+  }
  }
  Variables {
   BtVariableVector position {
@@ -845,6 +852,10 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   VariableReference inestigateCenterPos {
    VariableType 2
    EditorPos 2464 48
+  }
+  VariableReference duration {
+   VariableType 7
+   EditorPos -128 496
   }
  }
  Groups {

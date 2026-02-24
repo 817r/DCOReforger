@@ -1,6 +1,6 @@
 modded class SCR_AIUtilityComponent
 {
-	ref DCO_AIMoraleSystem moraleSystem;
+	protected ref DCO_AIMoraleSystem moraleSystem;
 	DCO_AIConfigComponent m_DCOConfig;
 
 	override SCR_AIBehaviorBase EvaluateBehavior(BaseTarget unknownTarget)

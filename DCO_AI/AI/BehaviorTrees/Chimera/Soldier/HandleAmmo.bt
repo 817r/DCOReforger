@@ -206,17 +206,7 @@ BehaviorTree {
                    }
                    m_WeaponType WT_HANDGUN
                   }
-                  AITaskReturnState "Return State" {
-                   Name "Return State"
-                   EditorPos -1585.454 3145.82
-                   Result RUNNING
-                  }
                  }
-                }
-                AITaskReturnState "Return State" {
-                 Name "Return State"
-                 EditorPos -1569.454 2697.82
-                 Result RUNNING
                 }
                }
               }

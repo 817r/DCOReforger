@@ -101,6 +101,7 @@ modded class SCR_AIThreatSystem
 #endif
 	}
 	
+#ifdef WORKBENCH
 	override void ShowDebug()
 	{
 		// Show message above AI's head
@@ -133,4 +134,5 @@ modded class SCR_AIThreatSystem
 		
 		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, m_fThreatTotal.ToString(), EAIDebugCategory.THREAT, 1.4, color);	
 	}
+#endif
 }

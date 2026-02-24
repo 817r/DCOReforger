@@ -48,7 +48,7 @@ class DCO_AIMoraleSystem
 	private float m_fMoraleThreat;
 	private float m_fMoraleThreatMod;
 	
-	private float friendlys;
+	private float friendlys = 1;
 	
 	private SCR_AIUtilityComponent				m_Utility;
 	private SCR_AICombatComponent				m_Combat;
