@@ -86,15 +86,8 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_bAimAtTarget = true;
 		rq.m_bAimAtTargetEnd = true;
-		rq.m_fMoveDuration_s = Math.RandomFloat(2,5);
-		
-		if (vector.Distance(m_Utility.GetOrigin(), threatPos) < 15)
-			rq.m_eMovementType = EMovementType.WALK;
-		else
-			rq.m_eMovementType = EMovementType.RUN;
-		
-		if (m_Utility.m_ThreatSystem.GetState() < EAIThreatState.ALERTED)
-			rq.m_fMoveDuration_s *= 3;
+		rq.m_fMoveDuration_s = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
+		rq.m_eMovementType = EMovementType.RUN;
 		
 		vector dirToTgt = threatPos - m_Utility.m_OwnerEntity.GetOrigin();
 		rq.m_vAvoidStraightPathDir = dirToTgt;
@@ -103,7 +96,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	
 	protected void ResolveMoveandStopStance(out ECharacterStance moving, out ECharacterStance end)
 	{
-		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.6)
+		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.8)
 			moving = ECharacterStance.PRONE;
 		else
 		{

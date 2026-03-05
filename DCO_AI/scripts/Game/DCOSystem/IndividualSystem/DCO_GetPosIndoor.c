@@ -6,7 +6,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 	static const string PORT_VECTOR_POS				= "Position Found";
 	
 	[Attribute("0", UIWidgets.EditBox)]
-	protected float m_fRadius;
+		protected float m_fRadius;
 	
 	protected IEntity m_Building;
 	
@@ -195,7 +195,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 
 		if (params.TraceNorm[1] < 0.999)
 		{
-			params.End = outPos + 15 * vector.Up;
+			params.End = outPos + 10 * vector.Up;
 			
 			if (GetGame().GetWorld().TraceMove(params, null) >= 0.999)
 				return DCO_BuildingPosCreation.FAIL;
@@ -226,11 +226,10 @@ class DCO_FindIndoorPosition: AITaskScripted
 	
 	protected bool IsPositionOccupied(vector pos)
 	{
-		GetGame().GetWorld().QueryEntitiesBySphere(pos, 2.5, QueryCallbackC);
+		GetGame().GetWorld().QueryEntitiesBySphere(pos, 3, QueryCallbackC);
 		
 		foreach (IEntity e : m_aQueryFoundEntities)
 		{
-
 			return true;
 		}
 		

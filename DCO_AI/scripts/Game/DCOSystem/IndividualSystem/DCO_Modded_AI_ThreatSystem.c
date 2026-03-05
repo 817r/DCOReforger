@@ -24,7 +24,7 @@ modded class SCR_AIThreatSystem
 		#endif
 		
 		m_fThreatSuppression = Math.Clamp(m_fThreatSuppression + count*SUPPRESSION_BULLET_INCREMENT, 0, 2.5);
-		m_Combat.DangerSuppressedDecreaseAIM(count/4);
+		m_Combat.DangerSuppressedDecreaseAIM(count);
 		m_Utility.GetMoraleSystem().ThreatBulletImpact(count);
 	}
 	
@@ -34,7 +34,7 @@ modded class SCR_AIThreatSystem
 		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
 		#endif
 		m_fThreatFlyBy = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 1.2);
-		m_Combat.DangerSuppressedDecreaseAIM(count/6);
+		m_Combat.DangerSuppressedDecreaseAIM(count/2);
 		m_Utility.GetMoraleSystem().ThreatProjectileFlyby(count);
 	}
 	

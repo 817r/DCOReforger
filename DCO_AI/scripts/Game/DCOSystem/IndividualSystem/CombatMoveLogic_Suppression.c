@@ -45,7 +45,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 	{
 		float waitTime = 3;
 		if (m_State && m_State.IsMovingToBuilding())
-			waitTime *= 2;
+			waitTime *= 1.2;
 		
 		bool longWaitTime = false;
 		switch (weaponType)
@@ -83,11 +83,11 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			{
 				case EAIThreatState.THREATENED:
 				{
-					rq.m_eStanceMoving = ECharacterStance.PRONE;
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
 					rq.m_eStanceEnd = ECharacterStance.PRONE;
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 10.0;
-					moveDurationMax = 2;
+					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
 					rq.m_eMovementType = EMovementType.RUN;
 					break;
 				}
@@ -97,8 +97,8 @@ modded class SCR_AICombatMoveLogic_Suppressive
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 10.0;
-					moveDurationMax = 4;
-					rq.m_eMovementType = EMovementType.WALK;
+					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
+					rq.m_eMovementType = EMovementType.RUN;
 					break;
 				}
 				default:
@@ -107,7 +107,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 15.0;
-					moveDurationMax = 6;
+					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
 					rq.m_eMovementType = EMovementType.RUN;
 					break;
 				}
@@ -377,6 +377,16 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			// No waypoint, or it's an entity-associated waypoint, like Follow waypoint.
 			// Therefore use standard movement logic.
 			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
+			/*if (agent != group.GetLeaderAgent() && vector.Distance(group.GetLeaderEntity().GetOrigin(), m_MyEntity.GetOrigin()) > 50)
+			{
+				vector mp = vector.Zero;
+				FindPosition2D(mp, group.GetLeaderEntity().GetOrigin(), 30, vector.Zero, 3);
+				movePos = mp;
+				eDirection = SCR_EAICombatMoveDirection.FORWARD;
+				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+				avoidStraightPathDir = vector.Zero;			
+			}*/
+			
 			movePos = targetPos;
 			MoraleAndThreatPushMove(eDirection);
 			//eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS; // Move to target
@@ -394,9 +404,9 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			{
 				// We are outside WP, move towards center
 				movePos = wpPos;
-				eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+				eDirection = SCR_EAICombatMoveDirection.FORWARD;
 				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-				avoidStraightPathDir = GetAvoidStraightPathDir(); // Go straight
+				avoidStraightPathDir = vector.Zero; // Go straight
 			}
 			else if (myDistToWp > 0.5 * wpRadius)
 			{
@@ -437,6 +447,33 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		outCoverSearchSectorHalfAngleRad = coverSearchSectorHalfAngleRad;
 	}
 	
+	protected bool FindPosition2D(out vector randomPos, vector randomSphereOrigin, float randomSphereRadius, vector excludeSphereOrigin = vector.Zero, float excludeRadius = 0, int iterationCount = 50)
+	{
+		if (randomSphereOrigin == excludeSphereOrigin || excludeRadius < 1.0e-8)
+		{
+			randomPos = s_AIRandomGenerator.GenerateRandomPointInRadius(excludeRadius, randomSphereRadius, randomSphereOrigin, true);	
+			randomPos[1] = randomSphereOrigin[1];
+			return true;
+		}	
+		else
+		{
+			float excludeRadiusSq = excludeRadius * excludeRadius;
+			float randomRadiusSq = randomSphereRadius * randomSphereRadius;	
+			for (int i = iterationCount; i > 0; i--)
+			{
+				randomPos = s_AIRandomGenerator.GenerateRandomPointInRadius(0, randomSphereRadius, randomSphereOrigin, true);
+				
+				// Repeat if position is inside exclusion zone
+				if (excludeRadius > 0 && vector.DistanceSqXZ(randomPos, excludeSphereOrigin) < excludeRadiusSq)
+					continue;
+			
+				randomPos[1] = randomSphereOrigin[1];
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	//--------------------------------------------------------------------------------------------
 	protected override bool MoveToNextPosCondition()
 	{	
@@ -457,6 +494,9 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			// If it's first run, ignore timers, only if:
 			// - If we are not in cover.
 			if (IsFirstExecution() && !m_State.m_bInCover)
+				return true;
+			
+			if (m_Utility.GetCharacterController().GetWeaponObstructedState() == EWeaponObstructedState.FULLY_OBSTRUCTED_CANT_FIRE)
 				return true;
 			
 			float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	

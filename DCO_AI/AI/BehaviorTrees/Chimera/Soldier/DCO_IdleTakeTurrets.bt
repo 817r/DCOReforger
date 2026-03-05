@@ -1,0 +1,208 @@
+BehaviorTree "{C0656FE1D6DBE7F0}AI/BehaviorTrees/Chimera/Soldier/DCO_IdleTakeTurrets.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_IdleTakeTurrets.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -50 -45
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -48 176
+     Nodes {
+      ForEachChild "For Each Child" {
+       Name "For Each Child"
+       EditorPos -848 752
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos -832 928
+         Nodes {
+          AITaskGetControlledEntity "Get Controlled Entity" {
+           Name "Get Controlled Entity"
+           EditorPos -1184 1184
+           InEntity 2
+           OutAgent 1
+          }
+          DecoIsInVehicle "Is In Vehicle" {
+           Name "Is In Vehicle"
+           EditorPos -544 1200
+           Nodes {
+            SCR_AISendGoalMessage_GetOut "SCR_AI Send Goal Message_ Get Out" {
+             Name "SCR_AI Send Goal Message_ Get Out"
+             EditorPos -576 1392
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 1
+               PortName "Receiver"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "PriorityLevel"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "IsWaypointRelated"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "VehicleEntity"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "BoardingParams"
+              }
+             }
+             m_fPriorityLevel 50
+            }
+           }
+           ForceNodeResult Success
+           EntityIn 0
+          }
+         }
+        }
+       }
+       OutEntity 0
+      }
+      SCR_AIGetPositionAndRotationLeader "SCR_AI Get Position And Rotation Leader" {
+       Name "SCR_AI Get Position And Rotation Leader"
+       EditorPos 250.99 989.87
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 3
+         PortName "Position"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port -1
+         PortName "Rotation"
+        }
+       }
+      }
+      AITaskSetVariable "Set Variable" {
+       Name "Set Variable"
+       EditorPos 704 992
+       SetValue "30"
+       OutVariable 4
+      }
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 2064 672
+       Nodes {
+        SCR_DCOAIFindTurrets "SCR_DCOAI Find Turrets" {
+         Name "SCR_DCOAI Find Turrets"
+         EditorPos 1200 1072
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 3
+           PortName "OriginIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 4
+           PortName "RadiusIn"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "TurretNumber"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "TurretsFound"
+          }
+         }
+         m_fRadius 30
+        }
+        SCR_AIFindSmartActions "SCR_AI Find Smart Actions" {
+         Name "SCR_AI Find Smart Actions"
+         EditorPos 1610.277 1072.762
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 3
+           PortName "OriginIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 4
+           PortName "RadiusIn"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "SmartActionTags"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "SmartActionNumber"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "SmartActionsFound"
+          }
+         }
+        }
+        SCR_DCOAIAllocateActionsIdleDefendActivity "SCR_DCOAI Allocate Actions Idle Defend Activity" {
+         Name "SCR_DCOAI Allocate Actions Idle Defend Activity"
+         EditorPos 1976.275 1068.23
+        }
+        AITaskIdle Idle {
+         Name "Idle"
+         EditorPos 2593.653 1064.147
+         Period 30
+        }
+        AITaskReturnState "Return State" {
+         Name "Return State"
+         EditorPos 2800 1056
+         Result SUCCESS
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableEntity GroupMember {
+   Flags 0
+   Desc ""
+  }
+  BtVariableEntity GroupMemberAgent {
+   Flags 0
+   Desc ""
+  }
+  BtVariableEntity LeaderEntity {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector LeaderPos {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar Radius {
+   Flags 0
+   Desc ""
+  }
+ }
+ VariablesRefs {
+  VariableReference GroupMember {
+   VariableType 0
+   EditorPos -592 864
+  }
+  VariableReference GroupMemberAgent {
+   VariableType 1
+   EditorPos -928 1312
+  }
+  VariableReference GroupMember {
+   VariableType 0
+   EditorPos -1408 1232
+  }
+  VariableReference LeaderPos {
+   VariableType 3
+   EditorPos 896 1328
+  }
+  VariableReference Radius {
+   VariableType 4
+   EditorPos 928 1216
+  }
+ }
+}

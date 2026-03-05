@@ -43,7 +43,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
        Nodes {
         DCO_FindIndoorPosition "DCO_ Find Indoor Position" {
          Name "DCO_ Find Indoor Position"
-         EditorPos -429.773 632.909
+         EditorPos -432 640
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 5
@@ -64,7 +64,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
            PortName "Is Position Found"
           }
          }
-         m_fRadius 10
+         m_fRadius 50
         }
         Sequence Sequence {
          Name "Sequence"
@@ -89,8 +89,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
              PortName "CoverQueryProps"
             }
            }
-           m_fRadius 16
-           m_bSelectHighestScoreCover 1
+           m_fRadius 30
           }
           Sequence Sequence {
            Name "Sequence"

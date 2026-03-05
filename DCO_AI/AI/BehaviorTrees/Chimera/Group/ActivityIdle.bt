@@ -1,0 +1,28 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Group/ActivityIdle.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 80 64
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos 80 320
+     Nodes {
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -272 672
+       BehaviorTree "{C0656FE1D6DBE7F0}AI/BehaviorTrees/Chimera/Soldier/DCO_IdleTakeTurrets.bt"
+       AlwaysReinit 1
+      }
+      AITaskReturnState "Return State" {
+       Name "Return State"
+       EditorPos 320 688
+       Result RUNNING
+      }
+     }
+    }
+   }
+  }
+ }
+}

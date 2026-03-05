@@ -17,3 +17,8 @@ enum DCO_GroupTactics
 	EVASIVE,
 	STEALTH
 }
+
+modded enum EAIDangerEventType
+{
+	Danger_Killzone,
+}

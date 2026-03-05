@@ -182,7 +182,7 @@ modded class SCR_AIUtilityComponent
 			return;	
 		
 		moraleSystem = new DCO_AIMoraleSystem(this);
-		m_DCOConfig = DCO_AIConfigComponent.Cast(owner.FindComponent(DCO_AIConfigComponent));
+		m_DCOConfig = DCO_AIConfigComponent.Cast(agent.FindComponent(DCO_AIConfigComponent));
 	}
 	
 	DCO_AIMoraleSystem GetMoraleSystem()

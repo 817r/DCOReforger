@@ -12,7 +12,6 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 	{
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 		
-
 		float distanceSq = vector.DistanceSq(utility.GetOrigin(), dangerEvent.GetPosition());
 				
 		if (distanceSq > BULLET_IMPACT_DISTANCE_SQ_MAX)
@@ -41,19 +40,21 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		int bulletCount = dangerEventCount;
 		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;				
 		
-		if (utility.m_CombatComponent.IsEnemyKnown(shooterRoot))
-		{
-			float radius = Math.Map(shooterDistance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
-			SCR_AISuppressionVolumeSphere createSupp = new SCR_AISuppressionVolumeSphere(shooterRoot.GetOrigin(), radius);
-		}
-		
 		if (shooter)
 		{
 			if (agent && agent.IsEnemy(shooter))
 			{						
+				if (utility.m_CombatComponent.GetSelectedWeaponType() == EWeaponType.WT_MACHINEGUN && distanceToDanger < 2 && isNullTarget)
+				{
+					float radius = Math.Map(shooterDistance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
+					SCR_AISuppressionVolumeSphere createSupp = new SCR_AISuppressionVolumeSphere(shooterRoot.GetOrigin(), radius);
+					SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 6, 2.5);
+					utility.AddAction(supp);					
+				}
+				
 				if (distanceToDanger < 2 && bulletCount > 2 && isNullTarget && m_State.IsInValidCover())
 				{
-					if(m_State != null)
+					if(m_State != null && !m_State.IsExecutingRequest())
 					{					
 						rq.m_vTargetPos = shooterPos;
 						rq.m_vMovePos = rq.m_vTargetPos;
@@ -82,7 +83,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				}
 				else if (distanceToDanger < 2 && shooterDistance < 20 && m_State.IsInValidCover() && bulletCount > 2)
 				{
-					if(m_State != null)
+					if(m_State != null && !m_State.IsExecutingRequest())
 					{					
 						rq.m_vTargetPos = shooterPos;
 						rq.m_vMovePos = rq.m_vTargetPos;
@@ -119,7 +120,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				}
 				else if (distanceToDanger < 2 && bulletCount > 4 && m_State.IsInValidCover())
 				{
-					if(m_State != null)
+					if(m_State != null && !m_State.IsExecutingRequest())
 					{					
 						rq.m_vTargetPos = shooterPos;
 						rq.m_vMovePos = rq.m_vTargetPos;
@@ -143,7 +144,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 								rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 						}
 						rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-						rq.m_bAimAtTarget = false; // Don't aim while running
+						rq.m_bAimAtTarget = true; // Don't aim while running
 						rq.m_bAimAtTargetEnd = true;
 						if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 							rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
@@ -163,7 +164,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				}
 				else if (distanceToDanger < 2 && bulletCount > 1 && isNullTarget)
 				{
-					if(m_State != null)
+					if(m_State != null && !m_State.IsExecutingRequest())
 					{					
 						rq.m_vTargetPos = shooterPos;
 						rq.m_vMovePos = rq.m_vTargetPos;
@@ -192,7 +193,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				}
 				else if (distanceToDanger < 2 && shooterDistance < 20)
 				{
-					if(m_State != null)
+					if(m_State != null && !m_State.IsExecutingRequest())
 					{					
 						rq.m_vTargetPos = shooterPos;
 						rq.m_vMovePos = rq.m_vTargetPos;
@@ -200,8 +201,8 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 						rq.m_bUseCoverSearchDirectivity = true;
 						rq.m_bCheckCoverVisibility = true;
 						rq.m_bFailIfNoCover = false;
-						rq.m_eStanceMoving = ECharacterStance.STAND;
-						rq.m_eStanceEnd = ECharacterStance.PRONE;
+						rq.m_eStanceMoving = ECharacterStance.CROUCH;
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
 						rq.m_eMovementType = EMovementType.WALK;
 						rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX / 2;
 						rq.m_fCoverSearchDistMin = 2;
@@ -216,7 +217,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 								rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 						}
 						rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-						rq.m_bAimAtTarget = false; // Don't aim while running
+						rq.m_bAimAtTarget = true; // Don't aim while running
 						rq.m_bAimAtTargetEnd = true;
 						if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 							rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
@@ -229,7 +230,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				}
 				else if (distanceToDanger < 2 && bulletCount > 3)
 				{
-					if(m_State != null)
+					if(m_State != null && !m_State.IsExecutingRequest())
 					{					
 						rq.m_vTargetPos = shooterPos;
 						rq.m_vMovePos = rq.m_vTargetPos;
@@ -253,7 +254,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 								rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
 						}
 						rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;  // - not needed since direction is ANYWHERE
-						rq.m_bAimAtTarget = false; // Don't aim while running
+						rq.m_bAimAtTarget = true; // Don't aim while running
 						rq.m_bAimAtTargetEnd = true;
 						if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 							rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;

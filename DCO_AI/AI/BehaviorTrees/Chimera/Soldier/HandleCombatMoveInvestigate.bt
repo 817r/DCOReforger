@@ -364,6 +364,10 @@ BehaviorTree {
             }
            }
           }
+          AITaskResetPathfindingFilters "Reset Pathfinding Filters" {
+           Name "Reset Pathfinding Filters"
+           EditorPos 1088 736
+          }
           Sequence Sequence {
            Name "Move Sequence"
            EditorPos 5440 1152

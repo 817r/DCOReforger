@@ -100,12 +100,25 @@ modded class SCR_AIDangerReaction_WeaponFired
 						myGroup, shooter, instigatorEntity, instigatorFaction, shotPos, endangeringForGroup);
 				}
 			}
+			
+			if (endangeringForGroup)
+			{
+				float radius = Math.Map(distance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
+				SCR_AISuppressionVolumeSphere createSupp = new SCR_AISuppressionVolumeSphere(shotPos, radius);
+				
+				if (utility.m_CombatComponent.GetSelectedWeaponType() == EWeaponType.WT_MACHINEGUN)
+				{
+					SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 3 * radius, 2.5, 2000);
+					utility.AddAction(supp);
+				}
+			}
+			
 		}
 		
-		if (isShotSuppressed)
+		if (isShotSuppressed && distance < 50)
 		{
 			auto investigaste = new SCR_AIMoveAndInvestigateBehavior(utility, null, shotPos,
-			SCR_AIActionBase.PRIORITY_BEHAVIOR_MOVE_AND_INVESTIGATE, SCR_AIActionBase.PRIORITY_LEVEL_NORMAL, isDangerous: true, radius: 15, targetUnitType: EAIUnitType.UnitType_Infantry, duration: 150); 
+			SCR_AIActionBase.PRIORITY_BEHAVIOR_MOVE_AND_INVESTIGATE, SCR_AIActionBase.PRIORITY_LEVEL_NORMAL, isDangerous: true, radius: 25, targetUnitType: EAIUnitType.UnitType_Infantry, duration: 150); 
 			
 			utility.AddAction(investigaste);
 		}

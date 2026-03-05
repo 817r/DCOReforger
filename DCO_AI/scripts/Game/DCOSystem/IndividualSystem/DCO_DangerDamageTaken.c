@@ -43,7 +43,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 		
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 		
-		if (m_State.IsInValidCover() && shooterDistances > 50)
+		if (!m_State.IsExecutingRequest() && m_State.IsInValidCover() && shooterDistances > 50)
 		{
 			rq.m_vTargetPos = shooterPos;
 			rq.m_vMovePos = rq.m_vTargetPos;
@@ -76,13 +76,13 @@ modded class SCR_AIDangerReaction_DamageTaken
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 			return true;			
-		} else if (!m_State.IsInValidCover() && shooterDistances > 50)
+		} else if (!m_State.IsExecutingRequest() && !m_State.IsInValidCover() && shooterDistances > 50)
 		{
 			rq.m_vTargetPos = shooterPos;
 			rq.m_vMovePos = rq.m_vTargetPos;
 			rq.m_bTryFindCover = true;
 			rq.m_bUseCoverSearchDirectivity = true;
-			rq.m_bCheckCoverVisibility = false;
+			rq.m_bCheckCoverVisibility = true;
 			rq.m_bFailIfNoCover = false;
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
@@ -115,7 +115,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 				charCon.SetRoll(1);
 			else
 				charCon.SetRoll(2);
-		} else if (m_State.IsInValidCover())
+		} else if (!m_State.IsExecutingRequest() && m_State.IsInValidCover())
 		{
 			rq.m_vTargetPos = shooterPos;
 			rq.m_vMovePos = rq.m_vTargetPos;
@@ -125,13 +125,13 @@ modded class SCR_AIDangerReaction_DamageTaken
 			rq.m_bFailIfNoCover = true;
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
-			rq.m_eMovementType = EMovementType.WALK;
+			rq.m_eMovementType = EMovementType.RUN;
 			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX / 2;
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-			rq.m_bAimAtTarget = false;
+			rq.m_bAimAtTarget = true;
 			rq.m_bAimAtTargetEnd = true;
 			if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 				rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
@@ -140,7 +140,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 			return true;		
-		} else if (!m_State.IsInValidCover())
+		} else if (!m_State.IsExecutingRequest() && !m_State.IsInValidCover())
 		{
 			rq.m_vTargetPos = shooterPos;
 			rq.m_vMovePos = rq.m_vTargetPos;
@@ -156,7 +156,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-			rq.m_bAimAtTarget = false;
+			rq.m_bAimAtTarget = true;
 			rq.m_bAimAtTargetEnd = true;
 			if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 				rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;

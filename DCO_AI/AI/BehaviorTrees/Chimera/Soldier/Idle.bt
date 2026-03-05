@@ -31,11 +31,11 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
          Nodes {
           DecoratorEntity Entity {
            Name "IsInVehicle or Turret?"
-           EditorPos -1768.81 -560.19
+           EditorPos -1829.809 -546.024
            Nodes {
             RunBT RunBT {
              Name "RunBT"
-             EditorPos -1859.001 -318.166
+             EditorPos -1920 -304
              BehaviorTree "{A39A4C0702473EF5}AI/BehaviorTrees/Chimera/Soldier/Idle_ObserveFromVehicle.bt"
             }
            }
@@ -47,54 +47,75 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
             }
            }
           }
-          Sequence Sequence {
-           Name "Sequence"
-           EditorPos -912 -464
+          Parallel Parallel {
+           Name "Parallel"
+           EditorPos -992 64
            Nodes {
-            RunBT RunBT {
-             Name "RunBT"
-             EditorPos -1376 -176
-             BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
-            }
-            AITaskIdle Idle {
-             Name "Idle"
-             EditorPos -928 -160
-             Period 10
-             PeriodRandom 5
-            }
             Switch Switch {
              Name "Switch"
-             EditorPos -673.559 -174.976
+             EditorPos -1824 448
              Nodes {
+              RunBT RunBT {
+               Name "RunBT"
+               EditorPos -2624 944
+               BehaviorTree "{561A02A3833D9900}AI/BehaviorTrees/Chimera/Soldier/Idle_ReturnToFormation.bt"
+              }
               Sequence Sequence {
                Name "Sequence"
-               EditorPos -1593.999 51.643
+               EditorPos -1548.359 787.705
                Nodes {
                 RunBT RunBT {
                  Name "RunBT"
-                 EditorPos -2040.388 282.655
-                 BehaviorTree "{561A02A3833D9900}AI/BehaviorTrees/Chimera/Soldier/Idle_ReturnToFormation.bt"
+                 EditorPos -1888 944
+                 BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
                 }
-                RunBT RunBT {
-                 Name "RunBT"
-                 EditorPos -1509.912 278.047
-                 BehaviorTree "{7BC17E0DF06FCF80}AI/BehaviorTrees/Chimera/Soldier/Idle_Observe.bt"
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos -1434.8 962.681
+                 Period 80
+                 PeriodRandom 100
                 }
                }
               }
-              RunBT RunBT {
-               Name "RunBT"
-               EditorPos -960 160
-               BehaviorTree "{E5F18B69F38FAE75}AI/BehaviorTrees/Chimera/Soldier/Idle_GadgetUse.bt"
-              }
-              RunBT RunBT {
-               Name "RunBT"
-               EditorPos -239.332 120.389
-               BehaviorTree "{77827BF0468F4A99}AI/BehaviorTrees/Chimera/Soldier/Idle_InspectWeapon.bt"
-              }
              }
              RandomRange {
-              4 5 6
+              1 8
+             }
+            }
+            RunBT RunBT {
+             Name "RunBT"
+             EditorPos -1104 464
+             BehaviorTree "{7BC17E0DF06FCF80}AI/BehaviorTrees/Chimera/Soldier/Idle_Observe.bt"
+            }
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 176 336
+             Nodes {
+              Switch Switch {
+               Name "Switch"
+               EditorPos -224 608
+               Nodes {
+                RunBT RunBT {
+                 Name "RunBT"
+                 EditorPos -576 864
+                 BehaviorTree "{77827BF0468F4A99}AI/BehaviorTrees/Chimera/Soldier/Idle_InspectWeapon.bt"
+                }
+                RunBT RunBT {
+                 Name "RunBT"
+                 EditorPos -48 864
+                 BehaviorTree "{E5F18B69F38FAE75}AI/BehaviorTrees/Chimera/Soldier/Idle_GadgetUse.bt"
+                }
+               }
+               RandomRange {
+                2 5
+               }
+              }
+              AITaskIdle Idle {
+               Name "Idle"
+               EditorPos 480 624
+               Period 15
+               PeriodRandom 10
+              }
              }
             }
            }

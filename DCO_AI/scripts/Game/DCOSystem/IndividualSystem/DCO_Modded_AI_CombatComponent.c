@@ -22,7 +22,7 @@ modded class SCR_AICombatComponent
 	protected const float PERCEPTION_FACTOR_SAFE = 1.0;			//!< We are safe and are good at recognising enemies
 	protected const float PERCEPTION_FACTOR_VIGILANT = 4;		//!< When vigilant and alert we are very good at recognising enemies
 	protected const float PERCEPTION_FACTOR_ALERTED = 3;
-	protected const float PERCEPTION_FACTOR_THREATENED = 2;	// We are suppressed and are bad at recognizing enemies
+	protected const float PERCEPTION_FACTOR_THREATENED = 1.7;	// We are suppressed and are bad at recognizing enemies
 	
 	float CURRENT_AIM_IMPROVEMENT;
 	
@@ -30,7 +30,7 @@ modded class SCR_AICombatComponent
 	
 	protected IEntity ownerEntity;
 	
-	const float m_fStartAccuracy = 1;
+	const float m_fStartAccuracy = 1.1;
 	protected float m_fTargetAccuracy;
 	float m_fTimeElapsed = 0.0;
 	protected float m_fDurationN;
@@ -59,7 +59,7 @@ modded class SCR_AICombatComponent
 	{
 		//float decrease = dec * AIM_IMPROVEMENT_DECREASE * AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER;
 		//Math.Clamp(CURRENT_AIM_IMPROVEMENT + decrease, 0, m_fStartAccuracy);
-		m_fTimeElapsed -= slicedTime * 1.5;
+		m_fTimeElapsed -= slicedTime * 1.5 * dec;
     	if (m_fTimeElapsed < 0) 
 			m_fTimeElapsed = 0;
 	}
@@ -67,7 +67,7 @@ modded class SCR_AICombatComponent
 	void MoraleDropAIM(float val)
 	{
 		//Math.Clamp(CURRENT_AIM_IMPROVEMENT + (val * AIM_MORALE), 0, m_fStartAccuracy);
-		m_fTimeElapsed -= slicedTime * 1.2;
+		m_fTimeElapsed -= slicedTime * 1.2 * val;
     	if (m_fTimeElapsed < 0) 
 			m_fTimeElapsed = 0;
 	}
@@ -232,7 +232,6 @@ modded class SCR_AICombatComponent
 		{
 			m_SelectedTargetVisible = false;
 			m_SelectedTargetDestinationPos = vector.Zero;
-			DecreaseAim();
 		}
 			
 		if (newTarget)
@@ -305,13 +304,11 @@ modded class SCR_AICombatComponent
 		Physics phys = ownerEntity.GetPhysics();
 		if (phys && phys.GetVelocity().Length() > 2)
 		{
-			
 			m_fTimeElapsed -= timeSlice * 1.5;
     		if (m_fTimeElapsed < 0) 
 				m_fTimeElapsed = 0;
 		} else
 		{
-		
 		    if (m_fTimeElapsed < m_fDurationN)
 		    {
 		        m_fTimeElapsed += timeSlice;
@@ -327,7 +324,7 @@ modded class SCR_AICombatComponent
 		        CURRENT_AIM_IMPROVEMENT = m_fTargetAccuracy;
 		    }
 		}
-		PrintString(CURRENT_AIM_IMPROVEMENT.ToString());
+		//PrintString(CURRENT_AIM_IMPROVEMENT.ToString());
 
 	}
 	

@@ -59,4 +59,9 @@ modded class SCR_AIInfoComponent
 	{
 		return m_MyGroup;
 	}
+	
+	SCR_InventoryStorageManagerComponent GetInventoryStorageManager()
+	{
+		return m_inventoryManagerComponent;
+	}
 }

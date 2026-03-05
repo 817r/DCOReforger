@@ -8,10 +8,10 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 	protected const float WEAPON_MIN_DIST = 2.0;
 	
 	// minimal distance Driver should be from enemy
-	protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 60.0 * 60.0;	// when too close to target, try to move backwards
+	protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 80.0 * 80.0;	// when too close to target, try to move backwards
 	protected const float MAX_MOVE_DURATION_TO_TARGET_S = 9; 					// max step to move towards target
 	protected const float MAX_MOVE_DURATION_TO_TARGET_THREATENED_S = 7; 		// move less under threat
-	protected const float REVERSE_MOVE_DURATION_S = 2; 						// step to move from target. This must be consistent with reverse distance in car movement component, so that car moves backwards.
+	protected const float REVERSE_MOVE_DURATION_S = 3; 						// step to move from target. This must be consistent with reverse distance in car movement component, so that car moves backwards.
 	
 	// Values updated on each update, to avoid passing them through calls
 	protected EAIThreatState m_eThreatState;
@@ -95,7 +95,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		rq.m_bAimAtTargetEnd = false; // turn towards the target should be true!
 		rq.m_bFailIfNoCover = false;
 		rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
-		rq.m_fMoveDuration_s = Math.RandomFloat(0.5, 1.0) * moveDurationMax; // Move distance randomized
+		rq.m_fMoveDuration_s = Math.RandomFloat(0.8, 1.3) * moveDurationMax; // Move distance randomized
 		vector dirToTgt = m_Target.GetLastSeenPosition() - m_DriverUtility.m_OwnerEntity.GetOrigin();
 		dirToTgt.Normalize();
 		rq.m_vAvoidStraightPathDir = dirToTgt;
@@ -209,6 +209,10 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 	protected float m_fTargetLastSeenTime_ms = 0;
 	protected static const float TIME_SINCE_GOOD_VISIBILITY_MIN_MS = 15000.0;
 	
+	protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 100.0 * 100.0;
+	
+	protected const float REVERSE_MOVE_DURATION_S = 3; 
+	
 	//-------------------------------------------------------------------------------------------
 	override bool UpdateCombatMoveLogic()
 	{
@@ -223,7 +227,14 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		m_bGoodVision = m_bTargetVisible || (timeSinceLastSeen_ms < TIME_SINCE_GOOD_VISIBILITY_MIN_MS);
 		
 		// Logic for suppressive fire is very simple. We only want to rotate the car until we can aim the turret at target.
-		if (TargetOutsideLimitsCondition())
+		if (MoveFromTargetCondition())
+		{
+			// Target out of reach for turret or too close
+			// Step backwards
+			if (MoveFromTargetNewRequestCondition())
+				PushRequestMoveFromTarget();
+		}
+		else if (TargetOutsideLimitsCondition())
 		{
 			if (TargetOutsideLimitsNewRequestCondition())
 			{
@@ -234,6 +245,63 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		return true;
 	}
 	
+	protected bool MoveFromTargetCondition()
+	{
+		if (!m_WeaponManagerComponent)
+			return false;
+		
+		vector mat[4];
+		m_WeaponManagerComponent.GetCurrentMuzzleTransform(mat);
+		vector muzzlePos = mat[3];
+		vector muzzleDir = mat[2].Normalized();
+		vector targetPos = m_SuppressionVolume.GetCenterPosition();
+		vector targetDir = (targetPos - muzzlePos).Normalized();
+		
+		// Target is too close in front -> we move backward
+		if (vector.DistanceSq(targetPos, muzzlePos) < MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ)
+			return true;
+		
+		// Target is behind vehicle -> we move backward
+		//vector targetPosVehicleSpaceLocal = m_MyVehicle.CoordToLocal(targetPos); // Target pos in vehicle's space
+		//if (targetPosVehicleSpaceLocal[2] < 0)
+		//	return true;
+		
+		// Check turret horizontal limits
+		if (!TargetWithinTurretSafeHorizontalLimits(targetPos))
+			return true;
+		
+		return false;
+	}
+	
+	protected bool MoveFromTargetNewRequestCondition()
+	{
+		if (!m_DriverState.IsExecutingRequest())
+			return true;
+		
+		// Still executing ...
+		// Send new request only if we are executing NOT move_from_target
+		SCR_AICombatMoveRequest_Move rq = SCR_AICombatMoveRequest_Move.Cast(m_DriverState.GetRequest());
+		if (!rq)
+			return true;
+		
+		return rq.m_eReason != SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
+	}
+	
+	protected void PushRequestMoveFromTarget()
+	{
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
+		rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+		rq.m_vMovePos = m_SuppressionVolume.GetCenterPosition();
+		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		rq.m_fMoveDuration_s = REVERSE_MOVE_DURATION_S;
+		rq.m_bAimAtTarget = false;
+		rq.m_bAimAtTargetEnd = false;
+		
+		ApplyNewRequest(rq);
+	}
+	
 	//-------------------------------------------------------------------------------------------
 	override bool TargetOutsideLimitsCondition()
 	{
@@ -242,6 +310,11 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 			return true;
 		
 		return false;
+	}
+	
+	protected static float ResolveOptimalDistance(float weaponMinDist)
+	{
+		return Math.Max(weaponMinDist + 10.0, 200);
 	}
 	
 	override void PushRequestRotateToTarget()

@@ -30,6 +30,8 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		if (!weaponReady)
 			return FIRE_TREE_LOOK;
 		
+		
+		
 		BaseWeaponComponent selectedWeaponComp;
 		int selectedMuzzleId;
 		m_CombatComponent.GetSelectedWeapon(selectedWeaponComp, selectedMuzzleId);
@@ -37,6 +39,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		bool directDamage
 		float weaponMinDist, weaponMaxDist;
 		m_CombatComponent.GetSelectedWeaponProperties(weaponMinDist, weaponMaxDist, directDamage);
+		EWeaponType weaponType = selectedWeaponComp.GetWeaponType();
 		
 		if (!selectedWeaponComp)
 			return FIRE_TREE_LOOK;
@@ -45,7 +48,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		if (m_CombatComponent.GetCombatMode() == EAIGroupCombatMode.HOLD_FIRE)
 			return FIRE_TREE_LOOK;
 		
-		EWeaponType weaponType = selectedWeaponComp.GetWeaponType();
+		
 		
 		float targetDistance = target.GetDistance();
 		
@@ -63,6 +66,21 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			return FIRE_TREE_LOOK;
 		}
 	
+		/*if (target.GetUnitType() == EAIUnitType.UnitType_Aircraft)
+		{
+			if (weaponType == EWeaponType.WT_MACHINEGUN)
+			{
+				if (target.GetDistance() > 50)
+					return FIRE_TREE_LOOK;
+				else if (target.GetTraceFraction() > 0.8)
+				{
+					return FIRE_TREE_SUPPRESSIVE;
+				}
+			} else if (!weaponType == EWeaponType.WT_ROCKETLAUNCHER || weaponType == EWeaponType.WT_MACHINEGUN)
+			{
+				return FIRE_TREE_LOOK;
+			}
+		}*/
 		
 		// Not melee
 		float threat = m_UtilityComponent.m_ThreatSystem.GetThreatMeasure();

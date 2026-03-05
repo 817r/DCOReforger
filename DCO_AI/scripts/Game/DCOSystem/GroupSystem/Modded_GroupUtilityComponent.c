@@ -43,4 +43,11 @@ modded class SCR_AIGroupUtilityComponent
 			}
 		}*/
 	}
+	
+	override protected void OnAgentLifeStateChanged(AIAgent incapacitatedAgent, SCR_AIInfoComponent infoIncap, IEntity vehicle, ECharacterLifeState lifeState)
+	{
+		m_OnAgentLifeStateChanged.Invoke(incapacitatedAgent, infoIncap, vehicle, lifeState);
+		SCR_AIDangerEvent_Killzone kz = new SCR_AIDangerEvent_Killzone();
+		kz.SetPosition(incapacitatedAgent.GetControlledEntity().GetOrigin());
+	}
 }

@@ -247,7 +247,7 @@ modded class SCR_AIGetAimErrorOffset
 		{
 			case EAIThreatState.THREATENED :
 			{
-				return 2;
+				return 2.5;
 				break;
 			}
 			case EAIThreatState.ALERTED :

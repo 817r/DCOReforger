@@ -18,10 +18,4 @@ modded class SCR_AIGetCoverParameters : AITaskScripted
 			outStanceHide = ECharacterStance.PRONE;
 		}
 	}
-	
-	protected bool FilterCallback(IEntity e)
-	{
-		
-		return true;
-	}
 }
