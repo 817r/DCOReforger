@@ -48,7 +48,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				{
 					float radius = Math.Map(shooterDistance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
 					SCR_AISuppressionVolumeSphere createSupp = new SCR_AISuppressionVolumeSphere(shooterRoot.GetOrigin(), radius);
-					SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 6, 2.5);
+					SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 6, 1.5);
 					utility.AddAction(supp);					
 				}
 				
@@ -157,10 +157,14 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 				}				
 				else if (charCon.GetStance() == ECharacterStance.PRONE && distanceToDanger < 1.5 && bulletCount > 2)
 				{
-					if (Math.RandomIntInclusive(0, 1) == 0)
-						charCon.SetRoll(1);
-					else
-						charCon.SetRoll(2);
+					int roll = 0;
+					for (int i = 0; i < roll; i++)
+					{
+						if (Math.RandomIntInclusive(0, 1) == 0)
+							charCon.SetRoll(1);
+						else
+							charCon.SetRoll(2);			
+					}
 				}
 				else if (distanceToDanger < 2 && bulletCount > 1 && isNullTarget)
 				{
@@ -264,6 +268,12 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 						m_bPushedMoveRequest = true;
 						return true;	
 					}
+				} else
+				{
+					if (charCon.GetStance() == ECharacterStance.STAND)
+						charCon.SetStanceChange(2);
+					else
+						charCon.SetStanceChange(3);
 				}
 					
 				return true;

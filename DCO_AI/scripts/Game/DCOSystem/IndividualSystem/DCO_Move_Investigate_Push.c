@@ -66,10 +66,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		rq.m_vMovePos = rq.m_vTargetPos;
 		rq.m_bTryFindCover = true;
 		rq.m_bUseCoverSearchDirectivity = true;
-		if (Math.RandomInt(0,2) == 1)
-			rq.m_bCheckCoverVisibility = true;
-		else
-			rq.m_bCheckCoverVisibility = false;
+		rq.m_bCheckCoverVisibility = true;
 		rq.m_bFailIfNoCover = false;
 		ResolveMoveandStopStance(rq.m_eStanceMoving, rq.m_eStanceEnd);
 		rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;

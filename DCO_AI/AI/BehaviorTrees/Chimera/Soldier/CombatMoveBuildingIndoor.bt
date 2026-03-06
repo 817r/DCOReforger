@@ -132,7 +132,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                PortName "Is Position Found"
               }
              }
-             m_fRadius 10
+             m_fRadius 25
             }
            }
           }
@@ -153,7 +153,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
             }
             AITaskReturnState "Return State" {
              Name "Return State"
-             EditorPos 1552 1840
+             EditorPos 1568 1872
              Result FAIL
             }
            }

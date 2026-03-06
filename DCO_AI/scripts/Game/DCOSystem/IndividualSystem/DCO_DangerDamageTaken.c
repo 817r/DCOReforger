@@ -5,7 +5,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 	protected SCR_AIUtilityComponent m_Utility;
 	protected CharacterControllerComponent m_CharacterController;
 	
-	protected static const float COVER_SEARCH_DIST_MAX = 20.0;
+	protected static const float COVER_SEARCH_DIST_MAX = 30.0;
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 	
 	protected bool m_bPushedMoveRequest = false;
@@ -37,7 +37,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 		
 		if (utility.m_CombatComponent.IsEnemyKnown(shooterRoot) && Math.RandomFloat01() > 0.7)
 		{
-			float radius = Math.Map(shooterDistance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
+			float radius = Math.Map(shooterDistance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 15);
 			SCR_AISuppressionVolumeSphere createSupp = new SCR_AISuppressionVolumeSphere(shooterRoot.GetOrigin(), radius);
 		}
 		
@@ -87,7 +87,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.SPRINT;
-			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX / 2;
+			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
 			if (Math.RandomIntInclusive(0, 1) == 0)
@@ -111,10 +111,15 @@ modded class SCR_AIDangerReaction_DamageTaken
 			return true;			
 		} else if (charCon.GetStance() == ECharacterStance.PRONE && shooterDistances > 50)
 		{
-			if (Math.RandomIntInclusive(0, 1) == 0)
-				charCon.SetRoll(1);
-			else
-				charCon.SetRoll(2);
+			int roll = 2;
+			for (int i = 0; i < roll; i++)
+			{
+				if (Math.RandomIntInclusive(0, 1) == 0)
+					charCon.SetRoll(1);
+				else
+					charCon.SetRoll(2);			
+			}
+
 		} else if (!m_State.IsExecutingRequest() && m_State.IsInValidCover())
 		{
 			rq.m_vTargetPos = shooterPos;
@@ -126,7 +131,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.RUN;
-			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX / 2;
+			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
@@ -146,12 +151,12 @@ modded class SCR_AIDangerReaction_DamageTaken
 			rq.m_vMovePos = rq.m_vTargetPos;
 			rq.m_bTryFindCover = true;
 			rq.m_bUseCoverSearchDirectivity = true;
-			rq.m_bCheckCoverVisibility = false;
+			rq.m_bCheckCoverVisibility = true;
 			rq.m_bFailIfNoCover = false;
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.RUN;
-			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX / 2;
+			rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 			rq.m_fCoverSearchDistMin = 2;
 			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;

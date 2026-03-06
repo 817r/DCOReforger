@@ -250,9 +250,19 @@ BehaviorTree {
                   }
                  }
                 }
+                DCO_IsAIMagicMagazine "DCO_ IsAI Magic Magazine" {
+                 Name "DCO_ IsAI Magic Magazine"
+                 EditorPos 2621.182 2662.976
+                 Nodes {
+                  DCO_MagicAmmo "DCO_ Magic Ammo" {
+                   Name "DCO_ Magic Ammo"
+                   EditorPos 2656 2784
+                  }
+                 }
+                }
                 AITaskReturnState "Return State" {
                  Name "Return State"
-                 EditorPos 2621.691 2677.311
+                 EditorPos 3024 2640
                  Result RUNNING
                 }
                }

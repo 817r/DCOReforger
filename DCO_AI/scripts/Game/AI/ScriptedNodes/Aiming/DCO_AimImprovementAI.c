@@ -131,7 +131,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_SNIPERRIFLE:
 			{
-				return 0.5;
+				return 0.3;
 			}
 			case EWeaponType.WT_AUTOCANNON:
 			{
@@ -171,7 +171,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_SNIPERRIFLE:
 			{
-				return 0.4;
+				return 0.2;
 			}
 			case EWeaponType.WT_AUTOCANNON:
 			{

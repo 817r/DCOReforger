@@ -18,20 +18,14 @@ class DCO_FindIndoorPosition: AITaskScripted
 	
 	vector fPos;
 	
-	static const int maxAttempt = 30;
+	static const int maxAttempt = 5000;
 	protected int attempt;
 
 	protected float EYE_POS = 1.55;
 	
 	protected NavmeshWorldComponent m_pNavmesh;
-	
+	bool isFoundEnt = true;
 	protected bool FoundPosition = false;
-	
-	protected ref array<ResourceName> LOS_TRACER_EXCLUDED_PREFABS = {
-		"{F1793FE006FDF888}Prefabs/Structures/BuildingParts/Doors/Door_Base.et",
-		"{2B188379767C8461}Prefabs/Structures/Core/DestructibleWindow_Base.et",
-		"{86834A0D5920F32F}Prefabs/Structures/Core/DestructibleGlass_Base.et",
-	};
 	
 	#ifdef WORKBENCH
 	// DEBUGER
@@ -46,7 +40,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 	{
 		vector searchPos;
 		float searchRad;
-		bool isFoundEnt = true;
+		
 		
 		GetVariableIn(PORT_CENTER_OF_SEARCH, searchPos);
 		if (!GetVariableIn(PORT_RADIUS, searchRad))
@@ -81,16 +75,23 @@ class DCO_FindIndoorPosition: AITaskScripted
 		m_Building = buildPosComp.GetBuildingEntity();
 		m_Building.GetBounds(m_vLocalMins, m_vLocalMaxs);
 		
-		if (!FoundPosition)
+		while (!FoundPosition)
 		{
 			RandomQueryStep();
 			return ENodeResult.RUNNING;		
-		} else
+		}
+		
+		if (FoundPosition)
 		{
+			SCR_CoverManagerComponent.GetInstance().RegisterPosition(owner.GetControlledEntity(), fPos);
 			SetVariableOut(PORT_VECTOR_POS, fPos);
 			SetVariableOut(PORT_VECTOR_BOOL, isFoundEnt);
 			return ENodeResult.SUCCESS;			
-		}
+		} 
+		
+		isFoundEnt = false;
+		return ENodeResult.FAIL;	
+		
 	}
 	
 	bool QueryCallback(IEntity e)
@@ -102,7 +103,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 			protected vector m_vLocalMinss, m_vLocalMaxss;
 			comp.GetOwner().GetBounds(m_vLocalMinss, m_vLocalMaxss);
 			float myR = 0.5*(m_vLocalMaxss[0] - m_vLocalMinss[0]);
-			if (myR > 5) 
+			if (myR > 2) 
 				m_aQueryFoundBuilding.Insert(e);
 		}
 			
@@ -122,14 +123,20 @@ class DCO_FindIndoorPosition: AITaskScripted
 		{
 			case DCO_BuildingPosCreation.SUCCESS:
 			{
-				#ifdef WORKBENCH
-				m_aDebugShapes.Insert(Shape.CreateSphere(COLOR_BLUE_A, ShapeFlags.NOZBUFFER | ShapeFlags.TRANSP, outPos, 0.2));
-				#endif
 				if (!IsPositionOccupied(outPos))
 				{
+					#ifdef WORKBENCH
+					m_aDebugShapes.Insert(Shape.CreateSphere(COLOR_GREEN_A, ShapeFlags.NOZBUFFER | ShapeFlags.WIREFRAME, outPos, 0.2));
+					#endif
 					fPos = outPos;
 					FoundPosition = true;
+					isFoundEnt = true;
 					return;
+				} else
+				{
+					#ifdef WORKBENCH
+					m_aDebugShapes.Insert(Shape.CreateSphere(COLOR_BLUE_A, ShapeFlags.NOZBUFFER | ShapeFlags.TRANSP, outPos, 0.2));
+					#endif
 				}
 				m_vCurrentQueryPos = GetRandomPosInBounds();
 				break;
@@ -161,9 +168,6 @@ class DCO_FindIndoorPosition: AITaskScripted
 		float groundHeight = GetGame().GetWorld().GetSurfaceY(localPos[0], localPos[2]);
 		if (localPos[1] < groundHeight)
 			localPos[1] = groundHeight;
-		#ifdef WORKBENCH
-		m_aDebugShapes.Insert(Shape.CreateSphere(COLOR_YELLOW_A, ShapeFlags.NOZBUFFER | ShapeFlags.TRANSP, localPos, 0.2));
-		#endif
 		return m_Building.CoordToParent(localPos);
 	}
 	
@@ -234,7 +238,8 @@ class DCO_FindIndoorPosition: AITaskScripted
 		
 		if (comp && !comp.IsDestroyed())
 			m_aQueryFoundEntities.Insert(e);
-		else if (doorComp)		
+		
+		if (doorComp)		
 			m_aQueryFoundEntities.Insert(e);
 		
 		return true;
@@ -244,10 +249,8 @@ class DCO_FindIndoorPosition: AITaskScripted
 	{
 		GetGame().GetWorld().QueryEntitiesBySphere(pos, 3, QueryCallbackC);
 		
-		foreach (IEntity e : m_aQueryFoundEntities)
-		{
+		if (m_aQueryFoundEntities.Count() >= 1 || (SCR_CoverManagerComponent.GetInstance().GetNearestBookedDistanceXZ(pos) < 3 && SCR_CoverManagerComponent.GetInstance().GetNearestBookedDistanceXZ(pos) > 0))
 			return true;
-		}
 		
 		return false;
 	}

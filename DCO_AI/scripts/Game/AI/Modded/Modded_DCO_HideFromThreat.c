@@ -1,6 +1,6 @@
 modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 {	
-	protected const float DANGER_HIGH = 3.0;
+	protected const float DANGER_HIGH = 2.0;
 	protected const float DANGER_MEDIUM = 0.5;
 	
 	//--------------------------------------------------------------------------------------------
@@ -59,7 +59,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 				{
 					ECharacterStance newStance;
 				
-					if ((threatState == EAIThreatState.THREATENED) || causedDamage)
+					if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
 						PushRequestMoveDanger(threatPos, sectorDanger, sectorFlags);
 					else if (threatState == EAIThreatState.THREATENED)
 						newStance = ECharacterStance.PRONE;
@@ -74,7 +74,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			{
 				ECharacterStance newStance;
 				
-				if ((threatState == EAIThreatState.THREATENED) || causedDamage)
+				if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
 					PushRequestMove(threatPos, sectorDanger, sectorFlags);
 				else
 					newStance = ECharacterStance.PRONE;
@@ -112,7 +112,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		{
 			if (closeRange)
 			{
-				rq.m_fCoverSearchDistMax = 16;
+				rq.m_fCoverSearchDistMax = 30;
 				rq.m_bUseCoverSearchDirectivity = true;
 				rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD; // Awaw from danger
 				rq.m_fCoverSearchSectorHalfAngleRad = 0.75 * Math.PI; // Almost full sector - except for direction directly at target
@@ -123,7 +123,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			}
 			else
 			{
-				rq.m_fCoverSearchDistMax = 25;
+				rq.m_fCoverSearchDistMax = 30;
 				rq.m_bUseCoverSearchDirectivity = false;
 				rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE; // Random direction
 				rq.m_fCoverSearchSectorHalfAngleRad = Math.PI; // Full sector
@@ -140,7 +140,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		else if (danger > DANGER_MEDIUM)
 		{
 			rq.m_bTryFindCover = true;
-			rq.m_fCoverSearchDistMax = 16;
+			rq.m_fCoverSearchDistMax = 30;
 			rq.m_bUseCoverSearchDirectivity = true;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 			//rq.m_fCoverSearchSectorHalfAngleRad - not needed since direction is ANYWHERE
@@ -156,7 +156,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		else
 		{
 			rq.m_bTryFindCover = true;
-			rq.m_fCoverSearchDistMax = 16;
+			rq.m_fCoverSearchDistMax = 30;
 			rq.m_bUseCoverSearchDirectivity = true;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 			//rq.m_fCoverSearchSectorHalfAngleRad - not needed since direction is ANYWHERE
@@ -168,8 +168,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			
 			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 			rq.m_bAimAtTargetEnd = true;
-		}
-		
+		}	
 		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
 		rq.m_vTargetPos = threatPos;
 		rq.m_vMovePos = rq.m_vTargetPos;
@@ -195,7 +194,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		{
 			if (closeRange)
 			{
-				rq.m_fCoverSearchDistMax = 16;
+				rq.m_fCoverSearchDistMax = 30;
 				rq.m_bUseCoverSearchDirectivity = true;
 				rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD; // Awaw from danger
 				rq.m_fCoverSearchSectorHalfAngleRad = 0.75 * Math.PI; // Almost full sector - except for direction directly at target
@@ -206,7 +205,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			}
 			else
 			{
-				rq.m_fCoverSearchDistMax = 20;
+				rq.m_fCoverSearchDistMax = 30;
 				rq.m_bUseCoverSearchDirectivity = false;
 				rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE; // Random direction
 				rq.m_fCoverSearchSectorHalfAngleRad = Math.PI; // Full sector
@@ -223,7 +222,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		else if (danger > DANGER_MEDIUM)
 		{
 			rq.m_bTryFindCover = true;
-			rq.m_fCoverSearchDistMax = 16;
+			rq.m_fCoverSearchDistMax = 30;
 			rq.m_bUseCoverSearchDirectivity = true;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 			//rq.m_fCoverSearchSectorHalfAngleRad - not needed since direction is ANYWHERE
@@ -239,7 +238,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		else
 		{
 			rq.m_bTryFindCover = true;
-			rq.m_fCoverSearchDistMax = 25;
+			rq.m_fCoverSearchDistMax = 30;
 			rq.m_bUseCoverSearchDirectivity = true;
 			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 			//rq.m_fCoverSearchSectorHalfAngleRad - not needed since direction is ANYWHERE
@@ -251,8 +250,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			
 			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
 			rq.m_bAimAtTargetEnd = true;
-		}
-		
+		}	
 		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
 		rq.m_vTargetPos = threatPos;
 		rq.m_vMovePos = rq.m_vTargetPos;
@@ -379,6 +377,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 	{
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 		
+		rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
 		rq.m_vTargetPos = threatPos;
 		rq.m_vMovePos = threatPos;

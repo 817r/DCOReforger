@@ -74,6 +74,7 @@ class DCO_AIMoraleSystem
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 		if (!agent)
 			return;
+		
 		m_Agent = agent;
 		
 		if (m_DamageManager)
@@ -204,7 +205,7 @@ class DCO_AIMoraleSystem
 	
 	void Update(SCR_AIUtilityComponent utility, float timeSlice)
 	{
-		friendlys = m_Utility.GetAIAgent().GetParentGroup().GetAgentsCount();
+		//friendlys = m_Utility.GetAIAgent().GetParentGroup().GetAgentsCount();
 		m_fMoraleSuppression -= m_fMoraleSuppression * (MORALE_SUPPRESSION_RECOVERY + (friendlys * MORALE_BOOST_FRIENDLY_VALUE)) * timeSlice;
 		if (m_Combat)
 		{

@@ -179,9 +179,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				return false;
 		}
 		
-		if (m_Utility.GetCharacterController().GetWeaponObstructedState() >= EWeaponObstructedState.SLIGHTLY_OBSTRUCTED)
-			return true;
-		
 		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
 	}
@@ -810,6 +807,15 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			// We are stopped and not in cover, manage our stance
 			
 
+		} else if (!m_State.IsExecutingRequest())
+		{
+			if (m_Utility.GetCharacterController().GetWeaponObstructedState() != EWeaponObstructedState.UNOBSTRUCTED)
+			{
+				if (m_CharacterController.GetStance() == ECharacterStance.CROUCH)
+					m_CharacterController.SetStanceChange(1);
+				else if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
+					m_CharacterController.SetStanceChange(2);
+			}
 		}
 		
 		return ENodeResult.RUNNING;
@@ -926,6 +932,38 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 
 		rq.GetOnMovementStarted().Insert(OnMovementStarted);
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
+		
+		m_State.ApplyNewRequest(rq);
+	}
+	
+	override protected void PushRequestLeaveUselessCover()
+	{
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+		
+		rq.m_vTargetPos = ResolveRequestTargetPos();
+		rq.m_vMovePos = rq.m_vTargetPos;
+		rq.m_bTryFindCover = true;
+		rq.m_bUseCoverSearchDirectivity = true;
+		rq.m_bCheckCoverVisibility = true;
+		rq.m_bFailIfNoCover = true;
+		rq.m_fCoverSearchDistMin = 0;
+		rq.m_fCoverSearchDistMax = 30;
+		if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
+			rq.m_eStanceMoving = ECharacterStance.CROUCH;
+		else
+			rq.m_eStanceMoving = m_CharacterController.GetStance();
+		rq.m_eStanceEnd = ECharacterStance.CROUCH;
+		rq.m_eMovementType = EMovementType.RUN;
+		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD; // Move back from target
+		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+		rq.m_bAimAtTargetEnd = true;
+		if (m_CharacterController.GetStance() == ECharacterStance.STAND)
+			rq.m_fMoveDuration_s = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
+		else
+			rq.m_fMoveDuration_s = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
+
 		
 		m_State.ApplyNewRequest(rq);
 	}

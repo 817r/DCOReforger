@@ -2,6 +2,7 @@ modded class SCR_AIWeaponHandling
 {
 	override static void StartMagazineSwitchCharacter(CharacterControllerComponent controller, BaseMagazineComponent newMagazineComp)
 	{
+		super.StartMagazineSwitchCharacter(controller, newMagazineComp);
 		DCO_AIConfigComponent conf;
 		SCR_InventoryStorageManagerComponent inv;
 		SCR_AICombatComponent comb = SCR_AICombatComponent.Cast(controller.GetOwner().FindComponent(SCR_AICombatComponent));
@@ -15,9 +16,8 @@ modded class SCR_AIWeaponHandling
 			}
 		}
 		
-		if (!conf || !conf.GetMagicMag())
+		if (!conf || !conf.GetMagicMag() || !inv)
 		{
-			controller.ReloadWeaponWith(newMagazineComp.GetOwner());
 			return;
 		}
 			
@@ -25,6 +25,6 @@ modded class SCR_AIWeaponHandling
 		ResourceName resName = newMagazineComp.GetOwner().GetPrefabData().GetPrefab().GetResourceName();
 		
 		inv.TrySpawnPrefabToStorage(resName);
-		controller.ReloadWeaponWith(newMagazineComp.GetOwner());
+		Print("Spawned " + resName);
 	}
 }

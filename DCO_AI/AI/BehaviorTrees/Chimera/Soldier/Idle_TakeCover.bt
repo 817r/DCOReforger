@@ -60,90 +60,99 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
            PortName "Position Found"
           }
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port -1
+           Port 11
            PortName "Is Position Found"
           }
          }
          m_fRadius 50
         }
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 352 608
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 336 560
          Nodes {
-          SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
-           Name "SCR_AI Create Basic Cover Query Props"
-           EditorPos -208.419 1000.323
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 5
-             PortName "Position"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "Radius"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 7
-             PortName "CoverQueryProps"
-            }
-           }
-           m_fRadius 30
-          }
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 335.581 1048.323
+           EditorPos 352 720
            Nodes {
-            SCR_AIFindCover "SCR_AI Find Cover" {
-             Name "SCR_AI Find Cover"
-             EditorPos 79.581 1432.323
+            SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
+             Name "SCR_AI Create Basic Cover Query Props"
+             EditorPos -208.419 1000.323
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 4
-               PortName "CoverQueryProps"
+               Port 5
+               PortName "Position"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "Radius"
               }
              }
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 8
-               PortName "CoverLock"
+               Port 7
+               PortName "CoverQueryProps"
+              }
+             }
+             m_fRadius 30
+            }
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 335.581 1048.323
+             Nodes {
+              SCR_AIFindCover "SCR_AI Find Cover" {
+               Name "SCR_AI Find Cover"
+               EditorPos 79.581 1432.323
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 4
+                 PortName "CoverQueryProps"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 8
+                 PortName "CoverLock"
+                }
+               }
+              }
+              AITaskSetVariable "Set Variable" {
+               Name "Set Variable"
+               EditorPos 367.581 1432.323
+               OutVariable 9
+               InVariable 8
               }
              }
             }
-            AITaskSetVariable "Set Variable" {
-             Name "Set Variable"
-             EditorPos 367.581 1432.323
-             OutVariable 9
-             InVariable 8
-            }
-           }
-          }
-          SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
-           Name "SCR_AI Get Cover Parameters"
-           EditorPos 864 992
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 6
-             PortName "CoverLock"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 2
-             PortName "Pos"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 1
-             PortName "Stance"
-            }
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port -1
-             PortName "StanceHide"
+            SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
+             Name "SCR_AI Get Cover Parameters"
+             EditorPos 864 992
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 6
+               PortName "CoverLock"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 2
+               PortName "Pos"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 1
+               PortName "Stance"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
+               PortName "StanceHide"
+              }
+             }
             }
            }
           }
          }
+         InVariable 11
+         TestType EqualsValue
+         TestValue "false"
         }
        }
       }
@@ -259,6 +268,10 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
    Flags 0
    Desc ""
   }
+  BtVariableBool isCoverFound {
+   Flags 0
+   Desc ""
+  }
  }
  VariablesRefs {
   VariableReference leaderEntity {
@@ -303,7 +316,11 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
   }
   VariableReference coverPos {
    VariableType 2
-   EditorPos -64 672
+   EditorPos -112 608
+  }
+  VariableReference isCoverFound {
+   VariableType 9
+   EditorPos -112 704
   }
  }
 }

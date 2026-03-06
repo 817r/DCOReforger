@@ -1,6 +1,8 @@
 [BaseContainerProps()]
 modded class SCR_AIDangerReaction_WeaponFired
 {
+	protected SCR_AIUtilityComponent uti;
+	vector dangerPos;
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
 		AIDangerEventWeaponFire eventWeaponFire = AIDangerEventWeaponFire.Cast(dangerEvent);		
@@ -21,6 +23,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 		
+		uti = utility;
 		bool myFactionIsMilitary = utility.IsMilitary();
 		if (myFactionIsMilitary && !agent.IsEnemy(instigatorFaction))
 			return false;
@@ -29,7 +32,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		vector shotPos = eventWeaponFire.GetPosition();
 		vector shotDir = eventWeaponFire.GetDirection();
 		bool isShotSuppressed = eventWeaponFire.IsSuppressed();
-		
+		dangerPos = shotPos;
 		vector myOrigin = utility.m_OwnerEntity.GetOrigin();
 		float distance = vector.Distance(myOrigin, shotPos);
 		
@@ -112,7 +115,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 					utility.AddAction(supp);
 				}
 			}
-			
+				
 		}
 		
 		if (isShotSuppressed && distance < 50)

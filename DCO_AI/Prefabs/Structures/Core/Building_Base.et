@@ -1,0 +1,7 @@
+SCR_DestructibleBuildingEntity {
+ ID "F0DBA538AC2A0552"
+ components {
+  DCO_BuildingPositionComponent "{68CD33A833DCE9D3}" {
+  }
+ }
+}

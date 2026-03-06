@@ -520,8 +520,16 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			if (IsFirstExecution() && !m_State.m_bInCover)
 				return true;
 			
-			if (m_Utility.GetCharacterController().GetWeaponObstructedState() == EWeaponObstructedState.FULLY_OBSTRUCTED_CANT_FIRE)
-				return true;
+			if (!m_State.IsExecutingRequest())
+			{
+				if (m_Utility.GetCharacterController().GetWeaponObstructedState() != EWeaponObstructedState.UNOBSTRUCTED)
+				{
+					if (m_CharacterController.GetStance() == ECharacterStance.CROUCH)
+						m_CharacterController.SetStanceChange(1);
+					else if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
+						m_CharacterController.SetStanceChange(2);
+				}
+			}
 			
 			float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
 			return m_State.m_fTimerStopped_s > stoppedWaitTime;
