@@ -743,7 +743,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		does movement is more fluent when switching to a new behavior which also utilizes
 		combat movement, including attacking a different target.
 		*/
-		
+
 		if (SuppressedInCoverCondition())
 		{
 			SuppressedInCoverLogic();
@@ -793,13 +793,23 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		}
 		else if (!m_State.IsExecutingRequest() && !m_State.m_bInCover)
 		{
-			// We are stopped and not in cover, manage our stance
-			ECharacterStance newStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
-			if (newStance > m_eStance)
+			if (IsInOpenArea(owner.GetControlledEntity()) && Math.RandomFloat01() > 0.4)
 			{
-				// Only let stance go down, no need to get back up
-				m_State.ApplyRequestChangeStanceOutsideCover(newStance);
+				if (!m_State.IsExecutingRequest())
+					PushRequestOpenArea();
+			} else
+			{
+				ECharacterStance newStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
+				if (newStance > m_eStance)
+				{
+					
+					// Only let stance go down, no need to get back up
+					m_State.ApplyRequestChangeStanceOutsideCover(newStance);
+				}
 			}
+			// We are stopped and not in cover, manage our stance
+			
+
 		}
 		
 		return ENodeResult.RUNNING;
@@ -813,6 +823,111 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	float MoraleAmplifyMove()
 	{
 		return Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 2, 1);
+	}
+	
+	protected void PushRequestOpenArea()
+	{		
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+		
+		// Common values
+		rq.m_vTargetPos = ResolveRequestTargetPos();
+		rq.m_vMovePos = rq.m_vTargetPos;
+		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		rq.m_fCoverSearchSectorHalfAngleRad;
+		rq.m_bTryFindCover = true;
+		rq.m_bUseCoverSearchDirectivity = true;
+		rq.m_bCheckCoverVisibility = true;
+
+		float coverSearchDistMin = 5;
+		float coverSearchDistMax = 50;
+		float moveDurationMax = 10;
+		if (m_bCloseRangeCombat)
+		{
+			switch (m_eThreatState)
+			{
+				case EAIThreatState.THREATENED:
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
+					rq.m_eMovementType = EMovementType.RUN;
+					break;
+				}
+				case EAIThreatState.ALERTED:
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
+					rq.m_eMovementType = EMovementType.WALK;
+					break;
+				}
+				default:
+				{
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
+					rq.m_eMovementType = EMovementType.RUN;
+					break;
+				}
+			}
+			
+			//rq.m_eMovementType = EMovementType.WALK;
+			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
+			rq.m_bAimAtTargetEnd = true;
+		}
+		else
+		{
+			// Long range combat
+			
+			switch (m_eThreatState)
+			{
+				case EAIThreatState.THREATENED:
+				{
+					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+					rq.m_eStanceEnd = ECharacterStance.PRONE;
+					rq.m_eMovementType = EMovementType.SPRINT;
+					break;
+				}
+				case EAIThreatState.ALERTED:
+				{
+					rq.m_eStanceMoving = ECharacterStance.CROUCH;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
+					rq.m_eMovementType = EMovementType.RUN;
+					break;
+				}
+				default:
+				{
+					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN; // Shouldn't be so large because we are sprinting and can't shoot
+					rq.m_eStanceMoving = ECharacterStance.STAND;
+					rq.m_eStanceEnd = ECharacterStance.CROUCH;
+					rq.m_eMovementType = EMovementType.RUN;
+					break;
+				}
+			}
+			
+			//rq.m_eMovementType = EMovementType.RUN;
+			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
+			rq.m_bAimAtTargetEnd = true;
+		}
+		
+		rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+		
+		rq.m_bFailIfNoCover = false;
+		rq.m_fCoverSearchDistMin = coverSearchDistMin;
+		rq.m_fCoverSearchDistMax = coverSearchDistMax;
+		rq.m_fMoveDuration_s = moveDurationMax * MoraleAmplifyMove();
+
+
+		rq.GetOnMovementStarted().Insert(OnMovementStarted);
+		rq.GetOnCompleted().Insert(OnMovementCompleted);
+		
+		m_State.ApplyNewRequest(rq);
 	}
 	
 	//--------------------------------------------------------------------------------------------

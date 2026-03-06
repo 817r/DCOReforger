@@ -227,7 +227,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 					}
 					case moraleState.MOTIVATED:
 					{
-						moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
+						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;					
 					}
 					default:
@@ -257,18 +257,27 @@ modded class SCR_AICombatMoveLogic_Suppressive
 					}
 					case moraleState.ANXIOUS:
 					{
-						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
-						break;					
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;						
 					}
 					case moraleState.NORMAL:
 					{
-						moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
-						break;					
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;								
 					}
 					case moraleState.MOTIVATED:
 					{
-						moveDir = SCR_EAICombatMoveDirection.FORWARD;
-						break;					
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;							
 					}
 					default:
 					{
@@ -294,18 +303,27 @@ modded class SCR_AICombatMoveLogic_Suppressive
 					}
 					case moraleState.ANXIOUS:
 					{
-						moveDir = SCR_EAICombatMoveDirection.FORWARD;
-						break;					
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;							
 					}
 					case moraleState.NORMAL:
 					{
-						moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
-						break;					
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;								
 					}
 					case moraleState.MOTIVATED:
 					{
-						moveDir = SCR_EAICombatMoveDirection.FORWARD;
-						break;					
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;							
 					}
 					default:
 					{
@@ -321,27 +339,33 @@ modded class SCR_AICombatMoveLogic_Suppressive
 				{
 					case moraleState.BREAK:
 					{
-						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
-						break;									
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;										
 					}
 					case moraleState.MANIAC:
 					{
-						moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
-						break;					
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+						break;			
 					}
 					case moraleState.ANXIOUS:
 					{
-						moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
+						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;					
 					}
 					case moraleState.NORMAL:
 					{
-						moveDir = SCR_EAICombatMoveDirection.FORWARD;
+						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;					
 					}
 					case moraleState.MOTIVATED:
 					{
-						moveDir = SCR_EAICombatMoveDirection.FORWARD;
+						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;					
 					}
 					default:

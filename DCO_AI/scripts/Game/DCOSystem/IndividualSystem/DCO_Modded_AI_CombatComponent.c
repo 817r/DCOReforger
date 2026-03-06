@@ -30,7 +30,7 @@ modded class SCR_AICombatComponent
 	
 	protected IEntity ownerEntity;
 	
-	const float m_fStartAccuracy = 1.1;
+	const float m_fStartAccuracy = 1;
 	protected float m_fTargetAccuracy;
 	float m_fTimeElapsed = 0.0;
 	protected float m_fDurationN;

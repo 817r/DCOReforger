@@ -4,7 +4,7 @@ SCR_AIWorld {
   ChimeraCoverManagerComponent "{5E3ADC0EA7048548}" {
    IncludeFullCover 1
    ShootingExposition 0.18
-   MinDistanceBetweenCovers 1.5
+   MinDistanceBetweenCovers 1.7
   }
   NavmeshWorldComponent "{5584F30E67F617AD}" {
    NavmeshSettings NavmeshWorld "{50FC63BEBE3973C5}" {

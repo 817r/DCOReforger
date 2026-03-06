@@ -1,6 +1,6 @@
 modded class SCR_AIGetAimErrorOffset
 {
-	static const float VERY_CLOSE_RANGE_THRESHOLD = 15.0;
+	static const float VERY_CLOSE_RANGE_THRESHOLD = 20.0;
 	static const float CLOSE_RANGE_THRESHOLD = 60.0;
 	static const float LONG_RANGE_THRESHOLD = 250.0;
 	static const float AIMING_ERROR_SCALE = 1.0;
@@ -214,7 +214,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case DCO_AISKILL.REGULAR :
 			{
-				sigma = 1.8;
+				sigma = 1.7;
 				break;
 			}
 			case DCO_AISKILL.VETERAN :
@@ -234,7 +234,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case DCO_AISKILL.TERMINATOR :
 			{
-				sigma = 0.05;
+				sigma = 0.02;
 				break;
 			}
 		}
@@ -347,8 +347,8 @@ modded class SCR_AIGetAimErrorOffset
 		
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
 		DCO_AISKILL dcoSkill = m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAISkill();
-		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0);
-		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0);
+		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor();
+		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor();
 		
 		tolerance = GetTolerance(entity, targetEntity, angularSize, distance, weaponType);
 		
@@ -379,6 +379,35 @@ modded class SCR_AIGetAimErrorOffset
 			return 0.7;
 		else
 			return 1;
+	}
+	
+	protected float GetStanceFactor()
+	{
+		switch (charCon.GetStance())
+		{
+			case ECharacterStance.PRONE:
+			{
+				return 0.65;
+				break;
+			}
+			case ECharacterStance.CROUCH:
+			{
+				return 0.8;
+				break;
+			}
+			case ECharacterStance.STAND:
+			{
+				return 1;
+				break;
+			}
+			default:
+			{
+				return 1;
+				break;
+			}
+		}
+		
+		return 1;
 	}
 	
 	override void OnInit(AIAgent owner)

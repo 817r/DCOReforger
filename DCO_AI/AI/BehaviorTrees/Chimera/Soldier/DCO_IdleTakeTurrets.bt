@@ -3,72 +3,18 @@ BehaviorTree "{C0656FE1D6DBE7F0}AI/BehaviorTrees/Chimera/Soldier/DCO_IdleTakeTur
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos -50 -45
+   EditorPos 1294 -45
    Nodes {
     Sequence Sequence {
      Name "Sequence"
-     EditorPos -48 176
+     EditorPos 1296 176
      Nodes {
-      ForEachChild "For Each Child" {
-       Name "For Each Child"
-       EditorPos -848 752
-       Nodes {
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos -832 928
-         Nodes {
-          AITaskGetControlledEntity "Get Controlled Entity" {
-           Name "Get Controlled Entity"
-           EditorPos -1184 1184
-           InEntity 2
-           OutAgent 1
-          }
-          DecoIsInVehicle "Is In Vehicle" {
-           Name "Is In Vehicle"
-           EditorPos -544 1200
-           Nodes {
-            SCR_AISendGoalMessage_GetOut "SCR_AI Send Goal Message_ Get Out" {
-             Name "SCR_AI Send Goal Message_ Get Out"
-             EditorPos -576 1392
-             InPorts {
-              SingleInputPortContainer SingleInputPortContainer {
-               Port 1
-               PortName "Receiver"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "PriorityLevel"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "IsWaypointRelated"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "VehicleEntity"
-              }
-              SingleInputPortContainer SingleInputPortContainer {
-               Port -1
-               PortName "BoardingParams"
-              }
-             }
-             m_fPriorityLevel 50
-            }
-           }
-           ForceNodeResult Success
-           EntityIn 0
-          }
-         }
-        }
-       }
-       OutEntity 0
-      }
       SCR_AIGetPositionAndRotationLeader "SCR_AI Get Position And Rotation Leader" {
        Name "SCR_AI Get Position And Rotation Leader"
        EditorPos 250.99 989.87
        OutPorts {
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 3
+         Port 2
          PortName "Position"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
@@ -81,7 +27,7 @@ BehaviorTree "{C0656FE1D6DBE7F0}AI/BehaviorTrees/Chimera/Soldier/DCO_IdleTakeTur
        Name "Set Variable"
        EditorPos 704 992
        SetValue "30"
-       OutVariable 4
+       OutVariable 3
       }
       Sequence Sequence {
        Name "Sequence"
@@ -92,11 +38,11 @@ BehaviorTree "{C0656FE1D6DBE7F0}AI/BehaviorTrees/Chimera/Soldier/DCO_IdleTakeTur
          EditorPos 1200 1072
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 3
+           Port 2
            PortName "OriginIn"
           }
           SingleInputPortContainer SingleInputPortContainer {
-           Port 4
+           Port 3
            PortName "RadiusIn"
           }
          }
@@ -117,11 +63,11 @@ BehaviorTree "{C0656FE1D6DBE7F0}AI/BehaviorTrees/Chimera/Soldier/DCO_IdleTakeTur
          EditorPos 1610.277 1072.762
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 3
+           Port 2
            PortName "OriginIn"
           }
           SingleInputPortContainer SingleInputPortContainer {
-           Port 4
+           Port 3
            PortName "RadiusIn"
           }
           SingleInputPortContainer SingleInputPortContainer {
@@ -160,6 +106,25 @@ BehaviorTree "{C0656FE1D6DBE7F0}AI/BehaviorTrees/Chimera/Soldier/DCO_IdleTakeTur
     }
    }
   }
+  ForEachChild "For Each Child" {
+   Name "For Each Child"
+   EditorPos -848 752
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -832 928
+     Nodes {
+      AITaskGetControlledEntity "Get Controlled Entity" {
+       Name "Get Controlled Entity"
+       EditorPos -1184 1184
+       InEntity 1
+       OutAgent 0
+      }
+     }
+    }
+   }
+   OutEntity -1
+  }
  }
  Variables {
   BtVariableEntity GroupMember {
@@ -184,10 +149,6 @@ BehaviorTree "{C0656FE1D6DBE7F0}AI/BehaviorTrees/Chimera/Soldier/DCO_IdleTakeTur
   }
  }
  VariablesRefs {
-  VariableReference GroupMember {
-   VariableType 0
-   EditorPos -592 864
-  }
   VariableReference GroupMemberAgent {
    VariableType 1
    EditorPos -928 1312

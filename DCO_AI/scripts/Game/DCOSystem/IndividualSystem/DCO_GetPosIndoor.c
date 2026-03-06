@@ -23,7 +23,6 @@ class DCO_FindIndoorPosition: AITaskScripted
 
 	protected float EYE_POS = 1.55;
 	
-	protected float LOS_TRACER_LENGTH = 15;
 	protected NavmeshWorldComponent m_pNavmesh;
 	
 	protected bool FoundPosition = false;
@@ -197,11 +196,28 @@ class DCO_FindIndoorPosition: AITaskScripted
 		{
 			params.End = outPos + 10 * vector.Up;
 			
-			if (GetGame().GetWorld().TraceMove(params, null) >= 0.999)
-				return DCO_BuildingPosCreation.FAIL;
-			
 			if (params.TraceEnt.GetRootParent() != m_Building.GetRootParent())
 				return DCO_BuildingPosCreation.FAIL;
+			
+			if (params.TraceEnt.GetRootParent() == m_Building.GetRootParent())
+			{
+				vector dir = params.End - params.Start;
+				
+				TraceParam parames = new TraceParam();
+				parames.Flags = params.Flags;
+				parames.Start = params.Start;
+				parames.End = params.Start + (dir * -1);
+				
+				float traceResult2 = GetGame().GetWorld().TraceMove(parames, null);
+				float traceResult1 = GetGame().GetWorld().TraceMove(params, null);
+				
+				vector hitPos1 = params.Start + (params.End - params.Start) * traceResult1;
+				vector hitPos2 = parames.Start + (parames.End - parames.Start) * traceResult2;
+				float corridorWidth = vector.Distance(hitPos1, hitPos2);
+				
+				if (corridorWidth < 1.5)
+				    return DCO_BuildingPosCreation.FAIL;
+			}
 		}
 		
 		if (GetGame().GetWorld().GetSurfaceY(outPos[0], outPos[2]) < 0)
