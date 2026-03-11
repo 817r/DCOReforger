@@ -66,7 +66,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
            EditorPos -352 1248
            InPorts {
             SingleInputPortContainer SingleInputPortContainer {
-             Port 37
+             Port 35
              PortName "Request"
             }
            }
@@ -91,11 +91,11 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos 320 1600
+           EditorPos 224 1552
            Nodes {
             SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
              Name "SCR_AI Get Entity Position"
-             EditorPos -64.678 1782.424
+             EditorPos -160.678 1734.424
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
                Port -1
@@ -104,17 +104,17 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
              }
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 38
+               Port 36
                PortName "Position"
               }
              }
             }
             DCO_FindIndoorPosition "DCO_ Find Indoor Position" {
              Name "DCO_ Find Indoor Position"
-             EditorPos 496 1792
+             EditorPos 400 1744
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 38
+               Port 36
                PortName "OriginIn"
               }
               SingleInputPortContainer SingleInputPortContainer {
@@ -124,7 +124,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
              }
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 39
+               Port 37
                PortName "Position Found"
               }
               SingleOutputPortContainer SingleOutputPortContainer {
@@ -145,7 +145,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
              EditorPos 1056 1856
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 41
+               Port 39
                PortName "Request"
               }
              }
@@ -210,63 +210,27 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
               }
              }
             }
-            Selector Selector {
-             Name "Selector"
-             EditorPos 3568 2064
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 3600 2256
              Nodes {
-              DecoIsInVehicle "Is In Vehicle" {
-               Name "Is In Vehicle"
-               EditorPos 3360 2224
-               Nodes {
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos 3424 2384
-                 Nodes {
-                  AITaskSetPathfindingFilters "Set Pathfinding Filters" {
-                   Name "Set Pathfinding Filters"
-                   EditorPos 3152 2592
-                   NavmeshProject "BTRlike"
-                   IgnoreFlags 0x8 0
-                  }
-                  AITaskSetVariable "Set Variable" {
-                   Name "Set Variable"
-                   EditorPos 3408 2592
-                   SetValue "5"
-                   OutVariable 14
-                  }
-                  AITaskSetVariable "Set Variable" {
-                   Name "Set Variable"
-                   EditorPos 3616 2592
-                   SetValue "-1"
-                   OutVariable 17
-                  }
-                 }
-                }
-               }
+              AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+               Name "Set Pathfinding Filters"
+               EditorPos 3280 2416
+               NavmeshProject "Soldiers"
+               IgnoreFlags 0x8 0
               }
-              Sequence Sequence {
-               Name "Sequence"
-               EditorPos 3936 2256
-               Nodes {
-                AITaskSetPathfindingFilters "Set Pathfinding Filters" {
-                 Name "Set Pathfinding Filters"
-                 EditorPos 3616 2416
-                 NavmeshProject "Soldiers"
-                 IgnoreFlags 0x8 0
-                }
-                AITaskSetVariable "Set Variable" {
-                 Name "Set Variable"
-                 EditorPos 3872 2432
-                 SetValue "0.6"
-                 OutVariable 15
-                }
-                AITaskSetVariable "Set Variable" {
-                 Name "Set Variable"
-                 EditorPos 4112 2432
-                 SetValue "0.6"
-                 OutVariable 18
-                }
-               }
+              AITaskSetVariable "Set Variable" {
+               Name "Set Variable"
+               EditorPos 3536 2432
+               SetValue "0.6"
+               OutVariable 14
+              }
+              AITaskSetVariable "Set Variable" {
+               Name "Set Variable"
+               EditorPos 3776 2432
+               SetValue "0.6"
+               OutVariable 16
               }
              }
             }
@@ -274,28 +238,28 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
              Name "Set Variable"
              EditorPos 3856 2048
              SetValue "0"
-             OutVariable 24
+             OutVariable 22
             }
             AITaskSetVariable "Set Variable" {
              Name "Set Variable"
              EditorPos 4208 2064
              SetValue "true"
-             OutVariable 40
+             OutVariable 38
             }
             SCR_AICombatMoveRequest_Move_InvokeOnMovementStarted "SCR_AI Combat Move Request_ Move_ Invoke On Movement Started" {
              Name "Invoke OnMovementStarted"
              EditorPos 4928 2096
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 16
+               Port 15
                PortName "Request"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 19
+               Port 17
                PortName "Position"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 20
+               Port 18
                PortName "IsCover"
               }
              }
@@ -317,18 +281,18 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                 AITaskIdle Idle {
                  Name "Idle"
                  EditorPos 4896 3200
-                 PeriodKey 22
+                 PeriodKey 20
                 }
                 AITaskSetVariable "Set Variable" {
                  Name "Set Variable"
                  EditorPos 5072 3200
                  SetValue "1"
-                 OutVariable 23
+                 OutVariable 21
                 }
                }
               }
              }
-             InVariable 21
+             InVariable 19
              TestType EqualsValue
              TestValue "false"
             }
@@ -343,17 +307,17 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                 AITaskMove Move {
                  Name "Move"
                  EditorPos 4752 3968
-                 InTargetLocation 25
-                 InPrecisionXZ 26
-                 InPrecisionY 27
-                 InAutoOrientation 28
+                 InTargetLocation 23
+                 InPrecisionXZ 24
+                 InPrecisionY 25
+                 InAutoOrientation 26
                  InExtraMoveParams -1
                 }
                 AITaskSetVariable "Set Variable" {
                  Name "Set Variable"
                  EditorPos 5305.561 4056.635
                  SetValue "1"
-                 OutVariable 29
+                 OutVariable 27
                 }
                }
               }
@@ -366,7 +330,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                  EditorPos 5968 4256
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
-                   Port 30
+                   Port 28
                    PortName "Request"
                   }
                  }
@@ -376,7 +340,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                  Name "Set Variable"
                  EditorPos 6480 4256
                  SetValue "2"
-                 OutVariable 31
+                 OutVariable 29
                 }
                }
               }
@@ -397,7 +361,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                 }
                }
                AbortType AbortChildrenBranchAndParentFurtherChildren
-               InVariable 32
+               InVariable 30
                TestType EqualsValue
                TestValue "0"
               }
@@ -412,7 +376,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                 }
                }
                AbortType AbortChildrenBranchAndParentFurtherChildren
-               InVariable 33
+               InVariable 31
                TestType EqualsValue
                TestValue "1"
               }
@@ -427,7 +391,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                 }
                }
                AbortType AbortChildrenBranchAndParentFurtherChildren
-               InVariable 34
+               InVariable 32
                TestType EqualsValue
                TestValue "2"
               }
@@ -445,7 +409,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
              EditorPos 5872 1648
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 35
+               Port 33
                PortName "Stance"
               }
              }
@@ -455,7 +419,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
              EditorPos 6176 1664
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 36
+               Port 34
                PortName "InCover"
               }
               SingleInputPortContainer SingleInputPortContainer {
@@ -632,11 +596,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
   }
   VariableReference PrecisionXZ {
    VariableType 17
-   EditorPos 3425.887 2715.439
-  }
-  VariableReference PrecisionXZ {
-   VariableType 17
-   EditorPos 3876.549 2551.356
+   EditorPos 3540.549 2551.356
   }
   VariableReference Rq {
    VariableType 0
@@ -644,11 +604,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
   }
   VariableReference PrecisionY {
    VariableType 11
-   EditorPos 3659.543 2721.842
-  }
-  VariableReference PrecisionY {
-   VariableType 11
-   EditorPos 4153.457 2554.016
+   EditorPos 3817.457 2554.016
   }
   VariableReference MovePos {
    VariableType 14
@@ -728,11 +684,11 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
   }
   VariableReference myPos {
    VariableType 21
-   EditorPos 282.46 1908.635
+   EditorPos 186.46 1860.635
   }
   VariableReference MovePos {
    VariableType 14
-   EditorPos 788.419 1887.022
+   EditorPos 692.419 1839.022
   }
   VariableReference IsMovingToCover {
    VariableType 15

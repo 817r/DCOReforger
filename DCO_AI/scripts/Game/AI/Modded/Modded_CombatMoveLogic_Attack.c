@@ -686,8 +686,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			if (m_eWeaponType == EWeaponType.WT_MACHINEGUN)
 			{
 				float radius = Math.Map(m_fTargetDist, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
-				SCR_AISuppressionVolumeSphere createSupp = new SCR_AISuppressionVolumeSphere(m_Target.GetLastSeenPosition(), radius);
-				SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(m_Utility, null, createSupp, newWaitTime, 3);
+				vector bbMax, bbMin;
+				SCR_AISuppressionVolumeBase.CreateSuppressionBox(m_Target.GetLastSeenPosition(), radius, 4, bbMin, bbMax);
+				SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
+				SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(m_Utility, null, createSupp, newWaitTime, 1.5);
 				m_Utility.AddAction(supp);				
 			}
 		}
@@ -815,6 +817,8 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					m_CharacterController.SetStanceChange(1);
 				else if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
 					m_CharacterController.SetStanceChange(2);
+				else
+					PushRequestFFAvoidance();
 			}
 		}
 		
@@ -957,7 +961,8 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_eStanceEnd = ECharacterStance.CROUCH;
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD; // Move back from target
-		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType)&&
+								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 		rq.m_bAimAtTargetEnd = true;
 		if (m_CharacterController.GetStance() == ECharacterStance.STAND)
 			rq.m_fMoveDuration_s = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;

@@ -9,6 +9,10 @@ SCR_ChimeraAIAgent {
      m_eType Danger_Killzone
     }
    }
+   m_DefaultWeaponTypeHandlingConfig SCR_AIWeaponTypeHandlingConfig "{6112B9A86A223B4A}" {
+    m_iLowMagCountThreshold 0
+    m_iMinSuppressiveMagCountThreshold 0
+   }
   }
  }
 }

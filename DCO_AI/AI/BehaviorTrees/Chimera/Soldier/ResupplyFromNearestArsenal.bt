@@ -86,7 +86,7 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
       }
       Parallel Parallel {
        Name "Parallel"
-       EditorPos 2112 144
+       EditorPos 2672 48
        Nodes {
         SCR_AIDCO_Ressuplying "SCR_AIDCO_ Ressuplying" {
          Name "SCR_AIDCO_ Ressuplying"
@@ -155,7 +155,24 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
          }
          m_distanceThreshold 2
         }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 3495.291 289.892
+         Nodes {
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 3367.291 465.892
+           Period 10
+          }
+          AITaskReturnState "Return State" {
+           Name "Return State"
+           EditorPos 3585.251 467.956
+           Result FAIL
+          }
+         }
+        }
        }
+       UseChildResult 2
       }
      }
     }

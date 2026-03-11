@@ -13,7 +13,7 @@ modded class SCR_AICombatComponent
 	
 	          static const float TARGET_MAX_LAST_SEEN = 11.0;
 	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.5;	//!< Min value of TraceFraction for indirect attacks. \see BaseTarget.GetTraceFraction.
-	protected static const float TARGET_MAX_DISTANCE_VEHICLE = 1700.0;		//!<
+	protected static const float TARGET_MAX_DISTANCE_VEHICLE = 800.0;		//!<
 	protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.2;		//!< Max distance at which disarmed targets are considered for attack. Now it's 0, so they never shoot disarmed targets
 	protected static const float TARGET_MAX_TIME_SINCE_ENDANGERED = 5.0; 	//!< Max time since we were endangered to consider the enemy target endangering
 	protected static const float TARGET_SCORE_RETREAT = 75.0;				//!< Threshold for target score for retreating from that target

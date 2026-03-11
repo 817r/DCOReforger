@@ -94,7 +94,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	protected void ResolveMoveandStopStance(out ECharacterStance moving, out ECharacterStance end)
 	{
 		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.8)
-			moving = ECharacterStance.PRONE;
+			moving = ECharacterStance.CROUCH;
 		else
 		{
 			if (Math.RandomInt(0,2) == 1)
@@ -124,6 +124,9 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		}
 		
 		if (m_State && m_State.IsMovingToBuilding())
+			waitTime *= 3;
+		
+		if (m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
 			waitTime *= 5;
 			
 		waitTime = Math.RandomFloat(0.8, 1.2) * waitTime;

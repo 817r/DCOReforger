@@ -47,84 +47,91 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
             }
            }
           }
-          Parallel Parallel {
-           Name "Parallel"
-           EditorPos -992 64
+          DecoIsInVehicle "Is In Vehicle" {
+           Name "Is In Vehicle"
+           EditorPos -1056 -352
            Nodes {
-            Switch Switch {
-             Name "Switch"
-             EditorPos -1824 448
+            Parallel Parallel {
+             Name "Parallel"
+             EditorPos -992 64
              Nodes {
-              RunBT RunBT {
-               Name "RunBT"
-               EditorPos -2624 944
-               BehaviorTree "{561A02A3833D9900}AI/BehaviorTrees/Chimera/Soldier/Idle_ReturnToFormation.bt"
-              }
-              Sequence Sequence {
-               Name "Sequence"
-               EditorPos -1548.359 787.705
-               Nodes {
-                RunBT RunBT {
-                 Name "RunBT"
-                 EditorPos -1888 944
-                 BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
-                }
-                AITaskIdle Idle {
-                 Name "Idle"
-                 EditorPos -1434.8 962.681
-                 Period 80
-                 PeriodRandom 100
-                }
-               }
-              }
-             }
-             RandomRange {
-              1 8
-             }
-            }
-            RunBT RunBT {
-             Name "RunBT"
-             EditorPos -1104 464
-             BehaviorTree "{7BC17E0DF06FCF80}AI/BehaviorTrees/Chimera/Soldier/Idle_Observe.bt"
-            }
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 176 336
-             Nodes {
-              AITaskIdle Idle {
-               Name "Idle"
-               EditorPos -256 640
-               Period 15
-               PeriodRandom 5
-              }
               Switch Switch {
                Name "Switch"
-               EditorPos 112 624
+               EditorPos -1824 448
                Nodes {
                 RunBT RunBT {
                  Name "RunBT"
-                 EditorPos -240 880
-                 BehaviorTree "{77827BF0468F4A99}AI/BehaviorTrees/Chimera/Soldier/Idle_InspectWeapon.bt"
+                 EditorPos -2624 944
+                 BehaviorTree "{561A02A3833D9900}AI/BehaviorTrees/Chimera/Soldier/Idle_ReturnToFormation.bt"
                 }
-                RunBT RunBT {
-                 Name "RunBT"
-                 EditorPos 288 880
-                 BehaviorTree "{E5F18B69F38FAE75}AI/BehaviorTrees/Chimera/Soldier/Idle_GadgetUse.bt"
+                Sequence Sequence {
+                 Name "Sequence"
+                 EditorPos -1548.359 787.705
+                 Nodes {
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos -1888 944
+                   BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
+                  }
+                  AITaskIdle Idle {
+                   Name "Idle"
+                   EditorPos -1434.8 962.681
+                   Period 80
+                   PeriodRandom 100
+                  }
+                 }
                 }
                }
                RandomRange {
-                2 5
+                1 8
                }
               }
-              AITaskIdle Idle {
-               Name "Idle"
-               EditorPos 480 624
-               Period 50
-               PeriodRandom 10
+              RunBT RunBT {
+               Name "RunBT"
+               EditorPos -1104 464
+               BehaviorTree "{7BC17E0DF06FCF80}AI/BehaviorTrees/Chimera/Soldier/Idle_Observe.bt"
+              }
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 176 336
+               Nodes {
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos -256 640
+                 Period 15
+                 PeriodRandom 5
+                }
+                Switch Switch {
+                 Name "Switch"
+                 EditorPos 112 624
+                 Nodes {
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos -240 880
+                   BehaviorTree "{77827BF0468F4A99}AI/BehaviorTrees/Chimera/Soldier/Idle_InspectWeapon.bt"
+                  }
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos 288 880
+                   BehaviorTree "{E5F18B69F38FAE75}AI/BehaviorTrees/Chimera/Soldier/Idle_GadgetUse.bt"
+                  }
+                 }
+                 RandomRange {
+                  2 5
+                 }
+                }
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos 480 624
+                 Period 50
+                 PeriodRandom 10
+                }
+               }
               }
              }
             }
            }
+           NegativeCondition 1
           }
          }
         }

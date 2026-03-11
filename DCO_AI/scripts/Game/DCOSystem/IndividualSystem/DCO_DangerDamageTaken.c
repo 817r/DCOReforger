@@ -2,7 +2,6 @@
 modded class SCR_AIDangerReaction_DamageTaken
 {
 	protected SCR_AICombatMoveState m_State;
-	protected SCR_AIUtilityComponent m_Utility;
 	protected CharacterControllerComponent m_CharacterController;
 	
 	protected static const float COVER_SEARCH_DIST_MAX = 30.0;
@@ -37,8 +36,12 @@ modded class SCR_AIDangerReaction_DamageTaken
 		
 		if (utility.m_CombatComponent.IsEnemyKnown(shooterRoot) && Math.RandomFloat01() > 0.7)
 		{
-			float radius = Math.Map(shooterDistance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 15);
-			SCR_AISuppressionVolumeSphere createSupp = new SCR_AISuppressionVolumeSphere(shooterRoot.GetOrigin(), radius);
+			float dist = vector.Distance(shooterRoot.GetOrigin(), utility.GetOrigin());
+			float radius = Math.Map(dist, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
+			vector bbMax, bbMin;
+			SCR_AISuppressionVolumeBase.CreateSuppressionBox(shooterRoot.GetOrigin(), radius, 4, bbMin, bbMax);
+			SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
+			SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 5, 1.5);
 		}
 		
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
@@ -170,10 +173,6 @@ modded class SCR_AIDangerReaction_DamageTaken
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 			return true;		
-		} else
-		{
-			SCR_AISuppressionVolumeSphere createSupp = new SCR_AISuppressionVolumeSphere(shooterRoot.GetOrigin(), 12);
-			return true;
 		}
 		
 		return true;

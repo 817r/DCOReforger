@@ -86,7 +86,7 @@ BehaviorTree {
       }
       Parallel Parallel {
        Name "Parallel"
-       EditorPos 1239.75 459.7
+       EditorPos 1344 432
        Nodes {
         SCR_AIDCO_Ressuplying "SCR_AIDCO_ Ressuplying" {
          Name "SCR_AIDCO_ Ressuplying"
@@ -151,7 +151,24 @@ BehaviorTree {
          }
          m_distanceThreshold 2
         }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 2304 784
+         Nodes {
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 2176 960
+           Period 10
+          }
+          AITaskReturnState "Return State" {
+           Name "Return State"
+           EditorPos 2393.96 962.064
+           Result FAIL
+          }
+         }
+        }
        }
+       UseChildResult 2
       }
      }
     }

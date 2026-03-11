@@ -16,6 +16,9 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute( defvalue: "0", uiwidget: UIWidgets.Auto, desc: "Magical Ammo")]
 	protected bool m_bIsMagicallyResupplied;
 	
+	[Attribute( defvalue: "500", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "50 2000 0.01" )]
+	protected float m_fVehicleDismountDanger;
+	
 	[Attribute("2", UIWidgets.ComboBox, "AI Custom skill in combat", "", ParamEnumArray.FromEnum(DCO_AISKILL) )]
 	protected DCO_AISKILL m_eAISkillDefault;
 	
@@ -47,6 +50,17 @@ class DCO_GlobalAIComponent: ScriptComponent
 	DCO_AISKILL GetAISkill()
 	{
 		return m_eAISkillDefault;
+	}
+	
+	float GetDismountDistance()
+	{
+		return m_fVehicleDismountDanger;
+	}
+	
+	float SetDismountDistance(float acc)
+	{
+		m_fVehicleDismountDanger = acc;
+		return m_fVehicleDismountDanger;
 	}
 	
 	float GetAccuracyTime()

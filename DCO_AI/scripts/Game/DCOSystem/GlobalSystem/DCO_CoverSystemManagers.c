@@ -126,7 +126,6 @@ class SCR_CoverManagerComponent : ScriptComponent
 	{
 		if (!entity)
 		{
-			Print("NO ENTITY");
 			return false;
 		}
 			
@@ -135,7 +134,6 @@ class SCR_CoverManagerComponent : ScriptComponent
 
 		if (!world)
 		{
-			Print("NO WORLD");
 			return false;
 		}
 			
@@ -153,14 +151,12 @@ class SCR_CoverManagerComponent : ScriptComponent
 
 		if (hitFraction >= 1.0)
 		{
-			Print("Hit Fraction " + hitFraction.ToString());
 			return false;
 		}
 			
 
 		if (!trace.TraceEnt)
 		{
-			Print("No Traced Entity ");
 			return false;
 		}
 			
@@ -172,12 +168,9 @@ class SCR_CoverManagerComponent : ScriptComponent
 
 		if (!buildingComp)
 		{
-			Print("IS NOT IN BUILDING");
 			return false;
 		}
-			
 
-		Print("IS IN BUILDING");
 		return true;
 	}
 

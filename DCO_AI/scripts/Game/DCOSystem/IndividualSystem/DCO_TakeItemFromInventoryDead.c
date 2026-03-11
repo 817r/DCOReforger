@@ -120,9 +120,7 @@ class SCR_AITakeItemFromInventory : AITaskScripted
 		for (int i = arsenalComp.FindItemsWithComponents(foundItems,components, EStoragePurpose.PURPOSE_DEPOSIT)-1; i> -1; i--)
 		{
 			MagazineComponent magComp = MagazineComponent.Cast(foundItems[i].FindComponent(MagazineComponent));
-			Print("RES A Name : " + magComp.GetOwner().GetPrefabData().GetPrefab().GetResourceName());
-			Print("RES MAIN Name : " + prefabResourceName);
-			if (magComp &&  magComp.GetOwner().GetPrefabData().GetPrefab().GetResourceName() != prefabResourceName)
+			if (magComp &&  magComp.GetOwner().GetPrefabData().GetPrefab().GetResourceName() == prefabResourceName)
 			{
 				foundItems.Remove(i);
 			}

@@ -58,7 +58,6 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 				else
 				{
 					ECharacterStance newStance;
-				
 					if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
 						PushRequestMoveDanger(threatPos, sectorDanger, sectorFlags);
 					else if (threatState == EAIThreatState.THREATENED)
@@ -73,11 +72,10 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			else if (distToThreat < SCR_AICombatMoveUtils.VERY_LONG_RANGE_COMBAT_DIST)
 			{
 				ECharacterStance newStance;
-				
 				if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
 					PushRequestMove(threatPos, sectorDanger, sectorFlags);
 				else
-					newStance = ECharacterStance.PRONE;
+					newStance = ECharacterStance.CROUCH;
 				
 				if (newStance != m_CharacterController.GetStance())
 						m_State.ApplyRequestChangeStanceOutsideCover(newStance);
@@ -291,14 +289,13 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			else
 			{
 				SCR_EAIThreatSectorFlags sectorFlags = m_DriverUtilityComp.m_SectorThreatFilter.GetSectorFlags(m_iCurrentSector);
-				PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
+				PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.ANYWHERE);
 				m_bPushedRequest = true;
 			}
 		}
 		else if (m_bReachedSafety)
 		{
 			// We are not moving, manage our stance based on threat and range
-			
 			EAIThreatState threatState = m_DriverUtilityComp.m_ThreatSystem.GetState();
 			float distToThreat = vector.Distance(m_DriverEntity.GetOrigin(), threatPos);
 			
@@ -311,11 +308,11 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 					PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.BACKWARD);
 				else
 				{
-					if (Math.RandomInt(0,2) == 1)
-						PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
+					if (Math.RandomInt(0,3) == 1)
+						PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.BACKWARD);
 					else
 					{
-						if (Math.RandomInt(0,5) > 1)
+						if (Math.RandomInt(0,5) > 3)
 							PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
 						else
 						{
@@ -326,8 +323,6 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 						}
 					}
 				}
-						
-				
 			}
 			else if (distToThreat < SCR_AICombatMoveUtils.VERY_LONG_RANGE_COMBAT_DIST)
 			{
@@ -357,7 +352,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 				
 				if ((flags & SCR_EAIThreatSectorFlags.DIRECTED_AT_ME) || causedDamage)
 				{
-					if (Math.RandomInt(0,2) == 1)
+					if (Math.RandomInt(0,3) == 1)
 						PushRequestVehicleMove(threatPos, m_DriverCombatState, SCR_EAICombatMoveDirection.FORWARD);
 					else
 					{
@@ -382,7 +377,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		rq.m_vTargetPos = threatPos;
 		rq.m_vMovePos = threatPos;
 		rq.m_eDirection = dir;
-		rq.m_fMoveDuration_s = 10;
+		rq.m_fMoveDuration_s = 120 / SCR_AICombatMoveUtils.GROUND_VEHICLE_GENERIC_SPEED;
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 		

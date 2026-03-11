@@ -55,7 +55,7 @@ class SCR_AIFindPositionWithPrefab : AITaskScripted
 	{
 		SCR_InventoryStorageManagerComponent comp = SCR_InventoryStorageManagerComponent.Cast(e.FindComponent(SCR_InventoryStorageManagerComponent));
 		SCR_CharacterPerceivableComponent perc = SCR_CharacterPerceivableComponent.Cast(e.FindComponent(SCR_CharacterPerceivableComponent));
-		if (comp && SCR_InventoryStorageManagerComponent.IsItemInStorage(comp, m_sQueryResourceName, null) && perc.IsDisarmed())
+		if (comp && SCR_InventoryStorageManagerComponent.IsItemInStorage(comp, m_sQueryResourceName, null) && perc.isDead)
 			m_aQueryFoundEntities.Insert(e);
 		
 		return true;

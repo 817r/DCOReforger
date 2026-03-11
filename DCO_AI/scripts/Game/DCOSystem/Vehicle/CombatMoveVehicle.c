@@ -209,7 +209,7 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 	protected float m_fTargetLastSeenTime_ms = 0;
 	protected static const float TIME_SINCE_GOOD_VISIBILITY_MIN_MS = 15000.0;
 	
-	protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 100.0 * 100.0;
+	protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 20.0 * 20.0;
 	
 	protected const float REVERSE_MOVE_DURATION_S = 3; 
 	
@@ -226,87 +226,28 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		float timeSinceLastSeen_ms = GetGame().GetWorld().GetWorldTime() - m_fTargetLastSeenTime_ms;
 		m_bGoodVision = m_bTargetVisible || (timeSinceLastSeen_ms < TIME_SINCE_GOOD_VISIBILITY_MIN_MS);
 		
-		// Logic for suppressive fire is very simple. We only want to rotate the car until we can aim the turret at target.
-		if (MoveFromTargetCondition())
+		if (TimeToMove())
 		{
-			// Target out of reach for turret or too close
-			// Step backwards
-			if (MoveFromTargetNewRequestCondition())
-				PushRequestMoveFromTarget();
-		}
-		else if (TargetOutsideLimitsCondition())
-		{
-			if (TargetOutsideLimitsNewRequestCondition())
-			{
-				PushRequestRotateToTarget();
-			}
+			PushRequestRotateToTarget();
 		}
 		
 		return true;
 	}
 	
-	protected bool MoveFromTargetCondition()
+	//-------------------------------------------------------------------------------------------
+	protected bool TimeToMove()
 	{
-		if (!m_WeaponManagerComponent)
+		vector targetPos = m_SuppressionVolume.GetCenterPosition();
+		if (m_DriverState.IsExecutingRequest())
 			return false;
 		
-		vector mat[4];
-		m_WeaponManagerComponent.GetCurrentMuzzleTransform(mat);
-		vector muzzlePos = mat[3];
-		vector muzzleDir = mat[2].Normalized();
-		vector targetPos = m_SuppressionVolume.GetCenterPosition();
-		vector targetDir = (targetPos - muzzlePos).Normalized();
-		
-		// Target is too close in front -> we move backward
-		if (vector.DistanceSq(targetPos, muzzlePos) < MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ)
-			return true;
-		
-		// Target is behind vehicle -> we move backward
-		//vector targetPosVehicleSpaceLocal = m_MyVehicle.CoordToLocal(targetPos); // Target pos in vehicle's space
-		//if (targetPosVehicleSpaceLocal[2] < 0)
-		//	return true;
-		
-		// Check turret horizontal limits
 		if (!TargetWithinTurretSafeHorizontalLimits(targetPos))
 			return true;
 		
-		return false;
-	}
-	
-	protected bool MoveFromTargetNewRequestCondition()
-	{
-		if (!m_DriverState.IsExecutingRequest())
+		if (!m_bGoodVision)
 			return true;
 		
-		// Still executing ...
-		// Send new request only if we are executing NOT move_from_target
-		SCR_AICombatMoveRequest_Move rq = SCR_AICombatMoveRequest_Move.Cast(m_DriverState.GetRequest());
-		if (!rq)
-			return true;
-		
-		return rq.m_eReason != SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
-	}
-	
-	protected void PushRequestMoveFromTarget()
-	{
-		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
-		
-		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
-		rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
-		rq.m_vMovePos = m_SuppressionVolume.GetCenterPosition();
-		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
-		rq.m_fMoveDuration_s = REVERSE_MOVE_DURATION_S;
-		rq.m_bAimAtTarget = false;
-		rq.m_bAimAtTargetEnd = false;
-		
-		ApplyNewRequest(rq);
-	}
-	
-	//-------------------------------------------------------------------------------------------
-	override bool TargetOutsideLimitsCondition()
-	{
-		vector targetPos = m_SuppressionVolume.GetCenterPosition();
-		if (!TargetWithinTurretSafeHorizontalLimits(targetPos) || m_bGoodVision == false)
+		if (m_DriverState.m_fTimerStopped_s > Math.RandomFloatInclusive(20, 30))
 			return true;
 		
 		return false;
@@ -324,8 +265,19 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
 		rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 		rq.m_vMovePos = m_SuppressionVolume.GetCenterPosition();
-		rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
-		rq.m_fMoveDuration_s = 3;
+		rq.m_vTargetPos = rq.m_vMovePos;
+		if (Math.RandomIntInclusive(0, 3) >= 1)
+		{
+			rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
+		}
+		else
+		{
+			if (Math.RandomIntInclusive(0, 1) == 0)
+				rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+			else
+				rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;			
+		}
+		rq.m_fMoveDuration_s = 5 * Math.RandomFloat(1, 1.5) * SCR_AICombatMoveUtils.GROUND_VEHICLE_GENERIC_SPEED;
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 		

@@ -25,6 +25,6 @@ modded class SCR_AIWeaponHandling
 		ResourceName resName = newMagazineComp.GetOwner().GetPrefabData().GetPrefab().GetResourceName();
 		
 		inv.TrySpawnPrefabToStorage(resName);
-		Print("Spawned " + resName);
+		//Print("Spawned " + resName);
 	}
 }

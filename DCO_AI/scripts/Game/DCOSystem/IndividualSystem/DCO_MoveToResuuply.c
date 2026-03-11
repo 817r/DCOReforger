@@ -65,8 +65,8 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 		rq.m_eType = SCR_EAICombatMoveRequestType.RESUPPLYING;
 		rq.m_vTargetPos = threatPos;
 		rq.m_vMovePos = rq.m_vTargetPos;
-		rq.m_bTryFindCover = true;
-		rq.m_bUseCoverSearchDirectivity = true;
+		rq.m_bTryFindCover = false;
+		rq.m_bUseCoverSearchDirectivity = false;
 		rq.m_bCheckCoverVisibility = false;
 		rq.m_bFailIfNoCover = false;
 		ResolveMoveandStopStance(rq.m_eStanceMoving, rq.m_eStanceEnd);
@@ -76,7 +76,7 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
-		rq.m_fMoveDuration_s = Math.RandomFloat(7,10) * Math.RandomFloat(1,2);
+		rq.m_fMoveDuration_s = vector.Distance(m_Utility.GetOrigin(), threatPos) / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_vAvoidStraightPathDir = vector.Zero;
 			

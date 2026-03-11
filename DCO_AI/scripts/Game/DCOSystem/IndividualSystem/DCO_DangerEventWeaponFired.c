@@ -35,15 +35,56 @@ modded class SCR_AIDangerReaction_WeaponFired
 		dangerPos = shotPos;
 		vector myOrigin = utility.m_OwnerEntity.GetOrigin();
 		float distance = vector.Distance(myOrigin, shotPos);
+		float distanceSQ = vector.DistanceSq(myOrigin, shotPos);
+		float dismountDist = utility.m_DCOConfig.GetDismountDistance();
+		float dismountDistSq = dismountDist * dismountDist;
+		bool isFlyby = IsFlyby(myOrigin, shotPos, shotDir, distance);
+		bool endangeringForGroup = isFlyby || distance < ENDANGERING_FOR_GROUP_RADIUS;
+		
+		if (utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE) && distanceSQ > dismountDistSq)
+		{
+			return false;
+		} else if (utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE) && distanceSQ <= dismountDistSq)
+		{
+			if (utility.m_AIInfo.HasUnitState(EUnitState.PILOT))
+			{
+				/*
+				SCR_AIIdleBehavior_Driver driverBehavior = SCR_AIIdleBehavior_Driver.Cast(utility.FindActionOfType(SCR_AIIdleBehavior_Driver));
+				if (driverBehavior)
+					driverBehavior.SetPriority(SCR_AIActionBase.PRIORITY_ACTIVITY_COMBAT_WITH_VEHICLES);
+				*/
+			}
+			else if (utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET))
+			{
+				
+			}
+			else
+			{
+			 	CompartmentAccessComponent compartmentAccess = CompartmentAccessComponent.Cast(utility.m_OwnerEntity.FindComponent(CompartmentAccessComponent));
+				if (!compartmentAccess)
+					return false;
+					 
+				if (!compartmentAccess.IsInCompartment())
+					return false;	
+				
+				SCR_AIGetOutVehicle getOutAction = new SCR_AIGetOutVehicle(utility, null, compartmentAccess.GetOwner(), priority: SCR_AIActionBase.PRIORITY_BEHAVIOR_GET_OUT_VEHICLE_HIGH_PRIORITY);
+				utility.AddAction(getOutAction);		
+				
+				
+				return super.PerformReaction(utility, threatSystem, dangerEvent, dangerEventCount);	
+			}
+
+		}
 		
 		// Is it a flyby?
-		bool isFlyby = IsFlyby(myOrigin, shotPos, shotDir, distance);
+		
 		
 		bool isAudible = IsAudiable(distance, isShotSuppressed);
 		
-		
 		float timeTillFlyby_s = float.MAX;
 		float timeTillGunshotHeard_s = float.MAX;
+		
+
 		if (isFlyby)
 		{
 			float projectileSpeed = eventWeaponFire.GetInitialSpeed();
@@ -83,12 +124,20 @@ modded class SCR_AIDangerReaction_WeaponFired
 						utility, distance, dangerEventCount, shotPos);
 				}
 			}
+			
+			if (isShotSuppressed && distance < 50)
+			{
+				auto investigaste = new SCR_AIMoveAndInvestigateBehavior(utility, null, shotPos,
+				SCR_AIActionBase.PRIORITY_BEHAVIOR_MOVE_AND_INVESTIGATE, SCR_AIActionBase.PRIORITY_LEVEL_NORMAL, isDangerous: true, radius: 25, targetUnitType: EAIUnitType.UnitType_Infantry, duration: 150); 
+				
+				utility.AddAction(investigaste);
+			}
 		}
 		
 		if (isFlyby || isAudible)
 		{
 			// Notify our group, only if we are a leader
-			bool endangeringForGroup = isFlyby || distance < ENDANGERING_FOR_GROUP_RADIUS;
+			
 			
 			AIGroup myGroup = utility.GetOwner().GetParentGroup();
 			if (myGroup && myGroup.GetLeaderAgent() == agent)
@@ -103,27 +152,6 @@ modded class SCR_AIDangerReaction_WeaponFired
 						myGroup, shooter, instigatorEntity, instigatorFaction, shotPos, endangeringForGroup);
 				}
 			}
-			
-			if (endangeringForGroup)
-			{
-				float radius = Math.Map(distance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
-				SCR_AISuppressionVolumeSphere createSupp = new SCR_AISuppressionVolumeSphere(shotPos, radius);
-				
-				if (utility.m_CombatComponent.GetSelectedWeaponType() == EWeaponType.WT_MACHINEGUN)
-				{
-					SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 3 * radius, 2.5, 2000);
-					utility.AddAction(supp);
-				}
-			}
-				
-		}
-		
-		if (isShotSuppressed && distance < 50)
-		{
-			auto investigaste = new SCR_AIMoveAndInvestigateBehavior(utility, null, shotPos,
-			SCR_AIActionBase.PRIORITY_BEHAVIOR_MOVE_AND_INVESTIGATE, SCR_AIActionBase.PRIORITY_LEVEL_NORMAL, isDangerous: true, radius: 25, targetUnitType: EAIUnitType.UnitType_Infantry, duration: 150); 
-			
-			utility.AddAction(investigaste);
 		}
 		
 		return true;

@@ -509,6 +509,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			// We have good vision and we are in cover, just stay here
 			return false;
 		}
+		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
 		
 		// If vision is bad, move out until we have good visibility
 		// Here we operate with visibility of the suppression volume, still concept is same as during normal attack.
@@ -528,10 +529,12 @@ modded class SCR_AICombatMoveLogic_Suppressive
 						m_CharacterController.SetStanceChange(1);
 					else if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
 						m_CharacterController.SetStanceChange(2);
+					else
+						return 2 > stoppedWaitTime;
 				}
 			}
 			
-			float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
+			
 			return m_State.m_fTimerStopped_s > stoppedWaitTime;
 		}
 		

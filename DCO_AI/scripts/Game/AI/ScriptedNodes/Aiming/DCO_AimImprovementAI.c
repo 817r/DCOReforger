@@ -115,7 +115,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_HANDGUN:
 			{
-				return 1.2;
+				return 1.1;
 			}
 			case EWeaponType.WT_FRAGGRENADE:
 			{
@@ -131,11 +131,11 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_SNIPERRIFLE:
 			{
-				return 0.3;
+				return 0.5;
 			}
 			case EWeaponType.WT_AUTOCANNON:
 			{
-				return 3.0;
+				return 2.6;
 			}
 		}
 		return 1.0;
@@ -155,7 +155,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_HANDGUN:
 			{
-				return 1.2;
+				return 1.1;
 			}
 			case EWeaponType.WT_FRAGGRENADE:
 			{
@@ -175,7 +175,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_AUTOCANNON:
 			{
-				return 3;
+				return 2.6;
 			}
 		}
 		
@@ -186,7 +186,7 @@ modded class SCR_AIGetAimErrorOffset
 	{
 		PerceivableComponent perceivable = tgt.GetPerceivableComponent();
 		if (!perceivable)
-			return 12.0;
+			return 10.0;
 		
 		if (perceivable.GetIlluminationFactor() < 0.2)
 			return 6.0;
@@ -209,7 +209,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case DCO_AISKILL.ROOKIE :
 			{
-				sigma = 2;
+				sigma = 2.2;
 				break;
 			}
 			case DCO_AISKILL.REGULAR :
@@ -247,12 +247,12 @@ modded class SCR_AIGetAimErrorOffset
 		{
 			case EAIThreatState.THREATENED :
 			{
-				return 2.5;
+				return 2.7;
 				break;
 			}
 			case EAIThreatState.ALERTED :
 			{
-				return 1.5;
+				return 1.6;
 				break;
 			}
 			case EAIThreatState.VIGILANT :
@@ -387,12 +387,12 @@ modded class SCR_AIGetAimErrorOffset
 		{
 			case ECharacterStance.PRONE:
 			{
-				return 0.65;
+				return 0.7;
 				break;
 			}
 			case ECharacterStance.CROUCH:
 			{
-				return 0.8;
+				return 0.85;
 				break;
 			}
 			case ECharacterStance.STAND:

@@ -30,6 +30,13 @@ modded class SCR_AICombatMoveState
 		else
 			return false;
 	}
+	
+	bool IsPositionInBuilding()
+	{
+		bool isIt = false;
+		
+		return isIt;
+	}
 }
 
 modded enum SCR_EAICombatMoveRequestFailReason

@@ -46,8 +46,11 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			{						
 				if (utility.m_CombatComponent.GetSelectedWeaponType() == EWeaponType.WT_MACHINEGUN && distanceToDanger < 2 && isNullTarget)
 				{
-					float radius = Math.Map(shooterDistance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
-					SCR_AISuppressionVolumeSphere createSupp = new SCR_AISuppressionVolumeSphere(shooterRoot.GetOrigin(), radius);
+					float radius = Math.Map(shooterDistance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 2, 15);
+					vector bbMax, bbMin;
+					shooterRoot.GetBounds(bbMin, bbMax);
+					SCR_AISuppressionVolumeBase.CreateSuppressionBox(shooterRoot.GetOrigin(), radius, 4, bbMin, bbMax);
+					SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
 					SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 6, 1.5);
 					utility.AddAction(supp);					
 				}
@@ -268,12 +271,22 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 						m_bPushedMoveRequest = true;
 						return true;	
 					}
-				} else
+				} else if (shooterDistance > 100)
 				{
 					if (charCon.GetStance() == ECharacterStance.STAND)
 						charCon.SetStanceChange(2);
 					else
 						charCon.SetStanceChange(3);
+				}
+				
+				if (rq.m_bAimAtTarget && utility.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_MACHINEGUN))
+				{
+					float radius = Math.Map(shooterDistance, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 7, 15);
+					vector bbMax, bbMin;
+					SCR_AISuppressionVolumeBase.CreateSuppressionBox(shooterRoot.GetOrigin(), radius, 4, bbMin, bbMax);
+					SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
+					SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 5, 1.5);
+					utility.AddAction(supp);
 				}
 					
 				return true;

@@ -4,13 +4,14 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 	{
 		if (!m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
 			m_CombatMoveLogic.Update();
-		else
+		else if (m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET))
 			VehicleObserve();
 	}
 	
 	void VehicleObserve()
 	{
 		IEntity m_MyEntity = m_Utility.m_OwnerEntity;
+		AIGroup myGrp = m_Utility.GetAIAgent().GetParentGroup();
 		Vehicle m_MyVehicle;
 		SCR_AIUtilityComponent m_DriverUtility;
 		SCR_AICombatMoveState m_DriverState;
@@ -26,7 +27,6 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 				TurretControllerComponent contr = TurretControllerComponent.Cast(turretEnt.FindComponent(TurretControllerComponent));
 				if (contr)
 					TurretComponent m_TurretComponent = contr.GetTurretComponent();
-				BaseWeaponManagerComponent m_WeaponManagerComponent = BaseWeaponManagerComponent.Cast(turretEnt.FindComponent(BaseWeaponManagerComponent));
 			}
 			m_MyVehicle = Vehicle.Cast(m_CompartmentAccessComponent.GetVehicle());
 		}
@@ -55,6 +55,34 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 		
 		m_DriverState = m_DriverUtility.m_CombatMoveState;
 		
-		m_CombatMoveLogic.UpdateVehicle(m_DriverUtility.m_OwnerEntity, m_DriverState, m_DriverUtility);
+		if (CanMoveVehicle(m_DriverState))
+			m_CombatMoveLogic.UpdateVehicle(m_DriverUtility.m_OwnerEntity, m_DriverState, m_DriverUtility);
+		
+		vector threatPos = m_Utility.m_SectorThreatFilter.GetSectorPos(m_iCurrentSector);
+		float m_fTargetDist = vector.Distance(m_Utility.GetOrigin(), threatPos);
+		float radius = Math.Map(m_fTargetDist, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 4, 10);
+		vector bbMax, bbMin;
+		SCR_AISuppressionVolumeBase.CreateSuppressionBox(threatPos, radius, 4, bbMin, bbMax);
+		SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
+		SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(m_Utility, null, createSupp, 5, 3);
+		m_Utility.AddAction(supp);	
+	}
+	
+	protected bool IsFirstExecution(SCR_AICombatMoveState driverState)
+	{
+		return !driverState.GetRequest();
+	}
+	
+	protected bool CanMoveVehicle(SCR_AICombatMoveState driverState)
+	{
+		float stoppedWaitTime = ResolveStoppedWaitTime();	
+		return IsFirstExecution(driverState) || driverState.m_fTimerStopped_s > stoppedWaitTime;
+	}
+	
+	protected float ResolveStoppedWaitTime()
+	{
+		float waitTime = Math.RandomFloat(20, 30);
+
+		return waitTime;
 	}
 };
