@@ -21,3 +21,15 @@ enum DCO_BuildingPosCreation
 	RUNNING,
 	FAIL
 }
+
+
+enum DCO_EAIIndividualRoles
+{
+	LEADING = 0,
+	SUPPRESSING = 1 << 1,
+	ANTI_ARMOR = 1 << 2,
+	COVERT = 1 << 3,
+	LONG_RANGE = 1 << 4,
+	MEDIUM_RANGE = 1 << 5,
+	CLOSE_RANGE = 1 << 6
+}
