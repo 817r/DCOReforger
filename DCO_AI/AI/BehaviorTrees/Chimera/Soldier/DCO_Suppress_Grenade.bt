@@ -85,7 +85,7 @@ BehaviorTree {
              PortName "ResultVector"
             }
            }
-           m_Radius 1
+           m_Radius 1.2
           }
           SCR_AIGetAimCompensation "SCR_AI Get Aim Compensation" {
            Name "SCR_AI Get Aim Compensation"
@@ -224,7 +224,7 @@ BehaviorTree {
                     AITaskIdle Idle {
                      Name "Idle"
                      EditorPos 1680 2944
-                     Period 6
+                     Period 3
                     }
                     AITaskSetVariable "Set Variable" {
                      Name "Set Variable"

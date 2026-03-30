@@ -31,7 +31,7 @@ class SCR_AIGetVectorFromCombatMove : AITaskScripted
 	//--------------------------------------------------------------------------------------------
 	protected vector RandomizeDestinationPos(float distance, vector centerPos)
 	{
-		float radius = 0.1 * distance;
+		float radius = distance;
 		vector pos = s_AIRandomGenerator.GenerateRandomPointInRadius(0, radius, centerPos, true);
 		pos[1] = centerPos[1];
 		return pos;

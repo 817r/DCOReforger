@@ -57,15 +57,7 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 		
 		if (CanMoveVehicle(m_DriverState))
 			m_CombatMoveLogic.UpdateVehicle(m_DriverUtility.m_OwnerEntity, m_DriverState, m_DriverUtility);
-		
-		vector threatPos = m_Utility.m_SectorThreatFilter.GetSectorPos(m_iCurrentSector);
-		float m_fTargetDist = vector.Distance(m_Utility.GetOrigin(), threatPos);
-		float radius = Math.Map(m_fTargetDist, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 4, 10);
-		vector bbMax, bbMin;
-		SCR_AISuppressionVolumeBase.CreateSuppressionBox(threatPos, radius, 4, bbMin, bbMax);
-		SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
-		SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(m_Utility, null, createSupp, 5, 3);
-		m_Utility.AddAction(supp);	
+
 	}
 	
 	protected bool IsFirstExecution(SCR_AICombatMoveState driverState)

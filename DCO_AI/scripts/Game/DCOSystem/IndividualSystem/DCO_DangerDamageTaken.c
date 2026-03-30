@@ -37,9 +37,9 @@ modded class SCR_AIDangerReaction_DamageTaken
 		if (utility.m_CombatComponent.IsEnemyKnown(shooterRoot) && Math.RandomFloat01() > 0.7)
 		{
 			float dist = vector.Distance(shooterRoot.GetOrigin(), utility.GetOrigin());
-			float radius = Math.Map(dist, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
+			float radius = Math.Map(dist, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 1, 3);
 			vector bbMax, bbMin;
-			SCR_AISuppressionVolumeBase.CreateSuppressionBox(shooterRoot.GetOrigin(), radius, 4, bbMin, bbMax);
+			SCR_AISuppressionVolumeBase.CreateSuppressionBox(shooterRoot.GetOrigin(), radius, 3, bbMin, bbMax);
 			SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
 			SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 5, 1.5);
 		}

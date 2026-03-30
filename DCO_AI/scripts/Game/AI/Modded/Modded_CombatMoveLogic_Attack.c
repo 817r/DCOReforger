@@ -272,33 +272,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		outCoverSearchSectorHalfAngleRad = coverSearchSectorHalfAngleRad;
 	}
 	
-	protected bool FindPosition2D(out vector randomPos, vector randomSphereOrigin, float randomSphereRadius, vector excludeSphereOrigin = vector.Zero, float excludeRadius = 0, int iterationCount = 50)
-	{
-		if (randomSphereOrigin == excludeSphereOrigin || excludeRadius < 1.0e-8)
-		{
-			randomPos = s_AIRandomGenerator.GenerateRandomPointInRadius(excludeRadius, randomSphereRadius, randomSphereOrigin, true);	
-			randomPos[1] = randomSphereOrigin[1];
-			return true;
-		}	
-		else
-		{
-			float excludeRadiusSq = excludeRadius * excludeRadius;
-			float randomRadiusSq = randomSphereRadius * randomSphereRadius;	
-			for (int i = iterationCount; i > 0; i--)
-			{
-				randomPos = s_AIRandomGenerator.GenerateRandomPointInRadius(0, randomSphereRadius, randomSphereOrigin, true);
-				
-				// Repeat if position is inside exclusion zone
-				if (excludeRadius > 0 && vector.DistanceSqXZ(randomPos, excludeSphereOrigin) < excludeRadiusSq)
-					continue;
-			
-				randomPos[1] = randomSphereOrigin[1];
-				return true;
-			}
-		}
-		return false;
-	}
-	
 	override protected void PushRequestMove()
 	{		
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
@@ -354,7 +327,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 			//rq.m_eMovementType = EMovementType.WALK;
-			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 			rq.m_bAimAtTargetEnd = true;
 		}
@@ -397,7 +370,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 			//rq.m_eMovementType = EMovementType.RUN;
-			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 			rq.m_bAimAtTargetEnd = true;
 		}
@@ -682,16 +655,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		{
 			float newWaitTime = Math.RandomFloat(1.5, 2.5); // Expose out of cover for this time
 			PushRequestChangeStanceInCover(true, SCR_EAICombatMoveReason.SUPPRESSED_IN_COVER, newWaitTime);
-			
-			if (m_eWeaponType == EWeaponType.WT_MACHINEGUN)
-			{
-				float radius = Math.Map(m_fTargetDist, 50, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 10);
-				vector bbMax, bbMin;
-				SCR_AISuppressionVolumeBase.CreateSuppressionBox(m_Target.GetLastSeenPosition(), radius, 4, bbMin, bbMax);
-				SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
-				SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(m_Utility, null, createSupp, newWaitTime, 1.5);
-				m_Utility.AddAction(supp);				
-			}
 		}
 	}
 	
@@ -817,8 +780,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					m_CharacterController.SetStanceChange(1);
 				else if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
 					m_CharacterController.SetStanceChange(2);
-				else
-					PushRequestFFAvoidance();
 			}
 		}
 		
@@ -884,7 +845,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 			//rq.m_eMovementType = EMovementType.WALK;
-			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 			rq.m_bAimAtTargetEnd = true;
 		}
@@ -921,7 +882,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 			//rq.m_eMovementType = EMovementType.RUN;
-			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 			rq.m_bAimAtTargetEnd = true;
 		}
@@ -936,6 +897,47 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 
 		rq.GetOnMovementStarted().Insert(OnMovementStarted);
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
+		
+		m_State.ApplyNewRequest(rq);
+	}
+	
+	override protected void PushRequestFFAvoidance()
+	{
+		if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
+		{
+			if (Math.RandomFloat01() > 0.5)
+				m_CharacterController.SetRoll(1);
+			else
+				m_CharacterController.SetRoll(2);
+			
+			return;
+		}
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		rq.m_eReason = SCR_EAICombatMoveReason.FF_AVOIDANCE;
+		
+		// If prev. request was FF avoidance too, keep direction.
+		// Otherwise choose a new direction.
+		SCR_AICombatMoveRequest_Move prevRequest = SCR_AICombatMoveRequest_Move.Cast(m_State.GetRequest());
+		if (prevRequest && prevRequest.m_eReason == SCR_EAICombatMoveReason.FF_AVOIDANCE)
+		{
+			rq.m_eDirection = prevRequest.m_eDirection;
+		}
+		else
+		{
+			if (Math.RandomIntInclusive(0, 1) == 1)
+				rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+			else
+				rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+		}
+		
+		rq.m_eStanceMoving = m_CharacterController.GetStance(); // Don't change stance
+		rq.m_eStanceEnd = rq.m_eStanceMoving;
+		rq.m_vMovePos = ResolveRequestTargetPos();
+		rq.m_eMovementType = EMovementType.WALK;
+		rq.m_fMoveDuration_s = 1.0;
+		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+		rq.m_bAimAtTargetEnd = true;
 		
 		m_State.ApplyNewRequest(rq);
 	}
@@ -961,7 +963,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_eStanceEnd = ECharacterStance.CROUCH;
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD; // Move back from target
-		rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType)&&
+		rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 		rq.m_bAimAtTargetEnd = true;
 		if (m_CharacterController.GetStance() == ECharacterStance.STAND)

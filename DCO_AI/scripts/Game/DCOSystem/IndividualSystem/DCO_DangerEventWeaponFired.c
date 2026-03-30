@@ -56,7 +56,13 @@ modded class SCR_AIDangerReaction_WeaponFired
 			}
 			else if (utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET))
 			{
-				
+				float instDist = vector.Distance(eventWeaponFire.GetInstigatorEntity().GetOrigin(), utility.GetOrigin());
+				float radius = Math.Map(instDist, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 2, 5);
+				vector bbMax, bbMin;
+				SCR_AISuppressionVolumeBase.CreateSuppressionBox(eventWeaponFire.GetInstigatorEntity().GetOrigin(), radius, 3, bbMin, bbMax);
+				SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
+				SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 5, 3);
+				utility.AddAction(supp);	
 			}
 			else
 			{

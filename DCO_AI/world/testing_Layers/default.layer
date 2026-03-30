@@ -1,0 +1,41 @@
+$grp GameEntity {
+ {
+  components {
+   AICommander_ManagerComponent "{68F88499AF35F645}" {
+   }
+  }
+  coords 2750.273 66.423 1858.632
+ }
+ {
+  components {
+   AICommander_AlgorithmComponent "{68F8849956F58560}" {
+    m_sCommanderUID "mechanizedSquad"
+    m_sFactionKey "USSR"
+   }
+  }
+  coords 2742.375 67.76 1867.464
+ }
+ TestObjective {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   }
+   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
+    m_vResolution 32
+    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
+   }
+  }
+  coords 2662.468 80.406 1819.463
+ }
+ {
+  components {
+   AICommander_AlgorithmComponent "{68F8849956F58560}" {
+    m_sCommanderUID "rifleSquad"
+    m_sFactionKey "US"
+   }
+  }
+  coords 2749.168 67.76 1869.59
+ }
+}
+SCR_AIGroup AmmoGroup : "{C8622D0595B48437}Prefabs/Groups/OPFOR/Group_USSR_AmmoTeam.et" {
+ coords 2707.913 74.323 1900.533
+}

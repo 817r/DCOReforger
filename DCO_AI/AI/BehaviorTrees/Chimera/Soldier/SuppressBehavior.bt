@@ -137,29 +137,6 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
         }
         Sequence Sequence {
          Name "Sequence"
-         EditorPos -784 32
-         Nodes {
-          SCR_AIVisualizeDebug "SCR_AI Visualize Debug" {
-           Name "SCR_AI Visualize Debug"
-           EditorPos -864 192
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 6
-             PortName "DebugMessage"
-            }
-           }
-           m_eAICategory INFO
-           m_fShowTime 8
-          }
-          AITaskIdle Idle {
-           Name "Idle"
-           EditorPos -691.583 190.161
-           Period 10
-          }
-         }
-        }
-        Sequence Sequence {
-         Name "Sequence"
          EditorPos -780.893 864.345
          Nodes {
           SCR_AIGetSuppressionVolumeCenterPosition "SCR_AI Get Suppression Volume Center Position" {

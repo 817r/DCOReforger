@@ -148,7 +148,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			rq.m_eStanceMoving = m_CharacterController.GetStance();
 			rq.m_eStanceEnd = rq.m_eStanceMoving;
 			
-			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType); // Aim while moving
+			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection); // Aim while moving
 			rq.m_bAimAtTargetEnd = true;
 		}
 		else
@@ -164,7 +164,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			rq.m_eStanceMoving = ECharacterStance.CROUCH;
 			rq.m_eStanceEnd = ECharacterStance.PRONE;
 			
-			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+			rq.m_bAimAtTarget = false;
 			rq.m_bAimAtTargetEnd = true;
 		}	
 		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
@@ -230,7 +230,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			rq.m_eStanceMoving = m_CharacterController.GetStance();
 			rq.m_eStanceEnd = rq.m_eStanceMoving;
 			
-			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType); // Aim while moving
+			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection); // Aim while moving
 			rq.m_bAimAtTargetEnd = true;
 		}
 		else
@@ -246,7 +246,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			rq.m_eStanceMoving = ECharacterStance.CROUCH;
 			rq.m_eStanceEnd = ECharacterStance.PRONE;
 			
-			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType);
+			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection);
 			rq.m_bAimAtTargetEnd = true;
 		}	
 		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;

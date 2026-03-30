@@ -114,7 +114,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			}
 			
 			//rq.m_eMovementType = EMovementType.WALK;
-			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 			rq.m_bAimAtTargetEnd = true;
 		}
@@ -157,7 +157,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			}
 			
 			//rq.m_eMovementType = EMovementType.RUN;
-			rq.m_bAimAtTarget = SCR_AICombatMoveUtils.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType) &&
+			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
 			rq.m_bAimAtTargetEnd = true;
 		}
@@ -470,34 +470,6 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		outAvoidStraightPathDir = avoidStraightPathDir;
 		outCoverSearchSectorHalfAngleRad = coverSearchSectorHalfAngleRad;
 	}
-	
-	protected bool FindPosition2D(out vector randomPos, vector randomSphereOrigin, float randomSphereRadius, vector excludeSphereOrigin = vector.Zero, float excludeRadius = 0, int iterationCount = 50)
-	{
-		if (randomSphereOrigin == excludeSphereOrigin || excludeRadius < 1.0e-8)
-		{
-			randomPos = s_AIRandomGenerator.GenerateRandomPointInRadius(excludeRadius, randomSphereRadius, randomSphereOrigin, true);	
-			randomPos[1] = randomSphereOrigin[1];
-			return true;
-		}	
-		else
-		{
-			float excludeRadiusSq = excludeRadius * excludeRadius;
-			float randomRadiusSq = randomSphereRadius * randomSphereRadius;	
-			for (int i = iterationCount; i > 0; i--)
-			{
-				randomPos = s_AIRandomGenerator.GenerateRandomPointInRadius(0, randomSphereRadius, randomSphereOrigin, true);
-				
-				// Repeat if position is inside exclusion zone
-				if (excludeRadius > 0 && vector.DistanceSqXZ(randomPos, excludeSphereOrigin) < excludeRadiusSq)
-					continue;
-			
-				randomPos[1] = randomSphereOrigin[1];
-				return true;
-			}
-		}
-		return false;
-	}
-	
 	//--------------------------------------------------------------------------------------------
 	protected override bool MoveToNextPosCondition()
 	{	
