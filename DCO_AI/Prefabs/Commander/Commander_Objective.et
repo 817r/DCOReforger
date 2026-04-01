@@ -1,0 +1,14 @@
+GameEntity {
+ ID "6902DABDB943AAF5"
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 70
+   m_fRadius 145
+  }
+  Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
+   m_vResolution 32
+   m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
+  }
+ }
+ coords 2786.54 73.491 1687.561
+}

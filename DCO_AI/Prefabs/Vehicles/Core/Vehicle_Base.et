@@ -1,3 +1,7 @@
 Vehicle {
  ID "BBCBA43A9778AE21"
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+  }
+ }
 }

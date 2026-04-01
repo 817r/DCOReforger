@@ -1,7 +1,18 @@
 SCR_AIGroup {
  ID "0000000000000001"
  components {
+  DCO_GroupContactReporterComponent "{68FE1C39A63FE239}" {
+  }
   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   components {
+    DCO_TransportTeamComponent "{69028C1FE6A7D100}" {
+     Enabled 0
+    }
+   }
+  }
+  SCR_AIConfigComponent "{512CC1759AE69D6D}" {
+   m_EnableLeaderStop 1
   }
  }
+ DynamicsimLastlodDistance 0
 }

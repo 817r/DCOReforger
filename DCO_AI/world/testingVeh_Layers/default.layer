@@ -1,0 +1,54 @@
+$grp GameEntity {
+ {
+  components {
+   AICommander_ManagerComponent "{68F88499AF35F645}" {
+   }
+  }
+  coords 2750.273 66.423 1858.632
+ }
+ USSR_Commander {
+  components {
+   AICommander_AlgorithmComponent "{68F8849956F58560}" {
+    m_sCommanderUID "mechanizedSquad"
+    m_sFactionKey "USSR"
+    m_fObjectiveAtTheSameTime 1
+    m_fTransportDistanceThreshold 15
+   }
+   CMD_ThreatResponseComponent "{68FE1C39A87743C0}" {
+   }
+  }
+  coords 2015.591 51.482 3051.139
+ }
+ ArlevilleObjective {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fBaseValue 70
+    m_fRadius 145
+   }
+   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
+    m_vResolution 32
+    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
+   }
+  }
+  coords 2786.54 73.491 1687.561
+ }
+ US_Commander {
+  components {
+   AICommander_AlgorithmComponent "{68F8849956F58560}" {
+    m_sCommanderUID "rifleSquad"
+    m_sFactionKey "US"
+    m_fObjectiveAtTheSameTime 4
+    m_fTransportDistanceThreshold 15
+   }
+   CMD_ThreatResponseComponent "{68FE1C39956A7026}" {
+   }
+  }
+  coords 1835.601 50.053 1071.163
+ }
+}
+Vehicle LAV1 : "{0FBF8F010F81A4E5}Prefabs/Vehicles/Wheeled/LAV25/LAV25.et" {
+ coords 1831.372 50.285 1106.429
+}
+SCR_AIGroup : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ coords 1829.399 50.646 1088.539
+}

@@ -4,6 +4,7 @@ SCR_ChimeraAIAgent {
   DCO_AIConfigComponent "{68B10290AA2AA4DA}" {
   }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
+   m_EnableLeaderStop 1
    m_aDangerReactions {
     SCR_AIDangerReaction_Killzone "{68CB4305748A0BF6}" {
      m_eType Danger_Killzone
@@ -15,4 +16,5 @@ SCR_ChimeraAIAgent {
    }
   }
  }
+ DynamicsimLastlodDistance 0
 }

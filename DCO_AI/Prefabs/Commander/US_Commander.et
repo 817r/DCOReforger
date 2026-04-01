@@ -1,0 +1,15 @@
+GameEntity {
+ ID "6902DABDA61492A4"
+ components {
+  AICommander_AlgorithmComponent "{68F8849956F58560}" {
+   m_sCommanderUID ""
+   m_sFactionKey ""
+   m_fObjectiveAtTheSameTime 4
+   m_fThinkInterval 150
+   m_fTransportDistanceThreshold 15
+  }
+  CMD_ThreatResponseComponent "{68FE1C39956A7026}" {
+  }
+ }
+ coords 1835.601 50.053 1071.163
+}

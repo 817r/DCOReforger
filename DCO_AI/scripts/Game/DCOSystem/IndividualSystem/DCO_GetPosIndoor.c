@@ -18,7 +18,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 	
 	vector fPos;
 	
-	static const int maxAttempt = 5000;
+	static const int maxAttempt = 1000;
 	protected int attempt;
 
 	protected float EYE_POS = 1.55;
@@ -29,7 +29,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 	
 	#ifdef WORKBENCH
 	// DEBUGER
-	protected ref array<ref Shape> m_aDebugShapes = {};
+	//protected ref array<ref Shape> m_aDebugShapes = {};
 	
 	#endif
 	//------------------------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 			protected vector m_vLocalMinss, m_vLocalMaxss;
 			comp.GetOwner().GetBounds(m_vLocalMinss, m_vLocalMaxss);
 			float myR = 0.5*(m_vLocalMaxss[0] - m_vLocalMinss[0]);
-			if (myR > 2) 
+			if (myR > 4) 
 				m_aQueryFoundBuilding.Insert(e);
 		}
 			
@@ -126,7 +126,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 				if (!IsPositionOccupied(outPos))
 				{
 					#ifdef WORKBENCH
-					m_aDebugShapes.Insert(Shape.CreateSphere(COLOR_GREEN_A, ShapeFlags.NOZBUFFER | ShapeFlags.WIREFRAME, outPos, 0.2));
+					//m_aDebugShapes.Insert(Shape.CreateSphere(COLOR_GREEN_A, ShapeFlags.NOZBUFFER | ShapeFlags.WIREFRAME, outPos, 0.2));
 					#endif
 					fPos = outPos;
 					FoundPosition = true;
@@ -135,7 +135,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 				} else
 				{
 					#ifdef WORKBENCH
-					m_aDebugShapes.Insert(Shape.CreateSphere(COLOR_BLUE_A, ShapeFlags.NOZBUFFER | ShapeFlags.TRANSP, outPos, 0.2));
+					//m_aDebugShapes.Insert(Shape.CreateSphere(COLOR_BLUE_A, ShapeFlags.NOZBUFFER | ShapeFlags.TRANSP, outPos, 0.2));
 					#endif
 				}
 				m_vCurrentQueryPos = GetRandomPosInBounds();

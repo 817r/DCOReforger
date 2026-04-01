@@ -6,7 +6,6 @@ class AICommander_ManagerComponentClass : ScriptComponentClass
 class AICommander_ManagerComponent : ScriptComponent
 {
 	ref array<FactionKey> m_aAvailableFactions = {};
-	ref array<DCO_GroupUtilityComponent> m_aGroup = {};
 	
 	ref array<AICommander_BaseComponent> m_aCommander = {};
 	
@@ -15,11 +14,15 @@ class AICommander_ManagerComponent : ScriptComponent
 	protected static AICommander_ManagerComponent s_Instance;
 	
 	bool RegisterGroup(DCO_GroupUtilityComponent grp)
-	{
-		if (!m_aGroup.Contains(grp))
-			m_aGroup.Insert(grp);
+	{		
+		AssignGroupToCommander(grp);
 		
-		AssignGroupToRandomCommander(grp);
+		return true;
+	}
+	
+	bool RegisterVehicle(IEntity veh)
+	{		
+		AssignVehicleToCommander(veh);
 		
 		return true;
 	}
@@ -37,7 +40,7 @@ class AICommander_ManagerComponent : ScriptComponent
 		if (!m_aCommander.Contains(cmd))
 			m_aCommander.Insert(cmd);
 		
-		Print("REGISTERING : " + cmd.GetCommanderUID() + " FACTION : " + cmd.GetCommanderFactionKey());
+		//Print("REGISTERING : " + cmd.GetCommanderUID() + " FACTION : " + cmd.GetCommanderFactionKey());
 		return true;
 	}
 	
@@ -50,7 +53,7 @@ class AICommander_ManagerComponent : ScriptComponent
 		foreach(Faction f : AvailableFactions)
 		{
 			m_aAvailableFactions.Insert(f.GetFactionKey());
-			Print("FACTION AVAILABLE : " + f.GetFactionName());
+			//Print("FACTION AVAILABLE : " + f.GetFactionName());
 		}
 	}
 	
@@ -72,19 +75,145 @@ class AICommander_ManagerComponent : ScriptComponent
 		return nearestEntity;
 	}
 	
-	void AssignGroupToRandomCommander(DCO_GroupUtilityComponent grp)
+	void GetTopObjectives(AICommander_BaseComponent forCommander, int count, out array<CMD_AICommanderObjectiveComponent> result)
 	{
-		FactionKey grpFk = grp.GetFactionKey();
-		array<AICommander_BaseComponent> aAvailCommander = {};
-		
-		foreach(AICommander_BaseComponent a : m_aCommander)
+		result = {};
+		if (!forCommander)
+			return;
+ 
+		FactionKey fk  = forCommander.GetCommanderFactionKey();
+		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+ 
+		array<float> scores = {};
+		array<CMD_AICommanderObjectiveComponent> sorted = {};
+ 
+		foreach (CMD_AICommanderObjectiveComponent obj : m_aObjective)
 		{
-			if (a.GetCommanderFactionKey() == grpFk)
-				aAvailCommander.Insert(a);
+			if (!obj)
+				continue;
+ 
+			float score = obj.ComputePriorityScore(fk, worldTime);
+ 
+			bool inserted = false;
+			for (int i = 0; i < sorted.Count(); i++)
+			{
+				if (score > scores[i])
+				{
+					sorted.InsertAt(obj, i);
+					scores.InsertAt(score, i);
+					inserted = true;
+					break;
+				}
+			}
+ 
+			if (!inserted)
+			{
+				sorted.Insert(obj);
+				scores.Insert(score);
+			}
+		}
+ 
+		int take = Math.Min(count, sorted.Count());
+		for (int i = 0; i < take; i++)
+			result.Insert(sorted[i]);
+	}
+	
+	void AssignGroupToCommander(DCO_GroupUtilityComponent grp)
+	{
+		if (!grp)
+			return;
+ 
+		FactionKey grpFk = grp.GetFactionKey();
+		//Print("GRP FACTION KEY " + grpFk);
+ 
+		array<AICommander_BaseComponent> availCommanders = {};
+		foreach (AICommander_BaseComponent cmd : m_aCommander)
+		{
+			if (cmd && cmd.GetCommanderFactionKey() == grpFk)
+				availCommanders.Insert(cmd);
+		}
+ 
+		if (availCommanders.IsEmpty())
+		{
+			//Print(string.Format("[CMD_Manager] WARNING: Tidak ada commander untuk faction '%1'. Group '%2' unassigned.",
+				//grpFk, grp.GetOwner().GetName()), LogLevel.WARNING);
+			return;
+		}
+ 
+		AICommander_BaseComponent chosen = null;
+		int leastGroups = int.MAX;
+ 
+		foreach (AICommander_BaseComponent cmd : availCommanders)
+		{
+			int groupCount = cmd.GetOwnedGroupCount();
+			if (groupCount < leastGroups)
+			{
+				leastGroups = groupCount;
+				chosen = cmd;
+			}
 		}
 		
-		AICommander_BaseComponent rnd = aAvailCommander.GetRandomElement();
-		rnd.RegisterGroup(grp);
+		//Print("CHOSEN " + chosen.GetCommanderUID() + " GRP COUNT " + leastGroups);
+ 
+		if (!chosen)
+			return;
+ 
+		chosen.RegisterGroup(grp);
+		grp.RegisterCommanderToGroup(chosen);
+		//Print(string.Format("[CMD_Manager] Group '%1' → Commander '%2'",
+			//grp.GetOwner().GetName(), chosen.GetCommanderUID()));
+	}
+	
+	void AssignVehicleToCommander(IEntity grp)
+	{
+		if (!grp)
+			return;
+ 		SCR_VehicleFactionAffiliationComponent fac = SCR_VehicleFactionAffiliationComponent.Cast(grp.FindComponent(SCR_VehicleFactionAffiliationComponent));
+		FactionKey grpFk = fac.GetDefaultFactionKey();
+ 
+		array<AICommander_BaseComponent> availCommanders = {};
+		foreach (AICommander_BaseComponent cmd : m_aCommander)
+		{
+			if (cmd && cmd.GetCommanderFactionKey() == grpFk)
+				availCommanders.Insert(cmd);
+		}
+ 
+		if (availCommanders.IsEmpty())
+		{
+			return;
+		}
+ 
+		AICommander_BaseComponent chosen = null;
+		int leastGroups = int.MAX;
+ 
+		foreach (AICommander_BaseComponent cmd : availCommanders)
+		{
+			int groupCount = cmd.GetOwnedVehicle();
+			if (groupCount < leastGroups)
+			{
+				leastGroups = groupCount;
+				chosen = cmd;
+			}
+		}
+ 
+		if (!chosen)
+			return;
+ 
+		chosen.RegisterVehicle(grp);
+		DCO_TransportMissionComponent comp = DCO_TransportMissionComponent.Cast(grp.FindComponent(DCO_TransportMissionComponent));
+		comp.AssignCommanderOwner(chosen);
+		Print(string.Format("[VEH_Manager] VEH '%1' → Commander '%2'", grp.GetName(), chosen.GetCommanderUID()));
+	}
+	
+	bool UnregisterGroup(DCO_GroupUtilityComponent grp)
+	{
+		foreach (AICommander_BaseComponent cmd : m_aCommander)
+		{
+			if (cmd.IsGroupHere(grp))
+				cmd.UnregisterGroup(grp);
+		}
+		
+		return true;
 	}
 	
 	static AICommander_ManagerComponent GetInstance()

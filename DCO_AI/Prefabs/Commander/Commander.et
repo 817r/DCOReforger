@@ -1,0 +1,9 @@
+GameEntity : "{C28F5F51499CB912}Prefabs/Commander/US_Commander.et" {
+ ID "6902DABDA61492A4"
+ components {
+  AICommander_AlgorithmComponent "{68F8849956F58560}" {
+   m_fObjectiveAtTheSameTime 2
+  }
+ }
+ coords 2755.965 73.157 1561.269
+}

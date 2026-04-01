@@ -8,9 +8,6 @@ class DCO_CombatMoveUtility
 		if (moveType == EMovementType.SPRINT)
 			return false;
 		
-		if (dir == SCR_EAICombatMoveDirection.BACKWARD)
-			return false;
-		
 		return true;
 	}
 }	

@@ -1,0 +1,8 @@
+GameEntity {
+ ID "6902DABDBF9D2532"
+ components {
+  AICommander_ManagerComponent "{68F88499AF35F645}" {
+  }
+ }
+ coords 2750.273 66.423 1858.632
+}

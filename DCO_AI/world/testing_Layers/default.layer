@@ -6,36 +6,314 @@ $grp GameEntity {
   }
   coords 2750.273 66.423 1858.632
  }
- {
+ USSR_Commander {
   components {
    AICommander_AlgorithmComponent "{68F8849956F58560}" {
     m_sCommanderUID "mechanizedSquad"
     m_sFactionKey "USSR"
+    m_fObjectiveAtTheSameTime 2
+    m_fTransportDistanceThreshold 15
+   }
+   CMD_ThreatResponseComponent "{68FE1C39A87743C0}" {
    }
   }
-  coords 2742.375 67.76 1867.464
+  coords 2015.591 51.482 3051.139
  }
- TestObjective {
+ ArlevilleObjective {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fBaseValue 70
+    m_fRadius 145
    }
    Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
     m_vResolution 32
     m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
    }
   }
-  coords 2662.468 80.406 1819.463
+  coords 2786.54 73.491 1687.561
  }
- {
+ US_Commander {
   components {
    AICommander_AlgorithmComponent "{68F8849956F58560}" {
     m_sCommanderUID "rifleSquad"
     m_sFactionKey "US"
+    m_fObjectiveAtTheSameTime 4
+   }
+   CMD_ThreatResponseComponent "{68FE1C39956A7026}" {
    }
   }
-  coords 2749.168 67.76 1869.59
+  coords 1835.601 50.053 1071.163
+ }
+ SignalHillObjective {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 50
+    m_eObjectiveType DESTROY
+   }
+   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
+    m_vResolution 32
+    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
+   }
+  }
+  coords 2501.33 147.786 2260.85
+ }
+ HighfieldsObjective {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 85
+   }
+   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
+    m_vResolution 32
+    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
+   }
+  }
+  coords 2722.402 88.022 2124.046
+ }
+ ArlevilleHeights {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 55
+   }
+   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
+    m_vResolution 32
+    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
+   }
+  }
+  coords 3069.396 72.907 1576.946
+ }
+ TimberRidge {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 75
+   }
+   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
+    m_vResolution 32
+    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
+   }
+  }
+  coords 2600.126 111.052 2500.408
+ }
+ ArlevilleObjective2 {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fBaseValue 70
+    m_fRadius 200
+   }
+   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
+    m_vResolution 32
+    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
+   }
+  }
+  coords 3152.978 11.304 2782.434
+ }
+ ArlevilleObjective3 {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fBaseValue 70
+    m_fRadius 71
+   }
+   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
+    m_vResolution 32
+    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
+   }
+  }
+  coords 3091.082 44.263 2425.603
  }
 }
-SCR_AIGroup AmmoGroup : "{C8622D0595B48437}Prefabs/Groups/OPFOR/Group_USSR_AmmoTeam.et" {
- coords 2707.913 74.323 1900.533
+$grp Vehicle : "{0FBF8F010F81A4E5}Prefabs/Vehicles/Wheeled/LAV25/LAV25.et" {
+ LAV1 {
+  coords 1778.059 46.874 1098.424
+ }
+ LAV2 {
+  coords 1764.335 45.627 1087.605
+ }
+}
+SCR_AIGroup : "{1F468430E5AB477E}Prefabs/Groups/BLUFOR/GreenBerets/Suppressed/Group_US_GreenBeret_ReconSquad.et" {
+ coords 1845.242 52.646 1109.209
+}
+$grp SCR_AIGroup : "{30ED11AA4F0D41E5}Prefabs/Groups/OPFOR/Group_USSR_FireGroup.et" {
+ {
+  coords 2065.024 52.86 3040.41
+ }
+ {
+  coords 2057.768 51.23 3053.478
+ }
+ {
+  coords 2045.037 51.279 3059.096
+ }
+ {
+  coords 2030.569 51.377 3057.885
+ }
+}
+$grp Vehicle : "{3EA6F47D95867114}Prefabs/Vehicles/Wheeled/M998/M1025_armed_M2HB.et" {
+ M1025_armed_M2HB1 {
+  coords 1732.109 45.633 1086.176
+ }
+ M1025_armed_M2HB2 {
+  coords 1751.754 45.535 1092.077
+ }
+}
+$grp Vehicle : "{47D94E1193A88497}Prefabs/Vehicles/Wheeled/M151A2/M151A2_transport.et" {
+ M151A2_transport1 {
+  components {
+   SCR_VehicleFactionAffiliationComponent "{5882CBD9AC741CEC}" {
+    "faction affiliation" "USSR"
+   }
+  }
+  coords 2096.655 51.958 3004.008
+ }
+ M151A2_transport2 {
+  components {
+   SCR_VehicleFactionAffiliationComponent "{5882CBD9AC741CEC}" {
+    "faction affiliation" "USSR"
+   }
+  }
+  coords 2110.57 53.002 2983.218
+ }
+}
+$grp SCR_AIGroup : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ {
+  coords 1986.203 51.418 3096.631
+ }
+ {
+  coords 1982.341 51.077 3085.596
+ }
+ {
+  coords 1997.999 51.281 3083.459
+ }
+}
+$grp SCR_AIGroup : "{81B6DBF2B88545F5}Prefabs/Groups/BLUFOR/Group_US_Team_Suppress.et" {
+ {
+  coords 1845.555 53.154 1086.956
+ }
+ {
+  coords 1869.58 58.215 1084.917
+ }
+}
+$grp Vehicle : "{81FDAD5EB644CC3D}Prefabs/Vehicles/Wheeled/M923A1/M923A1_transport_covered.et" {
+ M923A1_transport_covered1 {
+  coords 1703.287 43.439 1110.828
+ }
+ M923A1_transport_covered2 {
+  coords 1794.72 44.12 1146.781
+ }
+}
+$grp SCR_AIGroup : "{84E5BBAB25EA23E5}Prefabs/Groups/BLUFOR/Group_US_FireTeam.et" {
+ Recon1_BF {
+  components {
+   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+    m_eUnitCapabilities RECON
+   }
+  }
+  coords 1862.026 56.423 1082.649
+ }
+ Reserve2_BF {
+  components {
+   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+    m_eUnitCapabilities RESERVE
+   }
+  }
+  coords 1827.196 52.19 1077.677
+ }
+ {
+  coords 1821.938 50.532 1114.157
+ }
+ {
+  coords 1834.964 50.996 1131.459
+ }
+ {
+  coords 1857.632 53.078 1123.793
+ }
+ {
+  coords 1871.54 55.484 1110.353
+ }
+}
+SCR_AIGroup : "{B7AB5D3F8A7ADAE4}Prefabs/Groups/BLUFOR/Group_US_PlatoonHQ.et" {
+ coords 1866.8 54.966 1100.535
+}
+Vehicle BTR1 : "{C012BB3488BEA0C2}Prefabs/Vehicles/Wheeled/BTR70/BTR70.et" {
+ coords 2128.64 53.604 2922.678
+}
+SCR_AIGroup Recon1_OF : "{C8622D0595B48437}Prefabs/Groups/OPFOR/Group_USSR_AmmoTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_eUnitCapabilities RECON
+  }
+ }
+ coords 2011.889 52.175 2997.099
+}
+$grp Vehicle : "{D9B91FAB817A6033}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_transport_covered.et" {
+ Ural4320_transport_covered1 {
+  coords 2119.362 53.701 2950.58
+ }
+ Ural4320_transport_covered2 {
+  coords 2080.222 53.1 2980.462
+ }
+ Ural4320_transport_covered3 {
+  coords 2090.039 53.628 2943.933
+ }
+}
+$grp SCR_AIGroup : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ Assault1_BF {
+  components {
+   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+    m_eUnitCapabilities ASSAULT
+   }
+  }
+  coords 1810.618 52.763 1085.366
+ }
+ Reserve1_BF {
+  components {
+   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+    m_eUnitCapabilities RESERVE
+   }
+  }
+  coords 1824.606 52.223 1097.297
+ }
+ {
+  coords 1835.675 51.874 1116.365
+ }
+ {
+  coords 1795.301 50.804 1078.67
+ }
+ {
+  coords 1810.369 48.368 1055.426
+ }
+}
+$grp SCR_AIGroup : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ Assault1_OF {
+  components {
+   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+    m_eUnitCapabilities ASSAULT
+   }
+  }
+  coords 2008.652 51.373 2983.264
+ }
+ Reserve2_OF {
+  components {
+   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+    m_eUnitCapabilities RESERVE
+   }
+  }
+  coords 1993.295 51.375 2993.727
+ }
+ Reserve1_OF {
+  components {
+   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+    m_eUnitCapabilities RESERVE
+   }
+  }
+  coords 1994.3 50.774 2969.417
+ }
+ {
+  coords 1971.954 52.791 3137.661
+ }
+}
+SCR_AIGroup Flank1_BF : "{FCF7F5DC4F83955C}Prefabs/Groups/BLUFOR/Group_US_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_eUnitCapabilities FLANK
+  }
+ }
+ coords 1846.543 53.189 1075.395
 }
