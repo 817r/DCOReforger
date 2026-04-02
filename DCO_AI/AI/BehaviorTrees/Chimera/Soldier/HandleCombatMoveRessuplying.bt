@@ -67,14 +67,14 @@ BehaviorTree {
          Name "SCR_AI Get Vector From Combat Move"
          EditorPos 768 864
          InPorts {
-          SingleInputPortContainer SingleInputPortContainerClass {
-           Port 50
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 46
            PortName "Request"
           }
          }
          OutPorts {
-          SingleOutputPortContainer SingleOutputPortContainerClass {
-           Port 49
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 45
            PortName "Pos"
           }
          }
@@ -104,46 +104,19 @@ BehaviorTree {
             }
             Selector Selector {
              Name "Selector"
-             EditorPos 2848 2064
-             Nodes {
-              DecoTestVariable "Test Variable" {
-               Name "Test Variable"
-               EditorPos 2720 2240
-               Nodes {
-                AITaskSetVariable "Set Variable" {
-                 Name "Set Variable"
-                 EditorPos 2704 2400
-                 SetValue "false"
-                 OutVariable 25
-                }
-               }
-               InVariable 24
-               TestType EqualsValue
-               TestValue "true"
-              }
-              AITaskSetVariable "Set Variable" {
-               Name "Set Variable"
-               EditorPos 3008 2256
-               SetValue "true"
-               OutVariable 26
-              }
-             }
-            }
-            Selector Selector {
-             Name "Selector"
-             EditorPos 3568 2064
+             EditorPos 3200 2016
              Nodes {
               DecoIsInVehicle "Is In Vehicle" {
                Name "Is In Vehicle"
-               EditorPos 3360 2224
+               EditorPos 2992 2176
                Nodes {
                 Sequence Sequence {
                  Name "Sequence"
-                 EditorPos 3424 2384
+                 EditorPos 3056 2336
                  Nodes {
                   AITaskReturnState "Return State" {
                    Name "Return State"
-                   EditorPos 3408 2544
+                   EditorPos 3040 2496
                    Result FAIL
                   }
                  }
@@ -152,25 +125,25 @@ BehaviorTree {
               }
               Sequence Sequence {
                Name "Sequence"
-               EditorPos 3936 2256
+               EditorPos 3584 2224
                Nodes {
                 AITaskSetPathfindingFilters "Set Pathfinding Filters" {
                  Name "Set Pathfinding Filters"
-                 EditorPos 3616 2416
+                 EditorPos 3264 2384
                  NavmeshProject "Soldiers"
-                 IgnoreFlags 0x8 0
+                 IgnoreFlags 0x1c 0
                 }
                 AITaskSetVariable "Set Variable" {
                  Name "Set Variable"
-                 EditorPos 3872 2432
+                 EditorPos 3520 2400
                  SetValue "0.6"
-                 OutVariable 27
+                 OutVariable 24
                 }
                 AITaskSetVariable "Set Variable" {
                  Name "Set Variable"
-                 EditorPos 4112 2432
+                 EditorPos 3760 2400
                  SetValue "0.6"
-                 OutVariable 29
+                 OutVariable 26
                 }
                }
               }
@@ -180,22 +153,22 @@ BehaviorTree {
              Name "Set Variable"
              EditorPos 3856 2048
              SetValue "0"
-             OutVariable 36
+             OutVariable 33
             }
             SCR_AICombatMoveRequest_Move_InvokeOnMovementStarted "SCR_AI Combat Move Request_ Move_ Invoke On Movement Started" {
              Name "Invoke OnMovementStarted"
              EditorPos 4400 2064
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 28
+               Port 25
                PortName "Request"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 30
+               Port 27
                PortName "Position"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 31
+               Port 28
                PortName "IsCover"
               }
              }
@@ -217,18 +190,18 @@ BehaviorTree {
                 AITaskIdle Idle {
                  Name "Idle"
                  EditorPos 4896 3200
-                 PeriodKey 34
+                 PeriodKey 31
                 }
                 AITaskSetVariable "Set Variable" {
                  Name "Set Variable"
                  EditorPos 5072 3200
                  SetValue "1"
-                 OutVariable 35
+                 OutVariable 32
                 }
                }
               }
              }
-             InVariable 33
+             InVariable 30
              TestType EqualsValue
              TestValue "false"
             }
@@ -242,18 +215,25 @@ BehaviorTree {
                Nodes {
                 AITaskMove Move {
                  Name "Move"
-                 EditorPos 5408 3952
-                 InTargetLocation 37
-                 InPrecisionXZ 38
-                 InPrecisionY 39
-                 InAutoOrientation 40
+                 EditorPos 5200 3952
+                 InTargetLocation 34
+                 InPrecisionXZ 35
+                 InPrecisionY 36
+                 InAutoOrientation -1
+                 AutoOrientation 0
                  InExtraMoveParams -1
+                }
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos 5585.069 3989.591
+                 Period 2
+                 PeriodRandom 3
                 }
                 AITaskSetVariable "Set Variable" {
                  Name "Set Variable"
                  EditorPos 5760 3968
                  SetValue "1"
-                 OutVariable 41
+                 OutVariable 37
                 }
                }
               }
@@ -266,7 +246,7 @@ BehaviorTree {
                  EditorPos 5968 4256
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
-                   Port 42
+                   Port 38
                    PortName "Request"
                   }
                  }
@@ -276,7 +256,7 @@ BehaviorTree {
                  Name "Set Variable"
                  EditorPos 6480 4256
                  SetValue "2"
-                 OutVariable 43
+                 OutVariable 39
                 }
                }
               }
@@ -297,7 +277,7 @@ BehaviorTree {
                 }
                }
                AbortType AbortChildrenBranchAndParentFurtherChildren
-               InVariable 44
+               InVariable 40
                TestType EqualsValue
                TestValue "0"
               }
@@ -312,7 +292,7 @@ BehaviorTree {
                 }
                }
                AbortType AbortChildrenBranchAndParentFurtherChildren
-               InVariable 45
+               InVariable 41
                TestType EqualsValue
                TestValue "1"
               }
@@ -327,7 +307,7 @@ BehaviorTree {
                 }
                }
                AbortType AbortChildrenBranchAndParentFurtherChildren
-               InVariable 46
+               InVariable 42
                TestType EqualsValue
                TestValue "2"
               }
@@ -345,7 +325,7 @@ BehaviorTree {
              EditorPos 5872 1648
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 47
+               Port 43
                PortName "Stance"
               }
              }
@@ -355,7 +335,7 @@ BehaviorTree {
              EditorPos 6176 1664
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 48
+               Port 44
                PortName "InCover"
               }
               SingleInputPortContainer SingleInputPortContainer {
@@ -387,7 +367,7 @@ BehaviorTree {
    EditorPos -2208 2432
    InPorts {
     SingleInputPortContainer SingleInputPortContainer {
-     Port 0
+     Port -1
      PortName "CombatMoveRequest"
     }
    }
@@ -483,7 +463,7 @@ BehaviorTree {
        }
        OutPorts {
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 32
+         Port 29
          PortName "Pos"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
@@ -665,7 +645,7 @@ BehaviorTree {
  VariablesRefs {
   VariableReference Rq {
    VariableType 0
-   EditorPos -2704 1456
+   EditorPos -1344 496
   }
   VariableReference TryFindCover {
    VariableType 1
@@ -771,21 +751,9 @@ BehaviorTree {
    VariableType 5
    EditorPos 1952 2208
   }
-  VariableReference AimAtTarget {
-   VariableType 7
-   EditorPos 2528 2304
-  }
-  VariableReference AutoOrientation {
-   VariableType 16
-   EditorPos 2720 2544
-  }
-  VariableReference AutoOrientation {
-   VariableType 16
-   EditorPos 3024 2400
-  }
   VariableReference PrecisionXZ {
    VariableType 17
-   EditorPos 3876.549 2551.356
+   EditorPos 3524.549 2519.356
   }
   VariableReference Rq {
    VariableType 0
@@ -793,7 +761,7 @@ BehaviorTree {
   }
   VariableReference PrecisionY {
    VariableType 11
-   EditorPos 4153.457 2554.016
+   EditorPos 3801.457 2522.016
   }
   VariableReference MovePos {
    VariableType 14
@@ -825,19 +793,15 @@ BehaviorTree {
   }
   VariableReference MovePos {
    VariableType 14
-   EditorPos 5168 3888
+   EditorPos 4960 3888
   }
   VariableReference PrecisionXZ {
    VariableType 17
-   EditorPos 5150.866 3965.668
+   EditorPos 4942.866 3965.668
   }
   VariableReference PrecisionY {
    VariableType 11
-   EditorPos 5136 4048
-  }
-  VariableReference AutoOrientation {
-   VariableType 16
-   EditorPos 5088 4144
+   EditorPos 4928 4048
   }
   VariableReference MoveState {
    VariableType 18

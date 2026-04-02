@@ -152,7 +152,7 @@ modded class SCR_AIGroupUtilityComponent
 	{
 		foreach (SCR_AIGroupTargetCluster c : m_Perception.m_aTargetClusters)
 		{
-			if (c.m_State && c.m_State.m_iCountEndangering != 0 && c.m_State.m_iCountAlive != 0 && c.m_State.GetTimeSinceLastNewInformation() < 15)
+			if (c.m_State && c.m_State.m_iCountEndangering != 0 && c.m_State.m_iCountAlive != 0 && c.m_State.GetTimeSinceLastNewInformation() < 7)
 				return true;
 		}
 	

@@ -127,23 +127,23 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
       }
       Selector Selector {
        Name "Selector"
-       EditorPos 48 800
+       EditorPos -228.694 269.417
        Nodes {
         DecoTestVariable "Test Variable" {
          Name "Test Variable"
-         EditorPos -251.306 994.583
+         EditorPos -544 704
          Nodes {
           Sequence Sequence {
            Name "Sequence"
-           EditorPos -211.286 1191.429
+           EditorPos -503.98 900.846
            Nodes {
             SCR_AIUpdateExecutedAction "SCR_AI Update Executed Action" {
              Name "SCR_AI Update Executed Action"
-             EditorPos -569.917 1328.829
+             EditorPos -864 1040
             }
             AITaskSetVariable "Set Variable" {
              Name "Set Variable"
-             EditorPos -173.686 1332.599
+             EditorPos -466.38 1042.016
              ClearVariable 1
              OutVariable 6
             }
@@ -156,11 +156,11 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
         }
         SCR_AIIsValidAction "SCR_AI Is Valid Action" {
          Name "SCR_AI Is Valid Action"
-         EditorPos 559.5 1014.306
+         EditorPos 266.806 723.723
          Nodes {
           RunBT RunBT {
            Name "RunBT"
-           EditorPos 615.567 1307.65
+           EditorPos 288 960
            AlwaysReinit 1
            InBehaviorTree 1
           }
@@ -171,7 +171,13 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
       }
       RunBT RunBT {
        Name "RunBT"
-       EditorPos 336 576
+       EditorPos 272 320
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 10
+         PortName "lowAmmo"
+        }
+       }
        BehaviorTree "{ACD3C7A90E991485}AI/BehaviorTrees/Chimera/Soldier/HandleAmmo.bt"
       }
       Selector Selector {
@@ -236,6 +242,10 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
    Flags 0
    Desc "float"
   }
+  BtVariableBool IsLowAmmo {
+   Flags 0
+   Desc ""
+  }
  }
  VariablesRefs {
   VariableReference unknownTarget {
@@ -244,7 +254,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
   }
   VariableReference behaviorTree {
    VariableType 1
-   EditorPos 177.987 1199.998
+   EditorPos -114.707 909.415
   }
   VariableReference updateBehavior {
    VariableType 2
@@ -252,7 +262,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
   }
   VariableReference updateBehavior {
    VariableType 2
-   EditorPos -494.639 1092.5
+   EditorPos -787.333 801.917
   }
   VariableReference unknownTarget {
    VariableType 0
@@ -264,7 +274,7 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
   }
   VariableReference updateBehavior {
    VariableType 2
-   EditorPos 38.297 1405.774
+   EditorPos -254.397 1115.191
   }
   VariableReference useCombatMove {
    VariableType 3
@@ -277,6 +287,10 @@ BehaviorTree "{990D4960E5206005}AI/BehaviorTrees/Chimera/Soldier/Soldier.bt" {
   VariableReference fDecisionUpdateInterval {
    VariableType 4
    EditorPos -1435 965.953
+  }
+  VariableReference IsLowAmmo {
+   VariableType 5
+   EditorPos 656 448
   }
  }
  Groups {

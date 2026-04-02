@@ -3,6 +3,7 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 	// Inputs
 	protected static const string PORT_PREFAB_RESOURCE_NAME = "PrefabResourceName";
 	protected static const string PORT_WEAPON_COMPONENT = "WeaponComponent";
+	protected static const string PORT_MAGAZINE_WELL = "MagazineWellArray";
 	
 	// Used for query
 	protected ResourceName m_sQueryResourceName;
@@ -10,6 +11,9 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 	protected CharacterControllerComponent m_ControlComp;
 	protected BaseWeaponManagerComponent m_WeaponMgrComp;
 	protected CompartmentAccessComponent m_CompartmentAccessComp;
+	
+	protected typename magazineWell;
+	
 	IEntity controlledEnt;
 	
 	//------------------------------------------------------------
@@ -37,9 +41,25 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 		else
 			selectedWeaponComp = weaponMgr.GetCurrentWeapon();
 		
-		DCO_AIResupplyConfigComponent resConf = DCO_AIResupplyConfigComponent.Cast(controlledEnt.FindComponent(DCO_AIResupplyConfigComponent));
-		m_sQueryResourceName = resConf.GetRandomMagazinePrefab(selectedWeaponComp.GetWeaponType());		
+		if (selectedWeaponComp)
+		{
+			BaseMuzzleComponent muzz = selectedWeaponComp.GetCurrentMuzzle();
+			if (muzz)
+			{
+				magazineWell = muzz.GetMagazineWell().Type();
+			}
+		}
 		
+		DCO_AIResupplyConfigComponent resConf = DCO_AIResupplyConfigComponent.Cast(controlledEnt.FindComponent(DCO_AIResupplyConfigComponent));
+		if (resConf)
+			m_sQueryResourceName = resConf.GetRandomMagazinePrefab(selectedWeaponComp.GetWeaponType());		
+		
+		if (!magazineWell)
+			Print("FOUND NO MAGAZINE WELL");
+		else
+			Print("FOUND MAGAZINE WELL " + magazineWell.ToString());
+		
+		SetVariableOut(PORT_MAGAZINE_WELL, magazineWell);
 		SetVariableOut(PORT_PREFAB_RESOURCE_NAME, m_sQueryResourceName);
 		
 		return ENodeResult.SUCCESS;
@@ -60,6 +80,6 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 	protected static ref TStringArray s_aVarsIn = {PORT_WEAPON_COMPONENT};
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 	
-	protected static ref TStringArray s_aVarsOut = { PORT_PREFAB_RESOURCE_NAME };
+	protected static ref TStringArray s_aVarsOut = { PORT_PREFAB_RESOURCE_NAME, PORT_MAGAZINE_WELL };
 	override TStringArray GetVariablesOut() { return s_aVarsOut; }
 }

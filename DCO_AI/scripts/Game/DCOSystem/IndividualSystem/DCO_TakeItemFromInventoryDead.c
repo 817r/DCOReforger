@@ -66,6 +66,9 @@ class SCR_AITakeItemFromInventory : AITaskScripted
 		arsenalComp =
 			SCR_InventoryStorageManagerComponent.Cast(arsenalEntity.FindComponent(SCR_InventoryStorageManagerComponent));
 		
+		Resource mags = Resource.Load(prefabResourceName);
+		IEntity en = mags.GetResource().ToEntitySource();
+		
 		if (!arsenalComp)
 			return ENodeResult.FAIL;
 		

@@ -3,13 +3,13 @@ class DCO_GroupContactReporterComponentClass : ScriptComponentClass {}
 
 class DCO_GroupContactReporterComponent : ScriptComponent
 {
-	[Attribute("10.0", UIWidgets.EditBox, "Interval scan musuh (detik)", category: "Contact")]
+	[Attribute("10.0", UIWidgets.EditBox, "Interval scan enemy (Second)", category: "Contact")]
 	protected float m_fScanInterval;
 
-	[Attribute("3", UIWidgets.EditBox, "Minimum musuh terdeteksi sebelum lapor", category: "Contact")]
+	[Attribute("3", UIWidgets.EditBox, "Minimum enemy detected before report", category: "Contact")]
 	protected int m_iMinEnemyToReport;
 
-	[Attribute("5", UIWidgets.EditBox, "Min unit count sebelum request reinforcement", category: "Contact")]
+	[Attribute("5", UIWidgets.EditBox, "Minimun Unit Count for reporting", category: "Contact")]
 	protected int m_iReinforcementThreshold;
 
 	

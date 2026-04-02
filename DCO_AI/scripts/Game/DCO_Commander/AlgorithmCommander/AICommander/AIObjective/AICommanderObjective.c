@@ -25,6 +25,9 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
  
 	[Attribute("1", UIWidgets.EditBox, "Berapa group yang di-assign untuk defend setelah captured", category: "Objective")]
 	protected int m_iDefendGroupCount;
+	
+	[Attribute("", UIWidgets.Auto, "Blacklisted Commander to not process this objective", category: "Objective")]
+	protected ref array<string> m_sBlacklistedCo;
  
 	ref map<FactionKey, float> m_mCaptureStartTime = new map<FactionKey, float>();
 	ref map<FactionKey, bool>  m_mIsCaptured       = new map<FactionKey, bool>();
@@ -44,6 +47,13 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	float GetRadius()
 	{
 		return m_fRadius;
+	}
+	
+	bool IsCommanderBlackListed(string cuid)
+	{
+		if (m_sBlacklistedCo.Contains(cuid))
+			return true;
+		return false;
 	}
 	
 	void MarkCompleted(FactionKey fk) { SetObjectiveState(fk, CMD_EObjectiveState.COMPLETED); }
@@ -83,39 +93,42 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		
 	}
 	
-	float ComputePriorityScore(FactionKey forFaction, float worldTime)
+	float ComputePriorityScore(FactionKey forFaction, float worldTime, vector commanderPos)
 	{
-		CMD_EObjectiveState currentState = GetObjectiveState(forFaction);
- 
-		if (currentState == CMD_EObjectiveState.COMPLETED || currentState == CMD_EObjectiveState.FAILED)
-			return 0.0;
- 
-		if ((worldTime - m_fScoreCacheAge) < CACHE_DURATION)
-			return m_fCachedScore;
- 
-		float score = m_fBaseValue;
- 
-		int enemyCount = CountNearbyUnits(m_fThreatRadius, forFaction, false);
-		if (enemyCount > 0)
-			score += Math.Clamp(enemyCount * 8.0, 0.0, 40.0);
- 
-		if (m_fLastContestedTime > 0.0)
-		{
-			float elapsed = worldTime - m_fLastContestedTime;
-			if (elapsed < 120.0)
-				score += Math.Lerp(25.0, 0.0, elapsed / 120.0);
-		}
- 
-		int friendlyCount = CountNearbyUnits(m_fFriendlyRadius, forFaction, true);
-		score -= Math.Clamp(friendlyCount * 5.0, 0.0, 30.0);
- 
-		if (currentState == CMD_EObjectiveState.ASSIGNED)
-			score -= 15.0;
- 
-		m_fCachedScore   = Math.Max(score, 0.0);
-		m_fScoreCacheAge = worldTime;
- 
-		return m_fCachedScore;
+	    CMD_EObjectiveState currentState = GetObjectiveState(forFaction);
+	
+	    if (currentState == CMD_EObjectiveState.COMPLETED || currentState == CMD_EObjectiveState.FAILED)
+	        return 0.0;
+	
+	    if ((worldTime - m_fScoreCacheAge) < CACHE_DURATION)
+	        return m_fCachedScore;
+	
+	    float score = m_fBaseValue;
+	
+	    int enemyCount = CountNearbyUnits(m_fThreatRadius, forFaction, false);
+	    if (enemyCount > 0)
+	        score += Math.Clamp(enemyCount * 8.0, 0.0, 50.0);
+	
+	    if (m_fLastContestedTime > 0.0)
+	    {
+	        float elapsed = worldTime - m_fLastContestedTime;
+	        if (elapsed < 120.0)
+	            score += Math.Lerp(25.0, 0.0, elapsed / 120.0);
+	    }
+	
+	    int friendlyCount = CountNearbyUnits(m_fFriendlyRadius, forFaction, true);
+	    score -= Math.Clamp(friendlyCount * 5.0, 0.0, 30.0);
+	
+	    if (currentState == CMD_EObjectiveState.ASSIGNED)
+	        score -= 15.0;
+	
+		float distToCommander = vector.Distance(commanderPos, GetOwner().GetOrigin());
+		score -= Math.Map(distToCommander, 0.0, 2000.0, 0.0, 30.0);
+	
+	    m_fCachedScore   = Math.Max(score, 0.0);
+	    m_fScoreCacheAge = worldTime;
+	
+	    return m_fCachedScore;
 	}
 	
 	bool QueryCallback(IEntity e)

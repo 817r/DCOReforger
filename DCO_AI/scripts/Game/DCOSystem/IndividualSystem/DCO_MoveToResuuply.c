@@ -4,7 +4,7 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 2;
 	
 	// Inputs
-	protected static const string PORT_ENTITY = "Entity";
+	protected static const string PORT_ENTITY_POS = "EntityPosition";
 	
 	// Outputs
 	protected static const string PORT_COMPLETE_ACTION = "CompleteAction";
@@ -41,13 +41,12 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 		if (!m_State || !myEntity)
 			return ENodeResult.FAIL;
 		
-		IEntity ent;
 		vector threatPos;
-		GetVariableIn(PORT_ENTITY, ent);
-		threatPos = ent.GetOrigin();
+		GetVariableIn(PORT_ENTITY_POS, threatPos);
+		
 		if (threatPos == vector.Zero)
 			return ENodeResult.FAIL;
-		
+
 		if (MoveToNextPosCondition())
 		{
 			float distToThreat = vector.Distance(myEntity.GetOrigin(), threatPos);
@@ -70,8 +69,8 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 		rq.m_bCheckCoverVisibility = false;
 		rq.m_bFailIfNoCover = false;
 		ResolveMoveandStopStance(rq.m_eStanceMoving, rq.m_eStanceEnd);
-		rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
-		rq.m_fCoverSearchDistMin = 10;
+		rq.m_fCoverSearchDistMax = 0;
+		rq.m_fCoverSearchDistMin = 0;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.FORWARD;
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_bAimAtTarget = false;
@@ -80,7 +79,6 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_vAvoidStraightPathDir = vector.Zero;
 			
-		m_State.CancelRequest();
 		m_State.ApplyNewRequest(rq);			
 	}
 	
@@ -103,32 +101,13 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 		else
 			end = ECharacterStance.PRONE;
 	}
-	
-	protected float ResolveStoppedWaitTime(bool inCover)
-	{
-		float waitTime = 0;
-			
-		if (inCover)
-		{
-			waitTime = 5.0;
-		} else
-		{
-			waitTime = 3.0;
-		}
-			
-		waitTime = Math.RandomFloat(0.7, 1.3) * waitTime;
-			
-		return waitTime;
-	}
 		
 	protected bool MoveToNextPosCondition()
 	{
 		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.6)
 			return false;
-			
-		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover);	
-		
-		if (m_State.IsExecutingRequest() && m_State.m_fTimerStopped_s > stoppedWaitTime)
+
+		if (m_State.GetRequest().m_eType != SCR_EAICombatMoveRequestType.RESUPPLYING)
 		{
 			return true;
 		}
@@ -136,7 +115,7 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 		return false;
 	}
 
-	protected static ref TStringArray s_aVarsIn = { PORT_ENTITY };
+	protected static ref TStringArray s_aVarsIn = { PORT_ENTITY_POS };
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 	
 	override static bool VisibleInPalette() { return true; }

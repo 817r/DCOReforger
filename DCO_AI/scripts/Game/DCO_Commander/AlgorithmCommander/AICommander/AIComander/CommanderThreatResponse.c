@@ -3,20 +3,26 @@ class CMD_ThreatResponseComponentClass : ScriptComponentClass {}
 
 class CMD_ThreatResponseComponent : ScriptComponent
 {
-	[Attribute("30.0", UIWidgets.EditBox, "Score minimum untuk engage threat (di bawah ini diabaikan)", category: "Threat")]
+	[Attribute("30.0", UIWidgets.EditBox, "Score minimum For Engage Threat", category: "Threat")]
 	protected float m_fEngageThreshold;
 
-	[Attribute("65.0", UIWidgets.EditBox, "Score minimum untuk kirim reinforcement ke group yang sudah engage", category: "Threat")]
+	[Attribute("65.0", UIWidgets.EditBox, "Score minimum for Reinforcement sent", category: "Threat")]
 	protected float m_fReinforcementThreshold;
 
-	[Attribute("60.0", UIWidgets.EditBox, "Detik sebelum threat entry yang tidak diupdate dihapus", category: "Threat")]
+	[Attribute("60.0", UIWidgets.EditBox, "Second Before Entry threat forgoten", category: "Threat")]
 	protected float m_fThreatExpiry;
 
-	[Attribute("40.0", UIWidgets.EditBox, "Jarak (meter) dua report dianggap threat yang sama", category: "Threat")]
+	[Attribute("40.0", UIWidgets.EditBox, "Distance in Meter 2 report is a same Report", category: "Threat")]
 	protected float m_fMergeRadius;
 
-	[Attribute("45.0", UIWidgets.EditBox, "Interval proses threat list (detik)", category: "Threat")]
+	[Attribute("45.0", UIWidgets.EditBox, "Interval proses threat list (second)", category: "Threat")]
 	protected float m_fThinkInterval;
+	
+	[Attribute("3.0", UIWidgets.EditBox, "Max Reinforcement Sent to Threat Contact", category: "Reinforcement")]
+	protected int m_iMaxReinforcementSent;
+	
+	[Attribute("1.0", UIWidgets.EditBox, "Increase Scoree Per Enemy", category: "Threat Calculation")]
+	protected int m_iEnemyIncrementedScore;
 
 	protected AICommander_BaseComponent  m_Commander;
 	protected ref array<ref CMD_ThreatEntry> m_aThreats        = new array<ref CMD_ThreatEntry>;
@@ -59,7 +65,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		
 		//Print(threat.m_vPosition.ToString() + "< THREAT POS REINFORCEMENT REQUEST | REINFORCEMENT SENT > " + threat.m_iReinforcementSentNumber);
 
-		if (threat.m_iReinforcementSentNumber > 3)
+		if (threat.m_iReinforcementSentNumber >= m_iMaxReinforcementSent)
 			return;
 
 		if (threat.m_fPriorityScore < m_fReinforcementThreshold)
@@ -101,7 +107,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		float score = 0.0;
 
 		float enemyBonus = Math.Clamp(threat.m_iEstimatedEnemyCount * 6.0, 0.0, 50.0);
-		score = score + enemyBonus;
+		score = score + (enemyBonus * m_iEnemyIncrementedScore);
 
 		float age = worldTime - threat.m_fLastUpdateTime;
 		float freshnessBonus = Math.Max(0.0, 20.0 - (age * 0.5));

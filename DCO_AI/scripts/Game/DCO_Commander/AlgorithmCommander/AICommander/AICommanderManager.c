@@ -91,8 +91,11 @@ class AICommander_ManagerComponent : ScriptComponent
 		{
 			if (!obj)
 				continue;
+			
+			if (obj.IsCommanderBlackListed(forCommander.GetCommanderUID()))
+				continue;
  
-			float score = obj.ComputePriorityScore(fk, worldTime);
+			float score = obj.ComputePriorityScore(fk, worldTime, forCommander.GetOwner().GetOrigin());
  
 			bool inserted = false;
 			for (int i = 0; i < sorted.Count(); i++)

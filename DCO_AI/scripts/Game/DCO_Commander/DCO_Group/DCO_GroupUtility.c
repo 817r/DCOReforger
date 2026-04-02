@@ -26,6 +26,8 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	
 	protected CMD_AICommanderObjectiveComponent currentObjective = null;
 	
+	protected bool IsPlayerGroup = false;
+	
 	protected vector m_vOrderTarget    = vector.Zero;
 	protected float  m_fOrderStartTime = 0.0;
 	protected float  m_fOrderTimeout   = 0.0;
@@ -260,6 +262,9 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	override protected void OnPostInit(IEntity owner)
 	{
 		super.OnPostInit(owner);
+		m_Group = SCR_AIGroup.Cast(owner);
+		m_UtilityComp = SCR_AIGroupUtilityComponent.Cast(owner.FindComponent(SCR_AIGroupUtilityComponent));
+		m_FormationComponent = AIFormationComponent.Cast(owner.FindComponent(AIFormationComponent));
 		SetEventMask(owner, EntityEvent.INIT);
 	}
 	
@@ -278,20 +283,38 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		else
 			DedicatedTransport.Deactivate(GetOwner());
 	}
+	
+	bool IsPlayerGroup()
+	{
+		SCR_AIGroup grp = SCR_AIGroup.Cast(GetOwner());
+		//8Print(grp.GetTotalAgentCount().ToString() + " < AGENT COUNT | PLAYER COUNT > " + grp.GetTotalPlayerCount().ToString());
+		
+		if (grp.GetTotalPlayerCount() != 0)
+		{
+			IsPlayerGroup = true;
+		} else
+		{
+			IsPlayerGroup = false;
+		}
+		
+		return IsPlayerGroup;
+	}
 
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
-		m_Group = SCR_AIGroup.Cast(owner);
 		if (!AICommander_ManagerComponent.GetInstance())
 			return;
+		
+		SCR_AIGroup grp = SCR_AIGroup.Cast(owner);
 		AICommander_ManagerComponent.GetInstance().RegisterGroup(this);
-		m_UtilityComp = SCR_AIGroupUtilityComponent.Cast(owner.FindComponent(SCR_AIGroupUtilityComponent));
-		m_FormationComponent = AIFormationComponent.Cast(owner.FindComponent(AIFormationComponent));
 		if (!m_eUnitCapabilities == CMD_EGroupRole.NONE)
 			SetGroupRole(m_eUnitCapabilities);
 		else
 			SetGroupRole(CMD_EGroupRole.NONE);
+		
+
+			
 		
 		//SetDedicatedTransport(m_bIsDedicatedTransport)
 	}

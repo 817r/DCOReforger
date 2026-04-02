@@ -67,289 +67,160 @@ BehaviorTree {
         }
        }
       }
-      Parallel Parallel {
-       Name "Parallel"
-       EditorPos 1504 752
+      DecoTestVariable "Test Variable" {
+       Name "Test Variable"
+       EditorPos 1056 896
        Nodes {
-        DecoTestVariable "Test Variable" {
-         Name "Test Variable"
-         EditorPos 1216 912
+        DecoIsInVehicle "Is In Vehicle" {
+         Name "Is In Vehicle"
+         EditorPos 1008 1184
          Nodes {
-          DecoIsInVehicle "Is In Vehicle" {
-           Name "Is In Vehicle"
-           EditorPos 640 1248
+          SCR_AIDecoHasActionOfType "SCR_AI Deco Has Action Of Type" {
+           Name "SCR_AI Deco Has Action Of Type"
+           EditorPos 960 1360
            Nodes {
-            SCR_AIDecoHasActionOfType "SCR_AI Deco Has Action Of Type" {
-             Name "SCR_AI Deco Has Action Of Type"
-             EditorPos 592 1424
+            Selector Selector {
+             Name "Selector"
+             EditorPos 1024 1632
              Nodes {
-              Selector Selector {
-               Name "Selector"
-               EditorPos 704 1680
+              DecoIsInVehicle "Is In Vehicle" {
+               Name "Is In Vehicle"
+               EditorPos 0 2352
                Nodes {
-                DecoIsInVehicle "Is In Vehicle" {
-                 Name "Is In Vehicle"
-                 EditorPos -784 2336
-                 Nodes {
-                  Sequence Sequence {
-                   Name "Find Nearest Arsenal Box"
-                   EditorPos -800 2592
-                   Nodes {
-                    AITaskIdle Idle {
-                     Name "Idle"
-                     EditorPos -1168 2880
-                     Period 2
-                    }
-                    SCR_AISetAIState "SCR_AI SetAI State" {
-                     Name "SCR_AI SetAI State"
-                     EditorPos -960 2880
-                     InPorts {
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port -1
-                       PortName "AIState"
-                      }
-                     }
-                     m_stateToSet BUSY
-                    }
-                    RunBT RunBT {
-                     Name "RunBT"
-                     EditorPos -752 2848
-                     InPorts {
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port 8
-                       PortName "WeaponComp"
-                      }
-                     }
-                     BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNearestArsenal.bt"
-                     AlwaysReinit 1
-                    }
-                   }
-                  }
-                 }
-                 NegativeCondition 1
-                }
-                DecoIsInVehicle "Is In Vehicle" {
-                 Name "Is In Vehicle"
-                 EditorPos 0 2352
-                 Nodes {
-                  Sequence Sequence {
-                   Name "Sequence"
-                   EditorPos 64 2528
-                   Nodes {
-                    AITaskIdle Idle {
-                     Name "Idle"
-                     EditorPos -272 2752
-                     Period 2
-                    }
-                    SCR_AISetAIState "SCR_AI SetAI State" {
-                     Name "SCR_AI SetAI State"
-                     EditorPos -80 2752
-                     InPorts {
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port -1
-                       PortName "AIState"
-                      }
-                     }
-                     m_stateToSet BUSY
-                    }
-                    RunBT RunBT {
-                     Name "RunBT"
-                     EditorPos 112 2736
-                     InPorts {
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port 13
-                       PortName "weaponComp"
-                      }
-                     }
-                     BehaviorTree "{93DD727B7DB0571B}AI/BehaviorTrees/Chimera/Soldier/DCO_FindMagazineInGround.bt"
-                    }
-                   }
-                  }
-                 }
-                 NegativeCondition 1
-                }
                 Sequence Sequence {
-                 Name "Sequence - Complain to squad leader"
-                 EditorPos 1424 2304
+                 Name "Sequence"
+                 EditorPos 64 2528
                  Nodes {
-                  SCR_AIGetMuzzleMagazineWell "SCR_AI Get Muzzle Magazine Well" {
-                   Name "SCR_AI Get Muzzle Magazine Well"
-                   EditorPos 864 2560
+                  AITaskIdle Idle {
+                   Name "Idle"
+                   EditorPos -272 2752
+                   Period 2
+                  }
+                  SCR_AISetAIState "SCR_AI SetAI State" {
+                   Name "SCR_AI SetAI State"
+                   EditorPos -80 2752
                    InPorts {
                     SingleInputPortContainer SingleInputPortContainer {
-                     Port 3
-                     PortName "WeaponComponent"
-                    }
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port 4
-                     PortName "MuzzleId"
-                    }
-                   }
-                   OutPorts {
-                    SingleOutputPortContainer SingleOutputPortContainer {
                      Port -1
-                     PortName "MagazineWell"
-                    }
-                    SingleOutputPortContainer SingleOutputPortContainer {
-                     Port 5
-                     PortName "MagazineWellType"
+                     PortName "AIState"
                     }
                    }
+                   m_stateToSet BUSY
                   }
-                  AITaskGetControlledEntity "Get Controlled Entity" {
-                   Name "Get Controlled Entity"
-                   EditorPos 1264 2560
-                   OutControlledEntity 7
-                  }
-                  SCR_AIGetMyGroup "SCR_AI Get My Group" {
-                   Name "SCR_AI Get My Group"
-                   EditorPos 1755.809 2552.567
-                   OutPorts {
-                    SingleOutputPortContainer SingleOutputPortContainer {
-                     Port 6
-                     PortName "GroupOut"
-                    }
-                   }
-                  }
-                  SCR_AISendInfoMessage_NoAmmo "SCR_AI Send Info Message_ No Ammo" {
-                   Name "SCR_AI Send Info Message_ No Ammo"
-                   EditorPos 2240 2656
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos 112 2736
                    InPorts {
                     SingleInputPortContainer SingleInputPortContainer {
-                     Port 6
-                     PortName "Receiver"
-                    }
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port 7
-                     PortName "EntityToSupply"
-                    }
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port 5
-                     PortName "MagazineWellType"
+                     Port 9
+                     PortName "weaponComp"
                     }
                    }
-                  }
-                  DCO_IsAIMagicMagazine "DCO_ IsAI Magic Magazine" {
-                   Name "DCO_ IsAI Magic Magazine"
-                   EditorPos 2621.182 2662.976
-                   Nodes {
-                    DCO_MagicAmmo "DCO_ Magic Ammo" {
-                     Name "DCO_ Magic Ammo"
-                     EditorPos 2656 2800
-                    }
-                   }
-                  }
-                  AITaskReturnState "Return State" {
-                   Name "Return State"
-                   EditorPos 3024 2640
-                   Result RUNNING
+                   BehaviorTree "{93DD727B7DB0571B}AI/BehaviorTrees/Chimera/Soldier/DCO_FindMagazineInGround.bt"
+                   AlwaysReinit 1
                   }
                  }
                 }
                }
+               NegativeCondition 1
+              }
+              Sequence Sequence {
+               Name "Sequence - Complain to squad leader"
+               EditorPos 1424 2304
+               Nodes {
+                SCR_AIGetMuzzleMagazineWell "SCR_AI Get Muzzle Magazine Well" {
+                 Name "SCR_AI Get Muzzle Magazine Well"
+                 EditorPos 864 2560
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 3
+                   PortName "WeaponComponent"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 4
+                   PortName "MuzzleId"
+                  }
+                 }
+                 OutPorts {
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port -1
+                   PortName "MagazineWell"
+                  }
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port 5
+                   PortName "MagazineWellType"
+                  }
+                 }
+                }
+                AITaskGetControlledEntity "Get Controlled Entity" {
+                 Name "Get Controlled Entity"
+                 EditorPos 1264 2560
+                 OutControlledEntity 7
+                }
+                SCR_AIGetMyGroup "SCR_AI Get My Group" {
+                 Name "SCR_AI Get My Group"
+                 EditorPos 1755.809 2552.567
+                 OutPorts {
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port 6
+                   PortName "GroupOut"
+                  }
+                 }
+                }
+                SCR_AISendInfoMessage_NoAmmo "SCR_AI Send Info Message_ No Ammo" {
+                 Name "SCR_AI Send Info Message_ No Ammo"
+                 EditorPos 2240 2656
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 6
+                   PortName "Receiver"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 7
+                   PortName "EntityToSupply"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 5
+                   PortName "MagazineWellType"
+                  }
+                 }
+                }
+                DCO_IsAIMagicMagazine "DCO_ IsAI Magic Magazine" {
+                 Name "DCO_ IsAI Magic Magazine"
+                 EditorPos 2621.182 2662.976
+                 Nodes {
+                  DCO_MagicAmmo "DCO_ Magic Ammo" {
+                   Name "DCO_ Magic Ammo"
+                   EditorPos 2656 2800
+                  }
+                 }
+                }
+                AITaskReturnState "Return State" {
+                 Name "Return State"
+                 EditorPos 3024 2640
+                 Result RUNNING
+                }
+               }
               }
              }
-             NegativeCondition 1
-             AbortType AbortChildrenBranch
-             m_sActionType "SCR_AIPickupInventoryItemsBehavior"
             }
            }
            NegativeCondition 1
+           AbortType AbortChildrenBranch
+           m_sActionType "SCR_AIPickupInventoryItemsBehavior"
           }
          }
-         InVariable 2
-         TestType EqualsValue
-         TestValue "true"
-        }
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 1536 1024
-         Nodes {
-          AITaskIdle Idle {
-           Name "Idle"
-           EditorPos 1424 1200
-           Period 25
-           PeriodRandom 5
-          }
-          SCR_AISetAIState "SCR_AI SetAI State" {
-           Name "SCR_AI SetAI State"
-           EditorPos 1584 1200
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port -1
-             PortName "AIState"
-            }
-           }
-          }
-          AITaskReturnState "Return State" {
-           Name "Return State"
-           EditorPos 1760 1200
-           Result SUCCESS
-          }
-         }
+         NegativeCondition 1
         }
        }
-       UseChildResult 1
-      }
-      DecoTestVariable "Test Variable" {
-       Name "Test Variable"
-       EditorPos 2928 768
-       Nodes {
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 2944 944
-         Nodes {
-          SCR_AIGetCurrentWeaponComponent "SCR_AI Get Current Weapon Component" {
-           Name "SCR_AI Get Current Weapon Component"
-           EditorPos 2352 1136
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 11
-             PortName "WeaponComponent"
-            }
-           }
-          }
-          AITaskSetVariable "Set Variable" {
-           Name "Set Variable"
-           EditorPos 2816 1136
-           SetValue "0"
-           OutVariable 12
-          }
-          SCR_AICheckLowAmmo "SCR_AI Check Low Ammo" {
-           Name "SCR_AI Check Low Ammo"
-           EditorPos 3120 1152
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 11
-             PortName "WeaponComponent"
-            }
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 12
-             PortName "MuzzleId"
-            }
-           }
-           OutPorts {
-            SingleOutputPortContainer SingleOutputPortContainer {
-             Port 10
-             PortName "LowAmmo"
-            }
-           }
-          }
-         }
-        }
-       }
-       InVariable 9
-       TestType SmallerThanValue
-       TestValue "0"
+       InVariable 2
+       TestType EqualsValue
+       TestValue "true"
       }
      }
      UseChildResult 1
     }
    }
-  }
-  Selector Selector {
-   Name "Selector"
-   EditorPos 336 1248
   }
   DCO_IsAIMagicMagazine "DCO_ IsAI Magic Magazine" {
    Name "DCO_ IsAI Magic Magazine"
@@ -510,6 +381,47 @@ BehaviorTree {
    m_bSynchronous 1
    m_bTransmitIfPassenger 0
   }
+  DecoIsInVehicle "Is In Vehicle" {
+   Name "Is In Vehicle"
+   EditorPos -784 2336
+   Nodes {
+    Sequence Sequence {
+     Name "Find Nearest Arsenal Box"
+     EditorPos -800 2592
+     Nodes {
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos -1168 2880
+       Period 2
+      }
+      SCR_AISetAIState "SCR_AI SetAI State" {
+       Name "SCR_AI SetAI State"
+       EditorPos -960 2880
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "AIState"
+        }
+       }
+       m_stateToSet BUSY
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos -752 2848
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 8
+         PortName "WeaponComp"
+        }
+       }
+       BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNearestArsenal.bt"
+       AlwaysReinit 1
+      }
+     }
+    }
+   }
+   NegativeCondition 1
+  }
  }
  Variables {
   BtVariableObject weaponComp {
@@ -525,7 +437,7 @@ BehaviorTree {
    Desc "typename"
   }
   BtVariableBool lowAmmo {
-   Flags 0
+   Flags Output
    Desc "bool"
   }
   BtVariableGroup myGroup {
@@ -548,7 +460,7 @@ BehaviorTree {
   }
   VariableReference lowAmmo {
    VariableType 3
-   EditorPos 810.825 986.032
+   EditorPos 768 976
   }
   VariableReference weaponComp {
    VariableType 0
@@ -573,22 +485,6 @@ BehaviorTree {
   VariableReference weaponComp {
    VariableType 0
    EditorPos -976 2992
-  }
-  VariableReference muzzleId {
-   VariableType 1
-   EditorPos 2784 800
-  }
-  VariableReference lowAmmo {
-   VariableType 3
-   EditorPos 3392 1280
-  }
-  VariableReference weaponComp {
-   VariableType 0
-   EditorPos 2480 1264
-  }
-  VariableReference muzzleId {
-   VariableType 1
-   EditorPos 2896 1264
   }
   VariableReference weaponComp {
    VariableType 0

@@ -3,11 +3,11 @@ BehaviorTree {
  Nodes {
   RootNode Root {
    Name "Root"
-   EditorPos -50 -45
+   EditorPos 398 -445
    Nodes {
     Sequence Sequence {
      Name "Sequence"
-     EditorPos -48 112
+     EditorPos 400 -288
      Nodes {
       Sequence Sequence {
        Name "Sequence"
@@ -27,6 +27,10 @@ BehaviorTree {
            Port 1
            PortName "PrefabResourceName"
           }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 7
+           PortName "MagazineWellArray"
+          }
          }
         }
         SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
@@ -45,39 +49,38 @@ BehaviorTree {
           }
          }
         }
-        SCR_AIFindPositionWithPrefab "SCR_AI Find Position With Prefab" {
-         Name "SCR_AI Find Position With Prefab"
-         EditorPos 192 704
+        SCR_AIFindPositionWithMagazineWell "SCR_AI Find Position With Magazine Well" {
+         Name "SCR_AI Find Position With Magazine Well"
+         EditorPos 160 688
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
            Port 2
            PortName "Pos"
           }
           SingleInputPortContainer SingleInputPortContainer {
-           Port 3
-           PortName "PrefabResourceName"
+           Port 7
+           PortName "MagazineWell"
           }
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 4
+           Port 3
            PortName "ArsenalEntity"
           }
          }
-         m_fSearchRadius 80
         }
         SCR_AIGetEntityPosition "SCR_AI Get Entity Position" {
          Name "SCR_AI Get Entity Position"
-         EditorPos 608 688
+         EditorPos 704 656
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 4
+           Port 3
            PortName "Entity"
           }
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 7
+           Port 5
            PortName "Position"
           }
          }
@@ -86,17 +89,30 @@ BehaviorTree {
       }
       Parallel Parallel {
        Name "Parallel"
-       EditorPos 1344 432
+       EditorPos 1472 192
        Nodes {
-        SCR_AIDCO_Ressuplying "SCR_AIDCO_ Ressuplying" {
-         Name "SCR_AIDCO_ Ressuplying"
-         EditorPos 1143.75 651.7
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 8
-           PortName "Entity"
+        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+         Name "SCR_AI Deco Is Above Threat Level"
+         EditorPos 1120 464
+         Nodes {
+          SCR_AIDCO_Ressuplying "SCR_AIDCO_ Ressuplying" {
+           Name "SCR_AIDCO_ Ressuplying"
+           EditorPos 1168 656
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 5
+             PortName "EntityPosition"
+            }
+           }
+           m_fUpdateInterval_ms 1000
           }
          }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainerClass {
+           PortName "ThresholdIn"
+          }
+         }
+         NegativeCondition 1
         }
         DCO_IsAIDistanceLessThan "DCO_ IsAI Distance Less Than" {
          Name "DCO_ IsAI Distance Less Than"
@@ -111,24 +127,20 @@ BehaviorTree {
              EditorPos 1424 1392
              m_eGesture EItemGesturePickUp
             }
-            SCR_AITakeItemFromInventory "SCR_AI Take Item From Inventory" {
-             Name "SCR_AI Take Item From Inventory"
-             EditorPos 1717.019 1417.488
+            SCR_AITakeItemFromInventoryWell "SCR_AI Take Item From Inventory Well" {
+             Name "SCR_AI Take Item From Inventory Well"
+             EditorPos 1712 1456
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 5
+               Port 4
                PortName "ArsenalEntity"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 6
-               PortName "PrefabResourceName"
+               Port 8
+               PortName "MagazineWell"
               }
              }
              OutPorts {
-              SingleOutputPortContainer SingleOutputPortContainer {
-               Port -1
-               PortName "ItemEntity"
-              }
               SingleOutputPortContainer SingleOutputPortContainer {
                Port -1
                PortName "CountItemsTaken"
@@ -145,7 +157,7 @@ BehaviorTree {
          }
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 9
+           Port 6
            PortName "ThresholdIn"
           }
          }
@@ -196,6 +208,10 @@ BehaviorTree {
    Flags 0
    Desc ""
   }
+  BtVariableTypename MagWellArray {
+   Flags 0
+   Desc ""
+  }
  }
  VariablesRefs {
   VariableReference weaponComp {
@@ -204,39 +220,35 @@ BehaviorTree {
   }
   VariableReference MagPref {
    VariableType 1
-   EditorPos -448 800
+   EditorPos -448 704
   }
   VariableReference myPos {
    VariableType 2
-   EditorPos 0 816
-  }
-  VariableReference MagPref {
-   VariableType 1
-   EditorPos -76 907
+   EditorPos 0 640
   }
   VariableReference deadEnt {
    VariableType 3
-   EditorPos 464 784
+   EditorPos 544 800
   }
   VariableReference deadEnt {
    VariableType 3
-   EditorPos 1533.119 1489.288
-  }
-  VariableReference MagPref {
-   VariableType 1
-   EditorPos 1471.019 1574.388
+   EditorPos 1520 1472
   }
   VariableReference EntityPos {
    VariableType 4
-   EditorPos 848 848
-  }
-  VariableReference deadEnt {
-   VariableType 3
-   EditorPos 966.465 716.845
+   EditorPos 976 832
   }
   VariableReference EntityPos {
    VariableType 4
    EditorPos 1472 816
+  }
+  VariableReference MagWellArray {
+   VariableType 5
+   EditorPos -442.293 915.366
+  }
+  VariableReference MagWellArray {
+   VariableType 5
+   EditorPos 1456 1568
   }
  }
 }

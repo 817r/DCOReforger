@@ -122,7 +122,7 @@ BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMov
                  Nodes {
                   SCR_AIProcessCombatMoveRequest "SCR_AI Process Combat Move Request" {
                    Name "SCR_AI Process Combat Move Request"
-                   EditorPos 547.083 2039.167
+                   EditorPos 544 2032
                    InPorts {
                     SingleInputPortContainer SingleInputPortContainer {
                      Port 7

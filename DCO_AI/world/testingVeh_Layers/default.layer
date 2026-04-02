@@ -49,6 +49,9 @@ $grp GameEntity {
 Vehicle LAV1 : "{0FBF8F010F81A4E5}Prefabs/Vehicles/Wheeled/LAV25/LAV25.et" {
  coords 1831.372 50.285 1106.429
 }
+SCR_SpawnPoint : "{CEA2B24051A44525}PrefabsEditable/SpawnPoints/E_SpawnPoint_US.et" {
+ coords 1814.494 49.984 1097.508
+}
 SCR_AIGroup : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
  coords 1829.399 50.646 1088.539
 }

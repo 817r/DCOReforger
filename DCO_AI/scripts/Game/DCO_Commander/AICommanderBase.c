@@ -56,6 +56,9 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	[Attribute("30.0", UIWidgets.EditBox, "Interval think cycle dalam detik.", category: "Commander")]
 	protected float m_fThinkInterval;
+	
+	[Attribute("60.0", UIWidgets.EditBox, "Delay Before Start First Iteration", category: "Commander")]
+	protected float m_fDelayFirstIteration;
  
 	[Attribute("2", UIWidgets.EditBox, "Unit count minimum group sebelum dipaksa retreat.", category: "Commander")]
 	protected int m_iRetreatThreshold;
@@ -68,6 +71,9 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	[Attribute("50.0", UIWidgets.EditBox, "Radius pencarian kendaraan", category: "Commander")]
 	protected float m_fVehicleSearchRadius;
+	
+	[Attribute("50.0", UIWidgets.EditBox, "Radius pencarian kendaraan", category: "Commander")]
+	protected float m_fBaseRadius;
  
 	protected float m_fCaptureCheckTimer = 0.0;
 	
@@ -82,7 +88,7 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	protected ref array<DCO_TransportTeamComponent> m_aTransportTeams = {};
 	
-	protected float m_fThinkTimer = m_fThinkInterval - 10;
+	protected float m_fThinkTimer = 0 - m_fDelayFirstIteration;
 	
 	protected const float m_fFlankAngleMin = 15;
 	protected const float m_fFlankAngleMax = 315;
@@ -239,6 +245,12 @@ class AICommander_BaseComponent : ScriptComponent
 		DCO_GroupUtilityComponent reconGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RECON);
 		if (!reconGrp)
 		{
+			return;
+		}
+		
+		if (reconGrp.IsPlayerGroup())
+		{
+			//CMD_TaskNotifier.Notify(reconGrp.GetOwner(), "Recon " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.RECON);
 			return;
 		}
 		
@@ -406,8 +418,15 @@ class AICommander_BaseComponent : ScriptComponent
 			if (grp.GetUnitCount() <= m_iRetreatThreshold
 				&& grp.GetGroupStatus() != DCOG_EGroupStatus.IDLE)
 			{
-				SCR_AIWaypoint wp = SpawnMoveWP(GetOwner().GetOrigin());
-				//grp.ForceRetreat(wp, worldTime);
+				
+				RandomGenerator rand = new RandomGenerator();
+ 
+				vector centerGround    	 = rand.GenerateRandomPointInRadius(0, m_fBaseRadius, GetOwner().GetOrigin(), false);
+				centerGround[1]		 = GetGame().GetWorld().GetSurfaceY(centerGround[0], centerGround[2]);
+				
+				SCR_AIWaypoint wp = SpawnMoveWP(centerGround);
+				
+				grp.MoveTo(wp, worldTime);
 			}
 	
 			if (!grp.CheckOrderComplete(worldTime))
@@ -451,6 +470,11 @@ class AICommander_BaseComponent : ScriptComponent
 	    DCO_GroupUtilityComponent assaultGrp = FindBestIdleGroupForRole(CMD_EGroupRole.ASSAULT);
 	    if (assaultGrp)
 	    {
+			if (assaultGrp.IsPlayerGroup())
+			{
+				//CMD_TaskNotifier.Notify(assaultGrp.GetOwner(), "STAGING " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.MOVE);
+				return;
+			}
 			if (TryAssignTransport(assaultGrp, stagingPos, worldTime))
     			return;
 	        SCR_AIWaypoint wp = SpawnMoveWP(stagingPos);
@@ -465,6 +489,11 @@ class AICommander_BaseComponent : ScriptComponent
 	    DCO_GroupUtilityComponent flankGrp = FindBestIdleGroupForRole(CMD_EGroupRole.FLANK);
 	    if (flankGrp)
 	    {
+			if (flankGrp.IsPlayerGroup())
+			{
+				//CMD_TaskNotifier.Notify(flankGrp.GetOwner(), "STAGING " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.MOVE);
+				return;
+			}
 			if (TryAssignTransport(flankGrp, stagingPos, worldTime))
     			return;
 	        vector flankStaging = ComputeFlankPosition(base, stagingPos, 150);
@@ -584,6 +613,11 @@ class AICommander_BaseComponent : ScriptComponent
 			DCO_GroupUtilityComponent assaultGrp = FindBestIdleGroupForRole(CMD_EGroupRole.ASSAULT);
 			if (assaultGrp)
 			{
+				if (assaultGrp.IsPlayerGroup())
+				{
+					//CMD_TaskNotifier.Notify(assaultGrp.GetOwner(), "ASSAULT " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.CAPTURE);
+					return;
+				}
 				if (TryAssignTransport(assaultGrp, objPos, worldTime))
     				return;
 				array<SCR_AIWaypoint> searchWPs = {};
@@ -620,6 +654,11 @@ class AICommander_BaseComponent : ScriptComponent
 			DCO_GroupUtilityComponent flankGrp = FindBestIdleGroupForRole(CMD_EGroupRole.FLANK);
 			if (flankGrp)
 			{
+				if (flankGrp.IsPlayerGroup())
+				{
+					//CMD_TaskNotifier.Notify(flankGrp.GetOwner(), "FLANK " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.DESTROY);
+					return;
+				}
 				if (TryAssignTransport(flankGrp, objPos, worldTime))
     				return;
 				
@@ -684,6 +723,12 @@ class AICommander_BaseComponent : ScriptComponent
 			DCO_GroupUtilityComponent defGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RESERVE);
 			if (!defGrp)
 				break;
+			
+			if (defGrp.IsPlayerGroup())
+			{
+				//CMD_TaskNotifier.Notify(defGrp.GetOwner(), "DEFEND " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.DEFEND);
+				return;
+			}
  
 			SCR_AIWaypoint wp = SpawnDefendWP(objPos);
 			if (!wp)
@@ -716,6 +761,9 @@ class AICommander_BaseComponent : ScriptComponent
 				continue;
  
 			CMD_EObjectiveState state = obj.GetObjectiveState(m_sFactionKey);
+			
+			if (obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, true) < obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, false))
+				obj.SetObjectiveState(m_sFactionKey, CMD_EObjectiveState.ASSIGNED);
  
 			if (state == CMD_EObjectiveState.COMPLETED || state == CMD_EObjectiveState.FAILED)
 				continue;

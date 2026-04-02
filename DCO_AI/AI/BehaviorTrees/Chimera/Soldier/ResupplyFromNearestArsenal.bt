@@ -18,14 +18,18 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
          EditorPos -752 400
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 1
+           Port 0
            PortName "WeaponComponent"
           }
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 0
+           Port -1
            PortName "PrefabResourceName"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 6
+           PortName "MagazineWellArray"
           }
          }
         }
@@ -40,27 +44,27 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 2
+           Port 1
            PortName "Position"
           }
          }
         }
-        SCR_AIFindArsenalWithPrefab "SCR_AI Find Arsenal With Prefab" {
-         Name "SCR_AI Find Arsenal With Prefab"
-         EditorPos 576 480
+        SCR_AIFindArsenalWithMagazineWell "SCR_AI Find Arsenal With Magazine Well" {
+         Name "SCR_AI Find Arsenal With Magazine Well"
+         EditorPos 528 480
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 2
+           Port 1
            PortName "Pos"
           }
           SingleInputPortContainer SingleInputPortContainer {
-           Port 3
-           PortName "PrefabResourceName"
+           Port 6
+           PortName "MagazineWellTypename"
           }
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 4
+           Port 2
            PortName "ArsenalEntity"
           }
          }
@@ -71,13 +75,13 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
          EditorPos 1104 480
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 4
+           Port 2
            PortName "Entity"
           }
          }
          OutPorts {
           SingleOutputPortContainer SingleOutputPortContainer {
-           Port 8
+           Port 4
            PortName "Position"
           }
          }
@@ -88,15 +92,29 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
        Name "Parallel"
        EditorPos 2672 48
        Nodes {
-        SCR_AIDCO_Ressuplying "SCR_AIDCO_ Ressuplying" {
-         Name "SCR_AIDCO_ Ressuplying"
-         EditorPos 1936 448
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 7
-           PortName "Entity"
+        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+         Name "SCR_AI Deco Is Above Threat Level"
+         EditorPos 1888 336
+         Nodes {
+          SCR_AIDCO_Ressuplying "SCR_AIDCO_ Ressuplying" {
+           Name "SCR_AIDCO_ Ressuplying"
+           EditorPos 1936 560
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 4
+             PortName "EntityPosition"
+            }
+           }
           }
          }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ThresholdIn"
+          }
+         }
+         NegativeCondition 1
+         m_threatThreshold ALERTED
         }
         DCO_IsAIDistanceLessThan "DCO_ IsAI Distance Less Than" {
          Name "DCO_ IsAI Distance Less Than"
@@ -111,16 +129,16 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
              EditorPos 2608 1024
              m_eGesture EItemGesturePickUp
             }
-            SCR_AITakeItemFromArsenal "SCR_AI Take Item From Arsenal" {
-             Name "SCR_AI Take Item From Arsenal"
-             EditorPos 2864 1024
+            SCR_AITakeItemFromArsenalMagWell "SCR_AI Take Item From Arsenal Mag Well" {
+             Name "SCR_AI Take Item From Arsenal Mag Well"
+             EditorPos 2850.846 1039.395
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 5
+               Port 3
                PortName "ArsenalEntity"
               }
               SingleInputPortContainer SingleInputPortContainer {
-               Port 6
+               Port 7
                PortName "PrefabResourceName"
               }
              }
@@ -149,7 +167,7 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
          }
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 9
+           Port 5
            PortName "ThresholdIn"
           }
          }
@@ -200,23 +218,19 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
    Flags 0
    Desc ""
   }
+  BtVariableTypename MagazineWellType {
+   Flags 0
+   Desc ""
+  }
  }
  VariablesRefs {
-  VariableReference MagazinePrefabName {
-   VariableType 0
-   EditorPos -400 528
-  }
   VariableReference WeaponComp {
    VariableType 1
    EditorPos -1024 528
   }
   VariableReference DesireableMovePos {
    VariableType 2
-   EditorPos 224 592
-  }
-  VariableReference MagazinePrefabName {
-   VariableType 0
-   EditorPos 144.606 696.9
+   EditorPos 224 432
   }
   VariableReference ArsenalPrefab {
    VariableType 3
@@ -226,14 +240,6 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
    VariableType 3
    EditorPos 2592 1104
   }
-  VariableReference MagazinePrefabName {
-   VariableType 0
-   EditorPos 2459.75 1191.4
-  }
-  VariableReference ArsenalPrefab {
-   VariableType 3
-   EditorPos 1693.233 544.763
-  }
   VariableReference EntPos {
    VariableType 4
    EditorPos 1328 592
@@ -241,6 +247,14 @@ BehaviorTree "{EF5A22922591E929}AI/BehaviorTrees/Chimera/Soldier/ResupplyFromNea
   VariableReference EntPos {
    VariableType 4
    EditorPos 2672 560
+  }
+  VariableReference MagazineWellType {
+   VariableType 5
+   EditorPos -352 560
+  }
+  VariableReference MagazineWellType {
+   VariableType 5
+   EditorPos 2561.436 1208.138
   }
  }
 }
