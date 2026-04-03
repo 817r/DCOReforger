@@ -54,32 +54,42 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("3.0", UIWidgets.Auto, "Number of the Objective Can be processed at the same time", category: "Commander Objective Setting")]
 	protected int m_fObjectiveAtTheSameTime;
 	
-	[Attribute("30.0", UIWidgets.EditBox, "Interval think cycle dalam detik.", category: "Commander")]
+	[Attribute("30.0", UIWidgets.EditBox, "Interval think cycle dalam detik.", category: "Commander Setting")]
 	protected float m_fThinkInterval;
 	
-	[Attribute("60.0", UIWidgets.EditBox, "Delay Before Start First Iteration", category: "Commander")]
+	[Attribute("60.0", UIWidgets.EditBox, "Delay Before Start First Iteration", category: "Commander Setting")]
 	protected float m_fDelayFirstIteration;
  
-	[Attribute("2", UIWidgets.EditBox, "Unit count minimum group sebelum dipaksa retreat.", category: "Commander")]
+	[Attribute("2", UIWidgets.EditBox, "Unit count minimum group sebelum dipaksa retreat.", category: "Commander Setting")]
 	protected int m_iRetreatThreshold;
 	
-	[Attribute("15.0", UIWidgets.EditBox, "Interval cek capture progress (detik)", category: "Commander")]
+	[Attribute("15.0", UIWidgets.EditBox, "Interval cek capture progress (detik)", category: "Commander Setting")]
 	protected float m_fCaptureCheckInterval;
 	
-	[Attribute("400.0", UIWidgets.EditBox, "Jarak minimum sebelum cari transport", category: "Commander")]
+	[Attribute("400.0", UIWidgets.EditBox, "Jarak minimum sebelum cari transport", category: "Commander Setting")]
 	protected float m_fTransportDistanceThreshold;
 	
-	[Attribute("50.0", UIWidgets.EditBox, "Radius pencarian kendaraan", category: "Commander")]
+	[Attribute("50.0", UIWidgets.EditBox, "Radius pencarian kendaraan", category: "Commander Setting")]
 	protected float m_fVehicleSearchRadius;
 	
-	[Attribute("50.0", UIWidgets.EditBox, "Radius pencarian kendaraan", category: "Commander")]
+	[Attribute("50.0", UIWidgets.EditBox, "Radius Close To Commander", category: "Commander Setting")]
 	protected float m_fBaseRadius;
+	
+	[Attribute("0.6", UIWidgets.Range, "Defend Chances Instead Patrol Around", params: "0 1 0.01", category: "Commander Setting")]
+	protected float m_fDefendChance;
+	
+	[Attribute("2", UIWidgets.ComboBox, "Commander Mode", "", ParamEnumArray.FromEnum(CMD_ECommanderMode), category: "Commander Personality" )]
+	protected CMD_ECommanderMode m_eCommanderModeExternal;
  
 	protected float m_fCaptureCheckTimer = 0.0;
+	
+	protected float m_fDefensiveTriggerCooldown = 0.0;
+	static float DEFENSIVE_COOLDOWN = 180.0;
 	
 	protected ref array<CMD_AICommanderObjectiveComponent> m_aObjective = {};
 	
 	protected CMD_ECommanderState m_eCommanderState = CMD_ECommanderState.IDLE;
+	protected CMD_ECommanderMode m_eCommanderMode = CMD_ECommanderMode.OFFENSIVE;
 	
 	protected CMD_ThreatResponseComponent threatComp;
 	
@@ -147,6 +157,27 @@ class AICommander_BaseComponent : ScriptComponent
 	{
 		return m_sCommanderUID;
 	}
+	
+	void SwitchToDefensive(float worldTime)
+	{
+		m_eCommanderMode            = CMD_ECommanderMode.DEFENSIVE;
+		m_fDefensiveTriggerCooldown = worldTime;
+	 
+		//Print(string.Format("[%1] SWITCHING TO DEFENSIVE MODE", m_sCommanderUID));
+	}
+	 
+	void SwitchToOffensive()
+	{
+		m_eCommanderMode = CMD_ECommanderMode.OFFENSIVE;
+	 
+		//Print(string.Format("[%1] SWITCHING TO OFFENSIVE MODE", m_sCommanderUID));
+	}
+	 
+	// Manual override dari luar (misalnya game mode bisa force defensive)
+	void ForceDefensiveMode(float worldTime)   { SwitchToDefensive(worldTime); }
+	void ForceOffensiveMode()                  { SwitchToOffensive(); }
+	 
+	CMD_ECommanderMode GetCommanderMode()      { return m_eCommanderMode; }
 	
 	protected vector ComputeFlankPosition(vector base, vector objective, float distance)
 	{
@@ -283,25 +314,63 @@ class AICommander_BaseComponent : ScriptComponent
  
 	protected void SendIdleGroupsToReserve()
 	{
-		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
-		{
-			if (!grp)
-				continue;
- 
-			if (grp.GetGroupStatus() == DCOG_EGroupStatus.EXECUTING_COMMAND)
-				continue;
- 
-			if (grp.GetGroupRole() == CMD_EGroupRole.NONE)
-			{
-				SCR_AIWaypoint wp = SpawnMoveWP(GetOwner().GetOrigin());
-				if (wp)
-				{
-					float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
-					grp.SetGroupRole(CMD_EGroupRole.RESERVE);
-					grp.MoveTo(wp, worldTime);
-				}
-			}
-		}
+	    foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
+	    {
+	        if (!grp)
+	            continue;
+	
+	        AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+	        if (!mgr)
+	            return;
+	
+	        if (grp.GetGroupStatus() == DCOG_EGroupStatus.EXECUTING_COMMAND)
+	            continue;
+	
+	        if (grp.GetGroupRole() != CMD_EGroupRole.NONE)
+	            continue;
+	
+	        float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+	        RandomGenerator rand = new RandomGenerator();
+	
+	        array<vector> candidatePositions = new array<vector>();
+	
+	        array<CMD_AICommanderObjectiveComponent> allObjs = {};
+	        mgr.GetTopObjectives(this, mgr.m_aObjective.Count(), allObjs);
+	
+	        foreach (CMD_AICommanderObjectiveComponent obj : allObjs)
+	        {
+	            if (!obj)
+	                continue;
+	
+	            if (!obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+	                continue;
+	
+	            candidatePositions.Insert(obj.GetOwner().GetOrigin());
+	        }
+	
+	        if (candidatePositions.IsEmpty() || candidatePositions.Count() < 2)
+	            candidatePositions.Insert(GetOwner().GetOrigin());
+	
+	        for (int i = candidatePositions.Count() - 1; i > 0; i--)
+	        {
+	            int j = Math.RandomInt(0, i + 1);
+	            vector tmp = candidatePositions[i];
+	            candidatePositions[i] = candidatePositions[j];
+	            candidatePositions[j] = tmp;
+	        }
+	
+	        foreach (vector basePos : candidatePositions)
+	        {
+	            vector patrolPos = rand.GenerateRandomPointInRadius(0, m_fBaseRadius, basePos, false);
+	            patrolPos[1] = GetGame().GetWorld().GetSurfaceY(patrolPos[0], patrolPos[2]);
+	
+	            SCR_AIWaypoint wp = SpawnMoveWP(patrolPos);
+	            if (wp)
+	                grp.MoveTo(wp, worldTime);	            
+	        }
+	
+	        grp.SetGroupRole(CMD_EGroupRole.RESERVE);
+	    }
 	}
 	
 	protected DCO_GroupUtilityComponent FindBestIdleGroupForRole(CMD_EGroupRole role)
@@ -323,8 +392,12 @@ class AICommander_BaseComponent : ScriptComponent
 		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RECON);
 		if (result)
 			return result;
-	
+		
 		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.REINFORNCE);
+		if (result)
+			return result;
+	
+		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.DEFEND);
 		return result;
 	}
 	
@@ -397,62 +470,171 @@ class AICommander_BaseComponent : ScriptComponent
 		return best;
 	}
 	
+	protected void EvaluateCommanderMode(float worldTime)
+	{
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!mgr)
+			return;
+		
+		if (m_eCommanderModeExternal != CMD_ECommanderMode.BALANCED)
+		{
+			switch (m_eCommanderMode)
+			{
+				case CMD_ECommanderMode.DEFENSIVE:
+				{
+					SwitchToDefensive(worldTime);
+					return;
+				}
+				case CMD_ECommanderMode.OFFENSIVE:
+				{
+					SwitchToOffensive();
+					return;
+				}
+			}
+		} else
+		{
+			m_eCommanderMode = m_eCommanderModeExternal;
+			return;
+		}
+	 	/*
+		bool anyLost = false;
+		bool haveObjectiveToDefend = false;
+	 
+		foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
+		{
+			if (!obj)
+				continue;
+	 
+			if (obj.IsCapturedBy(m_sFactionKey))
+			{
+				haveObjectiveToDefend = true;
+				if (obj.GetObjectiveState(m_sFactionKey) == CMD_EObjectiveState.FAILED)
+					anyLost = true;
+				break;
+			}
+		}
+	 
+		if ((haveObjectiveToDefend || anyLost) && m_eCommanderMode == CMD_ECommanderMode.OFFENSIVE)
+		{
+			SwitchToDefensive(worldTime);
+			return;
+		}
+	 
+		if (m_eCommanderMode == CMD_ECommanderMode.DEFENSIVE && !anyLost)
+		{
+			float elapsed = worldTime - m_fDefensiveTriggerCooldown;
+			if (elapsed >= DEFENSIVE_COOLDOWN)
+				SwitchToOffensive();
+		}*/
+	}
+	
 	protected void Think(float worldTime)
 	{
 		if (!Replication.IsServer())
 			return;
-	
-		m_eCommanderState = CMD_ECommanderState.COMMANDING;
-	
+	 
+		m_eCommanderState = CMD_ECommanderState.PLANNING;
+	 
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
 		if (!mgr)
 			return;
-	
-		mgr.GetTopObjectives(this, m_fObjectiveAtTheSameTime, m_aObjective);
-	
+	 
 		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
 		{
 			if (!grp)
 				continue;
-	
+	 
 			if (grp.GetUnitCount() <= m_iRetreatThreshold
 				&& grp.GetGroupStatus() != DCOG_EGroupStatus.IDLE)
 			{
-				
-				RandomGenerator rand = new RandomGenerator();
- 
-				vector centerGround    	 = rand.GenerateRandomPointInRadius(0, m_fBaseRadius, GetOwner().GetOrigin(), false);
-				centerGround[1]		 = GetGame().GetWorld().GetSurfaceY(centerGround[0], centerGround[2]);
-				
-				SCR_AIWaypoint wp = SpawnMoveWP(centerGround);
-				
-				grp.MoveTo(wp, worldTime);
+				SCR_AIWaypoint rallyWP = SpawnMoveWP(GetOwner().GetOrigin());
+				if (rallyWP)
+					grp.ForceRetreat(rallyWP, worldTime);
 			}
-	
+	 
 			if (!grp.CheckOrderComplete(worldTime))
 				continue;
 		}
+	 
+		EvaluateCommanderMode(worldTime);
+	 
+		if (m_eCommanderMode == CMD_ECommanderMode.DEFENSIVE)
+			ThinkDefensive(worldTime);
+		else if (m_eCommanderMode == CMD_ECommanderMode.OFFENSIVE)
+			ThinkOffensive(mgr, worldTime);
+		else if (m_eCommanderMode == CMD_ECommanderMode.BALANCED)
+		{
+			ThinkDefensive(worldTime);
+			ThinkOffensive(mgr, worldTime);
+		}
+	 
+		m_eCommanderState = CMD_ECommanderState.COMMANDING;
+	}
 	
+	protected void ThinkOffensive(AICommander_ManagerComponent mgr, float worldTime)
+	{
+		mgr.GetTopObjectivesOffensive(this, m_fObjectiveAtTheSameTime, m_aObjective);
+	 
 		if (m_aObjective.IsEmpty())
 		{
 			SendIdleGroupsToReserve();
 			m_eCommanderState = CMD_ECommanderState.IDLE;
 			return;
 		}
-	
+	 
 		for (int i = 0; i < m_aObjective.Count(); i++)
 		{
 			CMD_AICommanderObjectiveComponent obj = m_aObjective[i];
 			if (!obj)
 				continue;
-	
-			CMD_EObjectiveState state = obj.GetObjectiveState(m_sFactionKey);
-			//Print(typename.EnumToString(CMD_EObjectiveState, state) + " < STATUS | FK > " + m_sFactionKey);
-	
+			
+			if (obj.CheckAndMarkIfLost(m_sFactionKey))
+			{
+				obj.ResetLostStatus(m_sFactionKey);
+				continue;
+			}
+	 
 			AssignRolesToObjective(obj, worldTime);
 		}
+	}
 	
-		m_eCommanderState = CMD_ECommanderState.PLANNING;
+	protected void ThinkDefensive(float worldTime)
+	{
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!mgr)
+			return;
+
+		array<CMD_AICommanderObjectiveComponent> allObjs = {};
+		mgr.GetTopObjectives(this, mgr.m_aObjective.Count(), allObjs);
+	 
+		bool hasAnyWork = false;
+	 
+		foreach (CMD_AICommanderObjectiveComponent obj : allObjs)
+		{
+			if (!obj)
+				continue;
+	 
+			if (!obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+				continue;
+			
+			if (obj.CheckIsItLost(m_sFactionKey))
+			{
+				obj.ResetAssignedGroupCount(m_sFactionKey);
+				obj.SetObjectiveState(m_sFactionKey, CMD_EObjectiveState.PENDING);
+				continue;
+			}
+			
+	 
+			AssignDefendToObjective(obj, worldTime);
+			hasAnyWork = true;
+		}
+		
+		Print(hasAnyWork.ToString() + " < HAS DEFEND WORK FOR " + m_sCommanderUID + " " + m_sFactionKey);
+	 
+		if (!hasAnyWork)
+		{
+			SendIdleGroupsToReserve();
+		}
 	}
 	
 	protected void TrySendToStaging(CMD_AICommanderObjectiveComponent obj, float worldTime)
@@ -507,51 +689,58 @@ class AICommander_BaseComponent : ScriptComponent
 	    }
 	}
 	
-	protected void GenerateSearchWaypoints(vector center, float radius, array<SCR_AIWaypoint> outWaypoints,	int rings = 3, int sectorsPerRing = 5)
+	protected void GenerateSearchWaypoints(vector center, float radius, array<SCR_AIWaypoint> outWaypoints, int rings = 4, int sectorsPerRing = 5)
 	{
-		if (!outWaypoints)
-			return;
-	 
-		outWaypoints.Clear();
-	 
-		vector centerGround = Vector(center[0], GetGame().GetWorld().GetSurfaceY(center[0], center[2]), center[2]);
-		RandomGenerator rand = new RandomGenerator();
- 
-		centerGround    	 = rand.GenerateRandomPointInRadius(0, radius, center, false);
-		centerGround[1]		 = GetGame().GetWorld().GetSurfaceY(centerGround[0], centerGround[2]);
-		SCR_AIWaypoint wpCenter = SpawnMoveWP(centerGround);
-		if (wpCenter)
-			outWaypoints.Insert(wpCenter);
-	 
-		for (int ring = 1; ring <= rings; ring++)
-		{
-			// Setiap ring punya band dari radiusInner ke radiusOuter
-			float ringStep    = radius / rings;
-			float radiusInner = ringStep * (ring - 1);
-			float radiusOuter = ringStep * ring;
-	 
-			float sectorAngle = 360.0 / sectorsPerRing;
-	 
-			for (int sector = 0; sector < sectorsPerRing; sector++)
-			{
-				float angleMin = sectorAngle * sector;
-				float angleMax = sectorAngle * (sector + 1);
-				float angleDeg = Math.RandomFloat(angleMin, angleMax);
-				float angleRad = angleDeg * Math.DEG2RAD;
-	 
-				float dist = Math.RandomFloat(radiusInner + 1.0, radiusOuter);
-	 
-				float px = center[0] + Math.Cos(angleRad) * dist;
-				float pz = center[2] + Math.Sin(angleRad) * dist;
-				float py = GetGame().GetWorld().GetSurfaceY(px, pz);
-	 
-				SCR_AIWaypoint wp = SpawnMoveWP(Vector(px, py, pz));
-				if (wp)
-				{
-					outWaypoints.Insert(wp);
-				}
-			}
-		}
+	    if (!outWaypoints)
+	        return;
+	
+	    outWaypoints.Clear();
+	
+	    RandomGenerator rand = new RandomGenerator();
+	    float ringStep = radius / rings;
+	
+	    array<int> middleRings = new array<int>();
+	    for (int r = 1; r < rings; r++)
+	        middleRings.Insert(r);
+	
+	    for (int r = middleRings.Count() - 1; r > 0; r--)
+	    {
+	        int swapIdx = Math.RandomInt(0, r + 1);
+	        int tmp = middleRings[r];
+	        middleRings[r] = middleRings[swapIdx];
+	        middleRings[swapIdx] = tmp;
+	    }
+	
+	    array<int> ringOrder = new array<int>();
+	    ringOrder.Insert(rings);
+	    foreach (int r : middleRings)
+	        ringOrder.Insert(r);
+	    ringOrder.Insert(rings);
+	
+	    foreach (int ring : ringOrder)
+	    {
+	        float radiusInner = ringStep * (ring - 1);
+	        float radiusOuter = ringStep * ring;
+	        float sectorAngle = 360.0 / sectorsPerRing;
+	
+	        for (int sector = 0; sector < sectorsPerRing; sector++)
+	        {
+	            float angleMin = sectorAngle * sector;
+	            float angleMax = sectorAngle * (sector + 1);
+	            float angleDeg = Math.RandomFloat(angleMin, angleMax);
+	            float angleRad = angleDeg * Math.DEG2RAD;
+	
+	            float dist = Math.RandomFloat(radiusInner + 1.0, radiusOuter);
+	
+	            float px = center[0] + Math.Cos(angleRad) * dist;
+	            float pz = center[2] + Math.Sin(angleRad) * dist;
+	            float py = GetGame().GetWorld().GetSurfaceY(px, pz);
+	
+	            SCR_AIWaypoint wp = SpawnMoveWP(Vector(px, py, pz));
+	            if (wp)
+	                outWaypoints.Insert(wp);
+	        }
+	    }
 	}
 	
 	SCR_AIWaypoint SpawnMoveWP(vector pos)
@@ -588,6 +777,121 @@ class AICommander_BaseComponent : ScriptComponent
 		params.Transform[3] = pos;
  
 		return SCR_AIWaypoint.Cast(GetGame().SpawnEntityPrefab(res, null, params));
+	}
+	
+	protected void AssignDefendToObjective(CMD_AICommanderObjectiveComponent obj, float worldTime)
+	{
+	    int needed = obj.GetDefendGroupCount();
+	    int current = obj.GetCurrentAssignedGroupCount(m_sFactionKey);
+	    int toSend = needed - current;
+	
+	    if (toSend <= 0)
+	        return;
+	
+	    vector objPos = obj.GetOwner().GetOrigin();
+	
+	    array<int> roleList = new array<int>();
+	
+	    if (toSend > 2)
+	    {
+	        roleList.Insert(1);
+	        for (int i = 1; i < toSend; i++)
+	        {
+				float qrfChance = 0.2 / i;
+				float roll = Math.RandomFloat(0.0, 1.0);
+				
+				int role = 0;
+				if (roll < qrfChance)
+				    role = 1;
+				
+				roleList.Insert(role);
+	        }
+	    }
+	    else
+	    {
+	        for (int i = 0; i < toSend; i++)
+	            roleList.Insert(0);
+	    }
+	
+	    for (int i = roleList.Count() - 1; i > 0; i--)
+	    {
+	        int j = Math.RandomInt(0, i + 1);
+	        int tmp = roleList[i];
+	        roleList[i] = roleList[j];
+	        roleList[j] = tmp;
+	    }
+	
+	    for (int i = 0; i < toSend; i++)
+	    {
+	        DCO_GroupUtilityComponent defGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RESERVE);
+	        if (!defGrp)
+	            break;
+	
+	        if (roleList[i] == 1)
+	        {
+	            vector qrfPos = ComputeFlankPosition(GetOwner().GetOrigin(), objPos, obj.GetRadius() * 0.8);
+	            if (!TryAssignTransport(defGrp, qrfPos, worldTime))
+	            {
+	                SCR_AIWaypoint wp = SpawnMoveWP(qrfPos);
+	                if (wp)
+	                {
+	                    defGrp.SetGroupRole(CMD_EGroupRole.DEFEND);
+	                    defGrp.MoveTo(wp, worldTime);
+	                    obj.SetObjectiveGroup(m_sFactionKey, 1);
+	                }
+	            }
+	        }
+	        else
+	        {
+	            float roll = Math.RandomFloat(0.0, 1.0);
+	            bool bDoDefend = (roll < m_fDefendChance);
+	
+	            if (bDoDefend)
+	            {
+	                RandomGenerator rand = new RandomGenerator();
+	                vector defendPos = rand.GenerateRandomPointInRadius(0, obj.GetRadius(), obj.GetOwner().GetOrigin(), false);
+	                defendPos[1] = GetGame().GetWorld().GetSurfaceY(defendPos[0], defendPos[2]);
+	
+	                SCR_AIWaypoint wp = SpawnDefendWP(defendPos);
+	                if (wp)
+	                {
+	                    defGrp.SetGroupRole(CMD_EGroupRole.DEFEND);
+	                    defGrp.MoveTo(wp, worldTime);
+	                    wp.SetCompletionRadius(obj.GetRadius());
+	                    obj.SetObjectiveGroup(m_sFactionKey, 1);
+	                }
+	            }
+	            else
+	            {
+	                AssignPatrolAroundObjective(defGrp, objPos, obj.GetRadius(), worldTime);
+	                obj.SetObjectiveGroup(m_sFactionKey, 1);
+	            }
+	        }
+	    }
+	
+	    Print("Assigning Number Of Squad to Defend : " + toSend.ToString());
+	}
+	
+	protected void AssignPatrolAroundObjective(DCO_GroupUtilityComponent grp, vector center,float radius,float worldTime)
+	{
+		int patrolPoints = 6;
+		float patrolRadius = radius * 1.2;
+	
+		for (int p = 0; p < patrolPoints; p++)
+		{
+			float angleDeg = (360.0 / patrolPoints) * p;
+			float angleRad = angleDeg * Math.DEG2RAD;
+	
+			float px = center[0] + Math.Cos(angleRad) * patrolRadius;
+			float pz = center[2] + Math.Sin(angleRad) * patrolRadius;
+			float py = GetGame().GetWorld().GetSurfaceY(px, pz);
+	
+			SCR_AIWaypoint wp = SpawnMoveWP(Vector(px, py, pz));
+			if (wp)
+				grp.MoveTo(wp, worldTime);
+		}
+	
+		grp.SetGroupRole(CMD_EGroupRole.DEFEND);
 	}
 	
 	protected void TrySendAssaultWithSlots(CMD_AICommanderObjectiveComponent obj, float worldTime)
@@ -768,9 +1072,9 @@ class AICommander_BaseComponent : ScriptComponent
 			if (state == CMD_EObjectiveState.COMPLETED || state == CMD_EObjectiveState.FAILED)
 				continue;
  
-			if (obj.IsCapturedBy(m_sFactionKey))
+			if (obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
 			{
-				TrySendDefend(obj, worldTime);
+				//TrySendDefend(obj, worldTime);
 				continue;
 			}
  
@@ -804,7 +1108,7 @@ class AICommander_BaseComponent : ScriptComponent
 					obj.GetOwner().GetName(),
 					obj.GetDefendGroupCount()));*/
  
-				TrySendDefend(obj, worldTime);
+				//TrySendDefend(obj, worldTime);
 			}
 		}
 	}
@@ -846,15 +1150,13 @@ class AICommander_BaseComponent : ScriptComponent
 	 
 		if (!mission)
 		{
-			Print(string.Format("[%1] Vehicle %2 tidak punya DCO_TransportMissionComponent — skip",
-				m_sCommanderUID, vehicle.GetName()), LogLevel.WARNING);
+			//Print(string.Format("[%1] Vehicle %2 tidak punya DCO_TransportMissionComponent — skip", m_sCommanderUID, vehicle.GetName()), LogLevel.WARNING);
 			return;
 		}
 	 
 		if (mission.IsActiveVehicle())
 		{
-			Print(string.Format("[%1] Vehicle %2 sudah dipakai transport lain",
-				m_sCommanderUID, vehicle.GetName()));
+			//Print(string.Format("[%1] Vehicle %2 sudah dipakai transport lain", m_sCommanderUID, vehicle.GetName()));
 			return;
 		}
 	 
@@ -874,11 +1176,11 @@ class AICommander_BaseComponent : ScriptComponent
 		// Pass `this` supaya mission bisa spawn GetIn/GetOut WP
 		mission.StartMission(passengerGroup, destination, m_sFactionKey, worldTime, this);
 	 
-		Print(string.Format("[%1] TRANSPORT assigned | group: %2 | vehicle: %3 | dest: %4",
+		/*Print(string.Format("[%1] TRANSPORT assigned | group: %2 | vehicle: %3 | dest: %4",
 			m_sCommanderUID,
 			passengerGroup.GetOwner().GetName(),
 			vehicle.GetName(),
-			destination.ToString()));
+			destination.ToString()));*/
 	}
 	
 	SCR_AIWaypoint SpawnGetInWP(vector pos)
@@ -930,8 +1232,7 @@ class AICommander_BaseComponent : ScriptComponent
 		team.SetRallyPoint(GetOwner().GetOrigin());
 		m_aTransportTeams.Insert(team);
 	 
-		Print(string.Format("[%1] Transport team registered: %2",
-			m_sCommanderUID, team.GetOwner().GetName()));
+		//Print(string.Format("[%1] Transport team registered: %2", m_sCommanderUID, team.GetOwner().GetName()));
 	}
 	
 	bool TryAssignTransport(DCO_GroupUtilityComponent passengerGroup, vector destination, float worldTime)
@@ -987,15 +1288,13 @@ class AICommander_BaseComponent : ScriptComponent
 	 
 		if (!mission)
 		{
-			Print(string.Format("[%1] Vehicle %2 tidak punya DCO_TransportMissionComponent — skip",
-				m_sCommanderUID, vehicle.GetName()), LogLevel.WARNING);
+			//Print(string.Format("[%1] Vehicle %2 tidak punya DCO_TransportMissionComponent — skip", m_sCommanderUID, vehicle.GetName()), LogLevel.WARNING);
 			return null;
 		}
 	 
 		if (mission.IsActiveVehicle())
 		{
-			Print(string.Format("[%1] Vehicle %2 sudah dipakai transport lain",
-				m_sCommanderUID, vehicle.GetName()));
+			//Print(string.Format("[%1] Vehicle %2 sudah dipakai transport lain", m_sCommanderUID, vehicle.GetName()));
 			return null;
 		}
 		

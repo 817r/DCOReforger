@@ -23,11 +23,14 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	[Attribute("60.0", UIWidgets.EditBox, "Detik yang dibutuhkan untuk capture (groups harus di area)", category: "Objective")]
 	protected float m_fCaptureHoldDuration;
  
-	[Attribute("1", UIWidgets.EditBox, "Berapa group yang di-assign untuk defend setelah captured", category: "Objective")]
+	[Attribute("2", UIWidgets.EditBox, "Berapa group yang di-assign untuk defend setelah captured", category: "Objective")]
 	protected int m_iDefendGroupCount;
 	
 	[Attribute("", UIWidgets.Auto, "Blacklisted Commander to not process this objective", category: "Objective")]
 	protected ref array<string> m_sBlacklistedCo;
+	
+	[Attribute("", UIWidgets.Auto, "Set Captured by Commander for this objective", category: "Objective")]
+	protected ref array<string> m_sCapturedCo;
  
 	ref map<FactionKey, float> m_mCaptureStartTime = new map<FactionKey, float>();
 	ref map<FactionKey, bool>  m_mIsCaptured       = new map<FactionKey, bool>();
@@ -35,6 +38,8 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	ref map<FactionKey, CMD_EObjectiveState> m_mObjectiveState = new map<FactionKey, CMD_EObjectiveState>();
 	ref map<FactionKey, int> m_mObjectiveAssignedGroup = new map<FactionKey, int>();
 	protected ref map<FactionKey, DCO_GroupUtilityComponent> m_mReconGroup = new map<FactionKey, DCO_GroupUtilityComponent>();
+	
+	protected ref map<FactionKey, bool> m_mLostStatus = new map<FactionKey, bool>();
 	
 	IEntity m_OwnerEntity;
 	
@@ -54,6 +59,12 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		if (m_sBlacklistedCo.Contains(cuid))
 			return true;
 		return false;
+	}
+	
+	bool IsScouted(FactionKey fk)
+	{
+	    CMD_EObjectiveState state = GetObjectiveState(fk);
+	    return state != CMD_EObjectiveState.PENDING;
 	}
 	
 	void MarkCompleted(FactionKey fk) { SetObjectiveState(fk, CMD_EObjectiveState.COMPLETED); }
@@ -325,11 +336,93 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		return Math.Clamp(elapsed / m_fCaptureHoldDuration, 0.0, 1.0);
 	}
  
-	bool IsCapturedBy(FactionKey fk)
+	bool IsCapturedBy(FactionKey fk, string cuid = "")
 	{
 		bool captured;
+		if (!cuid.IsEmpty())
+		{
+			if (m_sCapturedCo.Contains(cuid))
+			{
+				//Print("FOUND " + cuid + " IN OBJECTIVE ");
+				if (!m_mIsCaptured.Contains(fk))
+				{
+					SetCapturedBy(fk, true);
+					return true;
+				}
+				else if (m_mIsCaptured.Find(fk, captured))
+				{
+					//Print("IS " + cuid + " CAPTURE? " + captured.ToString() + " < IsCaptured Map Found");
+					return captured;
+						
+				}
+			}
+		} else
+			//Print("NO CUID FOUND IN OBJECTIVE : " + cuid);
+		
+		bool refre = false;
+		
+		//Print("IS " + fk + " CAPTURE UPDATED ? " + m_mIsCaptured.Find(fk, refre).ToString());
+		
 		if (m_mIsCaptured.Find(fk, captured))
 			return captured;
+		return false;
+	}
+
+	bool CheckAndMarkIfLost(FactionKey fk)
+	{
+		bool alreadyLost;
+		if (m_mLostStatus.Find(fk, alreadyLost) && alreadyLost)
+			return true;
+	
+		int friendlyCount = CountNearbyUnits(m_fRadius, fk, true);
+		if (friendlyCount == 0 && IsCapturedBy(fk, string.Empty))
+		{
+			MarkLost(fk);
+			return true;
+		}
+	
+		int enemyCount = CountNearbyUnits(m_fRadius, fk, false);
+		if (friendlyCount > 0 && enemyCount >= friendlyCount * 3)
+		{
+			MarkLost(fk);
+			return true;
+		}
+	
+		return false;
+	}
+	
+	bool CheckIsItLost(FactionKey fk)
+	{
+		bool alreadyLost;
+		if (m_mLostStatus.Find(fk, alreadyLost) && alreadyLost)
+			return true;	
+		return false;
+	}
+	
+	protected void MarkLost(FactionKey fk)
+	{
+		if (!m_mLostStatus.Contains(fk))
+			m_mLostStatus.Insert(fk, true);
+		else
+			m_mLostStatus.Set(fk, true);
+	
+		// Invalidate captured status
+		SetCapturedBy(fk, false);
+	
+		Print(string.Format("[CMD_Objective] %1 LOST by %2", GetOwner().GetName(), fk));
+	}
+	
+	void ResetLostStatus(FactionKey fk)
+	{
+		if (m_mLostStatus.Contains(fk))
+			m_mLostStatus.Set(fk, false);
+	}
+	
+	bool IsLost(FactionKey fk)
+	{
+		bool val;
+		if (m_mLostStatus.Find(fk, val))
+			return val;
 		return false;
 	}
  
@@ -339,6 +432,8 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 			m_mIsCaptured.Insert(fk, val);
 		else
 			m_mIsCaptured.Set(fk, val);
+
+		//Print("SET " + fk + " CAPTURE " + val);
 	}
  
 	bool IsGroupSlotFull(FactionKey fk)

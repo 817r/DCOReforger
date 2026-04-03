@@ -48,7 +48,8 @@ enum CMD_EGroupRole
 	TRANSPORT = 4,
 	RESERVE   = 5,
 	RETREAT   = 6,
-	REINFORNCE= 7
+	REINFORNCE= 7,
+	DEFEND    = 8
 }
 
 enum CMD_EObjectiveType
@@ -64,6 +65,13 @@ enum CMD_EThreatLevel
 	MEDIUM     = 2,
 	HIGH       = 3,
 	CRITICAL   = 4
+}
+
+enum CMD_ECommanderMode
+{
+	OFFENSIVE  = 0,
+	DEFENSIVE  = 1,
+	BALANCED   = 2
 }
  
 class CMD_ContactReport

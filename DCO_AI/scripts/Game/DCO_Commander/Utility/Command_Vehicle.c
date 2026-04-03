@@ -15,7 +15,7 @@ class CMD_VehicleFinder
 	static IEntity FindNearestVehicle(IEntity ent, vector fromPos, int requiredSeats)
 	{
 		IEntity bestVehicle = null;
-		float   bestDist    = 200;
+		float   bestDist    = 500;
 		
 		if (!ent)
 			return null;

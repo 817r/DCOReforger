@@ -121,6 +121,55 @@ class AICommander_ManagerComponent : ScriptComponent
 			result.Insert(sorted[i]);
 	}
 	
+	void GetTopObjectivesOffensive(AICommander_BaseComponent forCommander, int count, out array<CMD_AICommanderObjectiveComponent> result)
+	{
+		result = {};
+		if (!forCommander)
+			return;
+ 
+		FactionKey fk  = forCommander.GetCommanderFactionKey();
+		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+ 
+		array<float> scores = {};
+		array<CMD_AICommanderObjectiveComponent> sorted = {};
+ 
+		foreach (CMD_AICommanderObjectiveComponent obj : m_aObjective)
+		{
+			if (!obj)
+				continue;
+			
+			if (obj.IsCommanderBlackListed(forCommander.GetCommanderUID()))
+				continue;
+			
+			if (obj.IsCapturedBy(fk, forCommander.GetCommanderUID()))
+				continue;
+ 
+			float score = obj.ComputePriorityScore(fk, worldTime, forCommander.GetOwner().GetOrigin());
+ 
+			bool inserted = false;
+			for (int i = 0; i < sorted.Count(); i++)
+			{
+				if (score > scores[i])
+				{
+					sorted.InsertAt(obj, i);
+					scores.InsertAt(score, i);
+					inserted = true;
+					break;
+				}
+			}
+ 
+			if (!inserted)
+			{
+				sorted.Insert(obj);
+				scores.Insert(score);
+			}
+		}
+ 
+		int take = Math.Min(count, sorted.Count());
+		for (int i = 0; i < take; i++)
+			result.Insert(sorted[i]);
+	}
+	
 	void AssignGroupToCommander(DCO_GroupUtilityComponent grp)
 	{
 		if (!grp)
@@ -205,7 +254,7 @@ class AICommander_ManagerComponent : ScriptComponent
 		chosen.RegisterVehicle(grp);
 		DCO_TransportMissionComponent comp = DCO_TransportMissionComponent.Cast(grp.FindComponent(DCO_TransportMissionComponent));
 		comp.AssignCommanderOwner(chosen);
-		Print(string.Format("[VEH_Manager] VEH '%1' → Commander '%2'", grp.GetName(), chosen.GetCommanderUID()));
+		//Print(string.Format("[VEH_Manager] VEH '%1' → Commander '%2'", grp.GetName(), chosen.GetCommanderUID()));
 	}
 	
 	bool UnregisterGroup(DCO_GroupUtilityComponent grp)

@@ -24,6 +24,9 @@ $grp GameEntity {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fBaseValue 70
     m_fRadius 145
+    m_sCapturedCo {
+     "rifleSquad"
+    }
    }
    Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
     m_vResolution 32
@@ -72,7 +75,14 @@ $grp GameEntity {
  ArlevilleHeights {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fBaseValue 70
     m_fRadius 55
+    m_sBlacklistedCo {
+     "mechanizedSquad"
+    }
+    m_sCapturedCo {
+     "rifleSquad"
+    }
    }
    Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
     m_vResolution 32

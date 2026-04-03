@@ -158,6 +158,8 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
+		if (!AICommander_ManagerComponent.GetInstance())
+			return;
 		m_Group     = SCR_AIGroup.Cast(owner);
 		m_GroupUtil = DCO_GroupUtilityComponent.Cast(owner.FindComponent(DCO_GroupUtilityComponent));
 	}
