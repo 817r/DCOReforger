@@ -70,20 +70,24 @@ class DCO_AIMoraleSystem
 		m_Utility = utility;
 		m_Combat = utility.m_CombatComponent;
 		m_Threat = utility.m_ThreatSystem;
-		m_DamageManager = SCR_DamageManagerComponent.Cast(utility.m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));
+		
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 		if (!agent)
 			return;
 		
 		m_Agent = agent;
+		m_State = moraleState.NORMAL;
+	}
+	
+	void RegisterDamageManager(SCR_DamageManagerComponent dmg)
+	{
+		m_DamageManager = dmg;
 		
 		if (m_DamageManager)
 		{
 			m_DamageManager.GetOnDamageOverTimeAdded().Insert(OnDamageOverTimeAdded);
 			m_DamageManager.GetOnDamageOverTimeRemoved().Insert(OnDamageOverTimeRemoved);
 		}
-		
-		m_State = moraleState.NORMAL;
 	}
 	
 	//------------------------------------------------------------------------------------------------

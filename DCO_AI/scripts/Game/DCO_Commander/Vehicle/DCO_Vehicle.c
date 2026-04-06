@@ -244,16 +244,19 @@ class DCO_TransportMissionComponent : ScriptComponent
 	override protected void OnPostInit(IEntity owner)
 	{
 		super.OnPostInit(owner);
-		SetEventMask(owner, EntityEvent.FRAME);
+		
 		SetEventMask(owner, EntityEvent.INIT);
 	}
 	
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
+		if (!AICommander_ManagerComponent.GetInstance())
+			return;
+		
 		Vehicle veh = Vehicle.Cast(owner);
 		m_eVehType = veh.m_eVehicleType;
-		
+		SetEventMask(owner, EntityEvent.FRAME);
 		
 	}
 }

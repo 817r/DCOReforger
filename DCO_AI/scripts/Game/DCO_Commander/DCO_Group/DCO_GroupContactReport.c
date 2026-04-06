@@ -152,7 +152,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	{
 		super.OnPostInit(owner);
 		SetEventMask(owner, EntityEvent.INIT);
-		SetEventMask(owner, EntityEvent.FRAME);
+		
 	}
 
 	override void EOnInit(IEntity owner)
@@ -162,5 +162,6 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 			return;
 		m_Group     = SCR_AIGroup.Cast(owner);
 		m_GroupUtil = DCO_GroupUtilityComponent.Cast(owner.FindComponent(DCO_GroupUtilityComponent));
+		SetEventMask(owner, EntityEvent.FRAME);
 	}
 }

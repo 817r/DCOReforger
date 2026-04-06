@@ -43,6 +43,7 @@ class DCO_AIConfigComponent : ScriptComponent
 		m_fTimeToMaxAccuracy = settings.GetAccuracyTime();
 		m_eAISkillDefault = settings.GetAISkill();
 		m_fVehicleDismountDanger = settings.GetDismountDistance();
+		
 	}
 	
 	DCO_AISKILL SetAISkill(DCO_AISKILL ski)

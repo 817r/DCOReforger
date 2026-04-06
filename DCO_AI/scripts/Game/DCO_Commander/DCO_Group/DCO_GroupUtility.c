@@ -265,6 +265,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		m_Group = SCR_AIGroup.Cast(owner);
 		m_UtilityComp = SCR_AIGroupUtilityComponent.Cast(owner.FindComponent(SCR_AIGroupUtilityComponent));
 		m_FormationComponent = AIFormationComponent.Cast(owner.FindComponent(AIFormationComponent));
+		//
 		SetEventMask(owner, EntityEvent.INIT);
 	}
 	

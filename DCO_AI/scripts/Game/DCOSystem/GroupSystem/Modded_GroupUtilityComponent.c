@@ -6,7 +6,7 @@ modded class SCR_AIGroupUtilityComponent
 	ref ScriptInvokerBase<SCR_AIOnTacticChange> m_OnTacticsChange = new ScriptInvokerBase<SCR_AIOnTacticChange>();
 	protected DCO_GroupUtilityComponent utilDco;
 	
-	SCR_AIGroupPerception GetPercGroupComp()
+	ref SCR_AIGroupPerception GetPercGroupComp()
 	{
 		return m_Perception;
 	}
@@ -159,17 +159,19 @@ modded class SCR_AIGroupUtilityComponent
 		return false;
 	}
 	
+	override SCR_AIActionBase EvaluateActivity(out bool restartActivity)
+	{
+		foreach (SCR_AIInfoComponent a : m_aInfoComponents)
+		{
+			Print("[AI LOD] : " + a.GetUtilityComp().GetAIAgent().GetLOD().ToString());
+		}
+		return super.EvaluateActivity(restartActivity);
+	}
+	
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
 		utilDco = DCO_GroupUtilityComponent.Cast(owner.FindComponent(DCO_GroupUtilityComponent));
 		utilDco.perc = m_Perception;
-	}
-	
-	override protected void OnAgentLifeStateChanged(AIAgent incapacitatedAgent, SCR_AIInfoComponent infoIncap, IEntity vehicle, ECharacterLifeState lifeState)
-	{
-		m_OnAgentLifeStateChanged.Invoke(incapacitatedAgent, infoIncap, vehicle, lifeState);
-		SCR_AIDangerEvent_Killzone kz = new SCR_AIDangerEvent_Killzone();
-		kz.SetPosition(incapacitatedAgent.GetControlledEntity().GetOrigin());
 	}
 }
