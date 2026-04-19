@@ -131,9 +131,14 @@ modded class SCR_AIGroupUtilityComponent
 	{
 		array<AIAgent> agents = {};
 		m_Owner.GetAgents(agents);
+		
+		if (m_Perception.m_aTargetEntities.Count() < 1)
+			return false;
 	
-		foreach (IEntity target : m_Perception.m_aTargetEntities)
+		foreach (ref IEntity target : m_Perception.m_aTargetEntities)
 		{
+			if (!target) 
+				continue;
 			foreach (AIAgent agent : agents)
 			{
 				IEntity controlled = agent.GetControlledEntity();
@@ -152,7 +157,7 @@ modded class SCR_AIGroupUtilityComponent
 	{
 		foreach (SCR_AIGroupTargetCluster c : m_Perception.m_aTargetClusters)
 		{
-			if (c.m_State && c.m_State.m_iCountEndangering != 0 && c.m_State.m_iCountAlive != 0 && c.m_State.GetTimeSinceLastNewInformation() < 7)
+			if (c.m_State && c.m_State.m_iCountEndangering != 0 && c.m_State.m_iCountAlive != 0 && c.m_State.GetTimeSinceLastNewInformation() < 2)
 				return true;
 		}
 	
@@ -161,10 +166,6 @@ modded class SCR_AIGroupUtilityComponent
 	
 	override SCR_AIActionBase EvaluateActivity(out bool restartActivity)
 	{
-		foreach (SCR_AIInfoComponent a : m_aInfoComponents)
-		{
-			Print("[AI LOD] : " + a.GetUtilityComp().GetAIAgent().GetLOD().ToString());
-		}
 		return super.EvaluateActivity(restartActivity);
 	}
 	

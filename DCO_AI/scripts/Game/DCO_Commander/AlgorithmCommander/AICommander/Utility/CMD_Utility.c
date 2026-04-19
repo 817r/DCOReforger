@@ -49,7 +49,9 @@ enum CMD_EGroupRole
 	RESERVE   = 5,
 	RETREAT   = 6,
 	REINFORNCE= 7,
-	DEFEND    = 8
+	DEFEND    = 8,
+	ARMORED   = 9,
+	STATIC_ARTILLERY = 10
 }
 
 enum CMD_EObjectiveType
@@ -101,7 +103,15 @@ class CMD_ThreatEntry
 	bool              m_bEngaged;
 	bool              m_bReinforcementSent;
 	int				  m_iReinforcementSentNumber;
-	DCO_GroupUtilityComponent            m_sEngagingGroupName;
+	DCO_GroupUtilityComponent m_sEngagingGroupName;
+	float m_fLastReinforcementTime = 0.0;
+	float m_fLastArtilleryTime     = 0.0;
+	bool  m_bArtilleryCalled       = false;
+	
+	bool              m_bFlankSent;
+	
+	bool              m_bNeedsRecon;
+	bool              m_bReconSent;
  
 	void CMD_ThreatEntry(vector pos, int enemyCount, float worldTime, DCO_GroupUtilityComponent grp)
 	{
@@ -115,5 +125,103 @@ class CMD_ThreatEntry
 		m_bReinforcementSent    = false;
 		m_iReinforcementSentNumber = 0;
 		m_sEngagingGroupName    = grp;
+		m_bFlankSent            = false;
+		m_bNeedsRecon           = false;
+		m_bReconSent            = false;
+	}
+}
+
+enum CMD_EArtilleryRoundType
+{
+	HE    = 0,
+	SMOKE = 1,
+	ILLUM = 2
+}
+ 
+class CMD_ArtilleryFireMission
+{
+	vector                  m_vTargetPos;
+	CMD_EArtilleryRoundType m_eRoundType;
+	float                   m_fExecuteAt;   // worldTime kapan order dikirim ke mortar
+	bool                    m_bDispatched;  // sudah dikirim ke mortar?
+
+	void CMD_ArtilleryFireMission(vector targetPos, CMD_EArtilleryRoundType type, float executeAt)
+	{
+		m_vTargetPos   = targetPos;
+		m_eRoundType   = type;
+		m_fExecuteAt   = executeAt;
+		m_bDispatched  = false;
+	}
+}
+
+class CMD_PendingFireMission
+{
+	vector                  m_vTargetPos;
+	CMD_EArtilleryRoundType m_eRoundType;
+	int                     m_iRoundCount;
+	float                   m_fQueuedAt;
+
+	void CMD_PendingFireMission(vector targetPos, CMD_EArtilleryRoundType type, int rounds, float queuedAt)
+	{
+		m_vTargetPos  = targetPos;
+		m_eRoundType  = type;
+		m_iRoundCount = rounds;
+		m_fQueuedAt   = queuedAt;
+	}
+}
+
+enum CMD_EMortarBaseSize
+{
+	SMALL  = 0,
+	MEDIUM = 1
+}
+
+class CMD_MortarSlotData
+{
+	IEntity                    m_MortarEntity;
+	DCO_GroupUtilityComponent  m_CrewGroup;
+	bool                       m_bCrewAssigned;
+	bool                       m_bBusy;
+	float                      m_fReadyAt;
+
+	void CMD_MortarSlotData(IEntity mortarEntity)
+	{
+		m_MortarEntity   = mortarEntity;
+		m_CrewGroup      = null;
+		m_bCrewAssigned  = false;
+		m_bBusy          = false;
+		m_fReadyAt       = 0.0;
+	}
+}
+
+class CMD_EnemyBatteryReport
+{
+	vector     m_vEstimatedPos;
+	FactionKey m_sEnemyFaction;
+	float      m_fDetectedAt;
+	bool       m_bCounterFired;
+	bool       m_bHunterSent;
+
+	void CMD_EnemyBatteryReport(vector estimatedPos, FactionKey enemyFaction, float detectedAt)
+	{
+		m_vEstimatedPos = estimatedPos;
+		m_sEnemyFaction = enemyFaction;
+		m_fDetectedAt   = detectedAt;
+		m_bCounterFired = false;
+		m_bHunterSent   = false;
+	}
+}
+
+class CMD_HunterEntry
+{
+	DCO_GroupUtilityComponent m_Group;
+	float                     m_fDispatchTime;
+	vector                    m_vTargetPos;
+
+	void CMD_HunterEntry(DCO_GroupUtilityComponent grp, float dispatchTime, vector targetPos)
+	{
+		m_Group         = grp;
+		m_fDispatchTime = dispatchTime;
+		m_vTargetPos    = targetPos;
 	}
 }

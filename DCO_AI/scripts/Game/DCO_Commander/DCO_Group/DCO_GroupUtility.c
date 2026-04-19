@@ -9,6 +9,9 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	[Attribute("0", UIWidgets.EditBox, "Radius pencarian kendaraan", category: "Commander")]
 	protected bool m_bIsDedicatedTransport;
 	
+	[Attribute("1", UIWidgets.EditBox, "Radius pencarian kendaraan", category: "Commander")]
+	protected bool m_bIsProcessedByCommander;
+	
 	protected SCR_AIGroup m_Group;
 	protected SCR_AIGroupUtilityComponent m_UtilityComp;
 	ref SCR_AIGroupPerception perc;
@@ -22,7 +25,11 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	[Attribute("0", UIWidgets.SearchComboBox, "", enums: ParamEnumArray.FromEnum(CMD_EGroupRole))]
 	protected CMD_EGroupRole m_eUnitCapabilities;
 	
+	[Attribute("", UIWidgets.Auto, "Blacklisted Commander to not process this Group", category: "Commander")]
+	protected ref array<string> m_sBlacklistedCo;
+	
 	protected CMD_EGroupRole    m_eGroupRole   = CMD_EGroupRole.NONE;
+	protected FactionKey fk;
 	
 	protected CMD_AICommanderObjectiveComponent currentObjective = null;
 	
@@ -34,8 +41,23 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	protected bool   m_bOrderActive    = false;
 	
 	static float AVG_MOVE_SPEED_MPS = 2.5;
-	static float ORDER_BASE_BUFFER  = 20.0;
-	static float ARRIVAL_THRESHOLD  = 5.0;
+	static float ORDER_BASE_BUFFER  = 10.0;
+	static float ARRIVAL_THRESHOLD  = 3.0;
+	
+	void CompleteAllWaypoints()
+	{
+		m_Group.CompleteAllWaypoints();
+	}
+	
+	bool IsCommanderBlacklisted(string cuid)
+	{
+		return m_sBlacklistedCo.Contains(cuid);
+	}
+	
+	int GetGroupID()
+	{
+		return m_Group.GetID();
+	}
 	
 	AICommander_BaseComponent GetMyCommander()
 	{
@@ -54,6 +76,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	
 	CMD_ThreatResponseComponent GetThreatResponseComponent()
 	{
+		Print(threatComp.Type().ToString() + " < THREAT RESPONSE");
 		return threatComp;
 	}
 	
@@ -251,7 +274,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	FactionKey GetFactionKey()
 	{
 		//Print(m_Group.GetName() + " Group Faction : " + m_Group.GetFaction());
-		return m_Group.GetFaction().GetFactionKey();
+		return fk;
 	}
 	
 	void OnGroupRemoved()
@@ -272,7 +295,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	void RegisterCommanderToGroup(AICommander_BaseComponent cmd)
 	{
 		myCommander = cmd;
-		//Print(myCommander.GetOwner().GetName() + " < MY COMMANDER | MY GROUP > " + typename.EnumToString(CMD_EGroupRole, m_eGroupRole));
+		Print(myCommander.GetCommanderUID() + " < MY COMMANDER | MY GROUP > " + typename.EnumToString(CMD_EGroupRole, m_eGroupRole));
 		threatComp = myCommander.GetThreatResponseComponent();
 	}
 	
@@ -307,17 +330,27 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		if (!AICommander_ManagerComponent.GetInstance())
 			return;
 		
+		if (!m_bIsProcessedByCommander)
+			return;
+		
 		SCR_AIGroup grp = SCR_AIGroup.Cast(owner);
-		AICommander_ManagerComponent.GetInstance().RegisterGroup(this);
+		
 		if (!m_eUnitCapabilities == CMD_EGroupRole.NONE)
 			SetGroupRole(m_eUnitCapabilities);
 		else
 			SetGroupRole(CMD_EGroupRole.NONE);
 		
-
-			
+		
+		GetGame().GetCallqueue().CallLater(delayedInit, 5000, false, owner);
 		
 		//SetDedicatedTransport(m_bIsDedicatedTransport)
+	}
+	
+	protected void delayedInit(IEntity owner)
+	{
+		SCR_AIGroup grp = SCR_AIGroup.Cast(owner);
+		fk = grp.GetFaction().GetFactionKey();
+		AICommander_ManagerComponent.GetInstance().RegisterGroup(this);
 	}
 }
 

@@ -1,0 +1,12 @@
+GenericEntity {
+ ID "691051C8CB916258"
+ components {
+  GMC_VehicleFactionSpawner "{6910616C86F27F19}" {
+  }
+  RplComponent "{691051C9304F04E0}" {
+  }
+  Hierarchy "{691051C933922A4E}" {
+  }
+ }
+ coords 2824.454 2 1068.885
+}

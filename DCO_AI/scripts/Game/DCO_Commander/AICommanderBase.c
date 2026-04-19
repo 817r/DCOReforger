@@ -16,6 +16,12 @@ class AICommander_BaseComponentClass : ScriptComponentClass
 	[Attribute("{2602CAB8AB74FBBF}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetOut.et", UIWidgets.ResourceNamePicker, desc: "Waypoint to be used Get Out.", "et", category: "Commander Waypoint Setting")]
 	protected ResourceName m_sDefaultGetOutWaypointPrefab;
 	
+	[Attribute("{2602CAB8AB74FBBF}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetOut.et", UIWidgets.ResourceNamePicker, desc: "Tasking For Player.", "et", category: "Commander Player Tasking Setting")]
+	protected ResourceName m_sDefaultTaskPlayerMovePrefab;
+	
+	[Attribute("{2602CAB8AB74FBBF}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetOut.et", UIWidgets.ResourceNamePicker, desc: "Tasking For Player.", "et", category: "Commander Player Tasking Setting")]
+	protected ResourceName m_sDefaultShootArtilleryPrefab;
+	
 
 	ResourceName GetCycleWaypointPrefab()
 	{
@@ -41,6 +47,16 @@ class AICommander_BaseComponentClass : ScriptComponentClass
 	{
 		return m_sDefaultGetOutWaypointPrefab;
 	}
+	
+	ResourceName GetDefaultMoveTaskPrefab()
+	{
+		return m_sDefaultTaskPlayerMovePrefab;
+	}
+	
+	ResourceName GetShootArtilleryWaypointPrefab()
+	{
+		return m_sDefaultShootArtilleryPrefab;
+	}
 }
 
 class AICommander_BaseComponent : ScriptComponent
@@ -59,6 +75,9 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	[Attribute("60.0", UIWidgets.EditBox, "Delay Before Start First Iteration", category: "Commander Setting")]
 	protected float m_fDelayFirstIteration;
+	
+	[Attribute("120.0", UIWidgets.EditBox, "Cooldown (detik) sebelum stalemate response di-trigger lagi per objective", category: "Commander Setting")]
+	protected float m_fStalemateResponseCooldown;
  
 	[Attribute("2", UIWidgets.EditBox, "Unit count minimum group sebelum dipaksa retreat.", category: "Commander Setting")]
 	protected int m_iRetreatThreshold;
@@ -80,6 +99,15 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	[Attribute("2", UIWidgets.ComboBox, "Commander Mode", "", ParamEnumArray.FromEnum(CMD_ECommanderMode), category: "Commander Personality" )]
 	protected CMD_ECommanderMode m_eCommanderModeExternal;
+	
+	[Attribute("0.5", UIWidgets.Range, "Agresivitas: seberapa cepat commit assault tanpa tunggu recon.\n0 = tunggu recon tiba dulu | 1 = langsung serang tanpa recon", params: "0 1 0.01", category: "Commander Personality")]
+	protected float m_fAggression;
+	
+	[Attribute("0.5", UIWidgets.Range, "Adaptabilitas: kecepatan switching mode dan reaktivitas commander.\n0 = lambat bereaksi | 1 = sangat responsif", params: "0 1 0.01", category: "Commander Personality")]
+	protected float m_fAdaptability;
+	
+    [Attribute("false", UIWidgets.CheckBox, desc: "Random Personality Every Playthough?", category: "Commander Personality")]
+    bool m_bRandomPersonality;
  
 	protected float m_fCaptureCheckTimer = 0.0;
 	
@@ -97,6 +125,10 @@ class AICommander_BaseComponent : ScriptComponent
 	protected ref array<IEntity> m_aVehicle = {};
 	
 	protected ref array<DCO_TransportTeamComponent> m_aTransportTeams = {};
+	
+	protected IEntity m_MyEnt;
+	
+	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mStalemateResponseTime = new map<CMD_AICommanderObjectiveComponent, float>();
 	
 	protected float m_fThinkTimer = 0 - m_fDelayFirstIteration;
 	
@@ -139,8 +171,16 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	protected void InitializeCommander()
 	{
+		if (!AICommander_ManagerComponent.GetInstance()) return;
 		AICommander_ManagerComponent.GetInstance().RegisterCommander(this);
-		threatComp = CMD_ThreatResponseComponent.Cast(GetOwner().FindComponent(CMD_ThreatResponseComponent));
+		threatComp = CMD_ThreatResponseComponent.Cast(m_MyEnt.FindComponent(CMD_ThreatResponseComponent));
+		if (m_bRandomPersonality)
+		{
+			m_fAggression = Math.RandomFloat01();
+			m_fAdaptability = Math.RandomFloat01();
+		}
+		float adaptMod   = Math.Lerp(1.5, 0.5, m_fAdaptability);
+		m_fThinkInterval = m_fThinkInterval * adaptMod;
 	}
 	
 	CMD_ThreatResponseComponent GetThreatResponseComponent()
@@ -179,7 +219,7 @@ class AICommander_BaseComponent : ScriptComponent
 	 
 	CMD_ECommanderMode GetCommanderMode()      { return m_eCommanderMode; }
 	
-	protected vector ComputeFlankPosition(vector base, vector objective, float distance)
+	vector ComputeFlankPosition(vector base, vector objective, float distance)
 	{
 		vector axis = objective - base;
 		axis = Vector(axis[0], 0.0, axis[2]);
@@ -251,6 +291,12 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	    if (objState == CMD_EObjectiveState.PENDING)
 	    {
+	    	if (m_fAggression >= Math.RandomFloat01())
+	    	{
+	    		TrySendToStaging(obj, worldTime);
+	    		obj.MarkAssigned(m_sFactionKey);
+	    		return;
+	    	}
 	        TrySendRecon(obj);
 	        TrySendToStaging(obj, worldTime);
 	        return;
@@ -258,9 +304,9 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	    if (objState == CMD_EObjectiveState.ASSIGNED)
 	    {
-	        if (!obj.IsReconArrived(m_sFactionKey, worldTime))
+	        if (m_fAggression < Math.RandomFloat01() && !obj.IsReconArrived(m_sFactionKey, worldTime))
 	        {
-	            //Print(string.Format("[%1] Objective %2 — menunggu recon tiba",
+	            //Print(string.Format("[%1] LOW AGGRESSION — waiting for recon at %2",
 	                //m_sCommanderUID, obj.GetOwner().GetName()));
 	            return;
 	        }
@@ -284,6 +330,8 @@ class AICommander_BaseComponent : ScriptComponent
 			//CMD_TaskNotifier.Notify(reconGrp.GetOwner(), "Recon " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.RECON);
 			return;
 		}
+		
+		reconGrp.CompleteAllWaypoints();
 		
 		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
 		
@@ -358,6 +406,8 @@ class AICommander_BaseComponent : ScriptComponent
 	            candidatePositions[i] = candidatePositions[j];
 	            candidatePositions[j] = tmp;
 	        }
+			
+			grp.CompleteAllWaypoints();
 	
 	        foreach (vector basePos : candidatePositions)
 	        {
@@ -379,6 +429,9 @@ class AICommander_BaseComponent : ScriptComponent
 	
 		result = FindIdleGroupByCurrentRole(role, role);
 		if (result)
+			return result;
+		
+		if (role == CMD_EGroupRole.ARMORED)
 			return result;
 	
 		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.NONE);
@@ -547,9 +600,9 @@ class AICommander_BaseComponent : ScriptComponent
 			if (grp.GetUnitCount() <= m_iRetreatThreshold
 				&& grp.GetGroupStatus() != DCOG_EGroupStatus.IDLE)
 			{
-				SCR_AIWaypoint rallyWP = SpawnMoveWP(GetOwner().GetOrigin());
-				if (rallyWP)
-					grp.ForceRetreat(rallyWP, worldTime);
+				//SCR_AIWaypoint rallyWP = SpawnMoveWP(GetOwner().GetOrigin());
+				//if (rallyWP)
+					//grp.ForceRetreat(rallyWP, worldTime);
 			}
 	 
 			if (!grp.CheckOrderComplete(worldTime))
@@ -657,6 +710,7 @@ class AICommander_BaseComponent : ScriptComponent
 				//CMD_TaskNotifier.Notify(assaultGrp.GetOwner(), "STAGING " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.MOVE);
 				return;
 			}
+			assaultGrp.CompleteAllWaypoints();
 			if (TryAssignTransport(assaultGrp, stagingPos, worldTime))
     			return;
 	        SCR_AIWaypoint wp = SpawnMoveWP(stagingPos);
@@ -676,6 +730,7 @@ class AICommander_BaseComponent : ScriptComponent
 				//CMD_TaskNotifier.Notify(flankGrp.GetOwner(), "STAGING " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.MOVE);
 				return;
 			}
+			flankGrp.CompleteAllWaypoints();
 			if (TryAssignTransport(flankGrp, stagingPos, worldTime))
     			return;
 	        vector flankStaging = ComputeFlankPosition(base, stagingPos, 150);
@@ -689,7 +744,7 @@ class AICommander_BaseComponent : ScriptComponent
 	    }
 	}
 	
-	protected void GenerateSearchWaypoints(vector center, float radius, array<SCR_AIWaypoint> outWaypoints, int rings = 4, int sectorsPerRing = 5)
+	protected void GenerateSearchWaypoints(vector center, float radius, array<SCR_AIWaypoint> outWaypoints, int rings = 2, int sectorsPerRing = 3)
 	{
 	    if (!outWaypoints)
 	        return;
@@ -745,20 +800,38 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	SCR_AIWaypoint SpawnMoveWP(vector pos)
 	{
-		AICommander_BaseComponentClass data = AICommander_BaseComponentClass.Cast(GetComponentData(GetOwner()));
-		if (!data)
-			return null;
- 
-		Resource res = Resource.Load(data.GetDefaultMoveWaypointPrefab());
-		if (!res || !res.IsValid())
-			return null;
- 
-		EntitySpawnParams params = EntitySpawnParams();
-		params.TransformMode = ETransformMode.WORLD;
-		Math3D.MatrixIdentity4(params.Transform);
-		params.Transform[3] = pos;
- 
-		return SCR_AIWaypoint.Cast(GetGame().SpawnEntityPrefab(res, null, params));
+	    AICommander_BaseComponentClass data = AICommander_BaseComponentClass.Cast(GetComponentData(GetOwner()));
+	    if (!data)
+	        return null;
+	
+	    Resource res = Resource.Load(data.GetDefaultMoveWaypointPrefab());
+	    if (!res || !res.IsValid())
+	        return null;
+	
+	    // --- Snap ke surface & validasi bukan air ---
+	    BaseWorld world = GetGame().GetWorld();
+	    if (!world)
+	        return null;
+		
+		EWaterSurfaceType waterType = EWaterSurfaceType.WST_NONE;
+	
+	    float surfaceY = world.GetSurfaceY(pos[0], pos[2]);
+		float lakeArea = 0;
+	
+	    float waterY = SCR_WorldTools.GetWaterSurfaceY(null, pos, waterType, lakeArea);
+	    if (surfaceY < waterY)
+	    {
+			if (waterType == EWaterSurfaceType.WST_OCEAN)
+	        	return null;
+	    }
+	
+	    pos[1] = surfaceY;
+	    EntitySpawnParams params = EntitySpawnParams();
+	    params.TransformMode = ETransformMode.WORLD;
+	    Math3D.MatrixIdentity4(params.Transform);
+	    params.Transform[3] = pos;
+	
+	    return SCR_AIWaypoint.Cast(GetGame().SpawnEntityPrefab(res, null, params));
 	}
  
 	SCR_AIWaypoint SpawnDefendWP(vector pos)
@@ -777,6 +850,92 @@ class AICommander_BaseComponent : ScriptComponent
 		params.Transform[3] = pos;
  
 		return SCR_AIWaypoint.Cast(GetGame().SpawnEntityPrefab(res, null, params));
+	}
+	
+	protected void HandleStalemateObjective(CMD_AICommanderObjectiveComponent obj, float worldTime)
+	{
+	    float lastResponse;
+	    if (m_mStalemateResponseTime.Find(obj, lastResponse))
+	    {
+	        if ((worldTime - lastResponse) < m_fStalemateResponseCooldown)
+	            return;
+	    }
+	
+	    if (!m_mStalemateResponseTime.Contains(obj))
+	        m_mStalemateResponseTime.Insert(obj, worldTime);
+	    else
+	        m_mStalemateResponseTime.Set(obj, worldTime);
+	
+	    obj.NotifyContested(worldTime);
+	
+	    bool slotFull = obj.IsGroupSlotFull(m_sFactionKey);
+	
+	    if (!slotFull)
+	    {
+	        TrySendAssaultWithSlots(obj, worldTime);
+	        return;
+	    }
+	
+	    ReallocateGroupFromStalemateObjective(obj, worldTime);
+	}
+	
+	protected void ReallocateGroupFromStalemateObjective(CMD_AICommanderObjectiveComponent stalemateObj, float worldTime)
+	{
+	    AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+	    if (!mgr)
+	        return;
+	
+	    array<CMD_AICommanderObjectiveComponent> candidates = {};
+	    mgr.GetTopObjectivesOffensive(this, m_fObjectiveAtTheSameTime + 2, candidates);
+	
+	    CMD_AICommanderObjectiveComponent altObj = null;
+	    foreach (CMD_AICommanderObjectiveComponent c : candidates)
+	    {
+	        if (!c || c == stalemateObj)
+	            continue;
+	        if (c.IsStalemate(m_sFactionKey, worldTime))
+	            continue;
+	        altObj = c;
+	        break;
+	    }
+	
+	    if (!altObj)
+	    {
+	        stalemateObj.ResetAssignedGroupCount(m_sFactionKey);
+	        TrySendAssaultWithSlots(stalemateObj, worldTime);
+	        return;
+	    }
+	
+	    foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
+	    {
+	        if (!grp)
+	            continue;
+	
+	        if (grp.GetGroupObjective() != stalemateObj)
+	            continue;
+	
+	        if (grp.GetGroupStatus() == DCOG_EGroupStatus.EXECUTING_COMMAND)
+	            continue;
+	
+	        grp.SetGroupObjective(altObj);
+	        grp.SetGroupRole(CMD_EGroupRole.ASSAULT);
+	
+	        RandomGenerator rand = new RandomGenerator();
+	        vector altPos = rand.GenerateRandomPointInRadius(5, altObj.GetRadius(), altObj.GetOwner().GetOrigin(), false);
+	        altPos[1] = GetGame().GetWorld().GetSurfaceY(altPos[0], altPos[2]);
+	
+	        if (!TryAssignTransport(grp, altPos, worldTime))
+	        {
+	            SCR_AIWaypoint wp = SpawnMoveWP(altPos);
+	            if (wp)
+	                grp.MoveTo(wp, worldTime);
+	        }
+	
+	        stalemateObj.SetObjectiveGroup(m_sFactionKey, -1);
+	        altObj.SetObjectiveGroup(m_sFactionKey, 1);
+	
+	        break;
+	    }
 	}
 	
 	protected void AssignDefendToObjective(CMD_AICommanderObjectiveComponent obj, float worldTime)
@@ -826,6 +985,8 @@ class AICommander_BaseComponent : ScriptComponent
 	        DCO_GroupUtilityComponent defGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RESERVE);
 	        if (!defGrp)
 	            break;
+			
+			defGrp.CompleteAllWaypoints();
 	
 	        if (roleList[i] == 1)
 	        {
@@ -835,7 +996,7 @@ class AICommander_BaseComponent : ScriptComponent
 	                SCR_AIWaypoint wp = SpawnMoveWP(qrfPos);
 	                if (wp)
 	                {
-	                    defGrp.SetGroupRole(CMD_EGroupRole.DEFEND);
+	                    defGrp.SetGroupRole(CMD_EGroupRole.RESERVE);
 	                    defGrp.MoveTo(wp, worldTime);
 	                    obj.SetObjectiveGroup(m_sFactionKey, 1);
 	                }
@@ -874,9 +1035,9 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	protected void AssignPatrolAroundObjective(DCO_GroupUtilityComponent grp, vector center,float radius,float worldTime)
 	{
-		int patrolPoints = 6;
-		float patrolRadius = radius * 1.2;
-	
+		int patrolPoints = 4;
+		float patrolRadius = radius * 1.6;
+		grp.CompleteAllWaypoints();
 		for (int p = 0; p < patrolPoints; p++)
 		{
 			float angleDeg = (360.0 / patrolPoints) * p;
@@ -922,6 +1083,7 @@ class AICommander_BaseComponent : ScriptComponent
 					//CMD_TaskNotifier.Notify(assaultGrp.GetOwner(), "ASSAULT " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.CAPTURE);
 					return;
 				}
+				assaultGrp.CompleteAllWaypoints();
 				if (TryAssignTransport(assaultGrp, objPos, worldTime))
     				return;
 				array<SCR_AIWaypoint> searchWPs = {};
@@ -963,6 +1125,7 @@ class AICommander_BaseComponent : ScriptComponent
 					//CMD_TaskNotifier.Notify(flankGrp.GetOwner(), "FLANK " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.DESTROY);
 					return;
 				}
+				flankGrp.CompleteAllWaypoints();
 				if (TryAssignTransport(flankGrp, objPos, worldTime))
     				return;
 				
@@ -1007,110 +1170,52 @@ class AICommander_BaseComponent : ScriptComponent
 			}
 		}
 	}
-
-	protected void TrySendDefend(CMD_AICommanderObjectiveComponent obj, float worldTime)
-	{
-		int defendNeeded = obj.GetDefendGroupCount();
-		int current      = obj.GetCurrentAssignedGroupCount(m_sFactionKey);
-		int toSend       = defendNeeded - current;
- 
-		if (toSend <= 0)
-			return;
-		
-		RandomGenerator rand = new RandomGenerator();
- 
-		vector objPos 	 = rand.GenerateRandomPointInRadius(5, obj.GetRadius(), obj.GetOwner().GetOrigin(), true);
- 		objPos[1]		 = GetGame().GetWorld().GetSurfaceY(objPos[0], objPos[2]);
-		
-		for (int i = 0; i < toSend; i++)
-		{
-			DCO_GroupUtilityComponent defGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RESERVE);
-			if (!defGrp)
-				break;
-			
-			if (defGrp.IsPlayerGroup())
-			{
-				//CMD_TaskNotifier.Notify(defGrp.GetOwner(), "DEFEND " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.DEFEND);
-				return;
-			}
- 
-			SCR_AIWaypoint wp = SpawnDefendWP(objPos);
-			if (!wp)
-				break;
- 
-			defGrp.SetGroupRole(CMD_EGroupRole.RESERVE);
-			defGrp.MoveTo(wp, worldTime);
-			
-			if (defGrp.GetGroupObjective() != obj)
-			{
-				defGrp.SetGroupObjective(obj);
-				obj.SetObjectiveGroup(m_sFactionKey, 1);
-			}
-				
- 
-			/*Print(string.Format("[%1] DEFEND (post-capture %2/%3): %4 → %5",
-				m_sCommanderUID,
-				obj.GetCurrentAssignedGroupCount(m_sFactionKey),
-				defendNeeded,
-				defGrp.GetOwner().GetName(),
-				obj.GetOwner().GetName()));*/
-		}
-	}
 	
 	protected void ThinkCaptureProgress(float worldTime)
 	{
-		foreach (CMD_AICommanderObjectiveComponent obj : m_aObjective)
-		{
-			if (!obj)
-				continue;
- 
-			CMD_EObjectiveState state = obj.GetObjectiveState(m_sFactionKey);
-			
-			if (obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, true) < obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, false))
-				obj.SetObjectiveState(m_sFactionKey, CMD_EObjectiveState.ASSIGNED);
- 
-			if (state == CMD_EObjectiveState.COMPLETED || state == CMD_EObjectiveState.FAILED)
-				continue;
- 
-			if (obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
-			{
-				//TrySendDefend(obj, worldTime);
-				continue;
-			}
- 
-			if (state != CMD_EObjectiveState.ASSIGNED)
-				continue;
- 
-			if (!obj.IsCaptureTimerRunning(m_sFactionKey))
-			{
-				if (obj.GetCurrentAssignedGroupCount(m_sFactionKey) > 0)
-				{
-					if (obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, true) > 0)
-						obj.StartCaptureTimer(m_sFactionKey, worldTime);
-				}
-					
-				continue;
-			}
- 
-			float progress = obj.GetCaptureProgress(m_sFactionKey, worldTime);
-			/*Print(string.Format("[%1] Capture progress %2: %3%",
-				m_sCommanderUID,
-				obj.GetOwner().GetName(),
-				(progress).ToString()));*/
- 
-			if (obj.IsCaptureTimerComplete(m_sFactionKey, worldTime))
-			{
-				obj.SetCapturedBy(m_sFactionKey, true);
-				obj.ResetAssignedGroupCount(m_sFactionKey);
- 
-				/*Print(string.Format("[%1] CAPTURED: %2 — transitioning to DEFEND (%3 groups)",
-					m_sCommanderUID,
-					obj.GetOwner().GetName(),
-					obj.GetDefendGroupCount()));*/
- 
-				//TrySendDefend(obj, worldTime);
-			}
-		}
+	    foreach (CMD_AICommanderObjectiveComponent obj : m_aObjective)
+	    {
+	        if (!obj)
+	            continue;
+	
+	        CMD_EObjectiveState state = obj.GetObjectiveState(m_sFactionKey);
+	
+	        if (obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, true) < obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, false))
+	            obj.SetObjectiveState(m_sFactionKey, CMD_EObjectiveState.ASSIGNED);
+	
+	        if (state == CMD_EObjectiveState.COMPLETED || state == CMD_EObjectiveState.FAILED)
+	            continue;
+	
+	        if (obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+	            continue;
+	
+	        if (state != CMD_EObjectiveState.ASSIGNED)
+	            continue;
+	
+	        if (!obj.IsCaptureTimerRunning(m_sFactionKey))
+	        {
+	            if (obj.GetCurrentAssignedGroupCount(m_sFactionKey) > 0)
+	            {
+	                if (obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, true) > 0)
+	                    obj.StartCaptureTimer(m_sFactionKey, worldTime);
+	            }
+	            continue;
+	        }
+	
+	        float progress = obj.GetCaptureProgress(m_sFactionKey, worldTime);
+	
+	        if (obj.IsStalemate(m_sFactionKey, worldTime))
+	        {
+	            HandleStalemateObjective(obj, worldTime);
+	        }
+	
+	        if (obj.IsCaptureTimerComplete(m_sFactionKey, worldTime))
+	        {
+	            obj.SetCapturedBy(m_sFactionKey, true);
+	            obj.ResetAssignedGroupCount(m_sFactionKey);
+	            obj.ResetStalemateTracking(); // ← reset tracking setelah captured
+	        }
+	    }
 	}
 	
 	protected IEntity TryAssignTransports(DCO_GroupUtilityComponent passengerGroup)
@@ -1341,6 +1446,7 @@ class AICommander_BaseComponent : ScriptComponent
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
+		m_MyEnt = owner;
 		InitializeCommander();
 	}
 }

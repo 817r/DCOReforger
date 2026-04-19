@@ -5,6 +5,9 @@ class AICommander_ManagerComponentClass : ScriptComponentClass
 
 class AICommander_ManagerComponent : ScriptComponent
 {
+	[Attribute("0", UIWidgets.EditBox, "Is Use LOD Or No", category: "Simulation")]
+	protected bool m_bPreventUseLOD;
+	
 	ref array<FactionKey> m_aAvailableFactions = {};
 	
 	ref array<AICommander_BaseComponent> m_aCommander = {};
@@ -12,6 +15,11 @@ class AICommander_ManagerComponent : ScriptComponent
 	ref array<CMD_AICommanderObjectiveComponent> m_aObjective = {};
 	
 	protected static AICommander_ManagerComponent s_Instance;
+	
+	bool IsPreventLODUsage()
+	{
+		return m_bPreventUseLOD;
+	}
 	
 	bool RegisterGroup(DCO_GroupUtilityComponent grp)
 	{		
@@ -40,7 +48,7 @@ class AICommander_ManagerComponent : ScriptComponent
 		if (!m_aCommander.Contains(cmd))
 			m_aCommander.Insert(cmd);
 		
-		//Print("REGISTERING : " + cmd.GetCommanderUID() + " FACTION : " + cmd.GetCommanderFactionKey());
+		Print("REGISTERING : " + cmd.GetCommanderUID() + " FACTION : " + cmd.GetCommanderFactionKey());
 		return true;
 	}
 	
@@ -53,7 +61,6 @@ class AICommander_ManagerComponent : ScriptComponent
 		foreach(Faction f : AvailableFactions)
 		{
 			m_aAvailableFactions.Insert(f.GetFactionKey());
-			//Print("FACTION AVAILABLE : " + f.GetFactionName());
 		}
 	}
 	
@@ -197,6 +204,9 @@ class AICommander_ManagerComponent : ScriptComponent
  
 		foreach (AICommander_BaseComponent cmd : availCommanders)
 		{
+			if (grp.IsCommanderBlacklisted(cmd.GetCommanderUID()))
+				continue;
+			
 			int groupCount = cmd.GetOwnedGroupCount();
 			if (groupCount < leastGroups)
 			{
@@ -212,8 +222,8 @@ class AICommander_ManagerComponent : ScriptComponent
  
 		chosen.RegisterGroup(grp);
 		grp.RegisterCommanderToGroup(chosen);
-		//Print(string.Format("[CMD_Manager] Group '%1' → Commander '%2'",
-			//grp.GetOwner().GetName(), chosen.GetCommanderUID()));
+		Print(string.Format("[CMD_Manager] Group '%1' → Commander '%2'",
+			grp.GetOwner().GetName(), chosen.GetCommanderUID()));
 	}
 	
 	void AssignVehicleToCommander(IEntity grp)
@@ -221,7 +231,11 @@ class AICommander_ManagerComponent : ScriptComponent
 		if (!grp)
 			return;
  		SCR_VehicleFactionAffiliationComponent fac = SCR_VehicleFactionAffiliationComponent.Cast(grp.FindComponent(SCR_VehicleFactionAffiliationComponent));
-		FactionKey grpFk = fac.GetDefaultFactionKey();
+		FactionKey grpFk
+		if (fac.GetAffiliatedFaction())
+			grpFk = fac.GetAffiliatedFactionKey();
+		else
+			grpFk = fac.GetDefaultFactionKey();
  
 		array<AICommander_BaseComponent> availCommanders = {};
 		foreach (AICommander_BaseComponent cmd : m_aCommander)

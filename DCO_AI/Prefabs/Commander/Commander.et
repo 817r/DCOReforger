@@ -2,7 +2,17 @@ GameEntity : "{C28F5F51499CB912}Prefabs/Commander/US_Commander.et" {
  ID "6902DABDA61492A4"
  components {
   AICommander_AlgorithmComponent "{68F8849956F58560}" {
-   m_fObjectiveAtTheSameTime 2
+   m_fObjectiveAtTheSameTime 4
+   m_fTransportDistanceThreshold 400
+   m_fVehicleSearchRadius 200
+  }
+  CMD_ArtillerySupportComponent "{6912AE2001023B91}" {
+   Enabled 0
+   m_fMissionCooldown 300
+  }
+  RplComponent "{690E9870223C5974}" {
+  }
+  Hierarchy "{690E9870258BBC89}" {
   }
  }
  coords 2755.965 73.157 1561.269

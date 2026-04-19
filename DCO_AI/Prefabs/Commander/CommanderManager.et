@@ -3,6 +3,10 @@ GameEntity {
  components {
   AICommander_ManagerComponent "{68F88499AF35F645}" {
   }
+  RplComponent "{690E98702C7BA9B2}" {
+  }
+  Hierarchy "{690F0BAC7AA6FE56}" {
+  }
  }
  coords 2750.273 66.423 1858.632
 }

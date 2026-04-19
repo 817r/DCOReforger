@@ -1,0 +1,18 @@
+SCR_AIGroup : "{182C2343D6B22648}Prefabs/Group/US_MortarTeam.et" {
+ coords 1651.218 38.928 2634.867
+}
+GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
+ components {
+  AICommander_AlgorithmComponent "{68F8849956F58560}" {
+   m_sCommanderUID "ko"
+   m_sFactionKey "US"
+  }
+  CMD_ArtillerySupportComponent "{6912AE2001023B91}" {
+   Enabled 1
+  }
+ }
+ coords 1647.913 38.629 2634.156
+}
+GameEntity : "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et" {
+ coords 1650.373 38.64 2631.561
+}

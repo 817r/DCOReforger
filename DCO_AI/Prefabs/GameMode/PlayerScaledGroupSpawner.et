@@ -1,0 +1,16 @@
+GenericEntity {
+ ID "690E9871DF6FFEE8"
+ components {
+  SCR_PlayerScaledGroupSpawner "{690E987F784D1AAE}" {
+   m_aGroupPrefabs {
+   }
+   m_iMinGroups 3
+   m_iMaxGroups 20
+  }
+  RplComponent "{690E8ABFA37093CD}" {
+  }
+  Hierarchy "{690E8ABFA6F01C73}" {
+  }
+ }
+ coords 2799.007 70.275 1557.706
+}

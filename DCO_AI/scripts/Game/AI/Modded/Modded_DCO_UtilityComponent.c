@@ -186,7 +186,12 @@ modded class SCR_AIUtilityComponent
 			return;
 		
 		if (AICommander_ManagerComponent.GetInstance())
-			agent.SetPermanentLOD(0);
+		{
+			if (AICommander_ManagerComponent.GetInstance().IsPreventLODUsage())
+				agent.SetPermanentLOD(0);
+			else
+				agent.PreventMaxLOD();
+		}
 		
 		moraleSystem = new DCO_AIMoraleSystem(this);
 		SCR_DamageManagerComponent m_DamageManager = SCR_DamageManagerComponent.Cast(m_OwnerEntity.FindComponent(SCR_DamageManagerComponent));

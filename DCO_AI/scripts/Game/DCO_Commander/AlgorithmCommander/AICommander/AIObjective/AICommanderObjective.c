@@ -14,7 +14,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	[Attribute("200.0", UIWidgets.EditBox, "Radius (meter) untuk cek friendly presence.", category: "Objective")]
 	protected float m_fFriendlyRadius;
 	
-	[Attribute("30.0", UIWidgets.Slider, "Radius of the Objective", "1.0 200.0 1.0")]
+	[Attribute("30.0", UIWidgets.Slider, "Radius of the Objective", "1.0 300.0 1.0")]
 	protected float m_fRadius;
 	
 	[Attribute("0", UIWidgets.ComboBox, "Tipe objective ini", "", ParamEnumArray.FromEnum(CMD_EObjectiveType))]
@@ -26,11 +26,20 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	[Attribute("2", UIWidgets.EditBox, "Berapa group yang di-assign untuk defend setelah captured", category: "Objective")]
 	protected int m_iDefendGroupCount;
 	
+	[Attribute("4", UIWidgets.EditBox, "Berapa group yang di-assign untuk attack objective", category: "Objective")]
+	protected int m_iMaxGroupCount;
+	
 	[Attribute("", UIWidgets.Auto, "Blacklisted Commander to not process this objective", category: "Objective")]
 	protected ref array<string> m_sBlacklistedCo;
 	
 	[Attribute("", UIWidgets.Auto, "Set Captured by Commander for this objective", category: "Objective")]
 	protected ref array<string> m_sCapturedCo;
+	
+	protected float m_fLastProgressTime   = 0.0;
+	protected float m_fStaleStartTime     = 0.0;
+	
+	[Attribute("300.0", UIWidgets.EditBox, "Detik tanpa progress sebelum dianggap stalemate", category: "Objective")]
+	protected float m_fStalemateThreshold;
  
 	ref map<FactionKey, float> m_mCaptureStartTime = new map<FactionKey, float>();
 	ref map<FactionKey, bool>  m_mIsCaptured       = new map<FactionKey, bool>();
@@ -52,6 +61,50 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	float GetRadius()
 	{
 		return m_fRadius;
+	}
+	
+	float GetCaptureProgress(FactionKey fk, float worldTime)
+	{
+	    float startTime;
+	    if (!m_mCaptureStartTime.Find(fk, startTime))
+	        return 0.0;
+	
+	    float elapsed = worldTime - startTime;
+	    if (CountNearbyUnits(m_fRadius, fk, true) < CountNearbyUnits(m_fRadius, fk, false))
+	    {
+	        elapsed = 0;
+	    }
+	    else
+	    {
+	        // Ada progress nyata — update timestamp
+	        m_fLastProgressTime = worldTime;
+	    }
+	
+	    return Math.Clamp(elapsed / m_fCaptureHoldDuration, 0.0, 1.0);
+	}
+	
+	bool IsStalemate(FactionKey fk, float worldTime)
+	{
+	    // Hanya relevan kalau capture timer udah jalan
+	    if (!IsCaptureTimerRunning(fk))
+	        return false;
+	
+	    // Kalau belum pernah ada progress, hitung dari start timer
+	    float referenceTime = m_fLastProgressTime;
+	    if (referenceTime <= 0.0)
+	    {
+	        float startTime;
+	        if (!m_mCaptureStartTime.Find(fk, startTime))
+	            return false;
+	        referenceTime = startTime;
+	    }
+	
+	    return (worldTime - referenceTime) >= m_fStalemateThreshold;
+	}
+	
+	void ResetStalemateTracking()
+	{
+	    m_fLastProgressTime = 0.0;
 	}
 	
 	bool IsCommanderBlackListed(string cuid)
@@ -95,6 +148,8 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	
 	protected void InitializeObjective()
 	{
+		if (!AICommander_ManagerComponent.GetInstance())
+			return;
 		AICommander_ManagerComponent.GetInstance().RegisterObjective(this);
 		for(int i = 0; i < AICommander_ManagerComponent.GetInstance().m_aAvailableFactions.Count(); i++)
 		{
@@ -223,30 +278,32 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	int GetRequiredGroupCount()
 	{
-		int radiusTier;
-		if (m_fRadius < 70.0)
-			radiusTier = 1;
-		else if (m_fRadius < 175.0)
-			radiusTier = 2;
-		else
-			radiusTier = Math.Round(m_fRadius / 175) + 1;
- 
-		int priorityTier;
-		if (m_fBaseValue < 34.0)
-			priorityTier = 0;
-		else if (m_fBaseValue < 67.0)
-			priorityTier = 1;
-		else
-			priorityTier = 2;
- 
-		int typeBonus = 0;
-		if (m_eObjectiveType == CMD_EObjectiveType.CAPTURE)
-			typeBonus = 1;
-		else if (m_eObjectiveType == CMD_EObjectiveType.DESTROY)
-			typeBonus = 2;
-		float grp = radiusTier + priorityTier; //+ typeBonus;
- 
-		return grp;
+	    int radiusGroups;
+	    if (m_fRadius >= 70.0)
+	        radiusGroups = 2;
+	    else
+	        radiusGroups = 1;
+
+	    int priorityBonus;
+	    if (m_fBaseValue >= 60.0)
+	        priorityBonus = 1;
+	    else
+	        priorityBonus = 0;
+
+	    int typeBonus;
+	    switch (m_eObjectiveType)
+	    {
+	        case CMD_EObjectiveType.CAPTURE:
+	        case CMD_EObjectiveType.DESTROY:
+	            typeBonus = 1;
+	            break;
+	        default:
+	            typeBonus = 0;
+	            break;
+	    }
+	
+	    int total = radiusGroups + priorityBonus + typeBonus;
+	    return Math.ClampInt(total, 1, m_iMaxGroupCount);
 	}
  
 	CMD_EObjectiveType GetObjectiveType()    { return m_eObjectiveType; }
@@ -318,22 +375,6 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		}
 		
 		return elapsed >= m_fCaptureHoldDuration;
-	}
- 
-	float GetCaptureProgress(FactionKey fk, float worldTime)
-	{
-		float startTime;
-		if (!m_mCaptureStartTime.Find(fk, startTime))
-			return 0.0;
- 
-		float elapsed = worldTime - startTime;
-		if (CountNearbyUnits(m_fRadius, fk, true) < CountNearbyUnits(m_fRadius, fk, false))
-		{
-			elapsed = 0;
-		}
-		//Print(string.Format("[CMD_Objective] %1 Elapsed %2 Hold Duration %3 Faction",
-			//elapsed, m_fCaptureHoldDuration, fk));		
-		return Math.Clamp(elapsed / m_fCaptureHoldDuration, 0.0, 1.0);
 	}
  
 	bool IsCapturedBy(FactionKey fk, string cuid = "")

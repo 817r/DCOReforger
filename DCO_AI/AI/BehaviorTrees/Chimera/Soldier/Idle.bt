@@ -68,22 +68,22 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
                  Name "Sequence"
                  EditorPos -1548.359 787.705
                  Nodes {
-                  RunBT RunBT {
-                   Name "RunBT"
-                   EditorPos -1888 944
-                   BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
-                  }
                   AITaskIdle Idle {
                    Name "Idle"
-                   EditorPos -1434.8 962.681
+                   EditorPos -1792 976
                    Period 80
                    PeriodRandom 100
+                  }
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos -1488 960
+                   BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
                   }
                  }
                 }
                }
                RandomRange {
-                1 8
+                1 4
                }
               }
               RunBT RunBT {

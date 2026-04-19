@@ -9,6 +9,10 @@ GameEntity {
    m_vResolution 32
    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
   }
+  RplComponent "{690E9870386388B0}" {
+  }
+  Hierarchy "{690E98703AAC4821}" {
+  }
  }
  coords 2786.54 73.491 1687.561
 }

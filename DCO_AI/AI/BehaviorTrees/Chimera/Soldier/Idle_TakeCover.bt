@@ -41,30 +41,57 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
        Name "Selector"
        EditorPos 80 272
        Nodes {
-        DCO_FindIndoorPosition "DCO_ Find Indoor Position" {
-         Name "DCO_ Find Indoor Position"
-         EditorPos -432 640
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 5
-           PortName "OriginIn"
+        Switch Switch {
+         Name "Switch"
+         EditorPos -224 384
+         Nodes {
+          DCO_FindIndoorPosition "DCO_ Find Indoor Position" {
+           Name "DCO_ Find Indoor Position"
+           EditorPos -688 656
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 5
+             PortName "OriginIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "RadiusIn"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 10
+             PortName "Position Found"
+            }
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 11
+             PortName "Is Position Found"
+            }
+           }
+           m_fRadius 50
           }
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "RadiusIn"
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 32 608
+           Nodes {
+            AITaskSetVariable "Set Variable" {
+             Name "Set Variable"
+             EditorPos -112 768
+             SetValue "false"
+             OutVariable 12
+             InVariable 11
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 122.674 764.554
+             Period 2
+            }
+           }
           }
          }
-         OutPorts {
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 10
-           PortName "Position Found"
-          }
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 11
-           PortName "Is Position Found"
-          }
+         RandomRange {
+          1 4
          }
-         m_fRadius 50
         }
         DecoTestVariable "Test Variable" {
          Name "Test Variable"
@@ -292,7 +319,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
   }
   VariableReference CoverQueryProps {
    VariableType 5
-   EditorPos 15.581 1576.323
+   EditorPos 16 1584
   }
   VariableReference vLeaderPos {
    VariableType 4
@@ -316,11 +343,15 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
   }
   VariableReference coverPos {
    VariableType 2
-   EditorPos -112 608
+   EditorPos -368 624
   }
   VariableReference isCoverFound {
    VariableType 9
-   EditorPos -112 704
+   EditorPos -368 720
+  }
+  VariableReference isCoverFound {
+   VariableType 9
+   EditorPos 96 880
   }
  }
 }
