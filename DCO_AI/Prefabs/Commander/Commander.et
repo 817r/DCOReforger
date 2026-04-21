@@ -6,9 +6,7 @@ GameEntity : "{C28F5F51499CB912}Prefabs/Commander/US_Commander.et" {
    m_fTransportDistanceThreshold 400
    m_fVehicleSearchRadius 200
   }
-  CMD_ArtillerySupportComponent "{6912AE2001023B91}" {
-   Enabled 0
-   m_fMissionCooldown 300
+  CMD_ArtillerySupport "{6928FC9E431A42AF}" {
   }
   RplComponent "{690E9870223C5974}" {
   }

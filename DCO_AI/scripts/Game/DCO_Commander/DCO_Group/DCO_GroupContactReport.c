@@ -15,12 +15,13 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	[Attribute("6", UIWidgets.EditBox, "Minimum enemy visible untuk request artillery support", category: "Artillery")]
 	protected int m_iArtilleryEnemyThreshold;
 
-	[Attribute("120.0", UIWidgets.EditBox, "Cooldown antara artillery requests dari group ini (detik)", category: "Artillery")]
+	[Attribute("180.0", UIWidgets.EditBox, "Cooldown antara artillery requests dari group ini (detik)", category: "Artillery")]
 	protected float m_fArtilleryRequestCooldown;
 
 	//--------------------------------------------------------------------
 	protected DCO_GroupUtilityComponent  m_GroupUtil;
 	protected ref SCR_AIGroupPerception  m_GroupPerc;
+	protected IEntity					 m_MyEntity;
 	protected SCR_AIGroup                m_Group;
 	protected float                      m_fScanTimer          = 0.0;
 	protected bool                       m_bReinfRequested     = false;
@@ -37,6 +38,11 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 
 		m_GroupUtil.GetThreatResponseComponent().ReceiveContactReport(report, m_GroupUtil);
 	}
+	
+	bool CanChangeRole()
+	{
+		return m_GroupUtil.CanCommanderOverrideRole();
+	}
 
 	protected void RequestReinforcement(float worldTime)
 	{
@@ -45,33 +51,68 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 
 		if (!m_GroupUtil)
 			return;
+		
+		if (!m_GroupUtil.CanCallReinforcement())
+			return;
 
 		m_bReinfRequested = true;
 		m_GroupUtil.GetThreatResponseComponent().ReceiveReinforcementRequest(m_GroupUtil, worldTime);
 	}
 
-	//--------------------------------------------------------------------
-	// Artillery request — group sends contact pos to ThreatResponse.
-	// ThreatResponse decides ammo type + validates score before forwarding.
-	//--------------------------------------------------------------------
 	protected void RequestArtillerySupport(vector contactPos, float worldTime)
 	{
-		if (!m_GroupUtil)
+	    if (!m_GroupUtil)
+	        return;
+		
+		if (!m_GroupUtil.CanCallArty())
 			return;
-
-		if (worldTime - m_fLastArtilleryReqAt < m_fArtilleryRequestCooldown)
-			return;
-
-		CMD_ThreatResponseComponent threatComp = m_GroupUtil.GetThreatResponseComponent();
-		if (!threatComp)
-			return;
-
-		m_fLastArtilleryReqAt = worldTime;
-
-		Print(string.Format("[DCO_Reporter] %1 requested artillery @ %2",
-			GetOwner().GetName(), contactPos.ToString()));
+	
+		float re = worldTime - m_fLastArtilleryReqAt;
+		int reI = Math.Round(re);
+		Print(re.ToString() + " < Delay Cooldown Group | Cooldown > " + m_fArtilleryRequestCooldown.ToString());
+	    if (worldTime - m_fLastArtilleryReqAt < m_fArtilleryRequestCooldown)
+	        return;
+	
+	    CMD_ThreatResponseComponent threatComp = m_GroupUtil.GetThreatResponseComponent();
+	    if (!threatComp)
+	        return;
+	
+	    m_fLastArtilleryReqAt = worldTime;
+	
+	    CMD_FireMissionRequest request = new CMD_FireMissionRequest(
+	        contactPos,
+	        DetermineShellType(contactPos, worldTime),
+	        worldTime
+	    );
+	
+	    threatComp.ReceiveArtillerySupport(request, m_GroupUtil);
+	
+	    Print(string.Format("[DCO_Reporter] %1 requested artillery @ %2",
+	        GetOwner().GetName(), contactPos.ToString()));
 	}
 
+	SCR_EAIArtilleryAmmoType DetermineShellType(vector contactPos, float worldTime)
+	{
+		ChimeraWorld world = ChimeraWorld.CastFrom(GetOwner().GetWorld());
+		if (!world)
+			return true;
+
+		TimeAndWeatherManagerEntity manager = world.GetTimeAndWeatherManager();
+		if (!manager)
+			return true;
+		
+		protected float m_fSunriseTime;
+		protected float m_fSunsetTime;
+
+		float currentTime = manager.GetTimeOfTheDay();
+		if (!manager.GetSunriseHour(m_fSunriseTime) || !manager.GetSunsetHour(m_fSunsetTime))
+			return false;
+
+	    if (currentTime < m_fSunriseTime && currentTime > m_fSunsetTime)
+	        return SCR_EAIArtilleryAmmoType.ILLUMINATION;
+	
+	    return SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE;
+	}
 	//--------------------------------------------------------------------
 	protected void ScanForEnemies(float worldTime)
 	{
@@ -176,10 +217,14 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		super.EOnInit(owner);
 		if (!AICommander_ManagerComponent.GetInstance())
 			return;
-
+		
+		m_MyEntity = owner;
 		m_Group     = SCR_AIGroup.Cast(owner);
 		m_GroupUtil = DCO_GroupUtilityComponent.Cast(owner.FindComponent(DCO_GroupUtilityComponent));
-
-		SetEventMask(owner, EntityEvent.FRAME);
+	}
+	
+	void InitializeContactReport()
+	{
+		SetEventMask(m_MyEntity, EntityEvent.FRAME);	
 	}
 }

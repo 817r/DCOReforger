@@ -33,28 +33,21 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	[Attribute("120.0", UIWidgets.EditBox, "Jarak counter-flank dari posisi threat (meter)", category: "Flanking")]
 	protected float m_fFlankDistance;
 
-	// Artillery integration attributes
-	[Attribute("55.0", UIWidgets.EditBox, "Score minimum untuk trigger HE fire mission", category: "Artillery")]
-	protected float m_fArtilleryHEThreshold;
-
-	[Attribute("35.0", UIWidgets.EditBox, "Score minimum untuk trigger Smoke/Illum fire mission", category: "Artillery")]
-	protected float m_fArtillerySuppressThreshold;
-
-	[Attribute("180.0", UIWidgets.EditBox, "Cooldown (detik) antara fire mission ke threat yang sama", category: "Artillery")]
-	protected float m_fArtilleryCooldown;
-
-	[Attribute("20.0", UIWidgets.EditBox, "Dispersion radius (meter) untuk HE missions dari threat response", category: "Artillery")]
-	protected float m_fArtilleryHEDispersion;
-
-	[Attribute("40.0", UIWidgets.EditBox, "Dispersion radius (meter) untuk Smoke/Illum missions", category: "Artillery")]
-	protected float m_fArtillerySuppressDispersion;
-
-	[Attribute("0.7", UIWidgets.Range, "Akurasi artillery untuk threat response (0–1)",
-		params: "0 1 0.01", category: "Artillery")]
+	[Attribute("0.5", UIWidgets.Range, "Akurasi artillery untuk threat response (0–1)", params: "0 1 0.01", category: "Artillery")]
 	protected float m_fArtilleryAccuracy;
+	
+	[Attribute("1", UIWidgets.EditBox, "Jumlah shell HE per fire mission", category: "Artillery")]
+	protected int m_iHEShellCount;
+	
+	[Attribute("1", UIWidgets.EditBox, "Jumlah shell Smoke per fire mission", category: "Artillery")]
+	protected int m_iSmokeShellCount;
+	
+	[Attribute("1", UIWidgets.EditBox, "Jumlah shell Illum per fire mission", category: "Artillery")]
+	protected int m_iIllumShellCount;
 
 	//--------------------------------------------------------------------
 	protected AICommander_BaseComponent          m_Commander;
+	protected CMD_ArtillerySupport				 m_ArtySupport;
 	protected ref array<ref CMD_ThreatEntry>     m_aThreats    = new array<ref CMD_ThreatEntry>();
 	protected float                              m_fThinkTimer = 0.0;
 	protected float                              m_fMergeSQ    = 0.0;
@@ -80,6 +73,120 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 		CMD_ThreatEntry entry = new CMD_ThreatEntry(report.m_vPosition, report.m_iEstimatedEnemyCount, worldTime, grp);
 		m_aThreats.Insert(entry);
+	}
+	
+	void ReceiveArtillerySupport(CMD_FireMissionRequest request, DCO_GroupUtilityComponent grp)
+	{
+	    if (!m_Commander)
+	        return;
+	
+	    float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+	
+	    CMD_ThreatEntry threat = new CMD_ThreatEntry(
+	        request.m_vImpactPos,
+	        0,
+	        worldTime,
+	        grp
+	    );
+		
+		float disp = CalculateArtilleryDispersion(GetOwner().GetOrigin(), threat.m_vPosition, request.m_eShellType);
+		int shellNum = CalculateArtilleryShellCount(request, m_fArtilleryAccuracy, worldTime);
+	    FireMission(threat, request.m_eShellType, shellNum, disp, worldTime);
+	}
+	
+	int CalculateArtilleryShellCount(CMD_FireMissionRequest request, float accuracy, float worldTime)
+	{
+	    float shells = 0;
+	
+	    switch (request.m_eShellType)
+	    {
+	        case SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE:
+	            shells = 3 * m_iHEShellCount;
+	            break;
+	        case SCR_EAIArtilleryAmmoType.SMOKE:
+	            shells = 5 * m_iSmokeShellCount;
+	            break;
+	        case SCR_EAIArtilleryAmmoType.ILLUMINATION:
+	            shells = 2 * m_iIllumShellCount;
+	            break;
+	        case SCR_EAIArtilleryAmmoType.PRACTICE:
+	            shells = 4;
+	            break;
+	    }
+	
+	    // Accuracy rendah = lempar lebih banyak buat kompensasi
+	    if (accuracy < 0.3)
+	        shells += 3;
+	    else if (accuracy < 0.5)
+	        shells += 2;
+	    else if (accuracy < 0.7)
+	        shells += 1;
+	    else if (accuracy >= 0.85)
+	        shells -= 1;
+	
+	    // Data stale = coverage lebih luas
+	    float dataAge = worldTime - request.m_fRequestedTime;
+	    if (dataAge > 60.0)
+	        shells += 2;
+	    else if (dataAge > 30.0)
+	        shells += 1;
+	
+	    return Math.Clamp(shells, 1, 12);
+	}
+	
+	float CalculateArtilleryDispersion(vector commanderPos, vector impactPos, SCR_EAIArtilleryAmmoType shellType)
+	{
+	    float rangeToTarget = vector.Distance(commanderPos, impactPos);
+	
+	    float baseDispersion = Math.Clamp(rangeToTarget * 0.1, 20.0, 150.0);
+	
+	    switch (shellType)
+	    {
+	        case SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE:
+	            baseDispersion *= 1.0;
+	            break;
+	        case SCR_EAIArtilleryAmmoType.SMOKE:
+	            baseDispersion *= 1.2;
+	            break;
+	        case SCR_EAIArtilleryAmmoType.ILLUMINATION:
+	            baseDispersion *= 1.5;
+	            break;
+	        case SCR_EAIArtilleryAmmoType.PRACTICE:
+	            baseDispersion *= 0.8;
+	            break;
+	    }
+	
+	    return baseDispersion;
+	}
+	
+	protected void FireMission(CMD_ThreatEntry threat, SCR_EAIArtilleryAmmoType shellType, int shellCount, float baseDispersion, float worldTime)
+	{
+	    if (!m_Commander)
+	        return;
+	
+	    CMD_ArtillerySupport artComp = CMD_ArtillerySupport.Cast(
+	        m_Commander.GetOwner().FindComponent(CMD_ArtillerySupport));
+	    if (!artComp)
+	    {
+	        Print("[DCO_ThreatResponse] FireMission GAGAL — CMD_ArtillerySupport tidak ditemukan");
+	        return;
+	    }
+	
+	    // === LOLOS SEMUA CHECK — QUEUE REQUEST ===
+	
+	    string shellTypeName = "HE";
+	    if (shellType == SCR_EAIArtilleryAmmoType.SMOKE)
+	        shellTypeName = "SMOKE";
+	    else if (shellType == SCR_EAIArtilleryAmmoType.ILLUMINATION)
+	        shellTypeName = "ILLUM";
+	
+	    Print(string.Format("[DCO_ThreatResponse] FireMission → %1 x %2 @ %3",
+	        shellCount, shellTypeName, threat.m_vPosition.ToString()));
+	
+		artComp.RequestShellImpact(threat.m_vPosition, shellType, worldTime, shellCount);
+	
+	    threat.m_bArtilleryCalled   = true;
+	    threat.m_fLastArtilleryTime = worldTime;
 	}
 
 	void ReceiveReinforcementRequest(DCO_GroupUtilityComponent requestingGrp, float worldTime)
@@ -291,6 +398,14 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		reconGrp.MoveTo(wp, worldTime);
 		threat.m_bReconSent = true;
 	}
+	
+	protected DCO_GroupUtilityComponent FindClosestGroupForRole(CMD_EGroupRole role, vector pos)
+	{
+	    if (!m_Commander)
+	        return null;
+	
+	    return m_Commander.FindClosestIdleGroupForRole_Public(role, pos);
+	}
 
 	protected void TrySendCounterFlank(CMD_ThreatEntry threat, float worldTime)
 	{
@@ -318,48 +433,88 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 	protected void SendReinforcement(CMD_ThreatEntry threat, float worldTime)
 	{
-		if (!m_Commander)
-			return;
-
-		DCO_GroupUtilityComponent reinforcement = null;
-		bool armored = false;
-
-		if (threat.m_eThreatLevel >= CMD_EThreatLevel.HIGH)
-		{
-			reinforcement = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.ARMORED);
-			if (reinforcement)
-				armored = true;
-			else
-				reinforcement = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.REINFORNCE);
-		}
-		else
-		{
-			reinforcement = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.REINFORNCE);
-		}
-
-		if (!reinforcement)
-			return;
-
-		if (m_Commander.TryAssignTransport(reinforcement, threat.m_vPosition, worldTime))
-		{
-			threat.m_iReinforcementSentNumber++;
-			threat.m_bReinforcementSent     = true;
-			threat.m_fLastReinforcementTime = worldTime;
-			return;
-		}
-
-		SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(threat.m_vPosition);
-		if (!wp)
-			return;
-
-		if (!armored)
-			reinforcement.SetGroupRole(CMD_EGroupRole.REINFORNCE);
-
-		reinforcement.MoveTo(wp, worldTime);
-
-		threat.m_iReinforcementSentNumber++;
-		threat.m_bReinforcementSent     = true;
-		threat.m_fLastReinforcementTime = worldTime;
+	    if (!m_Commander)
+	        return;
+	
+	    // Hitung slot yang masih kosong untuk threat ini
+	    int slotsLeft = m_iMaxReinforcementSent - threat.m_iReinforcementSentNumber;
+	    if (slotsLeft <= 0)
+	        return;
+	
+	    int sentThisCall = 0;
+	
+	    while (sentThisCall < slotsLeft)
+	    {
+	        DCO_GroupUtilityComponent reinforcement = null;
+	        bool armored = false;
+	
+	        // HIGH/CRITICAL → prioritaskan ARMORED dulu, fallback ke REINFORNCE
+	        if (threat.m_eThreatLevel >= CMD_EThreatLevel.HIGH)
+	        {
+	            reinforcement = FindClosestGroupForRole(CMD_EGroupRole.ARMORED, threat.m_vPosition);
+	            if (reinforcement)
+	            {
+	                armored = true;
+	            }
+	            else
+	            {
+	                reinforcement = FindClosestGroupForRole(CMD_EGroupRole.REINFORNCE, threat.m_vPosition);
+	                armored = false;
+	            }
+	        }
+	        else
+	        {
+	            reinforcement = FindClosestGroupForRole(CMD_EGroupRole.REINFORNCE, threat.m_vPosition);
+	        }
+	
+	        // Tidak ada lagi group idle yang bisa dikirim — stop loop
+	        if (!reinforcement)
+	            break;
+	
+	        // Coba pakai transport dulu
+	        if (m_Commander.TryAssignTransport(reinforcement, threat.m_vPosition, worldTime))
+	        {
+	            threat.m_iReinforcementSentNumber++;
+	            threat.m_bReinforcementSent     = true;
+	            threat.m_fLastReinforcementTime = worldTime;
+	            sentThisCall++;
+	
+	            Print(string.Format("[DCO_ThreatResponse] Reinforcement %1/%2 (transport) dikirim ke %3",
+	                threat.m_iReinforcementSentNumber,
+	                m_iMaxReinforcementSent,
+	                threat.m_vPosition.ToString()));
+	
+	            continue;
+	        }
+	
+	        // Transport tidak tersedia → jalan kaki/kendaraan sendiri
+	        SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(threat.m_vPosition);
+	        if (!wp)
+	            break;
+	
+	        if (!armored)
+	            reinforcement.SetGroupRole(CMD_EGroupRole.REINFORNCE);
+	
+	        reinforcement.MoveTo(wp, worldTime);
+	
+	        threat.m_iReinforcementSentNumber++;
+	        threat.m_bReinforcementSent     = true;
+	        threat.m_fLastReinforcementTime = worldTime;
+	        sentThisCall++;
+	
+	        Print(string.Format("[DCO_ThreatResponse] Reinforcement %1/%2 (foot/motor) dikirim ke %3",
+	            threat.m_iReinforcementSentNumber,
+	            m_iMaxReinforcementSent,
+	            threat.m_vPosition.ToString()));
+	    }
+	
+	    if (sentThisCall > 0)
+	    {
+	        Print(string.Format("[DCO_ThreatResponse] Total %1 group dikirim, slot terisi %2/%3",
+	            sentThisCall,
+	            threat.m_iReinforcementSentNumber,
+	            m_iMaxReinforcementSent));
+	    }
 	}
 
 	//--------------------------------------------------------------------
@@ -438,6 +593,8 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		m_Commander = AICommander_BaseComponent.Cast(owner.FindComponent(AICommander_BaseComponent));
 		if (!m_Commander)
 			return;
+		
+		m_ArtySupport = CMD_ArtillerySupport.Cast(owner.FindComponent(CMD_ArtillerySupport));
 
 		m_fMergeSQ = m_fMergeRadius * m_fMergeRadius;
 	}

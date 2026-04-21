@@ -1,5 +1,10 @@
-SCR_AIGroup : "{182C2343D6B22648}Prefabs/Group/US_MortarTeam.et" {
- coords 1651.218 38.928 2634.867
+$grp Turret : "{8094D99689ABE241}Prefabs/Weapons/Mortars/M252/Mortar_M252.et" {
+ m1 {
+  coords 1648.734 38.444 2627.113
+ }
+ m2 {
+  coords 1641.902 38.204 2627.113
+ }
 }
 GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
  components {
@@ -7,12 +12,48 @@ GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
    m_sCommanderUID "ko"
    m_sFactionKey "US"
   }
-  CMD_ArtillerySupportComponent "{6912AE2001023B91}" {
-   Enabled 1
-  }
  }
  coords 1647.913 38.629 2634.156
 }
+$grp SCR_AIGroup : "{9624D2B39397E148}Prefabs/Groups/BLUFOR/Group_US_SapperTeam.et" {
+ {
+  components {
+   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+    m_eUnitCapabilities ARTILLERY
+    m_sUsableVehicle {
+     "m1"
+    }
+   }
+  }
+  coords 1649.433 38.103 2622.863
+  m_aUnitPrefabSlots {
+   "{AE63E4B79FB45DD1}Prefabs/Characters/Factions/BLUFOR/US_Army/Character_US_Sapper.et"
+  }
+ }
+ {
+  components {
+   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+    m_eUnitCapabilities ARTILLERY
+    m_sUsableVehicle {
+     "m2"
+    }
+   }
+  }
+  coords 1642.906 38.103 2621.705
+  m_aUnitPrefabSlots {
+   "{AE63E4B79FB45DD1}Prefabs/Characters/Factions/BLUFOR/US_Army/Character_US_Sapper.et"
+  }
+ }
+}
+GenericEntity : "{C1AB654F77ABA58B}PrefabsEditable/Auto/Props/Military/Compositions/US/E_ArsenalBox_US.et" {
+ coords 1645.367 38.382 2631.166
+ angles 0 44.922 0
+}
 GameEntity : "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et" {
+ components {
+  AICommander_ManagerComponent "{68F88499AF35F645}" {
+   m_bPreventUseLOD 1
+  }
+ }
  coords 1650.373 38.64 2631.561
 }

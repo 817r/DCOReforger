@@ -51,7 +51,7 @@ enum CMD_EGroupRole
 	REINFORNCE= 7,
 	DEFEND    = 8,
 	ARMORED   = 9,
-	STATIC_ARTILLERY = 10
+	ARTILLERY = 10
 }
 
 enum CMD_EObjectiveType
@@ -131,97 +131,18 @@ class CMD_ThreatEntry
 	}
 }
 
-enum CMD_EArtilleryRoundType
+class CMD_FireMissionRequest
 {
-	HE    = 0,
-	SMOKE = 1,
-	ILLUM = 2
-}
+	vector         m_vImpactPos;
+	SCR_EAIArtilleryAmmoType m_eShellType;
+	float          m_fRequestedTime;
+	int m_iShellCount;
  
-class CMD_ArtilleryFireMission
-{
-	vector                  m_vTargetPos;
-	CMD_EArtilleryRoundType m_eRoundType;
-	float                   m_fExecuteAt;   // worldTime kapan order dikirim ke mortar
-	bool                    m_bDispatched;  // sudah dikirim ke mortar?
-
-	void CMD_ArtilleryFireMission(vector targetPos, CMD_EArtilleryRoundType type, float executeAt)
+	void CMD_FireMissionRequest(vector pos, SCR_EAIArtilleryAmmoType shellType, float time, int req = 1)
 	{
-		m_vTargetPos   = targetPos;
-		m_eRoundType   = type;
-		m_fExecuteAt   = executeAt;
-		m_bDispatched  = false;
-	}
-}
-
-class CMD_PendingFireMission
-{
-	vector                  m_vTargetPos;
-	CMD_EArtilleryRoundType m_eRoundType;
-	int                     m_iRoundCount;
-	float                   m_fQueuedAt;
-
-	void CMD_PendingFireMission(vector targetPos, CMD_EArtilleryRoundType type, int rounds, float queuedAt)
-	{
-		m_vTargetPos  = targetPos;
-		m_eRoundType  = type;
-		m_iRoundCount = rounds;
-		m_fQueuedAt   = queuedAt;
-	}
-}
-
-enum CMD_EMortarBaseSize
-{
-	SMALL  = 0,
-	MEDIUM = 1
-}
-
-class CMD_MortarSlotData
-{
-	IEntity                    m_MortarEntity;
-	DCO_GroupUtilityComponent  m_CrewGroup;
-	bool                       m_bCrewAssigned;
-	bool                       m_bBusy;
-	float                      m_fReadyAt;
-
-	void CMD_MortarSlotData(IEntity mortarEntity)
-	{
-		m_MortarEntity   = mortarEntity;
-		m_CrewGroup      = null;
-		m_bCrewAssigned  = false;
-		m_bBusy          = false;
-		m_fReadyAt       = 0.0;
-	}
-}
-
-class CMD_EnemyBatteryReport
-{
-	vector     m_vEstimatedPos;
-	FactionKey m_sEnemyFaction;
-	float      m_fDetectedAt;
-	bool       m_bCounterFired;
-	bool       m_bHunterSent;
-
-	void CMD_EnemyBatteryReport(vector estimatedPos, FactionKey enemyFaction, float detectedAt)
-	{
-		m_vEstimatedPos = estimatedPos;
-		m_sEnemyFaction = enemyFaction;
-		m_fDetectedAt   = detectedAt;
-		m_bCounterFired = false;
-		m_bHunterSent   = false;
-	}
-}
-
-class CMD_HunterEntry
-{
-	DCO_GroupUtilityComponent m_Group;
-	float                     m_fDispatchTime;
-	vector                    m_vTargetPos;
-
-	void CMD_HunterEntry(DCO_GroupUtilityComponent grp, float dispatchTime, vector targetPos)
-	{
-		m_Group         = grp;
-		m_fDispatchTime = dispatchTime;
-		m_vTargetPos    = targetPos;
+		m_vImpactPos     = pos;
+		m_eShellType     = shellType;
+		m_fRequestedTime = time;
+		m_iShellCount = req;
 	}
 }

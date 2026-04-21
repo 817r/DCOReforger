@@ -64,7 +64,7 @@ class SCR_AITakeItemFromArsenalMagWell : AITaskScripted
 			if(myInvComp.TrySpawnPrefabToStorage(resourceName))
 				nItemsTaken++;			
 	
-			Print(" FOUND AMMO MAGAZINE WELL : " + prefabResourceName + " ITEM TAKEN : " + nItemsTaken.ToString());
+			//Print(" FOUND AMMO MAGAZINE WELL : " + prefabResourceName + " ITEM TAKEN : " + nItemsTaken.ToString());
 				
 			if (m_iMaxItemsToTake != -1 && nItemsTaken == m_iMaxItemsToTake)
 				return ENodeResult.SUCCESS;

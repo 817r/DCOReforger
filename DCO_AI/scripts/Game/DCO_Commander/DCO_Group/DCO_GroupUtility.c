@@ -9,8 +9,17 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	[Attribute("0", UIWidgets.EditBox, "Radius pencarian kendaraan", category: "Commander")]
 	protected bool m_bIsDedicatedTransport;
 	
-	[Attribute("1", UIWidgets.EditBox, "Radius pencarian kendaraan", category: "Commander")]
+	[Attribute("1", UIWidgets.EditBox, "Can it be used By Commander?", category: "Commander")]
 	protected bool m_bIsProcessedByCommander;
+	
+	[Attribute("1", UIWidgets.EditBox, "Can it call Artillery?", category: "Support")]
+	protected bool m_bCanCallArtillery;
+	
+	[Attribute("1", UIWidgets.EditBox, "Can it call Reinforcement?", category: "Support")]
+	protected bool m_bCanCallReinforcement;
+	
+	[Attribute("1", UIWidgets.EditBox, "Can it role be override by Commander?", category: "Group Role")]
+	protected bool m_bCanCommanderOverrideRole;
 	
 	protected SCR_AIGroup m_Group;
 	protected SCR_AIGroupUtilityComponent m_UtilityComp;
@@ -19,6 +28,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	protected AICommander_BaseComponent myCommander;
 	protected CMD_ThreatResponseComponent threatComp;
 	protected DCO_TransportTeamComponent DedicatedTransport;
+	protected DCO_GroupContactReporterComponent contactReportComponent;
  
 	protected DCOG_EGroupStatus m_eGroupStatus = DCOG_EGroupStatus.IDLE;
 	
@@ -27,6 +37,9 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	
 	[Attribute("", UIWidgets.Auto, "Blacklisted Commander to not process this Group", category: "Commander")]
 	protected ref array<string> m_sBlacklistedCo;
+	
+	[Attribute("", UIWidgets.Auto, "Usable Mortar For This Group In The Inital", category: "Artillery Group")]
+	protected ref array<string> m_sUsableVehicle;
 	
 	protected CMD_EGroupRole    m_eGroupRole   = CMD_EGroupRole.NONE;
 	protected FactionKey fk;
@@ -43,6 +56,21 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	static float AVG_MOVE_SPEED_MPS = 2.5;
 	static float ORDER_BASE_BUFFER  = 10.0;
 	static float ARRIVAL_THRESHOLD  = 3.0;
+	
+	bool CanCommanderOverrideRole()
+	{
+		return m_bCanCommanderOverrideRole;
+	}
+	
+	bool CanCallReinforcement()
+	{
+		return m_bCanCallReinforcement;
+	}
+	
+	bool CanCallArty()
+	{
+		return m_bCanCallArtillery;
+	}
 	
 	void CompleteAllWaypoints()
 	{
@@ -100,9 +128,37 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		m_Group.AddWaypoint(wp);
 		SetGroupStatus(DCOG_EGroupStatus.EXECUTING_COMMAND);
 		BeginOrderTracking(wp.GetOrigin(), worldTime);
- 
-		//Print(string.Format("[DCO_Group] %1 → MoveTo (role: %2)",
-			//GetOwner().GetName(), typename.EnumToString(CMD_EGroupRole, m_eGroupRole)));
+	}
+	
+	void CheckGroupIsHaveOrder()
+	{
+		if (GetGroupStatus() == DCOG_EGroupStatus.EXECUTING_COMMAND)
+		{
+			if (IsGroupHaveWaypoint())
+				return;
+		}
+		
+		SetGroupStatus(DCOG_EGroupStatus.IDLE);
+	}
+	
+	void ShootMortar(SCR_AIWaypoint wp, float worldTime)
+	{
+		if (m_eGroupRole != CMD_EGroupRole.ARTILLERY)
+			return;
+		
+		m_Group.AddWaypoint(wp);
+		SetGroupStatus(DCOG_EGroupStatus.EXECUTING_COMMAND);
+	}
+	
+	bool IsGroupHaveWaypoint()
+	{
+		array<AIWaypoint> wp ={};
+		m_Group.GetWaypoints(wp);
+		
+		if (wp.Count() > 0)
+			return true;
+		else
+			return false;
 	}
  
 	void ForceRetreat(SCR_AIWaypoint rallyPos, float worldTime)
@@ -180,6 +236,12 @@ class DCO_GroupUtilityComponent : ScriptComponent
 				break;
 			}
 			case CMD_EGroupRole.REINFORNCE:
+			{
+				m_FormationComponent.SetFormation("Wedge");
+				m_UtilityComp.SetCombatMode(EAIGroupCombatMode.RETURN_FIRE);
+				break;
+			}
+			case CMD_EGroupRole.ARTILLERY:
 			{
 				m_FormationComponent.SetFormation("Wedge");
 				m_UtilityComp.SetCombatMode(EAIGroupCombatMode.RETURN_FIRE);
@@ -340,7 +402,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		else
 			SetGroupRole(CMD_EGroupRole.NONE);
 		
-		
+		contactReportComponent = DCO_GroupContactReporterComponent.Cast(owner.FindComponent(DCO_GroupContactReporterComponent));
 		GetGame().GetCallqueue().CallLater(delayedInit, 5000, false, owner);
 		
 		//SetDedicatedTransport(m_bIsDedicatedTransport)
@@ -351,6 +413,28 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		SCR_AIGroup grp = SCR_AIGroup.Cast(owner);
 		fk = grp.GetFaction().GetFactionKey();
 		AICommander_ManagerComponent.GetInstance().RegisterGroup(this);
+		
+		if (myCommander)
+		{
+			contactReportComponent.InitializeContactReport();
+		}
+		
+		foreach(string s : m_sUsableVehicle)
+		{
+			IEntity e = GetGame().GetWorld().FindEntityByName(s);
+			
+			if (e)
+			{
+				SCR_AIVehicleUsageComponent aiveh = SCR_AIVehicleUsageComponent.Cast(e.FindComponent(SCR_AIVehicleUsageComponent));
+				if (aiveh)
+				{
+					m_UtilityComp.AddUsableVehicle(aiveh);
+				}
+			}
+		}
+		
+		if (m_eGroupRole == CMD_EGroupRole.ARTILLERY)
+			GetGame().GetCallqueue().CallLater(CheckGroupIsHaveOrder, 10000, true);
 	}
 }
 

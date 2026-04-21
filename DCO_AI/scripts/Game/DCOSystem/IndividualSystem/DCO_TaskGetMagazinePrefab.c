@@ -54,10 +54,10 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 		if (resConf)
 			m_sQueryResourceName = resConf.GetRandomMagazinePrefab(selectedWeaponComp.GetWeaponType());		
 		
-		if (!magazineWell)
-			Print("FOUND NO MAGAZINE WELL");
-		else
-			Print("FOUND MAGAZINE WELL " + magazineWell.ToString());
+		//if (!magazineWell)
+		//	Print("FOUND NO MAGAZINE WELL");
+		//else
+		//	Print("FOUND MAGAZINE WELL " + magazineWell.ToString());
 		
 		SetVariableOut(PORT_MAGAZINE_WELL, magazineWell);
 		SetVariableOut(PORT_PREFAB_RESOURCE_NAME, m_sQueryResourceName);

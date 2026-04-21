@@ -66,12 +66,6 @@ modded class SCR_AIGroupUtilityComponent
 			currentRole = groupUtil.GetGroupRole();
 	
 		int targetCount = m_Perception.m_aTargetEntities.Count();
-		
-		if (IsAnyTargetEndangering())
-		{
-			m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
-			return;
-		}
 	
 		if (currentRole == CMD_EGroupRole.RECON || currentRole == CMD_EGroupRole.RETREAT)
 		{
@@ -81,8 +75,7 @@ modded class SCR_AIGroupUtilityComponent
 				m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
 			return;
 		}
-	
-		if (currentRole == CMD_EGroupRole.ASSAULT || currentRole == CMD_EGroupRole.REINFORNCE)
+		else if (currentRole == CMD_EGroupRole.ASSAULT || currentRole == CMD_EGroupRole.REINFORNCE)
 		{
 		    if (groupUtil && groupUtil.IsOrderActive())
 		    {
@@ -99,8 +92,7 @@ modded class SCR_AIGroupUtilityComponent
 		        m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
 		    return;
 		}
-	
-		if (currentRole == CMD_EGroupRole.FLANK)
+		else if (currentRole == CMD_EGroupRole.FLANK)
 		{
 		    array<AIAgent> agents = {};
 		    m_Owner.GetAgents(agents);
@@ -119,6 +111,22 @@ modded class SCR_AIGroupUtilityComponent
 		    else
 		        m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
 		    return;
+		} 
+		else if (currentRole == CMD_EGroupRole.ARTILLERY)
+		{
+		    array<AIAgent> agents = {};
+		    m_Owner.GetAgents(agents);
+		
+		    if (IsAnyTargetWithinDistance(30.0))
+		        m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
+		    else
+		        m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
+		    return;
+		}
+		else if (IsAnyTargetEndangering())
+		{
+			m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
+			return;
 		}
 	
 		if (targetCount > 0)

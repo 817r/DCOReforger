@@ -1,6 +1,7 @@
 [ComponentEditorProps(category: "GameScripted/Commander")]
 class AICommander_BaseComponentClass : ScriptComponentClass
 {
+	// TO-DO GANTI SEMUA JADI YANG GA EDITABLE
 	[Attribute("{35BD6541CBB8AC08}Prefabs/AI/Waypoints/AIWaypoint_Cycle.et", UIWidgets.ResourceNamePicker, desc: "Cycle waypoint to be used for waypoints in hierarchy.", "et", category: "Commander Waypoint Setting")]
 	protected ResourceName m_sCycleWaypointPrefab;
 
@@ -19,7 +20,7 @@ class AICommander_BaseComponentClass : ScriptComponentClass
 	[Attribute("{2602CAB8AB74FBBF}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetOut.et", UIWidgets.ResourceNamePicker, desc: "Tasking For Player.", "et", category: "Commander Player Tasking Setting")]
 	protected ResourceName m_sDefaultTaskPlayerMovePrefab;
 	
-	[Attribute("{2602CAB8AB74FBBF}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetOut.et", UIWidgets.ResourceNamePicker, desc: "Tasking For Player.", "et", category: "Commander Player Tasking Setting")]
+	[Attribute("{6ED320498A60081C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_ArtillerySupport.et", UIWidgets.ResourceNamePicker, desc: "Tasking For Player.", "et", category: "Commander Player Tasking Setting")]
 	protected ResourceName m_sDefaultShootArtilleryPrefab;
 	
 
@@ -120,6 +121,7 @@ class AICommander_BaseComponent : ScriptComponent
 	protected CMD_ECommanderMode m_eCommanderMode = CMD_ECommanderMode.OFFENSIVE;
 	
 	protected CMD_ThreatResponseComponent threatComp;
+	protected CMD_ArtillerySupport		  artySupport;
 	
 	protected ref array<DCO_GroupUtilityComponent> m_aOwnedGroup = {};
 	protected ref array<IEntity> m_aVehicle = {};
@@ -142,9 +144,16 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	bool RegisterGroup(DCO_GroupUtilityComponent grp)
 	{
+		
+		if (grp.GetGroupRole() == CMD_EGroupRole.ARTILLERY)
+		{
+			artySupport.RegisterArtilleryGroup(grp);
+			return true;
+		}
+		
 		if (!m_aOwnedGroup.Contains(grp))
 			m_aOwnedGroup.Insert(grp);
-		
+
 		return true;
 	}
 	
@@ -181,6 +190,7 @@ class AICommander_BaseComponent : ScriptComponent
 		}
 		float adaptMod   = Math.Lerp(1.5, 0.5, m_fAdaptability);
 		m_fThinkInterval = m_fThinkInterval * adaptMod;
+		artySupport = CMD_ArtillerySupport.Cast(m_MyEnt.FindComponent(CMD_ArtillerySupport));
 	}
 	
 	CMD_ThreatResponseComponent GetThreatResponseComponent()
@@ -327,7 +337,7 @@ class AICommander_BaseComponent : ScriptComponent
 		
 		if (reconGrp.IsPlayerGroup())
 		{
-			//CMD_TaskNotifier.Notify(reconGrp.GetOwner(), "Recon " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.RECON);
+			
 			return;
 		}
 		
@@ -454,6 +464,63 @@ class AICommander_BaseComponent : ScriptComponent
 		return result;
 	}
 	
+	protected DCO_GroupUtilityComponent FindClosestIdleGroupByCurrentRole(CMD_EGroupRole role, CMD_EGroupRole currentRole, vector targetPos)
+	{
+	    DCO_GroupUtilityComponent bestGroup = null;
+	    float bestDistSq = -1.0;
+	
+	    foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
+	    {
+	        if (!grp)
+	            continue;
+	        if (grp.GetGroupStatus() != DCOG_EGroupStatus.IDLE)
+	            continue;
+	        if (grp.GetGroupRole() != currentRole)
+	            continue;
+	
+	        float distSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), targetPos);
+	
+	        if (bestDistSq < 0.0 || distSq < bestDistSq)
+	        {
+	            bestDistSq = distSq;
+	            bestGroup  = grp;
+	        }
+	    }
+	
+	    return bestGroup;
+	}
+	
+	DCO_GroupUtilityComponent FindClosestIdleGroupForRole_Public(CMD_EGroupRole role, vector targetPos)
+	{
+	    DCO_GroupUtilityComponent result = null;
+	
+	    result = FindClosestIdleGroupByCurrentRole(role, role, targetPos);
+	    if (result)
+	        return result;
+	
+	    if (role == CMD_EGroupRole.ARMORED)
+	        return null;
+	
+	    result = FindClosestIdleGroupByCurrentRole(role, CMD_EGroupRole.NONE, targetPos);
+	    if (result)
+	        return result;
+	
+	    result = FindClosestIdleGroupByCurrentRole(role, CMD_EGroupRole.RESERVE, targetPos);
+	    if (result)
+	        return result;
+	
+	    result = FindClosestIdleGroupByCurrentRole(role, CMD_EGroupRole.RECON, targetPos);
+	    if (result)
+	        return result;
+	
+	    result = FindClosestIdleGroupByCurrentRole(role, CMD_EGroupRole.REINFORNCE, targetPos);
+	    if (result)
+	        return result;
+	
+	    result = FindClosestIdleGroupByCurrentRole(role, CMD_EGroupRole.DEFEND, targetPos);
+	    return result;
+	}
+	
 	protected DCO_GroupUtilityComponent FindIdleGroupByCurrentRole(CMD_EGroupRole targetRole, CMD_EGroupRole currentRole)
 	{
 		DCO_GroupUtilityComponent best = null;
@@ -471,6 +538,9 @@ class AICommander_BaseComponent : ScriptComponent
 				continue;
 			
 			if (grp.IsDedicatedTransport())
+				continue;
+			
+			if (!grp.CanCommanderOverrideRole())
 				continue;
 	
 			int unitCount = grp.GetUnitCount();
@@ -809,6 +879,41 @@ class AICommander_BaseComponent : ScriptComponent
 	        return null;
 	
 	    // --- Snap ke surface & validasi bukan air ---
+	    BaseWorld world = GetGame().GetWorld();
+	    if (!world)
+	        return null;
+		
+		EWaterSurfaceType waterType = EWaterSurfaceType.WST_NONE;
+	
+	    float surfaceY = world.GetSurfaceY(pos[0], pos[2]);
+		float lakeArea = 0;
+	
+	    float waterY = SCR_WorldTools.GetWaterSurfaceY(null, pos, waterType, lakeArea);
+	    if (surfaceY < waterY)
+	    {
+			if (waterType == EWaterSurfaceType.WST_OCEAN)
+	        	return null;
+	    }
+	
+	    pos[1] = surfaceY;
+	    EntitySpawnParams params = EntitySpawnParams();
+	    params.TransformMode = ETransformMode.WORLD;
+	    Math3D.MatrixIdentity4(params.Transform);
+	    params.Transform[3] = pos;
+	
+	    return SCR_AIWaypoint.Cast(GetGame().SpawnEntityPrefab(res, null, params));
+	}
+	
+	SCR_AIWaypoint SpawnArtilleryWP(vector pos)
+	{
+	    AICommander_BaseComponentClass data = AICommander_BaseComponentClass.Cast(GetComponentData(GetOwner()));
+	    if (!data)
+	        return null;
+	
+	    Resource res = Resource.Load(data.GetShootArtilleryWaypointPrefab());
+	    if (!res || !res.IsValid())
+	        return null;
+	
 	    BaseWorld world = GetGame().GetWorld();
 	    if (!world)
 	        return null;
@@ -1244,6 +1349,33 @@ class AICommander_BaseComponent : ScriptComponent
 		return vehicle;
 	}
 	
+	array<vector> GenerateArtilleryImpactPoints(vector center, float range, float dispersion, float accuracy, float numberOfShell = 3)
+	{
+	    array<vector> impactPoints = new array<vector>();
+	    RandomGenerator rand = new RandomGenerator();
+	
+	    float effectiveDispersion = dispersion * (1.0 - Math.Clamp(accuracy, 0.0, 1.0));
+	    float minRadius           = effectiveDispersion * 0.1;
+	
+	    for (int i = 0; i < numberOfShell; i++)
+	    {
+	        float r1     = rand.RandFloatXY(minRadius, effectiveDispersion);
+	        float r2     = rand.RandFloatXY(minRadius, effectiveDispersion);
+	        float radius = (r1 + r2) * 0.5;
+	
+	        float angleDeg = rand.RandFloatXY(0.0, 360.0);
+	        float angleRad = angleDeg * Math.DEG2RAD;
+	
+	        float px = center[0] + Math.Cos(angleRad) * radius;
+	        float pz = center[2] + Math.Sin(angleRad) * radius;
+	        float py = GetGame().GetWorld().GetSurfaceY(px, pz);
+	
+	        impactPoints.Insert(Vector(px, py, pz));
+	    }
+	
+	    return impactPoints;
+	}
+	
 	protected void BeginTransportMission(
 		DCO_GroupUtilityComponent passengerGroup,
 		IEntity                   vehicle,
@@ -1413,6 +1545,37 @@ class AICommander_BaseComponent : ScriptComponent
 		
 		return null;
 	}
+	
+	void ComputeArtillerySpreadAndDispersion(vector center, float range, float dispersion, float accuracy, float numberOfShell = 3)
+	{
+	    RandomGenerator rand = new RandomGenerator();
+	    
+	    float effectiveDispersion = dispersion * (1.0 - Math.Clamp(accuracy, 0.0, 1.0));
+	    float minRadius           = effectiveDispersion * 0.1;
+	    
+	    for (int i = 0; i < numberOfShell; i++)
+	    {
+	        float r1 = rand.RandFloatXY(minRadius, effectiveDispersion);
+	        float r2 = rand.RandFloatXY(minRadius, effectiveDispersion);
+	        float radius = (r1 + r2) * 0.5;
+	        
+	        float angleDeg = rand.RandFloatXY(0.0, 360.0);
+	        float angleRad = angleDeg * Math.DEG2RAD;
+	        
+	        float px = center[0] + Math.Cos(angleRad) * radius;
+	        float pz = center[2] + Math.Sin(angleRad) * radius;
+	        float py = GetGame().GetWorld().GetSurfaceY(px, pz);
+	        
+	        vector shellImpact = Vector(px, py, pz);
+	        
+	        Print(string.Format("[Artillery] Shell %1 impact at %2 (radius: %3m from center)",
+	            i + 1, shellImpact.ToString(), radius.ToString()));
+	        
+	        // TODO: spawn explosion / effect di shellImpact
+	    }
+	}
+	
+	
 	
 	override void EOnFrame(IEntity owner, float timeSlice)
 	{
