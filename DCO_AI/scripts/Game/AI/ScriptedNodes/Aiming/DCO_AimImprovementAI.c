@@ -101,6 +101,18 @@ modded class SCR_AIGetAimErrorOffset
 		return 0;
 	}
 	
+	protected float GetSuppressionFactor()
+	{
+		if (!m_InfoComponent)
+			return 1.0;
+			
+		float suppressionLevel = m_InfoComponent.GetThreatSystem().GetSuppressionMeasure(); 
+		
+		float maxSuppressionPenalty = 2.5; 
+		
+		return Math.Lerp(1.0, maxSuppressionPenalty, suppressionLevel);
+	}
+	
 	override float GetWeaponTypeFactor(EWeaponType weaponType)
 	{
 		switch(weaponType)
@@ -347,8 +359,8 @@ modded class SCR_AIGetAimErrorOffset
 		
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
 		DCO_AISKILL dcoSkill = m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAISkill();
-		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor();
-		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor();
+		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetSuppressionFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor();
+		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetSuppressionFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor();
 		
 		tolerance = GetTolerance(entity, targetEntity, angularSize, distance, weaponType);
 		

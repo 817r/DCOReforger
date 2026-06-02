@@ -1,0 +1,647 @@
+$grp PolylineShapeEntity {
+ {
+  coords 2493.817 147.327 2257.411
+  Points {
+   ShapePoint "{694E450457C56E30}" {
+    Position -0.24 0.336 -4.063
+   }
+   ShapePoint "{694E450457C57759}" {
+    Position -0.085 -1.674 33.242
+   }
+   ShapePoint "{694E45046AB6BFEE}" {
+    Position 15.925 0.271 59.07
+   }
+  }
+  LineColor 0 0 0 0
+  {
+   WallGeneratorEntity : "{DC02082051FDEC54}Prefabs/WEGenerators/Walls/Net/WG_NetFence_USSR_01_poles.et" {
+    Flags 0x100003 0
+    m_iSeed 8951
+    {
+     $grp SCR_DestructibleEntity : "{2CA940B210EDA36E}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_6m_V2.et" {
+      {
+       coords -0.236 0.212 -3.043
+       angles 0 -89.761 0
+      }
+      {
+       coords -0.211 -0.434 2.865
+       angles 0 -89.761 0
+      }
+      {
+       coords -0.187 -0.957 8.772
+       angles 0 -89.761 0
+      }
+      {
+       coords -0.162 -0.808 14.68
+       angles 0 -89.761 0
+      }
+      {
+       coords -0.137 0.085 20.588
+       angles 0 -89.761 0
+      }
+      {
+       coords -0.113 -0.118 26.496
+       angles 0 -89.761 0
+      }
+      {
+       coords -0.129 -1.345 32.415
+       angles 0 -58.94 0
+      }
+      {
+       coords 2.923 -1.566 37.481
+       angles 0 -58.94 0
+      }
+      {
+       coords 5.974 -0.705 42.548
+       angles 0 -58.94 0
+      }
+      {
+       coords 9.026 -0.303 47.615
+       angles 0 -58.94 0
+      }
+      {
+       coords 12.078 -0.132 52.682
+       angles 0 -58.94 0
+      }
+     }
+     SCR_DestructibleEntity : "{A786DACFAA0BE670}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_D_start.et" {
+      coords -0.24 0.336 -4.063
+      angles 0 -89.761 0
+     }
+     SCR_DestructibleEntity : "{D7BDCA21659E98D8}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_D_end.et" {
+      coords 15.178 0.275 57.83
+      angles 0 -58.94 0
+     }
+    }
+   }
+  }
+ }
+ {
+  coords 2494.546 146.71 2241.781
+  Points {
+   ShapePoint "{694E4507E683CC98}" {
+    Position -1.44 1.075 7.076
+   }
+   ShapePoint "{694E4506D77EC8CA}" {
+    Position -2.423 0.507 -0.761
+   }
+   ShapePoint "{694E4506D77E59F3}" {
+    Position 19.605 -0.482 1.162
+   }
+   ShapePoint "{694E4506EA467496}" {
+    Position 27.604 -1.033 11.43
+   }
+  }
+  LineColor 0 0 0 0
+  {
+   WallGeneratorEntity : "{DC02082051FDEC54}Prefabs/WEGenerators/Walls/Net/WG_NetFence_USSR_01_poles.et" {
+    Flags 0x100003 0
+    m_iSeed 4378
+    {
+     $grp SCR_DestructibleEntity : "{2CA940B210EDA36E}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_6m_V2.et" {
+      {
+       coords -1.567 1.067 6.065
+       angles 0 -262.853 0
+      }
+      {
+       coords -2.391 0.719 0.127
+       angles 0 -2.695 0
+      }
+      {
+       coords 3.511 -0.835 0.404
+       angles 0 -2.695 0
+      }
+      {
+       coords 9.413 -0.461 0.682
+       angles 0 -2.695 0
+      }
+      {
+       coords 15.335 0.268 0.912
+       angles 0 -40.604 0
+      }
+      {
+       coords 19.826 -0.042 4.762
+       angles 0 -40.604 0
+      }
+     }
+     SCR_DestructibleEntity : "{A786DACFAA0BE670}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_D_start.et" {
+      coords -1.44 1.075 7.076
+      angles 0 -262.853 0
+     }
+     SCR_DestructibleEntity : "{D7BDCA21659E98D8}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_D_end.et" {
+      coords 24.389 -0.482 8.673
+      angles 0 -40.604 0
+     }
+    }
+   }
+  }
+ }
+ {
+  coords 2205.043 60.999 2106.92
+  Points {
+   ShapePoint "{694F08408B07C30F}" {
+    Position 0 0 0
+   }
+   ShapePoint "{694F08408B07E49E}" {
+    Position 5.335 8.988 56.037
+   }
+   ShapePoint "{694F08409BE07AB8}" {
+    Position -32.52 9.399 81.155
+   }
+   ShapePoint "{694F08409D105696}" {
+    Position -79.823 4.769 69.405
+   }
+   ShapePoint "{694F084092293693}" {
+    Position -79.659 -3.318 1.634
+   }
+   ShapePoint "{694F0840931AB7D5}" {
+    Position -6.038 -3.252 -10.854
+   }
+  }
+  LineColor 0 0 0 0
+  {
+   WallGeneratorEntity : "{CA5FA41E2FC5DDA1}Prefabs/WEGenerators/Walls/Net/WG_NetFence_USSR_01.et" {
+    Flags 0x100003 0
+    coords 0 0 0
+    m_iSeed 10504
+    {
+     $grp SCR_DestructibleEntity : "{2CA940B210EDA36E}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_6m_V2.et" {
+      {
+       coords 0.096 0.442 1.004
+       angles 0 -84.562 0
+      }
+      {
+       coords 1.2 2.704 12.609
+       angles 0 -84.562 0
+      }
+      {
+       coords 2.856 5.041 30.002
+       angles 0 -84.562 0
+      }
+      {
+       coords 4.512 7.477 47.394
+       angles 0 -84.562 0
+      }
+      {
+       coords -9.324 9.182 65.807
+       angles 0 -146.509 0
+      }
+      {
+       coords -14.257 9.211 69.071
+       angles 0 -146.509 0
+      }
+      {
+       coords -19.191 9.183 72.336
+       angles 0 -146.509 0
+      }
+      {
+       coords -32.553 9.412 81.247
+       angles 0 -194.064 0
+      }
+      {
+       coords -43.952 8.071 78.391
+       angles 0 -194.064 0
+      }
+      {
+       coords -55.352 6.853 75.535
+       angles 0 -194.064 0
+      }
+      {
+       coords -66.751 5.793 72.68
+       angles 0 -194.064 0
+      }
+      {
+       coords -72.465 5.328 71.248
+       angles 0 -194.064 0
+      }
+      {
+       coords -79.59 3.428 57.852
+       angles 0 -269.929 0
+      }
+      {
+       coords -79.619 0.813 34.436
+       angles 0 -269.929 0
+      }
+      {
+       coords -79.626 0.383 28.561
+       angles 0 -269.929 0
+      }
+      {
+       coords -79.648 -1.605 10.992
+       angles 0 -269.929 0
+      }
+      {
+       coords -79.737 -3.215 2.208
+       angles 0 10.05 0
+      }
+      {
+       coords -73.912 -3.311 1.175
+       angles 0 10.05 0
+      }
+      {
+       coords -62.289 -2.959 -0.885
+       angles 0 10.05 0
+      }
+      {
+       coords -50.665 -3.678 -2.945
+       angles 0 10.05 0
+      }
+      {
+       coords -44.84 -3.617 -3.977
+       angles 0 10.05 0
+      }
+      {
+       coords -27.418 -4.038 -7.065
+       angles 0 10.05 0
+      }
+      {
+       coords -21.593 -3.965 -8.097
+       angles 0 10.05 0
+      }
+     }
+     $grp SCR_DestructibleEntity : "{40FD7452AC292C40}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_6m_V1.et" {
+      {
+       coords 0.649 1.9 6.82
+       angles 0 -84.562 0
+      }
+      {
+       coords 1.754 3.609 18.425
+       angles 0 -84.562 0
+      }
+      {
+       coords 2.305 4.432 24.213
+       angles 0 -84.562 0
+      }
+      {
+       coords 3.41 5.806 35.818
+       angles 0 -84.562 0
+      }
+      {
+       coords 3.961 6.622 41.606
+       angles 0 -84.562 0
+      }
+      {
+       coords 5.408 9 56.06
+       angles 0 -146.509 0
+      }
+      {
+       coords 0.497 8.99 59.309
+       angles 0 -146.509 0
+      }
+      {
+       coords -4.413 9.115 62.558
+       angles 0 -146.509 0
+      }
+      {
+       coords -24.125 9.248 75.6
+       angles 0 -146.509 0
+      }
+      {
+       coords -38.266 8.728 79.816
+       angles 0 -194.064 0
+      }
+      {
+       coords -49.666 7.457 76.96
+       angles 0 -194.064 0
+      }
+      {
+       coords -61.065 6.268 74.104
+       angles 0 -194.064 0
+      }
+      {
+       coords -79.575 4.8 69.547
+       angles 0 -269.929 0
+      }
+      {
+       coords -79.582 4.119 63.699
+       angles 0 -269.929 0
+      }
+      {
+       coords -79.597 2.652 51.977
+       angles 0 -269.929 0
+      }
+      {
+       coords -79.604 1.916 46.13
+       angles 0 -269.929 0
+      }
+      {
+       coords -79.611 1.323 40.283
+       angles 0 -269.929 0
+      }
+      {
+       coords -79.633 -0.119 22.686
+       angles 0 -269.929 0
+      }
+      {
+       coords -79.641 -0.754 16.839
+       angles 0 -269.929 0
+      }
+      {
+       coords -68.086 -3.035 0.143
+       angles 0 10.05 0
+      }
+      {
+       coords -56.463 -3.514 -1.917
+       angles 0 10.05 0
+      }
+      {
+       coords -39.014 -3.79 -5.01
+       angles 0 10.05 0
+      }
+      {
+       coords -33.216 -3.959 -6.037
+       angles 0 10.05 0
+      }
+      {
+       coords -15.767 -3.951 -9.13
+       angles 0 10.05 0
+      }
+     }
+     $grp SCR_DestructibleEntity : "{74F66E977B10C100}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_1m.et" {
+      {
+       coords -31.423 9.37 80.429
+       angles 0 -146.509 0
+      }
+      {
+       coords -78.178 4.878 69.817
+       angles 0 -194.064 0
+      }
+     }
+     $grp SCR_DestructibleEntity : "{9AE2BF8692551FE0}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_3m.et" {
+      {
+       coords 5.066 8.502 53.21
+       angles 0 -84.562 0
+      }
+      {
+       coords -29.035 9.368 78.849
+       angles 0 -146.509 0
+      }
+      {
+       coords -79.655 -2.708 5.117
+       angles 0 -269.929 0
+      }
+      {
+       coords -9.969 -3.817 -10.157
+       angles 0 10.05 0
+      }
+     }
+     SCR_DestructibleEntity : "{A786DACFAA0BE670}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_D_start.et" {
+      coords 0 0 0
+      angles 0 -84.562 0
+     }
+     SCR_DestructibleEntity : "{D7BDCA21659E98D8}Prefabs/Structures/Walls/BarbedWire/NetFence_USSR_01/NetFence_USSR_01_D_end.et" {
+      coords -7.057 -3.467 -10.674
+      angles 0 10.05 0
+     }
+    }
+   }
+  }
+ }
+}
+GenericEntity : "{084825E68F0FAF86}Prefabs/Compositions/Slotted/SlotFlatSmall/MachineGunNest_Scoped_S_USSR_01.et" {
+ coords 2416.706 55.261 3039.176
+ angles -2.897 75.382 -7.517
+}
+GenericEntity : "{114DE81321786CD9}Prefabs/Compositions/Slotted/SlotFlatSmall/MachineGunNest_S_USSR_01_PKM.et" {
+ coords 2555.172 137.713 2234.453
+ angles -17.748 134.653 3.117
+}
+GenericEntity : "{1EB5949DF6738E38}Prefabs/Compositions/Slotted/SlotFlatSmall/VehicleMaintenance_S_USSR_01.et" {
+ coords 2527.571 144.174 2281.566
+ angles 0 148.08 0
+}
+GenericEntity : "{2A27606856B8A914}Prefabs/Compositions/Slotted/SlotRoadLarge/Barricade_L_USSR_01.et" {
+ coords 2548.136 19.183 3087.628
+ angles 0 90 0
+}
+GenericEntity : "{2ACE3A315F531CFD}Prefabs/Compositions/Slotted/SlotFlatMedium/FieldHospital_M_USSR_01.et" {
+ coords 2398.813 61.514 3008.265
+ angles -10.668 -14.825 4.617
+}
+$grp GameEntity : "{2CB0AA2A87842C18}Prefabs/Props/Civilian/LampKerosene_01/LampKerosene_01_military_USSR.et" {
+ {
+  coords 2605.775 111.735 2504.373
+ }
+ {
+  coords 2606.693 111.712 2501.254
+ }
+ {
+  coords 2603.43 111.798 2500.562
+ }
+}
+$grp GenericEntity : "{3AE0A97C6595801F}Prefabs/Props/Military/WaterTanks/MobileWaterTank_USSR_01.et" {
+ {
+  coords 2596.925 110.996 2508.773
+  angles 0 79.632 0
+ }
+ {
+  coords 2597.353 111.019 2506.433
+  angles 0 79.632 0
+ }
+}
+GenericEntity : "{4093AE33DCEFAD67}Prefabs/Compositions/Slotted/SlotFlatSmall/SupplyStorage_S_USSR_01.et" {
+ coords 2603.564 111.104 2490.05
+ angles 0 -89.22 0
+ {
+  GenericEntity {
+   ID "58C28EA171B30DC1"
+   components {
+    SCR_ArsenalComponent "{589F01C9C8D4A475}" {
+     m_eSupportedArsenalItemTypes 65574
+     m_eSupportedArsenalItemModes 242
+     m_eEditableAttributeGroups 30
+    }
+   }
+  }
+ }
+}
+GenericEntity : "{4510C273B794F3A9}Prefabs/Compositions/Slotted/SlotFlatMedium/VehicleMaintenance_M_USSR_01.et" {
+ coords 2154.486 65.038 2153.858
+ angles 5.415 60.387 4.096
+}
+Vehicle Ural1 : "{4597626AF36C0858}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320.et" {
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+   Enabled 0
+  }
+ }
+ coords 2600.369 110.913 2508.827
+ angles 0 168.964 0
+}
+GenericEntity : "{68ED84218EA1BDC3}Prefabs/Compositions/Slotted/SlotFlatSmall/Antenna_S_USSR_01.et" {
+ coords 2515.854 147.763 2260.58
+ angles 0 30 0
+}
+SCR_TriggerTask : "{7259F0B101761BD5}Prefabs/Tasks/MoveTask.et" {
+ coords 1890.614 12.147 1826.951
+ m_TaskUIInfo SCR_TaskUIInfo "{6950065DE57CAA0C}" {
+  Name "Move"
+  Description "Move to the designated area"
+ }
+ m_eTaskState ASSIGNED
+ m_eTaskOwnership FACTION
+ m_eTaskVisibility FACTION
+ m_aOwnerFactionKeys {
+  "US"
+ }
+}
+GenericEntity : "{73604060A04CBB85}Prefabs/Compositions/Slotted/SlotFlatSmall/FuelStorage_S_USSR_01.et" {
+ coords 2539.646 143.551 2264.303
+ angles 0 -75 0
+}
+GenericEntity : "{7A40BF128BB47EFD}Prefabs/Compositions/Slotted/SlotFlatSmall/MachineGunNest_S_USSR_01.et" {
+ coords 2185.482 62.443 2122.391
+ angles 0 129.131 0
+}
+$grp GenericEntity : "{7AF4B627D5C90235}Prefabs/Props/Military/Sandbags/Sandbag_01_round_high_burlap.et" {
+ {
+  coords 2594.806 111.071 2509.447
+  angles 0 -60 0
+ }
+ {
+  coords 2595.456 111.116 2505.089
+  angles 0 -136.513 0
+ }
+}
+GenericEntity : "{7C20041DA3207191}Prefabs/Compositions/Slotted/SlotFlatSmall/AmmoStorage_S_USSR_01.et" {
+ coords 2513.211 147.819 2306.725
+ angles 0 -150 0
+}
+GenericEntity : "{7C85836D444E3797}Prefabs/Compositions/Slotted/SlotRoadMedium/Checkpoint_M_USSR_01.et" {
+ coords 2236.574 60.246 2076.852
+ angles 5.597 115.845 0.727
+}
+$grp GenericEntity : "{8E1DF47DD56E69E6}Prefabs/Compositions/Slotted/SlotFlatSmall/SandbagPosition_S_USSR_01.et" {
+ {
+  coords 2611.194 110.806 2501.202
+  angles 0 84.788 0
+ }
+ {
+  coords 2416.5 57.25 3027.625
+  angles -4.287 90.963 -10.662
+ }
+}
+StaticModelEntity : "{942358281B820A96}Prefabs/Structures/Military/Camps/TentUSSR_01/TentUSSRMedical_01_foundation.et" {
+ coords 2501.887 147.549 2290.671
+ angles 0 135 0
+}
+$grp GenericEntity : "{9C9C4BED9E19C374}Prefabs/Props/Military/Sandbags/Sandbag_01_wall_solid_burlap.et" {
+ {
+  coords 2607.764 110.788 2505.876
+  angles 0 -105 0
+ }
+ {
+  coords 2608.48 110.816 2503.316
+  angles 0 -105 0
+ }
+ {
+  coords 2609.199 110.847 2500.631
+  angles 0 -105 0
+ }
+ {
+  coords 2608.788 110.884 2498.596
+  angles 0 -15 0
+ }
+ {
+  coords 2606.401 110.783 2507.504
+  angles 0 -15 0
+ }
+}
+GenericEntity : "{9F9924B626C5FA2C}Prefabs/Compositions/Slotted/SlotRoadLarge/Checkpoint_L_USSR_01.et" {
+ coords 2497.073 18.627 3089.367
+ angles 0 90 0
+}
+GenericEntity : "{B547CF929FCC6BB7}Prefabs/Props/Military/Sandbags/Sandbag_01_end_high_burlap.et" {
+ coords 2596.776 110.965 2510.655
+ angles 0 -10.959 0
+}
+GenericEntity : "{CC5453CCC311603B}Prefabs/Props/Military/Sandbags/Sandbag_01_end_burlap.et" {
+ coords 2594.629 111.102 2507.221
+ angles 0 78.883 0
+}
+$grp GenericEntity : "{D63716E01EF9AC74}Prefabs/Props/Forest/ForestBench_01/ForestBench_01.et" {
+ {
+  coords 2605.937 110.836 2504.404
+  angles 0 -12.744 0
+ }
+ {
+  coords 2603.651 110.9 2500.618
+  angles 0 -12.744 0
+ }
+ {
+  coords 2606.661 110.812 2501.3
+  angles 0 -12.744 0
+ }
+}
+$grp GenericEntity : "{DFBF655559915333}Prefabs/Compositions/Slotted/SlotFlatSmall/GuardTower_S_USSR_01.et" {
+ {
+  coords 2604.974 110.729 2512.4
+  angles 0 30 0
+ }
+ {
+  coords 2612.665 110.968 2484.712
+  angles 0 120 0
+ }
+ {
+  coords 2483.869 146.577 2235.896
+  angles 0 -165 0
+ }
+ {
+  coords 2178.4 62.501 2127.615
+  angles 0 134.688 0
+ }
+}
+$grp GenericEntity : "{E249C09D69AAE6C8}Prefabs/Compositions/Slotted/SlotFlatSmall/SandbagPosition_S_USSR_02.et" {
+ {
+  coords 2610.38 110.675 2512.187
+  angles 0 75 0
+ }
+ {
+  coords 2613.933 110.848 2491.802
+  angles 0 75 0
+ }
+ {
+  coords 2609.014 111.141 2480.928
+  angles 0 177.183 0
+ }
+ {
+  coords 2597.73 110.885 2513.848
+  angles 0 -15 0
+ }
+}
+$grp StaticModelEntity : "{E34FFA7EC13C10DA}Prefabs/Structures/Military/Camps/TentUSSR_01/TentUSSR_01_foundation.et" {
+ {
+  coords 2514.517 147.595 2279.969
+  angles 0 -90 0
+ }
+ {
+  coords 2499.517 147.562 2279.969
+  angles 0 90 0
+ }
+ {
+  coords 2499.517 147.331 2270.969
+  angles 0 90 0
+ }
+ {
+  coords 2499.517 147.744 2261.969
+  angles 0 90 0
+ }
+}
+$grp GenericEntity : "{F15B99F6B06E7200}Prefabs/Structures/Military/Radar/ApproachRadar_RPL5_01/ApproachRadar_RPL5_01_generator.et" {
+ {
+  coords 2497.772 147.286 2247.311
+  angles 16.393 1.58 5.583
+ }
+ {
+  coords 2501.406 147.064 2247.311
+  angles 16.519 0.531 1.867
+ }
+ {
+  coords 2505.406 147.229 2247.311
+  angles 11.438 -0.725 -3.649
+ }
+ {
+  coords 2509.406 147.646 2247.311
+  angles 10.579 -0.669 -3.638
+ }
+}

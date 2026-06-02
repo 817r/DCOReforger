@@ -2,6 +2,7 @@ modded class SCR_AIUtilityComponent
 {
 	protected ref DCO_AIMoraleSystem moraleSystem;
 	DCO_AIConfigComponent m_DCOConfig;
+	AIAgent myAgent;
 
 	override SCR_AIBehaviorBase EvaluateBehavior(BaseTarget unknownTarget)
 	{
@@ -178,6 +179,7 @@ modded class SCR_AIUtilityComponent
 	{
 		super.EOnInit(owner);
 		AIAgent agent = GetOwner();
+		myAgent = agent;
 		if (!agent)
 			return;	
 		

@@ -185,13 +185,6 @@ class DCO_TransportMissionComponent : ScriptComponent
 	{
 		if (!m_PassengerGroup || !m_Commander)
 			return;
-		
-		if (m_eVehType == EVehicleType.APC)
-		{
-			m_PassengerGroup.SetGroupRole(CMD_EGroupRole.ARMORED);
-			m_PassengerGroup.SetGroupStatus(DCOG_EGroupStatus.IDLE);
-			return;
-		}
 
 		SCR_AIGroup grp = SCR_AIGroup.Cast(m_PassengerGroup.GetOwner());
 		if (!grp)

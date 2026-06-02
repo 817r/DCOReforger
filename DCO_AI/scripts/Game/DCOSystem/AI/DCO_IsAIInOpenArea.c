@@ -7,7 +7,7 @@ static bool IsInOpenArea(IEntity aiEntity, float checkRadius = 15.0)
 
     BaseWorld world = GetGame().GetWorld();
     int openDirections = 0;
-    int totalDirections = 8;
+    const int totalDirections = 8;
 
     for (int i = 0; i < totalDirections; i++)
     {

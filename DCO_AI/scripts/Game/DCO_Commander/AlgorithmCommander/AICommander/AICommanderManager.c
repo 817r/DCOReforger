@@ -207,6 +207,15 @@ class AICommander_ManagerComponent : ScriptComponent
 			if (grp.IsCommanderBlacklisted(cmd.GetCommanderUID()))
 				continue;
 			
+			if (!grp.DedicatedCommander().IsEmpty())
+			{
+				if (cmd.GetCommanderUID() == grp.DedicatedCommander())
+				{
+					chosen = cmd;
+					break;
+				}
+			}
+			
 			int groupCount = cmd.GetOwnedGroupCount();
 			if (groupCount < leastGroups)
 			{

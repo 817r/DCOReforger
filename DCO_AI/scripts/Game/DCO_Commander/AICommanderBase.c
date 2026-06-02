@@ -23,6 +23,8 @@ class AICommander_BaseComponentClass : ScriptComponentClass
 	[Attribute("{6ED320498A60081C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_ArtillerySupport.et", UIWidgets.ResourceNamePicker, desc: "Tasking For Player.", "et", category: "Commander Player Tasking Setting")]
 	protected ResourceName m_sDefaultShootArtilleryPrefab;
 	
+	[Attribute("{6ED320498A60081C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_ArtillerySupport.et", UIWidgets.ResourceNamePicker, desc: "Waypoint To Suppress Area.", "et", category: "Commander Player Tasking Setting")]
+	protected ResourceName m_sDefaultSuppressPrefab;
 
 	ResourceName GetCycleWaypointPrefab()
 	{
@@ -57,6 +59,11 @@ class AICommander_BaseComponentClass : ScriptComponentClass
 	ResourceName GetShootArtilleryWaypointPrefab()
 	{
 		return m_sDefaultShootArtilleryPrefab;
+	}
+	
+	ResourceName GetDefaultSuppressPrefab()
+	{
+		return m_sDefaultSuppressPrefab;
 	}
 }
 
@@ -329,7 +336,7 @@ class AICommander_BaseComponent : ScriptComponent
  
 	protected void TrySendRecon(CMD_AICommanderObjectiveComponent obj)
 	{
-		DCO_GroupUtilityComponent reconGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RECON);
+		DCO_GroupUtilityComponent reconGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RECON, obj.GetOwner().GetOrigin());
 		if (!reconGrp)
 		{
 			return;
@@ -433,98 +440,73 @@ class AICommander_BaseComponent : ScriptComponent
 	    }
 	}
 	
-	protected DCO_GroupUtilityComponent FindBestIdleGroupForRole(CMD_EGroupRole role)
+	protected DCO_GroupUtilityComponent FindBestIdleGroupForRole(CMD_EGroupRole role, vector targetPos)
 	{
 		DCO_GroupUtilityComponent result = null;
 	
-		result = FindIdleGroupByCurrentRole(role, role);
+		result = FindIdleGroupByCurrentRole(role, role, targetPos);
 		if (result)
 			return result;
 		
 		if (role == CMD_EGroupRole.ARMORED)
 			return result;
 	
-		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.NONE);
+		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.NONE, targetPos);
 		if (result)
 			return result;
 	
-		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RESERVE);
+		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RESERVE, targetPos);
 		if (result)
 			return result;
 		
-		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RECON);
+		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RECON, targetPos);
 		if (result)
 			return result;
 		
-		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.REINFORNCE);
+		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.REINFORNCE, targetPos);
 		if (result)
 			return result;
 	
-		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.DEFEND);
+		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.DEFEND, targetPos);
 		return result;
-	}
-	
-	protected DCO_GroupUtilityComponent FindClosestIdleGroupByCurrentRole(CMD_EGroupRole role, CMD_EGroupRole currentRole, vector targetPos)
-	{
-	    DCO_GroupUtilityComponent bestGroup = null;
-	    float bestDistSq = -1.0;
-	
-	    foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
-	    {
-	        if (!grp)
-	            continue;
-	        if (grp.GetGroupStatus() != DCOG_EGroupStatus.IDLE)
-	            continue;
-	        if (grp.GetGroupRole() != currentRole)
-	            continue;
-	
-	        float distSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), targetPos);
-	
-	        if (bestDistSq < 0.0 || distSq < bestDistSq)
-	        {
-	            bestDistSq = distSq;
-	            bestGroup  = grp;
-	        }
-	    }
-	
-	    return bestGroup;
 	}
 	
 	DCO_GroupUtilityComponent FindClosestIdleGroupForRole_Public(CMD_EGroupRole role, vector targetPos)
 	{
 	    DCO_GroupUtilityComponent result = null;
 	
-	    result = FindClosestIdleGroupByCurrentRole(role, role, targetPos);
+	    result = FindIdleGroupByCurrentRole(role, role, targetPos);
 	    if (result)
 	        return result;
 	
 	    if (role == CMD_EGroupRole.ARMORED)
 	        return null;
 	
-	    result = FindClosestIdleGroupByCurrentRole(role, CMD_EGroupRole.NONE, targetPos);
+	    result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.NONE, targetPos);
 	    if (result)
 	        return result;
 	
-	    result = FindClosestIdleGroupByCurrentRole(role, CMD_EGroupRole.RESERVE, targetPos);
+	    result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RESERVE, targetPos);
 	    if (result)
 	        return result;
 	
-	    result = FindClosestIdleGroupByCurrentRole(role, CMD_EGroupRole.RECON, targetPos);
+	    result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RECON, targetPos);
 	    if (result)
 	        return result;
 	
-	    result = FindClosestIdleGroupByCurrentRole(role, CMD_EGroupRole.REINFORNCE, targetPos);
+	    result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.REINFORNCE, targetPos);
 	    if (result)
 	        return result;
 	
-	    result = FindClosestIdleGroupByCurrentRole(role, CMD_EGroupRole.DEFEND, targetPos);
+	    result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.DEFEND, targetPos);
 	    return result;
 	}
 	
-	protected DCO_GroupUtilityComponent FindIdleGroupByCurrentRole(CMD_EGroupRole targetRole, CMD_EGroupRole currentRole)
+	protected DCO_GroupUtilityComponent FindIdleGroupByCurrentRole(CMD_EGroupRole targetRole, CMD_EGroupRole currentRole, vector targetPos)
 	{
 		DCO_GroupUtilityComponent best = null;
 		float bestScore = -1.0;
+		float bestDistSq = -1.0;
 	
 		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
 		{
@@ -541,6 +523,9 @@ class AICommander_BaseComponent : ScriptComponent
 				continue;
 			
 			if (!grp.CanCommanderOverrideRole())
+				continue;
+			
+			if (!grp.CanItHaveOrder())
 				continue;
 	
 			int unitCount = grp.GetUnitCount();
@@ -582,11 +567,17 @@ class AICommander_BaseComponent : ScriptComponent
 					score = strengthPct;
 					break;
 			}
+			
+	        float distSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), targetPos);
 	
 			if (score > bestScore)
 			{
-				bestScore = score;
-				best = grp;
+		        if (bestDistSq < 0.0 || distSq < bestDistSq)
+		        {
+					bestScore = score;
+		            bestDistSq = distSq;
+					best = grp;
+		        }
 			}
 		}
 	
@@ -665,6 +656,9 @@ class AICommander_BaseComponent : ScriptComponent
 		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
 		{
 			if (!grp)
+				continue;
+			
+			if (!grp.CanItHaveOrder())
 				continue;
 	 
 			if (grp.GetUnitCount() <= m_iRetreatThreshold
@@ -772,7 +766,7 @@ class AICommander_BaseComponent : ScriptComponent
 	    vector stagingPos   = base + axis * (dist * Math.RandomFloatInclusive(0.15, 0.4));
 	    stagingPos[1]       = GetGame().GetWorld().GetSurfaceY(stagingPos[0], stagingPos[2]);
 	
-	    DCO_GroupUtilityComponent assaultGrp = FindBestIdleGroupForRole(CMD_EGroupRole.ASSAULT);
+	    DCO_GroupUtilityComponent assaultGrp = FindBestIdleGroupForRole(CMD_EGroupRole.ASSAULT, objPos);
 	    if (assaultGrp)
 	    {
 			if (assaultGrp.IsPlayerGroup())
@@ -792,7 +786,7 @@ class AICommander_BaseComponent : ScriptComponent
 	        }
 	    }
 	
-	    DCO_GroupUtilityComponent flankGrp = FindBestIdleGroupForRole(CMD_EGroupRole.FLANK);
+	    DCO_GroupUtilityComponent flankGrp = FindBestIdleGroupForRole(CMD_EGroupRole.FLANK, objPos);
 	    if (flankGrp)
 	    {
 			if (flankGrp.IsPlayerGroup())
@@ -814,12 +808,16 @@ class AICommander_BaseComponent : ScriptComponent
 	    }
 	}
 	
-	protected void GenerateSearchWaypoints(vector center, float radius, array<SCR_AIWaypoint> outWaypoints, int rings = 2, int sectorsPerRing = 3)
+	protected void GenerateSearchWaypoints(vector center, float radius, array<SCR_AIWaypoint> outWaypoints, float wpSpacing = 50.0)
 	{
 	    if (!outWaypoints)
 	        return;
 	
 	    outWaypoints.Clear();
+	
+	    int rings = Math.Max(1, (int)Math.Round(radius / wpSpacing));
+	    
+	    int baseSectorsPerRing = Math.Max(2, (int)Math.Round((radius * 2 * Math.PI) / (wpSpacing * 1.5))); 
 	
 	    RandomGenerator rand = new RandomGenerator();
 	    float ringStep = radius / rings;
@@ -840,15 +838,19 @@ class AICommander_BaseComponent : ScriptComponent
 	    ringOrder.Insert(rings);
 	    foreach (int r : middleRings)
 	        ringOrder.Insert(r);
-	    ringOrder.Insert(rings);
+	    
+	    if (rings > 1) 
+	        ringOrder.Insert(rings);
 	
 	    foreach (int ring : ringOrder)
 	    {
 	        float radiusInner = ringStep * (ring - 1);
 	        float radiusOuter = ringStep * ring;
-	        float sectorAngle = 360.0 / sectorsPerRing;
+	        
+	        int currentSectors = Math.Max(2, (int)Math.Round(baseSectorsPerRing * ((float)ring / rings)));
+	        float sectorAngle = 360.0 / currentSectors;
 	
-	        for (int sector = 0; sector < sectorsPerRing; sector++)
+	        for (int sector = 0; sector < currentSectors; sector++)
 	        {
 	            float angleMin = sectorAngle * sector;
 	            float angleMax = sectorAngle * (sector + 1);
@@ -1087,7 +1089,7 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	    for (int i = 0; i < toSend; i++)
 	    {
-	        DCO_GroupUtilityComponent defGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RESERVE);
+	        DCO_GroupUtilityComponent defGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RESERVE, obj.GetOwner().GetOrigin());
 	        if (!defGrp)
 	            break;
 			
@@ -1180,7 +1182,7 @@ class AICommander_BaseComponent : ScriptComponent
  
 		if (slotsLeft > 0)
 		{
-			DCO_GroupUtilityComponent assaultGrp = FindBestIdleGroupForRole(CMD_EGroupRole.ASSAULT);
+			DCO_GroupUtilityComponent assaultGrp = FindBestIdleGroupForRole(CMD_EGroupRole.ASSAULT, objPos);
 			if (assaultGrp)
 			{
 				if (assaultGrp.IsPlayerGroup())
@@ -1222,7 +1224,7 @@ class AICommander_BaseComponent : ScriptComponent
  
 		if (slotsLeft > 0)
 		{
-			DCO_GroupUtilityComponent flankGrp = FindBestIdleGroupForRole(CMD_EGroupRole.FLANK);
+			DCO_GroupUtilityComponent flankGrp = FindBestIdleGroupForRole(CMD_EGroupRole.FLANK, objPos);
 			if (flankGrp)
 			{
 				if (flankGrp.IsPlayerGroup())
@@ -1456,9 +1458,9 @@ class AICommander_BaseComponent : ScriptComponent
 		return SCR_AIWaypoint.Cast(GetGame().SpawnEntityPrefab(res, null, params));
 	}
 	
-	DCO_GroupUtilityComponent FindBestIdleGroupForRole_Public(CMD_EGroupRole role)
+	DCO_GroupUtilityComponent FindBestIdleGroupForRole_Public(CMD_EGroupRole role, vector pos)
 	{
-	    return FindBestIdleGroupForRole(role);
+	    return FindBestIdleGroupForRole(role, pos);
 	}
 	
 	void RegisterTransportTeam(DCO_TransportTeamComponent team)

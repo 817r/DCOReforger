@@ -22,7 +22,7 @@ modded class SCR_AICombatComponent
 	protected const float PERCEPTION_FACTOR_SAFE = 1.0;			//!< We are safe and are good at recognising enemies
 	protected const float PERCEPTION_FACTOR_VIGILANT = 4;		//!< When vigilant and alert we are very good at recognising enemies
 	protected const float PERCEPTION_FACTOR_ALERTED = 3;
-	protected const float PERCEPTION_FACTOR_THREATENED = 1.7;	// We are suppressed and are bad at recognizing enemies
+	protected const float PERCEPTION_FACTOR_THREATENED = 1.5;	// We are suppressed and are bad at recognizing enemies
 	
 	float CURRENT_AIM_IMPROVEMENT;
 	
@@ -302,30 +302,28 @@ modded class SCR_AICombatComponent
 	void UpdateAccuracy(float timeSlice)
 	{
 		Physics phys = ownerEntity.GetPhysics();
-		if (phys && phys.GetVelocity().Length() > 2)
+		float currentSpeed = 0.0;
+		
+		if (phys)
 		{
-			m_fTimeElapsed -= timeSlice * 1.5;
-    		if (m_fTimeElapsed < 0) 
-				m_fTimeElapsed = 0;
-		} else
-		{
-		    if (m_fTimeElapsed < m_fDurationN)
-		    {
-		        m_fTimeElapsed += timeSlice;
-		        
-				float rawProgress = m_fTimeElapsed / m_fDurationN;
-				rawProgress = Math.Clamp(rawProgress, 0.0, 1.0);
-				float smoothProgress = rawProgress * rawProgress * (3.0 - 2.0 * rawProgress);
-				
-				CURRENT_AIM_IMPROVEMENT = Math.Lerp(m_fStartAccuracy, m_fTargetAccuracy, smoothProgress);
-		    }
-		    else
-		    {
-		        CURRENT_AIM_IMPROVEMENT = m_fTargetAccuracy;
-		    }
+			currentSpeed = phys.GetVelocity().Length();
 		}
-		//PrintString(CURRENT_AIM_IMPROVEMENT.ToString());
-
+	
+		float speedThreshold = 0.5; 
+		float aimProgressRate = 1.0;
+		
+		if (currentSpeed > speedThreshold)
+		{
+			aimProgressRate = -1.5 * (currentSpeed / 2.0); 
+		}
+		
+		m_fTimeElapsed += timeSlice * aimProgressRate;
+		m_fTimeElapsed = Math.Clamp(m_fTimeElapsed, 0.0, m_fDurationN);
+	
+		float rawProgress = m_fTimeElapsed / m_fDurationN;
+		float smoothProgress = rawProgress * rawProgress * (3.0 - 2.0 * rawProgress);
+		
+		CURRENT_AIM_IMPROVEMENT = Math.Lerp(m_fStartAccuracy, m_fTargetAccuracy, smoothProgress);
 	}
 	
 	SCR_CharacterControllerComponent GetCharacterController()

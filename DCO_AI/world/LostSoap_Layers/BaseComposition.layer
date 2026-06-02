@@ -1,0 +1,18 @@
+$grp GenericEntity : "{7C20041DA3207191}Prefabs/Compositions/Slotted/SlotFlatSmall/AmmoStorage_S_USSR_01.et" {
+ {
+  coords 1359.168 37.694 2979.781
+  angles 0 165 0
+ }
+ {
+  coords 1412.951 35.708 2351.397
+  angles 0 -90 0
+ }
+}
+GenericEntity : "{7C367E9261376345}Prefabs/Compositions/Slotted/SlotFlatSmall/AmmoStorage_S_US_01.et" {
+ coords 2748.751 77.391 1673.366
+ angles 0 -131.274 0
+}
+GenericEntity : "{8E49E48C2BD0BFE3}Prefabs/Compositions/Slotted/SlotFlatSmall/AmmoStorage_S_FIA_01.et" {
+ coords 3117.779 16 2732.727
+ angles 0 -45 0
+}

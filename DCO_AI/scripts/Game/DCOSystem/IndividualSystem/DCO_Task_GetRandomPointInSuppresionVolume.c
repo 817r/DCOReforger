@@ -23,7 +23,7 @@ class DCO_AIGetSuppressionVolumeRandomPosition : AITaskScripted
 		if (!volume)
 			return NodeError(this, owner, "No suppression volume provided!");
 			
-		vector centerPos = volume.GetRandomPosition(owner.GetControlledEntity());
+		vector centerPos = volume.GetCenterPosition();
 		SetVariableOut(CENTER_POS_PORT, centerPos);
 		
 		float distance;

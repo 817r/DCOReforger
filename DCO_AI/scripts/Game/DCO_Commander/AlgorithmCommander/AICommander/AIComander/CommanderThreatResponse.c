@@ -384,9 +384,9 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (!m_Commander)
 			return;
 
-		DCO_GroupUtilityComponent reconGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.RECON);
+		DCO_GroupUtilityComponent reconGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.RECON, threat.m_vPosition);
 		if (!reconGrp)
-			reconGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.RESERVE);
+			reconGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.RESERVE, threat.m_vPosition);
 		if (!reconGrp)
 			return;
 
@@ -412,9 +412,9 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (!m_Commander)
 			return;
 
-		DCO_GroupUtilityComponent flankGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.FLANK);
+		DCO_GroupUtilityComponent flankGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.FLANK, threat.m_vPosition);
 		if (!flankGrp)
-			flankGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.REINFORNCE);
+			flankGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.REINFORNCE, threat.m_vPosition);
 		if (!flankGrp)
 			return;
 

@@ -1,0 +1,25 @@
+SCR_SpawnPoint : "{2B1758F237E4820E}Prefabs/MP/Spawning/SpawnPoint_FIA.et" {
+ coords 3100.662 16.347 2725.408
+ angles 0 37.762 0
+ m_Info SCR_UIInfo "{56B4CC4ECACA2C37}" {
+  Name "Beauregard Church"
+ }
+}
+$grp SCR_SpawnPoint : "{5A2220DD0C16958B}Prefabs/MP/Spawning/SpawnPoint_US.et" {
+ {
+  coords 2758.877 77.464 1639.442
+  angles 0 -45.995 0
+  m_fRandomSpawnRadius 5
+  m_Info SCR_UIInfo "{56B4CC4ECACA2C37}" {
+   Name "FOB Arleville"
+  }
+ }
+ USSR_Spawn {
+  coords 1383.137 36.217 2384.906
+  m_sFaction "USSR"
+ }
+ USSR_Spawn2 {
+  coords 1354.129 37.783 2973.953
+  m_sFaction "USSR"
+ }
+}

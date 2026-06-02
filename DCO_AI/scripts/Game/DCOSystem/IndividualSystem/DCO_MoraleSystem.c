@@ -18,7 +18,7 @@ class DCO_AIMoraleSystem
 	// Courage is the resistance to Morale 
 	// Round classification (EWeaponType) classification
 	
-	private static const float MORALE_SHOT_RECOVERY 				= 			0.00015* 0.001;	//!< Falloff (percentual drop per milisecond)
+	private static const float MORALE_SHOT_RECOVERY 				= 			0.00015 * 0.001;	//!< Falloff (percentual drop per milisecond)
 	private static const float MORALE_SUPPRESSION_RECOVERY 			= 			0.0005 * 0.001;
 	private static const float MORALE_ENDANGERED_RECOVERY 			= 			0.0004 * 0.001;
 	private static const float LOW_SUPPLY_RECOVERY					=			0.01 * 0.001;

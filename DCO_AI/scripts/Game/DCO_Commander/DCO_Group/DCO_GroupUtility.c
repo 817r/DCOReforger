@@ -12,6 +12,9 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	[Attribute("1", UIWidgets.EditBox, "Can it be used By Commander?", category: "Commander")]
 	protected bool m_bIsProcessedByCommander;
 	
+	[Attribute("1", UIWidgets.EditBox, "Can it Have By Commander?", category: "Commander")]
+	protected bool m_bCanHaveCommander;
+	
 	[Attribute("1", UIWidgets.EditBox, "Can it call Artillery?", category: "Support")]
 	protected bool m_bCanCallArtillery;
 	
@@ -38,6 +41,9 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	[Attribute("", UIWidgets.Auto, "Blacklisted Commander to not process this Group", category: "Commander")]
 	protected ref array<string> m_sBlacklistedCo;
 	
+	[Attribute("", UIWidgets.Auto, "Assign This Unit To Commander", category: "Commander")]
+	protected string m_sDedicatedCo;
+	
 	[Attribute("", UIWidgets.Auto, "Usable Mortar For This Group In The Inital", category: "Artillery Group")]
 	protected ref array<string> m_sUsableVehicle;
 	
@@ -56,6 +62,11 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	static float AVG_MOVE_SPEED_MPS = 2.5;
 	static float ORDER_BASE_BUFFER  = 10.0;
 	static float ARRIVAL_THRESHOLD  = 3.0;
+	
+	protected vector m_vLastCheckPos = vector.Zero;
+	protected float m_fLastMoveTime = 0;
+	protected const float STUCK_DIST_THRESHOLD = 2.5;
+	protected const float STUCK_TIME_THRESHOLD = 15.0;
 	
 	bool CanCommanderOverrideRole()
 	{
@@ -90,6 +101,11 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	AICommander_BaseComponent GetMyCommander()
 	{
 		return myCommander;
+	}
+	
+	string DedicatedCommander()
+	{
+		return m_sDedicatedCo;
 	}
 	
 	bool IsOrderActive()
@@ -279,29 +295,49 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			ResetOrderTracking();
 			return true;
 		}
- 
-		float distToTarget = vector.Distance(GetOwner().GetOrigin(), m_vOrderTarget);
+		
+		vector currentPos = GetOwner().GetOrigin();
+		float distToTarget = vector.Distance(currentPos, m_vOrderTarget);
  
 		if (distToTarget <= ARRIVAL_THRESHOLD)
 		{
-			//Print(string.Format("[DCO_Group] %1 arrived (dist: %2m)",
-				//GetOwner().GetName(), distToTarget.ToString()));
- 
 			SetGroupStatus(DCOG_EGroupStatus.IDLE);
 			ResetOrderTracking();
 			return true;
 		}
  
-		float elapsed = worldTime - m_fOrderStartTime;
+		if (m_vLastCheckPos == vector.Zero) 
+		{
+			m_vLastCheckPos = currentPos;
+			m_fLastMoveTime = worldTime;
+		}
+		else
+		{
+			float distMoved = vector.Distance(currentPos, m_vLastCheckPos);
+			
+			if (distMoved > STUCK_DIST_THRESHOLD)
+			{
+				m_vLastCheckPos = currentPos;
+				m_fLastMoveTime = worldTime;
+			}
+			else
+			{
+				float stuckElapsed = worldTime - m_fLastMoveTime;
+				if (stuckElapsed >= STUCK_TIME_THRESHOLD)
+				{
+					/*Print(string.Format("[DCO_Group] %1 STUCK/IDLE di tempat selama %2s, membatalkan order!",
+						GetOwner().GetName(), stuckElapsed.ToString()));*/
+					
+					SetGroupStatus(DCOG_EGroupStatus.IDLE);
+					ResetOrderTracking();
+					return true;
+				}
+			}
+		}
  
+		float elapsed = worldTime - m_fOrderStartTime;
 		if (elapsed >= m_fOrderTimeout)
 		{
-			/*Print(string.Format("[DCO_Group] %1 TIMEOUT after %2s (remaining dist: %3m | role: %4)",
-				GetOwner().GetName(),
-				elapsed.ToString(),
-				distToTarget.ToString(),
-				typename.EnumToString(CMD_EGroupRole, m_eGroupRole)));*/
- 
 			SetGroupStatus(DCOG_EGroupStatus.IDLE);
 			ResetOrderTracking();
 			return true;
@@ -316,6 +352,8 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		m_fOrderStartTime = 0.0;
 		m_fOrderTimeout   = 0.0;
 		m_bOrderActive    = false;
+		m_vLastCheckPos = vector.Zero;
+		m_fLastMoveTime = 0;
 	}
 	
 	void SetGroupStatus(DCOG_EGroupStatus st)
@@ -392,7 +430,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		if (!AICommander_ManagerComponent.GetInstance())
 			return;
 		
-		if (!m_bIsProcessedByCommander)
+		if (!m_bIsProcessedByCommander && !m_bCanHaveCommander)
 			return;
 		
 		SCR_AIGroup grp = SCR_AIGroup.Cast(owner);
@@ -408,10 +446,17 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		//SetDedicatedTransport(m_bIsDedicatedTransport)
 	}
 	
+	bool CanItHaveOrder()
+	{
+		return m_bIsProcessedByCommander;
+	}
+	
 	protected void delayedInit(IEntity owner)
 	{
 		SCR_AIGroup grp = SCR_AIGroup.Cast(owner);
-		fk = grp.GetFaction().GetFactionKey();
+		Faction fc = grp.GetFaction();
+		if (fc)
+			fk = grp.GetFaction().GetFactionKey();
 		AICommander_ManagerComponent.GetInstance().RegisterGroup(this);
 		
 		if (myCommander)

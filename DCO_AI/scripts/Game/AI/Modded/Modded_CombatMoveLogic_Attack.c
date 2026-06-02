@@ -84,7 +84,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			if (m_State && m_State.IsMovingToBuilding())
 				return true;
 			else
-				return true;
+				return false;
 		}
 		else
 		{
@@ -99,6 +99,11 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	//--------------------------------------------------------------------------------------------
 	protected override float ResolveStoppedWaitTime(bool inCover, EAIThreatState threat, EWeaponType weaponType)
 	{
+		if (m_bCloseRangeCombat)
+		{
+			return Math.RandomFloat(1.0, 4.5);
+		}
+		
 		float waitTime;
 		
 		if (inCover)
@@ -107,10 +112,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			switch (threat)
 			{
 				case EAIThreatState.THREATENED:
-					waitTime = 60.0;	// Stay in cover for a long time, until we are not suppressed any more
+					waitTime = Math.RandomFloat(60, 90);	// Stay in cover for a long time, until we are not suppressed any more
 					break;
 				default:
-					waitTime = 40.0;
+					waitTime = Math.RandomFloat(30, 45);
 			}
 		}
 		else
@@ -119,10 +124,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			switch (threat)
 			{
 				case EAIThreatState.THREATENED:
-					waitTime = 3.0;
+					waitTime = Math.RandomFloat(2, 4);
 					break;
 				default:
-					waitTime = 6.0;
+					waitTime = Math.RandomFloat(6, 9);
 					break;
 			}
 		}
@@ -141,14 +146,14 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		// Note: it's important to let bots enough time to aim at very long range
 		// Stop time should be more than just a few seconds.
 		if (m_bVeryLongRangeCombat)
-			waitTime *= 2.0;
+			waitTime *= 1.5;
 		else
-			waitTime *= Math.RandomFloat(1.0, 1.5);
+			waitTime *= Math.RandomFloat(0.8, 1);
 		
 		if (longWaitTime)
 			waitTime *= 2;
 		
-		float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 1, 2);
+		float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 1, 2.5);
 		waitTime += mult;
 		
 		return waitTime;
