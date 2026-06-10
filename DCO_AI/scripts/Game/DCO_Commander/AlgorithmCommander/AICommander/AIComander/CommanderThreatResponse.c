@@ -393,6 +393,8 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(threat.m_vPosition);
 		if (!wp)
 			return;
+		
+		reconGrp.CompleteAllWaypoints();
 
 		reconGrp.SetGroupRole(CMD_EGroupRole.RECON);
 		reconGrp.MoveTo(wp, worldTime);
@@ -425,6 +427,8 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(flankPos);
 		if (!wp)
 			return;
+		
+		flankGrp.CompleteAllWaypoints();
 
 		flankGrp.SetGroupRole(CMD_EGroupRole.FLANK);
 		flankGrp.MoveTo(wp, worldTime);
@@ -494,6 +498,8 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	
 	        if (!armored)
 	            reinforcement.SetGroupRole(CMD_EGroupRole.REINFORNCE);
+			
+			reinforcement.CompleteAllWaypoints();
 	
 	        reinforcement.MoveTo(wp, worldTime);
 	

@@ -760,7 +760,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		}
 		else if (!m_State.IsExecutingRequest() && !m_State.m_bInCover)
 		{
-			if (IsInOpenArea(owner.GetControlledEntity()) && Math.RandomFloat01() > 0.4)
+			if (IsInOpenArea(owner.GetControlledEntity()) && Math.RandomFloat01() > 0.3)
 			{
 				if (!m_State.IsExecutingRequest())
 					PushRequestOpenArea();
