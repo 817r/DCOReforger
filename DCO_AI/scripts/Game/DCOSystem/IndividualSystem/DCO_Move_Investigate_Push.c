@@ -59,6 +59,8 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	void CombatMoveLogic(vector threatPos, float distToThreat)
 	{				
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		float dist = vector.Distance(m_Utility.GetOrigin(), threatPos);
 			
 		rq.m_eReason = SCR_EAICombatMoveReason.INVESTIGATE;
 		rq.m_eType = SCR_EAICombatMoveRequestType.INVESTIGATE;
@@ -68,10 +70,10 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility = true;
 		rq.m_bFailIfNoCover = false;
-		ResolveMoveandStopStance(rq.m_eStanceMoving, rq.m_eStanceEnd);
+		ResolveMoveandStopStance(dist, rq.m_eStanceMoving, rq.m_eStanceEnd);
 		rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
 		rq.m_fCoverSearchDistMin = 10;
-		if (vector.Distance(m_Utility.GetOrigin(), threatPos) > 20)
+		if (dist > 20)
 		{
 			if (Math.RandomInt(0,2) == 1)
 				rq.m_eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
@@ -83,7 +85,12 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		rq.m_bAimAtTarget = true;
 		rq.m_bAimAtTargetEnd = true;
-		rq.m_fMoveDuration_s = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
+		if (dist > 31)
+		{
+			rq.m_fMoveDuration_s = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
+		} else
+			rq.m_fMoveDuration_s = dist / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
+		
 		rq.m_eMovementType = EMovementType.RUN;
 		
 		vector dirToTgt = threatPos - m_Utility.m_OwnerEntity.GetOrigin();
@@ -91,8 +98,8 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		m_State.ApplyNewRequest(rq);			
 	}
 	
-	protected void ResolveMoveandStopStance(out ECharacterStance moving, out ECharacterStance end)
-	{
+	protected void ResolveMoveandStopStance(float dist, out ECharacterStance moving, out ECharacterStance end)
+	{		
 		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.8)
 			moving = ECharacterStance.CROUCH;
 		else
@@ -101,6 +108,21 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 				moving = ECharacterStance.STAND;
 			else
 				moving = ECharacterStance.CROUCH;
+		}
+		
+		if (dist < 35)
+		{
+			if (moving == ECharacterStance.STAND)
+				end = ECharacterStance.CROUCH;
+			else if (moving == ECharacterStance.CROUCH)
+			{
+				if (Math.RandomInt(0,2) == 1)
+					end = ECharacterStance.CROUCH;
+				else
+					end = ECharacterStance.STAND;
+			}	
+			
+			return;
 		}
 		
 		if (moving == ECharacterStance.STAND)

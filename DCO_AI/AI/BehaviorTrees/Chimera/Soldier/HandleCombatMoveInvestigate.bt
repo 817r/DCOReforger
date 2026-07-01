@@ -1,4 +1,4 @@
-BehaviorTree {
+BehaviorTree "{EC11D1E185670015}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMoveInvestigate.bt" {
  Name "AI/BehaviorTrees/Chimera/Soldier/HandleCombatMoveInvestigate.bt"
  Nodes {
   RootNode Root {
@@ -87,597 +87,220 @@ BehaviorTree {
         }
        }
       }
-      Selector Selector {
-       Name "Selector"
-       EditorPos 192 -640
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos 1072 496
        Nodes {
-        DecoIsInVehicle "Is In Vehicle" {
-         Name "Is In Vehicle"
-         EditorPos -304 -336
-         Nodes {
-          DCO_IsAIDistanceLessThan "DCO_ IsAI Distance Less Than" {
-           Name "DCO_ IsAI Distance Less Than"
-           EditorPos -320 -160
-           Nodes {
-            AITaskMove Move {
-             Name "Move"
-             EditorPos -304 0
-             InTargetLocation 56
-             PrecisionY 1
-            }
-           }
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 55
-             PortName "ThresholdIn"
-            }
-           }
-           m_distanceThreshold 30
-          }
-         }
-         NegativeCondition 1
+        AITaskSetVariable "Set Variable" {
+         Name "Set Variable"
+         EditorPos 80 800
+         SetValue "true"
+         OutVariable 15
         }
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 1072 496
+        Selector Selector {
+         Name "Selector"
+         EditorPos 304 1056
          Nodes {
-          AITaskSetVariable "Set Variable" {
-           Name "Set Variable"
-           EditorPos 80 800
-           SetValue "true"
-           OutVariable 15
-          }
-          Selector Selector {
-           Name "Selector"
-           EditorPos 304 1056
-           Nodes {
-            DecoTestVariable "Test Variable" {
-             Name "Test Variable"
-             EditorPos -1200 1952
-             Nodes {
-              Sequence Sequence {
-               Name "Find Cover"
-               EditorPos -1184 2160
-               Nodes {
-                SCR_AICalculateCoverQueryProps_CombatMove "SCR_AI Calculate Cover Query Props_ Combat Move" {
-                 Name "SCR_AI Calculate Cover Query Props_ Combat Move"
-                 EditorPos -2560 2624
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 0
-                   PortName "CombatMoveRequest"
-                  }
-                 }
-                 OutPorts {
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 10
-                   PortName "CoverQueryProps"
-                  }
-                 }
-                }
-                DCO_AICalculateCoverQueryProps_Indoor "DCO_AI Calculate Cover Query Props_ Indoor" {
-                 Name "DCO_AI Calculate Cover Query Props_ Indoor"
-                 EditorPos -2032 2624
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 0
-                   PortName "CombatMoveRequest"
-                  }
-                 }
-                 OutPorts {
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 54
-                   PortName "CoverQueryProps"
-                  }
-                 }
-                }
-                Selector Selector {
-                 Name "Selector"
-                 EditorPos -1040 2480
-                 Nodes {
-                  Selector Selector {
-                   Name "Selector"
-                   EditorPos -1232 2672
-                   Nodes {
-                    SCR_AIFindCover "SCR_AI Find Cover" {
-                     Name "SCR_AI Find Cover"
-                     EditorPos -1488 2816
-                     InPorts {
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port 54
-                       PortName "CoverQueryProps"
-                      }
-                     }
-                     OutPorts {
-                      SingleOutputPortContainer SingleOutputPortContainer {
-                       Port 13
-                       PortName "CoverLock"
-                      }
-                     }
-                    }
-                    SCR_AIFindCover "SCR_AI Find Cover" {
-                     Name "SCR_AI Find Cover"
-                     EditorPos -1136 2816
-                     InPorts {
-                      SingleInputPortContainer SingleInputPortContainer {
-                       Port 10
-                       PortName "CoverQueryProps"
-                      }
-                     }
-                     OutPorts {
-                      SingleOutputPortContainer SingleOutputPortContainer {
-                       Port 13
-                       PortName "CoverLock"
-                      }
-                     }
-                     Group "{684869BF8943D654}"
-                    }
-                   }
-                  }
-                  DecoTestVariable "Test Variable" {
-                   Name "Test Variable"
-                   EditorPos -832 2832
-                   Nodes {
-                    Sequence Sequence {
-                     Name "Sequence"
-                     EditorPos -816 3024
-                     Nodes {
-                      AITaskSetVariable "Set Variable" {
-                       Name "Set Variable"
-                       EditorPos -1328.916 3228.823
-                       Group "{684869BF8943D654}"
-                       SetValue "false"
-                       OutVariable 16
-                      }
-                      SCR_AISetCombatMoveRequestFailReason "SCR_AI Set Combat Move Request Fail Reason" {
-                       Name "SCR_AI Set Combat Move Request Fail Reason"
-                       EditorPos -800 3312
-                       InPorts {
-                        SingleInputPortContainer SingleInputPortContainer {
-                         Port 12
-                         PortName "Request"
-                        }
-                       }
-                       Group "{684869BF8943D654}"
-                       m_eFailReason COVER_NOT_FOUND
-                      }
-                      AITaskReturnState "Return State" {
-                       Name "Return State"
-                       EditorPos -320 3328
-                       Group "{684869BF8943D654}"
-                       Result FAIL
-                      }
-                     }
-                     Group "{684869BF8943D654}"
-                    }
-                   }
-                   Group "{684869BF8943D654}"
-                   InVariable 11
-                   TestType EqualsValue
-                   TestValue "true"
-                  }
-                 }
-                 Group "{684869BF8943D654}"
-                }
-                SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
-                 Name "SCR_AI Get Cover Parameters"
-                 EditorPos -560 2544
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 13
-                   PortName "CoverLock"
-                  }
-                 }
-                 OutPorts {
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 34
-                   PortName "Pos"
-                  }
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 14
-                   PortName "Stance"
-                  }
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port -1
-                   PortName "StanceHide"
-                  }
-                 }
-                 Group "{684869BF8943D654}"
-                }
-                AITaskSetVariable "Set Variable" {
-                 Name "Set Variable"
-                 EditorPos -66.5 2542.05
-                 Group "{684869BF8943D654}"
-                 SetValue "true"
-                 OutVariable 20
-                }
-               }
-               Group "{684869BF8943D654}"
-              }
-             }
-             Group "{684869BF8943D654}"
-             InVariable 9
-             TestType EqualsValue
-             TestValue "true"
-            }
-            DecoTestVariable "Test Variable" {
-             Name "Test Variable"
-             EditorPos 560 1936
-             Nodes {
-              Sequence Sequence {
-               Name "Find Position Without Cover"
-               EditorPos 496 2160
-               Nodes {
-                SCR_AICalculateNextCombatMovePos "SCR_AI Calculate Next Combat Move Pos" {
-                 Name "SCR_AI Calculate Next Combat Move Pos"
-                 EditorPos 368 2432
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port 18
-                   PortName "Request"
-                  }
-                 }
-                 OutPorts {
-                  SingleOutputPortContainer SingleOutputPortContainer {
-                   Port 19
-                   PortName "Pos"
-                  }
-                 }
-                 Group "{6846971C148DE6AB}"
-                }
-                SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
-                 Name "SCR_AI Set Combat Move State"
-                 EditorPos 736 2432
-                 InPorts {
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "InCover"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "ExposedInCover"
-                  }
-                  SingleInputPortContainer SingleInputPortContainer {
-                   Port -1
-                   PortName "AimAtTarget"
-                  }
-                 }
-                 Group "{6846971C148DE6AB}"
-                 m_eRequestStateValue SUCCESS
-                 m_bReleaseCoverLock 1
-                }
-                AITaskSetVariable "Set Variable" {
-                 Name "Set Variable"
-                 EditorPos 1024 2432
-                 Group "{6846971C148DE6AB}"
-                 SetValue "false"
-                 OutVariable 21
-                }
-               }
-               Group "{6846971C148DE6AB}"
-              }
-             }
-             Group "{6846971C148DE6AB}"
-             InVariable 17
-             TestType EqualsValue
-             TestValue "true"
-            }
-           }
-          }
-          AITaskResetPathfindingFilters "Reset Pathfinding Filters" {
-           Name "Reset Pathfinding Filters"
-           EditorPos 1088 736
-          }
-          Sequence Sequence {
-           Name "Move Sequence"
-           EditorPos 5440 1152
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos -1200 1952
            Nodes {
             Sequence Sequence {
-             Name "Setup Movement"
-             EditorPos 3536 1744
+             Name "Find Cover"
+             EditorPos -1184 2160
              Nodes {
-              AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
-               Name "Character Set Movement Speed"
-               EditorPos 1952 2096
-               "Input Movement speed" 23
-              }
-              SCR_AISetStance "SCR_AI Set Stance" {
-               Name "SCR_AI Set Stance"
-               EditorPos 2391.167 2109.393
+              SCR_AICalculateCoverQueryProps_CombatMove "SCR_AI Calculate Cover Query Props_ Combat Move" {
+               Name "SCR_AI Calculate Cover Query Props_ Combat Move"
+               EditorPos -2560 2624
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 22
-                 PortName "Stance"
+                 Port 0
+                 PortName "CombatMoveRequest"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 10
+                 PortName "CoverQueryProps"
                 }
                }
               }
-              Selector Selector {
-               Name "Selector"
-               EditorPos 2848 2064
-               Nodes {
-                DecoTestVariable "Test Variable" {
-                 Name "Test Variable"
-                 EditorPos 2720 2240
-                 Nodes {
-                  AITaskSetVariable "Set Variable" {
-                   Name "Set Variable"
-                   EditorPos 2704 2400
-                   SetValue "false"
-                   OutVariable 25
-                  }
-                 }
-                 InVariable 24
-                 TestType EqualsValue
-                 TestValue "true"
-                }
-                AITaskSetVariable "Set Variable" {
-                 Name "Set Variable"
-                 EditorPos 3008 2256
-                 SetValue "true"
-                 OutVariable 26
-                }
-               }
-              }
-              Selector Selector {
-               Name "Selector"
-               EditorPos 3568 2064
-               Nodes {
-                DecoIsInVehicle "Is In Vehicle" {
-                 Name "Is In Vehicle"
-                 EditorPos 3360 2224
-                 Nodes {
-                  Sequence Sequence {
-                   Name "Sequence"
-                   EditorPos 3424 2384
-                   Nodes {
-                    AITaskSetPathfindingFilters "Set Pathfinding Filters" {
-                     Name "Set Pathfinding Filters"
-                     EditorPos 3152 2592
-                     NavmeshProject "BTRlike"
-                     IgnoreFlags 0x8 0
-                    }
-                    AITaskSetVariable "Set Variable" {
-                     Name "Set Variable"
-                     EditorPos 3408 2592
-                     SetValue "5"
-                     OutVariable 27
-                    }
-                    AITaskSetVariable "Set Variable" {
-                     Name "Set Variable"
-                     EditorPos 3616 2592
-                     SetValue "-1"
-                     OutVariable 30
-                    }
-                   }
-                  }
-                 }
-                }
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos 3936 2256
-                 Nodes {
-                  AITaskSetPathfindingFilters "Set Pathfinding Filters" {
-                   Name "Set Pathfinding Filters"
-                   EditorPos 3616 2416
-                   NavmeshProject "Soldiers"
-                   IgnoreFlags 0x8 0
-                  }
-                  AITaskSetVariable "Set Variable" {
-                   Name "Set Variable"
-                   EditorPos 3872 2432
-                   SetValue "0.6"
-                   OutVariable 28
-                  }
-                  AITaskSetVariable "Set Variable" {
-                   Name "Set Variable"
-                   EditorPos 4112 2432
-                   SetValue "0.6"
-                   OutVariable 31
-                  }
-                 }
-                }
-               }
-              }
-              AITaskSetVariable "Set Variable" {
-               Name "Set Variable"
-               EditorPos 3856 2048
-               SetValue "0"
-               OutVariable 38
-              }
-              SCR_AICombatMoveRequest_Move_InvokeOnMovementStarted "SCR_AI Combat Move Request_ Move_ Invoke On Movement Started" {
-               Name "Invoke OnMovementStarted"
-               EditorPos 4400 2064
+              DCO_AICalculateCoverQueryProps_Indoor "DCO_AI Calculate Cover Query Props_ Indoor" {
+               Name "DCO_AI Calculate Cover Query Props_ Indoor"
+               EditorPos -2032 2624
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 29
-                 PortName "Request"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 32
-                 PortName "Position"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 33
-                 PortName "IsCover"
+                 Port 0
+                 PortName "CombatMoveRequest"
                 }
                }
-              }
-             }
-            }
-            Parallel Parallel {
-             Name "Parallel"
-             EditorPos 5440 2560
-             Nodes {
-              DecoTestVariable "Test Variable" {
-               Name "Test Variable"
-               EditorPos 5024 2848
-               Nodes {
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos 5040 3024
-                 Nodes {
-                  AITaskIdle Idle {
-                   Name "Idle"
-                   EditorPos 4896 3200
-                   PeriodKey 36
-                  }
-                  AITaskSetVariable "Set Variable" {
-                   Name "Set Variable"
-                   EditorPos 5072 3200
-                   SetValue "1"
-                   OutVariable 37
-                  }
-                 }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 54
+                 PortName "CoverQueryProps"
                 }
                }
-               InVariable 35
-               TestType EqualsValue
-               TestValue "false"
               }
               Selector Selector {
                Name "Selector"
-               EditorPos 5552 3328
+               EditorPos -1040 2480
                Nodes {
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos 5120 3712
+                Selector Selector {
+                 Name "Selector"
+                 EditorPos -1232 2672
                  Nodes {
-                  SCR_CreateAIExtraMoveParams_CombatMove "SCR_ CreateAI Extra Move Params_ Combat Move" {
-                   Name "SCR_ CreateAI Extra Move Params_ Combat Move"
-                   EditorPos 4442.358 4093.073
+                  SCR_AIFindCover "SCR_AI Find Cover" {
+                   Name "SCR_AI Find Cover"
+                   EditorPos -1488 2816
                    InPorts {
                     SingleInputPortContainer SingleInputPortContainer {
-                     Port 39
-                     PortName "Request"
-                    }
-                    SingleInputPortContainer SingleInputPortContainer {
-                     Port 40
-                     PortName "InMovingToCover"
+                     Port 54
+                     PortName "CoverQueryProps"
                     }
                    }
                    OutPorts {
                     SingleOutputPortContainer SingleOutputPortContainer {
-                     Port 41
-                     PortName "OutParams"
+                     Port 13
+                     PortName "CoverLock"
                     }
                    }
                   }
-                  AITaskMove Move {
-                   Name "Move"
-                   EditorPos 5408 3952
-                   InTargetLocation 42
-                   InPrecisionXZ 43
-                   InPrecisionY 44
-                   InAutoOrientation 45
-                   InExtraMoveParams 41
-                  }
-                  AITaskSetVariable "Set Variable" {
-                   Name "Set Variable"
-                   EditorPos 5760 3968
-                   SetValue "1"
-                   OutVariable 46
-                  }
-                 }
-                }
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos 6304 3936
-                 Nodes {
-                  SCR_AISetCombatMoveRequestFailReason "SCR_AI Set Combat Move Request Fail Reason" {
-                   Name "SCR_AI Set Combat Move Request Fail Reason"
-                   EditorPos 5968 4256
+                  SCR_AIFindCover "SCR_AI Find Cover" {
+                   Name "SCR_AI Find Cover"
+                   EditorPos -1136 2816
                    InPorts {
                     SingleInputPortContainer SingleInputPortContainer {
-                     Port 47
-                     PortName "Request"
+                     Port 10
+                     PortName "CoverQueryProps"
                     }
                    }
-                   m_eFailReason MOVEMENT_FAILED
-                  }
-                  AITaskSetVariable "Set Variable" {
-                   Name "Set Variable"
-                   EditorPos 6480 4256
-                   SetValue "2"
-                   OutVariable 48
+                   OutPorts {
+                    SingleOutputPortContainer SingleOutputPortContainer {
+                     Port 13
+                     PortName "CoverLock"
+                    }
+                   }
+                   Group "{684869BF8943D654}"
                   }
                  }
+                }
+                DecoTestVariable "Test Variable" {
+                 Name "Test Variable"
+                 EditorPos -832 2832
+                 Nodes {
+                  Sequence Sequence {
+                   Name "Sequence"
+                   EditorPos -816 3024
+                   Nodes {
+                    AITaskSetVariable "Set Variable" {
+                     Name "Set Variable"
+                     EditorPos -1328.916 3228.823
+                     Group "{684869BF8943D654}"
+                     SetValue "false"
+                     OutVariable 16
+                    }
+                    SCR_AISetCombatMoveRequestFailReason "SCR_AI Set Combat Move Request Fail Reason" {
+                     Name "SCR_AI Set Combat Move Request Fail Reason"
+                     EditorPos -800 3312
+                     InPorts {
+                      SingleInputPortContainer SingleInputPortContainer {
+                       Port 12
+                       PortName "Request"
+                      }
+                     }
+                     Group "{684869BF8943D654}"
+                     m_eFailReason COVER_NOT_FOUND
+                    }
+                    AITaskReturnState "Return State" {
+                     Name "Return State"
+                     EditorPos -320 3328
+                     Group "{684869BF8943D654}"
+                     Result FAIL
+                    }
+                   }
+                   Group "{684869BF8943D654}"
+                  }
+                 }
+                 Group "{684869BF8943D654}"
+                 InVariable 11
+                 TestType EqualsValue
+                 TestValue "true"
                 }
                }
+               Group "{684869BF8943D654}"
               }
-              Selector Selector {
-               Name "Selector"
-               EditorPos 6320 2864
-               Nodes {
-                DecoTestVariable "Test Variable" {
-                 Name "Test Variable"
-                 EditorPos 6064 3056
-                 Nodes {
-                  AITaskReturnState "Return State" {
-                   Name "Return State"
-                   EditorPos 6144 3232
-                   Result RUNNING
-                  }
-                 }
-                 AbortType AbortChildrenBranchAndParentFurtherChildren
-                 InVariable 49
-                 TestType EqualsValue
-                 TestValue "0"
-                }
-                DecoTestVariable "Test Variable" {
-                 Name "Test Variable"
-                 EditorPos 6320 3232
-                 Nodes {
-                  AITaskReturnState "Return State" {
-                   Name "Return State"
-                   EditorPos 6405.542 3432.244
-                   Result SUCCESS
-                  }
-                 }
-                 AbortType AbortChildrenBranchAndParentFurtherChildren
-                 InVariable 50
-                 TestType EqualsValue
-                 TestValue "1"
-                }
-                DecoTestVariable "Test Variable" {
-                 Name "Test Variable"
-                 EditorPos 6576 3440
-                 Nodes {
-                  AITaskReturnState "Return State" {
-                   Name "Return State"
-                   EditorPos 6672 3632
-                   Result FAIL
-                  }
-                 }
-                 AbortType AbortChildrenBranchAndParentFurtherChildren
-                 InVariable 51
-                 TestType EqualsValue
-                 TestValue "2"
-                }
-               }
-              }
-             }
-             UseChildResult 2
-            }
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 6048 1456
-             Nodes {
-              SCR_AISetStance "SCR_AI Set Stance" {
-               Name "SCR_AI Set Stance"
-               EditorPos 5872 1648
+              SCR_AIGetCoverParameters "SCR_AI Get Cover Parameters" {
+               Name "SCR_AI Get Cover Parameters"
+               EditorPos -560 2544
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 52
-                 PortName "Stance"
+                 Port 13
+                 PortName "CoverLock"
                 }
                }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 34
+                 PortName "Pos"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 14
+                 PortName "Stance"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "StanceHide"
+                }
+               }
+               Group "{684869BF8943D654}"
+              }
+              AITaskSetVariable "Set Variable" {
+               Name "Set Variable"
+               EditorPos -66.5 2542.05
+               Group "{684869BF8943D654}"
+               SetValue "true"
+               OutVariable 20
+              }
+             }
+             Group "{684869BF8943D654}"
+            }
+           }
+           Group "{684869BF8943D654}"
+           InVariable 9
+           TestType EqualsValue
+           TestValue "true"
+          }
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 560 1936
+           Nodes {
+            Sequence Sequence {
+             Name "Find Position Without Cover"
+             EditorPos 496 2160
+             Nodes {
+              SCR_AICalculateNextCombatMovePos "SCR_AI Calculate Next Combat Move Pos" {
+               Name "SCR_AI Calculate Next Combat Move Pos"
+               EditorPos 368 2432
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 18
+                 PortName "Request"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 19
+                 PortName "Pos"
+                }
+               }
+               Group "{6846971C148DE6AB}"
               }
               SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
                Name "SCR_AI Set Combat Move State"
-               EditorPos 6176 1664
+               EditorPos 736 2432
                InPorts {
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 53
+                 Port -1
                  PortName "InCover"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
@@ -689,12 +312,406 @@ BehaviorTree {
                  PortName "AimAtTarget"
                 }
                }
+               Group "{6846971C148DE6AB}"
                m_eRequestStateValue SUCCESS
-               m_bSetInCover 1
-               m_bSetExposedInCover 1
-               m_bExposedInCoverValue 1
+               m_bReleaseCoverLock 1
+              }
+              AITaskSetVariable "Set Variable" {
+               Name "Set Variable"
+               EditorPos 1024 2432
+               Group "{6846971C148DE6AB}"
+               SetValue "false"
+               OutVariable 21
               }
              }
+             Group "{6846971C148DE6AB}"
+            }
+           }
+           Group "{6846971C148DE6AB}"
+           InVariable 17
+           TestType EqualsValue
+           TestValue "true"
+          }
+         }
+        }
+        AITaskResetPathfindingFilters "Reset Pathfinding Filters" {
+         Name "Reset Pathfinding Filters"
+         EditorPos 1088 736
+        }
+        Sequence Sequence {
+         Name "Move Sequence"
+         EditorPos 5440 1152
+         Nodes {
+          Sequence Sequence {
+           Name "Setup Movement"
+           EditorPos 3536 1744
+           Nodes {
+            AITaskCharacterSetMovementSpeed "Character Set Movement Speed" {
+             Name "Character Set Movement Speed"
+             EditorPos 1952 2096
+             "Input Movement speed" 23
+            }
+            SCR_AISetStance "SCR_AI Set Stance" {
+             Name "SCR_AI Set Stance"
+             EditorPos 2391.167 2109.393
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 22
+               PortName "Stance"
+              }
+             }
+            }
+            Selector Selector {
+             Name "Selector"
+             EditorPos 2848 2064
+             Nodes {
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 2720 2240
+               Nodes {
+                AITaskSetVariable "Set Variable" {
+                 Name "Set Variable"
+                 EditorPos 2704 2400
+                 SetValue "false"
+                 OutVariable 25
+                }
+               }
+               InVariable 24
+               TestType EqualsValue
+               TestValue "true"
+              }
+              AITaskSetVariable "Set Variable" {
+               Name "Set Variable"
+               EditorPos 3008 2256
+               SetValue "true"
+               OutVariable 26
+              }
+             }
+            }
+            Selector Selector {
+             Name "Selector"
+             EditorPos 3568 2064
+             Nodes {
+              DecoIsInVehicle "Is In Vehicle" {
+               Name "Is In Vehicle"
+               EditorPos 3360 2224
+               Nodes {
+                Sequence Sequence {
+                 Name "Sequence"
+                 EditorPos 3424 2384
+                 Nodes {
+                  AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+                   Name "Set Pathfinding Filters"
+                   EditorPos 3152 2592
+                   NavmeshProject "BTRlike"
+                   IgnoreFlags 0x8 0
+                  }
+                  AITaskSetVariable "Set Variable" {
+                   Name "Set Variable"
+                   EditorPos 3408 2592
+                   SetValue "5"
+                   OutVariable 27
+                  }
+                  AITaskSetVariable "Set Variable" {
+                   Name "Set Variable"
+                   EditorPos 3616 2592
+                   SetValue "-1"
+                   OutVariable 30
+                  }
+                 }
+                }
+               }
+              }
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 3936 2256
+               Nodes {
+                AITaskSetPathfindingFilters "Set Pathfinding Filters" {
+                 Name "Set Pathfinding Filters"
+                 EditorPos 3616 2416
+                 NavmeshProject "Soldiers"
+                 IgnoreFlags 0x8 0
+                }
+                AITaskSetVariable "Set Variable" {
+                 Name "Set Variable"
+                 EditorPos 3872 2432
+                 SetValue "1"
+                 OutVariable 28
+                }
+                AITaskSetVariable "Set Variable" {
+                 Name "Set Variable"
+                 EditorPos 4112 2432
+                 SetValue "-1"
+                 OutVariable 31
+                }
+               }
+              }
+             }
+            }
+            AITaskSetVariable "Set Variable" {
+             Name "Set Variable"
+             EditorPos 3856 2048
+             SetValue "0"
+             OutVariable 38
+            }
+            SCR_AICombatMoveRequest_Move_InvokeOnMovementStarted "SCR_AI Combat Move Request_ Move_ Invoke On Movement Started" {
+             Name "Invoke OnMovementStarted"
+             EditorPos 4400 2064
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 29
+               PortName "Request"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 32
+               PortName "Position"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 33
+               PortName "IsCover"
+              }
+             }
+            }
+           }
+          }
+          Parallel Parallel {
+           Name "Parallel"
+           EditorPos 5440 2560
+           Nodes {
+            DecoTestVariable "Test Variable" {
+             Name "Test Variable"
+             EditorPos 5024 2848
+             Nodes {
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 5040 3024
+               Nodes {
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos 4896 3200
+                 PeriodKey 36
+                }
+                AITaskSetVariable "Set Variable" {
+                 Name "Set Variable"
+                 EditorPos 5072 3200
+                 SetValue "1"
+                 OutVariable 37
+                }
+               }
+              }
+             }
+             InVariable 35
+             TestType EqualsValue
+             TestValue "false"
+            }
+            Selector Selector {
+             Name "Selector"
+             EditorPos 5552 3328
+             Nodes {
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 5120 3712
+               Nodes {
+                SCR_CreateAIExtraMoveParams_CombatMove "SCR_ CreateAI Extra Move Params_ Combat Move" {
+                 Name "SCR_ CreateAI Extra Move Params_ Combat Move"
+                 EditorPos 4080 4416
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 39
+                   PortName "Request"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 40
+                   PortName "InMovingToCover"
+                  }
+                 }
+                 OutPorts {
+                  SingleOutputPortContainer SingleOutputPortContainer {
+                   Port 41
+                   PortName "OutParams"
+                  }
+                 }
+                }
+                Selector Selector {
+                 Name "Selector"
+                 EditorPos 5248 3920
+                 Nodes {
+                  DCO_IsAIDistanceLessThan "DCO_ IsAI Distance Less Than" {
+                   Name "DCO_ IsAI Distance Less Than"
+                   EditorPos 4912 4096
+                   Nodes {
+                    DecoIsInVehicle "Is In Vehicle" {
+                     Name "Is In Vehicle"
+                     EditorPos 4944 4304
+                     Nodes {
+                      AITaskMove Move {
+                       Name "Move"
+                       EditorPos 4912 4560
+                       InTargetLocation 56
+                       InAutoOrientation 57
+                       PrecisionXZ 1.5
+                       PrecisionY 0.1
+                       InExtraMoveParams -1
+                      }
+                     }
+                     NegativeCondition 1
+                    }
+                   }
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 56
+                     PortName "ThresholdIn"
+                    }
+                   }
+                   m_distanceThreshold 30
+                  }
+                  DCO_IsAIDistanceLessThan "DCO_ IsAI Distance Less Than" {
+                   Name "DCO_ IsAI Distance Less Than"
+                   EditorPos 5440 4080
+                   Nodes {
+                    AITaskMove Move {
+                     Name "Move"
+                     EditorPos 5472 4336
+                     InTargetLocation 42
+                     InPrecisionXZ 43
+                     InPrecisionY 44
+                     InAutoOrientation 45
+                     InExtraMoveParams 41
+                    }
+                   }
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 56
+                     PortName "ThresholdIn"
+                    }
+                   }
+                   NegativeCondition 1
+                   m_distanceThreshold 31
+                  }
+                 }
+                }
+                AITaskSetVariable "Set Variable" {
+                 Name "Set Variable"
+                 EditorPos 5760 3968
+                 SetValue "1"
+                 OutVariable 46
+                }
+               }
+              }
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 6304 3936
+               Nodes {
+                SCR_AISetCombatMoveRequestFailReason "SCR_AI Set Combat Move Request Fail Reason" {
+                 Name "SCR_AI Set Combat Move Request Fail Reason"
+                 EditorPos 5968 4256
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 47
+                   PortName "Request"
+                  }
+                 }
+                 m_eFailReason MOVEMENT_FAILED
+                }
+                AITaskSetVariable "Set Variable" {
+                 Name "Set Variable"
+                 EditorPos 6480 4256
+                 SetValue "2"
+                 OutVariable 48
+                }
+               }
+              }
+             }
+            }
+            Selector Selector {
+             Name "Selector"
+             EditorPos 6320 2864
+             Nodes {
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 6064 3056
+               Nodes {
+                AITaskReturnState "Return State" {
+                 Name "Return State"
+                 EditorPos 6144 3232
+                 Result RUNNING
+                }
+               }
+               AbortType AbortChildrenBranchAndParentFurtherChildren
+               InVariable 49
+               TestType EqualsValue
+               TestValue "0"
+              }
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 6320 3232
+               Nodes {
+                AITaskReturnState "Return State" {
+                 Name "Return State"
+                 EditorPos 6405.542 3432.244
+                 Result SUCCESS
+                }
+               }
+               AbortType AbortChildrenBranchAndParentFurtherChildren
+               InVariable 50
+               TestType EqualsValue
+               TestValue "1"
+              }
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 6576 3440
+               Nodes {
+                AITaskReturnState "Return State" {
+                 Name "Return State"
+                 EditorPos 6672 3632
+                 Result FAIL
+                }
+               }
+               AbortType AbortChildrenBranchAndParentFurtherChildren
+               InVariable 51
+               TestType EqualsValue
+               TestValue "2"
+              }
+             }
+            }
+           }
+           UseChildResult 2
+          }
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 6048 1456
+           Nodes {
+            SCR_AISetStance "SCR_AI Set Stance" {
+             Name "SCR_AI Set Stance"
+             EditorPos 5872 1648
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 52
+               PortName "Stance"
+              }
+             }
+            }
+            SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
+             Name "SCR_AI Set Combat Move State"
+             EditorPos 6176 1664
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 53
+               PortName "InCover"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "ExposedInCover"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port -1
+               PortName "AimAtTarget"
+              }
+             }
+             m_eRequestStateValue SUCCESS
+             m_bSetInCover 1
+             m_bSetExposedInCover 1
+             m_bExposedInCoverValue 1
             }
            }
           }
@@ -820,19 +837,19 @@ BehaviorTree {
   }
   VariableReference MovementType {
    VariableType 5
-   EditorPos -1383.567 -263.784
+   EditorPos -1376 -256
   }
   VariableReference MoveDir {
    VariableType 6
-   EditorPos -1372.385 -169.815
+   EditorPos -1376 -176
   }
   VariableReference AimAtTarget {
    VariableType 7
-   EditorPos -1364.236 -79.397
+   EditorPos -1360 -80
   }
   VariableReference MoveDuration {
    VariableType 8
-   EditorPos -1371.004 15.951
+   EditorPos -1376 16
   }
   VariableReference FailifNoCover {
    VariableType 2
@@ -850,7 +867,7 @@ BehaviorTree {
   }
   VariableReference FailifNoCover {
    VariableType 2
-   EditorPos -1104.363 2940.536
+   EditorPos -1104 2944
    Group "{684869BF8943D654}"
   }
   VariableReference Rq {
@@ -870,7 +887,7 @@ BehaviorTree {
   }
   VariableReference MoveWithoutCover {
    VariableType 13
-   EditorPos 57.812 912.816
+   EditorPos 64 912
   }
   VariableReference MoveWithoutCover {
    VariableType 13
@@ -879,7 +896,7 @@ BehaviorTree {
   }
   VariableReference MoveWithoutCover {
    VariableType 13
-   EditorPos 269.676 2058.014
+   EditorPos 272 2064
    Group "{6846971C148DE6AB}"
   }
   VariableReference Rq {
@@ -924,11 +941,11 @@ BehaviorTree {
   }
   VariableReference PrecisionXZ {
    VariableType 17
-   EditorPos 3425.887 2715.439
+   EditorPos 3424 2720
   }
   VariableReference PrecisionXZ {
    VariableType 17
-   EditorPos 3876.549 2551.356
+   EditorPos 3872 2544
   }
   VariableReference Rq {
    VariableType 0
@@ -936,31 +953,31 @@ BehaviorTree {
   }
   VariableReference PrecisionY {
    VariableType 11
-   EditorPos 3659.543 2721.842
+   EditorPos 3664 2720
   }
   VariableReference PrecisionY {
    VariableType 11
-   EditorPos 4153.457 2554.016
+   EditorPos 4160 2560
   }
   VariableReference MovePos {
    VariableType 14
-   EditorPos 4167.224 2139.244
+   EditorPos 4160 2144
   }
   VariableReference IsMovingToCover {
    VariableType 15
-   EditorPos 4148.156 2245.762
+   EditorPos 4144 2240
   }
   VariableReference MovePos {
    VariableType 14
-   EditorPos -265.945 2568.689
+   EditorPos -272 2576
   }
   VariableReference IsMovingToCover {
    VariableType 15
-   EditorPos 4758.912 2915.532
+   EditorPos 4752 2912
   }
   VariableReference MoveDuration {
    VariableType 8
-   EditorPos 4674.11 3243.354
+   EditorPos 4672 3248
   }
   VariableReference MoveState {
    VariableType 18
@@ -968,43 +985,43 @@ BehaviorTree {
   }
   VariableReference MoveState {
    VariableType 18
-   EditorPos 3906.82 2153.468
+   EditorPos 3904 2160
   }
   VariableReference Rq {
    VariableType 0
-   EditorPos 4272 4080
+   EditorPos 3904 4400
   }
   VariableReference IsMovingToCover {
    VariableType 15
-   EditorPos 4190.358 4163.073
+   EditorPos 3824 4480
   }
   VariableReference ExtraMoveCombat {
    VariableType 19
-   EditorPos 5040 4240
+   EditorPos 4576 4480
   }
   VariableReference MovePos {
    VariableType 14
-   EditorPos 5168 3888
+   EditorPos 5248 4288
   }
   VariableReference PrecisionXZ {
    VariableType 17
-   EditorPos 5150.866 3965.668
+   EditorPos 5248 4368
   }
   VariableReference PrecisionY {
    VariableType 11
-   EditorPos 5136 4048
+   EditorPos 5264 4448
   }
   VariableReference AutoOrientation {
    VariableType 16
-   EditorPos 5088 4144
+   EditorPos 5216 4528
   }
   VariableReference MoveState {
    VariableType 18
-   EditorPos 5782.439 4103.365
+   EditorPos 5776 4096
   }
   VariableReference Rq {
    VariableType 0
-   EditorPos 5781.57 4312.061
+   EditorPos 5776 4320
   }
   VariableReference MoveState {
    VariableType 18
@@ -1012,27 +1029,27 @@ BehaviorTree {
   }
   VariableReference MoveState {
    VariableType 18
-   EditorPos 5854.386 3143.219
+   EditorPos 5856 3136
   }
   VariableReference MoveState {
    VariableType 18
-   EditorPos 6105.353 3366.459
+   EditorPos 6112 3360
   }
   VariableReference MoveState {
    VariableType 18
-   EditorPos 6410.835 3582.717
+   EditorPos 6416 3584
   }
   VariableReference StanceEnd {
    VariableType 4
-   EditorPos 5717.634 1713.739
+   EditorPos 5712 1712
   }
   VariableReference IsMovingToCover {
    VariableType 15
-   EditorPos 5885.729 1813.224
+   EditorPos 5888 1808
   }
   VariableReference coverQueryIndoor {
    VariableType 20
-   EditorPos -1780.066 2745.481
+   EditorPos -1776 2752
   }
   VariableReference InvestPos {
    VariableType 22
@@ -1040,7 +1057,11 @@ BehaviorTree {
   }
   VariableReference InvestPos {
    VariableType 22
-   EditorPos -509 75
+   EditorPos 4624 4384
+  }
+  VariableReference AutoOrientation {
+   VariableType 16
+   EditorPos 4640 4720
   }
  }
 }

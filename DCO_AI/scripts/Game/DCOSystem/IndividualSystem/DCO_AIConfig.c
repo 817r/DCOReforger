@@ -23,6 +23,12 @@ class DCO_AIConfigComponent : ScriptComponent
 	[Attribute("2", UIWidgets.ComboBox, "AI Custom skill in combat", "", ParamEnumArray.FromEnum(DCO_AISKILL) )]
 	protected DCO_AISKILL m_eAISkillDefault;
 	
+	[Attribute("", UIWidgets.Auto, "Lock Player UID", "")]
+	protected array<string> m_eLockPlayerUID;
+	
+	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "How Suppression Affecting this AI", params: "0 2 0.01" )]
+	protected float m_fSuppressionEffect;
+	
 	//------------------------------------------------------------------------------------------------
 	override void OnPostInit(IEntity owner)
 	{

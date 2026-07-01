@@ -107,10 +107,14 @@ modded class SCR_AIGetAimErrorOffset
 			return 1.0;
 			
 		float suppressionLevel = m_InfoComponent.GetThreatSystem().GetSuppressionMeasure(); 
+		float maxSuppressionPenalty = 1.8; 
+		float suppressionSpeedMultiplier = 1;
 		
-		float maxSuppressionPenalty = 2.5; 
+		float modifiedSuppression = suppressionLevel * suppressionSpeedMultiplier;
+
+		modifiedSuppression = Math.Min(modifiedSuppression, 1.0);
 		
-		return Math.Lerp(1.0, maxSuppressionPenalty, suppressionLevel);
+		return Math.Lerp(1.0, maxSuppressionPenalty, modifiedSuppression);
 	}
 	
 	override float GetWeaponTypeFactor(EWeaponType weaponType)

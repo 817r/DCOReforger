@@ -260,7 +260,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			case CMD_EGroupRole.ARTILLERY:
 			{
 				m_FormationComponent.SetFormation("Wedge");
-				m_UtilityComp.SetCombatMode(EAIGroupCombatMode.RETURN_FIRE);
+				m_UtilityComp.SetCombatMode(EAIGroupCombatMode.HOLD_FIRE);
 				break;
 			}
 			case CMD_EGroupRole.NONE:

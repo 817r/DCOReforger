@@ -114,7 +114,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	            break;
 	    }
 	
-	    // Accuracy rendah = lempar lebih banyak buat kompensasi
 	    if (accuracy < 0.3)
 	        shells += 3;
 	    else if (accuracy < 0.5)
@@ -124,7 +123,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	    else if (accuracy >= 0.85)
 	        shells -= 1;
 	
-	    // Data stale = coverage lebih luas
 	    float dataAge = worldTime - request.m_fRequestedTime;
 	    if (dataAge > 60.0)
 	        shells += 2;
@@ -171,8 +169,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	        Print("[DCO_ThreatResponse] FireMission GAGAL — CMD_ArtillerySupport tidak ditemukan");
 	        return;
 	    }
-	
-	    // === LOLOS SEMUA CHECK — QUEUE REQUEST ===
 	
 	    string shellTypeName = "HE";
 	    if (shellType == SCR_EAIArtilleryAmmoType.SMOKE)
@@ -440,7 +436,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	    if (!m_Commander)
 	        return;
 	
-	    // Hitung slot yang masih kosong untuk threat ini
 	    int slotsLeft = m_iMaxReinforcementSent - threat.m_iReinforcementSentNumber;
 	    if (slotsLeft <= 0)
 	        return;
@@ -452,7 +447,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	        DCO_GroupUtilityComponent reinforcement = null;
 	        bool armored = false;
 	
-	        // HIGH/CRITICAL → prioritaskan ARMORED dulu, fallback ke REINFORNCE
 	        if (threat.m_eThreatLevel >= CMD_EThreatLevel.HIGH)
 	        {
 	            reinforcement = FindClosestGroupForRole(CMD_EGroupRole.ARMORED, threat.m_vPosition);
@@ -471,11 +465,9 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	            reinforcement = FindClosestGroupForRole(CMD_EGroupRole.REINFORNCE, threat.m_vPosition);
 	        }
 	
-	        // Tidak ada lagi group idle yang bisa dikirim — stop loop
 	        if (!reinforcement)
 	            break;
 	
-	        // Coba pakai transport dulu
 	        if (m_Commander.TryAssignTransport(reinforcement, threat.m_vPosition, worldTime))
 	        {
 	            threat.m_iReinforcementSentNumber++;
@@ -483,15 +475,9 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	            threat.m_fLastReinforcementTime = worldTime;
 	            sentThisCall++;
 	
-	            Print(string.Format("[DCO_ThreatResponse] Reinforcement %1/%2 (transport) dikirim ke %3",
-	                threat.m_iReinforcementSentNumber,
-	                m_iMaxReinforcementSent,
-	                threat.m_vPosition.ToString()));
-	
 	            continue;
 	        }
 	
-	        // Transport tidak tersedia → jalan kaki/kendaraan sendiri
 	        SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(threat.m_vPosition);
 	        if (!wp)
 	            break;

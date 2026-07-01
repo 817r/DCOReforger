@@ -196,16 +196,16 @@ BehaviorTree {
                      Nodes {
                       AITaskThrowGrenade "Throw Grenade" {
                        Name "Throw Grenade"
-                       EditorPos 1167.741 3133.655
+                       EditorPos 1055.741 3133.655
                       }
                       AITaskIdle Idle {
                        Name "Idle"
-                       EditorPos 1408 3136
-                       Period 2
+                       EditorPos 1296 3136
+                       Period 1.5
                       }
                       AITaskReturnState "Return State" {
                        Name "Return State"
-                       EditorPos 1552 3136
+                       EditorPos 1504 3120
                        Result SUCCESS
                       }
                      }
@@ -303,11 +303,11 @@ BehaviorTree {
  VariablesRefs {
   VariableReference WeaponComp {
    VariableType 0
-   EditorPos -1174.627 1250.872
+   EditorPos -1168 1248
   }
   VariableReference MinDist {
    VariableType 1
-   EditorPos -577.324 1272.086
+   EditorPos -576 1280
   }
   VariableReference ThrowPos {
    VariableType 3
@@ -319,11 +319,11 @@ BehaviorTree {
   }
   VariableReference MaxDist {
    VariableType 2
-   EditorPos -380.112 1275.938
+   EditorPos -384 1280
   }
   VariableReference ThrowPos {
    VariableType 3
-   EditorPos 917.862 1436.902
+   EditorPos 912 1440
   }
   VariableReference MinDist {
    VariableType 1
@@ -331,7 +331,7 @@ BehaviorTree {
   }
   VariableReference MaxDist {
    VariableType 2
-   EditorPos 890.036 1564.728
+   EditorPos 896 1568
   }
   VariableReference CancelThrow {
    VariableType 5
@@ -339,11 +339,11 @@ BehaviorTree {
   }
   VariableReference CancelThrow {
    VariableType 5
-   EditorPos 1900.803 3056.368
+   EditorPos 1904 3056
   }
   VariableReference ThrowPosRandomized {
    VariableType 6
-   EditorPos -377.469 1934.832
+   EditorPos -384 1936
   }
   VariableReference ThrowPosRandomized {
    VariableType 6

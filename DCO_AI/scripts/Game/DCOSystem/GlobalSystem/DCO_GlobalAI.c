@@ -22,6 +22,9 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute("2", UIWidgets.ComboBox, "AI Custom skill in combat", "", ParamEnumArray.FromEnum(DCO_AISKILL) )]
 	protected DCO_AISKILL m_eAISkillDefault;
 	
+	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "How Suppression Affecting this AI", params: "0 2 0.01" )]
+	protected float m_fSuppressionEffect;
+	
 	static DCO_GlobalAIComponent m_sInstance;
 	
 	static DCO_GlobalAIComponent GetInstance()

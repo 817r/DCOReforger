@@ -30,36 +30,6 @@ BehaviorTree {
          }
          m_WeaponType WT_ROCKETLAUNCHER
         }
-        DCO_IsWeaponDisposeable "DCO_ Is Weapon Disposeable" {
-         Name "DCO_ Is Weapon Disposeable"
-         EditorPos -2416 960
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port 0
-           PortName "WeaponComponent"
-          }
-         }
-         OutPorts {
-          SingleOutputPortContainer SingleOutputPortContainer {
-           Port 9
-           PortName "IsDisposeable"
-          }
-         }
-        }
-        DecoTestVariable "Test Variable" {
-         Name "Test Variable"
-         EditorPos -1744 944
-         Nodes {
-          AITaskReturnState "Return State" {
-           Name "Return State"
-           EditorPos -1744 1152
-           Result SUCCESS
-          }
-         }
-         InVariable 9
-         TestType EqualsValue
-         TestValue "true"
-        }
         SCR_AISwitchWeapon "SCR_AI Switch Weapon" {
          Name "SCR_AI Switch Weapon"
          EditorPos -1344 992
@@ -225,6 +195,36 @@ BehaviorTree {
     }
    }
   }
+  DecoTestVariable "Test Variable" {
+   Name "Test Variable"
+   EditorPos -1744 944
+   Nodes {
+    AITaskReturnState "Return State" {
+     Name "Return State"
+     EditorPos -1744 1152
+     Result SUCCESS
+    }
+   }
+   InVariable 9
+   TestType EqualsValue
+   TestValue "true"
+  }
+  DCO_IsWeaponDisposeable "DCO_ Is Weapon Disposeable" {
+   Name "DCO_ Is Weapon Disposeable"
+   EditorPos -2416 960
+   InPorts {
+    SingleInputPortContainer SingleInputPortContainer {
+     Port 0
+     PortName "WeaponComponent"
+    }
+   }
+   OutPorts {
+    SingleOutputPortContainer SingleOutputPortContainer {
+     Port 9
+     PortName "IsDisposeable"
+    }
+   }
+  }
  }
  Variables {
   BtVariableObject WeaponComponent {
@@ -259,7 +259,7 @@ BehaviorTree {
   }
   VariableReference ShootPos {
    VariableType 1
-   EditorPos -435.86 1453.625
+   EditorPos -432 1456
   }
   VariableReference ShootPosCompensated {
    VariableType 2
@@ -267,11 +267,11 @@ BehaviorTree {
   }
   VariableReference ShootPos {
    VariableType 1
-   EditorPos 157.713 1430.185
+   EditorPos 160 1424
   }
   VariableReference ShootPos {
    VariableType 1
-   EditorPos -879.482 1123.24
+   EditorPos -880 1120
   }
   VariableReference FireTime {
    VariableType 4
@@ -283,7 +283,7 @@ BehaviorTree {
   }
   VariableReference StabilizationTime {
    VariableType 5
-   EditorPos -374.632 1069.19
+   EditorPos -368 1072
   }
   VariableReference StabilizationTime {
    VariableType 5
@@ -295,7 +295,7 @@ BehaviorTree {
   }
   VariableReference WeaponComponent {
    VariableType 0
-   EditorPos -1567.338 1116.239
+   EditorPos -1568 1120
   }
  }
 }

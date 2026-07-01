@@ -105,6 +105,22 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("0.6", UIWidgets.Range, "Defend Chances Instead Patrol Around", params: "0 1 0.01", category: "Commander Setting")]
 	protected float m_fDefendChance;
 	
+	// === ADDED: Manpower Budget System ===
+	[Attribute("1", UIWidgets.CheckBox, desc: "Aktifkan Manpower Budgeting? Kalau false, commander bisa komit semua grup ke offense tanpa reserve (behavior lama).", category: "Commander Manpower Budget")]
+	protected bool m_bEnableManpowerBudget;
+	
+	[Attribute("0.2", UIWidgets.Range, "Minimum persentase total manpower yang WAJIB tetap jadi reserve (tidak dikomit ke offense). 0.2 = 20% pasukan selalu disisain.", params: "0 1 0.01", category: "Commander Manpower Budget")]
+	protected float m_fReserveMinimumPct;
+	// === END ADDED ===
+	
+	// === ADDED: Absolute Defend & Key Position Evaluation ===
+	[Attribute("1", UIWidgets.CheckBox, desc: "Kalau true, defend group dievaluasi posisinya (dataran tinggi + arah hadap musuh) bukan random murni.", category: "Commander Defend Setting")]
+	protected bool m_bEnableKeyDefendSpotEvaluation;
+	
+	[Attribute("2", UIWidgets.EditBox, "Maksimum jumlah defend group per objective yang dikirim ke 'key position' hasil evaluasi (sisanya tetap random/patrol seperti biasa).", category: "Commander Defend Setting")]
+	protected int m_iMaxKeyDefendPositions;
+	// === END ADDED ===
+	
 	[Attribute("2", UIWidgets.ComboBox, "Commander Mode", "", ParamEnumArray.FromEnum(CMD_ECommanderMode), category: "Commander Personality" )]
 	protected CMD_ECommanderMode m_eCommanderModeExternal;
 	
@@ -146,6 +162,71 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	int GetOwnedGroupCount() { return m_aOwnedGroup.Count(); }
 	int GetOwnedVehicle()	{return m_aVehicle.Count(); }
+	
+	// === ADDED: Manpower Budget System ===
+	protected int m_iManpowerTotalCache = 0; // diisi ulang tiap Think() cycle, dipakai GetReserveFloor()
+	
+	// Total manpower = jumlah unit dari semua grup yang dimiliki commander ini.
+	int GetTotalManpower()
+	{
+		int total = 0;
+		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
+		{
+			if (!grp)
+				continue;
+			total += grp.GetUnitCount();
+		}
+		return total;
+	}
+	
+	// Reserve manpower = unit dari grup yang belum dikomit (role NONE atau RESERVE).
+	int GetReserveManpower()
+	{
+		int reserve = 0;
+		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
+		{
+			if (!grp)
+				continue;
+			
+			CMD_EGroupRole role = grp.GetGroupRole();
+			if (role == CMD_EGroupRole.NONE || role == CMD_EGroupRole.RESERVE)
+				reserve += grp.GetUnitCount();
+		}
+		return reserve;
+	}
+	
+	// Berapa manpower minimum yang wajib tetap nganggur (gak boleh dikomit ke offense).
+	// === OPTIMIZED: pakai total manpower yang di-cache sekali per Think() cycle,
+	// bukan re-scan m_aOwnedGroup tiap kali CanCommitGroup() dipanggil (bisa berkali-kali
+	// per cycle -- 1x per grup yang dicoba commit ke offense). Total force gak berubah
+	// dalam satu Think() cycle (cuma role yang berubah), jadi aman di-cache per-cycle.
+	float GetReserveFloor()
+	{
+		return m_iManpowerTotalCache * m_fReserveMinimumPct;
+	}
+	
+	// Cek apakah grup ini boleh dikomit ke offense (RECON/ASSAULT/FLANK) tanpa
+	// nembus reserve floor. Dipanggil SEBELUM grup di-assign role offensive.
+	// Defend tidak lewat gate ini karena itu memang tujuan reserve.
+	bool CanCommitGroup(DCO_GroupUtilityComponent grp)
+	{
+		if (!m_bEnableManpowerBudget)
+			return true;
+		
+		if (!grp)
+			return false;
+		
+		float reserveAfterCommit = GetReserveManpower() - grp.GetUnitCount();
+		return reserveAfterCommit >= GetReserveFloor();
+	}
+	
+	// Buat debug overlay / mission maker visibility (opsional dipanggil dari luar).
+	string GetManpowerBudgetStatus()
+	{
+		return string.Format("[%1] Manpower Total:%2 Reserve:%3 Floor:%4 Enabled:%5",
+			m_sCommanderUID, GetTotalManpower(), GetReserveManpower(), GetReserveFloor(), m_bEnableManpowerBudget);
+	}
+	// === END ADDED ===
 	
 	bool send = true;
 	
@@ -344,9 +425,16 @@ class AICommander_BaseComponent : ScriptComponent
 		
 		if (reconGrp.IsPlayerGroup())
 		{
-			
 			return;
 		}
+		
+		// === ADDED: Manpower Budget gate ===
+		if (!CanCommitGroup(reconGrp))
+		{
+			//Print(string.Format("[%1] Manpower budget insufficient — skip RECON to %2", m_sCommanderUID, obj.GetOwner().GetName()));
+			return;
+		}
+		// === END ADDED ===
 		
 		reconGrp.CompleteAllWaypoints();
 		
@@ -372,46 +460,55 @@ class AICommander_BaseComponent : ScriptComponent
 		reconGrp.MoveTo(wp, worldTime);
  		obj.SetReconGroup(m_sFactionKey, reconGrp);
 		obj.MarkAssigned(m_sFactionKey);
- 
-		//Print(string.Format("[%1] RECON: %2 → %3",
-			//m_sCommanderUID, reconGrp.GetOwner().GetName(), obj.GetOwner().GetName()));
 	}
  
 	protected void SendIdleGroupsToReserve()
 	{
+	    AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+	    if (!mgr)
+	        return;
+	
+	    // === OPTIMIZED ===
+	    // Sebelumnya: mgr.GetTopObjectives() dipanggil ULANG per idle group DI DALAM loop.
+	    // GetTopObjectives() men-trigger ComputePriorityScore() (isinya QueryEntitiesBySphere,
+	    // spatial query beneran mahal) buat SETIAP objective di map, terus hasilnya CUMA dipakai
+	    // buat filter IsCapturedBy lalu di-random-shuffle lagi -- urutan priority-nya kebuang
+	    // percuma. Kalau ada 10 grup idle & 15 objective, itu ratusan spatial query per Think()
+	    // cycle. Sekarang: list posisi objective captured dihitung SEKALI di luar loop, langsung
+	    // pakai mgr.m_aObjective (unsorted -- gapapa karena toh langsung di-shuffle per grup).
+	    array<vector> capturedObjPositions = new array<vector>();
+	    foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
+	    {
+	        if (!obj)
+	            continue;
+	
+	        if (!obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+	            continue;
+	
+	        capturedObjPositions.Insert(obj.GetOwner().GetOrigin());
+	    }
+	
+	    RandomGenerator rand = new RandomGenerator();
+	    float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+	    // === END OPTIMIZED ===
+	
 	    foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
 	    {
 	        if (!grp)
 	            continue;
-	
-	        AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
-	        if (!mgr)
-	            return;
 	
 	        if (grp.GetGroupStatus() == DCOG_EGroupStatus.EXECUTING_COMMAND)
 	            continue;
 	
 	        if (grp.GetGroupRole() != CMD_EGroupRole.NONE)
 	            continue;
-	
-	        float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
-	        RandomGenerator rand = new RandomGenerator();
+			
+			if (!grp.CanItHaveOrder())
+				continue;
 	
 	        array<vector> candidatePositions = new array<vector>();
-	
-	        array<CMD_AICommanderObjectiveComponent> allObjs = {};
-	        mgr.GetTopObjectives(this, mgr.m_aObjective.Count(), allObjs);
-	
-	        foreach (CMD_AICommanderObjectiveComponent obj : allObjs)
-	        {
-	            if (!obj)
-	                continue;
-	
-	            if (!obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
-	                continue;
-	
-	            candidatePositions.Insert(obj.GetOwner().GetOrigin());
-	        }
+	        foreach (vector cp : capturedObjPositions)
+	            candidatePositions.Insert(cp);
 	
 	        if (candidatePositions.IsEmpty() || candidatePositions.Count() < 2)
 	            candidatePositions.Insert(GetOwner().GetOrigin());
@@ -473,33 +570,10 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	DCO_GroupUtilityComponent FindClosestIdleGroupForRole_Public(CMD_EGroupRole role, vector targetPos)
 	{
-	    DCO_GroupUtilityComponent result = null;
-	
-	    result = FindIdleGroupByCurrentRole(role, role, targetPos);
-	    if (result)
-	        return result;
-	
-	    if (role == CMD_EGroupRole.ARMORED)
-	        return null;
-	
-	    result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.NONE, targetPos);
-	    if (result)
-	        return result;
-	
-	    result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RESERVE, targetPos);
-	    if (result)
-	        return result;
-	
-	    result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RECON, targetPos);
-	    if (result)
-	        return result;
-	
-	    result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.REINFORNCE, targetPos);
-	    if (result)
-	        return result;
-	
-	    result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.DEFEND, targetPos);
-	    return result;
+	    // === OPTIMIZED: dulu fungsi ini duplikat 100% dari FindBestIdleGroupForRole() (logic
+	    // sama persis, cuma nama beda). Sekarang delegate langsung -- satu sumber kebenaran,
+	    // otomatis ikut kebagian optimasi kalau FindBestIdleGroupForRole() dioptimasi lagi nanti.
+	    return FindBestIdleGroupForRole(role, targetPos);
 	}
 	
 	protected DCO_GroupUtilityComponent FindIdleGroupByCurrentRole(CMD_EGroupRole targetRole, CMD_EGroupRole currentRole, vector targetPos)
@@ -529,25 +603,6 @@ class AICommander_BaseComponent : ScriptComponent
 				continue;
 	
 			int unitCount = grp.GetUnitCount();
-	
-			/*
-			switch (targetRole)
-			{
-				case CMD_EGroupRole.RECON:
-					if (unitCount < 1 || unitCount > 5)
-						continue;
-					break;
-				case CMD_EGroupRole.ASSAULT:
-					if (unitCount < 6)
-						continue;
-					break;
-				case CMD_EGroupRole.FLANK:
-					if (unitCount < 5)
-						continue;
-					break;
-				default:
-					break;
-			}*/
 	
 			float score = 0.0;
 			float strengthPct = Math.Clamp(unitCount / 12.0 * 100.0, 0.0, 100.0);
@@ -673,7 +728,24 @@ class AICommander_BaseComponent : ScriptComponent
 				continue;
 		}
 	 
+		// === ADDED: Manpower cache refresh (1x per Think cycle, lihat GetReserveFloor) ===
+		m_iManpowerTotalCache = GetTotalManpower();
+		// === END ADDED ===
+	 
 		EvaluateCommanderMode(worldTime);
+	 
+		// === ADDED: Absolute Defend Guarantee ===
+		// Captured objective SELALU dicek butuh reinforcement defend, terlepas dari
+		// commander mode saat ini (dulu ini cuma jalan pas mode DEFENSIVE/BALANCED,
+		// jadi kalau commander lagi full OFFENSIVE, objective yang udah captured
+		// gak pernah direinforce). Dipanggil SEBELUM offense supaya defend dapat
+		// prioritas pertama ambil grup dari reserve pool.
+		// PENGECUALIAN: commander bertipe OFFENSIVE murni (full aggression, personality
+		// yang gak peduli hold ground) SENGAJA di-skip — semua manpower dialokasikan
+		// buat push, gak ada yang dikorbankan buat defend captured objective.
+		if (m_eCommanderMode != CMD_ECommanderMode.OFFENSIVE)
+			EnsureAbsoluteDefend(worldTime);
+		// === END ADDED ===
 	 
 		if (m_eCommanderMode == CMD_ECommanderMode.DEFENSIVE)
 			ThinkDefensive(worldTime);
@@ -721,8 +793,12 @@ class AICommander_BaseComponent : ScriptComponent
 		if (!mgr)
 			return;
 
-		array<CMD_AICommanderObjectiveComponent> allObjs = {};
-		mgr.GetTopObjectives(this, mgr.m_aObjective.Count(), allObjs);
+		// === OPTIMIZED ===
+		// Dulu manggil mgr.GetTopObjectives() yang trigger ComputePriorityScore()+QueryEntitiesBySphere
+		// buat SEMUA objective di map, padahal urutan priority gak ngaruh di sini (loop di bawah gak
+		// ada break, semua captured objective tetap diproses). Pakai mgr.m_aObjective langsung.
+		array<CMD_AICommanderObjectiveComponent> allObjs = mgr.m_aObjective;
+		// === END OPTIMIZED ===
 	 
 		bool hasAnyWork = false;
 	 
@@ -774,6 +850,14 @@ class AICommander_BaseComponent : ScriptComponent
 				//CMD_TaskNotifier.Notify(assaultGrp.GetOwner(), "STAGING " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.MOVE);
 				return;
 			}
+			// === ADDED: Manpower Budget gate ===
+			if (!CanCommitGroup(assaultGrp))
+			{
+				//Print(string.Format("[%1] Manpower budget insufficient — skip ASSAULT staging to %2", m_sCommanderUID, obj.GetOwner().GetName()));
+			}
+			else
+			{
+			// === END ADDED ===
 			assaultGrp.CompleteAllWaypoints();
 			if (TryAssignTransport(assaultGrp, stagingPos, worldTime))
     			return;
@@ -784,6 +868,7 @@ class AICommander_BaseComponent : ScriptComponent
 	            assaultGrp.MoveTo(wp, worldTime);
 	            //Print(string.Format("[%1] ASSAULT → STAGING: %2", m_sCommanderUID, assaultGrp.GetOwner().GetName()));
 	        }
+			} // === ADDED: closes CanCommitGroup else block ===
 	    }
 	
 	    DCO_GroupUtilityComponent flankGrp = FindBestIdleGroupForRole(CMD_EGroupRole.FLANK, objPos);
@@ -794,6 +879,13 @@ class AICommander_BaseComponent : ScriptComponent
 				//CMD_TaskNotifier.Notify(flankGrp.GetOwner(), "STAGING " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.MOVE);
 				return;
 			}
+			// === ADDED: Manpower Budget gate ===
+			if (!CanCommitGroup(flankGrp))
+			{
+				//Print(string.Format("[%1] Manpower budget insufficient — skip FLANK staging to %2", m_sCommanderUID, obj.GetOwner().GetName()));
+				return;
+			}
+			// === END ADDED ===
 			flankGrp.CompleteAllWaypoints();
 			if (TryAssignTransport(flankGrp, stagingPos, worldTime))
     			return;
@@ -1045,6 +1137,148 @@ class AICommander_BaseComponent : ScriptComponent
 	    }
 	}
 	
+	// === ADDED: Absolute Defend Guarantee ===
+	// Loop semua objective yang udah captured commander ini dan pastikan defend
+	// slot-nya keisi, terlepas dari commander mode. Dipanggil setiap Think() cycle.
+	protected void EnsureAbsoluteDefend(float worldTime)
+	{
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!mgr)
+			return;
+	
+		// === OPTIMIZED: pakai mgr.m_aObjective langsung, gak perlu GetTopObjectives()
+		// (priority sort + ComputePriorityScore/QueryEntitiesBySphere buat semua objective)
+		// karena di sini urutan gak ngaruh -- semua captured objective diproses tanpa break.
+		array<CMD_AICommanderObjectiveComponent> allObjs = mgr.m_aObjective;
+	
+		foreach (CMD_AICommanderObjectiveComponent obj : allObjs)
+		{
+			if (!obj)
+				continue;
+	
+			if (!obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+				continue;
+	
+			if (obj.CheckIsItLost(m_sFactionKey))
+				continue;
+	
+			AssignDefendToObjective(obj, worldTime);
+		}
+	}
+	
+	// Evaluasi titik defend di sekitar objective berdasarkan dua faktor heuristik:
+	// 1. Elevasi permukaan (dataran tinggi relatif terhadap rata-rata ring) — defend dari atas lebih unggul.
+	// 2. Arah hadap terhadap axis base→objective — titik yang "menghadap" menjauhi base
+	//    diasumsikan lebih dekat ke arah datangnya musuh (karena base = rear friendly).
+	// CATATAN: ini heuristik dari GetSurfaceY doang, BUKAN analisis line-of-sight/navmesh
+	// sungguhan (engine ini gak expose API buat itu ke script). Cukup buat menghindari
+	// full-random placement, bukan pengganti recon manusia.
+	protected void EvaluateDefendPositions(vector center, float radius, int count, out array<vector> outPositions)
+	{
+		outPositions = {};
+		if (count <= 0)
+			return;
+	
+		int sampleCount = 16;
+		array<vector> candidates = {};
+		float sampleRadius = radius * 1.3;
+		float totalElevation = 0.0;
+	
+		for (int i = 0; i < sampleCount; i++)
+		{
+			float angleDeg = (360.0 / sampleCount) * i;
+			float angleRad = angleDeg * Math.DEG2RAD;
+	
+			float px = center[0] + Math.Cos(angleRad) * sampleRadius;
+			float pz = center[2] + Math.Sin(angleRad) * sampleRadius;
+			float py = GetGame().GetWorld().GetSurfaceY(px, pz);
+	
+			vector candidate = Vector(px, py, pz);
+			candidates.Insert(candidate);
+			totalElevation += py;
+		}
+	
+		float avgElevation = totalElevation / sampleCount;
+	
+		vector baseToObj = center - GetOwner().GetOrigin();
+		baseToObj = Vector(baseToObj[0], 0.0, baseToObj[2]);
+		baseToObj = baseToObj.Normalized();
+	
+		array<float> scores = {};
+		for (int i = 0; i < candidates.Count(); i++)
+		{
+			float elevationScore = candidates[i][1] - avgElevation;
+	
+			vector toCandidate = candidates[i] - center;
+			toCandidate = Vector(toCandidate[0], 0.0, toCandidate[2]);
+			toCandidate = toCandidate.Normalized();
+	
+			float facingScore = vector.Dot(toCandidate, baseToObj) * 10.0;
+	
+			scores.Insert(elevationScore * 2.0 + facingScore);
+		}
+	
+		array<vector> sortedCandidates = {};
+		array<float> sortedScores = {};
+		for (int i = 0; i < candidates.Count(); i++)
+		{
+			float score = scores[i];
+			bool inserted = false;
+			for (int j = 0; j < sortedCandidates.Count(); j++)
+			{
+				if (score > sortedScores[j])
+				{
+					sortedCandidates.InsertAt(candidates[i], j);
+					sortedScores.InsertAt(score, j);
+					inserted = true;
+					break;
+				}
+			}
+	
+			if (!inserted)
+			{
+				sortedCandidates.Insert(candidates[i]);
+				sortedScores.Insert(score);
+			}
+		}
+	
+		// Ambil top-N sambil jaga jarak minimum biar defend spot gak numpuk di 1 sisi objective.
+		array<vector> picked = {};
+		foreach (vector cand : sortedCandidates)
+		{
+			if (picked.Count() >= count)
+				break;
+	
+			bool tooClose = false;
+			foreach (vector p : picked)
+			{
+				if (vector.Distance(p, cand) < radius * 0.6)
+				{
+					tooClose = true;
+					break;
+				}
+			}
+	
+			if (!tooClose)
+				picked.Insert(cand);
+		}
+	
+		// Fallback kalau filter jarak ketat dan belum cukup, isi sisa tanpa filter.
+		if (picked.Count() < count)
+		{
+			foreach (vector cand : sortedCandidates)
+			{
+				if (picked.Count() >= count)
+					break;
+				if (!picked.Contains(cand))
+					picked.Insert(cand);
+			}
+		}
+	
+		outPositions = picked;
+	}
+	// === END ADDED ===
+	
 	protected void AssignDefendToObjective(CMD_AICommanderObjectiveComponent obj, float worldTime)
 	{
 	    int needed = obj.GetDefendGroupCount();
@@ -1087,6 +1321,20 @@ class AICommander_BaseComponent : ScriptComponent
 	        roleList[j] = tmp;
 	    }
 	
+	    // === ADDED: Key Defend Position Evaluation ===
+	    array<vector> keyDefendPositions = {};
+	    int keyPosUsed = 0;
+	    if (m_bEnableKeyDefendSpotEvaluation)
+	    {
+	        int keyPosCount = Math.Min(toSend, m_iMaxKeyDefendPositions);
+	        EvaluateDefendPositions(objPos, obj.GetRadius(), keyPosCount, keyDefendPositions);
+	    }
+	    // === END ADDED ===
+	
+	    // === OPTIMIZED: RandomGenerator dibuat SEKALI di sini, bukan per-grup di dalam loop ===
+	    RandomGenerator rand = new RandomGenerator();
+	    // === END OPTIMIZED ===
+	
 	    for (int i = 0; i < toSend; i++)
 	    {
 	        DCO_GroupUtilityComponent defGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RESERVE, obj.GetOwner().GetOrigin());
@@ -1116,9 +1364,17 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	            if (bDoDefend)
 	            {
-	                RandomGenerator rand = new RandomGenerator();
+	                // (rand dipakai dari instance yang di-hoist di atas loop, gak dibuat ulang di sini)
 	                vector defendPos = rand.GenerateRandomPointInRadius(0, obj.GetRadius(), obj.GetOwner().GetOrigin(), false);
 	                defendPos[1] = GetGame().GetWorld().GetSurfaceY(defendPos[0], defendPos[2]);
+	
+	                // === ADDED: pakai key defend position hasil evaluasi kalau tersedia ===
+	                if (keyPosUsed < keyDefendPositions.Count())
+	                {
+	                    defendPos = keyDefendPositions[keyPosUsed];
+	                    keyPosUsed++;
+	                }
+	                // === END ADDED ===
 	
 	                SCR_AIWaypoint wp = SpawnDefendWP(defendPos);
 	                if (wp)
@@ -1190,6 +1446,14 @@ class AICommander_BaseComponent : ScriptComponent
 					//CMD_TaskNotifier.Notify(assaultGrp.GetOwner(), "ASSAULT " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.CAPTURE);
 					return;
 				}
+				// === ADDED: Manpower Budget gate ===
+				if (!CanCommitGroup(assaultGrp))
+				{
+					//Print(string.Format("[%1] Manpower budget insufficient — skip ASSAULT slot di %2", m_sCommanderUID, obj.GetOwner().GetName()));
+				}
+				else
+				{
+				// === END ADDED ===
 				assaultGrp.CompleteAllWaypoints();
 				if (TryAssignTransport(assaultGrp, objPos, worldTime))
     				return;
@@ -1219,6 +1483,7 @@ class AICommander_BaseComponent : ScriptComponent
 						obj.GetOwner().GetName(),
 						slotsLeft));*/
 				}
+				} // === ADDED: closes CanCommitGroup else block ===
 			}
 		}
  
@@ -1232,6 +1497,13 @@ class AICommander_BaseComponent : ScriptComponent
 					//CMD_TaskNotifier.Notify(flankGrp.GetOwner(), "FLANK " + obj.GetOwner().GetName(), obj.GetOwner().GetOrigin(), CMD_ETaskType.DESTROY);
 					return;
 				}
+				// === ADDED: Manpower Budget gate ===
+				if (!CanCommitGroup(flankGrp))
+				{
+					//Print(string.Format("[%1] Manpower budget insufficient — skip FLANK slot di %2", m_sCommanderUID, obj.GetOwner().GetName()));
+					return;
+				}
+				// === END ADDED ===
 				flankGrp.CompleteAllWaypoints();
 				if (TryAssignTransport(flankGrp, objPos, worldTime))
     				return;

@@ -88,7 +88,7 @@ modded class SCR_AIGroupUtilityComponent
 	    {
 			if (hasActiveOrder)
 			{
-		        if (IsAnyTargetWithinDistance(40.0))
+		        if (IsAnyTargetRelevant(40.0))
 		            m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 		        else
 		            m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;			
@@ -106,7 +106,7 @@ modded class SCR_AIGroupUtilityComponent
 	    {
 	        if (hasActiveOrder)
 	        {
-	            if (IsAnyTargetWithinDistance(100.0))
+	            if (IsAnyTargetRelevant(100.0))
 	                m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 	            else
 	                m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
@@ -126,14 +126,14 @@ modded class SCR_AIGroupUtilityComponent
 	
 	        if (hasActiveOrder)
 	        {
-	            if (IsAnyTargetWithinDistance(50.0))
+	            if (IsAnyTargetRelevant(50.0))
 	                m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 	            else
 	                m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
 	            return;
 	        }
 	
-	        if (IsAnyTargetWithinDistance(70.0) || targetCount >= agents.Count() || IsAnyTargetRelevant(170.0))
+	        if (IsAnyTargetRelevant(70.0) || targetCount >= agents.Count() || IsAnyTargetRelevant(170.0))
 	            m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 	        else
 	            m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
@@ -141,7 +141,7 @@ modded class SCR_AIGroupUtilityComponent
 	    } 
 	    else if (currentRole == CMD_EGroupRole.ARTILLERY)
 	    {
-	        if (IsAnyTargetWithinDistance(40.0))
+	        if (IsAnyTargetRelevant(40.0))
 	            m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 	        else
 	            m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
