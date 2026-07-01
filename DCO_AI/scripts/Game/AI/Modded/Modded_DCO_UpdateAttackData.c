@@ -12,6 +12,20 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 	
 	
 	protected const float BURST_FIRE_MAX_DISTANCE = 70.0;
+	
+	// === ADDED: HVT urgency tuning ===
+	protected const float HVT_FIRERATE_BOOST = 1.5;
+	protected const float HVT_CLOSER_THREAT_MARGIN_M = 20.0; // kalau ada threat lain minimal segini lebih deket dari HVT, turunin urgency
+	// === END ADDED ===
+	
+	// === ADDED: Responsive close-range override ===
+	protected const float CLOSE_DIRECT_THREAT_DIST = 20.0; // dalam jarak ini + visible, AI harus tetep bisa balas nembak walau lagi combat-move
+	// === END ADDED ===
+	
+	// === ADDED: Grenade throw (visible-obstructed) tuning ===
+	protected const float GRENADE_MIN_THROW_DIST = 5.0;  // kelewat deket -> bahaya ledakan sendiri
+	protected const float GRENADE_MAX_THROW_DIST = 25.0; // kelewat jauh -> gak akurat/gak nyampe
+	// === END ADDED ===
 
 	//-----------------------------------------------------------------------------------------------------
 	// Evaluates which fire tree should be used
@@ -20,7 +34,15 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		// Is aiming forbidden by combat move?
 		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_UtilityComponent.GetExecutedAction());
 		if (executedBehavior && executedBehavior.m_bUseCombatMove && !m_UtilityComponent.m_CombatMoveState.m_bAimAtTarget)
-			return FIRE_TREE_LOOK_THREATS;
+		{
+			// === ADDED: Responsive close-range override ===
+			// Kalau target deket & visible (lagi nembakin kita dari jarak deket), jangan
+			// taat buta ke flag combat-move -- AI harus tetep bisa balas nembak. Cuma
+			// berlaku kalau visible, biar gak asal tembak ke arah kosong.
+			if (!IsCloseDirectThreat(target, visible))
+				return FIRE_TREE_LOOK_THREATS;
+			// === END ADDED ===
+		}
 		
 		// Is looking at threats activated?
 		if (m_bLookAtThreats)
@@ -94,10 +116,11 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 4, 1));
 				fireRate = maxFireRate * threat;
 				
-				// === ADDED: High-Value Target prioritization ===
+				// === MODIFIED: High-Value Target prioritization -- pake urgency scale,
+				// bukan flat boost, biar turun kalau ada threat lain yang lebih deket ===
 				if (IsHighValueTarget(target, visible))
-					fireRate *= 1.5;
-				// === END ADDED ===
+					fireRate *= GetHVTUrgencyScale(targetDistance);
+				// === END MODIFIED ===
 				
 				return FIRE_TREE_SUPPRESSIVE;
 			}
@@ -108,8 +131,30 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		
 		if (visible)
 		{
-			// === ADDED: High-Value Target prioritization ===
-			bool isHVT = IsHighValueTarget(target, visible);
+			// === MODIFIED: High-Value Target prioritization -- burst-force cuma kalau
+			// urgency masih tinggi (gak ada threat lain yang lebih deket) ===
+			bool isHVT = IsHighValueTarget(target, visible) && GetHVTUrgencyScale(targetDistance) > 1.0;
+			// === END MODIFIED ===
+			
+			// === ADDED: Personality System -- AGGRESSIVE/RECKLESS berani burst dari
+			// lebih jauh, CAUTIOUS lebih pendek (hemat amunisi, lebih kontrol) ===
+			float effectiveBurstMaxDist = BURST_FIRE_MAX_DISTANCE * DCO_PersonalityCombatUtility.GetBurstDistanceScale(m_UtilityComponent);
+			// === END ADDED ===
+			
+			// === ADDED: Grenade throw -- target VISIBLE tapi susah kena (trace fraction
+			// jelek = kehalang cover/object walau keliatan). Sebelumnya grenade cuma
+			// pernah dipertimbangkan buat target INVISIBLE, jadi skenario paling umum
+			// "musuh di belakang sandbag/tembok tapi keliatan" gak pernah ke-cover.
+			if (target.GetTraceFraction() < 0.6 && targetDistance > GRENADE_MIN_THROW_DIST && targetDistance < GRENADE_MAX_THROW_DIST
+				&& m_CombatComponent.HasWeaponOfType(EWeaponType.WT_FRAGGRENADE)
+				&& DCO_GrenadeUtility.CanThrowGrenadeNow(m_UtilityComponent))
+			{
+				SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, target.GetLastSeenPosition(), EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE +
+				SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER);
+				m_UtilityComponent.AddAction(gren);
+				DCO_GrenadeUtility.NotifyGrenadeThrown(m_UtilityComponent);
+				return FIRE_TREE_LOOK;
+			}
 			// === END ADDED ===
 			
 			// Visible
@@ -117,7 +162,14 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			// For regular weapons, use burst at short range if available, otherwise single
 			if (weaponType == EWeaponType.WT_MACHINEGUN)
 				return FIRE_TREE_BURST;
-			else if ((targetDistance < BURST_FIRE_MAX_DISTANCE || isHVT) && m_bWeaponHasBurstOrAuto) // MODIFIED: "|| isHVT" -- HVT dapet burst walau di luar jarak burst normal
+			// === ADDED: Grenade Launcher -- weapon indirect/arc, bukan direct-fire kayak
+			// rifle. Sebelumnya gak ada case sendiri, jatuh ke logic burst/single generic
+			// yang gak cocok buat weapon jenis ini. Diperlakukan kayak MG di outside-range
+			// branch -- selalu suppressive/area fire. ===
+			else if (weaponType == EWeaponType.WT_GRENADELAUNCHER)
+				return FIRE_TREE_SUPPRESSIVE;
+			// === END ADDED ===
+			else if ((targetDistance < effectiveBurstMaxDist || isHVT) && m_bWeaponHasBurstOrAuto) // MODIFIED: "|| isHVT" -- HVT dapet burst walau di luar jarak burst normal
 				return FIRE_TREE_BURST;
 			else
 				return FIRE_TREE_SINGLE;
@@ -152,10 +204,10 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 4, 1));
 				fireRate = maxFireRate * threat;
 				
-				// === ADDED: High-Value Target prioritization ===
+				// === MODIFIED: High-Value Target prioritization -- urgency scale ===
 				if (IsHighValueTarget(target, false))
-					fireRate *= 1.5;
-				// === END ADDED ===
+					fireRate *= GetHVTUrgencyScale(targetDistance);
+				// === END MODIFIED ===
 								
 				return FIRE_TREE_SUPPRESSIVE;
 			}
@@ -163,13 +215,20 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			//{
 			//	return FIRE_TREE_RPG;
 			//}
-			else if (target.GetTimeSinceSeen() > 2 && target.GetDistance() < 15 && target.GetTraceFraction() > 0.5)
+			// === MODIFIED: widen jarak (15->20m) + gate lewat DCO_GrenadeUtility
+			// (cooldown per-unit + personality chance), biar gak dead-simple fallback
+			// yang jarang ke-hit dan gak spam kalau kondisi kepenuhin banyak tick ===
+			else if (target.GetTimeSinceSeen() > 2 && target.GetDistance() < 20 && target.GetTraceFraction() > 0.5
+				&& m_CombatComponent.HasWeaponOfType(EWeaponType.WT_FRAGGRENADE)
+				&& DCO_GrenadeUtility.CanThrowGrenadeNow(m_UtilityComponent))
 			{
 				SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, target.GetLastSeenPosition(), EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + 
 				SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER);
 				m_UtilityComponent.AddAction(gren);
+				DCO_GrenadeUtility.NotifyGrenadeThrown(m_UtilityComponent);
 				return FIRE_TREE_LOOK;
 			}
+			// === END MODIFIED ===
 			else
 				return FIRE_TREE_LOOK;
 		}
@@ -268,6 +327,66 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		}
 		
 		return false;
+	}
+	// === END ADDED ===
+	
+	// === ADDED: HVT urgency scaling -- "turunin urgency kalau ada threat lain" ===
+	// Cek jarak threat TERDEKAT yang diketahui grup (dari semua target cluster,
+	// bukan cuma target HVT yang lagi kita evaluasi). Kalau ada threat lain yang
+	// jelas lebih deket dari target HVT ini, jangan boost fire rate/burst -- kasih
+	// perlakuan normal aja (scale 1.0), biar AI gak "nempel" ke HVT jauh pas ada
+	// yang lebih urgent di deket.
+	protected float GetHVTUrgencyScale(float targetDistance)
+	{
+		if (!m_UtilityComponent)
+			return HVT_FIRERATE_BOOST;
+		
+		AIAgent agent = m_UtilityComponent.GetAIAgent();
+		if (!agent)
+			return HVT_FIRERATE_BOOST;
+		
+		AIGroup grp = agent.GetParentGroup();
+		if (!grp)
+			return HVT_FIRERATE_BOOST;
+		
+		SCR_AIGroupUtilityComponent groupUtilComp = SCR_AIGroupUtilityComponent.Cast(grp.FindComponent(SCR_AIGroupUtilityComponent));
+		if (!groupUtilComp)
+			return HVT_FIRERATE_BOOST;
+		
+		SCR_AIGroupPerception groupPerc = groupUtilComp.GetPercGroupComp();
+		if (!groupPerc)
+			return HVT_FIRERATE_BOOST;
+		
+		float nearestKnownDist = float.MAX;
+		foreach (SCR_AIGroupTargetCluster c : groupPerc.m_aTargetClusters)
+		{
+			if (!c || !c.m_State)
+				continue;
+			
+			if (c.m_State.m_fDistMin < nearestKnownDist)
+				nearestKnownDist = c.m_State.m_fDistMin;
+		}
+		
+		if (nearestKnownDist == float.MAX)
+			return HVT_FIRERATE_BOOST;
+		
+		if (nearestKnownDist < targetDistance - HVT_CLOSER_THREAT_MARGIN_M)
+			return 1.0; // ada threat lain yang jauh lebih deket -- urgency HVT diturunin total
+		
+		return HVT_FIRERATE_BOOST;
+	}
+	// === END ADDED ===
+	
+	// === ADDED: Responsive close-range override ===
+	//! Dipake buat nge-bypass "gak boleh aim pas combat-move" kalau AI lagi ditembak
+	//! dari jarak deket. Cuma trigger kalau target visible (biar gak asal nembak ke
+	//! arah kosong pas invisible).
+	protected bool IsCloseDirectThreat(BaseTarget target, bool visible)
+	{
+		if (!target || !visible)
+			return false;
+		
+		return target.GetDistance() < CLOSE_DIRECT_THREAT_DIST;
 	}
 	// === END ADDED ===
 }

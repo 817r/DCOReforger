@@ -28,7 +28,12 @@ class DCO_AIConfigComponent : ScriptComponent
 	
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "How Suppression Affecting this AI", params: "0 2 0.01" )]
 	protected float m_fSuppressionEffect;
-	
+
+	[Attribute("1", UIWidgets.ComboBox, "AI Personality -- gimana gaya combat AI ini, orthogonal dari skill", "", ParamEnumArray.FromEnum(DCO_EAIPersonality))]
+	protected DCO_EAIPersonality m_ePersonality;
+
+	protected bool m_bHoldPosition = false;
+
 	//------------------------------------------------------------------------------------------------
 	override void OnPostInit(IEntity owner)
 	{
@@ -49,6 +54,8 @@ class DCO_AIConfigComponent : ScriptComponent
 		m_fTimeToMaxAccuracy = settings.GetAccuracyTime();
 		m_eAISkillDefault = settings.GetAISkill();
 		m_fVehicleDismountDanger = settings.GetDismountDistance();
+		m_fSuppressionEffect = settings.GetSuppressionEffect();
+		m_ePersonality = Math.RandomInt(DCO_EAIPersonality.CAUTIOUS, DCO_EAIPersonality.RECKLESS + 1);
 		
 	}
 	
@@ -116,5 +123,44 @@ class DCO_AIConfigComponent : ScriptComponent
 	{
 		m_bIsMagicallyResupplied = s;
 		return m_bIsMagicallyResupplied;
+	}
+
+	float GetSuppressionEffect()
+	{
+		return m_fSuppressionEffect;
+	}
+	
+	float SetSuppressionEffect(float f)
+	{
+		m_fSuppressionEffect = f;
+		return m_fSuppressionEffect;
+	}
+
+	DCO_EAIPersonality GetPersonality()
+	{
+		return m_ePersonality;
+	}
+	
+	DCO_EAIPersonality SetPersonality(DCO_EAIPersonality p)
+	{
+		m_ePersonality = p;
+		return m_ePersonality;
+	}
+
+	bool IsHoldPosition()
+	{
+		return m_bHoldPosition;
+	}
+	
+	bool SetHoldPosition(bool b)
+	{
+		m_bHoldPosition = b;
+		return m_bHoldPosition;
+	}
+
+	bool ToggleHoldPosition()
+	{
+		m_bHoldPosition = !m_bHoldPosition;
+		return m_bHoldPosition;
 	}
 }

@@ -289,6 +289,15 @@ class DCO_GroupUtilityComponent : ScriptComponent
 				m_UtilityComp.SetCombatMode(EAIGroupCombatMode.HOLD_FIRE);
 				break;
 			}
+			// === ADDED: SUPPRESS role -- grup diem di posisi ber-LOS ke objective,
+			// nembak/suppress sambil grup ASSAULT/FLANK laen push masuk.
+			case CMD_EGroupRole.SUPPRESS:
+			{
+				m_FormationComponent.SetFormation("Line");
+				m_UtilityComp.SetCombatMode(EAIGroupCombatMode.RETURN_FIRE);
+				break;
+			}
+			// === END ADDED ===
 			case CMD_EGroupRole.NONE:
 			{
 				m_FormationComponent.SetFormation("Wedge");

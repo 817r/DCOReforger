@@ -3,6 +3,10 @@ typedef func SCR_AIOnTacticChange;
 
 modded class SCR_AIGroupUtilityComponent
 {
+	// === ADDED: Responsive close-range bypass tuning ===
+	protected const float CLOSE_RESPONSIVE_DIST = 50.0;
+	// === END ADDED ===
+	
 	ref ScriptInvokerBase<SCR_AIOnTacticChange> m_OnTacticsChange = new ScriptInvokerBase<SCR_AIOnTacticChange>();
 	protected DCO_GroupUtilityComponent utilDco;
 	
@@ -84,6 +88,18 @@ modded class SCR_AIGroupUtilityComponent
 	        return;
 	    }
 	    
+	    // === ADDED: Responsive close-range bypass ===
+	    // Threshold per-role di bawah bisa sampe 40-160m tergantung role/order, dan
+	    // itu sebagian gantung ke hasThreat (endangering+fresh) yang gak selalu reliable
+	    // buat suppressive fire yang landing terus-menerus. Ini safety net kedua: kalau
+	    // ada threat DEKET & fresh, langsung FIRE_AT_WILL, jangan nunggu role-based logic.
+	    if (IsAnyTargetRelevant(CLOSE_RESPONSIVE_DIST))
+	    {
+	        m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
+	        return;
+	    }
+	    // === END ADDED ===
+	    
 	    // === ADDED: MG bypass ===
 	    // Kalau grup punya gunner MG dan ada target yang relevan, langsung FIRE_AT_WILL --
 	    // gak perlu nunggu threshold jarak per-role (40-160m tergantung role) yang bisa
@@ -160,6 +176,17 @@ modded class SCR_AIGroupUtilityComponent
 	            m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
 	        return;
 	    }
+	    // === ADDED: SUPPRESS role -- tugasnya emang nembak/suppress, jadi threshold
+	    // paling permisif (gak perlu nunggu target deket kayak role lain).
+	    else if (currentRole == CMD_EGroupRole.SUPPRESS)
+	    {
+	        if (IsAnyTargetRelevant(300.0))
+	            m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
+	        else
+	            m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
+	        return;
+	    }
+	    // === END ADDED ===
 	
 	    if (IsAnyTargetRelevant(250.0))
 	        m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;

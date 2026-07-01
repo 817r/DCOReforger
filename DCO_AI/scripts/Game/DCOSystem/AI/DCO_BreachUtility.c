@@ -39,10 +39,17 @@ class DCO_BreachUtility
 			return false;
 
 		float worldTime_ms = GetGame().GetWorld().GetWorldTime();
+		
+		// === ADDED: Personality System ===
+		// AGGRESSIVE lebih sering breach (cooldown pendek), CAUTIOUS lebih jarang.
+		float personalityCooldownScale = GetPersonalityCooldownScale(utility);
+		float effectiveCooldown = BREACH_COOLDOWN_MS * personalityCooldownScale;
+		// === END ADDED ===
+		
 		float lastThrow;
 		if (s_mLastBreachThrowTime.Find(myEntity, lastThrow))
 		{
-			if ((worldTime_ms - lastThrow) < BREACH_COOLDOWN_MS)
+			if ((worldTime_ms - lastThrow) < effectiveCooldown)
 				return false;
 		}
 
@@ -58,6 +65,27 @@ class DCO_BreachUtility
 
 	//------------------------------------------------------------------------------------------------
 	protected static ref array<IEntity> s_aFriendlyCheckResult = {};
+
+	protected static float GetPersonalityCooldownScale(SCR_AIUtilityComponent utility)
+	{
+		if (!utility || !utility.m_DCOConfig)
+			return 1.0;
+		
+		switch (utility.m_DCOConfig.GetPersonality())
+		{
+			case DCO_EAIPersonality.CAUTIOUS:
+				return 2.0;   // 2x cooldown -- jarang breach
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 0.5;   // setengah cooldown -- lebih sering breach
+			case DCO_EAIPersonality.RECKLESS:
+				return 0.3;   // hampir gak ada jeda
+			default:
+				return 1.0;   // STANDARD
+		}
+		
+		return 1.0;
+	}
+	// === END ADDED ===
 
 	protected static bool HasFriendlyNear(IEntity self, vector pos)
 	{

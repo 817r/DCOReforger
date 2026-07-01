@@ -1418,6 +1418,23 @@ class AICommander_BaseComponent : ScriptComponent
 		grp.SetGroupRole(CMD_EGroupRole.DEFEND);
 	}
 	
+	// === ADDED: Dedicated Suppress Group helper ===
+	// Cek apakah objective ini udah punya grup SUPPRESS yang di-assign, biar gak
+	// nyoba assign ulang tiap Think() cycle.
+	protected bool ObjectiveHasSuppressGroup(CMD_AICommanderObjectiveComponent obj)
+	{
+		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
+		{
+			if (!grp)
+				continue;
+			
+			if (grp.GetGroupRole() == CMD_EGroupRole.SUPPRESS && grp.GetGroupObjective() == obj)
+				return true;
+		}
+		return false;
+	}
+	// === END ADDED ===
+	
 	protected void TrySendAssaultWithSlots(CMD_AICommanderObjectiveComponent obj, float worldTime)
 	{
 		if (obj.IsGroupSlotFull(m_sFactionKey))
@@ -1435,6 +1452,36 @@ class AICommander_BaseComponent : ScriptComponent
 		float objRad	 = obj.GetRadius();
 		int required     = obj.GetRequiredGroupCount();
 		int slotsLeft    = required - obj.GetCurrentAssignedGroupCount(m_sFactionKey);
+	 
+		// === ADDED: Dedicated Suppress Group ===
+		// Kalau objective butuh >1 grup, sisihin 1 grup (di LUAR hitungan required slot
+		// assault -- ini bonus/support, bukan gantiin manpower assault) buat diem di
+		// posisi ber-LOS ke objective dan suppress, sementara grup lain push masuk.
+		// Posisi dicari pakai CMD_ReconSpotFinder yang udah ada scoring LOS-nya (dipake
+		// juga di TrySendRecon), jadi gak perlu bikin LOS-scoring baru dari nol.
+		if (required >= 2 && !ObjectiveHasSuppressGroup(obj))
+		{
+			DCO_GroupUtilityComponent suppressGrp = FindBestIdleGroupForRole(CMD_EGroupRole.SUPPRESS, objPos);
+			if (suppressGrp && !suppressGrp.IsPlayerGroup() && CanCommitGroup(suppressGrp))
+			{
+				vector suppressPos = CMD_ReconSpotFinder.FindBestReconSpot(GetOwner().GetOrigin(), objPos, 180.0, objRad * 1.5, 12);
+				if (suppressPos != vector.Zero)
+				{
+					suppressGrp.CompleteAllWaypoints();
+					SCR_AIWaypoint suppressWp = SpawnMoveWP(suppressPos);
+					if (suppressWp)
+					{
+						suppressGrp.SetGroupRole(CMD_EGroupRole.SUPPRESS);
+						suppressGrp.MoveTo(suppressWp, worldTime);
+						if (suppressGrp.GetGroupObjective() != obj)
+							suppressGrp.SetGroupObjective(obj);
+						
+						//Print(string.Format("[%1] SUPPRESS → %2: %3", m_sCommanderUID, obj.GetOwner().GetName(), suppressGrp.GetOwner().GetName()));
+					}
+				}
+			}
+		}
+		// === END ADDED ===
  
 		if (slotsLeft > 0)
 		{

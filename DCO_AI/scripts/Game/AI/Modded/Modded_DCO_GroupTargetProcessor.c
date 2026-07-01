@@ -75,10 +75,12 @@ modded class SCR_AIGroupTargetClusterProcessor
 						SCR_AIGroupFireteamLock.TryLockFireteams(newFireteams, ftsAux, true);
 					}
 				}
-				else if(ftsAux.Count() > 1)
+				else
 				{
-					// So far we don't want more than 1 aux fireteam to keep AI more engaged
-					while (ftsAux.Count() > 1)
+					int totalFireteams = ftsMain.Count() + ftsAux.Count();
+					int maxAuxFireteams = Math.Max(1, totalFireteams / 3);
+					
+					while (ftsAux.Count() > maxAuxFireteams)
 					{
 						SCR_AIGroupFireteamLock ftLock = ftsAux[ftsAux.Count()-1];
 						ftsMain.Insert(ftLock);
@@ -93,8 +95,6 @@ modded class SCR_AIGroupTargetClusterProcessor
 			{
 				if (!inFtsMain.IsEmpty() || !inFtsAux.IsEmpty())
 				{
-					// Here we need only one array of fireteams
-					// Combine all previous main and aux fireteams into one array
 					ftsMain = {};
 					foreach (auto ft : inFtsMain)
 						ftsMain.Insert(ft);
@@ -111,7 +111,6 @@ modded class SCR_AIGroupTargetClusterProcessor
 				}
 				else
 				{
-					// Failed to find any fireteams
 					return null;
 				}
 				
@@ -120,7 +119,6 @@ modded class SCR_AIGroupTargetClusterProcessor
 			
 			default:
 			{
-				// Should not be possible to call this function for those states
 				return null;
 			}
 		}

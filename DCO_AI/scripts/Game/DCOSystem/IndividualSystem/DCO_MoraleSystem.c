@@ -194,14 +194,19 @@ class DCO_AIMoraleSystem
 	private void UpdateState()
 	{
 		moraleState newState = moraleState.NORMAL;
+		float personalityScale = DCO_PersonalityCombatUtility.GetMoraleThresholdScale(m_Utility);
+		float breakThresholdScaled = BREAK_THRESHOLD * personalityScale;
+		float maniacThresholdScaled = MANIAC_THRESHOLD * personalityScale;
+		float anxiousThresholdScaled = ANXIOUS_THRESHOLD * personalityScale;
+		float motivatedThresholdScaled = MOTIVATED_THRESHOLD * personalityScale;
 		
-		if (m_fMoraleTotal > BREAK_THRESHOLD)
+		if (m_fMoraleTotal > breakThresholdScaled)
 			newState = moraleState.BREAK;		
-		else if (m_fMoraleTotal > MANIAC_THRESHOLD)
+		else if (m_fMoraleTotal > maniacThresholdScaled)
 			newState = moraleState.MANIAC;		
-		else if (m_fMoraleTotal > ANXIOUS_THRESHOLD)
+		else if (m_fMoraleTotal > anxiousThresholdScaled)
 			newState = moraleState.ANXIOUS;
-		else if (m_fMoraleTotal > MOTIVATED_THRESHOLD)
+		else if (m_fMoraleTotal > motivatedThresholdScaled)
 			newState = moraleState.MOTIVATED;
 		
 		StateTransition(newState);
@@ -219,7 +224,7 @@ class DCO_AIMoraleSystem
 			if (m_Combat.GetCurrentTarget())
 			{
 				m_fMoraleEndangeredPlus += ENDANGERED_INCREMENT * timeSlice;
-				m_fMoraleEndangered = Math.Clamp(m_fMoraleEndangered + m_fMoraleEndangeredPlus, 0 , 1.2); // FIX: titik-koma kelewat (pre-existing, compile-blocking)
+				m_fMoraleEndangered = Math.Clamp(m_fMoraleEndangered + m_fMoraleEndangeredPlus, 0 , 1.2);
 			}
 			else
 			{

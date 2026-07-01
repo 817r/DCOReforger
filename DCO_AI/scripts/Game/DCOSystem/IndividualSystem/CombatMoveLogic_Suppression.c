@@ -62,6 +62,10 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		waitTime += mult;
 		// === END ADDED ===
 		
+		// === ADDED: Personality System ===
+		waitTime *= DCO_PersonalityCombatUtility.GetStoppedWaitTimeScale(m_Utility);
+		// === END ADDED ===
+		
 		return waitTime;
 	}
 	
@@ -76,6 +80,12 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		ResolveMoveRequestMovePosAndDir(rq.m_vTargetPos, rq.m_vMovePos, rq.m_vAvoidStraightPathDir, rq.m_eDirection, rq.m_fCoverSearchSectorHalfAngleRad);
 		rq.m_bTryFindCover = true;
 		rq.m_bUseCoverSearchDirectivity = true;
+		
+		// === ADDED: Concealment-seeking pas exposed (samain sama Attack) ===
+		bool isExposed = DCO_ConcealmentUtility.IsPositionExposed(m_MyEntity.GetOrigin(), m_MyEntity);
+		if (isExposed)
+			rq.m_bUseCoverSearchDirectivity = false;
+		// === END ADDED ===
 		rq.m_bCheckCoverVisibility = true;
 
 		float coverSearchDistMin = 5;
@@ -195,6 +205,10 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		// === ADDED: samain sama Attack -- morale scaling buat cover search radius & move duration.
 		// Suppression class ini sebelumnya gak punya morale hook di sini sama sekali.
 		coverSearchDistMax *= DCO_MoraleCombatUtility.GetCoverSearchDistScale(moraleSystem);
+		// === ADDED: perlebar radius search kalau exposed ===
+		if (isExposed)
+			coverSearchDistMax *= 1.5;
+		// === END ADDED ===
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
 		rq.m_fMoveDuration_s = moveDurationMax * MoraleAmplifyMove();
 		// === END ADDED ===
@@ -501,6 +515,11 @@ modded class SCR_AICombatMoveLogic_Suppressive
 	//--------------------------------------------------------------------------------------------
 	protected override bool MoveToNextPosCondition()
 	{	
+		// === ADDED: Hold Position ===
+		if (m_Utility && m_Utility.m_DCOConfig && m_Utility.m_DCOConfig.IsHoldPosition())
+			return false;
+		// === END ADDED ===
+		
 		if (m_State.IsExecutingRequest())
 			return false;
 		

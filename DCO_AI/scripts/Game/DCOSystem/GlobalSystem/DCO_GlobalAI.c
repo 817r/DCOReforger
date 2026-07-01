@@ -25,6 +25,9 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "How Suppression Affecting this AI", params: "0 2 0.01" )]
 	protected float m_fSuppressionEffect;
 	
+	// Personality gak ada field di Global sama sekali -- individual (DCO_AIConfigComponent)
+	// ngeroll random sendiri, full range, tanpa gantung ke Global apapun.
+	
 	static DCO_GlobalAIComponent m_sInstance;
 	
 	static DCO_GlobalAIComponent GetInstance()
@@ -109,4 +112,24 @@ class DCO_GlobalAIComponent: ScriptComponent
 		m_bIsMagicallyResupplied = s;
 		return m_bIsMagicallyResupplied;
 	}
+	
+	// === ADDED: getter/setter buat m_fSuppressionEffect -- fieldnya udah ada dari
+	// awal tapi belum ada getter/setternya, jadi gak bisa dibaca/ditulis dari luar.
+	float GetSuppressionEffect()
+	{
+		return m_fSuppressionEffect;
+	}
+	
+	float SetSuppressionEffect(float f)
+	{
+		m_fSuppressionEffect = f;
+		return m_fSuppressionEffect;
+	}
+	// === END ADDED ===
+	
+	// === REMOVED: Personality System ===
+	// Semua field/logic personality dipindah full ke DCO_AIConfigComponent (individual).
+	// Global gak nyimpen apapun soal personality -- randomisasi full-range, gak ada
+	// param buat nyeragamin/nge-range di level Global sama sekali.
+	// === END REMOVED ===
 }

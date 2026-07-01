@@ -156,12 +156,23 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 1, 2.5);
 		waitTime += mult;
 		
+		// === ADDED: Personality System ===
+		waitTime *= DCO_PersonalityCombatUtility.GetStoppedWaitTimeScale(m_Utility);
+		// === END ADDED ===
+		
 		return waitTime;
 	}
 	
 	//--------------------------------------------------------------------------------------------
 	protected override bool MoveToNextPosCondition()
 	{
+		// === ADDED: Hold Position ===
+		// Kalau di-hold, jangan generate move request baru sama sekali -- diem di
+		// tempat. Ini dicek paling pertama, sebelum semua logic lain.
+		if (m_Utility && m_Utility.m_DCOConfig && m_Utility.m_DCOConfig.IsHoldPosition())
+			return false;
+		// === END ADDED ===
+		
 		// Don't get any more closer
 		// Except we should still move closer if we haven't seen target for a long time
 		float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
@@ -299,6 +310,16 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_bTryFindCover = true;
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility = true;
+		
+		// === ADDED: Concealment-seeking pas exposed ===
+		// Kalau AI lagi di tempat terbuka, cover-search jangan dibatesin cuma ke arah
+		// target (m_bUseCoverSearchDirectivity=false = cari ke SEGALA arah) -- yang
+		// penting nemu concealment SEKARANG, bukan concealment yang convenient buat
+		// nyerang doang.
+		bool isExposed = DCO_ConcealmentUtility.IsPositionExposed(m_MyEntity.GetOrigin(), m_MyEntity);
+		if (isExposed)
+			rq.m_bUseCoverSearchDirectivity = false;
+		// === END ADDED ===
 
 		float coverSearchDistMin = 5;
 		float coverSearchDistMax = 30;
@@ -420,7 +441,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		
 		// === ADDED: morale scaling buat cover search radius -- BREAK/MANIAC asal cover
 		// terdekat, MOTIVATED bisa afford nyari yang lebih strategis walau agak jauh.
-		coverSearchDistMax *= DCO_MoraleCombatUtility.GetCoverSearchDistScale(moraleSystem);
+		coverSearchDistMax *= DCO_MoraleCombatUtility.GetCoverSearchDistScale(moraleSystem, m_Utility);
+		// === ADDED: kalau exposed, perlebar radius search -- jangan sampe kepentok
+		// radius kecil terus gak nemu concealment apapun.
+		if (isExposed)
+			coverSearchDistMax *= 1.5;
+		// === END ADDED ===
 		// === END ADDED ===
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
@@ -708,6 +734,14 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (!m_State || !m_MyEntity || !m_Utility || !m_CombatComp || !m_CharacterController)
 			return ENodeResult.FAIL;
 		
+		// === ADDED: Hold Position ===
+		// Kalau di-hold, skip SEMUA logic combat-movement di bawah -- gak cuma
+		// PushRequestMove, tapi juga FFAvoidance/LeaveUselessCover/OpenArea. AI diem
+		// total di posisi sekarang, cuma stance/aim yang masih jalan normal.
+		if (m_Utility.m_DCOConfig && m_Utility.m_DCOConfig.IsHoldPosition())
+			return ENodeResult.RUNNING;
+		// === END ADDED ===
+		
 		// Don't run combat movement logic if CombatMove BT is not used now (like in turret)
 		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_Utility.GetExecutedAction());
 		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
@@ -792,7 +826,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		}
 		else if (!m_State.IsExecutingRequest() && !m_State.m_bInCover)
 		{
-			if (IsInOpenArea(owner.GetControlledEntity()) && Math.RandomFloat01() > 0.3)
+			// === MODIFIED: dulu ada "&& Math.RandomFloat01() > 0.3" -- cuma 70% kesempatan
+			// AI beneran react pas ketauan di tempat terbuka. Sekarang selalu react, gak
+			// ada RNG yang bisa bikin AI diem aja di open area.
+			if (IsInOpenArea(owner.GetControlledEntity()))
 			{
 				if (!m_State.IsExecutingRequest())
 					PushRequestOpenArea();

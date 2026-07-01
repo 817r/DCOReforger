@@ -51,7 +51,8 @@ enum CMD_EGroupRole
 	REINFORNCE= 7,
 	DEFEND    = 8,
 	ARMORED   = 9,
-	ARTILLERY = 10
+	ARTILLERY = 10,
+	SUPPRESS  = 11 // === ADDED: grup yang diem di posisi ber-LOS ke objective, suppress doang sambil grup lain push
 }
 
 enum CMD_EObjectiveType
