@@ -27,6 +27,11 @@ class DCO_TransportTeamComponent : ScriptComponent
 
 	[Attribute("30.0", UIWidgets.EditBox, "Disembark timeout (detik)", category: "Transport Team")]
 	protected float m_fDisembarkTimeout;
+	
+	// === ADDED: RTB vs Stay at LZ ===
+	[Attribute("1", UIWidgets.CheckBox, "Setelah drop off passenger, RTB balik ke rally point? Kalau false, standby/parkir di LZ terakhir dan siap terima job baru dari situ.", category: "Transport Team")]
+	protected bool m_bReturnToRallyAfterDrop;
+	// === END ADDED ===
 
 	protected DCO_ETransportTeamState   m_eTeamState       = DCO_ETransportTeamState.AVAILABLE;
 	protected DCO_GroupUtilityComponent m_PassengerGroup;
@@ -214,10 +219,22 @@ class DCO_TransportTeamComponent : ScriptComponent
 
 		m_iJobsCompleted = m_iJobsCompleted + 1;
 
-		Print(string.Format("[DCO_TransportTeam] %1 job #%2 complete — returning to rally",
-			GetOwner().GetName(), m_iJobsCompleted));
+		// === ADDED: RTB vs Stay at LZ ===
+		if (m_bReturnToRallyAfterDrop)
+		{
+			Print(string.Format("[DCO_TransportTeam] %1 job #%2 complete — returning to rally",
+				GetOwner().GetName(), m_iJobsCompleted));
 
-		ReturnToRally(worldTime);
+			ReturnToRally(worldTime);
+		}
+		else
+		{
+			Print(string.Format("[DCO_TransportTeam] %1 job #%2 complete — standby di LZ",
+				GetOwner().GetName(), m_iJobsCompleted));
+
+			SetTeamState(DCO_ETransportTeamState.AVAILABLE, worldTime);
+		}
+		// === END ADDED ===
 	}
 
 	protected void TickReturning(float worldTime)

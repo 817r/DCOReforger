@@ -49,7 +49,10 @@ class DCO_FindIndoorPosition: AITaskScripted
 		if (searchPos == vector.Zero)
 			return ENodeResult.FAIL;
 		
-		
+		// === FIXED: list ini gak pernah di-Clear() sebelumnya, jadi nambah terus tiap
+		// tick tanpa batas dan bisa kepilih entity stale dari query sebelumnya.
+		m_aQueryFoundBuilding.Clear();
+		// === END FIXED ===
 		GetGame().GetWorld().QueryEntitiesBySphere(searchPos, searchRad, QueryCallback);
 		
 		IEntity nearestEntity = null;
@@ -75,11 +78,24 @@ class DCO_FindIndoorPosition: AITaskScripted
 		m_Building = buildPosComp.GetBuildingEntity();
 		m_Building.GetBounds(m_vLocalMins, m_vLocalMaxs);
 		
-		while (!FoundPosition)
+		// === FIXED: sebelumnya "while (!FoundPosition)" ini cuma jalan 1x per tick karena
+		// ada "return RUNNING" gak bersyarat di dalamnya -- efektifnya bukan while, cuma if.
+		// Masalah utamanya: kalau attempt > maxAttempt, RandomQueryStep() cuma "return;" tanpa
+		// nge-set apapun, jadi node ini bakal RUNNING SELAMANYA kalau building emang gak ada
+		// spot valid (building kecil / semua spot occupied). Ini kemungkinan besar penyebab
+		// "often breaks the game entirely" yang disebut di komentar atas file ini.
+		if (!FoundPosition)
 		{
+			if (attempt > maxAttempt)
+			{
+				isFoundEnt = false;
+				return ENodeResult.FAIL;
+			}
+			
 			RandomQueryStep();
-			return ENodeResult.RUNNING;		
+			return ENodeResult.RUNNING;
 		}
+		// === END FIXED ===
 		
 		if (FoundPosition)
 		{
@@ -100,7 +116,8 @@ class DCO_FindIndoorPosition: AITaskScripted
 		
 		if (comp) // && comp.isInitialized == true
 		{
-			protected vector m_vLocalMinss, m_vLocalMaxss;
+			// FIX: "protected" gak valid buat local variable, ini bug syntax pre-existing
+			vector m_vLocalMinss, m_vLocalMaxss;
 			comp.GetOwner().GetBounds(m_vLocalMinss, m_vLocalMaxss);
 			float myR = 0.5*(m_vLocalMaxss[0] - m_vLocalMinss[0]);
 			if (myR > 4) 
@@ -232,7 +249,10 @@ class DCO_FindIndoorPosition: AITaskScripted
 	
 	bool QueryCallbackC(IEntity e)
 	{
-		m_aQueryFoundEntities.Clear();
+		// FIX: sebelumnya Clear() ditaro di sini (dalam callback per-entity), jadi tiap
+		// entity baru ketemu, list-nya malah ke-reset -- efeknya cuma nyimpen entity
+		// TERAKHIR, bukan semua entity yang ketemu dalam radius. Clear() dipindah ke
+		// IsPositionOccupied(), dipanggil SEKALI sebelum query mulai.
 		SCR_CharacterDamageManagerComponent comp = SCR_CharacterDamageManagerComponent.Cast(e.FindComponent(SCR_CharacterDamageManagerComponent));
 		DoorComponent doorComp = DoorComponent.Cast(e.FindComponent(DoorComponent));
 		
@@ -247,6 +267,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 	
 	protected bool IsPositionOccupied(vector pos)
 	{
+		m_aQueryFoundEntities.Clear();
 		GetGame().GetWorld().QueryEntitiesBySphere(pos, 3, QueryCallbackC);
 		
 		if (m_aQueryFoundEntities.Count() >= 1 || (SCR_CoverManagerComponent.GetInstance().GetNearestBookedDistanceXZ(pos) < 3 && SCR_CoverManagerComponent.GetInstance().GetNearestBookedDistanceXZ(pos) > 0))

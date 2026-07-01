@@ -108,6 +108,10 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		
 		if (danger > DANGER_HIGH || (sectorFlags & SCR_EAIThreatSectorFlags.DIRECTED_AT_ME))
 		{
+			// === ADDED: Smoke grenade buat cover reposition ===
+			DCO_SmokeUtility.TryDeploySmokeForRetreat(m_Utility, threatPos, danger);
+			// === END ADDED ===
+			
 			if (closeRange)
 			{
 				rq.m_fCoverSearchDistMax = 30;
@@ -190,6 +194,10 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		
 		if (danger > DANGER_HIGH || (sectorFlags & SCR_EAIThreatSectorFlags.DIRECTED_AT_ME))
 		{
+			// === ADDED: Smoke grenade buat cover reposition ===
+			DCO_SmokeUtility.TryDeploySmokeForRetreat(m_Utility, threatPos, danger);
+			// === END ADDED ===
+			
 			if (closeRange)
 			{
 				rq.m_fCoverSearchDistMax = 30;

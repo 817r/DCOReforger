@@ -12,6 +12,12 @@ modded class SCR_AICombatMoveLogic_HideFromUnknownFire : AITaskScripted
 		{
 			// Standing not in cover
 			
+			// === ADDED: Smoke grenade buat cover reposition ===
+			// Momen ini AI lagi mutusin "harus kabur dari sini SEKARANG" (gak ada cover,
+			// gak lagi gerak) -- pas paling relevan buat nutupin gerakan pake smoke.
+			DCO_SmokeUtility.TryDeploySmokeForRetreat(m_Utility, threatPos);
+			// === END ADDED ===
+			
 			SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 			
 			rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;

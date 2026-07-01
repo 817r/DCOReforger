@@ -1605,13 +1605,38 @@ class AICommander_BaseComponent : ScriptComponent
 		int unitCount = passengerGroup.GetUnitCount();
 		if (unitCount <= 0)
 			return null;
+		
+		// === ADDED: Vehicle Ownership fast-path ===
+		// Kalau grup ini udah punya vehicle sendiri, langsung pake itu lagi -- gak perlu
+		// search dari nol tiap kali mau transport. Cek dulu vehicle-nya masih hidup &
+		// lagi gak dipake orang lain sebelum dipake ulang.
+		IEntity ownedVeh = passengerGroup.GetOwnedVehicle();
+		if (ownedVeh)
+		{
+			DamageManagerComponent dmg = DamageManagerComponent.Cast(ownedVeh.FindComponent(DamageManagerComponent));
+			bool vehicleDestroyed = dmg && dmg.GetState() == EDamageState.DESTROYED;
+	
+			DCO_TransportMissionComponent ownedMission = DCO_TransportMissionComponent.Cast(ownedVeh.FindComponent(DCO_TransportMissionComponent));
+	
+			if (!vehicleDestroyed && ownedMission && !ownedMission.IsActiveVehicle())
+				return ownedVeh;
+	
+			if (vehicleDestroyed || !ownedMission)
+			{
+				// Vehicle hancur / component ilang -- lepas klaim biar bisa cari pengganti.
+				if (ownedMission)
+					ownedMission.ReleaseOwnership();
+				passengerGroup.SetOwnedVehicle(null);
+			}
+		}
+		// === END ADDED ===
 	 
 		vector groupPos = passengerGroup.GetOwner().GetOrigin();
 		IEntity vehicle = null;
 		
 		for(int i = 0; i < m_aVehicle.Count(); i++)
 		{
-			vehicle = CMD_VehicleFinder.FindNearestVehicle(m_aVehicle[i], groupPos, unitCount);
+			vehicle = CMD_VehicleFinder.FindNearestVehicle(m_aVehicle[i], groupPos, unitCount, passengerGroup);
 			if (vehicle) break;
 		}
 	 
@@ -1670,6 +1695,13 @@ class AICommander_BaseComponent : ScriptComponent
 			//Print(string.Format("[%1] Vehicle %2 sudah dipakai transport lain", m_sCommanderUID, vehicle.GetName()));
 			return;
 		}
+	 
+		// === ADDED: Vehicle Ownership ===
+		// Klaim vehicle ini buat grup ini secara permanen (bukan cuma buat 1 trip),
+		// jadi trip berikutnya grup ini langsung pake vehicle yang sama, gak search ulang.
+		mission.ClaimOwnership(passengerGroup);
+		passengerGroup.SetOwnedVehicle(vehicle);
+		// === END ADDED ===
 	 
 		passengerGroup.SetGroupRole(CMD_EGroupRole.TRANSPORT);
 		
@@ -1759,17 +1791,24 @@ class AICommander_BaseComponent : ScriptComponent
 		if (unitCount <= 0)
 			return false;
 	 
-		// Dedicated transport team dulu
-		/*DCO_TransportTeamComponent team = GetAvailableTransportTeam(passengerGroup.GetOwner().GetOrigin(), worldTime);
-		if (team)
+		// === ADDED: Dedicated Transport Team dispatch ===
+		// Dulu blok ini di-comment total, jadi dedicated team yang udah ke-register di
+		// m_aTransportTeams gak pernah dipanggil -- commander selalu fallback ke general
+		// vehicle pool. Sekarang: cek dulu ada dedicated team yang available, pakai kalau ada.
+		// (Pakai FindAvailableTransportTeam() yang baru, BUKAN GetAvailableTransportTeam()
+		// lama -- itu ada bug null-return + logic yang nyampur vehicle-pool-search buat
+		// grup transport-nya sendiri, jangan dipakai.)
+		DCO_TransportTeamComponent dedicatedTeam = FindAvailableTransportTeam();
+		if (dedicatedTeam)
 		{
-			team.AssignJob(passengerGroup, destination, this, worldTime);
+			dedicatedTeam.AssignJob(passengerGroup, destination, this, worldTime);
 			Print(string.Format("[%1] TRANSPORT via dedicated team: %2 carrying %3",
 				m_sCommanderUID,
-				team.GetOwner().GetName(),
+				dedicatedTeam.GetOwner().GetName(),
 				passengerGroup.GetOwner().GetName()));
 			return true;
-		}*/
+		}
+		// === END ADDED ===
 	 
 		// Fallback: cari vehicle biasa
 		vector groupPos = passengerGroup.GetOwner().GetOrigin();
@@ -1781,6 +1820,21 @@ class AICommander_BaseComponent : ScriptComponent
 		BeginTransportMission(passengerGroup, vehicle, destination, worldTime);
 		return true;
 	}
+	
+	// === ADDED: Dedicated Transport Team dispatch ===
+	// Cari dedicated transport team pertama yang lagi available (belum ada job).
+	// Sengaja dipisah dari GetAvailableTransportTeam() lama karena itu punya bug
+	// (null-return di akhir walau berhasil, dan null-deref kalau vehicle gak ketemu).
+	protected DCO_TransportTeamComponent FindAvailableTransportTeam()
+	{
+		foreach (DCO_TransportTeamComponent team : m_aTransportTeams)
+		{
+			if (team && team.IsAvailable())
+				return team;
+		}
+		return null;
+	}
+	// === END ADDED ===
 	 
 	DCO_TransportTeamComponent GetAvailableTransportTeam(vector TakeAt, float wt)
 	{

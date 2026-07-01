@@ -83,6 +83,19 @@ modded class SCR_AIGroupUtilityComponent
 	        m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
 	        return;
 	    }
+	    
+	    // === ADDED: MG bypass ===
+	    // Kalau grup punya gunner MG dan ada target yang relevan, langsung FIRE_AT_WILL --
+	    // gak perlu nunggu threshold jarak per-role (40-160m tergantung role) yang bisa
+	    // bikin telat return fire. MG efektif buat suppress dari jarak jauh, gak masuk
+	    // akal nunggu musuh mendekat dulu. Riflemen tetap ngikutin behavior existing
+	    // (cari cover, suppressive fire) begitu grup gak lagi HOLD_FIRE.
+	    if (HasMachineGunGunner() && IsAnyTargetRelevant(250.0))
+	    {
+	        m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
+	        return;
+	    }
+	    // === END ADDED ===
 	
 	    if (currentRole == CMD_EGroupRole.RECON || currentRole == CMD_EGroupRole.RETREAT)
 	    {
@@ -153,6 +166,33 @@ modded class SCR_AIGroupUtilityComponent
 	    else
 	        m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
 	}
+	
+	// === ADDED: MG bypass helper ===
+	// Cek apakah ADA member di grup ini yang bawa MG. Dipake buat bypass threshold
+	// jarak di EvaluateCombatMode() -- MG idealnya langsung return fire, gak nunggu
+	// musuh mendekat dulu kayak riflemen.
+	protected bool HasMachineGunGunner()
+	{
+		array<AIAgent> agents = {};
+		m_Owner.GetAgents(agents);
+		
+		foreach (AIAgent agent : agents)
+		{
+			IEntity controlled = agent.GetControlledEntity();
+			if (!controlled)
+				continue;
+			
+			SCR_AICombatComponent combatComp = SCR_AICombatComponent.Cast(controlled.FindComponent(SCR_AICombatComponent));
+			if (!combatComp)
+				continue;
+			
+			if (combatComp.HasWeaponOfType(EWeaponType.WT_MACHINEGUN))
+				return true;
+		}
+		
+		return false;
+	}
+	// === END ADDED ===
 	
 	protected bool IsAnyTargetRelevant(float maxRelevanceDistance = 150.0)
 	{

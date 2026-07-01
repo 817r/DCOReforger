@@ -63,10 +63,36 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	static float ORDER_BASE_BUFFER  = 10.0;
 	static float ARRIVAL_THRESHOLD  = 3.0;
 	
+	// === ADDED: Squad Cohesion Check ===
+	static float SQUAD_SPREAD_THRESHOLD = 30.0; // Meter -- member terjauh dari leader di atas ini dianggap "belum ngumpul"
+	// === END ADDED ===
+	
 	protected vector m_vLastCheckPos = vector.Zero;
 	protected float m_fLastMoveTime = 0;
 	protected const float STUCK_DIST_THRESHOLD = 2.5;
 	protected const float STUCK_TIME_THRESHOLD = 15.0;
+	
+	// === ADDED: Vehicle Ownership ===
+	// Vehicle biasa (bukan dedicated transport) yang udah "dimiliki" grup ini secara
+	// permanen. Sekali grup dapet vehicle, dia bakal terus pake vehicle yang sama tiap
+	// kali jalan lagi -- gak search vehicle baru dari nol tiap kali mau transport.
+	protected IEntity m_OwnedVehicle;
+	
+	IEntity GetOwnedVehicle()
+	{
+		return m_OwnedVehicle;
+	}
+	
+	void SetOwnedVehicle(IEntity veh)
+	{
+		m_OwnedVehicle = veh;
+	}
+	
+	bool HasOwnedVehicle()
+	{
+		return m_OwnedVehicle != null;
+	}
+	// === END ADDED ===
 	
 	bool CanCommanderOverrideRole()
 	{
@@ -272,6 +298,31 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		}
 	}
 	
+	// === ADDED: Squad Cohesion Check ===
+	// Cek apakah ada member grup yang masih jauh dari leader/group-origin. Dipake buat
+	// nunda "order complete" sampe squad beneran ngumpul, bukan cuma leader doang.
+	protected bool IsSquadSpreadTooFar(vector leaderPos)
+	{
+		if (!m_Group)
+			return false;
+		
+		array<AIAgent> agents = {};
+		m_Group.GetAgents(agents);
+		
+		foreach (AIAgent agent : agents)
+		{
+			IEntity controlled = agent.GetControlledEntity();
+			if (!controlled)
+				continue;
+			
+			if (vector.Distance(controlled.GetOrigin(), leaderPos) > SQUAD_SPREAD_THRESHOLD)
+				return true;
+		}
+		
+		return false;
+	}
+	// === END ADDED ===
+	
 	protected void BeginOrderTracking(vector targetPos, float worldTime)
 	{
 		m_vOrderTarget    = targetPos;
@@ -301,6 +352,19 @@ class DCO_GroupUtilityComponent : ScriptComponent
  
 		if (distToTarget <= ARRIVAL_THRESHOLD)
 		{
+			// === ADDED: Squad Cohesion Check ===
+			// Sebelumnya, order langsung dianggap selesai begitu GetOwner().GetOrigin()
+			// (posisi leader/group-origin) nyampe target -- walau member lain masih jauh
+			// di belakang. Commander bisa langsung kasih order baru & leader gerak lagi
+			// sebelum squad sempet regroup, bikin gap makin lebar tiap cycle (compounding).
+			// Sekarang: kalau ada member yang masih jauh dari leader, order BELUM dianggap
+			// selesai -- tunggu squad ngumpul dulu. Jalur stuck-detection & timeout di bawah
+			// TETAP jalan normal (gak kena efek ini), jadi kalau ada straggler yang beneran
+			// stuck permanen, order tetap bisa selesai lewat jalur itu -- gak bakal deadlock.
+			if (IsSquadSpreadTooFar(currentPos))
+				return false;
+			// === END ADDED ===
+			
 			SetGroupStatus(DCOG_EGroupStatus.IDLE);
 			ResetOrderTracking();
 			return true;
@@ -380,6 +444,18 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	void OnGroupRemoved()
 	{
 		AICommander_ManagerComponent.GetInstance().UnregisterGroup(this);
+		
+		// === ADDED: Vehicle Ownership cleanup ===
+		// Grup dihapus/disband -- lepas klaim vehicle-nya biar bisa dipake grup lain,
+		// jangan sampai vehicle nyangkut "dimiliki" grup yang udah gak eksis.
+		if (m_OwnedVehicle)
+		{
+			DCO_TransportMissionComponent mission = DCO_TransportMissionComponent.Cast(m_OwnedVehicle.FindComponent(DCO_TransportMissionComponent));
+			if (mission)
+				mission.ReleaseOwnership();
+			m_OwnedVehicle = null;
+		}
+		// === END ADDED ===
 	}
 	
 	override protected void OnPostInit(IEntity owner)
@@ -482,4 +558,3 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			GetGame().GetCallqueue().CallLater(CheckGroupIsHaveOrder, 10000, true);
 	}
 }
-

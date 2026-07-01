@@ -56,6 +56,12 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		if (longWaitTime)
 			waitTime *= 2;
 		
+		// === ADDED: samain sama Attack -- morale measure nambah wait time (morale
+		// tinggi/tertekan = lebih lama diem/hesitant sebelum gerak lagi).
+		float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 1, 2.5);
+		waitTime += mult;
+		// === END ADDED ===
+		
 		return waitTime;
 	}
 	
@@ -114,8 +120,11 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			}
 			
 			//rq.m_eMovementType = EMovementType.WALK;
-			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
-								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
+			// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving ===
+			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
+				DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
+				IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
+				moraleSystem);
 			rq.m_bAimAtTargetEnd = true;
 		}
 		else
@@ -157,8 +166,11 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			}
 			
 			//rq.m_eMovementType = EMovementType.RUN;
-			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
-								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
+			// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving ===
+			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
+				DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
+				IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
+				moraleSystem);
 			rq.m_bAimAtTargetEnd = true;
 		}
 		
@@ -180,8 +192,12 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		}
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
+		// === ADDED: samain sama Attack -- morale scaling buat cover search radius & move duration.
+		// Suppression class ini sebelumnya gak punya morale hook di sini sama sekali.
+		coverSearchDistMax *= DCO_MoraleCombatUtility.GetCoverSearchDistScale(moraleSystem);
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
-		rq.m_fMoveDuration_s = moveDurationMax;
+		rq.m_fMoveDuration_s = moveDurationMax * MoraleAmplifyMove();
+		// === END ADDED ===
 		
 		// Subscribe to events
 		// We will pronounce voice lines once we start or end moving
@@ -190,6 +206,14 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		
 		m_State.ApplyNewRequest(rq);
 	}
+	
+	// === ADDED: sebelumnya gak ada di Suppression (cuma ada di Attack). Dipakai di
+	// PushRequestMove buat scale move duration berdasarkan morale.
+	float MoraleAmplifyMove()
+	{
+		return Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 2, 1);
+	}
+	// === END ADDED ===
 	
 	void MoraleAndThreatPushMove(out SCR_EAICombatMoveDirection moveDir)
 	{
@@ -401,21 +425,25 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			// No waypoint, or it's an entity-associated waypoint, like Follow waypoint.
 			// Therefore use standard movement logic.
 			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
-			/*if (agent != group.GetLeaderAgent() && vector.Distance(group.GetLeaderEntity().GetOrigin(), m_MyEntity.GetOrigin()) > 50)
+			// === REACTIVATED & FIXED: cohesion check (sama pola kayak Attack) ===
+			if (agent != group.GetLeaderAgent() && vector.Distance(group.GetLeaderEntity().GetOrigin(), m_MyEntity.GetOrigin()) > 50)
 			{
-				vector mp = vector.Zero;
-				FindPosition2D(mp, group.GetLeaderEntity().GetOrigin(), 30, vector.Zero, 3);
+				RandomGenerator cohesionRand = new RandomGenerator();
+				vector mp = cohesionRand.GenerateRandomPointInRadius(0, 30, group.GetLeaderEntity().GetOrigin(), false);
+				mp[1] = GetGame().GetWorld().GetSurfaceY(mp[0], mp[2]);
 				movePos = mp;
 				eDirection = SCR_EAICombatMoveDirection.FORWARD;
 				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-				avoidStraightPathDir = vector.Zero;			
-			}*/
-			
-			movePos = targetPos;
-			MoraleAndThreatPushMove(eDirection);
-			//eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS; // Move to target
-			avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
-			coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+				avoidStraightPathDir = vector.Zero;
+			}
+			else
+			{
+				movePos = targetPos;
+				MoraleAndThreatPushMove(eDirection);
+				//eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS; // Move to target
+				avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
+				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+			}
 		}
 		else
 		{

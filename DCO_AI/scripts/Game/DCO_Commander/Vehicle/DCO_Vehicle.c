@@ -21,6 +21,38 @@ class DCO_TransportMissionComponent : ScriptComponent
 
 	protected AICommander_BaseComponent m_Commander;
 
+	// === ADDED: Vehicle Ownership ===
+	// Grup yang "memiliki" vehicle ini secara permanen. Beda sama m_PassengerGroup yang
+	// cuma valid selama 1 mission aktif -- ownership ini nempel terus sampai grup ganti
+	// vehicle atau vehicle ini hancur.
+	protected DCO_GroupUtilityComponent m_OwnerGroup;
+
+	bool HasOwner()
+	{
+		return m_OwnerGroup != null;
+	}
+
+	bool IsOwnedBy(DCO_GroupUtilityComponent grp)
+	{
+		return m_OwnerGroup == grp;
+	}
+
+	void ClaimOwnership(DCO_GroupUtilityComponent grp)
+	{
+		m_OwnerGroup = grp;
+	}
+
+	void ReleaseOwnership()
+	{
+		m_OwnerGroup = null;
+	}
+
+	DCO_GroupUtilityComponent GetOwnerGroup()
+	{
+		return m_OwnerGroup;
+	}
+	// === END ADDED ===
+
 	static float BOARDING_TIMEOUT   = 40.0;
 	static float MOVING_TIMEOUT     = 300.0;
 	static float DISEMBARK_TIMEOUT  = 30.0;

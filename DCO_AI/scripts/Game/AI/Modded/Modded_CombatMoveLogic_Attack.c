@@ -207,21 +207,31 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			// Therefore use standard movement logic.
 			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
 			
-			/*if (agent != group.GetLeaderAgent() && vector.Distance(group.GetLeaderEntity().GetOrigin(), m_MyEntity.GetOrigin()) > 40)
+			// === REACTIVATED & FIXED: cohesion check ===
+			// Sebelumnya di-comment total, kemungkinan karena FindPosition2D() gak valid/gak
+			// ada definisinya. Diganti pakai RandomGenerator.GenerateRandomPointInRadius yang
+			// udah stabil kepake di banyak tempat lain (AICommanderBase.c). Juga dibungkus
+			// if/else yang bener -- sebelumnya walau di-uncomment, baris "movePos = targetPos"
+			// di bawah tetap jalan TANPA syarat dan langsung nimpa hasil blok ini.
+			if (agent != group.GetLeaderAgent() && vector.Distance(group.GetLeaderEntity().GetOrigin(), m_MyEntity.GetOrigin()) > 40)
 			{
-				vector mp = vector.Zero;
-				FindPosition2D(mp, group.GetLeaderEntity().GetOrigin(), 25, vector.Zero, 5);
+				RandomGenerator cohesionRand = new RandomGenerator();
+				vector mp = cohesionRand.GenerateRandomPointInRadius(0, 25, group.GetLeaderEntity().GetOrigin(), false);
+				mp[1] = GetGame().GetWorld().GetSurfaceY(mp[0], mp[2]);
 				movePos = mp;
 				eDirection = SCR_EAICombatMoveDirection.FORWARD;
 				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
-				avoidStraightPathDir = vector.Zero;			
-			}*/
-			
-			movePos = targetPos;
-			MoraleAndThreatPushMove(eDirection);
-			//eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS; // Move to target
-			avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
-			coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+				avoidStraightPathDir = vector.Zero;
+			}
+			else
+			{
+				movePos = targetPos;
+				MoraleAndThreatPushMove(eDirection);
+				//eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS; // Move to target
+				avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
+				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+			}
+			// === END REACTIVATED & FIXED ===
 		}
 		else
 		{
@@ -332,8 +342,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 			//rq.m_eMovementType = EMovementType.WALK;
-			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
-								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
+			// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving -- BREAK
+			// gak sempet aim-while-moving walau secara teknis diizinin ===
+			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
+				DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
+				IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
+				moraleSystem);
 			rq.m_bAimAtTargetEnd = true;
 		}
 		else
@@ -375,21 +389,39 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 			//rq.m_eMovementType = EMovementType.RUN;
-			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
-								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
+			// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving -- BREAK
+			// gak sempet aim-while-moving walau secara teknis diizinin ===
+			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
+				DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
+				IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
+				moraleSystem);
 			rq.m_bAimAtTargetEnd = true;
 		}
 		
 		if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 			rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 		else
+		{
 			rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
+			
+			// === ADDED: CQB breach grenade ===
+			// Momen ini AI mutusin bakal masuk ke building buat kejar target -- ini titik
+			// paling pas buat "breach grenade" sebelum entry, bukan cuma reaksi ke target
+			// invisible kayak logic grenade yang di Modded_DCO_UpdateAttackData.
+			DCO_BreachUtility.TryThrowBreachGrenade(m_Utility, rq.m_vTargetPos);
+			// === END ADDED ===
+		}
 		
 		rq.m_bFailIfNoCover = ResolveFailMoveIfNoCover();
 		
 		// If we are not in cover, min cover search distance is overridden to 0, we should find any cover ASAP
 		if (!m_State.m_bInCover)
 			coverSearchDistMin = 3;
+		
+		// === ADDED: morale scaling buat cover search radius -- BREAK/MANIAC asal cover
+		// terdekat, MOTIVATED bisa afford nyari yang lebih strategis walau agak jauh.
+		coverSearchDistMax *= DCO_MoraleCombatUtility.GetCoverSearchDistScale(moraleSystem);
+		// === END ADDED ===
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
@@ -767,6 +799,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			} else
 			{
 				ECharacterStance newStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
+				// === ADDED: morale bisa override stance normal (BREAK = refleks PRONE,
+				// MANIAC = males full-prone, minimal CROUCH) ===
+				newStance = DCO_MoraleCombatUtility.ApplyMoraleStanceOverride(newStance, moraleSystem);
+				// === END ADDED ===
 				if (newStance > m_eStance)
 				{
 					
@@ -850,8 +886,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 			//rq.m_eMovementType = EMovementType.WALK;
-			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
-								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
+			// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving -- BREAK
+			// gak sempet aim-while-moving walau secara teknis diizinin ===
+			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
+				DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
+				IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
+				moraleSystem);
 			rq.m_bAimAtTargetEnd = true;
 		}
 		else
@@ -887,8 +927,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 			//rq.m_eMovementType = EMovementType.RUN;
-			rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
-								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
+			// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving -- BREAK
+			// gak sempet aim-while-moving walau secara teknis diizinin ===
+			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
+				DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
+				IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
+				moraleSystem);
 			rq.m_bAimAtTargetEnd = true;
 		}
 		
@@ -968,8 +1012,11 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_eStanceEnd = ECharacterStance.CROUCH;
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD; // Move back from target
-		rq.m_bAimAtTarget = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
-								IsAimingAndMovingAllowedForWeapon(m_eWeaponType);
+		// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving ===
+		rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
+			DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
+			IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
+			moraleSystem);
 		rq.m_bAimAtTargetEnd = true;
 		if (m_CharacterController.GetStance() == ECharacterStance.STAND)
 			rq.m_fMoveDuration_s = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;

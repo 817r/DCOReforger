@@ -61,7 +61,7 @@ class DCO_AIMoraleSystem
 	private moraleState m_State;
 	
 	protected float m_fNextUpdate_ms = 2000;
-	protected float m_fUpdateInterval_ms;
+	protected float m_fUpdateInterval_ms = 2000.0;
 	
 	private ref SCR_AIMoraleStateChangedInvoker m_OnThreatStateChanged = new SCR_AIMoraleStateChangedInvoker();
 	
@@ -209,17 +209,23 @@ class DCO_AIMoraleSystem
 	
 	void Update(SCR_AIUtilityComponent utility, float timeSlice)
 	{
-		//friendlys = m_Utility.GetAIAgent().GetParentGroup().GetAgentsCount();
+		AIAgent moraleAgent = m_Utility.GetAIAgent();
+		if (moraleAgent && moraleAgent.GetParentGroup())
+			friendlys = moraleAgent.GetParentGroup().GetAgentsCount();
 		m_fMoraleSuppression -= m_fMoraleSuppression * (MORALE_SUPPRESSION_RECOVERY + (friendlys * MORALE_BOOST_FRIENDLY_VALUE)) * timeSlice;
+		m_fMoraleSuppressionPlus -= m_fMoraleSuppressionPlus * MORALE_SUPPRESSION_RECOVERY * timeSlice;
 		if (m_Combat)
 		{
 			if (m_Combat.GetCurrentTarget())
 			{
 				m_fMoraleEndangeredPlus += ENDANGERED_INCREMENT * timeSlice;
-				m_fMoraleEndangered = Math.Clamp(m_fMoraleEndangered + m_fMoraleEndangeredPlus, 0 , 1.2)
+				m_fMoraleEndangered = Math.Clamp(m_fMoraleEndangered + m_fMoraleEndangeredPlus, 0 , 1.2); // FIX: titik-koma kelewat (pre-existing, compile-blocking)
 			}
 			else
+			{
 				m_fMoraleEndangered -= m_fMoraleEndangered * MORALE_ENDANGERED_RECOVERY * timeSlice;
+				m_fMoraleEndangeredPlus -= m_fMoraleEndangeredPlus * MORALE_ENDANGERED_RECOVERY * timeSlice;
+			}
 		}
 		else
 		{
@@ -231,7 +237,7 @@ class DCO_AIMoraleSystem
 		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
 		if (currentTime_ms > m_fNextUpdate_ms)
 		{
-			//DropAim();
+			DropAim();
 		}
 		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
 #ifdef WORKBENCH

@@ -12,7 +12,7 @@ class CMD_VehicleQueryCollector
 
 class CMD_VehicleFinder
 {
-	static IEntity FindNearestVehicle(IEntity ent, vector fromPos, int requiredSeats)
+	static IEntity FindNearestVehicle(IEntity ent, vector fromPos, int requiredSeats, DCO_GroupUtilityComponent requestingGroup = null)
 	{
 		IEntity bestVehicle = null;
 		float   bestDist    = 500;
@@ -31,6 +31,13 @@ class CMD_VehicleFinder
 		if (IsVehicleClaimed(ent))
 			return null;;
 
+		// === ADDED: Vehicle Ownership ===
+		// Skip vehicle yang udah "dimiliki" grup lain (bukan requestingGroup) -- walau
+		// lagi kosong/gak dipake sekarang, jangan direbut grup lain.
+		if (IsVehicleOwnedByOther(ent, requestingGroup))
+			return null;
+		// === END ADDED ===
+
 		float dist = vector.Distance(fromPos, ent.GetOrigin());
 		if (dist < bestDist)
 		{
@@ -40,6 +47,22 @@ class CMD_VehicleFinder
 
 		return bestVehicle;
 	}
+
+	// === ADDED: Vehicle Ownership ===
+	static bool IsVehicleOwnedByOther(IEntity vehicle, DCO_GroupUtilityComponent requestingGroup)
+	{
+		DCO_TransportMissionComponent mission =
+			DCO_TransportMissionComponent.Cast(vehicle.FindComponent(DCO_TransportMissionComponent));
+
+		if (!mission)
+			return false;
+
+		if (!mission.HasOwner())
+			return false;
+
+		return !mission.IsOwnedBy(requestingGroup);
+	}
+	// === END ADDED ===
 
 	static int CountFreeSeats(SCR_BaseCompartmentManagerComponent compMgr)
 	{

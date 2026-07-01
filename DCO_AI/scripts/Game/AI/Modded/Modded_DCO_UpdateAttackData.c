@@ -36,7 +36,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		int selectedMuzzleId;
 		m_CombatComponent.GetSelectedWeapon(selectedWeaponComp, selectedMuzzleId);
 		
-		bool directDamage
+		bool directDamage; // FIX: pre-existing syntax bug, titik-koma kelewat di sini (sebelum ada perubahan apapun dari kita)
 		float weaponMinDist, weaponMaxDist;
 		m_CombatComponent.GetSelectedWeaponProperties(weaponMinDist, weaponMaxDist, directDamage);
 		EWeaponType weaponType = selectedWeaponComp.GetWeaponType();
@@ -93,6 +93,12 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			{
 				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 4, 1));
 				fireRate = maxFireRate * threat;
+				
+				// === ADDED: High-Value Target prioritization ===
+				if (IsHighValueTarget(target, visible))
+					fireRate *= 1.5;
+				// === END ADDED ===
+				
 				return FIRE_TREE_SUPPRESSIVE;
 			}
 			return FIRE_TREE_LOOK;
@@ -102,12 +108,16 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		
 		if (visible)
 		{
+			// === ADDED: High-Value Target prioritization ===
+			bool isHVT = IsHighValueTarget(target, visible);
+			// === END ADDED ===
+			
 			// Visible
 			// If machinegun, always use burst at any range
 			// For regular weapons, use burst at short range if available, otherwise single
 			if (weaponType == EWeaponType.WT_MACHINEGUN)
 				return FIRE_TREE_BURST;
-			else if (targetDistance < BURST_FIRE_MAX_DISTANCE && m_bWeaponHasBurstOrAuto)
+			else if ((targetDistance < BURST_FIRE_MAX_DISTANCE || isHVT) && m_bWeaponHasBurstOrAuto) // MODIFIED: "|| isHVT" -- HVT dapet burst walau di luar jarak burst normal
 				return FIRE_TREE_BURST;
 			else
 				return FIRE_TREE_SINGLE;
@@ -141,6 +151,11 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			{
 				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 4, 1));
 				fireRate = maxFireRate * threat;
+				
+				// === ADDED: High-Value Target prioritization ===
+				if (IsHighValueTarget(target, false))
+					fireRate *= 1.5;
+				// === END ADDED ===
 								
 				return FIRE_TREE_SUPPRESSIVE;
 			}
@@ -213,4 +228,46 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			return;
 		}
 	}
+	
+	// === ADDED: High-Value Target prioritization ===
+	// Cek apakah target ini "bernilai tinggi" (bawa MG/AT/sniper) berdasarkan senjata
+	// yang dia pegang saat ini. Dipakai buat bikin respon (burst-fire, suppressive fire
+	// rate) lebih agresif -- ini BUKAN target re-selection (SCR_AIWeaponTargetSelector-nya
+	// vanilla, gak bisa kita intervensi milih target). Ini cuma "begitu ngunci HVT, abis-
+	// abisan", bukan "selalu tembak HVT duluan".
+	//
+	// Sengaja gak omniscient penuh: kalau target lagi gak visible DAN udah lama gak keliatan
+	// (>5 detik), kita anggap "belum tau" loadout-nya, return false.
+	protected static bool IsHighValueTarget(BaseTarget target, bool visible)
+	{
+		if (!target)
+			return false;
+		
+		if (!visible && target.GetTimeSinceSeen() > 5.0)
+			return false;
+		
+		IEntity targetEntity = target.GetTargetEntity();
+		if (!targetEntity)
+			return false;
+		
+		BaseWeaponManagerComponent wpnMgr = BaseWeaponManagerComponent.Cast(targetEntity.FindComponent(BaseWeaponManagerComponent));
+		if (!wpnMgr)
+			return false;
+		
+		array<BaseWeaponComponent> weapons = {};
+		wpnMgr.GetWeapons(weapons);
+		
+		foreach (BaseWeaponComponent w : weapons)
+		{
+			if (!w)
+				continue;
+			
+			EWeaponType wt = w.GetWeaponType();
+			if (wt == EWeaponType.WT_MACHINEGUN || wt == EWeaponType.WT_ROCKETLAUNCHER || wt == EWeaponType.WT_SNIPERRIFLE)
+				return true;
+		}
+		
+		return false;
+	}
+	// === END ADDED ===
 }
