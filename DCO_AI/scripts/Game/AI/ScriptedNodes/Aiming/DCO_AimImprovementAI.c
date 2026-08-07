@@ -250,7 +250,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case DCO_AISKILL.TERMINATOR :
 			{
-				sigma = 0.02;
+				sigma = 0.0001;
 				break;
 			}
 		}

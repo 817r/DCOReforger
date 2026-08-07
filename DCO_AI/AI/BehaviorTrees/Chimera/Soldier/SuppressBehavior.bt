@@ -436,56 +436,56 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
  VariablesRefs {
   VariableReference SuppressionVolume {
    VariableType 0
-   EditorPos 258.148 687.242
+   EditorPos 256 688
   }
   VariableReference duration {
    VariableType 1
-   EditorPos -2836.295 -155.788
+   EditorPos -2832 -160
   }
   VariableReference bVisible {
    VariableType 2
-   EditorPos -1865.13 357.705
+   EditorPos -1872 352
   }
   VariableReference SuppressionVolume {
    VariableType 0
-   EditorPos -2847.834 418.238
+   EditorPos -2848 416
   }
   VariableReference fTimeLastSeen_ms {
    VariableType 3
-   EditorPos -1906.13 444.194
+   EditorPos -1904 448
   }
   VariableReference SuppressionVolume {
    VariableType 0
-   EditorPos -2001.667 273.667
+   EditorPos -1936 608
   }
   VariableReference iFireTreeId {
    VariableType 4
-   EditorPos -1876.445 533.055
+   EditorPos -1872 528
   }
   VariableReference iFireTreeId {
    VariableType 4
-   EditorPos 54.404 484.405
+   EditorPos 48 480
   }
   VariableReference iFireTreeId {
    VariableType 4
-   EditorPos 590 490
+   EditorPos 592 496
   }
   VariableReference fireRate {
    VariableType 5
-   EditorPos -2835.523 -71.476
+   EditorPos -2832 -64
   }
   VariableReference fireRate {
    VariableType 5
-   EditorPos -115.256 752.475
+   EditorPos -112 752
   }
   VariableReference SuppressionVolume {
    VariableType 0
-   EditorPos -2118.667 1246.167
+   EditorPos -2112 1248
    Group "{6124D04D0D75BCEC}"
   }
   VariableReference distance {
    VariableType 6
-   EditorPos -1261.429 1262.381
+   EditorPos -1264 1264
    Group "{6124D04D0D75BCEC}"
   }
   VariableReference iFireTreeId {
@@ -494,7 +494,7 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
   }
   VariableReference SuppressionRandomPos {
    VariableType 7
-   EditorPos 1465.104 1289.388
+   EditorPos 1472 1296
   }
   VariableReference SuppressionVolume {
    VariableType 0
@@ -502,7 +502,7 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
   }
   VariableReference iFireTreeId {
    VariableType 4
-   EditorPos 2877.233 504.289
+   EditorPos 2880 512
   }
   VariableReference SuppressionRandomPos {
    VariableType 7
@@ -510,11 +510,11 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
   }
   VariableReference SuppressionVolume {
    VariableType 0
-   EditorPos 2243.537 1182.786
+   EditorPos 2240 1184
   }
   VariableReference iFireTreeId {
    VariableType 4
-   EditorPos 1691.573 -146.665
+   EditorPos 1696 -144
   }
  }
  Groups {

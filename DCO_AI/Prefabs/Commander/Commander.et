@@ -2,6 +2,8 @@ GameEntity : "{C28F5F51499CB912}Prefabs/Commander/US_Commander.et" {
  ID "6902DABDA61492A4"
  components {
   AICommander_AlgorithmComponent "{68F8849956F58560}" {
+   m_sDefaultMoveWaypointPrefab "{93D9BB77AC27D38C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Move_Commander.et"
+   m_sDefaultGetInWaypointPrefab "{6EB248EC45C92C3A}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetInCommander.et"
    m_fObjectiveAtTheSameTime 4
    m_fTransportDistanceThreshold 400
    m_fVehicleSearchRadius 200

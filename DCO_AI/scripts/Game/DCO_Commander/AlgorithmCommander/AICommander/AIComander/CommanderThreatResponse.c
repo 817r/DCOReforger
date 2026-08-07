@@ -12,16 +12,24 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	[Attribute("60.0", UIWidgets.EditBox, "Detik sebelum threat entry dianggap expired dan dihapus", category: "Threat")]
 	protected float m_fThreatExpiry;
 
-	[Attribute("70.0", UIWidgets.EditBox, "Jarak (meter) dua laporan dianggap threat yang sama", category: "Threat")]
+	[Attribute("70.0", UIWidgets.EditBox, "Jarak (meter) dua laporan dianggap threat yang sama (dedup/merge)", category: "Threat")]
 	protected float m_fMergeRadius;
+
+	// === ADDED: Threat Clustering ===
+	[Attribute("150.0", UIWidgets.EditBox, "Jarak (meter) buat grouping threat jadi 1 cluster respons -- lebih gede dari merge radius, karena ini buat 'gimana kita respons', bukan dedup laporan", category: "Threat")]
+	protected float m_fClusterRadius;
+
+	[Attribute("25.0", UIWidgets.EditBox, "Combined score minimum cluster sebelum ada respons aktif (reinforcement/flank/artillery) dikirim. Di bawah ini = dianggap gak cukup bahaya, di-skip total", category: "Threat")]
+	protected float m_fClusterMinResponseScore;
+	// === END ADDED ===
 
 	[Attribute("45.0", UIWidgets.EditBox, "Interval think cycle threat list (detik)", category: "Threat")]
 	protected float m_fThinkInterval;
 
-	[Attribute("2", UIWidgets.EditBox, "Maksimum reinforcement dikirim ke satu threat", category: "Reinforcement")]
+	[Attribute("2", UIWidgets.EditBox, "Maksimum reinforcement dikirim ke satu cluster", category: "Reinforcement")]
 	protected int m_iMaxReinforcementSent;
 
-	[Attribute("120.0", UIWidgets.EditBox, "Cooldown (detik) antara pengiriman reinforcement ke threat yang sama", category: "Reinforcement")]
+	[Attribute("120.0", UIWidgets.EditBox, "Cooldown (detik) antara pengiriman reinforcement ke cluster yang sama", category: "Reinforcement")]
 	protected float m_fReinforcementCooldown;
 
 	[Attribute("1", UIWidgets.EditBox, "Penambahan score per musuh yang terdeteksi", category: "Threat Scoring")]
@@ -33,17 +41,14 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	[Attribute("120.0", UIWidgets.EditBox, "Jarak counter-flank dari posisi threat (meter)", category: "Flanking")]
 	protected float m_fFlankDistance;
 
-	[Attribute("0.5", UIWidgets.Range, "Akurasi artillery untuk threat response (0–1)", params: "0 1 0.01", category: "Artillery")]
+	[Attribute("0.5", UIWidgets.Range, "Akurasi artillery untuk request manual/langsung (0–1)", params: "0 1 0.01", category: "Artillery")]
 	protected float m_fArtilleryAccuracy;
-	
-	[Attribute("1", UIWidgets.EditBox, "Jumlah shell HE per fire mission", category: "Artillery")]
-	protected int m_iHEShellCount;
-	
-	[Attribute("1", UIWidgets.EditBox, "Jumlah shell Smoke per fire mission", category: "Artillery")]
-	protected int m_iSmokeShellCount;
-	
-	[Attribute("1", UIWidgets.EditBox, "Jumlah shell Illum per fire mission", category: "Artillery")]
-	protected int m_iIllumShellCount;
+
+	// === ADDED: cooldown khusus artillery per-cluster, terpisah dari reinforcement
+	// cooldown -- artillery harusnya lebih jarang/berat daripada kirim reinforcement ===
+	[Attribute("90.0", UIWidgets.EditBox, "Cooldown (detik) artillery per-cluster", category: "Artillery")]
+	protected float m_fArtilleryCooldown;
+	// === END ADDED ===
 
 	//--------------------------------------------------------------------
 	protected AICommander_BaseComponent          m_Commander;
@@ -51,6 +56,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	protected ref array<ref CMD_ThreatEntry>     m_aThreats    = new array<ref CMD_ThreatEntry>();
 	protected float                              m_fThinkTimer = 0.0;
 	protected float                              m_fMergeSQ    = 0.0;
+	protected float                              m_fClusterSQ  = 0.0;
 
 	//--------------------------------------------------------------------
 	void ReceiveContactReport(CMD_ContactReport report, DCO_GroupUtilityComponent grp)
@@ -74,46 +80,50 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		CMD_ThreatEntry entry = new CMD_ThreatEntry(report.m_vPosition, report.m_iEstimatedEnemyCount, worldTime, grp);
 		m_aThreats.Insert(entry);
 	}
-	
+
 	void ReceiveArtillerySupport(CMD_FireMissionRequest request, DCO_GroupUtilityComponent grp)
 	{
-	    if (!m_Commander)
-	        return;
-	
-	    float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
-	
-	    CMD_ThreatEntry threat = new CMD_ThreatEntry(
-	        request.m_vImpactPos,
-	        0,
-	        worldTime,
-	        grp
-	    );
-		
-		float disp = CalculateArtilleryDispersion(GetOwner().GetOrigin(), threat.m_vPosition, request.m_eShellType);
-		int shellNum = CalculateArtilleryShellCount(request, m_fArtilleryAccuracy, worldTime);
-	    FireMission(threat, request.m_eShellType, shellNum, disp, worldTime);
+		if (!m_Commander || !m_ArtySupport || !request)
+			return;
+
+		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+
+		if (m_ArtySupport.HasFriendlyNearPosDefault(request.m_vImpactPos))
+		{
+			Print("[DCO_ThreatResponse] Fire mission manual DITOLAK -- friendly kedeteksi di area target");
+			return;
+		}
+
+		DispatchArtilleryRequest(request, worldTime, "manual");
 	}
-	
+
+	// === ADDED: satu pipeline final buat SEMUA jalur artillery (manual, cluster-auto,
+	// simple-request) -- shellCount dihitung sekali di sini lewat CalculateArtilleryShellCount,
+	// gak lagi kepisah-pisah tiap caller ngitung sendiri. ===
+	protected void DispatchArtilleryRequest(CMD_FireMissionRequest request, float worldTime, string sourceTag)
+	{
+		if (!m_ArtySupport || !request)
+			return;
+
+		int shellNum = CalculateArtilleryShellCount(request, m_fArtilleryAccuracy, worldTime);
+
+		Print(string.Format("[DCO_ThreatResponse] Fire mission (%1) -> %2 shell @ %3",
+			sourceTag, shellNum, request.m_vImpactPos.ToString()));
+
+		m_ArtySupport.RequestShellImpact(request.m_vImpactPos, request.m_eShellType, worldTime, shellNum);
+	}
+	// === END ADDED ===
+
+	// === MODIFIED: unifikasi shellCount -- sebelumnya request.m_iShellCount (yang
+	// diisi caller, misal berdasarkan enemyCount yang mereka liat) SAMA SEKALI GAK
+	// DIPAKE, di-override total sama hardcoded base per shell-type. Sekarang
+	// request.m_iShellCount jadi BASE (context caller dihormati), fungsi ini cuma
+	// nambahin modifier universal (accuracy/staleness) di atasnya. Satu pipeline,
+	// dipake bareng oleh SEMUA jalur artillery (manual/cluster-auto/simple-request). ===
 	int CalculateArtilleryShellCount(CMD_FireMissionRequest request, float accuracy, float worldTime)
 	{
-	    float shells = 0;
-	
-	    switch (request.m_eShellType)
-	    {
-	        case SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE:
-	            shells = 3 * m_iHEShellCount;
-	            break;
-	        case SCR_EAIArtilleryAmmoType.SMOKE:
-	            shells = 5 * m_iSmokeShellCount;
-	            break;
-	        case SCR_EAIArtilleryAmmoType.ILLUMINATION:
-	            shells = 2 * m_iIllumShellCount;
-	            break;
-	        case SCR_EAIArtilleryAmmoType.PRACTICE:
-	            shells = 4;
-	            break;
-	    }
-	
+	    float shells = Math.Max(1, request.m_iShellCount);
+
 	    if (accuracy < 0.3)
 	        shells += 3;
 	    else if (accuracy < 0.5)
@@ -122,69 +132,20 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	        shells += 1;
 	    else if (accuracy >= 0.85)
 	        shells -= 1;
-	
+
 	    float dataAge = worldTime - request.m_fRequestedTime;
 	    if (dataAge > 60.0)
 	        shells += 2;
 	    else if (dataAge > 30.0)
 	        shells += 1;
-	
+
 	    return Math.Clamp(shells, 1, 12);
 	}
-	
-	float CalculateArtilleryDispersion(vector commanderPos, vector impactPos, SCR_EAIArtilleryAmmoType shellType)
-	{
-	    float rangeToTarget = vector.Distance(commanderPos, impactPos);
-	
-	    float baseDispersion = Math.Clamp(rangeToTarget * 0.1, 20.0, 150.0);
-	
-	    switch (shellType)
-	    {
-	        case SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE:
-	            baseDispersion *= 1.0;
-	            break;
-	        case SCR_EAIArtilleryAmmoType.SMOKE:
-	            baseDispersion *= 1.2;
-	            break;
-	        case SCR_EAIArtilleryAmmoType.ILLUMINATION:
-	            baseDispersion *= 1.5;
-	            break;
-	        case SCR_EAIArtilleryAmmoType.PRACTICE:
-	            baseDispersion *= 0.8;
-	            break;
-	    }
-	
-	    return baseDispersion;
-	}
-	
-	protected void FireMission(CMD_ThreatEntry threat, SCR_EAIArtilleryAmmoType shellType, int shellCount, float baseDispersion, float worldTime)
-	{
-	    if (!m_Commander)
-	        return;
-	
-	    CMD_ArtillerySupport artComp = CMD_ArtillerySupport.Cast(
-	        m_Commander.GetOwner().FindComponent(CMD_ArtillerySupport));
-	    if (!artComp)
-	    {
-	        Print("[DCO_ThreatResponse] FireMission GAGAL — CMD_ArtillerySupport tidak ditemukan");
-	        return;
-	    }
-	
-	    string shellTypeName = "HE";
-	    if (shellType == SCR_EAIArtilleryAmmoType.SMOKE)
-	        shellTypeName = "SMOKE";
-	    else if (shellType == SCR_EAIArtilleryAmmoType.ILLUMINATION)
-	        shellTypeName = "ILLUM";
-	
-	    Print(string.Format("[DCO_ThreatResponse] FireMission → %1 x %2 @ %3",
-	        shellCount, shellTypeName, threat.m_vPosition.ToString()));
-	
-		artComp.RequestShellImpact(threat.m_vPosition, shellType, worldTime, shellCount);
-	
-	    threat.m_bArtilleryCalled   = true;
-	    threat.m_fLastArtilleryTime = worldTime;
-	}
 
+	//--------------------------------------------------------------------
+	//! Entry point buat reinforcement request LANGSUNG/MANUAL dari 1 group spesifik
+	//! (bukan jalur otomatis cluster). Tetap dipertahankan buat kasus dimana ada
+	//! kode lain yang mau minta bantuan langsung tanpa nunggu Think() cycle.
 	void ReceiveReinforcementRequest(DCO_GroupUtilityComponent requestingGrp, float worldTime)
 	{
 		if (!requestingGrp)
@@ -203,7 +164,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (threat.m_fPriorityScore < m_fReinforcementThreshold)
 			return;
 
-		SendReinforcement(threat, worldTime);
+		DispatchReinforcement(threat.m_vPosition, threat.m_eThreatLevel, threat, worldTime);
 	}
 
 	//--------------------------------------------------------------------
@@ -212,30 +173,36 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		PurgeExpiredThreats(worldTime);
 		MergeNearbyThreats();
 
-		int i = 0;
-		while (i < m_aThreats.Count())
+		// Pass 1: scoring & recon per-entry individual. Recon soal verifikasi 1
+		// laporan spesifik yang basi, jadi tetep per-entry, bukan per-cluster.
+		foreach (CMD_ThreatEntry threat : m_aThreats)
 		{
-			CMD_ThreatEntry threat = m_aThreats[i];
 			if (!threat)
-			{
-				i++;
 				continue;
-			}
 
 			ScoreThreat(threat, worldTime);
 			ClassifyThreat(threat);
 
 			if (threat.m_bNeedsRecon && !threat.m_bReconSent)
 				TrySendReconForThreat(threat, worldTime);
+		}
 
-			if ((threat.m_eThreatLevel == CMD_EThreatLevel.HIGH
-				|| threat.m_eThreatLevel == CMD_EThreatLevel.CRITICAL)
-				&& !threat.m_bFlankSent)
-			{
-				TrySendCounterFlank(threat, worldTime);
-			}
+		// Pass 2: cluster jadi hot-zone, evaluasi respons AGGREGATE.
+		array<ref CMD_ThreatCluster> clusters = BuildThreatClusters();
+		foreach (CMD_ThreatCluster cluster : clusters)
+		{
+			if (!cluster || cluster.m_aMembers.IsEmpty())
+				continue;
 
-			i++;
+			// === "Kalo ga begitu bahaya ya gak usah dikirim" ===
+			if (cluster.m_fCombinedScore < m_fClusterMinResponseScore)
+				continue;
+
+			if (cluster.m_eClusterLevel == CMD_EThreatLevel.HIGH || cluster.m_eClusterLevel == CMD_EThreatLevel.CRITICAL)
+				TrySendCounterFlank(cluster, worldTime);
+
+			TrySendClusterReinforcement(cluster, worldTime);
+			TrySendClusterArtillery(cluster, worldTime);
 		}
 	}
 
@@ -304,21 +271,125 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		return bestBonus;
 	}
 
+	// === MODIFIED: logic score->level diekstrak jadi ClassifyScore, dipake bareng
+	// buat entry individual (ClassifyThreat) DAN buat combined score cluster
+	// (FinalizeCluster) -- biar konsisten satu definisi threshold ===
+	protected CMD_EThreatLevel ClassifyScore(float score)
+	{
+		if (score < 20.0)
+			return CMD_EThreatLevel.NEGLIGIBLE;
+		else if (score < m_fEngageThreshold)
+			return CMD_EThreatLevel.LOW;
+		else if (score < 55.0)
+			return CMD_EThreatLevel.MEDIUM;
+		else if (score < 75.0)
+			return CMD_EThreatLevel.HIGH;
+		else
+			return CMD_EThreatLevel.CRITICAL;
+	}
+
 	protected void ClassifyThreat(CMD_ThreatEntry threat)
 	{
-		float score = threat.m_fPriorityScore;
-
-		if (score < 20.0)
-			threat.m_eThreatLevel = CMD_EThreatLevel.NEGLIGIBLE;
-		else if (score < m_fEngageThreshold)
-			threat.m_eThreatLevel = CMD_EThreatLevel.LOW;
-		else if (score < 55.0)
-			threat.m_eThreatLevel = CMD_EThreatLevel.MEDIUM;
-		else if (score < 75.0)
-			threat.m_eThreatLevel = CMD_EThreatLevel.HIGH;
-		else
-			threat.m_eThreatLevel = CMD_EThreatLevel.CRITICAL;
+		threat.m_eThreatLevel = ClassifyScore(threat.m_fPriorityScore);
 	}
+	// === END MODIFIED ===
+
+	//--------------------------------------------------------------------
+	// === ADDED: Threat Clustering ===
+	//! Flood-fill/BFS clustering -- transitif, jadi kalau A-B deket dan B-C deket
+	//! tapi A-C sendiri di luar radius, ketiganya tetep kegabung jadi 1 cluster
+	//! (beda sama MergeNearbyThreats yang cuma pairwise buat dedup laporan sama).
+	protected ref array<ref CMD_ThreatCluster> BuildThreatClusters()
+	{
+		array<ref CMD_ThreatCluster> clusters = new array<ref CMD_ThreatCluster>();
+
+		array<bool> visited = {};
+		for (int i = 0; i < m_aThreats.Count(); i++)
+			visited.Insert(false);
+
+		for (int i = 0; i < m_aThreats.Count(); i++)
+		{
+			if (visited[i])
+				continue;
+
+			if (!m_aThreats[i])
+			{
+				visited[i] = true;
+				continue;
+			}
+
+			CMD_ThreatCluster cluster = new CMD_ThreatCluster();
+			array<int> toVisit = {i};
+			visited[i] = true;
+
+			while (!toVisit.IsEmpty())
+			{
+				int idx = toVisit[0];
+				toVisit.Remove(0);
+
+				CMD_ThreatEntry current = m_aThreats[idx];
+				if (!current)
+					continue;
+
+				cluster.m_aMembers.Insert(current);
+
+				for (int j = 0; j < m_aThreats.Count(); j++)
+				{
+					if (visited[j])
+						continue;
+
+					CMD_ThreatEntry candidate = m_aThreats[j];
+					if (!candidate)
+					{
+						visited[j] = true;
+						continue;
+					}
+
+					if (vector.DistanceSq(current.m_vPosition, candidate.m_vPosition) <= m_fClusterSQ)
+					{
+						visited[j] = true;
+						toVisit.Insert(j);
+					}
+				}
+			}
+
+			FinalizeCluster(cluster);
+			clusters.Insert(cluster);
+		}
+
+		return clusters;
+	}
+
+	protected void FinalizeCluster(CMD_ThreatCluster cluster)
+	{
+		vector sumPos      = vector.Zero;
+		int totalEnemies   = 0;
+		float combinedScore = 0.0;
+		float freshest     = 0.0;
+
+		foreach (CMD_ThreatEntry e : cluster.m_aMembers)
+		{
+			if (!e)
+				continue;
+
+			sumPos        += e.m_vPosition;
+			totalEnemies  += e.m_iEstimatedEnemyCount;
+			combinedScore += e.m_fPriorityScore;
+
+			if (e.m_fLastUpdateTime > freshest)
+				freshest = e.m_fLastUpdateTime;
+		}
+
+		int count = cluster.m_aMembers.Count();
+		if (count > 0)
+			cluster.m_vCenterPos = sumPos / count;
+
+		cluster.m_iTotalEstimatedEnemies = totalEnemies;
+		cluster.m_fCombinedScore         = combinedScore;
+		cluster.m_fFreshestUpdateTime    = freshest;
+		cluster.m_eClusterLevel          = ClassifyScore(combinedScore);
+	}
+	// === END ADDED ===
 
 	protected void MergeNearbyThreats()
 	{
@@ -389,125 +460,224 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(threat.m_vPosition);
 		if (!wp)
 			return;
-		
+
 		reconGrp.CompleteAllWaypoints();
 
 		reconGrp.SetGroupRole(CMD_EGroupRole.RECON);
 		reconGrp.MoveTo(wp, worldTime);
 		threat.m_bReconSent = true;
 	}
-	
+
 	protected DCO_GroupUtilityComponent FindClosestGroupForRole(CMD_EGroupRole role, vector pos)
 	{
 	    if (!m_Commander)
 	        return null;
-	
-	    return m_Commander.FindClosestIdleGroupForRole_Public(role, pos);
+
+	    return m_Commander.FindBestIdleGroupForRole_Public(role, pos);
 	}
 
-	protected void TrySendCounterFlank(CMD_ThreatEntry threat, float worldTime)
+	// === MODIFIED: sekarang beroperasi di level cluster (target = centroid cluster,
+	// state di-track di primary member cluster) ===
+	protected void TrySendCounterFlank(CMD_ThreatCluster cluster, float worldTime)
 	{
 		if (!m_Commander)
 			return;
 
-		DCO_GroupUtilityComponent flankGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.FLANK, threat.m_vPosition);
+		CMD_ThreatEntry primary = cluster.GetPrimaryMember();
+		if (!primary || primary.m_bFlankSent)
+			return;
+
+		DCO_GroupUtilityComponent flankGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.FLANK, cluster.m_vCenterPos);
 		if (!flankGrp)
-			flankGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.REINFORNCE, threat.m_vPosition);
+			flankGrp = m_Commander.FindBestIdleGroupForRole_Public(CMD_EGroupRole.REINFORNCE, cluster.m_vCenterPos);
 		if (!flankGrp)
 			return;
 
 		vector commanderPos = m_Commander.GetOwner().GetOrigin();
-		vector flankPos     = m_Commander.ComputeFlankPosition(commanderPos, threat.m_vPosition, m_fFlankDistance);
+		vector flankPos     = m_Commander.ComputeFlankPosition(commanderPos, cluster.m_vCenterPos, m_fFlankDistance);
 		flankPos[1]         = GetGame().GetWorld().GetSurfaceY(flankPos[0], flankPos[2]);
 
 		SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(flankPos);
 		if (!wp)
 			return;
-		
+
 		flankGrp.CompleteAllWaypoints();
 
 		flankGrp.SetGroupRole(CMD_EGroupRole.FLANK);
 		flankGrp.MoveTo(wp, worldTime);
-		threat.m_bFlankSent = true;
+		primary.m_bFlankSent = true;
 	}
+	// === END MODIFIED ===
 
-	protected void SendReinforcement(CMD_ThreatEntry threat, float worldTime)
+	// === ADDED: reinforcement otomatis dari cluster, dipanggil langsung dari Think() ===
+	protected void TrySendClusterReinforcement(CMD_ThreatCluster cluster, float worldTime)
+	{
+		if (!m_Commander)
+			return;
+
+		CMD_ThreatEntry primary = cluster.GetPrimaryMember();
+		if (!primary)
+			return;
+
+		if (worldTime - primary.m_fLastReinforcementTime < m_fReinforcementCooldown)
+			return;
+
+		if (primary.m_iReinforcementSentNumber >= m_iMaxReinforcementSent)
+			return;
+
+		if (cluster.m_fCombinedScore < m_fReinforcementThreshold)
+			return;
+
+		DispatchReinforcement(cluster.m_vCenterPos, cluster.m_eClusterLevel, primary, worldTime);
+	}
+	// === END ADDED ===
+
+	// === MODIFIED: sebelumnya "SendReinforcement(threat, worldTime)", sekarang
+	// generic -- nerima posisi/level target + entry yang nyimpen cooldown/count
+	// state, biar bisa dipake baik dari cluster (otomatis) maupun request manual ===
+	protected void DispatchReinforcement(vector targetPos, CMD_EThreatLevel level, CMD_ThreatEntry stateHolder, float worldTime)
 	{
 	    if (!m_Commander)
 	        return;
-	
-	    int slotsLeft = m_iMaxReinforcementSent - threat.m_iReinforcementSentNumber;
+
+	    int slotsLeft = m_iMaxReinforcementSent - stateHolder.m_iReinforcementSentNumber;
 	    if (slotsLeft <= 0)
 	        return;
-	
+
 	    int sentThisCall = 0;
-	
+
 	    while (sentThisCall < slotsLeft)
 	    {
 	        DCO_GroupUtilityComponent reinforcement = null;
 	        bool armored = false;
-	
-	        if (threat.m_eThreatLevel >= CMD_EThreatLevel.HIGH)
+
+	        if (level >= CMD_EThreatLevel.HIGH)
 	        {
-	            reinforcement = FindClosestGroupForRole(CMD_EGroupRole.ARMORED, threat.m_vPosition);
+	            reinforcement = FindClosestGroupForRole(CMD_EGroupRole.ARMORED, targetPos);
 	            if (reinforcement)
 	            {
 	                armored = true;
 	            }
 	            else
 	            {
-	                reinforcement = FindClosestGroupForRole(CMD_EGroupRole.REINFORNCE, threat.m_vPosition);
+	                reinforcement = FindClosestGroupForRole(CMD_EGroupRole.REINFORNCE, targetPos);
 	                armored = false;
 	            }
 	        }
 	        else
 	        {
-	            reinforcement = FindClosestGroupForRole(CMD_EGroupRole.REINFORNCE, threat.m_vPosition);
+	            reinforcement = FindClosestGroupForRole(CMD_EGroupRole.REINFORNCE, targetPos);
 	        }
-	
+
 	        if (!reinforcement)
 	            break;
-	
-	        if (m_Commander.TryAssignTransport(reinforcement, threat.m_vPosition, worldTime))
+
+	        if (m_Commander.TryAssignTransport(reinforcement, targetPos, worldTime))
 	        {
-	            threat.m_iReinforcementSentNumber++;
-	            threat.m_bReinforcementSent     = true;
-	            threat.m_fLastReinforcementTime = worldTime;
+	            stateHolder.m_iReinforcementSentNumber++;
+	            stateHolder.m_bReinforcementSent     = true;
+	            stateHolder.m_fLastReinforcementTime = worldTime;
 	            sentThisCall++;
-	
+
 	            continue;
 	        }
-	
-	        SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(threat.m_vPosition);
+
+	        SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(targetPos);
 	        if (!wp)
 	            break;
-	
+
 	        if (!armored)
 	            reinforcement.SetGroupRole(CMD_EGroupRole.REINFORNCE);
-			
+
 			reinforcement.CompleteAllWaypoints();
-	
+
 	        reinforcement.MoveTo(wp, worldTime);
-	
-	        threat.m_iReinforcementSentNumber++;
-	        threat.m_bReinforcementSent     = true;
-	        threat.m_fLastReinforcementTime = worldTime;
+
+	        stateHolder.m_iReinforcementSentNumber++;
+	        stateHolder.m_bReinforcementSent     = true;
+	        stateHolder.m_fLastReinforcementTime = worldTime;
 	        sentThisCall++;
-	
+
 	        Print(string.Format("[DCO_ThreatResponse] Reinforcement %1/%2 (foot/motor) dikirim ke %3",
-	            threat.m_iReinforcementSentNumber,
+	            stateHolder.m_iReinforcementSentNumber,
 	            m_iMaxReinforcementSent,
-	            threat.m_vPosition.ToString()));
+	            targetPos.ToString()));
 	    }
-	
+
 	    if (sentThisCall > 0)
 	    {
 	        Print(string.Format("[DCO_ThreatResponse] Total %1 group dikirim, slot terisi %2/%3",
 	            sentThisCall,
-	            threat.m_iReinforcementSentNumber,
+	            stateHolder.m_iReinforcementSentNumber,
 	            m_iMaxReinforcementSent));
 	    }
 	}
+	// === END MODIFIED ===
+
+	// === ADDED: artillery otomatis dari cluster -- milih shell type berdasarkan
+	// kondisi cluster (kesegaran intel, level ancaman, ada friendly deket apa
+	// enggak). Dispersion/accuracy tembakan beneran dihitung sepenuhnya oleh
+	// CMD_ArtillerySupport, di sini cuma nentuin POSISI, JENIS SHELL, dan JUMLAH. ===
+	protected void TrySendClusterArtillery(CMD_ThreatCluster cluster, float worldTime)
+	{
+		if (!m_Commander || !m_ArtySupport)
+			return;
+
+		CMD_ThreatEntry primary = cluster.GetPrimaryMember();
+		if (!primary)
+			return;
+
+		if (worldTime - primary.m_fLastArtilleryTime < m_fArtilleryCooldown)
+			return;
+
+		// Safety -- jangan tembak kalau ada friendly deket cluster ini
+		if (m_ArtySupport.HasFriendlyNearPosDefault(cluster.m_vCenterPos))
+			return;
+
+		bool isFresh = (worldTime - cluster.m_fFreshestUpdateTime) < m_fStalenessThreshold;
+
+		SCR_EAIArtilleryAmmoType shellType;
+		if (!isFresh)
+		{
+			// Intel udah agak basi -- jangan gambling HE ke posisi yang mungkin
+			// udah gak akurat, smoke buat disrupt/obscure aja
+			shellType = SCR_EAIArtilleryAmmoType.SMOKE;
+		}
+		else if (cluster.m_eClusterLevel == CMD_EThreatLevel.CRITICAL || cluster.m_eClusterLevel == CMD_EThreatLevel.HIGH)
+		{
+			shellType = SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE;
+		}
+		else
+		{
+			// MEDIUM ke bawah gak worth artillery -- biar reinforcement aja yang handle
+			return;
+		}
+
+		// === MODIFIED: CalculateClusterShellCount sekarang cuma nentuin BASE count
+		// (context cluster -- enemy count, staleness), lalu dioper ke pipeline shared
+		// DispatchArtilleryRequest yang nambahin modifier accuracy di atasnya. Gak lagi
+		// langsung manggil RequestShellImpact di sini. ===
+		int baseShellCount = CalculateClusterShellCount(cluster, worldTime);
+
+		CMD_FireMissionRequest request = new CMD_FireMissionRequest(cluster.m_vCenterPos, shellType, worldTime, baseShellCount);
+		DispatchArtilleryRequest(request, worldTime, "cluster-auto");
+
+		primary.m_bArtilleryCalled   = true;
+		primary.m_fLastArtilleryTime = worldTime;
+	}
+	// === END MODIFIED ===
+
+	protected int CalculateClusterShellCount(CMD_ThreatCluster cluster, float worldTime)
+	{
+		float shells = 2.0 + (cluster.m_iTotalEstimatedEnemies * 0.5);
+
+		float age = worldTime - cluster.m_fFreshestUpdateTime;
+		if (age > 30.0)
+			shells += 1.0;
+
+		return Math.Clamp(Math.Round(shells), 1, 12);
+	}
+	// === END ADDED ===
 
 	//--------------------------------------------------------------------
 	protected CMD_ThreatEntry FindNearbyThreat(vector pos)
@@ -522,6 +692,77 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		}
 		return null;
 	}
+
+	// === ADDED: Simple Artillery Request ===
+	//! Beda sama FindNearbyThreat (yang radius-nya ketat, buat dedup laporan sama) --
+	//! ini nyari threat KNOWN terdekat TANPA batas radius, dipake buat resolve posisi
+	//! target request artillery sederhana. maxDist opsional buat nyegah nembak ke
+	//! threat yang kejauhan buat dianggap relevan sama group yang minta.
+	protected CMD_ThreatEntry FindClosestKnownThreat(vector pos, float maxDist = -1.0)
+	{
+		CMD_ThreatEntry best = null;
+		float bestDistSq = -1.0;
+		float maxDistSq = maxDist * maxDist;
+
+		for (int i = 0; i < m_aThreats.Count(); i++)
+		{
+			CMD_ThreatEntry t = m_aThreats[i];
+			if (!t)
+				continue;
+
+			float distSq = vector.DistanceSq(t.m_vPosition, pos);
+
+			if (maxDist > 0 && distSq > maxDistSq)
+				continue;
+
+			if (bestDistSq < 0.0 || distSq < bestDistSq)
+			{
+				bestDistSq = distSq;
+				best = t;
+			}
+		}
+
+		return best;
+	}
+
+	//! Entry point buat GROUP yang butuh artillery support tapi gak tau/gak perlu
+	//! tau posisi spesifik musuh -- cuma bilang jenis efek yang dimau (HE/Smoke/dll),
+	//! posisi target otomatis diresolve dari threat TERDEKAT yang udah diketahui
+	//! commander (dari laporan kontak sebelumnya lewat ReceiveContactReport).
+	//! Return false kalau gak ada threat yang diketahui di sekitar grup (gak ada
+	//! yang bisa di-target), atau kalau ada friendly di area target (safety).
+	bool RequestArtillerySupportSimple(DCO_GroupUtilityComponent requestingGrp, SCR_EAIArtilleryAmmoType desiredShellType, float worldTime, float maxSearchDist = 300.0)
+	{
+		if (!requestingGrp || !m_ArtySupport)
+			return false;
+
+		vector grpPos = requestingGrp.GetOwner().GetOrigin();
+
+		CMD_ThreatEntry target = FindClosestKnownThreat(grpPos, maxSearchDist);
+		if (!target)
+		{
+			Print("[DCO_ThreatResponse] RequestArtillerySupportSimple GAGAL -- gak ada threat yang diketahui di sekitar grup");
+			return false;
+		}
+
+		if (m_ArtySupport.HasFriendlyNearPosDefault(target.m_vPosition))
+		{
+			Print("[DCO_ThreatResponse] RequestArtillerySupportSimple DITOLAK -- friendly kedeteksi di area target");
+			return false;
+		}
+
+		// === MODIFIED: base shellCount dari enemyCount target, lalu lewat pipeline
+		// shared (DispatchArtilleryRequest) biar modifier accuracy/staleness konsisten
+		// sama 2 jalur lainnya (manual, cluster-auto) ===
+		int baseShellCount = 3;
+		if (target.m_iEstimatedEnemyCount > 3)
+			baseShellCount = 5;
+
+		CMD_FireMissionRequest request = new CMD_FireMissionRequest(target.m_vPosition, desiredShellType, worldTime, baseShellCount);
+		DispatchArtilleryRequest(request, worldTime, "simple-request");
+		return true;
+	}
+	// === END MODIFIED ===
 
 	protected void PurgeExpiredThreats(float worldTime)
 	{
@@ -585,9 +826,59 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		m_Commander = AICommander_BaseComponent.Cast(owner.FindComponent(AICommander_BaseComponent));
 		if (!m_Commander)
 			return;
-		
+
 		m_ArtySupport = CMD_ArtillerySupport.Cast(owner.FindComponent(CMD_ArtillerySupport));
 
-		m_fMergeSQ = m_fMergeRadius * m_fMergeRadius;
+		m_fMergeSQ   = m_fMergeRadius * m_fMergeRadius;
+		m_fClusterSQ = m_fClusterRadius * m_fClusterRadius;
+		
+		// === ADDED: BUG FIX -- m_fThinkTimer sebelumnya mulai dari 0.0 SAMA PERSIS di
+		// semua instance (satu per commander/faction), dan m_fThinkInterval-nya fixed
+		// (gak di-scale personality apapun kayak AICommander_BaseComponent). Efeknya:
+		// SEMUA faction's threat response (BFS clustering + reinforcement + artillery
+		// evaluation) nembak bareng di FRAME YANG SAMA, tiap 45 detik, SELAMANYA --
+		// gak ada mekanisme desync apapun. Ini kemungkinan besar penyebab periodic
+		// freeze yang dilaporkan. Fix: kasih jitter random per-instance ke starting
+		// timer, biar tiap commander punya offset sendiri-sendiri.
+		m_fThinkTimer = Math.RandomFloat(0.0, m_fThinkInterval);
+		// === END ADDED ===
 	}
 }
+
+// === ADDED: Threat Clustering ===
+//! Grouping sementara dari beberapa CMD_ThreatEntry yang saling berdekatan --
+//! DIBANGUN ULANG tiap Think() cycle (gak persisten), state cooldown/sent tetep
+//! disimpen di CMD_ThreatEntry masing-masing (lewat GetPrimaryMember()), jadi
+//! gak butuh identity cluster yang stabil antar cycle.
+class CMD_ThreatCluster
+{
+	vector m_vCenterPos;
+	int m_iTotalEstimatedEnemies = 0;
+	float m_fCombinedScore = 0.0;
+	CMD_EThreatLevel m_eClusterLevel = CMD_EThreatLevel.NEGLIGIBLE;
+	float m_fFreshestUpdateTime = 0.0;
+	ref array<CMD_ThreatEntry> m_aMembers = new array<CMD_ThreatEntry>();
+
+	//! Member dengan priority score individu tertinggi -- carrier buat cooldown/
+	//! sent-state seluruh cluster ini (biar gak butuh persistent cluster identity).
+	CMD_ThreatEntry GetPrimaryMember()
+	{
+		CMD_ThreatEntry best = null;
+		float bestScore = -1.0;
+
+		foreach (CMD_ThreatEntry e : m_aMembers)
+		{
+			if (!e)
+				continue;
+
+			if (e.m_fPriorityScore > bestScore)
+			{
+				bestScore = e.m_fPriorityScore;
+				best = e;
+			}
+		}
+
+		return best;
+	}
+}
+// === END ADDED ===

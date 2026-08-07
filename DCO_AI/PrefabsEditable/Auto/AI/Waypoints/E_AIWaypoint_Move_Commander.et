@@ -1,0 +1,27 @@
+SCR_AIWaypoint : "{750A8D1695BD6998}Prefabs/AI/Waypoints/AIWaypoint_Move.et" {
+ ID "663CBEF736DEBDE0"
+ components {
+  SCR_EditableEntityVisibilityChildComponent "{56424E1FD75C754B}" : "{CA7D13FC9D385E8F}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityVisibilityChildComponent.ct" {
+  }
+  SCR_EditableWaypointComponent "{56424E1FD75DDA6D}" : "{89CF6086B34A8800}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityComponent.ct" {
+   m_UIInfo SCR_EditableEntityUIInfo "{5298E609432D192D}" {
+    Name "#AR-EditableEntity_AIWaypoint_Move_Name"
+    Icon "{FDE4238500835875}UI/Textures/Editor/EditableEntities/Waypoints/EditableEntity_Waypoint_Move.edds"
+    m_aAutoLabels {
+     ENTITYTYPE_SYSTEM SIZE_XL
+    }
+   }
+   m_EntityInteraction SCR_EditableAttachableEntityInteraction "{69C82E81AF4F8948}" {
+    m_aAttachableTypes {
+     GENERIC GROUP CHARACTER VEHICLE
+    }
+   }
+  }
+  SCR_WaypointAreaMeshComponent "{56424E1FD75DACBD}" : "{3CE012874EA1DC23}Prefabs/Editor/Components/Waypoint_SCR_WaypointAreaMeshComponent.ct" {
+  }
+  RplComponent "{56424E1FD75DD48A}" : "{B193E926C1935A4C}Prefabs/Editor/Components/Default_RplComponent.ct" {
+  }
+ }
+ CompletionRadius 20
+ CompletionType All
+}

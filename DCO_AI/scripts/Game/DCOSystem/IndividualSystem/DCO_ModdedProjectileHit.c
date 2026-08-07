@@ -51,8 +51,12 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 					shooterRoot.GetBounds(bbMin, bbMax);
 					SCR_AISuppressionVolumeBase.CreateSuppressionBox(shooterRoot.GetOrigin(), radius, 3, bbMin, bbMax);
 					SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
-					SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 6, 1.5);
-					utility.AddAction(supp);					
+					if (createSupp)
+					{
+						SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 6, 1.5);
+						utility.AddAction(supp);	
+					}
+				
 				}
 				
 				if (distanceToDanger < 2 && bulletCount > 2 && isNullTarget && m_State.IsInValidCover())
@@ -285,8 +289,11 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 					vector bbMax, bbMin;
 					SCR_AISuppressionVolumeBase.CreateSuppressionBox(shooterRoot.GetOrigin(), radius, 3, bbMin, bbMax);
 					SCR_AISuppressionObjectVolumeBox createSupp = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
-					SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 5, 1.5);
-					utility.AddAction(supp);
+					if (createSupp)
+					{
+						SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, createSupp, 5, 1.5);
+						utility.AddAction(supp);					
+					}
 				}
 					
 				return true;

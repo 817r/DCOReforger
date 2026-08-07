@@ -3,9 +3,12 @@ typedef func SCR_AIOnTacticChange;
 
 modded class SCR_AIGroupUtilityComponent
 {
-	// === ADDED: Responsive close-range bypass tuning ===
-	protected const float CLOSE_RESPONSIVE_DIST = 50.0;
-	// === END ADDED ===
+	// === MODIFIED: dulu CLOSE_RESPONSIVE_DIST (50m, dicabut pas Discipline system
+	// dibangun), sekarang balik lagi tapi jauh lebih ketat -- fallback safety net
+	// biar grup non-combat-role gak "diem gak nembak" pas musuh udah literally
+	// deket, tanpa balik ke behavior lama yang gampang aggro dari jarak jauh.
+	protected const float CLOSE_VISIBLE_TRIGGER_DIST = 20.0;
+	// === END MODIFIED ===
 	
 	ref ScriptInvokerBase<SCR_AIOnTacticChange> m_OnTacticsChange = new ScriptInvokerBase<SCR_AIOnTacticChange>();
 	protected DCO_GroupUtilityComponent utilDco;
@@ -70,7 +73,6 @@ modded class SCR_AIGroupUtilityComponent
 	        m_eCombatModeActual = m_eCombatModeExternal;
 	        return;
 	    }
-	
 
 	    
 	    bool hasActiveOrder = false;
@@ -88,46 +90,35 @@ modded class SCR_AIGroupUtilityComponent
 	        return;
 	    }
 	    
-	    // === ADDED: Responsive close-range bypass ===
-	    // Threshold per-role di bawah bisa sampe 40-160m tergantung role/order, dan
-	    // itu sebagian gantung ke hasThreat (endangering+fresh) yang gak selalu reliable
-	    // buat suppressive fire yang landing terus-menerus. Ini safety net kedua: kalau
-	    // ada threat DEKET & fresh, langsung FIRE_AT_WILL, jangan nunggu role-based logic.
-	    if (IsAnyTargetRelevant(CLOSE_RESPONSIVE_DIST))
+	    // === MODIFIED: Discipline -- bypass yang sebelumnya PURE JARAK (CLOSE_RESPONSIVE_DIST/
+	    // MG 250m) diganti jadi DIRECT THREAT ONLY (IsDirectlyThreatened -- lagi ditembakin/
+	    // di-endanger beneran, bukan cuma "ada musuh kedeteksi di radius sekian"). Grup gak
+	    // lagi otomatis buka tembak cuma karena ada target dalam jarak tertentu -- harus
+	    // bener-bener lagi diancam langsung. Self-preservation individual (IsCloseDirectThreat/
+	    // ShouldReturnFireWhenEndangered di ResolveFireTree) tetep jalan normal di luar ini.
+	    if (IsDirectlyThreatened())
 	    {
 	        m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 	        return;
 	    }
-	    // === END ADDED ===
+	    // === END MODIFIED ===
 	    
-	    // === ADDED: MG bypass ===
-	    // Kalau grup punya gunner MG dan ada target yang relevan, langsung FIRE_AT_WILL --
-	    // gak perlu nunggu threshold jarak per-role (40-160m tergantung role) yang bisa
-	    // bikin telat return fire. MG efektif buat suppress dari jarak jauh, gak masuk
-	    // akal nunggu musuh mendekat dulu. Riflemen tetap ngikutin behavior existing
-	    // (cari cover, suppressive fire) begitu grup gak lagi HOLD_FIRE.
-	    if (HasMachineGunGunner() && IsAnyTargetRelevant(250.0))
+	    // === MODIFIED: MG bypass -- sama, diganti direct-threat-only. MG tetep dapet
+	    // prioritas (gak perlu nunggu role-based threshold), tapi cuma kalau BENERAN
+	    // lagi diancam, bukan cuma ada target kedeteksi 250m.
+	    if (HasMachineGunGunner() && IsDirectlyThreatened())
 	    {
 	        m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 	        return;
 	    }
-	    // === END ADDED ===
-	
+	    // === END MODIFIED ===
+
 	    if (currentRole == CMD_EGroupRole.RECON || currentRole == CMD_EGroupRole.RETREAT)
 	    {
-			if (hasActiveOrder)
-			{
-		        if (IsAnyTargetRelevant(40.0))
-		            m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
-		        else
-		            m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;			
-			} else
-			{
-		        if (IsAnyTargetRelevant(120.0))
-		            m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
-		        else
-		            m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;			
-			}			
+	        if (IsDirectlyThreatened())
+	            m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
+	        else
+	            m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
 
 	        return;
 	    }
@@ -188,10 +179,14 @@ modded class SCR_AIGroupUtilityComponent
 	    }
 	    // === END ADDED ===
 	
-	    if (IsAnyTargetRelevant(250.0))
+	    // === MODIFIED: Discipline -- fallback ini kepake buat role NONE/RESERVE/TRANSPORT
+	    // (grup idle/reserve/patrol yang gak lagi dikasih combat order eksplisit) --
+	    // sama kayak RECON/RETREAT, ini bukan role combat, jadi disiplin penuh.
+	    if (IsDirectlyThreatened())
 	        m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 	    else
 	        m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
+	    // === END MODIFIED ===
 	}
 	
 	// === ADDED: MG bypass helper ===
@@ -215,6 +210,45 @@ modded class SCR_AIGroupUtilityComponent
 			
 			if (combatComp.HasWeaponOfType(EWeaponType.WT_MACHINEGUN))
 				return true;
+		}
+		
+		return false;
+	}
+	// === END ADDED ===
+	
+	// === ADDED: Discipline -- Direct Threat ===
+	//! True kalau grup ini BENERAN lagi diancam langsung (endangering+fresh dari
+	//! cluster target) -- bukan cuma "ada musuh kedeteksi di radius sekian" kayak
+	//! IsAnyTargetRelevant. Ini yang dipake buat gerbang "grup boleh nge-engage combat
+	//! walau lagi ngerjain non-combat task (RECON/RETREAT/RESERVE/dll)" -- disiplin,
+	//! cuma respon kalau BENERAN ditembakin/di-endanger, bukan proaktif nyari ribut.
+	protected bool IsDirectlyThreatened()
+	{
+		foreach (SCR_AIGroupTargetCluster c : m_Perception.m_aTargetClusters)
+		{
+			if (!c.m_State)
+				continue;
+			
+			bool hasThreat = (c.m_State.m_iCountEndangering > 0 && c.m_State.m_iCountAlive > 0);
+			bool isFresh   = (c.m_State.GetTimeSinceLastNewInformation() < 5.0);
+			
+			if (hasThreat && isFresh)
+				return true;
+			
+			// === ADDED: BUG FIX -- sebelumnya PURE endangering-only. Masalahnya
+			// m_iCountEndangering butuh musuh BENERAN nembak/near-miss dulu baru
+			// ke-set, ada delay. Efeknya mayoritas grup (RECON/RETREAT/RESERVE/NONE --
+			// itu kebanyakan populasi AI di battlefield manapun) jadi literally
+			// nunggu ditembak duluan sebelum boleh balas -- keliatan "diem, gak
+			// langsung nembak" padahal musuh udah kelihatan jelas di depan mata.
+			// Fallback ini: kalau musuh DEKET BANGET (jauh lebih ketat dari
+			// threshold role-based lama yang 40-250m), tetep izinin FIRE_AT_WILL
+			// walau belum ke-endanger -- biar gak "aggro" dari jarak jauh, tapi
+			// juga gak diem pas musuh udah literally di depan.
+			bool isVeryClose = (c.m_State.m_fDistMin < CLOSE_VISIBLE_TRIGGER_DIST);
+			if (isVeryClose)
+				return true;
+			// === END ADDED ===
 		}
 		
 		return false;

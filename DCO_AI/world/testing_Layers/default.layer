@@ -1,32 +1,9 @@
 $grp GameEntity {
- {
-  components {
-   AICommander_ManagerComponent "{68F88499AF35F645}" {
-   }
-  }
-  coords 2750.273 66.423 1858.632
- }
- USSR_Commander {
-  components {
-   AICommander_AlgorithmComponent "{68F8849956F58560}" {
-    m_sCommanderUID "mechanizedSquad"
-    m_sFactionKey "USSR"
-    m_fObjectiveAtTheSameTime 2
-    m_fTransportDistanceThreshold 15
-   }
-   CMD_ThreatResponseComponent "{68FE1C39A87743C0}" {
-   }
-  }
-  coords 2015.591 51.482 3051.139
- }
  ArlevilleObjective {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fBaseValue 70
     m_fRadius 145
-    m_sCapturedCo {
-     "rifleSquad"
-    }
    }
    Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
     m_vResolution 32
@@ -35,23 +12,10 @@ $grp GameEntity {
   }
   coords 2786.54 73.491 1687.561
  }
- US_Commander {
-  components {
-   AICommander_AlgorithmComponent "{68F8849956F58560}" {
-    m_sCommanderUID "rifleSquad"
-    m_sFactionKey "US"
-    m_fObjectiveAtTheSameTime 4
-   }
-   CMD_ThreatResponseComponent "{68FE1C39956A7026}" {
-   }
-  }
-  coords 1835.601 50.053 1071.163
- }
  SignalHillObjective {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 50
-    m_eObjectiveType DESTROY
    }
    Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
     m_vResolution 32
@@ -64,6 +28,8 @@ $grp GameEntity {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 85
+    m_fIntelCoverageRadius 500
+    m_eObjectiveType RECON
    }
    Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
     m_vResolution 32
@@ -77,12 +43,8 @@ $grp GameEntity {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fBaseValue 70
     m_fRadius 55
-    m_sBlacklistedCo {
-     "mechanizedSquad"
-    }
-    m_sCapturedCo {
-     "rifleSquad"
-    }
+    m_fIntelCoverageRadius 600
+    m_eObjectiveType RECON
    }
    Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
     m_vResolution 32
@@ -95,6 +57,7 @@ $grp GameEntity {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 75
+    m_eObjectiveType RECON
    }
    Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
     m_vResolution 32
@@ -121,6 +84,7 @@ $grp GameEntity {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fBaseValue 70
     m_fRadius 71
+    m_eObjectiveType RECON
    }
    Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
     m_vResolution 32
@@ -202,7 +166,7 @@ $grp SCR_AIGroup : "{81B6DBF2B88545F5}Prefabs/Groups/BLUFOR/Group_US_Team_Suppre
 }
 $grp Vehicle : "{81FDAD5EB644CC3D}Prefabs/Vehicles/Wheeled/M923A1/M923A1_transport_covered.et" {
  M923A1_transport_covered1 {
-  coords 1703.287 43.439 1110.828
+  coords 1762.495 45.89 1103.507
  }
  M923A1_transport_covered2 {
   coords 1794.72 44.12 1146.781
@@ -238,6 +202,37 @@ $grp SCR_AIGroup : "{84E5BBAB25EA23E5}Prefabs/Groups/BLUFOR/Group_US_FireTeam.et
   coords 1871.54 55.484 1110.353
  }
 }
+$grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
+ {
+  components {
+   AICommander_AlgorithmComponent "{68F8849956F58560}" {
+    m_sDefaultMoveWaypointPrefab "{93D9BB77AC27D38C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Move_Commander.et"
+    m_sDefaultGetInWaypointPrefab "{6EB248EC45C92C3A}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetInCommander.et"
+    m_sCommanderUID "rifleSquad"
+    m_sFactionKey "US"
+    m_fDelayFirstIteration 15
+    m_fReserveMinimumPct 0.1
+   }
+  }
+  coords 1833.469 50.311 1075.873
+ }
+ {
+  components {
+   AICommander_AlgorithmComponent "{68F8849956F58560}" {
+    m_sDefaultMoveWaypointPrefab "{93D9BB77AC27D38C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Move_Commander.et"
+    m_sDefaultGetInWaypointPrefab "{6EB248EC45C92C3A}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetInCommander.et"
+    m_sCommanderUID "mechanizedSquad"
+    m_sFactionKey "USSR"
+    m_fDelayFirstIteration 15
+    m_eCommanderModeExternal OFFENSIVE
+   }
+  }
+  coords 2017.567 52.007 3050.814
+ }
+}
+SCR_AIWaypoint : "{93D9BB77AC27D38C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Move_Commander.et" {
+ coords 3138.748 33.299 2311.683
+}
 SCR_AIGroup : "{B7AB5D3F8A7ADAE4}Prefabs/Groups/BLUFOR/Group_US_PlatoonHQ.et" {
  coords 1866.8 54.966 1100.535
 }
@@ -251,6 +246,14 @@ SCR_AIGroup Recon1_OF : "{C8622D0595B48437}Prefabs/Groups/OPFOR/Group_USSR_AmmoT
   }
  }
  coords 2011.889 52.175 2997.099
+}
+GameEntity : "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et" {
+ components {
+  AICommander_ManagerComponent "{69C61E8C066EE04E}" {
+   m_bPreventUseLOD 1
+  }
+ }
+ coords 2460.703 135.333 2163.718
 }
 $grp Vehicle : "{D9B91FAB817A6033}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_transport_covered.et" {
  Ural4320_transport_covered1 {

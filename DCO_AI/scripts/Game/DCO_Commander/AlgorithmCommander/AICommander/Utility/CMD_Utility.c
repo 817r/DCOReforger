@@ -58,7 +58,8 @@ enum CMD_EGroupRole
 enum CMD_EObjectiveType
 {
 	CAPTURE,
-	DESTROY
+	DESTROY,
+	RECON // === ADDED: objective yang fungsinya ngasih intel coverage ke objective lain di sekitarnya, bukan buat diserang/dipertahanin
 }
 
 enum CMD_EThreatLevel

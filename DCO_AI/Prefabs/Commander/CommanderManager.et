@@ -1,7 +1,7 @@
 GameEntity {
  ID "6902DABDBF9D2532"
  components {
-  AICommander_ManagerComponent "{68F88499AF35F645}" {
+  AICommander_ManagerComponent "{69C61E8C066EE04E}" {
   }
   RplComponent "{690E98702C7BA9B2}" {
   }

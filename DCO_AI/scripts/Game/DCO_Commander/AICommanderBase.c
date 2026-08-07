@@ -78,6 +78,14 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("3.0", UIWidgets.Auto, "Number of the Objective Can be processed at the same time", category: "Commander Objective Setting")]
 	protected int m_fObjectiveAtTheSameTime;
 	
+	// === ADDED: Synchronized Attack ===
+	[Attribute("1", UIWidgets.CheckBox, "Pake Synchronized Attack (grup ngumpul dulu di staging sampe full/timeout, baru nyerang bareng) -- kalau dimatiin, balik ke behavior lama (grup langsung ke objective satu-satu begitu dapet slot).", category: "Commander Objective Setting")]
+	protected bool m_bUseSynchronizedAttack;
+	
+	[Attribute("60.0", UIWidgets.EditBox, "Waktu maksimum (detik) nunggu slot ASSAULT penuh sebelum synchronized attack di-release paksa dengan grup yang udah ngumpul (walau belum full).", category: "Commander Objective Setting")]
+	protected float m_fSyncAttackMaxWaitTime;
+	// === END ADDED ===
+	
 	[Attribute("30.0", UIWidgets.EditBox, "Interval think cycle dalam detik.", category: "Commander Setting")]
 	protected float m_fThinkInterval;
 	
@@ -124,11 +132,35 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("2", UIWidgets.ComboBox, "Commander Mode", "", ParamEnumArray.FromEnum(CMD_ECommanderMode), category: "Commander Personality" )]
 	protected CMD_ECommanderMode m_eCommanderModeExternal;
 	
-	[Attribute("0.5", UIWidgets.Range, "Agresivitas: seberapa cepat commit assault tanpa tunggu recon.\n0 = tunggu recon tiba dulu | 1 = langsung serang tanpa recon", params: "0 1 0.01", category: "Commander Personality")]
+	[Attribute("0.5", UIWidgets.Range, "Agresivitas/Eagerness: seberapa cepat commit assault tanpa tunggu recon.\n0 = tunggu recon tiba dulu | 1 = langsung serang tanpa recon", params: "0 1 0.01", category: "Commander Personality")]
 	protected float m_fAggression;
 	
 	[Attribute("0.5", UIWidgets.Range, "Adaptabilitas: kecepatan switching mode dan reaktivitas commander.\n0 = lambat bereaksi | 1 = sangat responsif", params: "0 1 0.01", category: "Commander Personality")]
 	protected float m_fAdaptability;
+	
+	// === ADDED: Commander Personality System (expansion) ===
+	[Attribute("0.5", UIWidgets.Range, "Risk Taking: seberapa berani commit force ke objective yang FOGGY (gak ke-cover intel RECON).\n0 = nolak komit sampe ada intel jelas | 1 = tetep maksa nyerang walau buta", params: "0 1 0.01", category: "Commander Personality")]
+	protected float m_fRiskTaking;
+	
+	[Attribute("0.5", UIWidgets.Range, "Resilience: seberapa tahan commander ngirim grup bertarung sebelum retreat.\n0 = gampang retreat (threshold tinggi) | 1 = tahan banting (threshold rendah, hold sampe abis)", params: "0 1 0.01", category: "Commander Personality")]
+	protected float m_fResilience;
+	
+	[Attribute("0.5", UIWidgets.Range, "Patience: seberapa lama commander nunggu sebelum reallocate grup dari objective yang stalemate.\n0 = cepet nyerah/realokasi | 1 = sabar nungguin lama", params: "0 1 0.01", category: "Commander Personality")]
+	protected float m_fPatience;
+	// === END ADDED ===
+	
+	// === ADDED: Recon Reveal ===
+	[Attribute("30.0", UIWidgets.EditBox, "Interval (detik) recon standing ngereveal musuh di sekitarnya ke threat response.", category: "Intel")]
+	protected float m_fReconRevealInterval;
+	// === END ADDED ===
+	
+	// === ADDED: Defensive Patrol System ===
+	[Attribute("600.0", UIWidgets.EditBox, "Radius (meter) buat nyari objective captured LAIN yang bisa di-link jadi 1 rute patrol.", category: "Patrol")]
+	protected float m_fPatrolLinkRadius;
+	
+	[Attribute("0.4", UIWidgets.Range, "Chance grup defend dapet Objective-Link Patrol (roaming antar objective) ketimbang Perimeter Patrol (muter di 1 objective doang).", params: "0 1 0.01", category: "Patrol")]
+	protected float m_fLinkPatrolChance;
+	// === END ADDED ===
 	
     [Attribute("false", UIWidgets.CheckBox, desc: "Random Personality Every Playthough?", category: "Commander Personality")]
     bool m_bRandomPersonality;
@@ -154,6 +186,31 @@ class AICommander_BaseComponent : ScriptComponent
 	protected IEntity m_MyEnt;
 	
 	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mStalemateResponseTime = new map<CMD_AICommanderObjectiveComponent, float>();
+	
+	// === ADDED: Synchronized Attack ===
+	// Assault groups gak lagi langsung diarahin ke objective satu-satu begitu dapet
+	// slot (piecemeal). Sekarang mereka ngumpul dulu di staging position sampai FULL
+	// (m_fSyncAttackMaxWaitTime detik timeout kalau gak nyampe penuh juga), baru
+	// SEMUANYA di-release bareng ke objective di cycle yang sama.
+	protected ref map<CMD_AICommanderObjectiveComponent, bool>  m_mAssaultReleased    = new map<CMD_AICommanderObjectiveComponent, bool>();
+	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mStagingStartTime   = new map<CMD_AICommanderObjectiveComponent, float>();
+	// === END ADDED ===
+	
+	// === ADDED: Recon Wait Timeout ===
+	// Recon itu OPSIONAL, bukan syarat wajib buat nyerang -- tergantung availability
+	// (ada grup RECON apa enggak) dan personality (Eagerness). Commander harus SELALU
+	// advancing, gak boleh nunggu recon selamanya. m_mAssignedTime nyatet kapan objective
+	// ini di-mark ASSIGNED (independen dari Synchronized Attack toggle), dipake buat
+	// nge-timeout recon-wait di bawah.
+	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mAssignedTime = new map<CMD_AICommanderObjectiveComponent, float>();
+	
+	[Attribute("45.0", UIWidgets.EditBox, "Waktu maksimum (detik) nunggu recon konfirmasi sebelum SKIP dan tetep nyerang. Recon opsional -- ini nyegah commander stuck nunggu recon yang gak kunjung dateng/gak available.", category: "Commander Objective Setting")]
+	protected float m_fReconWaitTimeout;
+	// === END ADDED ===
+	
+	// === ADDED: Recon Reveal ===
+	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mLastReconRevealTime = new map<CMD_AICommanderObjectiveComponent, float>();
+	// === END ADDED ===
 	
 	protected float m_fThinkTimer = 0 - m_fDelayFirstIteration;
 	
@@ -271,13 +328,48 @@ class AICommander_BaseComponent : ScriptComponent
 		if (!AICommander_ManagerComponent.GetInstance()) return;
 		AICommander_ManagerComponent.GetInstance().RegisterCommander(this);
 		threatComp = CMD_ThreatResponseComponent.Cast(m_MyEnt.FindComponent(CMD_ThreatResponseComponent));
+		// === MODIFIED: Commander Personality System -- randomize semua trait (bukan
+		// cuma Aggression/Adaptability lagi) kalau m_bRandomPersonality aktif ===
 		if (m_bRandomPersonality)
 		{
-			m_fAggression = Math.RandomFloat01();
+			m_fAggression  = Math.RandomFloat01();
 			m_fAdaptability = Math.RandomFloat01();
+			m_fRiskTaking  = Math.RandomFloat01();
+			m_fResilience  = Math.RandomFloat01();
+			m_fPatience    = Math.RandomFloat01();
 		}
+		// === END MODIFIED ===
 		float adaptMod   = Math.Lerp(1.5, 0.5, m_fAdaptability);
 		m_fThinkInterval = m_fThinkInterval * adaptMod;
+		
+		// === ADDED: Resilience -- scale retreat threshold. Resilience tinggi = commander
+		// tahan banting, biarin grup bertarung sampe unit-nya beneran sedikit (threshold
+		// rendah). Resilience rendah = gampang retreat, threshold-nya dinaikin. ===
+		float resilienceMod = Math.Lerp(2.0, 0.5, m_fResilience);
+		m_iRetreatThreshold = Math.Max(1, Math.Round(m_iRetreatThreshold * resilienceMod));
+		// === END ADDED ===
+		
+		// === ADDED: Patience -- scale stalemate response cooldown. Patience tinggi =
+		// commander sabar, nunggu lebih lama sebelum reallocate grup dari objective
+		// yang stalemate. Patience rendah = cepet nyerah/realokasi. ===
+		float patienceMod = Math.Lerp(0.4, 2.5, m_fPatience);
+		m_fStalemateResponseCooldown = m_fStalemateResponseCooldown * patienceMod;
+		// === END ADDED ===
+		
+		// === ADDED: BUG FIX -- m_fThinkTimer sebelumnya diinisialisasi
+		// "0 - m_fDelayFirstIteration" (field initializer), dan m_fDelayFirstIteration
+		// itu attribute FIXED (default 60.0, sama buat semua commander). Efeknya:
+		// trigger PERTAMA semua commander SELALU bareng persis di detik ke-60, dan
+		// kalau m_fAdaptability antar commander kebetulan mirip (atau gak di-random),
+		// mereka bisa tetep nempel bareng terus-menerus setelahnya juga. Ini
+		// kemungkinan penyebab periodic freeze -- Think() cycle SEMUA commander
+		// (masing-masing bisa nge-trigger banyak QueryEntitiesBySphere lewat
+		// ComputePriorityScore per objective) numpuk di frame yang sama. Fix: kasih
+		// jitter random per-instance ke starting timer, di atas delay awal yang udah
+		// ada (bukan gantiin -- combine keduanya).
+		m_fThinkTimer = m_fThinkTimer - Math.RandomFloat(0.0, m_fThinkInterval);
+		// === END ADDED ===
+		
 		artySupport = CMD_ArtillerySupport.Cast(m_MyEnt.FindComponent(CMD_ArtillerySupport));
 	}
 	
@@ -380,12 +472,65 @@ class AICommander_BaseComponent : ScriptComponent
 		return angleScore;
 	}
  
-	protected void AssignRolesToObjective(CMD_AICommanderObjectiveComponent obj, float worldTime)
+	// === MODIFIED: Optimasi -- tambah optional contextCache, dipass dari ThinkOffensive
+	// (dibangun sekali per cycle). Backward compatible -- kalau null, fallback ke
+	// jalur lama (query manager per objective).
+	// === ADDED: Recon Wait Timeout ===
+	//! Catat kapan objective ini pertama kali di-mark ASSIGNED buat faction ini.
+	//! Dipake nge-gate timeout recon-wait, independen dari Synchronized Attack
+	//! toggle (biar tetep jalan walau m_bUseSynchronizedAttack dimatiin).
+	protected void RecordAssignedTime(CMD_AICommanderObjectiveComponent obj, float worldTime)
 	{
+		if (!m_mAssignedTime.Contains(obj))
+			m_mAssignedTime.Insert(obj, worldTime);
+		else
+			m_mAssignedTime.Set(obj, worldTime);
+	}
+	// === END ADDED ===
+	
+	protected void AssignRolesToObjective(CMD_AICommanderObjectiveComponent obj, float worldTime, CMD_ObjectiveContextCache contextCache = null)
+	{
+	    // === ADDED: RECON-type objective gating -- objective RECON gak diserang/
+	    // dipertahanin kayak biasa, cuma butuh standing recon presence. Logic
+	    // attack/defend di bawah sama sekali gak relevan buat tipe ini.
+	    if (obj.GetObjectiveType() == CMD_EObjectiveType.RECON)
+	    {
+	        AssignReconOnlyToObjective(obj, worldTime);
+	        return;
+	    }
+	    // === END ADDED ===
+	    
 	    CMD_EObjectiveState objState = obj.GetObjectiveState(m_sFactionKey);
 	
 	    if (objState == CMD_EObjectiveState.COMPLETED || objState == CMD_EObjectiveState.FAILED)
 	        return;
+	
+	    // === MODIFIED: BUG FIX -- RiskTaking gate sebelumnya jalan UNCONDITIONAL tiap
+	    // cycle buat SEMUA state (PENDING maupun ASSIGNED). Kalau map gak punya objective
+	    // RECON sama sekali, objective manapun bakal SELAMANYA foggy (gak ada yang bisa
+	    // nge-cover), dan gate ini bakal keroll TIAP cycle -- kalau kalah roll (RiskTaking
+	    // rendah), early-return dan SKIP logic gathering/release Synchronized Attack yang
+	    // udah jalan buat objective yang UDAH ASSIGNED. Efeknya keliatan kayak "commander
+	    // gak mau nyerang, diem doang" karena progress yang udah dimulai ke-stall
+	    // berulang-ulang. Sekarang gate ini CUMA berlaku buat keputusan AWAL (state masih
+	    // PENDING) -- begitu commander komit (ASSIGNED), dia jalan terus, gak mikir ulang
+	    // tiap cycle.
+	    AICommander_ManagerComponent mgrCheck = AICommander_ManagerComponent.GetInstance();
+	    if (objState == CMD_EObjectiveState.PENDING)
+	    {
+	        bool isFoggy;
+	        if (mgrCheck && contextCache)
+	            isFoggy = !mgrCheck.IsObjectiveIntelCoveredCached(obj, contextCache);
+	        else
+	            isFoggy = mgrCheck && !mgrCheck.IsObjectiveIntelCovered(obj, m_sFactionKey);
+
+	        if (isFoggy && m_fRiskTaking < Math.RandomFloat01())
+	        {
+	            TrySendRecon(obj);
+	            return;
+	        }
+	    }
+	    // === END MODIFIED ===
 	
 	    if (objState == CMD_EObjectiveState.PENDING)
 	    {
@@ -393,27 +538,156 @@ class AICommander_BaseComponent : ScriptComponent
 	    	{
 	    		TrySendToStaging(obj, worldTime);
 	    		obj.MarkAssigned(m_sFactionKey);
+	    		RecordAssignedTime(obj, worldTime);
 	    		return;
 	    	}
+	        // === MODIFIED: BUG FIX -- branch low-aggression ini sebelumnya GAK PERNAH
+	        // manggil MarkAssigned(). Efeknya objective STUCK di state PENDING SELAMANYA
+	        // kalau roll Eagerness kalah -- tiap cycle cuma re-send recon+staging berulang,
+	        // gak pernah naik ke ASSIGNED, gak pernah nyampe logic assault/gathering.
+	        // Commander dengan Eagerness rendah (personality) jadi kayak "gak mau nyerang
+	        // objective manapun" -- padahal maksud desainnya emang cuma nunggu recon
+	        // konfirmasi dulu SEBELUM nyerang (logic itu udah ada di branch ASSIGNED,
+	        // tunggu IsReconArrived -- tapi logic itu gak pernah kesampean karena
+	        // objective-nya gak pernah ke-mark ASSIGNED). Sekarang MarkAssigned() dipanggil
+	        // di sini juga, biar transisi ke ASSIGNED beneran kejadian dan logic tunggu-
+	        // recon di branch ASSIGNED bisa jalan sesuai desain aslinya.
 	        TrySendRecon(obj);
 	        TrySendToStaging(obj, worldTime);
+	        obj.MarkAssigned(m_sFactionKey);
+	        RecordAssignedTime(obj, worldTime);
 	        return;
+	        // === END MODIFIED ===
 	    }
 	
 	    if (objState == CMD_EObjectiveState.ASSIGNED)
 	    {
-	        if (m_fAggression < Math.RandomFloat01() && !obj.IsReconArrived(m_sFactionKey, worldTime))
+	        // === MODIFIED: Recon opsional -- commander harus SELALU advancing, gak boleh
+	        // nunggu recon selamanya. Timeout m_fReconWaitTimeout detik sejak objective
+	        // di-ASSIGNED -- abis itu SKIP recon-wait apapun hasilnya (available atau
+	        // enggak, arrived atau enggak), tetep lanjut nyerang. Personality (Eagerness)
+	        // masih ngaruh ke KEMUNGKINAN nunggu di awal, timeout ini cuma jaring pengaman
+	        // biar gak stuck selamanya kalau recon emang gak available/gak kunjung dateng.
+	        float assignedTime;
+	        bool hasAssignedRecord = m_mAssignedTime.Find(obj, assignedTime);
+	        bool reconTimedOut = !hasAssignedRecord || (worldTime - assignedTime) > m_fReconWaitTimeout;
+
+	        if (!reconTimedOut && m_fAggression < Math.RandomFloat01() && !obj.IsReconArrived(m_sFactionKey, worldTime))
 	        {
-	            //Print(string.Format("[%1] LOW AGGRESSION — waiting for recon at %2",
-	                //m_sCommanderUID, obj.GetOwner().GetName()));
 	            return;
 	        }
-	
-	        //Print(string.Format("[%1] Recon tiba — kirim assault ke %2",
-	            //m_sCommanderUID, obj.GetOwner().GetName()));
+	        // === END MODIFIED ===
+
+	        // === MODIFIED: Synchronized Attack -- sebelumnya langsung TrySendAssaultWithSlots
+	        // yang isi 1 slot per cycle dan LANGSUNG ngirim grup ke objective (piecemeal).
+	        // Sekarang (kalau m_bUseSynchronizedAttack aktif): selama belum "released",
+	        // grup-grup ngumpul dulu di staging sampe FULL atau timeout
+	        // (m_fSyncAttackMaxWaitTime), baru semuanya dilepas bareng ke objective di
+	        // cycle yang sama. Setelah released, reinforcement susulan (kalau ada slot
+	        // kosong lagi belakangan) tetap pake TrySendAssaultWithSlots yang lama --
+	        // langsung ke objective, gak perlu nunggu-nunggu lagi.
+	        //
+	        // Kalau m_bUseSynchronizedAttack DIMATIKAN di Workbench, skip semua gathering/
+	        // release, balik ke behavior lama sepenuhnya (langsung TrySendAssaultWithSlots).
+	        if (m_bUseSynchronizedAttack)
+	        {
+	            bool released;
+	            if (!m_mAssaultReleased.Find(obj, released))
+	                released = false;
+
+	            if (!released)
+	            {
+	                TryGatherForSynchronizedAssault(obj, worldTime);
+
+	                float stagingStart;
+	                if (!m_mStagingStartTime.Find(obj, stagingStart))
+	                {
+	                    stagingStart = worldTime;
+	                    m_mStagingStartTime.Insert(obj, stagingStart);
+	                }
+
+	                bool isFull    = obj.IsGroupSlotFull(m_sFactionKey);
+	                bool timedOut  = (worldTime - stagingStart) > m_fSyncAttackMaxWaitTime;
+
+	                if (isFull || timedOut)
+	                {
+	                    ReleaseSynchronizedAssault(obj, worldTime);
+
+	                    if (!m_mAssaultReleased.Contains(obj))
+	                        m_mAssaultReleased.Insert(obj, true);
+	                    else
+	                        m_mAssaultReleased.Set(obj, true);
+	                }
+
+	                return;
+	            }
+	        }
+	        // === END MODIFIED ===
+
 	        TrySendAssaultWithSlots(obj, worldTime);
 	    }
 	}
+	
+	// === ADDED: RECON objective standing-presence logic ===
+	//! Objective RECON gak pernah “selesai” -- cuma butuh ADA grup RECON standing di
+	//! situ terus-menerus. Kalau belum ada/grup lama mati-pergi, kirim penggantinya.
+	//! IsReconObjectiveActive udah ngecek grup masih idup DAN masih beneran di area,
+	//! jadi ini otomatis “refill” begitu presence-nya kosong.
+	protected void AssignReconOnlyToObjective(CMD_AICommanderObjectiveComponent obj, float worldTime)
+	{
+	    if (obj.IsReconObjectiveActive(m_sFactionKey))
+	    {
+	        // === ADDED: Recon Reveal -- selama recon standing di sini, berkala
+	        // scan+report kontak musuh di sekitarnya ke threat response, biar reveal
+	        // ini beneran ngefek ke sistem lain (cluster/reinforcement/artillery),
+	        // bukan cuma dekoratif.
+	        TryReconRevealEnemies(obj, worldTime);
+	        // === END ADDED ===
+	        return;
+	    }
+	    
+	    TrySendRecon(obj);
+	}
+	
+	// === ADDED: Recon Reveal ===
+	//! Selama grup RECON masih idup & standing di objective RECON, tiap
+	//! m_fReconRevealInterval detik dia "reveal" musuh di sekitarnya (dalam radius
+	//! intel-coverage objective itu) dengan ngirim contact report ke threat response
+	//! component -- persis kayak laporan kontak dari grup manapun, cuma sumbernya
+	//! recon yang standing, bukan grup yang aktif engage.
+	protected void TryReconRevealEnemies(CMD_AICommanderObjectiveComponent obj, float worldTime)
+	{
+		if (!threatComp)
+			return;
+		
+		float lastReveal;
+		if (m_mLastReconRevealTime.Find(obj, lastReveal))
+		{
+			if ((worldTime - lastReveal) < m_fReconRevealInterval)
+				return;
+		}
+		
+		int enemyCount = obj.CountNearbyUnits(obj.GetIntelCoverageRadius(), m_sFactionKey, false);
+		
+		if (!m_mLastReconRevealTime.Contains(obj))
+			m_mLastReconRevealTime.Insert(obj, worldTime);
+		else
+			m_mLastReconRevealTime.Set(obj, worldTime);
+		
+		if (enemyCount <= 0)
+			return; // gak ada yang di-reveal, tapi timer tetep di-update (nyegah re-check tiap cycle)
+		
+		DCO_GroupUtilityComponent reconGrp = obj.GetReconGroup(m_sFactionKey);
+		
+		CMD_ContactReport report = new CMD_ContactReport(
+			obj.GetOwner().GetOrigin(),
+			enemyCount,
+			worldTime,
+			"RECON:" + obj.GetOwner().GetName());
+		
+		threatComp.ReceiveContactReport(report, reconGrp);
+	}
+	// === END ADDED ===
  
 	protected void TrySendRecon(CMD_AICommanderObjectiveComponent obj)
 	{
@@ -488,9 +762,11 @@ class AICommander_BaseComponent : ScriptComponent
 	        capturedObjPositions.Insert(obj.GetOwner().GetOrigin());
 	    }
 	
-	    RandomGenerator rand = new RandomGenerator();
+	    // === MODIFIED: "rand" dihapus dari sini -- GenerateRandomPointInRadius yang
+	    // dulu manggilnya udah gak dipake lagi, digantiin GeneratePatrolRoute() yang
+	    // punya RandomGenerator sendiri di dalemnya. ===
 	    float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
-	    // === END OPTIMIZED ===
+	    // === END OPTIMIZED / MODIFIED ===
 	
 	    foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
 	    {
@@ -510,104 +786,117 @@ class AICommander_BaseComponent : ScriptComponent
 	        foreach (vector cp : capturedObjPositions)
 	            candidatePositions.Insert(cp);
 	
-	        if (candidatePositions.IsEmpty() || candidatePositions.Count() < 2)
+	        // === MODIFIED: REVERT -- sebelumnya (kalau captured <2) fallback narik posisi
+	        // objective PENDING sebagai kandidat, biar gak numpuk di 1 titik. Tapi itu bikin
+	        // masalah baru: reserve grup jadi muter-muter NGERUBUNGIN objective yang lagi
+	        // digarap assault/recon grup lain -- aneh, reserve gak ada urusan ke situ.
+	        //
+	        // Ternyata gak perlu -- GeneratePatrolRoute() (dipake di bawah) UDAH otomatis
+	        // nyebar sendiri (4-6 titik random, radius jitter, starting angle acak) buat
+	        // SATU center manapun yang dikasih. Jadi "numpuk di 1 titik" yang jadi alasan
+	        // fallback ini sebenernya udah keselesein sendiri sama GeneratePatrolRoute --
+	        // gak perlu narik ke objective pending lagi. Reserve sekarang balik jaga
+	        // perimeter HQ begitu belum ada territory captured (early game) -- itu emang
+	        // tugas reserve yang bener (jaga markas, siap di-deploy), bukan ngerecokin
+	        // target orang lain.
+	        if (candidatePositions.IsEmpty())
 	            candidatePositions.Insert(GetOwner().GetOrigin());
+	        // === END MODIFIED ===
 	
-	        for (int i = candidatePositions.Count() - 1; i > 0; i--)
+	        // === MODIFIED: Kesibukan grup idle -- sebelumnya shuffle SEMUA kandidat terus
+	        // nyamperin satu-satu sekali jalan (abis itu diem lagi sampe Think() cycle
+	        // berikutnya, ~45 detik default). Sekarang: pilih kandidat TERDEKAT dari grup
+	        // ini, kasih patrol LOOP beneran di situ (GeneratePatrolRoute, 4-6 titik
+	        // berulang) -- grup keliatan "sibuk" terus-menerus, bukan cuma numpang lewat.
+	        vector nearestCandidate = candidatePositions[0];
+	        float nearestDistSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), nearestCandidate);
+	        foreach (vector cand : candidatePositions)
 	        {
-	            int j = Math.RandomInt(0, i + 1);
-	            vector tmp = candidatePositions[i];
-	            candidatePositions[i] = candidatePositions[j];
-	            candidatePositions[j] = tmp;
+	            float distSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), cand);
+	            if (distSq < nearestDistSq)
+	            {
+	                nearestDistSq = distSq;
+	                nearestCandidate = cand;
+	            }
 	        }
-			
-			grp.CompleteAllWaypoints();
-	
-	        foreach (vector basePos : candidatePositions)
-	        {
-	            vector patrolPos = rand.GenerateRandomPointInRadius(0, m_fBaseRadius, basePos, false);
-	            patrolPos[1] = GetGame().GetWorld().GetSurfaceY(patrolPos[0], patrolPos[2]);
-	
-	            SCR_AIWaypoint wp = SpawnMoveWP(patrolPos);
-	            if (wp)
-	                grp.MoveTo(wp, worldTime);	            
-	        }
-	
+
+	        GeneratePatrolRoute(grp, nearestCandidate, m_fBaseRadius, worldTime);
+	        // === END MODIFIED ===
+
 	        grp.SetGroupRole(CMD_EGroupRole.RESERVE);
 	    }
 	}
 	
 	protected DCO_GroupUtilityComponent FindBestIdleGroupForRole(CMD_EGroupRole role, vector targetPos)
 	{
-		DCO_GroupUtilityComponent result = null;
-	
-		result = FindIdleGroupByCurrentRole(role, role, targetPos);
-		if (result)
-			return result;
+		// Susunan tier fallback (index 0 = prioritas tertinggi), persis urutan lama
+		array<CMD_EGroupRole> tiers = {role, CMD_EGroupRole.NONE, CMD_EGroupRole.RESERVE, CMD_EGroupRole.RECON, CMD_EGroupRole.REINFORNCE, CMD_EGroupRole.DEFEND};
 		
+		// ARMORED exception -- sebelumnya cuma nyoba tier pertama (role itu sendiri), gak fallback
+		int tierCount = tiers.Count();
 		if (role == CMD_EGroupRole.ARMORED)
-			return result;
-	
-		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.NONE, targetPos);
-		if (result)
-			return result;
-	
-		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RESERVE, targetPos);
-		if (result)
-			return result;
+			tierCount = 1;
 		
-		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.RECON, targetPos);
-		if (result)
-			return result;
+		array<DCO_GroupUtilityComponent> bestPerTier   = {};
+		array<float>                     bestScorePerTier  = {};
+		array<float>                     bestDistSqPerTier = {};
+		for (int t = 0; t < tierCount; t++)
+		{
+			bestPerTier.Insert(null);
+			bestScorePerTier.Insert(-1.0);
+			bestDistSqPerTier.Insert(-1.0);
+		}
 		
-		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.REINFORNCE, targetPos);
-		if (result)
-			return result;
-	
-		result = FindIdleGroupByCurrentRole(role, CMD_EGroupRole.DEFEND, targetPos);
-		return result;
-	}
-	
-	DCO_GroupUtilityComponent FindClosestIdleGroupForRole_Public(CMD_EGroupRole role, vector targetPos)
-	{
-	    // === OPTIMIZED: dulu fungsi ini duplikat 100% dari FindBestIdleGroupForRole() (logic
-	    // sama persis, cuma nama beda). Sekarang delegate langsung -- satu sumber kebenaran,
-	    // otomatis ikut kebagian optimasi kalau FindBestIdleGroupForRole() dioptimasi lagi nanti.
-	    return FindBestIdleGroupForRole(role, targetPos);
-	}
-	
-	protected DCO_GroupUtilityComponent FindIdleGroupByCurrentRole(CMD_EGroupRole targetRole, CMD_EGroupRole currentRole, vector targetPos)
-	{
-		DCO_GroupUtilityComponent best = null;
-		float bestScore = -1.0;
-		float bestDistSq = -1.0;
-	
 		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
 		{
 			if (!grp)
 				continue;
-	
+
 			if (grp.GetGroupStatus() == DCOG_EGroupStatus.EXECUTING_COMMAND)
 				continue;
-	
-			if (grp.GetGroupRole() != currentRole)
-				continue;
-			
+
 			if (grp.IsDedicatedTransport())
 				continue;
-			
+
 			if (!grp.CanCommanderOverrideRole())
 				continue;
-			
+
 			if (!grp.CanItHaveOrder())
 				continue;
-	
+
+			// === ADDED: BUG FIX -- sebelumnya player group gak di-exclude di sini,
+			// jadi bisa kepilih jadi "kandidat terbaik" buat auto-assign (ASSAULT/FLANK/
+			// dll). Caller-caller (TrySendToStaging, TryGatherForSynchronizedAssault, dll)
+			// ngecek IsPlayerGroup() abis dapet hasil dan ada yang RETURN dari SELURUH
+			// fungsi kalau ketemu player group -- kalau grup player itu KONSISTEN jadi
+			// kandidat terbaik (deket/status pas), objective bisa stuck SELAMANYA gak
+			// pernah dapet grup AI karena selalu "ketemu player duluan, terus di-abort".
+			// Filter di sini -- player group emang gak boleh di-auto-assign, tapi caller
+			// harus tetep bisa nemuin grup AI LAIN yang available, bukan nyerah total.
+			if (grp.IsPlayerGroup())
+				continue;
+			// === END ADDED ===
+
+			CMD_EGroupRole grpRole = grp.GetGroupRole();
+
+			int tierIdx = -1;
+			for (int t = 0; t < tierCount; t++)
+			{
+				if (tiers[t] == grpRole)
+				{
+					tierIdx = t;
+					break;
+				}
+			}
+
+			if (tierIdx < 0)
+				continue;
+
 			int unitCount = grp.GetUnitCount();
-	
-			float score = 0.0;
 			float strengthPct = Math.Clamp(unitCount / 12.0 * 100.0, 0.0, 100.0);
-	
-			switch (targetRole)
+
+			float score = 0.0;
+			switch (role)
 			{
 				case CMD_EGroupRole.RECON:
 					score = 100.0 - strengthPct;
@@ -622,22 +911,29 @@ class AICommander_BaseComponent : ScriptComponent
 					score = strengthPct;
 					break;
 			}
-			
-	        float distSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), targetPos);
-	
-			if (score > bestScore)
+
+			float distSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), targetPos);
+
+			if (score > bestScorePerTier[tierIdx])
 			{
-		        if (bestDistSq < 0.0 || distSq < bestDistSq)
-		        {
-					bestScore = score;
-		            bestDistSq = distSq;
-					best = grp;
-		        }
+				if (bestDistSqPerTier[tierIdx] < 0.0 || distSq < bestDistSqPerTier[tierIdx])
+				{
+					bestScorePerTier[tierIdx]  = score;
+					bestDistSqPerTier[tierIdx] = distSq;
+					bestPerTier[tierIdx]       = grp;
+				}
 			}
 		}
-	
-		return best;
+
+		for (int t = 0; t < tierCount; t++)
+		{
+			if (bestPerTier[t])
+				return bestPerTier[t];
+		}
+
+		return null;
 	}
+	
 	
 	protected void EvaluateCommanderMode(float worldTime)
 	{
@@ -645,9 +941,15 @@ class AICommander_BaseComponent : ScriptComponent
 		if (!mgr)
 			return;
 		
+		// === MODIFIED: BUG FIX -- sebelumnya switch di m_eCommanderMode (mode SAAT
+		// INI), padahal harusnya switch di m_eCommanderModeExternal (mode yang
+		// DIMINTA). Efeknya: kalau external minta DEFENSIVE tapi commander lagi
+		// OFFENSIVE, switch malah ke-hit case OFFENSIVE (reinforce mode lama, gak
+		// pernah pindah). Kalau current mode BALANCED, gak match case manapun sama
+		// sekali -- mode gak pernah keganti walau diminta eksternal. ===
 		if (m_eCommanderModeExternal != CMD_ECommanderMode.BALANCED)
 		{
-			switch (m_eCommanderMode)
+			switch (m_eCommanderModeExternal)
 			{
 				case CMD_ECommanderMode.DEFENSIVE:
 				{
@@ -665,6 +967,7 @@ class AICommander_BaseComponent : ScriptComponent
 			m_eCommanderMode = m_eCommanderModeExternal;
 			return;
 		}
+		// === END MODIFIED ===
 	 	/*
 		bool anyLost = false;
 		bool haveObjectiveToDefend = false;
@@ -753,9 +1056,38 @@ class AICommander_BaseComponent : ScriptComponent
 			ThinkOffensive(mgr, worldTime);
 		else if (m_eCommanderMode == CMD_ECommanderMode.BALANCED)
 		{
-			ThinkDefensive(worldTime);
-			ThinkOffensive(mgr, worldTime);
+			// === MODIFIED: urutan think tergantung Eagerness (m_fAggression).
+			// Commander eager mikirin OFFENSE duluan (assault dapet prioritas rebutan
+			// grup idle sebelum defend kebagian), commander kurang eager mikirin
+			// DEFENSE duluan (jaga yang udah ada dulu, baru comit sisa manpower buat
+			// nyerang). Order ini beneran ngaruh karena dua-duanya rebutan dari pool
+			// grup idle yang sama (m_aOwnedGroup) -- yang duluan jalan dapet pilihan
+			// pertama.
+			if (m_fAggression >= 0.5)
+			{
+				ThinkOffensive(mgr, worldTime);
+				ThinkDefensive(worldTime);
+			}
+			else
+			{
+				ThinkDefensive(worldTime);
+				ThinkOffensive(mgr, worldTime);
+			}
+			// === END MODIFIED ===
 		}
+		
+		// === MODIFIED: BUG FIX -- sebelumnya SendIdleGroupsToReserve() CUMA dipanggil
+		// sebagai fallback terakhir (m_aObjective.IsEmpty() di ThinkOffensive / !hasAnyWork
+		// di ThinkDefensive). Selama ada objective aktif (yang hampir selalu ada), fungsi
+		// itu gak pernah kepanggil -- akibatnya grup yang ketahan manpower reserve floor
+		// (CanCommitGroup) atau kelebihan dari slot objective yang udah penuh cuma
+		// nyangkut di role NONE, status IDLE, selamanya. Gak dikasih patrol/standby
+		// apapun -- keliatan kayak "AFK". Sekarang dipanggil SEKALI tiap akhir Think()
+		// cycle, unconditional -- internal loop-nya sendiri udah filter cuma proses grup
+		// yang MASIH role NONE, jadi aman dipanggil tiap cycle, gak ganggu grup yang
+		// udah ke-assign kemana pun. ===
+		SendIdleGroupsToReserve();
+		// === END MODIFIED ===
 	 
 		m_eCommanderState = CMD_ECommanderState.COMMANDING;
 	}
@@ -766,10 +1098,14 @@ class AICommander_BaseComponent : ScriptComponent
 	 
 		if (m_aObjective.IsEmpty())
 		{
-			SendIdleGroupsToReserve();
 			m_eCommanderState = CMD_ECommanderState.IDLE;
 			return;
 		}
+		
+		// === ADDED: Optimasi -- context dibangun SEKALI, dipake bareng buat RiskTaking
+		// gate di AssignRolesToObjective (bukan tiap objective query manager dari nol) ===
+		CMD_ObjectiveContextCache contextCache = mgr.BuildObjectiveContext(m_sFactionKey);
+		// === END ADDED ===
 	 
 		for (int i = 0; i < m_aObjective.Count(); i++)
 		{
@@ -783,7 +1119,7 @@ class AICommander_BaseComponent : ScriptComponent
 				continue;
 			}
 	 
-			AssignRolesToObjective(obj, worldTime);
+			AssignRolesToObjective(obj, worldTime, contextCache);
 		}
 	}
 	
@@ -823,11 +1159,8 @@ class AICommander_BaseComponent : ScriptComponent
 		}
 		
 		Print(hasAnyWork.ToString() + " < HAS DEFEND WORK FOR " + m_sCommanderUID + " " + m_sFactionKey);
-	 
-		if (!hasAnyWork)
-		{
-			SendIdleGroupsToReserve();
-		}
+		// === MODIFIED: SendIdleGroupsToReserve() dicabut dari sini -- sekarang dipanggil
+		// terpusat 1x per Think() cycle di Think() sendiri, gak lagi gated hasAnyWork ===
 	}
 	
 	protected void TrySendToStaging(CMD_AICommanderObjectiveComponent obj, float worldTime)
@@ -1387,7 +1720,7 @@ class AICommander_BaseComponent : ScriptComponent
 	            }
 	            else
 	            {
-	                AssignPatrolAroundObjective(defGrp, objPos, obj.GetRadius(), worldTime);
+	                AssignDefensivePatrol(defGrp, obj, worldTime);
 	                obj.SetObjectiveGroup(m_sFactionKey, 1);
 	            }
 	        }
@@ -1396,27 +1729,125 @@ class AICommander_BaseComponent : ScriptComponent
 	    Print("Assigning Number Of Squad to Defend : " + toSend.ToString());
 	}
 	
-	protected void AssignPatrolAroundObjective(DCO_GroupUtilityComponent grp, vector center,float radius,float worldTime)
+	// === MODIFIED: Perimeter Patrol -- sebelumnya selalu 4 titik simetris persis di
+	// angle yang sama tiap dipanggil (robotic, dan kalau ada 2+ grup defend di
+	// objective yang sama, rutenya bakal identik persis). Sekarang titik-nya
+	// bervariasi (4-6), radius per titik di-jitter dikit, dan starting angle random
+	// -- biar beda grup di objective yang sama gak jalan di rute yang persis sama. ===
+	// === MODIFIED: logic patrol-nya di-extract ke GeneratePatrolRoute() (role-agnostic),
+	// dipake bareng sama SendIdleGroupsToReserve() juga sekarang -- biar grup idle
+	// dapet patrol loop beneran (4-6 titik terus-menerus), bukan cuma nyamperin
+	// sederet titik sekali terus diem lagi sampe Think() cycle berikutnya. ===
+	protected void GeneratePatrolRoute(DCO_GroupUtilityComponent grp, vector center, float radius, float worldTime)
 	{
-		int patrolPoints = 4;
+		RandomGenerator rand = new RandomGenerator();
+		
+		int patrolPoints   = Math.RandomInt(4, 7); // 4-6 titik
 		float patrolRadius = radius * 1.6;
+		float startAngle   = Math.RandomFloat(0.0, 360.0);
+		
 		grp.CompleteAllWaypoints();
+		
 		for (int p = 0; p < patrolPoints; p++)
 		{
-			float angleDeg = (360.0 / patrolPoints) * p;
+			float angleDeg = startAngle + (360.0 / patrolPoints) * p;
 			float angleRad = angleDeg * Math.DEG2RAD;
-	
-			float px = center[0] + Math.Cos(angleRad) * patrolRadius;
-			float pz = center[2] + Math.Sin(angleRad) * patrolRadius;
+			
+			// Jitter radius dikit (±15%) biar gak keliatan muter di lingkaran sempurna
+			float radiusJitter = rand.RandFloatXY(patrolRadius * 0.85, patrolRadius * 1.15);
+			
+			float px = center[0] + Math.Cos(angleRad) * radiusJitter;
+			float pz = center[2] + Math.Sin(angleRad) * radiusJitter;
 			float py = GetGame().GetWorld().GetSurfaceY(px, pz);
-	
+			
 			SCR_AIWaypoint wp = SpawnMoveWP(Vector(px, py, pz));
 			if (wp)
 				grp.MoveTo(wp, worldTime);
 		}
+	}
 	
+	protected void AssignPatrolAroundObjective(DCO_GroupUtilityComponent grp, vector center, float radius, float worldTime)
+	{
+		GeneratePatrolRoute(grp, center, radius, worldTime);
 		grp.SetGroupRole(CMD_EGroupRole.DEFEND);
 	}
+	// === END MODIFIED ===
+	
+	// === ADDED: Objective-Link Patrol ===
+	//! Patroli ANTAR objective yang udah captured dan saling berdekatan (bukan cuma
+	//! muter di 1 objective doang) -- lebih natural buat area yang punya beberapa
+	//! captured objective berdekatan (garis depan yang udah stabil), dibanding tiap
+	//! grup defend cuma muter sendiri-sendiri di objective masing-masing.
+	protected void AssignObjectiveLinkPatrol(DCO_GroupUtilityComponent grp, CMD_AICommanderObjectiveComponent homeObj, float worldTime)
+	{
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!mgr)
+		{
+			AssignPatrolAroundObjective(grp, homeObj.GetOwner().GetOrigin(), homeObj.GetRadius(), worldTime);
+			return;
+		}
+		
+		vector homePos = homeObj.GetOwner().GetOrigin();
+		array<vector> linkPoints = new array<vector>();
+		linkPoints.Insert(homePos);
+		
+		foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
+		{
+			if (!obj || obj == homeObj)
+				continue;
+			
+			if (!obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+				continue;
+			
+			float dist = vector.Distance(obj.GetOwner().GetOrigin(), homePos);
+			if (dist <= m_fPatrolLinkRadius)
+				linkPoints.Insert(obj.GetOwner().GetOrigin());
+		}
+		
+		// Gak ada objective lain yang deket buat di-link -- fallback ke perimeter patrol biasa
+		if (linkPoints.Count() < 2)
+		{
+			AssignPatrolAroundObjective(grp, homePos, homeObj.GetRadius(), worldTime);
+			return;
+		}
+		
+		// Shuffle biar urutan rute gak selalu sama
+		for (int i = linkPoints.Count() - 1; i > 0; i--)
+		{
+			int j = Math.RandomInt(0, i + 1);
+			vector tmp   = linkPoints[i];
+			linkPoints[i] = linkPoints[j];
+			linkPoints[j] = tmp;
+		}
+		
+		grp.CompleteAllWaypoints();
+		RandomGenerator rand = new RandomGenerator();
+		
+		foreach (vector p : linkPoints)
+		{
+			vector patrolPos = rand.GenerateRandomPointInRadius(0, homeObj.GetRadius() * 0.8, p, false);
+			patrolPos[1] = GetGame().GetWorld().GetSurfaceY(patrolPos[0], patrolPos[2]);
+			
+			SCR_AIWaypoint wp = SpawnMoveWP(patrolPos);
+			if (wp)
+				grp.MoveTo(wp, worldTime);
+		}
+		
+		grp.SetGroupRole(CMD_EGroupRole.DEFEND);
+	}
+	
+	//! Dispatcher -- pilih strategi patrol defensif. Kalau ada objective captured lain
+	//! yang berdekatan, ada kesempatan (m_fLinkPatrolChance) buat patrol objective-link
+	//! ketimbang muter di 1 objective doang. Kalau gak ada yang deket, otomatis fallback
+	//! ke perimeter (AssignObjectiveLinkPatrol sendiri udah handle fallback ini).
+	protected void AssignDefensivePatrol(DCO_GroupUtilityComponent grp, CMD_AICommanderObjectiveComponent homeObj, float worldTime)
+	{
+		if (Math.RandomFloat01() < m_fLinkPatrolChance)
+			AssignObjectiveLinkPatrol(grp, homeObj, worldTime);
+		else
+			AssignPatrolAroundObjective(grp, homeObj.GetOwner().GetOrigin(), homeObj.GetRadius(), worldTime);
+	}
+	// === END ADDED ===
 	
 	// === ADDED: Dedicated Suppress Group helper ===
 	// Cek apakah objective ini udah punya grup SUPPRESS yang di-assign, biar gak
@@ -1432,6 +1863,99 @@ class AICommander_BaseComponent : ScriptComponent
 				return true;
 		}
 		return false;
+	}
+	// === END ADDED ===
+	
+	// === ADDED: Synchronized Attack ===
+	//! Fase GATHERING -- isi slot ASSAULT ke STAGING position (bukan langsung ke
+	//! objective), loop sampe SEMUA slot required keisi atau gak ada grup available
+	//! lagi. Beda sama TrySendAssaultWithSlots yang cuma isi 1 slot per panggilan --
+	//! di sini kita mau ngumpulin secepat mungkin dalam 1 cycle biar readiness check
+	//! di caller bisa kejadian lebih cepet.
+	protected void TryGatherForSynchronizedAssault(CMD_AICommanderObjectiveComponent obj, float worldTime)
+	{
+		vector objPos = obj.GetOwner().GetOrigin();
+		vector base   = GetOwner().GetOrigin();
+		vector axis   = objPos - base;
+		axis          = Vector(axis[0], 0.0, axis[2]);
+		axis          = axis.Normalized();
+		float dist    = vector.Distance(base, objPos);
+
+		vector stagingPos = base + axis * (dist * Math.RandomFloatInclusive(0.15, 0.4));
+		stagingPos[1]      = GetGame().GetWorld().GetSurfaceY(stagingPos[0], stagingPos[2]);
+
+		int required = obj.GetRequiredGroupCount();
+
+		while (obj.GetCurrentAssignedGroupCount(m_sFactionKey) < required)
+		{
+			DCO_GroupUtilityComponent assaultGrp = FindBestIdleGroupForRole(CMD_EGroupRole.ASSAULT, objPos);
+			if (!assaultGrp)
+				break; // gak ada grup available lagi -- coba lagi cycle Think() berikutnya
+
+			if (assaultGrp.IsPlayerGroup())
+				break; // jangan otomatis narik grup pemain ke staging
+
+			if (!CanCommitGroup(assaultGrp))
+				break; // manpower budget gak cukup -- stop gathering buat cycle ini
+
+			assaultGrp.CompleteAllWaypoints();
+
+			if (TryAssignTransport(assaultGrp, stagingPos, worldTime))
+			{
+				assaultGrp.SetGroupRole(CMD_EGroupRole.ASSAULT);
+				if (assaultGrp.GetGroupObjective() != obj)
+				{
+					assaultGrp.SetGroupObjective(obj);
+					obj.SetObjectiveGroup(m_sFactionKey, 1);
+				}
+				continue;
+			}
+
+			SCR_AIWaypoint wp = SpawnMoveWP(stagingPos);
+			if (!wp)
+				break;
+
+			assaultGrp.SetGroupRole(CMD_EGroupRole.ASSAULT);
+			assaultGrp.MoveTo(wp, worldTime);
+			if (assaultGrp.GetGroupObjective() != obj)
+			{
+				assaultGrp.SetGroupObjective(obj);
+				obj.SetObjectiveGroup(m_sFactionKey, 1);
+			}
+		}
+	}
+
+	//! Fase RELEASE -- semua grup ASSAULT yang lagi staging buat objective ini
+	//! (GetGroupObjective() == obj) dikasih waypoint SEARCH ke objective beneran,
+	//! SEMUANYA di cycle Think() yang sama -- ini yang bikin efek "nyerang bareng"
+	//! (bukan piecemeal kayak sebelumnya).
+	protected void ReleaseSynchronizedAssault(CMD_AICommanderObjectiveComponent obj, float worldTime)
+	{
+		int releasedCount = 0;
+
+		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
+		{
+			if (!grp)
+				continue;
+
+			if (grp.GetGroupObjective() != obj)
+				continue;
+
+			if (grp.GetGroupRole() != CMD_EGroupRole.ASSAULT)
+				continue; // flank/suppress udah punya posisi sendiri, gak perlu di-release ke objective
+
+			grp.CompleteAllWaypoints();
+
+			array<SCR_AIWaypoint> searchWPs = {};
+			GenerateSearchWaypoints(obj.GetOwner().GetOrigin(), obj.GetRadius(), searchWPs);
+			foreach (SCR_AIWaypoint wp : searchWPs)
+				grp.MoveTo(wp, worldTime);
+
+			releasedCount++;
+		}
+
+		Print(string.Format("[%1] SYNCHRONIZED ASSAULT RELEASED -> %2 (%3 grup)",
+			m_sCommanderUID, obj.GetOwner().GetName(), releasedCount));
 	}
 	// === END ADDED ===
 	

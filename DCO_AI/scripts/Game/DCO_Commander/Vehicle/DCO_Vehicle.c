@@ -138,7 +138,7 @@ class DCO_TransportMissionComponent : ScriptComponent
 
 		if (dist <= ARRIVAL_DIST)
 		{
-			if (m_eVehType == EVehicleType.APC)
+			if (m_eVehType == EVehicleType.APC || (m_OwnerGroup && m_OwnerGroup == m_PassengerGroup))
 				SetState(DCO_ETransportState.CLAIMED, worldTime);
 			else
 			{
@@ -152,13 +152,15 @@ class DCO_TransportMissionComponent : ScriptComponent
 		if ((worldTime - m_fStateStartTime) > MOVING_TIMEOUT)
 		{
 			Print("[DCO_Transport] MOVING timeout — force disembark");
-			if (m_eVehType == EVehicleType.APC)
+			// === MODIFIED: sama kayak di atas -- owner tetep di dalem walau timeout ===
+			if (m_eVehType == EVehicleType.APC || (m_OwnerGroup && m_OwnerGroup == m_PassengerGroup))
 				SetState(DCO_ETransportState.CLAIMED, worldTime);
 			else
 			{
 				SetState(DCO_ETransportState.DISEMBARKING, worldTime);
 				DisembarkGroup();			
 			}
+			// === END MODIFIED ===
 		}
 	}
 

@@ -52,6 +52,29 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	}
 	
 	//--------------------------------------------------------------------------------------------
+	// === ADDED: Search/Investigate ===
+	protected const float INVESTIGATE_MIN_TIME = 8.0;  // di bawah ini, masih dianggap "baru aja ilang" -- biar suppressive fire yang handle dulu
+	protected const float INVESTIGATE_MAX_TIME = 30.0; // di atas ini, intel udah terlalu basi buat worth didatengin
+	protected const float INVESTIGATE_MAX_DIST = 60.0; // jangan ngejar sampe kejauhan
+	
+	//! True kalau target lama gak keliatan (bukan sesaat ke-obstruct) tapi masih
+	//! dalam jarak & rentang waktu yang masuk akal buat didatengin & dicek.
+	protected bool IsInvestigating()
+	{
+		if (!m_Target)
+			return false;
+		
+		if (m_CombatComp.IsTargetVisible(m_Target))
+			return false;
+		
+		float tss = m_Target.GetTimeSinceSeen();
+		if (tss < INVESTIGATE_MIN_TIME || tss > INVESTIGATE_MAX_TIME)
+			return false;
+		
+		return m_Target.GetDistance() < INVESTIGATE_MAX_DIST;
+	}
+	// === END ADDED ===
+	
 	protected override vector ResolveRequestTargetPos()
 	{
 		IEntity tgtEntity = m_Target.GetTargetEntity();
@@ -103,6 +126,16 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		{
 			return Math.RandomFloat(1.0, 4.5);
 		}
+		
+		// === ADDED: Search/Investigate -- kalau target lama gak keliatan tapi masih
+		// worth dicek, jangan nunggu selama skenario lain (bisa 30-90 detik) -- lebih
+		// proaktif nyamperin buat ngecek. Di-scale personality lewat GetInvestigateEagernessScale.
+		if (IsInvestigating())
+		{
+			float investigateWait = Math.RandomFloat(4.0, 8.0) * DCO_PersonalityCombatUtility.GetInvestigateEagernessScale(m_Utility);
+			return Math.Max(investigateWait, 2.0);
+		}
+		// === END ADDED ===
 		
 		float waitTime;
 		
@@ -171,6 +204,40 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		// tempat. Ini dicek paling pertama, sebelum semua logic lain.
 		if (m_Utility && m_Utility.m_DCOConfig && m_Utility.m_DCOConfig.IsHoldPosition())
 			return false;
+		// === END ADDED ===
+		
+		// === ADDED: Prioritize Shooting Over Cover -- kondisi genting (THREATENED),
+		// jangan pindah posisi buat "cari yang lebih baik" -- prioritasin tetep nembak
+		// dari posisi sekarang. Pindah posisi pas lagi under fire parah itu lebih
+		// bahaya daripada diem+balas nembak. Begitu udah gak THREATENED lagi (agak
+		// amanan), reposisi normal jalan lagi.
+		if (IsCriticalCombatMoment())
+			return false;
+		// === END ADDED ===
+		
+		// === ADDED: Fireteam Bounding ===
+		// Leapfrog overwatch -- kalau grup lagi ASSAULT dan bounding aktif, unit ini
+		// cuma boleh generate move request baru kalau lagi di "moving team" sekarang.
+		// Kalau lagi di "covering team", jangan gerak -- diem di posisi, tetep bisa
+		// nembak normal (ResolveFireTree gak kesentuh sama sekali sama gate ini).
+		if (m_Utility)
+		{
+			AIAgent boundingAgent = m_Utility.GetAIAgent();
+			if (boundingAgent)
+			{
+				AIGroup boundingGrp = boundingAgent.GetParentGroup();
+				if (boundingGrp)
+				{
+					DCO_GroupUtilityComponent grpUtil = DCO_GroupUtilityComponent.Cast(boundingGrp.FindComponent(DCO_GroupUtilityComponent));
+					if (grpUtil)
+					{
+						float boundingWorldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+						if (!grpUtil.IsInMovingTeam(m_MyEntity, boundingWorldTime))
+							return false;
+					}
+				}
+			}
+		}
 		// === END ADDED ===
 		
 		// Don't get any more closer
@@ -418,6 +485,22 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				moraleSystem);
 			rq.m_bAimAtTargetEnd = true;
 		}
+		
+		// === ADDED: Search/Investigate ===
+		// Target lama gak keliatan tapi masih worth dicek -- approach cautious
+		// (crouch+walk) ke posisi terakhir, BUKAN pake stance/pace combat-reposition
+		// biasa (yang bisa STAND+SPRINT/RUN). Override apapun yang di-set switch di
+		// atas, karena "lagi nyamperin buat ngecek" itu beda kondisi sama "lagi
+		// reposisi buat nembak target yang jelas".
+		if (IsInvestigating())
+		{
+			rq.m_eStanceMoving = ECharacterStance.CROUCH;
+			rq.m_eStanceEnd = ECharacterStance.CROUCH;
+			rq.m_eMovementType = EMovementType.WALK;
+			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(true, moraleSystem);
+			rq.m_bAimAtTargetEnd = true;
+		}
+		// === END ADDED ===
 		
 		if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 			rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
@@ -826,13 +909,49 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		}
 		else if (!m_State.IsExecutingRequest() && !m_State.m_bInCover)
 		{
-			// === MODIFIED: dulu ada "&& Math.RandomFloat01() > 0.3" -- cuma 70% kesempatan
-			// AI beneran react pas ketauan di tempat terbuka. Sekarang selalu react, gak
-			// ada RNG yang bisa bikin AI diem aja di open area.
 			if (IsInOpenArea(owner.GetControlledEntity()))
 			{
-				if (!m_State.IsExecutingRequest())
-					PushRequestOpenArea();
+				// === ADDED: Prioritize Shooting Over Cover -- kondisi genting, jangan
+				// cari cover sama sekali, biarin unit tetep nembak dari tempatnya
+				// sekarang. Ini di-cek SEBELUM shouldStayEngaged/takeCoverChance di
+				// bawah -- critical moment menang mutlak atas semua faktor lain.
+				if (IsCriticalCombatMoment())
+				{
+					ECharacterStance criticalStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
+					criticalStance = DCO_MoraleCombatUtility.ApplyMoraleStanceOverride(criticalStance, moraleSystem);
+					if (criticalStance > m_eStance)
+						m_State.ApplyRequestChangeStanceOutsideCover(criticalStance);
+				}
+				else
+				{
+				// === END ADDED ===
+				
+				// === MODIFIED: D -- kalau target udah dalam optimal engage range dan
+				// masih fresh keliatan, jangan retreat cari cover -- prioritasin tetep
+				// engage. Cover-seeking cuma masuk akal kalau emang lagi kalah posisi,
+				// bukan pas lagi menang kontak/udah deket buat nembak.
+				float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
+				bool shouldStayEngaged = m_Target && m_fTargetDist <= optimalDist * 1.2 && m_Target.GetTimeSinceSeen() < 5.0;
+				// === END MODIFIED ===
+				
+				// === MODIFIED: B -- dulu SELALU react (gak ada RNG). Sekarang pake
+				// m_fTakeCoverChance (base dari GM, default 70%) di-scale personality --
+				// RECKLESS/AGGRESSIVE lebih milih tetep di tempat/lanjut combat daripada
+				// ngumpet, CAUTIOUS malah lebih sering ambil kesempatan buat cover. ===
+				float takeCoverChance = 0.7;
+				if (m_Utility && m_Utility.m_DCOConfig)
+					takeCoverChance = m_Utility.m_DCOConfig.GetTakeCoverChance();
+				takeCoverChance = Math.Clamp(takeCoverChance * DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(m_Utility), 0.0, 1.0);
+				
+				if (!shouldStayEngaged && Math.RandomFloat01() < takeCoverChance)
+				{
+					if (!m_State.IsExecutingRequest())
+						PushRequestOpenArea();
+				}
+				// === END MODIFIED ===
+				// === ADDED: Prioritize Shooting Over Cover (penutup else) ===
+				}
+				// === END ADDED ===
 			} else
 			{
 				ECharacterStance newStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
@@ -868,6 +987,18 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	{
 		return m_State.m_bInCover && m_eThreatState == EAIThreatState.THREATENED && moraleSystem.GetState() >= moraleState.MANIAC;
 	}
+	
+	// === ADDED: Prioritize Shooting Over Cover ===
+	//! True kalau lagi kondisi genting (THREATENED) -- dipake buat nge-suppress
+	//! trigger reposisi/cover-seeking (MoveToNextPosCondition, PushRequestOpenArea)
+	//! biar unit prioritasin tetep nembak dari posisi sekarang daripada exposed
+	//! pindah-pindah nyari tempat lebih aman. Begitu threat state turun dari
+	//! THREATENED (agak amanan), reposisi/cover-seeking normal jalan lagi.
+	protected bool IsCriticalCombatMoment()
+	{
+		return m_eThreatState == EAIThreatState.THREATENED;
+	}
+	// === END ADDED ===
 	
 	float MoraleAmplifyMove()
 	{

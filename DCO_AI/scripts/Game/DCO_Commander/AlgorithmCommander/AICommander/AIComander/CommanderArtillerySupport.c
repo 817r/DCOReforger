@@ -3,28 +3,28 @@ class CMD_ArtillerySupportClass : ScriptComponentClass
 {
 	
 }
- 
+
 class CMD_ArtillerySupport : ScriptComponent
 { 
 	[Attribute("0.4", UIWidgets.EditBox, "Interval (detik) dispatch tiap shell dari queue", category: "Firing")]
 	protected float m_fDispatchInterval;
  
-	[Attribute("90.0", UIWidgets.EditBox, "Detik sebelum request di queue dianggap kadaluarsa", category: "Firing")]
+	[Attribute("150.0", UIWidgets.EditBox, "Detik sebelum request di queue dianggap kadaluarsa", category: "Firing")]
 	protected float m_fQueueExpiry;
  
 	[Attribute("25.0", UIWidgets.EditBox, "Radius cek friendly (meter) sebelum fire mission diizinkan", category: "Safety")]
 	protected float m_fFriendlySafeRadius;
 	
-	[Attribute("0.3", UIWidgets.Range, "Chance request ditolak secara random (0 = tidak pernah, 1 = selalu)", params: "0 1 0.01", category: "Firing")]
+	[Attribute("0.2", UIWidgets.Range, "Chance request ditolak secara random (0 = tidak pernah, 1 = selalu)", params: "0 1 0.01", category: "Firing")]
 	protected float m_fBaseRejectionChance;
 	
-	[Attribute("15.0", UIWidgets.EditBox, "Cooldown base (detik) per shell yang ditembak", category: "Firing")]
+	[Attribute("5.0", UIWidgets.EditBox, "Cooldown base (detik) per shell yang ditembak", category: "Firing")]
 	protected float m_fCooldownPerShell;
 	
 	[Attribute("30.0", UIWidgets.EditBox, "Minimum cooldown global artillery (detik)", category: "Firing")]
 	protected float m_fMinGlobalCooldown;
 	
-	[Attribute("300.0", UIWidgets.EditBox, "Maximum cooldown global artillery (detik)", category: "Firing")]
+	[Attribute("180.0", UIWidgets.EditBox, "Maximum cooldown global artillery (detik)", category: "Firing")]
 	protected float m_fMaxGlobalCooldown;
 
 	[Attribute("30.0", UIWidgets.EditBox, "Minimum dispersion radius (meter)", category: "Artillery Accuracy")]
@@ -45,13 +45,13 @@ class CMD_ArtillerySupport : ScriptComponent
 	[Attribute("0.1", UIWidgets.Range, "Cluster ratio — 0 = flat random, 1 = sangat clustering di center", params: "0.0 1.0 0.01", category: "Artillery Accuracy")]
 	protected float m_fClusterRatio;
 	
-	[Attribute("5", UIWidgets.EditBox, "Maximum request di queue sebelum kena penalty cooldown", category: "Cooldown")]
+	[Attribute("10", UIWidgets.EditBox, "Maximum request di queue sebelum kena penalty cooldown", category: "Cooldown")]
 	protected int m_iMaxQueueSize;
 	
-	[Attribute("10.0", UIWidgets.EditBox, "Penalty cooldown tambahan per request saat queue penuh (detik)", category: "Cooldown")]
+	[Attribute("15.0", UIWidgets.EditBox, "Penalty cooldown tambahan per request saat queue penuh (detik)", category: "Cooldown")]
 	protected float m_fQueueOverloadPenalty;
 	
-	[Attribute("60.0", UIWidgets.EditBox, "Cooldown global artillery setelah fire mission selesai (detik)", category: "Cooldown")]
+	[Attribute("20.0", UIWidgets.EditBox, "Cooldown global artillery setelah fire mission selesai (detik)", category: "Cooldown")]
 	protected float m_fGlobalCooldown;
 	
 	[Attribute("5.0", UIWidgets.EditBox, "Waktu proses per request di queue (detik) sebelum request berikutnya bisa di-process", category: "Cooldown")]
@@ -111,8 +111,13 @@ class CMD_ArtillerySupport : ScriptComponent
 	{
 	    if (!Replication.IsServer())
 	        return;
-	
-	    // Queue penuh — tambah penalty cooldown dan tolak
+	    
+	    if (m_fBaseRejectionChance > 0 && Math.RandomFloat01() < m_fBaseRejectionChance)
+	    {
+	        Print(string.Format("[CMD_ArtillerySupport] Request DITOLAK (random rejection roll) @ %1", impactPos.ToString()));
+	        return;
+	    }
+
 	    if (m_aQueue.Count() >= m_iMaxQueueSize)
 	    {
 	        int overflow       = m_aQueue.Count() - m_iMaxQueueSize + 1;
@@ -124,13 +129,11 @@ class CMD_ArtillerySupport : ScriptComponent
 	        );
 	        return;
 	    }
-	
+	    
 	    CMD_FireMissionRequest req = new CMD_FireMissionRequest(impactPos, shellType, worldTime, shellCount);
 	    m_aQueue.Insert(req);
 	}
- 
-	// Safety check — return true jika ada friendly dalam radius dari pos.
-	// Dipanggil CMD_ThreatResponseComponent sebelum fire mission dikirim.
+
 	bool HasFriendlyNearPos(vector pos, float radius)
 	{
 		if (!m_Commander)
@@ -149,12 +152,13 @@ class CMD_ArtillerySupport : ScriptComponent
 		return m_bFriendlyFound;
 	}
  
-	// Shorthand — pakai radius default dari attribute
 	bool HasFriendlyNearPosDefault(vector pos)
 	{
 		return HasFriendlyNearPos(pos, m_fFriendlySafeRadius);
 	}
  
+	// === MODIFIED: samain definisi "available" sama FindClosestAvailableUnit --
+	// harus IDLE eksplisit, bukan cuma "bukan EXECUTING_COMMAND" ===
 	bool HasAnyAvailableUnit()
 	{
 		foreach (DCO_GroupUtilityComponent unit : m_aUnits)
@@ -170,42 +174,55 @@ class CMD_ArtillerySupport : ScriptComponent
 	    PurgeExpiredRequests(worldTime);
 	    PurgeDeadUnits();
 	
+	    // === ADDED: null-check m_Commander -- sebelumnya gak ada, padahal dipake
+	    // langsung di bawah (GetOwner().GetOrigin(), SpawnArtilleryWP). Kalau
+	    // AICommander_BaseComponent gak ketemu pas EOnInit, ini bisa null-deref
+	    // crash begitu ada request masuk queue. ===
+	    if (!m_Commander)
+	        return;
+	    // === END ADDED ===
+	    
 	    if (m_aQueue.IsEmpty())
 	        return;
 	    if (m_aUnits.IsEmpty())
 	        return;
 	
-	    // Cek global cooldown
-	    //if (worldTime < m_fGlobalCooldownUntil)
-	    //{
-	       // Print(string.Format("[CMD_ArtillerySupport] Cooldown — sisa %.1fs, queue %1/%2",
-	            //m_fGlobalCooldownUntil - worldTime, m_aQueue.Count(), m_iMaxQueueSize));
-	       // return;
-	   // }
+	    // === MODIFIED: global cooldown check diaktifin lagi (sebelumnya di-comment,
+	    // dihitung tapi gak pernah dienforce) ===
+	    if (worldTime < m_fGlobalCooldownUntil)
+	        return;
+	    // === END MODIFIED ===
 	
 	    if (worldTime < m_fNextProcessTime)
 	        return;
 		
 		int shellsFired = 0;
-		foreach (CMD_FireMissionRequest req : m_aQueue)
+		
+		// === MODIFIED: sebelumnya "foreach + RemoveItem" di array yang sama --
+		// modifying array while iterating, request ke-2+ dalam 1 cycle bisa
+		// ke-skip karena index geser abis remove. Diganti index-based while loop,
+		// konsisten sama pola PurgeExpiredRequests/PurgeDeadUnits. ===
+		int qi = 0;
+		while (qi < m_aQueue.Count())
 	    {
+		    CMD_FireMissionRequest req = m_aQueue[qi];
 		    if (!req)
 	    	{
-	     	   continue;
-	    	}		
+		    	m_aQueue.Remove(qi);
+		    	continue;
+	    	}
 			
 		    DCO_GroupUtilityComponent unit = FindClosestAvailableUnit(req.m_eShellType, req.m_vImpactPos, worldTime);
 		    if (!unit)
+		    {
+		        qi++;
 		        continue;
+		    }
 		
 		    array<vector> artyPoint = GenerateArtilleryImpactPoints(req, m_Commander.GetOwner().GetOrigin(), worldTime, req.m_iShellCount);
 		    
 		    foreach (vector v : artyPoint)
 		    {
-		        DCO_GroupUtilityComponent shellUnit = unit;
-		        if (!shellUnit)
-		            continue;
-		
 		        SCR_AIWaypoint wp = m_Commander.SpawnArtilleryWP(v);
 		        if (!wp)
 		            continue;
@@ -214,12 +231,13 @@ class CMD_ArtillerySupport : ScriptComponent
 		        wps.SetTargetShotCount(1);
 		        wps.SetActive(true);
 		
-		        shellUnit.ShootMortar(wps, worldTime);
+		        unit.ShootMortar(wps, worldTime);
 		        shellsFired++;
 		    }
 		
-		    m_aQueue.RemoveItem(req);			
-		}	
+		    m_aQueue.Remove(qi);
+		}
+		// === END MODIFIED ===
 
 	    m_iTotalShellsFired = m_iTotalShellsFired + shellsFired;
 	
@@ -306,6 +324,8 @@ class CMD_ArtillerySupport : ScriptComponent
 	    return baseRadius;
 	}
 	
+	// === Satu-satunya kalkulasi dispersion yang beneran dipake buat tembakan --
+	// CommanderThreatResponse.c sekarang gak punya versi sendiri lagi. ===
 	float CalculateArtilleryDispersion(vector commanderPos, vector impactPos, SCR_EAIArtilleryAmmoType shellType)
 	{
 	    float rangeToTarget  = vector.Distance(commanderPos, impactPos);
@@ -357,6 +377,9 @@ class CMD_ArtillerySupport : ScriptComponent
 	}
 
  
+	// === MODIFIED: sekarang require IDLE eksplisit, samain sama HasAnyAvailableUnit
+	// -- sebelumnya cuma exclude EXECUTING_COMMAND, bisa nyolong unit yang statusnya
+	// bukan IDLE tapi juga bukan EXECUTING_COMMAND (misal lagi assigned ke role lain) ===
 	protected DCO_GroupUtilityComponent FindClosestAvailableUnit(SCR_EAIArtilleryAmmoType shellType, vector targetPos, float worldTime)
 	{
 		DCO_GroupUtilityComponent bestUnit   = null;
@@ -367,7 +390,7 @@ class CMD_ArtillerySupport : ScriptComponent
 			if (!unit)
 				continue;
 			
-			if (unit.GetGroupStatus() == DCOG_EGroupStatus.EXECUTING_COMMAND)
+			if (unit.GetGroupStatus() != DCOG_EGroupStatus.IDLE)
 				continue;
  
 			float distSq = vector.DistanceSq(unit.GetOwner().GetOrigin(), targetPos);
@@ -381,6 +404,7 @@ class CMD_ArtillerySupport : ScriptComponent
  
 		return bestUnit;
 	}
+	// === END MODIFIED ===
  
 	protected void PurgeExpiredRequests(float worldTime)
 	{
@@ -473,7 +497,7 @@ class CMD_ArtillerySupport : ScriptComponent
 		if (!m_Commander)
 		{
 			Print("[CMD_ArtillerySupport] PERINGATAN — AICommander_BaseComponent tidak ditemukan. " +
-				"Friendly safety check tidak akan berfungsi.");
+				"Friendly safety check dan ProcessQueue tidak akan berfungsi (di-guard, gak crash, tapi artillery gak akan pernah nembak).");
 		}
 		else
 		{

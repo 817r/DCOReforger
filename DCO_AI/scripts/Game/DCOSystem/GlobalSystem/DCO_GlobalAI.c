@@ -25,6 +25,11 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "How Suppression Affecting this AI", params: "0 2 0.01" )]
 	protected float m_fSuppressionEffect;
 	
+	// === ADDED: Take Cover Chance ===
+	[Attribute("0.7", UIWidgets.Range, "Base chance AI mau aktif nyari cover pas ke-detect di tempat terbuka (0-1). Di-scale lebih lanjut sama personality -- RECKLESS turun paling banyak (ceroboh), AGGRESSIVE turun sedang (combat-oriented tapi disiplin), CAUTIOUS naik.", params: "0 1 0.01" )]
+	protected float m_fTakeCoverChance;
+	// === END ADDED ===
+	
 	// Personality gak ada field di Global sama sekali -- individual (DCO_AIConfigComponent)
 	// ngeroll random sendiri, full range, tanpa gantung ke Global apapun.
 	
@@ -124,6 +129,19 @@ class DCO_GlobalAIComponent: ScriptComponent
 	{
 		m_fSuppressionEffect = f;
 		return m_fSuppressionEffect;
+	}
+	// === END ADDED ===
+	
+	// === ADDED: Take Cover Chance ===
+	float GetTakeCoverChance()
+	{
+		return m_fTakeCoverChance;
+	}
+	
+	float SetTakeCoverChance(float f)
+	{
+		m_fTakeCoverChance = f;
+		return m_fTakeCoverChance;
 	}
 	// === END ADDED ===
 	

@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{6EB248EC45C92C3A}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetInCommander.et"
+ Configurations {
+  EntityTemplateResourceClass PC {
+  }
+  EntityTemplateResourceClass XBOX_ONE : PC {
+  }
+  EntityTemplateResourceClass XBOX_SERIES : PC {
+  }
+  EntityTemplateResourceClass PS4 : PC {
+  }
+  EntityTemplateResourceClass PS5 : PC {
+  }
+  EntityTemplateResourceClass HEADLESS : PC {
+  }
+ }
+}
