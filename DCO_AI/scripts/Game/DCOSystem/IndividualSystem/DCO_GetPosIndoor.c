@@ -10,6 +10,8 @@ class DCO_FindIndoorPosition: AITaskScripted
 	
 	protected IEntity m_Building;
 	
+	protected vector m_vLastSearchPos = vector.Zero;
+	
 	protected vector m_vLocalMins, m_vLocalMaxs;
 	protected vector m_vCurrentQueryPos;
 	
@@ -49,41 +51,40 @@ class DCO_FindIndoorPosition: AITaskScripted
 		if (searchPos == vector.Zero)
 			return ENodeResult.FAIL;
 		
-		// === FIXED: list ini gak pernah di-Clear() sebelumnya, jadi nambah terus tiap
-		// tick tanpa batas dan bisa kepilih entity stale dari query sebelumnya.
-		m_aQueryFoundBuilding.Clear();
-		// === END FIXED ===
-		GetGame().GetWorld().QueryEntitiesBySphere(searchPos, searchRad, QueryCallback);
-		
-		IEntity nearestEntity = null;
-		float smallestDistSq = float.MAX;
-		
-		foreach (IEntity e : m_aQueryFoundBuilding)
+		if (!m_Building || vector.DistanceSq(searchPos, m_vLastSearchPos) > 1.0)
 		{
-			float distSq = vector.DistanceSq(e.GetOrigin(), searchPos);
-			if (distSq < smallestDistSq)
+			m_vLastSearchPos = searchPos;
+			FoundPosition    = false;
+			attempt          = 0;
+			
+			m_aQueryFoundBuilding.Clear();
+			GetGame().GetWorld().QueryEntitiesBySphere(searchPos, searchRad, QueryCallback);
+			
+			IEntity nearestEntity = null;
+			float smallestDistSq = float.MAX;
+			
+			foreach (IEntity e : m_aQueryFoundBuilding)
 			{
-				nearestEntity = e;
-				smallestDistSq = distSq;
+				float distSq = vector.DistanceSq(e.GetOrigin(), searchPos);
+				if (distSq < smallestDistSq)
+				{
+					nearestEntity = e;
+					smallestDistSq = distSq;
+				}
 			}
+			
+			if (!nearestEntity)
+			{
+				m_Building = null;
+				isFoundEnt = false;
+				return ENodeResult.FAIL;
+			}
+			
+			DCO_BuildingPositionComponent buildPosComp = DCO_BuildingPositionComponent.Cast(nearestEntity.FindComponent(DCO_BuildingPositionComponent));
+			m_Building = buildPosComp.GetBuildingEntity();
+			m_Building.GetBounds(m_vLocalMins, m_vLocalMaxs);
 		}
-		
-		if (!nearestEntity)
-		{
-			isFoundEnt = false;
-			return ENodeResult.FAIL;
-		}
-		
-		DCO_BuildingPositionComponent buildPosComp = DCO_BuildingPositionComponent.Cast(nearestEntity.FindComponent(DCO_BuildingPositionComponent));
-		m_Building = buildPosComp.GetBuildingEntity();
-		m_Building.GetBounds(m_vLocalMins, m_vLocalMaxs);
-		
-		// === FIXED: sebelumnya "while (!FoundPosition)" ini cuma jalan 1x per tick karena
-		// ada "return RUNNING" gak bersyarat di dalamnya -- efektifnya bukan while, cuma if.
-		// Masalah utamanya: kalau attempt > maxAttempt, RandomQueryStep() cuma "return;" tanpa
-		// nge-set apapun, jadi node ini bakal RUNNING SELAMANYA kalau building emang gak ada
-		// spot valid (building kecil / semua spot occupied). Ini kemungkinan besar penyebab
-		// "often breaks the game entirely" yang disebut di komentar atas file ini.
+
 		if (!FoundPosition)
 		{
 			if (attempt > maxAttempt)
@@ -95,7 +96,6 @@ class DCO_FindIndoorPosition: AITaskScripted
 			RandomQueryStep();
 			return ENodeResult.RUNNING;
 		}
-		// === END FIXED ===
 		
 		if (FoundPosition)
 		{
@@ -116,7 +116,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 		
 		if (comp) // && comp.isInitialized == true
 		{
-			// FIX: "protected" gak valid buat local variable, ini bug syntax pre-existing
+
 			vector m_vLocalMinss, m_vLocalMaxss;
 			comp.GetOwner().GetBounds(m_vLocalMinss, m_vLocalMaxss);
 			float myR = 0.5*(m_vLocalMaxss[0] - m_vLocalMinss[0]);
@@ -249,10 +249,6 @@ class DCO_FindIndoorPosition: AITaskScripted
 	
 	bool QueryCallbackC(IEntity e)
 	{
-		// FIX: sebelumnya Clear() ditaro di sini (dalam callback per-entity), jadi tiap
-		// entity baru ketemu, list-nya malah ke-reset -- efeknya cuma nyimpen entity
-		// TERAKHIR, bukan semua entity yang ketemu dalam radius. Clear() dipindah ke
-		// IsPositionOccupied(), dipanggil SEKALI sebelum query mulai.
 		SCR_CharacterDamageManagerComponent comp = SCR_CharacterDamageManagerComponent.Cast(e.FindComponent(SCR_CharacterDamageManagerComponent));
 		DoorComponent doorComp = DoorComponent.Cast(e.FindComponent(DoorComponent));
 		

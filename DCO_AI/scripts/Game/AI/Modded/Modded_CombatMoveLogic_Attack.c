@@ -199,49 +199,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	//--------------------------------------------------------------------------------------------
 	protected override bool MoveToNextPosCondition()
 	{
-		// === ADDED: Hold Position ===
-		// Kalau di-hold, jangan generate move request baru sama sekali -- diem di
-		// tempat. Ini dicek paling pertama, sebelum semua logic lain.
 		if (m_Utility && m_Utility.m_DCOConfig && m_Utility.m_DCOConfig.IsHoldPosition())
 			return false;
-		// === END ADDED ===
-		
-		// === ADDED: Prioritize Shooting Over Cover -- kondisi genting (THREATENED),
-		// jangan pindah posisi buat "cari yang lebih baik" -- prioritasin tetep nembak
-		// dari posisi sekarang. Pindah posisi pas lagi under fire parah itu lebih
-		// bahaya daripada diem+balas nembak. Begitu udah gak THREATENED lagi (agak
-		// amanan), reposisi normal jalan lagi.
+
 		if (IsCriticalCombatMoment())
 			return false;
-		// === END ADDED ===
 		
-		// === ADDED: Fireteam Bounding ===
-		// Leapfrog overwatch -- kalau grup lagi ASSAULT dan bounding aktif, unit ini
-		// cuma boleh generate move request baru kalau lagi di "moving team" sekarang.
-		// Kalau lagi di "covering team", jangan gerak -- diem di posisi, tetep bisa
-		// nembak normal (ResolveFireTree gak kesentuh sama sekali sama gate ini).
-		if (m_Utility)
-		{
-			AIAgent boundingAgent = m_Utility.GetAIAgent();
-			if (boundingAgent)
-			{
-				AIGroup boundingGrp = boundingAgent.GetParentGroup();
-				if (boundingGrp)
-				{
-					DCO_GroupUtilityComponent grpUtil = DCO_GroupUtilityComponent.Cast(boundingGrp.FindComponent(DCO_GroupUtilityComponent));
-					if (grpUtil)
-					{
-						float boundingWorldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
-						if (!grpUtil.IsInMovingTeam(m_MyEntity, boundingWorldTime))
-							return false;
-					}
-				}
-			}
-		}
-		// === END ADDED ===
-		
-		// Don't get any more closer
-		// Except we should still move closer if we haven't seen target for a long time
 		float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
 		if (m_fTargetDist < optimalDist && m_Target.GetTimeSinceSeen() < 10)
 			return false;

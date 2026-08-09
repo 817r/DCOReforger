@@ -67,6 +67,19 @@ class AICommander_BaseComponentClass : ScriptComponentClass
 	}
 }
 
+// === ADDED: Order Squad Suppress ===
+class CMD_SuppressMission
+{
+	DCO_GroupUtilityComponent m_Squad;
+	IEntity m_TargetEntity;         // null = suppress posisi statis (gak floating)
+	vector  m_vStaticPos;           // dipake kalau m_TargetEntity null
+	float   m_fRadius;
+	float   m_fExpireTime;
+	float   m_fLastRepositionTime;
+	float   m_fRepositionInterval;
+}
+// === END ADDED ===
+
 class AICommander_BaseComponent : ScriptComponent
 {
 	[Attribute("", UIWidgets.Font, desc: "UID of the Commander.", category: "Commander General Setting")]
@@ -100,6 +113,15 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	[Attribute("15.0", UIWidgets.EditBox, "Interval cek capture progress (detik)", category: "Commander Setting")]
 	protected float m_fCaptureCheckInterval;
+	
+	// === ADDED: Order Squad Suppress ===
+	protected ref array<ref CMD_SuppressMission> m_aSuppressMissions = new array<ref CMD_SuppressMission>();
+	// === END ADDED ===
+	
+	// === ADDED: Frontline Recon ===
+	[Attribute("250.0", UIWidgets.EditBox, "Radius patrol scouting buat grup recon yang dikirim ke frontline (bukan ke objective spesifik).", category: "Commander Setting")]
+	protected float m_fFrontlineReconRadius;
+	// === END ADDED ===
 	
 	[Attribute("400.0", UIWidgets.EditBox, "Jarak minimum sebelum cari transport", category: "Commander Setting")]
 	protected float m_fTransportDistanceThreshold;
@@ -328,8 +350,6 @@ class AICommander_BaseComponent : ScriptComponent
 		if (!AICommander_ManagerComponent.GetInstance()) return;
 		AICommander_ManagerComponent.GetInstance().RegisterCommander(this);
 		threatComp = CMD_ThreatResponseComponent.Cast(m_MyEnt.FindComponent(CMD_ThreatResponseComponent));
-		// === MODIFIED: Commander Personality System -- randomize semua trait (bukan
-		// cuma Aggression/Adaptability lagi) kalau m_bRandomPersonality aktif ===
 		if (m_bRandomPersonality)
 		{
 			m_fAggression  = Math.RandomFloat01();
@@ -338,39 +358,30 @@ class AICommander_BaseComponent : ScriptComponent
 			m_fResilience  = Math.RandomFloat01();
 			m_fPatience    = Math.RandomFloat01();
 		}
-		// === END MODIFIED ===
 		float adaptMod   = Math.Lerp(1.5, 0.5, m_fAdaptability);
 		m_fThinkInterval = m_fThinkInterval * adaptMod;
-		
-		// === ADDED: Resilience -- scale retreat threshold. Resilience tinggi = commander
-		// tahan banting, biarin grup bertarung sampe unit-nya beneran sedikit (threshold
-		// rendah). Resilience rendah = gampang retreat, threshold-nya dinaikin. ===
 		float resilienceMod = Math.Lerp(2.0, 0.5, m_fResilience);
 		m_iRetreatThreshold = Math.Max(1, Math.Round(m_iRetreatThreshold * resilienceMod));
-		// === END ADDED ===
-		
-		// === ADDED: Patience -- scale stalemate response cooldown. Patience tinggi =
-		// commander sabar, nunggu lebih lama sebelum reallocate grup dari objective
-		// yang stalemate. Patience rendah = cepet nyerah/realokasi. ===
 		float patienceMod = Math.Lerp(0.4, 2.5, m_fPatience);
 		m_fStalemateResponseCooldown = m_fStalemateResponseCooldown * patienceMod;
-		// === END ADDED ===
+		m_fThinkTimer = m_fThinkInterval - m_fDelayFirstIteration;
 		
-		// === ADDED: BUG FIX -- m_fThinkTimer sebelumnya diinisialisasi
-		// "0 - m_fDelayFirstIteration" (field initializer), dan m_fDelayFirstIteration
-		// itu attribute FIXED (default 60.0, sama buat semua commander). Efeknya:
-		// trigger PERTAMA semua commander SELALU bareng persis di detik ke-60, dan
-		// kalau m_fAdaptability antar commander kebetulan mirip (atau gak di-random),
-		// mereka bisa tetep nempel bareng terus-menerus setelahnya juga. Ini
-		// kemungkinan penyebab periodic freeze -- Think() cycle SEMUA commander
-		// (masing-masing bisa nge-trigger banyak QueryEntitiesBySphere lewat
-		// ComputePriorityScore per objective) numpuk di frame yang sama. Fix: kasih
-		// jitter random per-instance ke starting timer, di atas delay awal yang udah
-		// ada (bukan gantiin -- combine keduanya).
+		// === ADDED: Mitigasi periodic freeze -- formula di atas (m_fThinkInterval -
+		// m_fDelayFirstIteration) bikin trigger PERTAMA semua commander selalu jatuh
+		// di detik ke-m_fDelayFirstIteration PERSIS, apapun m_fThinkInterval-nya
+		// (soalnya m_fThinkInterval saling coret di perhitungan elapsed time). Itu
+		// elegant buat "first-think delay konsisten", tapi efek sampingnya semua
+		// commander numpuk mikir bareng di frame yang sama -- itu yang kemarin bikin
+		// freeze periodik. Formula intinya TETEP dipertahanin sesuai desain awal,
+		// cuma ditambah jitter kecil di atasnya (0 sampe m_fThinkInterval, yang udah
+		// beda-beda per commander dari adaptMod personality) biar gak persis nempel.
 		m_fThinkTimer = m_fThinkTimer - Math.RandomFloat(0.0, m_fThinkInterval);
 		// === END ADDED ===
 		
 		artySupport = CMD_ArtillerySupport.Cast(m_MyEnt.FindComponent(CMD_ArtillerySupport));
+		
+		Print(string.Format("[%1] INITIALIZED", m_sCommanderUID));
+		Print(string.Format("[%1] < Think Timer | > Think Interval [%2] | [%3] < Commander ", m_fThinkTimer, m_fThinkInterval, m_sCommanderUID));
 	}
 	
 	CMD_ThreatResponseComponent GetThreatResponseComponent()
@@ -736,6 +747,74 @@ class AICommander_BaseComponent : ScriptComponent
 		obj.MarkAssigned(m_sFactionKey);
 	}
  
+	// === ADDED: Frontline Recon ===
+	//! Cari posisi "frontline" -- titik tengah antara base commander dan objective
+	//! terdekat yang BUKAN milik kita (PENDING atau musuh). Proxy sederhana buat
+	//! "kira-kira di mana kontak bakal kejadian duluan", tanpa perlu analisa posisi
+	//! musuh yang kompleks (kita gak selalu punya info musuh yang reliable).
+	protected bool TryGetFrontlinePosition(out vector frontlinePos)
+	{
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!mgr)
+			return false;
+		
+		vector basePos = GetOwner().GetOrigin();
+		CMD_AICommanderObjectiveComponent nearest = null;
+		float nearestDistSq = float.MAX;
+		
+		foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
+		{
+			if (!obj)
+				continue;
+			
+			if (obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+				continue; // udah punya kita, bukan bagian frontline
+			
+			float distSq = vector.DistanceSq(basePos, obj.GetOwner().GetOrigin());
+			if (distSq < nearestDistSq)
+			{
+				nearestDistSq = distSq;
+				nearest = obj;
+			}
+		}
+		
+		if (!nearest)
+			return false; // gak ada objective yang bisa dijadiin acuan sama sekali
+		
+		frontlinePos = (basePos + nearest.GetOwner().GetOrigin()) * 0.5;
+		return true;
+	}
+	
+	//! Kirim grup RECON yang masih nganggur (gak kepake buat objective manapun) buat
+	//! scouting ke arah frontline -- bukan buat objective spesifik, tapi buat nentuin
+	//! dari arah mana musuh bakal dateng / ngasih early warning. Contact report udah
+	//! otomatis jalan sendiri (tiap grup punya DCO_GroupContactReporterComponent),
+	//! jadi cukup POSISIIN mereka di frontline, gak perlu logic laporan baru.
+	protected void TrySendFrontlineRecon(float worldTime)
+	{
+		vector frontlinePos;
+		if (!TryGetFrontlinePosition(frontlinePos))
+			return;
+		
+		DCO_GroupUtilityComponent reconGrp = FindBestIdleGroupForRole(CMD_EGroupRole.RECON, frontlinePos);
+		if (!reconGrp)
+			return;
+		
+		if (reconGrp.IsPlayerGroup())
+			return;
+		
+		if (!CanCommitGroup(reconGrp))
+			return;
+		
+		reconGrp.CompleteAllWaypoints();
+		reconGrp.SetGroupRole(CMD_EGroupRole.RECON);
+		GeneratePatrolRoute(reconGrp, frontlinePos, m_fFrontlineReconRadius, worldTime);
+		
+		Print(string.Format("[%1] Frontline Recon: %2 -> scouting deket %3",
+			m_sCommanderUID, reconGrp.GetOwner().GetName(), frontlinePos.ToString()));
+	}
+	// === END ADDED ===
+	
 	protected void SendIdleGroupsToReserve()
 	{
 	    AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
@@ -940,15 +1019,7 @@ class AICommander_BaseComponent : ScriptComponent
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
 		if (!mgr)
 			return;
-		
-		// === MODIFIED: BUG FIX -- sebelumnya switch di m_eCommanderMode (mode SAAT
-		// INI), padahal harusnya switch di m_eCommanderModeExternal (mode yang
-		// DIMINTA). Efeknya: kalau external minta DEFENSIVE tapi commander lagi
-		// OFFENSIVE, switch malah ke-hit case OFFENSIVE (reinforce mode lama, gak
-		// pernah pindah). Kalau current mode BALANCED, gak match case manapun sama
-		// sekali -- mode gak pernah keganti walau diminta eksternal. ===
-		if (m_eCommanderModeExternal != CMD_ECommanderMode.BALANCED)
-		{
+
 			switch (m_eCommanderModeExternal)
 			{
 				case CMD_ECommanderMode.DEFENSIVE:
@@ -962,42 +1033,6 @@ class AICommander_BaseComponent : ScriptComponent
 					return;
 				}
 			}
-		} else
-		{
-			m_eCommanderMode = m_eCommanderModeExternal;
-			return;
-		}
-		// === END MODIFIED ===
-	 	/*
-		bool anyLost = false;
-		bool haveObjectiveToDefend = false;
-	 
-		foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
-		{
-			if (!obj)
-				continue;
-	 
-			if (obj.IsCapturedBy(m_sFactionKey))
-			{
-				haveObjectiveToDefend = true;
-				if (obj.GetObjectiveState(m_sFactionKey) == CMD_EObjectiveState.FAILED)
-					anyLost = true;
-				break;
-			}
-		}
-	 
-		if ((haveObjectiveToDefend || anyLost) && m_eCommanderMode == CMD_ECommanderMode.OFFENSIVE)
-		{
-			SwitchToDefensive(worldTime);
-			return;
-		}
-	 
-		if (m_eCommanderMode == CMD_ECommanderMode.DEFENSIVE && !anyLost)
-		{
-			float elapsed = worldTime - m_fDefensiveTriggerCooldown;
-			if (elapsed >= DEFENSIVE_COOLDOWN)
-				SwitchToOffensive();
-		}*/
 	}
 	
 	protected void Think(float worldTime)
@@ -1034,8 +1069,8 @@ class AICommander_BaseComponent : ScriptComponent
 		// === ADDED: Manpower cache refresh (1x per Think cycle, lihat GetReserveFloor) ===
 		m_iManpowerTotalCache = GetTotalManpower();
 		// === END ADDED ===
-	 
-		EvaluateCommanderMode(worldTime);
+	 	if (m_eCommanderModeExternal != CMD_ECommanderMode.BALANCED)
+			EvaluateCommanderMode(worldTime);
 	 
 		// === ADDED: Absolute Defend Guarantee ===
 		// Captured objective SELALU dicek butuh reinforcement defend, terlepas dari
@@ -1086,6 +1121,13 @@ class AICommander_BaseComponent : ScriptComponent
 		// cycle, unconditional -- internal loop-nya sendiri udah filter cuma proses grup
 		// yang MASIH role NONE, jadi aman dipanggil tiap cycle, gak ganggu grup yang
 		// udah ke-assign kemana pun. ===
+		// === ADDED: Frontline Recon -- kalau masih ada grup RECON yang nganggur
+		// (gak kepake buat objective manapun), kirim scouting ke frontline. Dipanggil
+		// SEBELUM SendIdleGroupsToReserve, biar grup RECON-eligible dapet kesempatan
+		// pertama sebelum sisanya disapu jadi RESERVE generic.
+		TrySendFrontlineRecon(worldTime);
+		// === END ADDED ===
+		
 		SendIdleGroupsToReserve();
 		// === END MODIFIED ===
 	 
@@ -1121,6 +1163,8 @@ class AICommander_BaseComponent : ScriptComponent
 	 
 			AssignRolesToObjective(obj, worldTime, contextCache);
 		}
+		
+		Print(string.Format("[%1] THINK OFFENSIVE", m_sCommanderUID));
 	}
 	
 	protected void ThinkDefensive(float worldTime)
@@ -1159,6 +1203,7 @@ class AICommander_BaseComponent : ScriptComponent
 		}
 		
 		Print(hasAnyWork.ToString() + " < HAS DEFEND WORK FOR " + m_sCommanderUID + " " + m_sFactionKey);
+		Print(string.Format("[%1] THINK DEFENSIVE", m_sCommanderUID));
 		// === MODIFIED: SendIdleGroupsToReserve() dicabut dari sini -- sekarang dipanggil
 		// terpusat 1x per Think() cycle di Think() sendiri, gak lagi gated hasAnyWork ===
 	}
@@ -1365,6 +1410,107 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	    return SCR_AIWaypoint.Cast(GetGame().SpawnEntityPrefab(res, null, params));
 	}
+	
+	SCR_AIWaypoint SpawnSuppressWP(vector pos)
+	{
+	    AICommander_BaseComponentClass data = AICommander_BaseComponentClass.Cast(GetComponentData(GetOwner()));
+	    if (!data)
+	        return null;
+	
+	    Resource res = Resource.Load(data.GetDefaultSuppressPrefab());
+	    if (!res || !res.IsValid())
+	        return null;
+	
+	    EntitySpawnParams params = EntitySpawnParams();
+	    params.TransformMode = ETransformMode.WORLD;
+	    Math3D.MatrixIdentity4(params.Transform);
+	    params.Transform[3] = pos;
+	
+	    return SCR_AIWaypoint.Cast(GetGame().SpawnEntityPrefab(res, null, params));
+	}
+	// === ADDED: Order Squad Suppress ===
+	//! Perintahin grup buat suppress area/target selama "duration" detik, radius
+	//! "radius". Kalau "trackTarget" dikasih (gak null), suppress-nya FLOATING --
+	//! posisi di-reposisi ngikutin trackTarget.GetOrigin() tiap "repositionInterval"
+	//! detik (default 15s, piggyback siklus ThinkCaptureProgress). Kalau trackTarget
+	//! null, suppress statis di targetPos, gak pernah reposisi.
+	//!
+	//! Return false kalau grup null atau waypoint gagal di-spawn (misal prefab
+	//! belum di-set di m_sDefaultSuppressPrefab).
+	bool OrderSquadSuppress(DCO_GroupUtilityComponent squad, vector targetPos, float duration, float radius, IEntity trackTarget = null, float repositionInterval = 15.0)
+	{
+	    if (!squad)
+	        return false;
+	    
+	    float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+	    
+	    SCR_AIWaypoint wp = SpawnSuppressWP(targetPos);
+	    if (!wp)
+	    {
+	        Print(string.Format("[%1] OrderSquadSuppress GAGAL -- SpawnSuppressWP null, cek m_sDefaultSuppressPrefab di Workbench", m_sCommanderUID));
+	        return false;
+	    }
+	    
+	    wp.SetCompletionRadius(radius);
+	    
+	    squad.CompleteAllWaypoints();
+	    squad.SetGroupRole(CMD_EGroupRole.SUPPRESS);
+	    squad.MoveTo(wp, worldTime);
+	    
+	    CMD_SuppressMission mission = new CMD_SuppressMission();
+	    mission.m_Squad               = squad;
+	    mission.m_TargetEntity        = trackTarget;
+	    mission.m_vStaticPos          = targetPos;
+	    mission.m_fRadius             = radius;
+	    mission.m_fExpireTime         = worldTime + duration;
+	    mission.m_fLastRepositionTime = worldTime;
+	    mission.m_fRepositionInterval = repositionInterval;
+	    m_aSuppressMissions.Insert(mission);
+	    
+	    return true;
+	}
+	
+	//! Dipanggil tiap ThinkCaptureProgress cycle (piggyback, gak nambah timer baru).
+	//! Cek misi yang udah expired (lepas grup balik ke RESERVE), dan reposisi misi
+	//! floating yang udah waktunya update.
+	protected void UpdateSuppressMissions(float worldTime)
+	{
+	    for (int i = m_aSuppressMissions.Count() - 1; i >= 0; i--)
+	    {
+	        CMD_SuppressMission mission = m_aSuppressMissions[i];
+	        if (!mission || !mission.m_Squad)
+	        {
+	            m_aSuppressMissions.Remove(i);
+	            continue;
+	        }
+	        
+	        if (worldTime >= mission.m_fExpireTime)
+	        {
+	            mission.m_Squad.CompleteAllWaypoints();
+	            mission.m_Squad.SetGroupRole(CMD_EGroupRole.RESERVE);
+	            Print(string.Format("[%1] Suppress mission selesai -- %2 dilepas balik ke RESERVE",
+	                m_sCommanderUID, mission.m_Squad.GetOwner().GetName()));
+	            m_aSuppressMissions.Remove(i);
+	            continue;
+	        }
+	        
+	        if (mission.m_TargetEntity && (worldTime - mission.m_fLastRepositionTime) >= mission.m_fRepositionInterval)
+	        {
+	            vector newPos = mission.m_TargetEntity.GetOrigin();
+	            SCR_AIWaypoint newWp = SpawnSuppressWP(newPos);
+	            if (newWp)
+	            {
+	                newWp.SetCompletionRadius(mission.m_fRadius);
+	                mission.m_Squad.CompleteAllWaypoints();
+	                mission.m_Squad.MoveTo(newWp, worldTime);
+	                mission.m_vStaticPos = newPos;
+	            }
+	            mission.m_fLastRepositionTime = worldTime;
+	        }
+	    }
+	}
+	// === END ADDED ===
+	
  
 	SCR_AIWaypoint SpawnDefendWP(vector pos)
 	{
@@ -1470,18 +1616,12 @@ class AICommander_BaseComponent : ScriptComponent
 	    }
 	}
 	
-	// === ADDED: Absolute Defend Guarantee ===
-	// Loop semua objective yang udah captured commander ini dan pastikan defend
-	// slot-nya keisi, terlepas dari commander mode. Dipanggil setiap Think() cycle.
 	protected void EnsureAbsoluteDefend(float worldTime)
 	{
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
 		if (!mgr)
 			return;
 	
-		// === OPTIMIZED: pakai mgr.m_aObjective langsung, gak perlu GetTopObjectives()
-		// (priority sort + ComputePriorityScore/QueryEntitiesBySphere buat semua objective)
-		// karena di sini urutan gak ngaruh -- semua captured objective diproses tanpa break.
 		array<CMD_AICommanderObjectiveComponent> allObjs = mgr.m_aObjective;
 	
 		foreach (CMD_AICommanderObjectiveComponent obj : allObjs)
@@ -1499,13 +1639,6 @@ class AICommander_BaseComponent : ScriptComponent
 		}
 	}
 	
-	// Evaluasi titik defend di sekitar objective berdasarkan dua faktor heuristik:
-	// 1. Elevasi permukaan (dataran tinggi relatif terhadap rata-rata ring) — defend dari atas lebih unggul.
-	// 2. Arah hadap terhadap axis base→objective — titik yang "menghadap" menjauhi base
-	//    diasumsikan lebih dekat ke arah datangnya musuh (karena base = rear friendly).
-	// CATATAN: ini heuristik dari GetSurfaceY doang, BUKAN analisis line-of-sight/navmesh
-	// sungguhan (engine ini gak expose API buat itu ke script). Cukup buat menghindari
-	// full-random placement, bukan pengganti recon manusia.
 	protected void EvaluateDefendPositions(vector center, float radius, int count, out array<vector> outPositions)
 	{
 		outPositions = {};
@@ -2478,10 +2611,10 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	override void EOnFrame(IEntity owner, float timeSlice)
 	{
-		if (!Replication.IsServer())
-			return;
+		//if (!Replication.IsServer())
+		//	return;
  
-		m_fThinkTimer += timeSlice;
+		 m_fThinkTimer += timeSlice;
 		 m_fCaptureCheckTimer += timeSlice;
 
 		if (m_fThinkTimer >= m_fThinkInterval)
@@ -2495,7 +2628,13 @@ class AICommander_BaseComponent : ScriptComponent
 		{
 		    m_fCaptureCheckTimer = 0.0;
 		    ThinkCaptureProgress(GetGame().GetWorld().GetWorldTime() / 1000.0);
+		    
+		    // === ADDED: Order Squad Suppress -- piggyback siklus yang sama ===
+		    UpdateSuppressMissions(GetGame().GetWorld().GetWorldTime() / 1000.0);
+		    // === END ADDED ===
 		}
+		
+		//Print(string.Format("[%1] < Think Timer | > Think Interval [%2] | [%3] < Commander ", m_fThinkTimer, m_fThinkInterval, m_sCommanderUID));
 	}
 	
 	override protected void OnPostInit(IEntity owner)

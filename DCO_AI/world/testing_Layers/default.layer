@@ -210,8 +210,10 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_sDefaultGetInWaypointPrefab "{6EB248EC45C92C3A}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetInCommander.et"
     m_sCommanderUID "rifleSquad"
     m_sFactionKey "US"
-    m_fDelayFirstIteration 15
+    m_bUseSynchronizedAttack 0
+    m_fDelayFirstIteration 30
     m_fReserveMinimumPct 0.1
+    m_bRandomPersonality 1
    }
   }
   coords 1833.469 50.311 1075.873
@@ -225,13 +227,11 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_sFactionKey "USSR"
     m_fDelayFirstIteration 15
     m_eCommanderModeExternal OFFENSIVE
+    m_bRandomPersonality 1
    }
   }
   coords 2017.567 52.007 3050.814
  }
-}
-SCR_AIWaypoint : "{93D9BB77AC27D38C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Move_Commander.et" {
- coords 3138.748 33.299 2311.683
 }
 SCR_AIGroup : "{B7AB5D3F8A7ADAE4}Prefabs/Groups/BLUFOR/Group_US_PlatoonHQ.et" {
  coords 1866.8 54.966 1100.535

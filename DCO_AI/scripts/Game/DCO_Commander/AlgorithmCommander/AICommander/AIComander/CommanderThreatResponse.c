@@ -1,6 +1,32 @@
 [ComponentEditorProps(category: "GameScripted/Commander", description: "Handles enemy contact response and reinforcement")]
 class CMD_ThreatResponseComponentClass : ScriptComponentClass {}
 
+// === REWRITE NOTES ===
+// Overhaul total dari versi sebelumnya. Perubahan arsitektur utama:
+//
+// 1. THREAT CLUSTERING -- tiap Think() cycle, m_aThreats di-grouping jadi cluster
+//    (flood-fill by m_fClusterRadius, transitif -- bukan cuma pairwise kayak
+//    MergeNearbyThreats yang radiusnya lebih kecil buat dedup laporan yang sama).
+//    Semua keputusan respons aktif (reinforcement, counter-flank, artillery)
+//    dievaluasi di level CLUSTER AGGREGATE, bukan per-entry individual.
+// 2. "Kalo ga begitu bahaya ya gak usah dikirim" -- cluster yang combined score-nya
+//    di bawah m_fClusterMinResponseScore di-skip total, gak ada respons aktif sama
+//    sekali (recon tetep jalan per-entry, karena itu soal ngumpulin info, bukan
+//    eskalasi kekuatan).
+// 3. Reinforcement & counter-flank sekarang OTOMATIS ke-trigger dari Think() lewat
+//    cluster (sebelumnya reinforcement CUMA bisa lewat ReceiveReinforcementRequest
+//    eksternal yang gak pernah dipanggil dari manapun -- itu bug utama kenapa
+//    "gak jalan").
+// 4. Artillery juga otomatis dari cluster (TrySendClusterArtillery), milih shell
+//    type berdasarkan kondisi cluster: intel basi -> SMOKE, CRITICAL/HIGH + intel
+//    fresh + gak ada friendly deket -> HIGH_EXPLOSIVE, MEDIUM ke bawah -> skip
+//    (biar reinforcement aja yang handle).
+// 5. Dispersion calculation duplikat (yang sebelumnya dead code, dihitung tapi gak
+//    pernah kepake) DIHAPUS dari file ini. CMD_ArtillerySupport sekarang jadi
+//    SATU-SATUNYA source of truth buat dispersion/accuracy tembakan beneran.
+// 6. Friendly-fire safety check (HasFriendlyNearPosDefault) sekarang BENERAN
+//    dipanggil sebelum artillery dikirim (sebelumnya dead, gak pernah di-wire).
+// === END REWRITE NOTES ===
 class CMD_ThreatResponseComponent : ScriptComponent
 {
 	[Attribute("30.0", UIWidgets.EditBox, "Score minimum untuk kirim reinforcement biasa", category: "Threat")]
@@ -66,6 +92,17 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 		float worldTime = report.m_fReportTime;
 
+		// === ADDED: Report Quality -- jarak grup pelapor (spotter) ke posisi target
+		// pas laporan ini dibuat. Deket = laporan jelas/reliable, jauh = perkiraan
+		// kasar. Ini basis "akurasi intel" buat artillery (Bagian 1).
+		float reportQuality = 0.7; // default netral kalau grp entah kenapa null
+		if (grp && grp.GetOwner())
+		{
+			float spotDistance = vector.Distance(grp.GetOwner().GetOrigin(), report.m_vPosition);
+			reportQuality = ComputeReportQuality(spotDistance);
+		}
+		// === END ADDED ===
+
 		CMD_ThreatEntry existing = FindNearbyThreat(report.m_vPosition);
 		if (existing)
 		{
@@ -74,13 +111,29 @@ class CMD_ThreatResponseComponent : ScriptComponent
 			existing.m_fLastUpdateTime      = worldTime;
 			existing.m_bNeedsRecon          = false;
 			existing.m_bReconSent           = false;
+			existing.m_fReportQuality       = reportQuality; // update ke laporan terbaru
 			return;
 		}
 
 		CMD_ThreatEntry entry = new CMD_ThreatEntry(report.m_vPosition, report.m_iEstimatedEnemyCount, worldTime, grp);
+		entry.m_fReportQuality = reportQuality;
 		m_aThreats.Insert(entry);
 	}
+	
+	// === ADDED: Report Quality helper ===
+	//! Konversi jarak spotter->target jadi skor quality 0.2-1.0. Deket (<=50m) =
+	//! quality penuh, jauh (>=400m) = quality minimum, linear di antaranya.
+	static float ComputeReportQuality(float spotDistance)
+	{
+		return Math.Clamp(1.0 - (spotDistance - 50.0) / 350.0, 0.2, 1.0);
+	}
+	// === END ADDED ===
 
+	//--------------------------------------------------------------------
+	//! Entry point buat request artillery LANGSUNG/MANUAL (misal dari group yang
+	//! spesifik minta fire support), terpisah dari jalur otomatis cluster di Think().
+	//! Dispersion/accuracy tembakan beneran dihitung sepenuhnya oleh CMD_ArtillerySupport
+	//! -- di sini cuma nentuin shell count dan jalanin safety check.
 	void ReceiveArtillerySupport(CMD_FireMissionRequest request, DCO_GroupUtilityComponent grp)
 	{
 		if (!m_Commander || !m_ArtySupport || !request)
@@ -88,11 +141,13 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
 
+		// === ADDED: safety check yang sebelumnya gak pernah beneran dipanggil ===
 		if (m_ArtySupport.HasFriendlyNearPosDefault(request.m_vImpactPos))
 		{
 			Print("[DCO_ThreatResponse] Fire mission manual DITOLAK -- friendly kedeteksi di area target");
 			return;
 		}
+		// === END ADDED ===
 
 		DispatchArtilleryRequest(request, worldTime, "manual");
 	}
@@ -659,7 +714,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		// langsung manggil RequestShellImpact di sini. ===
 		int baseShellCount = CalculateClusterShellCount(cluster, worldTime);
 
-		CMD_FireMissionRequest request = new CMD_FireMissionRequest(cluster.m_vCenterPos, shellType, worldTime, baseShellCount);
+		CMD_FireMissionRequest request = new CMD_FireMissionRequest(cluster.m_vCenterPos, shellType, worldTime, baseShellCount, cluster.m_fFreshestUpdateTime, primary.m_fReportQuality);
 		DispatchArtilleryRequest(request, worldTime, "cluster-auto");
 
 		primary.m_bArtilleryCalled   = true;
@@ -758,7 +813,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (target.m_iEstimatedEnemyCount > 3)
 			baseShellCount = 5;
 
-		CMD_FireMissionRequest request = new CMD_FireMissionRequest(target.m_vPosition, desiredShellType, worldTime, baseShellCount);
+		CMD_FireMissionRequest request = new CMD_FireMissionRequest(target.m_vPosition, desiredShellType, worldTime, baseShellCount, target.m_fLastUpdateTime, target.m_fReportQuality);
 		DispatchArtilleryRequest(request, worldTime, "simple-request");
 		return true;
 	}

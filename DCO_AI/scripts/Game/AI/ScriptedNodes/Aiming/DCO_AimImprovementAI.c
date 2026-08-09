@@ -16,7 +16,7 @@ modded class SCR_AIGetAimErrorOffset
 	
 	// AIMING ERROR FACTOR DISTANCE VARIANCE
 	static const float AIMING_ERROR_VERY_CLOSE_RANGE_FACTOR_MIN = 0.03;
-	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.15;
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.12;
 	
 	private SCR_AIInfoComponent m_InfoComponent;
 	private SCR_CharacterControllerComponent charCon;
@@ -44,12 +44,10 @@ modded class SCR_AIGetAimErrorOffset
 		float tolerance;
 		bool setMaxTolerance;
 	
-		// Always use max tolerance in close range
 		if (distance < VERY_CLOSE_RANGE_THRESHOLD)
 			return Math.Map(distance, 0, VERY_CLOSE_RANGE_THRESHOLD, MAXIMAL_TOLERANCE, MAXIMAL_TOLERANCE / 10);
 			
-		tolerance = angularSize / 2; // half of the size
-		// angular speed
+		tolerance = angularSize / 2;
 		tolerance *= GetAngularSpeedFactor(observer, target, setMaxTolerance);
 				
 		if (setMaxTolerance)
@@ -292,7 +290,6 @@ modded class SCR_AIGetAimErrorOffset
 	
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
     {
-		//if (!m_CombatComponent || !m_InfoComponent)
 		if (!m_CombatComponent)
 			return ENodeResult.FAIL;
 		
@@ -308,14 +305,12 @@ modded class SCR_AIGetAimErrorOffset
 		BaseTarget target;
 		GetVariableIn(PORT_BASE_TARGET, target);
 		
-		// Bail if target is invalid
 		if (!target)
 		{
 			ClearPorts();
 			return ENodeResult.FAIL;
 		}
 		
-		// Bail if target is invalid
 		IEntity targetEntity = target.GetTargetEntity();
 		if (!targetEntity)
 		{
@@ -323,7 +318,6 @@ modded class SCR_AIGetAimErrorOffset
 			return ENodeResult.FAIL;
 		}
 		
-		// Resolve which aimpoint types to use
 		EAimPointType aimpointTypes[3];
 		EAimPointType aimpointType0, aimpointType1;
 		if (!GetVariableIn(PORT_AIMPOINT_TYPE_0, aimpointType0))
@@ -334,10 +328,8 @@ modded class SCR_AIGetAimErrorOffset
 		aimpointTypes[1] = aimpointType1;
 		aimpointTypes[2] = m_eAimPointType;
 		
-		// Try to find aimpoint
 		AimPoint aimPoint = GetAimPoint(target, aimpointTypes);
 		
-		// Bail if aimpoint was not found
 		if (!aimPoint)
 		{
 			ClearPorts();

@@ -49,7 +49,10 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		if (m_CombatComponent.GetCombatMode() == EAIGroupCombatMode.HOLD_FIRE
 			&& !IsCloseDirectThreat(target, visible)
 			&& !ShouldReturnFireWhenEndangered())
-			return FIRE_TREE_LOOK;
+		{
+			if (!ShouldBreakDisciplineByChance(visible))
+				return FIRE_TREE_LOOK;
+		}
 		
 		
 		float targetDistance = target.GetDistance();
@@ -212,5 +215,19 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		float threshold = DCO_PersonalityCombatUtility.GetEndangeredReturnFireThreshold(m_UtilityComponent);
 		
 		return threat >= threshold;
+	}
+	
+	protected bool ShouldBreakDisciplineByChance(bool visible)
+	{
+		if (!visible)
+			return false;
+		
+		float skillFactor       = DCO_PersonalityCombatUtility.GetSkillDisciplineFactor(m_UtilityComponent);
+		float personalityScale  = DCO_PersonalityCombatUtility.GetDisciplineBreakChanceScale(m_UtilityComponent);
+		
+		float breakChance = 0.35 * skillFactor * personalityScale;
+		breakChance = Math.Clamp(breakChance, 0.0, 0.4);
+		
+		return Math.RandomFloat01() < breakChance;
 	}
 }

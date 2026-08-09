@@ -52,14 +52,14 @@ enum CMD_EGroupRole
 	DEFEND    = 8,
 	ARMORED   = 9,
 	ARTILLERY = 10,
-	SUPPRESS  = 11 // === ADDED: grup yang diem di posisi ber-LOS ke objective, suppress doang sambil grup lain push
+	SUPPRESS  = 11
 }
 
 enum CMD_EObjectiveType
 {
 	CAPTURE,
 	DESTROY,
-	RECON // === ADDED: objective yang fungsinya ngasih intel coverage ke objective lain di sekitarnya, bukan buat diserang/dipertahanin
+	RECON
 }
 
 enum CMD_EThreatLevel
@@ -114,6 +114,8 @@ class CMD_ThreatEntry
 	
 	bool              m_bNeedsRecon;
 	bool              m_bReconSent;
+	
+	float m_fReportQuality = 0.7;
  
 	void CMD_ThreatEntry(vector pos, int enemyCount, float worldTime, DCO_GroupUtilityComponent grp)
 	{
@@ -139,12 +141,22 @@ class CMD_FireMissionRequest
 	SCR_EAIArtilleryAmmoType m_eShellType;
 	float          m_fRequestedTime;
 	int m_iShellCount;
+	
+	float m_fTargetLastSeenTime;
+	float m_fReportQuality;
  
-	void CMD_FireMissionRequest(vector pos, SCR_EAIArtilleryAmmoType shellType, float time, int req = 1)
+	void CMD_FireMissionRequest(vector pos, SCR_EAIArtilleryAmmoType shellType, float time, int req = 1, float targetLastSeenTime = -1.0, float reportQuality = 0.7)
 	{
 		m_vImpactPos     = pos;
 		m_eShellType     = shellType;
 		m_fRequestedTime = time;
 		m_iShellCount = req;
+		
+		if (targetLastSeenTime < 0.0)
+			m_fTargetLastSeenTime = time;
+		else
+			m_fTargetLastSeenTime = targetLastSeenTime;
+		
+		m_fReportQuality = reportQuality;
 	}
 }

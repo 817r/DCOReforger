@@ -3,12 +3,7 @@ typedef func SCR_AIOnTacticChange;
 
 modded class SCR_AIGroupUtilityComponent
 {
-	// === MODIFIED: dulu CLOSE_RESPONSIVE_DIST (50m, dicabut pas Discipline system
-	// dibangun), sekarang balik lagi tapi jauh lebih ketat -- fallback safety net
-	// biar grup non-combat-role gak "diem gak nembak" pas musuh udah literally
-	// deket, tanpa balik ke behavior lama yang gampang aggro dari jarak jauh.
-	protected const float CLOSE_VISIBLE_TRIGGER_DIST = 20.0;
-	// === END MODIFIED ===
+	protected const float CLOSE_VISIBLE_TRIGGER_DIST = 30.0;
 	
 	ref ScriptInvokerBase<SCR_AIOnTacticChange> m_OnTacticsChange = new ScriptInvokerBase<SCR_AIOnTacticChange>();
 	protected DCO_GroupUtilityComponent utilDco;
@@ -34,36 +29,10 @@ modded class SCR_AIGroupUtilityComponent
 		info.SetMyGroup(m_Owner);
 	}
 	
-	//------------------------------------------------------------------------------------------------
-	//! \param[in] group
-	//! \param[in] agent
-	override protected void OnAgentRemoved(SCR_AIGroup group, AIAgent agent)
-	{	
-		super.OnAgentRemoved(group, agent);
-
-		/*
-		for (int i = m_aInfoComponents.Count() - 1; i >= 0; i--)
-		{
-			if (!m_aInfoComponents[i])
-			{
-				Debug.Error("Null AI info occured");
-				m_aInfoComponents.RemoveOrdered(i);
-			}
-			else if (m_aInfoComponents[i].IsOwnerAgent(agent))
-			{
-				SCR_AIInfoComponent infoComp = m_aInfoComponents[i];
-
-				break;
-			}
-		}*/
-	}
 	
 	override void EvaluateCombatMode()
 	{
-		CMD_EGroupRole currentRole = CMD_EGroupRole.NONE;
-	    DCO_GroupUtilityComponent groupUtil = DCO_GroupUtilityComponent.Cast(m_Owner.FindComponent(DCO_GroupUtilityComponent));
-		
-		if (!groupUtil.GetMyCommander())
+		if (!AICommander_ManagerComponent.GetInstance())
 		{
 			super.EvaluateCombatMode();
 		}
@@ -73,9 +42,14 @@ modded class SCR_AIGroupUtilityComponent
 	        m_eCombatModeActual = m_eCombatModeExternal;
 	        return;
 	    }
-
-	    
+		
+		
+	    DCO_GroupUtilityComponent groupUtil = DCO_GroupUtilityComponent.Cast(m_Owner.FindComponent(DCO_GroupUtilityComponent));
+	    if (!groupUtil.GetMyCommander())
+			return;
+		
 	    bool hasActiveOrder = false;
+		CMD_EGroupRole currentRole = CMD_EGroupRole.NONE;
 	    if (groupUtil)
 	    {
 	        currentRole = groupUtil.GetGroupRole();
@@ -90,28 +64,17 @@ modded class SCR_AIGroupUtilityComponent
 	        return;
 	    }
 	    
-	    // === MODIFIED: Discipline -- bypass yang sebelumnya PURE JARAK (CLOSE_RESPONSIVE_DIST/
-	    // MG 250m) diganti jadi DIRECT THREAT ONLY (IsDirectlyThreatened -- lagi ditembakin/
-	    // di-endanger beneran, bukan cuma "ada musuh kedeteksi di radius sekian"). Grup gak
-	    // lagi otomatis buka tembak cuma karena ada target dalam jarak tertentu -- harus
-	    // bener-bener lagi diancam langsung. Self-preservation individual (IsCloseDirectThreat/
-	    // ShouldReturnFireWhenEndangered di ResolveFireTree) tetep jalan normal di luar ini.
 	    if (IsDirectlyThreatened())
 	    {
 	        m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 	        return;
 	    }
-	    // === END MODIFIED ===
-	    
-	    // === MODIFIED: MG bypass -- sama, diganti direct-threat-only. MG tetep dapet
-	    // prioritas (gak perlu nunggu role-based threshold), tapi cuma kalau BENERAN
-	    // lagi diancam, bukan cuma ada target kedeteksi 250m.
+		
 	    if (HasMachineGunGunner() && IsDirectlyThreatened())
 	    {
 	        m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 	        return;
 	    }
-	    // === END MODIFIED ===
 
 	    if (currentRole == CMD_EGroupRole.RECON || currentRole == CMD_EGroupRole.RETREAT)
 	    {
@@ -167,8 +130,7 @@ modded class SCR_AIGroupUtilityComponent
 	            m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
 	        return;
 	    }
-	    // === ADDED: SUPPRESS role -- tugasnya emang nembak/suppress, jadi threshold
-	    // paling permisif (gak perlu nunggu target deket kayak role lain).
+
 	    else if (currentRole == CMD_EGroupRole.SUPPRESS)
 	    {
 	        if (IsAnyTargetRelevant(300.0))
@@ -177,22 +139,13 @@ modded class SCR_AIGroupUtilityComponent
 	            m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
 	        return;
 	    }
-	    // === END ADDED ===
 	
-	    // === MODIFIED: Discipline -- fallback ini kepake buat role NONE/RESERVE/TRANSPORT
-	    // (grup idle/reserve/patrol yang gak lagi dikasih combat order eksplisit) --
-	    // sama kayak RECON/RETREAT, ini bukan role combat, jadi disiplin penuh.
 	    if (IsDirectlyThreatened())
 	        m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
 	    else
 	        m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
-	    // === END MODIFIED ===
 	}
 	
-	// === ADDED: MG bypass helper ===
-	// Cek apakah ADA member di grup ini yang bawa MG. Dipake buat bypass threshold
-	// jarak di EvaluateCombatMode() -- MG idealnya langsung return fire, gak nunggu
-	// musuh mendekat dulu kayak riflemen.
 	protected bool HasMachineGunGunner()
 	{
 		array<AIAgent> agents = {};
@@ -214,14 +167,7 @@ modded class SCR_AIGroupUtilityComponent
 		
 		return false;
 	}
-	// === END ADDED ===
-	
-	// === ADDED: Discipline -- Direct Threat ===
-	//! True kalau grup ini BENERAN lagi diancam langsung (endangering+fresh dari
-	//! cluster target) -- bukan cuma "ada musuh kedeteksi di radius sekian" kayak
-	//! IsAnyTargetRelevant. Ini yang dipake buat gerbang "grup boleh nge-engage combat
-	//! walau lagi ngerjain non-combat task (RECON/RETREAT/RESERVE/dll)" -- disiplin,
-	//! cuma respon kalau BENERAN ditembakin/di-endanger, bukan proaktif nyari ribut.
+
 	protected bool IsDirectlyThreatened()
 	{
 		foreach (SCR_AIGroupTargetCluster c : m_Perception.m_aTargetClusters)
@@ -235,25 +181,13 @@ modded class SCR_AIGroupUtilityComponent
 			if (hasThreat && isFresh)
 				return true;
 			
-			// === ADDED: BUG FIX -- sebelumnya PURE endangering-only. Masalahnya
-			// m_iCountEndangering butuh musuh BENERAN nembak/near-miss dulu baru
-			// ke-set, ada delay. Efeknya mayoritas grup (RECON/RETREAT/RESERVE/NONE --
-			// itu kebanyakan populasi AI di battlefield manapun) jadi literally
-			// nunggu ditembak duluan sebelum boleh balas -- keliatan "diem, gak
-			// langsung nembak" padahal musuh udah kelihatan jelas di depan mata.
-			// Fallback ini: kalau musuh DEKET BANGET (jauh lebih ketat dari
-			// threshold role-based lama yang 40-250m), tetep izinin FIRE_AT_WILL
-			// walau belum ke-endanger -- biar gak "aggro" dari jarak jauh, tapi
-			// juga gak diem pas musuh udah literally di depan.
 			bool isVeryClose = (c.m_State.m_fDistMin < CLOSE_VISIBLE_TRIGGER_DIST);
 			if (isVeryClose)
 				return true;
-			// === END ADDED ===
 		}
 		
 		return false;
 	}
-	// === END ADDED ===
 	
 	protected bool IsAnyTargetRelevant(float maxRelevanceDistance = 150.0)
 	{

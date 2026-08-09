@@ -63,32 +63,13 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	static float ORDER_BASE_BUFFER  = 10.0;
 	static float ARRIVAL_THRESHOLD  = 3.0;
 	
-	// === ADDED: Squad Cohesion Check ===
-	static float SQUAD_SPREAD_THRESHOLD = 30.0; // Meter -- member terjauh dari leader di atas ini dianggap "belum ngumpul"
-	// === END ADDED ===
-	
-	// === ADDED: Fireteam Bounding ===
-	// Leapfrog overwatch -- grup dibagi 2 sub-tim berdasarkan index urutan member
-	// (genap/ganjil, deterministik, gak butuh state fireteam baru). Satu tim gerak,
-	// satu tim diem+cover (tetep bisa nembak, cuma gak generate move request baru),
-	// gantian tiap m_fBoundingSwapInterval detik. Cuma aktif pas role ASSAULT --
-	// bounding itu taktik nyerang, bukan defend/patrol/reserve.
-	[Attribute("12.0", UIWidgets.EditBox, "Interval (detik) gantian antara tim moving dan tim covering pas bounding aktif.", category: "Combat Movement")]
-	protected float m_fBoundingSwapInterval;
-	
-	protected int   m_iBoundingTeamAssignment = 0; // 0 atau 1 -- tim mana yang lagi "moving" sekarang
-	protected float m_fLastBoundingSwapTime   = 0.0;
-	// === END ADDED ===
+	static float SQUAD_SPREAD_THRESHOLD = 30.0;
 	
 	protected vector m_vLastCheckPos = vector.Zero;
 	protected float m_fLastMoveTime = 0;
 	protected const float STUCK_DIST_THRESHOLD = 2.5;
 	protected const float STUCK_TIME_THRESHOLD = 15.0;
-	
-	// === ADDED: Vehicle Ownership ===
-	// Vehicle biasa (bukan dedicated transport) yang udah "dimiliki" grup ini secara
-	// permanen. Sekali grup dapet vehicle, dia bakal terus pake vehicle yang sama tiap
-	// kali jalan lagi -- gak search vehicle baru dari nol tiap kali mau transport.
+
 	protected IEntity m_OwnedVehicle;
 	
 	IEntity GetOwnedVehicle()
@@ -245,12 +226,6 @@ class DCO_GroupUtilityComponent : ScriptComponent
 
 	void SetGroupRole(CMD_EGroupRole role)   
 	{ 
-		/* FORMATION
-			Wedge,
-			Line,
-			Column,
-			StaggeredColumn
-		*/
 		m_eGroupRole = role; 
 		switch(m_eGroupRole)
 		{
@@ -302,15 +277,12 @@ class DCO_GroupUtilityComponent : ScriptComponent
 				m_UtilityComp.SetCombatMode(EAIGroupCombatMode.HOLD_FIRE);
 				break;
 			}
-			// === ADDED: SUPPRESS role -- grup diem di posisi ber-LOS ke objective,
-			// nembak/suppress sambil grup ASSAULT/FLANK laen push masuk.
 			case CMD_EGroupRole.SUPPRESS:
 			{
 				m_FormationComponent.SetFormation("Line");
 				m_UtilityComp.SetCombatMode(EAIGroupCombatMode.RETURN_FIRE);
 				break;
 			}
-			// === END ADDED ===
 			case CMD_EGroupRole.NONE:
 			{
 				m_FormationComponent.SetFormation("Wedge");
@@ -464,50 +436,6 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	{
 		return m_eGroupRole == CMD_EGroupRole.ASSAULT;
 	}
-	
-	//! Index sub-tim member ini (0 atau 1) berdasarkan urutan agent di grup --
-	//! genap/ganjil, deterministik, gak butuh nyimpen assignment per-member manual.
-	protected int GetMemberTeamIndex(IEntity entity)
-	{
-		AIGroup grp = AIGroup.Cast(GetOwner());
-		if (!grp)
-			return 0;
-		
-		array<AIAgent> agents = {};
-		grp.GetAgents(agents);
-		
-		for (int i = 0; i < agents.Count(); i++)
-		{
-			if (!agents[i])
-				continue;
-			
-			if (agents[i].GetControlledEntity() == entity)
-				return i % 2;
-		}
-		
-		return 0;
-	}
-	
-	//! Dipanggil dari behavior individual (MoveToNextPosCondition) tiap kali mau
-	//! mutusin boleh generate move request baru apa enggak. Handle swap-timer di
-	//! sini juga (lazy update, gak butuh tick terpisah) -- begitu interval lewat,
-	//! tim moving/covering ketuker. Return true kalau bounding gak aktif (semua
-	//! boleh gerak normal) ATAU entity ini emang lagi di tim moving sekarang.
-	bool IsInMovingTeam(IEntity entity, float worldTime)
-	{
-		if (!ShouldUseBounding())
-			return true;
-		
-		if (worldTime - m_fLastBoundingSwapTime > m_fBoundingSwapInterval)
-		{
-			m_iBoundingTeamAssignment = 1 - m_iBoundingTeamAssignment;
-			m_fLastBoundingSwapTime   = worldTime;
-		}
-		
-		int memberTeam = GetMemberTeamIndex(entity);
-		return memberTeam == m_iBoundingTeamAssignment;
-	}
-	// === END ADDED ===
  
 	FactionKey GetFactionKey()
 	{
@@ -519,9 +447,6 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	{
 		AICommander_ManagerComponent.GetInstance().UnregisterGroup(this);
 		
-		// === ADDED: Vehicle Ownership cleanup ===
-		// Grup dihapus/disband -- lepas klaim vehicle-nya biar bisa dipake grup lain,
-		// jangan sampai vehicle nyangkut "dimiliki" grup yang udah gak eksis.
 		if (m_OwnedVehicle)
 		{
 			DCO_TransportMissionComponent mission = DCO_TransportMissionComponent.Cast(m_OwnedVehicle.FindComponent(DCO_TransportMissionComponent));
@@ -529,7 +454,6 @@ class DCO_GroupUtilityComponent : ScriptComponent
 				mission.ReleaseOwnership();
 			m_OwnedVehicle = null;
 		}
-		// === END ADDED ===
 	}
 	
 	override protected void OnPostInit(IEntity owner)
