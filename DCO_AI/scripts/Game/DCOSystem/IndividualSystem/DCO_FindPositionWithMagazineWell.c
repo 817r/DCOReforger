@@ -78,7 +78,7 @@ class SCR_AIFindPositionWithMagazineWell : AITaskScripted
 					continue;
 				
 				typename currMw = magComp.GetMagazineWell().Type();
-				Print(currMw.ToString() + " < FOUND THIS IN INVENTORY");
+				//Print(currMw.ToString() + " < FOUND THIS IN INVENTORY");
 				if (prefabResourceName == currMw)
 				{
 					m_aQueryFoundEntities.Insert(e);

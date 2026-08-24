@@ -71,8 +71,8 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
                   AITaskIdle Idle {
                    Name "Idle"
                    EditorPos -1792 976
-                   Period 80
-                   PeriodRandom 100
+                   Period 60
+                   PeriodRandom 30
                   }
                   RunBT RunBT {
                    Name "RunBT"

@@ -1,0 +1,27 @@
+SCR_DefendWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et" {
+ ID "663CBEF736DEBDE0"
+ Type "Defend"
+ Title "Defend waypoint"
+ AIBehaviorTree "{50F93F80EF183BA5}Prefabs/AI/Waypoints/AI_Garrisson.bt"
+ AIBehaviorTreeMoveTo "{A3755C1F88DED8D6}AI/BehaviorTrees/Waypoints/WP_Move.bt"
+ CompletionRadius 30
+ Autocomplete 0
+ m_TimedWaypointParameters SCR_AITimedWaypointParameters "{6A276E89F01A4673}" {
+  m_holdingTime -1
+ }
+ m_aDefendPresets {
+  SCR_DefendWaypointPreset "{6A276E89F01A3A2E}" {
+   m_sName "Guarding"
+   m_fFractionOfSA 0.6
+   m_aTagsForSearch {
+    "ObservationPost" "GatePost" "LoiterPost"
+   }
+  }
+  SCR_DefendWaypointPreset "{6A276E89F01A3A2B}" {
+   m_sName "Defending"
+   m_aTagsForSearch {
+    "CoverPost"
+   }
+  }
+ }
+}

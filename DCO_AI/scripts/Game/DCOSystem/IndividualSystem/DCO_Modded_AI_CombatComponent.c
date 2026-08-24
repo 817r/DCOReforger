@@ -19,10 +19,10 @@ modded class SCR_AICombatComponent
 	protected static const float TARGET_SCORE_RETREAT = 75.0;				//!< Threshold for target score for retreating from that target
 	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 98.5;			//!< Threshold for high priority attack
 		
-	protected const float PERCEPTION_FACTOR_SAFE = 1.0;			//!< We are safe and are good at recognising enemies
-	protected const float PERCEPTION_FACTOR_VIGILANT = 4;		//!< When vigilant and alert we are very good at recognising enemies
-	protected const float PERCEPTION_FACTOR_ALERTED = 3;
-	protected const float PERCEPTION_FACTOR_THREATENED = 1.5;	// We are suppressed and are bad at recognizing enemies
+	protected const float PERCEPTION_FACTOR_SAFE = 1.2;			//!< We are safe and are good at recognising enemies
+	protected const float PERCEPTION_FACTOR_VIGILANT = 4.2;		//!< When vigilant and alert we are very good at recognising enemies
+	protected const float PERCEPTION_FACTOR_ALERTED = 3.2;
+	protected const float PERCEPTION_FACTOR_THREATENED = 1.7;	// We are suppressed and are bad at recognizing enemies
 	
 	float CURRENT_AIM_IMPROVEMENT;
 	

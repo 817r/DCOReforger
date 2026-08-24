@@ -1,18 +1,56 @@
 [ComponentEditorProps(category: "GameScripted/Group", description: "Detects enemies and reports contact to Commander")]
 class DCO_GroupContactReporterComponentClass : ScriptComponentClass {}
 
+// === REWRITE NOTES ===
+// Bug yang dibenerin:
+// 1. DetermineShellType() -- return type mismatch (return true/false padahal
+//    fungsinya return SCR_EAIArtilleryAmmoType), dan "protected float ..." dideklarasi
+//    sebagai LOCAL VARIABLE di tengah function body (protected itu access modifier
+//    class member, bukan buat local var -- invalid syntax). Keduanya bikin ini
+//    kemungkinan besar GAGAL COMPILE.
+// 2. Logic malam pake && padahal maksudnya OR -- "currentTime < sunrise && currentTime
+//    > sunset" itu MUSTAHIL true (gak ada waktu yang lebih kecil dari sunrise DAN
+//    lebih besar dari sunset secara bersamaan). Diganti || -- ILLUMINATION sekarang
+//    beneran bisa kepilih pas malam.
+// 3. CMD_FireMissionRequest constructor dipanggil dengan 3 argumen, padahal di
+//    CMD_ArtillerySupport/CMD_ThreatResponseComponent konsisten dipanggil dengan 4
+//    (impactPos, shellType, worldTime, shellCount). Ditambahin shellCount, diskalain
+//    dari enemyCount yang sekarang dioper dari ScanForEnemies.
+// 4. EOnFrame akses m_GroupUtil.perc TANPA cek m_GroupUtil sendiri null dulu --
+//    EOnInit punya early-return yang bisa ninggalin m_GroupUtil tetep null -> crash
+//    risk. Ditambah null-check eksplisit.
+// 5. FRAME event sebelumnya CUMA di-enable lewat InitializeContactReport() yang gak
+//    dipanggil di manapun dalam file ini -- kalau gak ada kode eksternal yang
+//    manggil itu, EOnFrame gak akan PERNAH jalan sama sekali. Sekarang FRAME
+//    di-enable LANGSUNG di EOnInit begitu manager+GroupUtil ketemu, jadi komponen
+//    ini self-sufficient -- gak gantung pemanggil eksternal yang gak pasti ada.
+//    InitializeContactReport() tetap dipertahanin sebagai public method kalau ada
+//    kode lain yang mau re-trigger manual, tapi bukan lagi satu-satunya jalan.
+// 6. Behavior "diem total kalau gak ada AICommander_ManagerComponent" DIPERTAHANKAN
+//    sesuai instruksi -- itu emang bukan bug, itu desain yang diinginkan.
+// === END REWRITE NOTES ===
 class DCO_GroupContactReporterComponent : ScriptComponent
 {
 	[Attribute("10.0", UIWidgets.EditBox, "Interval scan enemy (Second)", category: "Contact")]
 	protected float m_fScanInterval;
 
+	// === ADDED: Shell Type -- Danger & Confidence thresholds ===
+	[Attribute("0.5", UIWidgets.Range, "Report quality minimum buat dianggep 'confirmed' pas malem -- di bawah ini, minta ILLUMINATION dulu sebelum HE.", params: "0 1 0.01", category: "Contact")]
+	protected float m_fLowConfidenceThreshold;
+	
+	[Attribute("8", UIWidgets.EditBox, "Jumlah musuh minimum buat dianggep 'danger tinggi' (bareng jarak deket) -- minta SMOKE, bukan HE.", category: "Contact")]
+	protected int m_iHighDangerEnemyCount;
+	
+	[Attribute("100.0", UIWidgets.EditBox, "Jarak maksimum (meter) spotter-ke-kontak buat dianggep 'danger tinggi'.", category: "Contact")]
+	protected float m_fHighDangerDistance;
+
 	[Attribute("3", UIWidgets.EditBox, "Minimum enemy detected before report", category: "Contact")]
 	protected int m_iMinEnemyToReport;
 
-	[Attribute("5", UIWidgets.EditBox, "Minimum Unit Count for reinforcement request", category: "Contact")]
+	[Attribute("3", UIWidgets.EditBox, "Minimum Unit Count for reinforcement request", category: "Contact")]
 	protected int m_iReinforcementThreshold;
 
-	[Attribute("6", UIWidgets.EditBox, "Minimum enemy visible untuk request artillery support", category: "Artillery")]
+	[Attribute("4", UIWidgets.EditBox, "Minimum enemy visible untuk request artillery support", category: "Artillery")]
 	protected int m_iArtilleryEnemyThreshold;
 
 	[Attribute("180.0", UIWidgets.EditBox, "Cooldown antara artillery requests dari group ini (detik)", category: "Artillery")]
@@ -21,7 +59,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	[Attribute("90.0", UIWidgets.EditBox, "Detik sebelum reinforcement request flag di-reset paksa walau grup belum IDLE (nyegah stuck permanen)", category: "Contact")]
 	protected float m_fReinfRequestTimeout;
 
-	[Attribute("0.5", UIWidgets.Range, "Chance artillery request DITOLAK kalau role grup bukan RECON/FLANK (0 = gak pernah ditolak, 1 = selalu ditolak)", params: "0 1 0.01", category: "Artillery")]
+	[Attribute("0.35", UIWidgets.Range, "Chance artillery request DITOLAK kalau role grup bukan RECON/FLANK (0 = gak pernah ditolak, 1 = selalu ditolak)", params: "0 1 0.01", category: "Artillery")]
 	protected float m_fNonFavoredRoleArtyRejectChance;
 
 	//--------------------------------------------------------------------
@@ -31,7 +69,9 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	protected float                      m_fScanTimer          = 0.0;
 	protected bool                       m_bReinfRequested     = false;
 	protected float                      m_fLastArtilleryReqAt = -999.0;
+	// === ADDED: A -- track kapan reinforcement terakhir di-request buat timeout fallback ===
 	protected float                      m_fLastReinfRequestAt = -999.0;
+	// === END ADDED ===
 
 	//--------------------------------------------------------------------
 	protected void ReportContact(vector contactPos, int enemyCount, float worldTime)
@@ -62,10 +102,12 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 			return;
 
 		m_bReinfRequested = true;
-		m_fLastReinfRequestAt = worldTime;
+		m_fLastReinfRequestAt = worldTime; // === ADDED: A ===
 		m_GroupUtil.GetThreatResponseComponent().ReceiveReinforcementRequest(m_GroupUtil, worldTime);
 	}
 
+	// === MODIFIED: nambah param enemyCount buat nge-skala shellCount, dipake buat
+	// ngelengkapin constructor CMD_FireMissionRequest yang butuh 4 argumen ===
 	protected void RequestArtillerySupport(vector contactPos, int enemyCount, float worldTime)
 	{
 	    if (!m_GroupUtil)
@@ -77,6 +119,8 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	    if (worldTime - m_fLastArtilleryReqAt < m_fArtilleryRequestCooldown)
 	        return;
 
+	    // === ADDED: B -- role selain RECON/FLANK punya kemungkinan lebih tinggi
+	    // buat ditolak (soft-reject via probability, bukan hard block) ===
 	    CMD_EGroupRole role = m_GroupUtil.GetGroupRole();
 	    if (role != CMD_EGroupRole.RECON && role != CMD_EGroupRole.FLANK)
 	    {
@@ -86,6 +130,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	            return;
 	        }
 	    }
+	    // === END ADDED ===
 	
 	    CMD_ThreatResponseComponent threatComp = m_GroupUtil.GetThreatResponseComponent();
 	    if (!threatComp)
@@ -93,17 +138,26 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	
 	    m_fLastArtilleryReqAt = worldTime;
 
+	    // Skala shellCount dari jumlah musuh yang keliatan -- clamp biar gak ekstrem
 	    int shellCount = Math.Clamp(Math.Round(enemyCount * 0.5), 2, 8);
-
+	
+	    // === ADDED: Report Quality -- jarak grup pelapor (diri sendiri) ke posisi
+	    // kontak, dipake DispatchArtilleryRequest buat nentuin akurasi tembakan.
 	    float spotDistance  = vector.Distance(m_GroupUtil.GetOwner().GetOrigin(), contactPos);
 	    float reportQuality = CMD_ThreatResponseComponent.ComputeReportQuality(spotDistance);
+	    // === END ADDED ===
 	
+	    // === ADDED: Danger check -- musuh banyak DAN deket = grup pelapor sendiri
+	    // lagi dalam bahaya parah, minta SMOKE buat cover diri sendiri (bukan HE).
+	    bool isHighDanger = (enemyCount >= m_iHighDangerEnemyCount && spotDistance < m_fHighDangerDistance);
+	    // === END ADDED ===
+
 	    CMD_FireMissionRequest request = new CMD_FireMissionRequest(
 	        contactPos,
-	        DetermineShellType(worldTime),
+	        DetermineShellType(worldTime, reportQuality, isHighDanger),
 	        worldTime,
 	        shellCount,
-	        worldTime,
+	        worldTime, // laporan langsung, worldTime = kapan kontak beneran keliatan
 	        reportQuality
 	    );
 	
@@ -112,26 +166,50 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	    Print(string.Format("[DCO_Reporter] %1 requested artillery @ %2 (%3 shell)",
 	        GetOwner().GetName(), contactPos.ToString(), shellCount));
 	}
+	// === END MODIFIED ===
 
-	SCR_EAIArtilleryAmmoType DetermineShellType(float worldTime)
+	// === MODIFIED: fix return type mismatch (true/false -> enum yang bener), fix
+	// "protected" invalid di local variable, fix logic malam (&& -> ||). Parameter
+	// contactPos dihapus karena emang gak pernah dipake di dalam function-nya.
+	//
+	// === MODIFIED: Danger + Report Quality -- sekarang 3 cabang, bukan 2:
+	// 1. isHighDanger (grup pelapor sendiri lagi bahaya parah) -> SMOKE, prioritas
+	//    paling atas, gak peduli waktu/report quality -- keselamatan grup pelapor
+	//    di atas akurasi tembakan.
+	// 2. Malem + report quality rendah (kegelapan, spotter gak yakin) -> ILLUMINATION
+	//    dulu buat konfirmasi, gak langsung nembak HE ke sesuatu yang gak jelas.
+	// 3. Malem + report quality masih cukup tinggi (misal spotter deket/jelas liat
+	//    walau malem) -> udah CONFIRMED, langsung HE, gak perlu illumination lagi.
+	SCR_EAIArtilleryAmmoType DetermineShellType(float worldTime, float reportQuality, bool isHighDanger = false)
 	{
-		ChimeraWorld world = ChimeraWorld.CastFrom(GetOwner().GetWorld());
+	    // === ADDED: Danger override ===
+	    if (isHighDanger)
+	        return SCR_EAIArtilleryAmmoType.SMOKE;
+	    // === END ADDED ===
+	    
+	    ChimeraWorld world = ChimeraWorld.CastFrom(GetOwner().GetWorld());
 		if (!world)
-			return SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE;
+			return SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE; // fallback aman kalau world gak ketemu
 
 		TimeAndWeatherManagerEntity manager = world.GetTimeAndWeatherManager();
 		if (!manager)
-			return SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE;
+			return SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE; // fallback aman kalau manager gak ketemu
 
 		float sunriseTime;
 		float sunsetTime;
 
 		float currentTime = manager.GetTimeOfTheDay();
 		if (!manager.GetSunriseHour(sunriseTime) || !manager.GetSunsetHour(sunsetTime))
-			return SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE;
+			return SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE; // fallback aman kalau lookup sunrise/sunset gagal
 
-		if (currentTime < sunriseTime || currentTime > sunsetTime)
+		bool isNight = (currentTime < sunriseTime || currentTime > sunsetTime);
+		
+		// === ADDED: 2 jenis laporan pas malem -- report quality rendah = gak yakin
+		// konfirmasi musuh (kegelapan), report quality masih tinggi = udah confirmed
+		// walau malem (misal spotter deket banget/jelas keliatan).
+		if (isNight && reportQuality < m_fLowConfidenceThreshold)
 			return SCR_EAIArtilleryAmmoType.ILLUMINATION;
+		// === END ADDED ===
 
 		return SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE;
 	}
@@ -162,10 +240,12 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 			case DCO_EAIPersonality.RECKLESS:
 				return 1.4;
 			default:
-				return 1.0;
+				return 1.0; // STANDARD
 		}
+		
 		return 1.0;
 	}
+	// === END ADDED ===
 
 	//--------------------------------------------------------------------
 	protected void ScanForEnemies(float worldTime)
@@ -177,7 +257,10 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		if (!fc)
 			return;
 
+		// === MODIFIED: fix type -- Count() natively int, sebelumnya di-declare float
+		// yang beresiko implicit narrowing pas dioper ke parameter int ===
 		int enemyCount = 0;
+		// === END MODIFIED ===
 
 		if (m_GroupUtil.perc && m_GroupUtil.perc.m_aTargets)
 			enemyCount = m_GroupUtil.perc.m_aTargets.Count();
@@ -189,9 +272,11 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 
 		ReportContact(reportPos, enemyCount, worldTime);
 
+		// === MODIFIED: D -- threshold artillery di-scale personality SL ===
 		int effectiveArtyThreshold = Math.Max(1, Math.Round(m_iArtilleryEnemyThreshold * GetPersonalityThresholdScale()));
 		if (enemyCount >= effectiveArtyThreshold)
 			RequestArtillerySupport(reportPos, enemyCount, worldTime);
+		// === END MODIFIED ===
 	}
 
 	vector GetCentroidFromEntities(array<IEntity> entities)
@@ -228,12 +313,15 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 
 		if (m_GroupUtil.perc && m_GroupUtil.perc.m_aTargets)
 		{
+			// === MODIFIED: D -- threshold reinforcement di-scale personality SL ===
 			int effectiveReinfThreshold = Math.Max(1, Math.Round(m_iReinforcementThreshold * GetPersonalityThresholdScale()));
 			if (m_GroupUtil.perc.m_aTargets.Count() >= effectiveReinfThreshold)
 				RequestReinforcement(worldTime);
+			// === END MODIFIED ===
 		}
 	}
 
+	// === MODIFIED: A -- tambah fallback timeout, sekarang butuh worldTime ===
 	protected void CheckResetFlags(float worldTime)
 	{
 		if (!m_GroupUtil)
@@ -245,17 +333,26 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 			return;
 		}
 
+		// Fallback: kalau udah lama minta reinforcement dan grup masih belum IDLE
+		// (mungkin reinforcement-nya sendiri gak pernah kekirim gara-gara gating di
+		// commander, atau grup stuck di status lain), reset paksa biar grup ini bisa
+		// nyoba minta lagi -- daripada stuck gak bisa minta bantuan selamanya.
 		if (m_bReinfRequested && (worldTime - m_fLastReinfRequestAt) > m_fReinfRequestTimeout)
 			m_bReinfRequested = false;
 	}
+	// === END MODIFIED ===
 
+	//--------------------------------------------------------------------
 	override void EOnFrame(IEntity owner, float timeSlice)
 	{
 		if (!Replication.IsServer())
 			return;
 
+		// === ADDED: null-check m_GroupUtil sebelum akses .perc -- sebelumnya bisa
+		// null-deref crash kalau EOnInit ninggalin m_GroupUtil null ===
 		if (!m_GroupUtil)
 			return;
+		// === END ADDED ===
 
 		m_fScanTimer += timeSlice;
 		if (m_fScanTimer <= m_fScanInterval || !m_GroupUtil.perc)
@@ -278,7 +375,9 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
-
+		// Behavior ini DIPERTAHANKAN sesuai instruksi -- kalau gak ada
+		// AICommander_ManagerComponent, komponen ini emang harus diem total, gak
+		// usah ngeproses apapun. Ini bukan bug.
 		if (!AICommander_ManagerComponent.GetInstance())
 			return;
 		
@@ -286,10 +385,20 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		m_Group     = SCR_AIGroup.Cast(owner);
 		m_GroupUtil = DCO_GroupUtilityComponent.Cast(owner.FindComponent(DCO_GroupUtilityComponent));
 
+		// === MODIFIED: sebelumnya FRAME event CUMA di-enable lewat
+		// InitializeContactReport() yang gak dipanggil di manapun dalam file ini --
+		// kalau gak ada kode eksternal yang manggil itu, EOnFrame gak PERNAH jalan.
+		// Sekarang di-enable LANGSUNG di sini, tapi cuma kalau m_GroupUtil beneran
+		// ketemu (kalau gak ketemu, percuma juga di-enable karena EOnFrame bakal
+		// early-return terus lewat null-check di atas). ===
 		if (m_GroupUtil)
 			SetEventMask(owner, EntityEvent.FRAME);
+		// === END MODIFIED ===
 	}
 	
+	//! Dipertahankan sebagai public method buat kode lain yang mau re-trigger FRAME
+	//! secara manual (misal abis group di-reset/reassign) -- tapi bukan lagi
+	//! satu-satunya jalan buat ngaktifin scanning, EOnInit udah self-sufficient.
 	void InitializeContactReport()
 	{
 		SetEventMask(m_MyEntity, EntityEvent.FRAME);	

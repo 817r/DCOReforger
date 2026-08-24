@@ -23,7 +23,7 @@ class AICommander_BaseComponentClass : ScriptComponentClass
 	[Attribute("{6ED320498A60081C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_ArtillerySupport.et", UIWidgets.ResourceNamePicker, desc: "Tasking For Player.", "et", category: "Commander Player Tasking Setting")]
 	protected ResourceName m_sDefaultShootArtilleryPrefab;
 	
-	[Attribute("{6ED320498A60081C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_ArtillerySupport.et", UIWidgets.ResourceNamePicker, desc: "Waypoint To Suppress Area.", "et", category: "Commander Player Tasking Setting")]
+	[Attribute("{B2A2A69B5F42EC49}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Suppress_Editor.et", UIWidgets.ResourceNamePicker, desc: "Waypoint To Suppress Area.", "et", category: "Commander Player Tasking Setting")]
 	protected ResourceName m_sDefaultSuppressPrefab;
 
 	ResourceName GetCycleWaypointPrefab()
@@ -66,17 +66,11 @@ class AICommander_BaseComponentClass : ScriptComponentClass
 		return m_sDefaultSuppressPrefab;
 	}
 }
-
-// === ADDED: Order Squad Suppress ===
-class CMD_SuppressMission
+// === ADDED: Frontline Recon ===
+class CMD_FrontlineReconTrack
 {
 	DCO_GroupUtilityComponent m_Squad;
-	IEntity m_TargetEntity;         // null = suppress posisi statis (gak floating)
-	vector  m_vStaticPos;           // dipake kalau m_TargetEntity null
-	float   m_fRadius;
-	float   m_fExpireTime;
-	float   m_fLastRepositionTime;
-	float   m_fRepositionInterval;
+	float m_fExpireTime;
 }
 // === END ADDED ===
 
@@ -114,13 +108,40 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("15.0", UIWidgets.EditBox, "Interval cek capture progress (detik)", category: "Commander Setting")]
 	protected float m_fCaptureCheckInterval;
 	
-	// === ADDED: Order Squad Suppress ===
-	protected ref array<ref CMD_SuppressMission> m_aSuppressMissions = new array<ref CMD_SuppressMission>();
-	// === END ADDED ===
-	
 	// === ADDED: Frontline Recon ===
 	[Attribute("250.0", UIWidgets.EditBox, "Radius patrol scouting buat grup recon yang dikirim ke frontline (bukan ke objective spesifik).", category: "Commander Setting")]
 	protected float m_fFrontlineReconRadius;
+	
+	// === MODIFIED: BUG FIX -- sebelumnya grup yang dikirim frontline recon gak
+	// PERNAH dilepas balik ke pool. Tiap Think() cycle narik 1 grup baru, permanen --
+	// lama-lama pool grup yang available buat assault/defend abis, commander keliatan
+	// "berhenti nyoba ambil objective" padahal cuma kehabisan pasukan yang bisa
+	// dipake. Sekarang ada durasi + auto-release, sama pola kayak Suppress Mission.
+	[Attribute("180.0", UIWidgets.EditBox, "Berapa lama (detik) grup ditugasin frontline recon sebelum dilepas balik ke pool (RESERVE).", category: "Commander Setting")]
+	protected float m_fFrontlineReconDuration;
+	
+	protected ref array<ref CMD_FrontlineReconTrack> m_aFrontlineReconTracks = new array<ref CMD_FrontlineReconTrack>();
+	// === END MODIFIED ===
+	
+	// === ADDED: BUG FIX -- grup yang baru selesai tugas di DEPAN (misal abis
+	// assault/capture) jangan ditarik jalan jauh balik ke belakang (HQ) cuma buat
+	// patrol -- aneh, buang waktu, dan grup itu harusnya tetep siaga di sekitar
+	// posisinya sekarang (deket front line), bukan disuruh treak balik ke markas.
+	[Attribute("500.0", UIWidgets.EditBox, "Jarak maksimum (meter) grup idle boleh ditarik buat patrol. Kalau kandidat terdekat (HQ/objective captured) lebih jauh dari ini, patrol lokal di posisi sekarang aja.", category: "Commander Setting")]
+	protected float m_fMaxPatrolPullDistance;
+	// === END ADDED ===
+	
+	// === ADDED: Suppress Support -- assault ===
+	[Attribute("90.0", UIWidgets.EditBox, "Berapa lama (detik) grup suppress support nutupin assault force begitu di-release, sebelum dilepas balik ke pool.", category: "Commander Setting")]
+	protected float m_fAssaultSuppressDuration;
+	// === END ADDED ===
+	
+	// === ADDED: Suppress Support -- retreat cover ===
+	[Attribute("45.0", UIWidgets.EditBox, "Berapa lama (detik) grup suppress cover nutupin arah kontak begitu ada grup lain retreat.", category: "Commander Setting")]
+	protected float m_fRetreatCoverDuration;
+	
+	[Attribute("50.0", UIWidgets.EditBox, "Radius suppress buat nutupin retreat.", category: "Commander Setting")]
+	protected float m_fRetreatCoverRadius;
 	// === END ADDED ===
 	
 	[Attribute("400.0", UIWidgets.EditBox, "Jarak minimum sebelum cari transport", category: "Commander Setting")]
@@ -169,6 +190,14 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	[Attribute("0.5", UIWidgets.Range, "Patience: seberapa lama commander nunggu sebelum reallocate grup dari objective yang stalemate.\n0 = cepet nyerah/realokasi | 1 = sabar nungguin lama", params: "0 1 0.01", category: "Commander Personality")]
 	protected float m_fPatience;
+	
+	// === ADDED: Combat Focus ===
+	[Attribute("0.5", UIWidgets.Range, "Combat Focus: lebih mentingin ngejar/reinforce musuh yang kedeteksi, atau stay fokus ke objective capture.\n0 = fokus objective, cuekin ancaman kecil | 1 = ngejar musuh kemanapun, reinforce gampang ke-trigger", params: "0 1 0.01", category: "Commander Personality")]
+	protected float m_fCombatFocus;
+	// === END ADDED ===
+	
+	// === ADDED: Public getter, biar CommanderThreatResponse.c bisa akses trait ini ===
+	float GetCombatFocus() { return m_fCombatFocus; }
 	// === END ADDED ===
 	
 	// === ADDED: Recon Reveal ===
@@ -281,7 +310,13 @@ class AICommander_BaseComponent : ScriptComponent
 	// dalam satu Think() cycle (cuma role yang berubah), jadi aman di-cache per-cycle.
 	float GetReserveFloor()
 	{
-		return m_iManpowerTotalCache * m_fReserveMinimumPct;
+		// === ADDED: Combat Focus -- ngaruh juga ke manpower budget. CombatFocus
+		// tinggi lebih berani komit banyak pasukan ke fight/task (reserve floor turun
+		// sampe 0.5x -- nahan lebih sedikit di belakang), CombatFocus rendah lebih
+		// konservatif (reserve floor naik sampe 1.5x -- nahan lebih banyak cadangan).
+		float combatFocusMod = Math.Lerp(1.5, 0.5, m_fCombatFocus);
+		return m_iManpowerTotalCache * m_fReserveMinimumPct * combatFocusMod;
+		// === END ADDED ===
 	}
 	
 	// Cek apakah grup ini boleh dikomit ke offense (RECON/ASSAULT/FLANK) tanpa
@@ -357,6 +392,7 @@ class AICommander_BaseComponent : ScriptComponent
 			m_fRiskTaking  = Math.RandomFloat01();
 			m_fResilience  = Math.RandomFloat01();
 			m_fPatience    = Math.RandomFloat01();
+			m_fCombatFocus = Math.RandomFloat01();
 		}
 		float adaptMod   = Math.Lerp(1.5, 0.5, m_fAdaptability);
 		m_fThinkInterval = m_fThinkInterval * adaptMod;
@@ -810,8 +846,126 @@ class AICommander_BaseComponent : ScriptComponent
 		reconGrp.SetGroupRole(CMD_EGroupRole.RECON);
 		GeneratePatrolRoute(reconGrp, frontlinePos, m_fFrontlineReconRadius, worldTime);
 		
+		// === ADDED: BUG FIX -- catat tracking durasi, biar grup ini ke-release balik
+		// ke pool nanti (lihat UpdateFrontlineReconTracks), gak permanen kesedot.
+		CMD_FrontlineReconTrack track = new CMD_FrontlineReconTrack();
+		track.m_Squad = reconGrp;
+		track.m_fExpireTime = worldTime + m_fFrontlineReconDuration;
+		m_aFrontlineReconTracks.Insert(track);
+		// === END ADDED ===
+		
 		Print(string.Format("[%1] Frontline Recon: %2 -> scouting deket %3",
 			m_sCommanderUID, reconGrp.GetOwner().GetName(), frontlinePos.ToString()));
+	}
+	
+	//! Lepas grup frontline recon yang udah expired balik ke RESERVE, biar pool
+	//! grup buat assault/defend/flank gak abis kesedot permanen. Piggyback siklus
+	//! ThinkCaptureProgress yang sama kayak Suppress Mission.
+	protected void UpdateFrontlineReconTracks(float worldTime)
+	{
+		for (int i = m_aFrontlineReconTracks.Count() - 1; i >= 0; i--)
+		{
+			CMD_FrontlineReconTrack track = m_aFrontlineReconTracks[i];
+			if (!track || !track.m_Squad)
+			{
+				m_aFrontlineReconTracks.Remove(i);
+				continue;
+			}
+			
+			if (worldTime >= track.m_fExpireTime)
+			{
+				if (track.m_Squad.GetGroupRole() == CMD_EGroupRole.RECON)
+				{
+					track.m_Squad.CompleteAllWaypoints();
+					track.m_Squad.SetGroupRole(CMD_EGroupRole.RESERVE);
+					Print(string.Format("[%1] Frontline Recon selesai -- %2 dilepas balik ke RESERVE",
+						m_sCommanderUID, track.m_Squad.GetOwner().GetName()));
+				}
+				m_aFrontlineReconTracks.Remove(i);
+			}
+		}
+	}
+	// === END ADDED ===
+	
+	
+	// === ADDED: Retreat System -- helper reusable, extract dari logic yang tadinya
+	// nempel di dalem SendIdleGroupsToReserve doang. Nyari posisi "aman" terdekat
+	// (objective captured atau HQ fallback) dari suatu titik, divalidasi navmesh
+	// reachability (sama pola kayak fix patrol center kemarin). Dipake buat patrol
+	// candidate DAN rally point retreat -- 2 kebutuhan yang sama persis konsepnya:
+	// "titik aman terdekat yang beneran bisa dipijak".
+	protected vector GetNearestSafePosition(vector fromPos)
+	{
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		
+		array<vector> candidatePositions = new array<vector>();
+		if (mgr)
+		{
+			foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
+			{
+				if (!obj)
+					continue;
+				if (!obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+					continue;
+				candidatePositions.Insert(obj.GetOwner().GetOrigin());
+			}
+		}
+		if (candidatePositions.IsEmpty())
+			candidatePositions.Insert(GetOwner().GetOrigin());
+		
+		// === MODIFIED: Personality -- Resilience nentuin SEBERAPA JAUH mundur, bukan
+		// cuma "nearest asal aman". Resilience tinggi (keras kepala) = mundur GAK
+		// JAUH-JAUH, ambil kandidat aman TERDEKAT. Resilience rendah (gampang
+		// panik) = mundur JAUH sampe ke kandidat PALING AMAN/JAUH dari kontak. Sort
+		// dulu berdasarkan jarak, baru ambil index sesuai persentil Resilience.
+		array<vector> sorted = new array<vector>();
+		array<float>  sortedDist = new array<float>();
+		foreach (vector cand : candidatePositions)
+		{
+			float d = vector.DistanceSq(fromPos, cand);
+			int insertAt = sorted.Count();
+			for (int i = 0; i < sorted.Count(); i++)
+			{
+				if (d < sortedDist[i])
+				{
+					insertAt = i;
+					break;
+				}
+			}
+			sorted.InsertAt(cand, insertAt);
+			sortedDist.InsertAt(d, insertAt);
+		}
+		
+		// Resilience 1.0 -> index 0 (terdeket/gak jauh mundur)
+		// Resilience 0.0 -> index terakhir (terjauh/paling aman)
+		int pickIndex = Math.Round((sorted.Count() - 1) * (1.0 - m_fResilience));
+		pickIndex = Math.Clamp(pickIndex, 0, sorted.Count() - 1);
+		
+		return sorted[pickIndex];
+		// === END MODIFIED ===
+	}
+	// === END ADDED ===
+	
+	// === ADDED: Anti-Cluster Awareness ===
+	//! Cek apa ada grup MILIK SENDIRI (m_aOwnedGroup) yang udah deket posisi ini
+	//! (di bawah minDistance), gak termasuk excludeGroup (biasanya grup yang lagi
+	//! diproses sendiri). Reusable buat titik-titik keputusan manapun yang mau
+	//! nyegah numpuk sesama grup sendiri (patrol, dll) -- BUKAN buat staging
+	//! Synchronized Attack (itu emang sengaja ngumpul di 1 titik).
+	[Attribute("100.0", UIWidgets.EditBox, "Jarak minimum (meter) buat nganggep 2 grup sendiri 'ngecluster'.", category: "Commander Setting")]
+	protected float m_fMinGroupClusterDistance;
+	
+	protected bool IsPositionClusteredWithOwnedGroups(vector pos, DCO_GroupUtilityComponent excludeGroup = null)
+	{
+		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
+		{
+			if (!grp || grp == excludeGroup)
+				continue;
+			
+			if (vector.Distance(pos, grp.GetOwner().GetOrigin()) < m_fMinGroupClusterDistance)
+				return true;
+		}
+		return false;
 	}
 	// === END ADDED ===
 	
@@ -855,8 +1009,22 @@ class AICommander_BaseComponent : ScriptComponent
 	        if (grp.GetGroupStatus() == DCOG_EGroupStatus.EXECUTING_COMMAND)
 	            continue;
 	
-	        if (grp.GetGroupRole() != CMD_EGroupRole.NONE)
+	        // === MODIFIED: BUG FIX -- sebelumnya cuma proses grup role NONE (belum
+	        // pernah disentuh). Gak ada MEKANISME APAPUN di seluruh codebase yang
+	        // reset role balik ke NONE -- begitu grup dapet 1x patrol loop (jadi
+	        // RESERVE), dia SELAMANYA gak pernah masuk filter ini lagi, kecuali
+	        // sistem lain (assault/defend/flank/dll) kebetulan narik dia. Kalau gak
+	        // ada yang narik, grup itu diem PERMANEN abis 1 putaran patrol selesai --
+	        // makin lama match berjalan, makin banyak grup numpuk di limbo ini.
+	        // Sekarang: grup RESERVE yang udah IDLE (patrol sebelumnya kelar) JUGA
+	        // diproses lagi -- dikasih putaran patrol BARU, bukan dibiarin diem.
+	        bool isNeverAssigned         = (grp.GetGroupRole() == CMD_EGroupRole.NONE);
+	        bool isFinishedReservePatrol = (grp.GetGroupRole() == CMD_EGroupRole.RESERVE && grp.GetGroupStatus() == DCOG_EGroupStatus.IDLE);
+	        
+	        if (!isNeverAssigned && !isFinishedReservePatrol)
 	            continue;
+	        // === END MODIFIED ===
+	
 			
 			if (!grp.CanItHaveOrder())
 				continue;
@@ -887,19 +1055,112 @@ class AICommander_BaseComponent : ScriptComponent
 	        // berikutnya, ~45 detik default). Sekarang: pilih kandidat TERDEKAT dari grup
 	        // ini, kasih patrol LOOP beneran di situ (GeneratePatrolRoute, 4-6 titik
 	        // berulang) -- grup keliatan "sibuk" terus-menerus, bukan cuma numpang lewat.
+	        // === MODIFIED: BUG FIX -- sebelumnya milih anchor "objective captured
+	        // TERDEKAT DARI GRUP" -- bisa aja itu objective paling BELAKANG (deket HQ)
+	        // kalau kebetulan grup lagi di situ, bukan yang ke arah frontline. Sekarang
+	        // tiap kandidat di-skoring gabungan: seberapa FORWARD dia (jarak ke objective
+	        // TERDEKAT yang bukan punya kita -- makin deket makin depan) vs seberapa
+	        // PRAKTIS (jarak ke grup itu sendiri). Eagerness (m_fAggression) nentuin
+	        // bobotnya -- commander agresif lebih maksa condong ke yang forward walau
+	        // grup harus jalan lebih jauh, commander santai lebih mentingin praktis
+	        // (yang deket grup aja).
+	        AICommander_ManagerComponent frontlineMgr = AICommander_ManagerComponent.GetInstance();
+	        
 	        vector nearestCandidate = candidatePositions[0];
-	        float nearestDistSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), nearestCandidate);
+	        float bestCombinedScore = -1.0;
+	        
 	        foreach (vector cand : candidatePositions)
 	        {
-	            float distSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), cand);
-	            if (distSq < nearestDistSq)
+	            float nearestNonOwnedDistSq = float.MAX;
+	            if (frontlineMgr)
 	            {
-	                nearestDistSq = distSq;
-	                nearestCandidate = cand;
+	                foreach (CMD_AICommanderObjectiveComponent fobj : frontlineMgr.m_aObjective)
+	                {
+	                    if (!fobj || fobj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+	                        continue;
+	                    float d = vector.DistanceSq(cand, fobj.GetOwner().GetOrigin());
+	                    if (d < nearestNonOwnedDistSq)
+	                        nearestNonOwnedDistSq = d;
+	                }
+	            }
+	            
+	            float frontlineScore;
+	            if (nearestNonOwnedDistSq == float.MAX)
+	                frontlineScore = 0.5;
+	            else
+	                frontlineScore = 1.0 / (1.0 + Math.Sqrt(nearestNonOwnedDistSq) / 500.0);
+	            
+	            float practicalScore = 1.0 / (1.0 + vector.Distance(grp.GetOwner().GetOrigin(), cand) / 500.0);
+	            
+	            float combined = (m_fAggression * frontlineScore) + ((1.0 - m_fAggression) * practicalScore);
+	            
+	            if (combined > bestCombinedScore)
+	            {
+	                bestCombinedScore = combined;
+	                nearestCandidate  = cand;
 	            }
 	        }
+	        float nearestDistSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), nearestCandidate);
+	        // === END MODIFIED ===
 
-	        GeneratePatrolRoute(grp, nearestCandidate, m_fBaseRadius, worldTime);
+	        // === ADDED: BUG FIX -- kalau kandidat terdekat (HQ/objective captured)
+	        // masih kejauhan dari posisi grup SEKARANG, jangan paksa dia jalan jauh
+	        // cuma buat patrol -- patrol lokal di posisi sekarang aja. Ini nyegah grup
+	        // yang lagi di depan (misal abis assault/capture) ditarik balik jalan jauh
+	        // ke HQ di belakang cuma buat "kesibukan" patrol.
+	        if (nearestDistSq > (m_fMaxPatrolPullDistance * m_fMaxPatrolPullDistance))
+	            nearestCandidate = grp.GetOwner().GetOrigin();
+	        // === END ADDED ===
+
+	        // === MODIFIED: BUG FIX -- sebelumnya SEMUA grup idle patrol di anchor yang
+	        // PERSIS SAMA (HQ atau objective terdekat), cuma bentuk loop-nya doang yang
+	        // di-randomize per grup. Kalau grup idle-nya banyak, keliatan numpuk di 1
+	        // area kecil -- aneh. Sekarang tiap grup dapet PUSAT PATROL sendiri,
+	        // di-randomize di sekitar anchor (bukan tepat di anchor-nya) -- nyebar ke
+	        // beberapa pocket area di sekitar HQ/territory, bukan muter di titik yang
+	        // sama semua.
+	        float spreadAngle = Math.RandomFloat(0.0, 360.0) * Math.DEG2RAD;
+	        float spreadDist  = Math.RandomFloatInclusive(m_fBaseRadius * 2.0, m_fBaseRadius * 6.0);
+	        vector patrolCenter = nearestCandidate + Vector(Math.Cos(spreadAngle) * spreadDist, 0.0, Math.Sin(spreadAngle) * spreadDist);
+	        patrolCenter[1] = GetGame().GetWorld().GetSurfaceY(patrolCenter[0], patrolCenter[2]);
+	        
+	        // === MODIFIED: BUG FIX -- sebelumnya divalidasi pake navmesh
+	        // (GetReachablePoint/IsTileLoaded), tapi itu bikin masalah baru: IsTileLoaded()
+	        // sering false (tile belum di-load di area yang belum pernah dijelajah AI),
+	        // efeknya semua grup collapse balik ke titik yang sama. Sekarang diganti pake
+	        // water check yang lebih simpel -- pola yang SAMA persis kayak yang udah
+	        // dipake & confirmed jalan di SpawnMoveWP/SpawnArtilleryWP. Kalau ternyata
+	        // jatuh di air laut (ocean), fallback ke nearestCandidate (anchor asli, udah
+	        // pasti valid). Kalau bukan air, tetep pake patrolCenter random-nya.
+	        EWaterSurfaceType waterType = EWaterSurfaceType.WST_NONE;
+	        float lakeArea = 0;
+	        float waterY = SCR_WorldTools.GetWaterSurfaceY(null, patrolCenter, waterType, lakeArea);
+	        
+	        if (patrolCenter[1] < waterY && waterType == EWaterSurfaceType.WST_OCEAN)
+	        {
+	            patrolCenter = nearestCandidate;
+	            patrolCenter[1] = GetGame().GetWorld().GetSurfaceY(patrolCenter[0], patrolCenter[2]);
+	        }
+	        // === END MODIFIED ===
+	        
+	        // === ADDED: Anti-Cluster Awareness -- kalau patrolCenter hasil roll ternyata
+	        // udah deket grup sendiri yang laen (di bawah m_fMinGroupClusterDistance,
+	        // 100m), coba 1x reroll ke angle/jarak lain. Kalau masih clustered abis
+	        // reroll juga, biarin aja (gak infinite-loop retry) -- lebih baik agak
+	        // numpuk dikit daripada nge-hang nyari posisi sempurna.
+	        if (IsPositionClusteredWithOwnedGroups(patrolCenter, grp))
+	        {
+	            float retryAngle = Math.RandomFloat(0.0, 360.0) * Math.DEG2RAD;
+	            float retryDist  = Math.RandomFloatInclusive(m_fBaseRadius * 2.0, m_fBaseRadius * 6.0);
+	            vector retryCenter = nearestCandidate + Vector(Math.Cos(retryAngle) * retryDist, 0.0, Math.Sin(retryAngle) * retryDist);
+	            retryCenter[1] = GetGame().GetWorld().GetSurfaceY(retryCenter[0], retryCenter[2]);
+	            
+	            if (!IsPositionClusteredWithOwnedGroups(retryCenter, grp))
+	                patrolCenter = retryCenter;
+	        }
+	        // === END ADDED ===
+
+	        GeneratePatrolRoute(grp, patrolCenter, m_fBaseRadius, worldTime);
 	        // === END MODIFIED ===
 
 	        grp.SetGroupRole(CMD_EGroupRole.RESERVE);
@@ -931,8 +1192,16 @@ class AICommander_BaseComponent : ScriptComponent
 			if (!grp)
 				continue;
 
-			if (grp.GetGroupStatus() == DCOG_EGroupStatus.EXECUTING_COMMAND)
+			// === MODIFIED: BUG FIX -- grup RESERVE (lagi idle patrol) sebelumnya
+			// gak bisa ditarik SAMA SEKALI selama masih EXECUTING_COMMAND (di tengah
+			// jalanin patrol loop) -- padahal patrol itu cuma "kesibukan pengisi
+			// waktu", commander HARUS selalu bisa interupsi kapan aja demi task yang
+			// lebih penting. Role LAIN (ASSAULT/DEFEND/FLANK/dll -- order combat
+			// beneran) tetep dilindungin dari interupsi casual kayak biasa.
+			bool isReservePatrol = (grp.GetGroupRole() == CMD_EGroupRole.RESERVE);
+			if (grp.GetGroupStatus() == DCOG_EGroupStatus.EXECUTING_COMMAND && !isReservePatrol)
 				continue;
+			// === END MODIFIED ===
 
 			if (grp.IsDedicatedTransport())
 				continue;
@@ -1057,9 +1326,24 @@ class AICommander_BaseComponent : ScriptComponent
 			if (grp.GetUnitCount() <= m_iRetreatThreshold
 				&& grp.GetGroupStatus() != DCOG_EGroupStatus.IDLE)
 			{
-				//SCR_AIWaypoint rallyWP = SpawnMoveWP(GetOwner().GetOrigin());
+				// === REMOVED: Retreat System -- di-nonaktifin sementara atas permintaan,
+				// sambil investigasi waypoint leak (waypoint gak pernah didespawn, cuma
+				// direferensiin ulang). SpawnMoveWP di sini juga nyumbang ke masalah itu.
+				// Dikomentar dulu (bukan dihapus total), biar gampang diaktifin lagi
+				// begitu fix leak-nya kelar.
+				//vector contactPos = grp.GetOwner().GetOrigin();
+				//vector rallyPos    = GetNearestSafePosition(contactPos);
+				//
+				//SCR_AIWaypoint rallyWP = SpawnMoveWP(rallyPos);
 				//if (rallyWP)
-					//grp.ForceRetreat(rallyWP, worldTime);
+				//{
+				//	grp.ForceRetreat(rallyWP, worldTime);
+				//	
+				//	DCO_GroupUtilityComponent coverGrp = FindBestIdleGroupForRole(CMD_EGroupRole.SUPPRESS, contactPos);
+				//	if (coverGrp && !coverGrp.IsPlayerGroup() && CanCommitGroup(coverGrp))
+				//		OrderSquadSuppress(coverGrp, contactPos, m_fRetreatCoverDuration, m_fRetreatCoverRadius);
+				//}
+				// === END REMOVED ===
 			}
 	 
 			if (!grp.CheckOrderComplete(worldTime))
@@ -1072,18 +1356,21 @@ class AICommander_BaseComponent : ScriptComponent
 	 	if (m_eCommanderModeExternal != CMD_ECommanderMode.BALANCED)
 			EvaluateCommanderMode(worldTime);
 	 
-		// === ADDED: Absolute Defend Guarantee ===
-		// Captured objective SELALU dicek butuh reinforcement defend, terlepas dari
-		// commander mode saat ini (dulu ini cuma jalan pas mode DEFENSIVE/BALANCED,
-		// jadi kalau commander lagi full OFFENSIVE, objective yang udah captured
-		// gak pernah direinforce). Dipanggil SEBELUM offense supaya defend dapat
-		// prioritas pertama ambil grup dari reserve pool.
-		// PENGECUALIAN: commander bertipe OFFENSIVE murni (full aggression, personality
-		// yang gak peduli hold ground) SENGAJA di-skip — semua manpower dialokasikan
-		// buat push, gak ada yang dikorbankan buat defend captured objective.
+		// === MODIFIED: BUG FIX -- sebelumnya EnsureAbsoluteDefend di-gate di
+		// belakang "if (m_fAggression < RandomFloat01())" -- coin-flip yang
+		// PROBABILITY-nya turun makin tinggi Eagerness commander. Buat commander
+		// Eagerness tinggi (misal 0.8-0.9), chance defend ke-trigger cuma 10-20%
+		// PER CYCLE -- rata-rata butuh ~10 Think() cycle (bisa berarti beberapa
+		// menit) sebelum objective captured PERTAMA KALI dapet penjagaan. Efeknya:
+		// territory captured bisa kosong tanpa penjagaan buat durasi gak
+		// predictable, kadang keliatan "gak pernah defend sama sekali" kalau
+		// testing session-nya gak selama itu. Sekarang jalan SELALU tiap cycle
+		// begitu mode bukan OFFENSIVE (sesuai niat komentar aslinya). Eagerness
+		// sekarang ngaruh ke JUMLAH grup yang dikirim defend (di AssignDefendToObjective),
+		// bukan ke "jalan apa enggak fungsinya sama sekali".
 		if (m_eCommanderMode != CMD_ECommanderMode.OFFENSIVE)
 			EnsureAbsoluteDefend(worldTime);
-		// === END ADDED ===
+		// === END MODIFIED ===
 	 
 		if (m_eCommanderMode == CMD_ECommanderMode.DEFENSIVE)
 			ThinkDefensive(worldTime);
@@ -1091,14 +1378,7 @@ class AICommander_BaseComponent : ScriptComponent
 			ThinkOffensive(mgr, worldTime);
 		else if (m_eCommanderMode == CMD_ECommanderMode.BALANCED)
 		{
-			// === MODIFIED: urutan think tergantung Eagerness (m_fAggression).
-			// Commander eager mikirin OFFENSE duluan (assault dapet prioritas rebutan
-			// grup idle sebelum defend kebagian), commander kurang eager mikirin
-			// DEFENSE duluan (jaga yang udah ada dulu, baru comit sisa manpower buat
-			// nyerang). Order ini beneran ngaruh karena dua-duanya rebutan dari pool
-			// grup idle yang sama (m_aOwnedGroup) -- yang duluan jalan dapet pilihan
-			// pertama.
-			if (m_fAggression >= 0.5)
+			if (m_fAggression >= Math.RandomFloat01())
 			{
 				ThinkOffensive(mgr, worldTime);
 				ThinkDefensive(worldTime);
@@ -1108,28 +1388,11 @@ class AICommander_BaseComponent : ScriptComponent
 				ThinkDefensive(worldTime);
 				ThinkOffensive(mgr, worldTime);
 			}
-			// === END MODIFIED ===
 		}
 		
-		// === MODIFIED: BUG FIX -- sebelumnya SendIdleGroupsToReserve() CUMA dipanggil
-		// sebagai fallback terakhir (m_aObjective.IsEmpty() di ThinkOffensive / !hasAnyWork
-		// di ThinkDefensive). Selama ada objective aktif (yang hampir selalu ada), fungsi
-		// itu gak pernah kepanggil -- akibatnya grup yang ketahan manpower reserve floor
-		// (CanCommitGroup) atau kelebihan dari slot objective yang udah penuh cuma
-		// nyangkut di role NONE, status IDLE, selamanya. Gak dikasih patrol/standby
-		// apapun -- keliatan kayak "AFK". Sekarang dipanggil SEKALI tiap akhir Think()
-		// cycle, unconditional -- internal loop-nya sendiri udah filter cuma proses grup
-		// yang MASIH role NONE, jadi aman dipanggil tiap cycle, gak ganggu grup yang
-		// udah ke-assign kemana pun. ===
-		// === ADDED: Frontline Recon -- kalau masih ada grup RECON yang nganggur
-		// (gak kepake buat objective manapun), kirim scouting ke frontline. Dipanggil
-		// SEBELUM SendIdleGroupsToReserve, biar grup RECON-eligible dapet kesempatan
-		// pertama sebelum sisanya disapu jadi RESERVE generic.
 		TrySendFrontlineRecon(worldTime);
-		// === END ADDED ===
 		
 		SendIdleGroupsToReserve();
-		// === END MODIFIED ===
 	 
 		m_eCommanderState = CMD_ECommanderState.COMMANDING;
 	}
@@ -1278,7 +1541,7 @@ class AICommander_BaseComponent : ScriptComponent
 	    }
 	}
 	
-	protected void GenerateSearchWaypoints(vector center, float radius, array<SCR_AIWaypoint> outWaypoints, float wpSpacing = 50.0)
+	protected void GenerateSearchWaypoints(vector center, float radius, array<SCR_AIWaypoint> outWaypoints, float wpSpacing = 50.0, float angleOffset = 0.0)
 	{
 	    if (!outWaypoints)
 	        return;
@@ -1322,8 +1585,14 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	        for (int sector = 0; sector < currentSectors; sector++)
 	        {
-	            float angleMin = sectorAngle * sector;
-	            float angleMax = sectorAngle * (sector + 1);
+	            // === ADDED: BUG FIX -- angleOffset digeser ke sini, biar tiap grup
+	            // (dipanggil dengan offset beda-beda dari caller) nyari di SEKTOR yang
+	            // beda, bukan semuanya nyari di 360 derajat penuh yang sama -- itu yang
+	            // bikin beberapa grup bisa convergen ke titik yang sama walau
+	            // objective-nya sama.
+	            float angleMin = angleOffset + sectorAngle * sector;
+	            float angleMax = angleOffset + sectorAngle * (sector + 1);
+	            // === END ADDED ===
 	            float angleDeg = Math.RandomFloat(angleMin, angleMax);
 	            float angleRad = angleDeg * Math.DEG2RAD;
 	
@@ -1427,90 +1696,7 @@ class AICommander_BaseComponent : ScriptComponent
 	    params.Transform[3] = pos;
 	
 	    return SCR_AIWaypoint.Cast(GetGame().SpawnEntityPrefab(res, null, params));
-	}
-	// === ADDED: Order Squad Suppress ===
-	//! Perintahin grup buat suppress area/target selama "duration" detik, radius
-	//! "radius". Kalau "trackTarget" dikasih (gak null), suppress-nya FLOATING --
-	//! posisi di-reposisi ngikutin trackTarget.GetOrigin() tiap "repositionInterval"
-	//! detik (default 15s, piggyback siklus ThinkCaptureProgress). Kalau trackTarget
-	//! null, suppress statis di targetPos, gak pernah reposisi.
-	//!
-	//! Return false kalau grup null atau waypoint gagal di-spawn (misal prefab
-	//! belum di-set di m_sDefaultSuppressPrefab).
-	bool OrderSquadSuppress(DCO_GroupUtilityComponent squad, vector targetPos, float duration, float radius, IEntity trackTarget = null, float repositionInterval = 15.0)
-	{
-	    if (!squad)
-	        return false;
-	    
-	    float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
-	    
-	    SCR_AIWaypoint wp = SpawnSuppressWP(targetPos);
-	    if (!wp)
-	    {
-	        Print(string.Format("[%1] OrderSquadSuppress GAGAL -- SpawnSuppressWP null, cek m_sDefaultSuppressPrefab di Workbench", m_sCommanderUID));
-	        return false;
-	    }
-	    
-	    wp.SetCompletionRadius(radius);
-	    
-	    squad.CompleteAllWaypoints();
-	    squad.SetGroupRole(CMD_EGroupRole.SUPPRESS);
-	    squad.MoveTo(wp, worldTime);
-	    
-	    CMD_SuppressMission mission = new CMD_SuppressMission();
-	    mission.m_Squad               = squad;
-	    mission.m_TargetEntity        = trackTarget;
-	    mission.m_vStaticPos          = targetPos;
-	    mission.m_fRadius             = radius;
-	    mission.m_fExpireTime         = worldTime + duration;
-	    mission.m_fLastRepositionTime = worldTime;
-	    mission.m_fRepositionInterval = repositionInterval;
-	    m_aSuppressMissions.Insert(mission);
-	    
-	    return true;
-	}
-	
-	//! Dipanggil tiap ThinkCaptureProgress cycle (piggyback, gak nambah timer baru).
-	//! Cek misi yang udah expired (lepas grup balik ke RESERVE), dan reposisi misi
-	//! floating yang udah waktunya update.
-	protected void UpdateSuppressMissions(float worldTime)
-	{
-	    for (int i = m_aSuppressMissions.Count() - 1; i >= 0; i--)
-	    {
-	        CMD_SuppressMission mission = m_aSuppressMissions[i];
-	        if (!mission || !mission.m_Squad)
-	        {
-	            m_aSuppressMissions.Remove(i);
-	            continue;
-	        }
-	        
-	        if (worldTime >= mission.m_fExpireTime)
-	        {
-	            mission.m_Squad.CompleteAllWaypoints();
-	            mission.m_Squad.SetGroupRole(CMD_EGroupRole.RESERVE);
-	            Print(string.Format("[%1] Suppress mission selesai -- %2 dilepas balik ke RESERVE",
-	                m_sCommanderUID, mission.m_Squad.GetOwner().GetName()));
-	            m_aSuppressMissions.Remove(i);
-	            continue;
-	        }
-	        
-	        if (mission.m_TargetEntity && (worldTime - mission.m_fLastRepositionTime) >= mission.m_fRepositionInterval)
-	        {
-	            vector newPos = mission.m_TargetEntity.GetOrigin();
-	            SCR_AIWaypoint newWp = SpawnSuppressWP(newPos);
-	            if (newWp)
-	            {
-	                newWp.SetCompletionRadius(mission.m_fRadius);
-	                mission.m_Squad.CompleteAllWaypoints();
-	                mission.m_Squad.MoveTo(newWp, worldTime);
-	                mission.m_vStaticPos = newPos;
-	            }
-	            mission.m_fLastRepositionTime = worldTime;
-	        }
-	    }
-	}
-	// === END ADDED ===
-	
+	}	
  
 	SCR_AIWaypoint SpawnDefendWP(vector pos)
 	{
@@ -1747,7 +1933,17 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	protected void AssignDefendToObjective(CMD_AICommanderObjectiveComponent obj, float worldTime)
 	{
-	    int needed = obj.GetDefendGroupCount();
+	    // === ADDED: Eagerness sekarang ngaruh ke SINI -- jumlah grup defend yang
+	    // dikirim, bukan lagi ke "jalan apa enggaknya EnsureAbsoluteDefend" (itu
+	    // fix bug terpisah -- lihat komentar di pemanggilnya). Commander agresif
+	    // (Eagerness tinggi) kirim LEBIH SEDIKIT grup buat defend (mentingin
+	    // manpower buat offense), commander hati-hati (Eagerness rendah) kirim
+	    // LEBIH BANYAK (garnisun kuat). Minimum selalu 1 -- objective captured
+	    // gak boleh 0 penjagaan sama sekali, apapun Eagerness-nya (itu persis
+	    // masalah yang baru kita fix, jangan reintroduce lewat jalur laen).
+	    float eagernessMod = Math.Lerp(1.3, 0.6, m_fAggression);
+	    int needed = Math.Max(1, Math.Round(obj.GetDefendGroupCount() * eagernessMod));
+	    // === END ADDED ===
 	    int current = obj.GetCurrentAssignedGroupCount(m_sFactionKey);
 	    int toSend = needed - current;
 	
@@ -1892,8 +2088,22 @@ class AICommander_BaseComponent : ScriptComponent
 			float px = center[0] + Math.Cos(angleRad) * radiusJitter;
 			float pz = center[2] + Math.Sin(angleRad) * radiusJitter;
 			float py = GetGame().GetWorld().GetSurfaceY(px, pz);
+			vector patrolPos = Vector(px, py, pz);
 			
-			SCR_AIWaypoint wp = SpawnMoveWP(Vector(px, py, pz));
+			// === ADDED: BUG FIX -- SpawnMoveWP cuma nolak air OCEAN (WST_OCEAN),
+			// gak nolak danau/kolam kecil (tipe air lain) -- jadi patrol point yang
+			// jatoh di danau tetep lolos ke SpawnMoveWP dan kepake. Di sini dicek
+			// SEMUA tipe air (bukan cuma ocean), karena patrol point emang gak perlu
+			// pernah nyasar ke air jenis apapun. Kalau kena air, titik ini di-skip
+			// (loop patrol jadi 1 titik lebih dikit, gak fatal).
+			EWaterSurfaceType waterType = EWaterSurfaceType.WST_NONE;
+			float lakeArea = 0;
+			float waterY = SCR_WorldTools.GetWaterSurfaceY(null, patrolPos, waterType, lakeArea);
+			if (py < waterY && waterType != EWaterSurfaceType.WST_NONE)
+				continue;
+			// === END ADDED ===
+			
+			SCR_AIWaypoint wp = SpawnMoveWP(patrolPos);
 			if (wp)
 				grp.MoveTo(wp, worldTime);
 		}
@@ -2066,6 +2276,15 @@ class AICommander_BaseComponent : ScriptComponent
 	{
 		int releasedCount = 0;
 
+		// === MODIFIED: BUG FIX -- sebelumnya GenerateSearchWaypoints dipanggil per
+		// grup dengan parameter IDENTIK (center+radius objective yang sama, gak ada
+		// pembagian area), jadi beberapa grup ASSAULT yang di-release bareng ke
+		// objective yang sama bisa convergen ke titik yang sama persis -- padahal
+		// harusnya nyerang/capture dari sisi yang beda-beda. Sekarang dikumpulin
+		// dulu (two-pass), baru tiap grup dikasih SEKTOR sudut yang beda (360°
+		// dibagi rata jumlah grup) lewat parameter angleOffset -- grup 1 nyari di
+		// sisi utara objective, grup 2 di timur, dst, gak overlap.
+		array<DCO_GroupUtilityComponent> toRelease = {};
 		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
 		{
 			if (!grp)
@@ -2077,18 +2296,38 @@ class AICommander_BaseComponent : ScriptComponent
 			if (grp.GetGroupRole() != CMD_EGroupRole.ASSAULT)
 				continue; // flank/suppress udah punya posisi sendiri, gak perlu di-release ke objective
 
+			toRelease.Insert(grp);
+		}
+
+		float sectorSize = 360.0 / Math.Max(1, toRelease.Count());
+
+		for (int gi = 0; gi < toRelease.Count(); gi++)
+		{
+			DCO_GroupUtilityComponent grp = toRelease[gi];
 			grp.CompleteAllWaypoints();
 
 			array<SCR_AIWaypoint> searchWPs = {};
-			GenerateSearchWaypoints(obj.GetOwner().GetOrigin(), obj.GetRadius(), searchWPs);
+			GenerateSearchWaypoints(obj.GetOwner().GetOrigin(), obj.GetRadius(), searchWPs, 50.0, sectorSize * gi);
 			foreach (SCR_AIWaypoint wp : searchWPs)
 				grp.MoveTo(wp, worldTime);
 
 			releasedCount++;
 		}
+		// === END MODIFIED ===
 
 		Print(string.Format("[%1] SYNCHRONIZED ASSAULT RELEASED -> %2 (%3 grup)",
 			m_sCommanderUID, obj.GetOwner().GetName(), releasedCount));
+		
+		// === REMOVED: Suppress Support -- di-nonaktifin sementara atas permintaan,
+		// sambil investigasi waypoint leak. Dikomentar dulu (bukan dihapus total),
+		// biar gampang diaktifin lagi begitu fix leak-nya kelar.
+		//if (releasedCount > 0)
+		//{
+		//	DCO_GroupUtilityComponent suppressGrp = FindBestIdleGroupForRole(CMD_EGroupRole.SUPPRESS, obj.GetOwner().GetOrigin());
+		//	if (suppressGrp && !suppressGrp.IsPlayerGroup() && CanCommitGroup(suppressGrp))
+		//		OrderSquadSuppress(suppressGrp, obj.GetOwner().GetOrigin(), m_fAssaultSuppressDuration, obj.GetRadius());
+		//}
+		// === END REMOVED ===
 	}
 	// === END ADDED ===
 	
@@ -2121,7 +2360,15 @@ class AICommander_BaseComponent : ScriptComponent
 			DCO_GroupUtilityComponent suppressGrp = FindBestIdleGroupForRole(CMD_EGroupRole.SUPPRESS, objPos);
 			if (suppressGrp && !suppressGrp.IsPlayerGroup() && CanCommitGroup(suppressGrp))
 			{
-				vector suppressPos = CMD_ReconSpotFinder.FindBestReconSpot(GetOwner().GetOrigin(), objPos, 180.0, objRad * 1.5, 12);
+				// === MODIFIED: BUG FIX -- sebelumnya observerBase = GetOwner().GetOrigin(),
+				// itu posisi COMMANDER SENDIRI (HQ), SAMA SEKALI BUKAN posisi suppressGrp.
+				// Search selalu di midpoint(HQ, objective) -- kalau HQ jauh dari
+				// objective (biasanya emang gitu), hasilnya jauh dari objective juga,
+				// bisa nyasar deket HQ/friendly lain yang lagi di situ. Sekarang pake
+				// objPos buat kedua parameter -- search selalu di sekitar objective
+				// beneran.
+				vector suppressPos = CMD_ReconSpotFinder.FindBestReconSpot(objPos, objPos, 180.0, objRad * 1.5, 12);
+				// === END MODIFIED ===
 				if (suppressPos != vector.Zero)
 				{
 					suppressGrp.CompleteAllWaypoints();
@@ -2162,7 +2409,14 @@ class AICommander_BaseComponent : ScriptComponent
 				if (TryAssignTransport(assaultGrp, objPos, worldTime))
     				return;
 				array<SCR_AIWaypoint> searchWPs = {};
-				GenerateSearchWaypoints(obj.GetOwner().GetOrigin(), obj.GetRadius(), searchWPs);
+				// === ADDED: BUG FIX -- sama kayak ReleaseSynchronizedAssault, kasih
+				// offset sektor berdasarkan berapa grup yang UDAH assigned ke objective
+				// ini duluan, biar grup baru yang masuk lewat jalur piecemeal ini juga
+				// nyari di sisi yang beda, gak numpuk di titik yang sama kayak grup
+				// sebelumnya.
+				float pieceOffset = 360.0 / 6.0 * obj.GetCurrentAssignedGroupCount(m_sFactionKey);
+				GenerateSearchWaypoints(obj.GetOwner().GetOrigin(), obj.GetRadius(), searchWPs, 50.0, pieceOffset);
+				// === END ADDED ===
 				if (searchWPs.Count() > 0)
 				{
 					foreach (SCR_AIWaypoint wp : searchWPs)
@@ -2629,8 +2883,14 @@ class AICommander_BaseComponent : ScriptComponent
 		    m_fCaptureCheckTimer = 0.0;
 		    ThinkCaptureProgress(GetGame().GetWorld().GetWorldTime() / 1000.0);
 		    
-		    // === ADDED: Order Squad Suppress -- piggyback siklus yang sama ===
-		    UpdateSuppressMissions(GetGame().GetWorld().GetWorldTime() / 1000.0);
+		    // === REMOVED: Order Squad Suppress -- di-nonaktifin sementara bareng
+		    // trigger-nya (di ReleaseSynchronizedAssault), sambil investigasi waypoint
+		    // leak. Dikomentar dulu, gampang diaktifin lagi nanti.
+		    //UpdateSuppressMissions(GetGame().GetWorld().GetWorldTime() / 1000.0);
+		    // === END REMOVED ===
+		    
+		    // === ADDED: Frontline Recon -- piggyback siklus yang sama ===
+		    UpdateFrontlineReconTracks(GetGame().GetWorld().GetWorldTime() / 1000.0);
 		    // === END ADDED ===
 		}
 		

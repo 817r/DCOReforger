@@ -21,4 +21,5 @@ SCR_AIWorld {
   SCR_CoverManagerComponent "{68CD33AE0A143917}" {
   }
  }
+ "Active AI limit" 1000
 }

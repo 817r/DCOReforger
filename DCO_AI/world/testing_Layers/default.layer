@@ -1,99 +1,3 @@
-$grp GameEntity {
- ArlevilleObjective {
-  components {
-   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
-    m_fBaseValue 70
-    m_fRadius 145
-   }
-   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
-    m_vResolution 32
-    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
-   }
-  }
-  coords 2786.54 73.491 1687.561
- }
- SignalHillObjective {
-  components {
-   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
-    m_fRadius 50
-   }
-   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
-    m_vResolution 32
-    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
-   }
-  }
-  coords 2501.33 147.786 2260.85
- }
- HighfieldsObjective {
-  components {
-   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
-    m_fRadius 85
-    m_fIntelCoverageRadius 500
-    m_eObjectiveType RECON
-   }
-   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
-    m_vResolution 32
-    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
-   }
-  }
-  coords 2722.402 88.022 2124.046
- }
- ArlevilleHeights {
-  components {
-   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
-    m_fBaseValue 70
-    m_fRadius 55
-    m_fIntelCoverageRadius 600
-    m_eObjectiveType RECON
-   }
-   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
-    m_vResolution 32
-    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
-   }
-  }
-  coords 3069.396 72.907 1576.946
- }
- TimberRidge {
-  components {
-   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
-    m_fRadius 75
-    m_eObjectiveType RECON
-   }
-   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
-    m_vResolution 32
-    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
-   }
-  }
-  coords 2600.126 111.052 2500.408
- }
- ArlevilleObjective2 {
-  components {
-   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
-    m_fBaseValue 70
-    m_fRadius 200
-   }
-   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
-    m_vResolution 32
-    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
-   }
-  }
-  coords 3152.978 11.304 2782.434
- }
- ArlevilleObjective3 {
-  components {
-   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
-    m_fBaseValue 70
-    m_fRadius 71
-    m_eObjectiveType RECON
-   }
-   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
-    m_vResolution 32
-    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
-   }
-  }
-  coords 3091.082 44.263 2425.603
- }
-}
 $grp Vehicle : "{0FBF8F010F81A4E5}Prefabs/Vehicles/Wheeled/LAV25/LAV25.et" {
  LAV1 {
   coords 1778.059 46.874 1098.424
@@ -134,7 +38,7 @@ $grp Vehicle : "{47D94E1193A88497}Prefabs/Vehicles/Wheeled/M151A2/M151A2_transpo
     "faction affiliation" "USSR"
    }
   }
-  coords 2096.655 51.958 3004.008
+  coords 2027.301 50.479 2941.713
  }
  M151A2_transport2 {
   components {
@@ -142,7 +46,7 @@ $grp Vehicle : "{47D94E1193A88497}Prefabs/Vehicles/Wheeled/M151A2/M151A2_transpo
     "faction affiliation" "USSR"
    }
   }
-  coords 2110.57 53.002 2983.218
+  coords 1996.057 48.609 2942.35
  }
 }
 $grp SCR_AIGroup : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
@@ -210,7 +114,6 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_sDefaultGetInWaypointPrefab "{6EB248EC45C92C3A}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetInCommander.et"
     m_sCommanderUID "rifleSquad"
     m_sFactionKey "US"
-    m_bUseSynchronizedAttack 0
     m_fDelayFirstIteration 30
     m_fReserveMinimumPct 0.1
     m_bRandomPersonality 1
@@ -225,7 +128,9 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_sDefaultGetInWaypointPrefab "{6EB248EC45C92C3A}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetInCommander.et"
     m_sCommanderUID "mechanizedSquad"
     m_sFactionKey "USSR"
+    m_bUseSynchronizedAttack 0
     m_fDelayFirstIteration 15
+    m_bEnableManpowerBudget 0
     m_eCommanderModeExternal OFFENSIVE
     m_bRandomPersonality 1
    }
@@ -233,11 +138,27 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
   coords 2017.567 52.007 3050.814
  }
 }
+$grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 40
+   }
+  }
+  coords 2503.889 147.722 2265.835
+ }
+ {
+  coords 2781.876 74.45 1647.594
+ }
+ {
+  coords 3110.897 11.625 2777.594
+ }
+}
 SCR_AIGroup : "{B7AB5D3F8A7ADAE4}Prefabs/Groups/BLUFOR/Group_US_PlatoonHQ.et" {
  coords 1866.8 54.966 1100.535
 }
 Vehicle BTR1 : "{C012BB3488BEA0C2}Prefabs/Vehicles/Wheeled/BTR70/BTR70.et" {
- coords 2128.64 53.604 2922.678
+ coords 2023.221 48.559 2907.904
 }
 SCR_AIGroup Recon1_OF : "{C8622D0595B48437}Prefabs/Groups/OPFOR/Group_USSR_AmmoTeam.et" {
  components {
@@ -257,13 +178,13 @@ GameEntity : "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et" {
 }
 $grp Vehicle : "{D9B91FAB817A6033}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_transport_covered.et" {
  Ural4320_transport_covered1 {
-  coords 2119.362 53.701 2950.58
+  coords 1998.512 47.242 2901.986
  }
  Ural4320_transport_covered2 {
-  coords 2080.222 53.1 2980.462
+  coords 2011.138 48.084 2923.39
  }
  Ural4320_transport_covered3 {
-  coords 2090.039 53.628 2943.933
+  coords 1996.398 48.14 2925.736
  }
 }
 $grp SCR_AIGroup : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
@@ -300,7 +221,7 @@ $grp SCR_AIGroup : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad
     m_eUnitCapabilities ASSAULT
    }
   }
-  coords 2008.652 51.373 2983.264
+  coords 2008.253 51.373 2984.958
  }
  Reserve2_OF {
   components {
@@ -308,7 +229,7 @@ $grp SCR_AIGroup : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad
     m_eUnitCapabilities RESERVE
    }
   }
-  coords 1993.295 51.375 2993.727
+  coords 1986.875 51.375 2995.678
  }
  Reserve1_OF {
   components {
@@ -316,7 +237,7 @@ $grp SCR_AIGroup : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad
     m_eUnitCapabilities RESERVE
    }
   }
-  coords 1994.3 50.774 2969.417
+  coords 1988.44 50.774 2970.515
  }
  {
   coords 1971.954 52.791 3137.661

@@ -184,6 +184,13 @@ class AICommander_ManagerComponent : ScriptComponent
  
 		FactionKey fk  = forCommander.GetCommanderFactionKey();
 		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		
+		// === REMOVED: Optimasi -- BuildObjectiveContext() dulu dibangun di sini buat
+		// dipass ke ComputePriorityScore, tapi sekarang ComputePriorityScore gak pake
+		// contextCache lagi (connectivity yang butuh itu udah dicabut dari relevance).
+		// Manggil BuildObjectiveContext() di sini sekarang cuma buang-buang kerjaan
+		// (O(N) tanpa konsumen), jadi dicabut.
+		// === END REMOVED ===
  
 		array<float> scores = {};
 		array<CMD_AICommanderObjectiveComponent> sorted = {};
@@ -199,7 +206,7 @@ class AICommander_ManagerComponent : ScriptComponent
 			if (obj.IsCapturedBy(fk, forCommander.GetCommanderUID()))
 				continue;
  
-			float score = obj.ComputePriorityScore(fk, worldTime, forCommander.GetOwner().GetOrigin());
+			float score = obj.ComputePriorityScore(fk, worldTime, forCommander.GetOwner().GetOrigin(), forCommander.GetCombatFocus());
  
 			bool inserted = false;
 			for (int i = 0; i < sorted.Count(); i++)
@@ -223,8 +230,6 @@ class AICommander_ManagerComponent : ScriptComponent
 		int take = Math.Min(count, sorted.Count());
 		for (int i = 0; i < take; i++)
 			result.Insert(sorted[i]);
-		
-		Print(string.Format("[CMD_Manager] Commander '%1'. GeAssigned Offensive '%2' Objective.", forCommander.GetCommanderUID(), result.Count()));
 	}
 	
 	void AssignGroupToCommander(DCO_GroupUtilityComponent grp)

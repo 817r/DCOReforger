@@ -142,6 +142,16 @@ class CMD_ArtillerySupport : ScriptComponent
 			m_aUnits.RemoveItemOrdered(grp);
 		}
 	}
+	
+	// === ADDED: Artillery Availability Check -- public getter, biar caller (misal
+	// CommanderThreatResponse.c) bisa cek "ada gak artillery yang beneran terdaftar"
+	// SEBELUM masukin request ke queue -- daripada request nyangkut di queue sampe
+	// expired tanpa feedback apapun ke pemohon.
+	bool HasRegisteredUnits()
+	{
+		return !m_aUnits.IsEmpty();
+	}
+	// === END ADDED ===
  
 	// === MODIFIED: sekarang beneran roll m_fBaseRejectionChance sebelum queue ===
 	void RequestShellImpact(vector impactPos, SCR_EAIArtilleryAmmoType shellType, float worldTime, int shellCount)

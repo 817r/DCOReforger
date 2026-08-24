@@ -212,48 +212,66 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	// makin tinggi bonus-nya, diskalain sama base value objective itu sendiri (objective
 	// penting + deket = bonus paling gede). Simpel: gak ada normalisasi/importance-
 	// weighting kayak sistem relevance sebelumnya, cuma proximity x base value doang.
-	float ComputePriorityScore(FactionKey forFaction, float worldTime, vector commanderPos)
+	float ComputePriorityScore(FactionKey forFaction, float worldTime, vector commanderPos, float combatFocus = 0.5)
 	{
 	    CMD_EObjectiveState currentState = GetObjectiveState(forFaction);
-	
+
 	    if (currentState == CMD_EObjectiveState.COMPLETED || currentState == CMD_EObjectiveState.FAILED)
 	        return 0.0;
-	
+
 	    if ((worldTime - m_fScoreCacheAge) < CACHE_DURATION)
 	        return m_fCachedScore;
-	
-	    float score = m_fBaseValue;
-	
+
+	    // === MODIFIED: 2-Tier (Assault vs Capture) -- sebelumnya enemyCount cuma
+	    // NAMBAH skor (max +50), jadi objective kosong yang base value/proximity-nya
+	    // tinggi bisa ngalahin objective yang lagi ada kontak aktif. Itu salah secara
+	    // taktis -- ada musuh HARUS didahuluin (assault), bukan sekadar "nambah
+	    // pertimbangan". Sekarang enemyCount jadi PENENTU TIER, bukan cuma tambahan:
+	    // objective ber-musuh (Tier 1) SELALU menang lawan objective kosong (Tier 2)
+	    // lewat offset besar (10000), apapun kombinasi value/proximity Tier 2.
 	    int enemyCount = CountNearbyUnits(m_fThreatRadius, forFaction, false);
-	    if (enemyCount > 0)
-	        score += Math.Clamp(enemyCount * 8.0, 0.0, 50.0);
-	
+
+	    float score = m_fBaseValue;
+
 	    if (m_fLastContestedTime > 0.0)
 	    {
 	        float elapsed = worldTime - m_fLastContestedTime;
 	        if (elapsed < 120.0)
 	            score += Math.Lerp(25.0, 0.0, elapsed / 120.0);
 	    }
-	
+
 	    int friendlyCount = CountNearbyUnits(m_fFriendlyRadius, forFaction, true);
 	    score -= Math.Clamp(friendlyCount * 5.0, 0.0, 30.0);
-	
+
 	    if (currentState == CMD_EObjectiveState.ASSIGNED)
 	        score -= 15.0;
-	
-	    // === ADDED: Proximity bonus -- jarak ke commander + base value objective ini
-	    // sendiri. Makin deket (relatif ke m_fMaxRelevantDistance), makin gede bonusnya,
-	    // diskalain sama base value (0 di jarak >= m_fMaxRelevantDistance, sampe
-	    // m_fBaseValue penuh di jarak 0).
+
 	    float distToCommander  = vector.Distance(commanderPos, GetOwner().GetOrigin());
 	    float proximityFactor  = Math.Clamp(1.0 - (distToCommander / m_fMaxRelevantDistance), 0.0, 1.0);
 	    float proximityBonus   = proximityFactor * m_fBaseValue;
 	    score += proximityBonus;
+
+	    // === ADDED: Combat Focus -- ngaruh ke BERAPA BANYAK musuh yang perlu
+	    // kedeteksi sebelum objective ini dianggep "assault-needed" (Tier 1).
+	    // CombatFocus tinggi (ngejar musuh) = threshold rendah, bahkan 1 musuh
+	    // langsung dianggep urgent. CombatFocus rendah (fokus objective) = butuh
+	    // musuh lebih banyak dulu (toleransi kontak kecil), stay fokus capture.
+	    int tierThreshold = Math.Max(1, Math.Round(Math.Lerp(3.0, 1.0, combatFocus)));
 	    // === END ADDED ===
+
+	    // Tier gate -- offset 10000 jauh ngelewatin skor maksimum Tier 2 (base 100 +
+	    // contested 25 + proximity 100 = 225 max, sebelum penalty). Di dalem Tier 1,
+	    // diurutin dari JUMLAH MUSUH dulu (x300, dominan atas residual max ~225),
+	    // score lama (base+prox+contested+dll) jadi tie-break residual kalau
+	    // enemyCount-nya sama persis.
+	    if (enemyCount >= tierThreshold)
+	        score = 10000.0 + (enemyCount * 300.0) + score;
+	    // else: Tier 2 (capture-only) -- score tetep apa adanya
+	    // === END MODIFIED ===
 
 	    m_fCachedScore   = Math.Max(score, 0.0);
 	    m_fScoreCacheAge = worldTime;
-	
+
 	    return m_fCachedScore;
 	}
 	

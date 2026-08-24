@@ -52,13 +52,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	}
 	
 	//--------------------------------------------------------------------------------------------
-	// === ADDED: Search/Investigate ===
-	protected const float INVESTIGATE_MIN_TIME = 8.0;  // di bawah ini, masih dianggap "baru aja ilang" -- biar suppressive fire yang handle dulu
-	protected const float INVESTIGATE_MAX_TIME = 30.0; // di atas ini, intel udah terlalu basi buat worth didatengin
-	protected const float INVESTIGATE_MAX_DIST = 60.0; // jangan ngejar sampe kejauhan
+	protected const float INVESTIGATE_MIN_TIME = 8.0;
+	protected const float INVESTIGATE_MAX_TIME = 30.0;
+	protected const float INVESTIGATE_MAX_DIST = 60.0;
 	
-	//! True kalau target lama gak keliatan (bukan sesaat ke-obstruct) tapi masih
-	//! dalam jarak & rentang waktu yang masuk akal buat didatengin & dicek.
 	protected bool IsInvestigating()
 	{
 		if (!m_Target)
@@ -73,7 +70,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		
 		return m_Target.GetDistance() < INVESTIGATE_MAX_DIST;
 	}
-	// === END ADDED ===
 	
 	protected override vector ResolveRequestTargetPos()
 	{
@@ -127,15 +123,11 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			return Math.RandomFloat(1.0, 4.5);
 		}
 		
-		// === ADDED: Search/Investigate -- kalau target lama gak keliatan tapi masih
-		// worth dicek, jangan nunggu selama skenario lain (bisa 30-90 detik) -- lebih
-		// proaktif nyamperin buat ngecek. Di-scale personality lewat GetInvestigateEagernessScale.
 		if (IsInvestigating())
 		{
 			float investigateWait = Math.RandomFloat(4.0, 8.0) * DCO_PersonalityCombatUtility.GetInvestigateEagernessScale(m_Utility);
 			return Math.Max(investigateWait, 2.0);
 		}
-		// === END ADDED ===
 		
 		float waitTime;
 		
@@ -212,8 +204,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (m_State.IsExecutingRequest())
 			return false;
 		
-		// If it's first run, ignore timers, only if:
-		// - If we are not in cover.
 		if (IsFirstExecution() && !m_State.m_bInCover)
 			return true;
 		
@@ -224,8 +214,11 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			if (!IsFirstExecution())
 				return false;
 		}
+		float inClosedAreaMultiplier = 1;
+		if (IsInOpenArea(m_MyEntity))
+			inClosedAreaMultiplier = 2;
 		
-		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
+		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType) * inClosedAreaMultiplier;
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
 	}
 	
@@ -244,16 +237,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		
 		if (!wp || SCR_EntityWaypoint.Cast(wp))
 		{
-			// No waypoint, or it's an entity-associated waypoint, like Follow waypoint.
-			// Therefore use standard movement logic.
-			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
-			
-			// === REACTIVATED & FIXED: cohesion check ===
-			// Sebelumnya di-comment total, kemungkinan karena FindPosition2D() gak valid/gak
-			// ada definisinya. Diganti pakai RandomGenerator.GenerateRandomPointInRadius yang
-			// udah stabil kepake di banyak tempat lain (AICommanderBase.c). Juga dibungkus
-			// if/else yang bener -- sebelumnya walau di-uncomment, baris "movePos = targetPos"
-			// di bawah tetap jalan TANPA syarat dan langsung nimpa hasil blok ini.
 			if (agent != group.GetLeaderAgent() && vector.Distance(group.GetLeaderEntity().GetOrigin(), m_MyEntity.GetOrigin()) > 40)
 			{
 				RandomGenerator cohesionRand = new RandomGenerator();
@@ -272,7 +255,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
 				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 			}
-			// === END REACTIVATED & FIXED ===
 		}
 		else
 		{
@@ -431,7 +413,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				{
 					coverSearchDistMin = 10.0;
 					coverSearchDistMax = 30.0;
-					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN; // Shouldn't be so large because we are sprinting and can't shoot
+					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
 					rq.m_eStanceMoving = ECharacterStance.STAND;
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					rq.m_eMovementType = EMovementType.RUN;
@@ -440,8 +422,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 			
 			//rq.m_eMovementType = EMovementType.RUN;
-			// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving -- BREAK
-			// gak sempet aim-while-moving walau secara teknis diizinin ===
 			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
 				DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 				IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
@@ -449,21 +429,14 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			rq.m_bAimAtTargetEnd = true;
 		}
 		
-		// === ADDED: Search/Investigate ===
-		// Target lama gak keliatan tapi masih worth dicek -- approach cautious
-		// (crouch+walk) ke posisi terakhir, BUKAN pake stance/pace combat-reposition
-		// biasa (yang bisa STAND+SPRINT/RUN). Override apapun yang di-set switch di
-		// atas, karena "lagi nyamperin buat ngecek" itu beda kondisi sama "lagi
-		// reposisi buat nembak target yang jelas".
 		if (IsInvestigating())
 		{
-			rq.m_eStanceMoving = ECharacterStance.CROUCH;
+			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.WALK;
 			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(true, moraleSystem);
 			rq.m_bAimAtTargetEnd = true;
 		}
-		// === END ADDED ===
 		
 		if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 			rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
@@ -471,29 +444,17 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		{
 			rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
 			
-			// === ADDED: CQB breach grenade ===
-			// Momen ini AI mutusin bakal masuk ke building buat kejar target -- ini titik
-			// paling pas buat "breach grenade" sebelum entry, bukan cuma reaksi ke target
-			// invisible kayak logic grenade yang di Modded_DCO_UpdateAttackData.
 			DCO_BreachUtility.TryThrowBreachGrenade(m_Utility, rq.m_vTargetPos);
-			// === END ADDED ===
 		}
 		
 		rq.m_bFailIfNoCover = ResolveFailMoveIfNoCover();
 		
-		// If we are not in cover, min cover search distance is overridden to 0, we should find any cover ASAP
 		if (!m_State.m_bInCover)
 			coverSearchDistMin = 3;
 		
-		// === ADDED: morale scaling buat cover search radius -- BREAK/MANIAC asal cover
-		// terdekat, MOTIVATED bisa afford nyari yang lebih strategis walau agak jauh.
 		coverSearchDistMax *= DCO_MoraleCombatUtility.GetCoverSearchDistScale(moraleSystem, m_Utility);
-		// === ADDED: kalau exposed, perlebar radius search -- jangan sampe kepentok
-		// radius kecil terus gak nemu concealment apapun.
 		if (isExposed)
 			coverSearchDistMax *= 1.5;
-		// === END ADDED ===
-		// === END ADDED ===
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
@@ -586,17 +547,17 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					case moraleState.ANXIOUS:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
-							moveDir = SCR_EAICombatMoveDirection.LEFT;
+							moveDir = SCR_EAICombatMoveDirection.BACKWARD;
 						else
-							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+							moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;					
 					}
 					case moraleState.NORMAL:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
-							moveDir = SCR_EAICombatMoveDirection.LEFT;
+							moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						else
-							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+							moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
 						break;					
 					}
 					case moraleState.MOTIVATED:
@@ -619,9 +580,9 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					case moraleState.BREAK:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
-							moveDir = SCR_EAICombatMoveDirection.LEFT;
+							moveDir = SCR_EAICombatMoveDirection.CUSTOM_POS;
 						else
-							moveDir = SCR_EAICombatMoveDirection.RIGHT;
+							moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;					
 					}
 					case moraleState.MANIAC:
@@ -780,20 +741,13 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (!m_State || !m_MyEntity || !m_Utility || !m_CombatComp || !m_CharacterController)
 			return ENodeResult.FAIL;
 		
-		// === ADDED: Hold Position ===
-		// Kalau di-hold, skip SEMUA logic combat-movement di bawah -- gak cuma
-		// PushRequestMove, tapi juga FFAvoidance/LeaveUselessCover/OpenArea. AI diem
-		// total di posisi sekarang, cuma stance/aim yang masih jalan normal.
 		if (m_Utility.m_DCOConfig && m_Utility.m_DCOConfig.IsHoldPosition())
 			return ENodeResult.RUNNING;
-		// === END ADDED ===
 		
-		// Don't run combat movement logic if CombatMove BT is not used now (like in turret)
 		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_Utility.GetExecutedAction());
 		if (executedBehavior && !executedBehavior.m_bUseCombatMove)
 			return ENodeResult.RUNNING;
 		
-		// Update cached variables
 		m_fTargetDist = GetTargetDistance();
 		m_bCloseRangeCombat = m_fTargetDist < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST;
 		m_bVeryLongRangeCombat = m_fTargetDist > SCR_AICombatMoveUtils.VERY_LONG_RANGE_COMBAT_DIST;
@@ -801,27 +755,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		m_eStance = m_CharacterController.GetStance();
 		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
 		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
-		
-		
-		/*		
-		//------------------------------------------------------------------------------------
-		Combat movement logic
-		
-		Conditions represent states inside which we want to remain.
-		
-		Conditions are organized based on their priority, highest first.
-		
-		Within each state there can be extra logic which decides if it's worth to
-		send a new request, because even though we have selected a state, we should avoid
-		spamming same request over and over.
-		
-		Conditions for states mostly depend on Combat Move State and its timers.
-		
-		It is important to write logic in such a way that it doesn't depend on state
-		of this node. In this case the state flow also doesn't depend on it, and AI
-		does movement is more fluent when switching to a new behavior which also utilizes
-		combat movement, including attacking a different target.
-		*/
 
 		if (SuppressedInCoverCondition())
 		{
@@ -829,21 +762,15 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		}
 		else if (MoveFromTargetCondition())
 		{
-			// Too close to target
-			// Step away
 			if (MoveFromTargetNewRequestCondition())
 				PushRequestMoveFromTarget();
 		}
 		else if (CurrentCoverUselessCondition())
 		{
-			// Current cover has been compromised, it's not directed at enemy any more
-			// Find a new cover nearby
 			PushRequestLeaveUselessCover();
 		}
 		else if (m_CharacterController.IsReloading())
 		{
-			// We're reloading and can't do much else now
-			// Hide in cover
 			if (m_State.m_bInCover)
 			{
 				if (m_State.m_bExposedInCover)
@@ -867,17 +794,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		}
 		else if (MoveToNextPosCondition())
 		{
-			// We've waited here too long, move to next place
 			PushRequestMove();
 		}
 		else if (!m_State.IsExecutingRequest() && !m_State.m_bInCover)
 		{
-			if (IsInOpenArea(owner.GetControlledEntity()))
+			if (IsInOpenArea(m_MyEntity))
 			{
-				// === ADDED: Prioritize Shooting Over Cover -- kondisi genting, jangan
-				// cari cover sama sekali, biarin unit tetep nembak dari tempatnya
-				// sekarang. Ini di-cek SEBELUM shouldStayEngaged/takeCoverChance di
-				// bawah -- critical moment menang mutlak atas semua faktor lain.
 				if (IsCriticalCombatMoment())
 				{
 					ECharacterStance criticalStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
@@ -887,59 +809,30 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				}
 				else
 				{
-				// === END ADDED ===
+					float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
+					bool shouldStayEngaged = m_Target && m_fTargetDist <= optimalDist * 1.2 && m_Target.GetTimeSinceSeen() < 5.0;
+	
+					float takeCoverChance = 0.7;
+					if (m_Utility && m_Utility.m_DCOConfig)
+						takeCoverChance = m_Utility.m_DCOConfig.GetTakeCoverChance();
+					takeCoverChance = Math.Clamp(takeCoverChance * DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(m_Utility), 0.0, 1.0);
 				
-				// === MODIFIED: D -- kalau target udah dalam optimal engage range dan
-				// masih fresh keliatan, jangan retreat cari cover -- prioritasin tetep
-				// engage. Cover-seeking cuma masuk akal kalau emang lagi kalah posisi,
-				// bukan pas lagi menang kontak/udah deket buat nembak.
-				float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
-				bool shouldStayEngaged = m_Target && m_fTargetDist <= optimalDist * 1.2 && m_Target.GetTimeSinceSeen() < 5.0;
-				// === END MODIFIED ===
-				
-				// === MODIFIED: B -- dulu SELALU react (gak ada RNG). Sekarang pake
-				// m_fTakeCoverChance (base dari GM, default 70%) di-scale personality --
-				// RECKLESS/AGGRESSIVE lebih milih tetep di tempat/lanjut combat daripada
-				// ngumpet, CAUTIOUS malah lebih sering ambil kesempatan buat cover. ===
-				float takeCoverChance = 0.7;
-				if (m_Utility && m_Utility.m_DCOConfig)
-					takeCoverChance = m_Utility.m_DCOConfig.GetTakeCoverChance();
-				takeCoverChance = Math.Clamp(takeCoverChance * DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(m_Utility), 0.0, 1.0);
-				
-				if (!shouldStayEngaged && Math.RandomFloat01() < takeCoverChance)
-				{
-					if (!m_State.IsExecutingRequest())
-						PushRequestOpenArea();
+					if (shouldStayEngaged && Math.RandomFloat01() < takeCoverChance)
+					{
+						if (!m_State.IsExecutingRequest())
+							PushRequestOpenArea();
+					}
 				}
-				// === END MODIFIED ===
-				// === ADDED: Prioritize Shooting Over Cover (penutup else) ===
-				}
-				// === END ADDED ===
-			} else
-			{
-				ECharacterStance newStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
-				// === ADDED: morale bisa override stance normal (BREAK = refleks PRONE,
-				// MANIAC = males full-prone, minimal CROUCH) ===
-				newStance = DCO_MoraleCombatUtility.ApplyMoraleStanceOverride(newStance, moraleSystem);
-				// === END ADDED ===
-				if (newStance > m_eStance)
-				{
-					
-					// Only let stance go down, no need to get back up
-					m_State.ApplyRequestChangeStanceOutsideCover(newStance);
-				}
-			}
-			// We are stopped and not in cover, manage our stance
-			
+			}			
 
 		} else if (!m_State.IsExecutingRequest())
 		{
 			if (m_Utility.GetCharacterController().GetWeaponObstructedState() != EWeaponObstructedState.UNOBSTRUCTED)
 			{
 				if (m_CharacterController.GetStance() == ECharacterStance.CROUCH)
-					m_CharacterController.SetStanceChange(1);
+					m_CharacterController.SetStanceChange(0);
 				else if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
-					m_CharacterController.SetStanceChange(2);
+					m_CharacterController.SetStanceChange(1);
 			}
 		}
 		
@@ -948,20 +841,16 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	
 	override protected bool SuppressedInCoverCondition()
 	{
+		if (IsInOpenArea(m_MyEntity) && m_eThreatState == EAIThreatState.THREATENED && moraleSystem.GetState() >= moraleState.MANIAC)
+			return true;
+		
 		return m_State.m_bInCover && m_eThreatState == EAIThreatState.THREATENED && moraleSystem.GetState() >= moraleState.MANIAC;
 	}
 	
-	// === ADDED: Prioritize Shooting Over Cover ===
-	//! True kalau lagi kondisi genting (THREATENED) -- dipake buat nge-suppress
-	//! trigger reposisi/cover-seeking (MoveToNextPosCondition, PushRequestOpenArea)
-	//! biar unit prioritasin tetep nembak dari posisi sekarang daripada exposed
-	//! pindah-pindah nyari tempat lebih aman. Begitu threat state turun dari
-	//! THREATENED (agak amanan), reposisi/cover-seeking normal jalan lagi.
 	protected bool IsCriticalCombatMoment()
 	{
 		return m_eThreatState == EAIThreatState.THREATENED;
 	}
-	// === END ADDED ===
 	
 	float MoraleAmplifyMove()
 	{

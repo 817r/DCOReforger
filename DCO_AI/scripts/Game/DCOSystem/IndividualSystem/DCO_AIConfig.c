@@ -29,13 +29,22 @@ class DCO_AIConfigComponent : ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "How Suppression Affecting this AI", params: "0 2 0.01" )]
 	protected float m_fSuppressionEffect;
 	
+	// === ADDED: Take Cover Chance ===
 	[Attribute("0.7", UIWidgets.Range, "Base chance AI mau aktif nyari cover pas ke-detect di tempat terbuka (0-1)", params: "0 1 0.01" )]
 	protected float m_fTakeCoverChance;
+	// === END ADDED ===
 	
+	// === ADDED: Personality System ===
 	[Attribute("1", UIWidgets.ComboBox, "AI Personality -- gimana gaya combat AI ini, orthogonal dari skill", "", ParamEnumArray.FromEnum(DCO_EAIPersonality))]
 	protected DCO_EAIPersonality m_ePersonality;
+	// === END ADDED ===
 	
+	// === ADDED: Hold Position ===
+	// Kalau true, AI ini gak akan generate combat-move request baru sama sekali --
+	// dia diem di posisi sekarang. Di-toggle via ToggleHoldPosition() (dipanggil dari
+	// trigger UI-nya -- context menu/radial command, dsb).
 	protected bool m_bHoldPosition = false;
+	// === END ADDED ===
 	
 	//------------------------------------------------------------------------------------------------
 	override void OnPostInit(IEntity owner)
@@ -57,9 +66,19 @@ class DCO_AIConfigComponent : ScriptComponent
 		m_fTimeToMaxAccuracy = settings.GetAccuracyTime();
 		m_eAISkillDefault = settings.GetAISkill();
 		m_fVehicleDismountDanger = settings.GetDismountDistance();
+		// === ADDED: m_fSuppressionEffect sebelumnya gak ikut di-sync dari Global sama
+		// sekali (fieldnya ada tapi gak pernah diisi dari default) ===
 		m_fSuppressionEffect = settings.GetSuppressionEffect();
+		// === END ADDED ===
+		// === ADDED: Take Cover Chance ===
 		m_fTakeCoverChance = settings.GetTakeCoverChance();
-		m_ePersonality = Math.RandomInt(DCO_EAIPersonality.CAUTIOUS, DCO_EAIPersonality.RECKLESS + 1);
+		// === END ADDED ===
+		// === MODIFIED: Personality System -- sebelumnya full-random uniform (Math.
+		// RandomInt, 25% rata tiap tipe), sekarang weighted lewat Global (feedback
+		// player: kebanyakan CAUTIOUS/AGGRESSIVE, harusnya mayoritas STANDARD).
+		// Bobotnya configurable di DCO_GlobalAIComponent, gak hardcode di sini.
+		m_ePersonality = settings.RollWeightedPersonality();
+		// === END MODIFIED ===
 		
 	}
 	

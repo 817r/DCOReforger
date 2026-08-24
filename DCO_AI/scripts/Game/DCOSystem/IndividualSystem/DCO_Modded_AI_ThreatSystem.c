@@ -1,17 +1,17 @@
 modded class SCR_AIThreatSystem
 {
-	static const float EXPLOSION_MAX_DISTANCE = 80;
+	static const float EXPLOSION_MAX_DISTANCE = 120;
 	
-	private static const float ENDANGERED_INCREMENT = 0.3;
+	private static const float ENDANGERED_INCREMENT = 0.25;
 	
 	static const float VIGILANT_THRESHOLD = 0.3;
-	static const float ALERTED_THRESHOLD = 0.9;
-	static const float THREATENED_THRESHOLD = 1.9;
+	static const float ALERTED_THRESHOLD = 1;
+	static const float THREATENED_THRESHOLD = 2.2;
 	
 	private static const float BLEEDING_FIXED_INCREMENT = 0.7;
 	
-	private static const float SUPPRESSION_BULLET_INCREMENT = 0.15;
-	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.018;
+	private static const float SUPPRESSION_BULLET_INCREMENT = 0.11;
+	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.01;
 	private static const float DISTANT_SHOT_INCREMENT = 0.005;
 	private static const float EXPLOSION_MAX_INCREMENT = 0.35;
 	

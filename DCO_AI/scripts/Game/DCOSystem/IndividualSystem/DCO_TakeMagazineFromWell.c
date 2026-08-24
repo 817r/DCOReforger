@@ -38,7 +38,7 @@ class SCR_AITakeItemFromInventoryWell : AITaskScripted
 		
 		arsenalComp.FindItemsWithComponents(arsEnt, components);
 		
-		Print("FOUND ITEM : " + arsEnt.Count().ToString());
+		//Print("FOUND ITEM : " + arsEnt.Count().ToString());
 		
 		if (arsEnt.Count() < 1)
 			return ENodeResult.FAIL;

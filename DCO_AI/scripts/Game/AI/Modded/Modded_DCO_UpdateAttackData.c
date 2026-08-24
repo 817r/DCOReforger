@@ -78,7 +78,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				if (DCO_AmmoUtility.ShouldAvoidSuppressiveFire(m_UtilityComponent, selectedWeaponComp))
 					return FIRE_TREE_LOOK;
 				
-				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 4, 1));
+				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 2, 1));
 				fireRate = maxFireRate * threat;
 				
 				fireRate *= DCO_AmmoUtility.GetAmmoConservationScale(m_UtilityComponent, selectedWeaponComp);
@@ -122,7 +122,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				if (DCO_AmmoUtility.ShouldAvoidSuppressiveFire(m_UtilityComponent, selectedWeaponComp))
 					return FIRE_TREE_LOOK;
 				
-				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 4, 1));
+				float maxFireRate = Math.Max(1, Math.Map(targetDistance, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 3, 1));
 				fireRate = maxFireRate * threat;
 				
 				fireRate *= DCO_AmmoUtility.GetAmmoConservationScale(m_UtilityComponent, selectedWeaponComp);
@@ -174,7 +174,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			if (weaponType == EWeaponType.WT_SNIPERRIFLE)
 			{
 				aimpointType0 = EAimPointType.INCAPACITATE;
-				aimpointType1 = EAimPointType.WEAK;
+				aimpointType1 = EAimPointType.NORMAL;
 				return;
 			}
 			

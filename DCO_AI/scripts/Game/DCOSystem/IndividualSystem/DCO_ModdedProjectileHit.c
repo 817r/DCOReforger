@@ -282,6 +282,35 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 					else
 						charCon.SetStanceChange(3);
 				}
+				else
+				{
+					if (m_State != null && !m_State.IsExecutingRequest())
+					{
+						rq.m_vTargetPos = shooterPos;
+						rq.m_vMovePos = rq.m_vTargetPos;
+						rq.m_bTryFindCover = true;
+						rq.m_bUseCoverSearchDirectivity = true;
+						rq.m_bCheckCoverVisibility = true;
+						rq.m_bFailIfNoCover = false; // jangan strict -- lebih baik gerak ke arah manapun daripada diem
+						rq.m_eStanceMoving = ECharacterStance.CROUCH;
+						rq.m_eStanceEnd = ECharacterStance.CROUCH;
+						rq.m_eMovementType = EMovementType.RUN;
+						rq.m_fCoverSearchDistMax = COVER_SEARCH_DIST_MAX;
+						rq.m_fCoverSearchDistMin = 2;
+						rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
+						rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+						rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+						rq.m_bAimAtTarget = false;
+						rq.m_bAimAtTargetEnd = true;
+						if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+							rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+						else
+							rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING; // integrasi indoor-seeking
+						m_State.ApplyNewRequest(rq);
+						m_bPushedMoveRequest = true;
+						return true;
+					}
+				}
 				
 				if (rq.m_bAimAtTarget && utility.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_MACHINEGUN))
 				{

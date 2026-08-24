@@ -16,22 +16,10 @@ SCR_ChimeraCharacter {
    }
   }
   DCO_AIIdentifierComponent "{68E707668754B162}" {
+   Enabled 0
   }
   DCO_AIResupplyConfigComponent "{684E3B932F31FCBF}" {
    Enabled 0
-  }
-  SCR_CharacterPerceivableComponent "{566CCE2397E28600}" {
-   "Additional aim points" {
-    AimPoint "{68AC76D24119CD6E}" {
-     AimPointPosition AttachPoint "{68AC76D243DC961D}" {
-      Bone "RightHand"
-     }
-     AimpointChecked 1
-     VsibilityChecked 1
-     Dimension 0.05
-     AimPointType Incapacitate
-    }
-   }
   }
  }
 }

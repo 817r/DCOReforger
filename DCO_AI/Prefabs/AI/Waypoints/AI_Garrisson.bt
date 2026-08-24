@@ -1,0 +1,219 @@
+BehaviorTree {
+ Name "Prefabs/AI/Waypoints/AI_Garrisson.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -64 -336
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -64 -144
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -1040 336
+       Nodes {
+        SCR_AIGetDefendWaypointParameters "SCR_AI Get Defend Waypoint Parameters" {
+         Name "SCR_AI Get Defend Waypoint Parameters"
+         EditorPos -1552 656
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "WaypointIn"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "WaypointOut"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 1
+           PortName "Radius"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 5
+           PortName "Origin"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 3
+           PortName "PriorityLevel"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "UseTurrets"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "SearchTags"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "FastInit"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 2
+           PortName "HoldingTime"
+          }
+         }
+        }
+        AITaskSetVariable "Set Variable" {
+         Name "Set Variable"
+         EditorPos -787 654
+         SetValue "true"
+         OutVariable 4
+        }
+        SCR_AIGetMyGroup "SCR_AI Get My Group" {
+         Name "SCR_AI Get My Group"
+         EditorPos -432 640
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainerClass {
+           Port 9
+           PortName "GroupOut"
+          }
+         }
+        }
+       }
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos 1136 400
+       Nodes {
+        ForEachChild "For Each Child" {
+         Name "For Each Child"
+         EditorPos 768 704
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 784 880
+           Nodes {
+            DCO_FindIndoorPosition "DCO_ Find Indoor Position" {
+             Name "DCO_ Find Indoor Position"
+             EditorPos 240 1248
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 6
+               PortName "OriginIn"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 7
+               PortName "RadiusIn"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 8
+               PortName "Position Found"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port -1
+               PortName "Is Position Found"
+              }
+             }
+            }
+            AITaskMove Move {
+             Name "Move"
+             EditorPos 961.723 1201.315
+             InTargetLocation 8
+             PrecisionY 1
+            }
+            AITaskPlayGesture "Play Gesture" {
+             Name "Play Gesture"
+             EditorPos 1312 1200
+             Gesture Hold
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 1552 1200
+             Period 30
+             PeriodRandom 30
+            }
+           }
+          }
+         }
+         InGroup 9
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableEntity eWayPoint {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar fRadius {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar fHoldingTime {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar fPriorityLevel {
+   Flags 0
+   Desc ""
+  }
+  BtVariableBool bRestartWP {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector vWaypointPos {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector vIndoorPosition {
+   Flags 0
+   Desc ""
+  }
+  BtVariableGroup eMyGroup {
+   Flags 0
+   Desc ""
+  }
+ }
+ VariablesRefs {
+  VariableReference eWayPoint {
+   VariableType 0
+   EditorPos -1120 640
+  }
+  VariableReference fRadius {
+   VariableType 1
+   EditorPos -1120 720
+  }
+  VariableReference fHoldingTime {
+   VariableType 2
+   EditorPos -1120 960
+  }
+  VariableReference fPriorityLevel {
+   VariableType 3
+   EditorPos -1120 880
+  }
+  VariableReference bRestartWP {
+   VariableType 4
+   EditorPos -576 816
+  }
+  VariableReference vWaypointPos {
+   VariableType 5
+   EditorPos -1120 800
+  }
+  VariableReference vWaypointPos {
+   VariableType 5
+   EditorPos 0 1248
+  }
+  VariableReference fRadius {
+   VariableType 1
+   EditorPos 48 1344
+  }
+  VariableReference vIndoorPosition {
+   VariableType 6
+   EditorPos 528 1248
+  }
+  VariableReference eMyGroup {
+   VariableType 7
+   EditorPos -144.466 731.479
+  }
+ }
+}

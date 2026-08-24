@@ -41,7 +41,6 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		if (!m_State || !myEntity)
 			return ENodeResult.FAIL;
 		
-		
 		vector threatPos;
 		GetVariableIn(PORT_POSITION, threatPos);
 		if (threatPos == vector.Zero)

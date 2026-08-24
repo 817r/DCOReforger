@@ -104,6 +104,35 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
         }
        }
       }
+      DecoTestVariable "Test Variable" {
+       Name "Test Variable"
+       EditorPos -466.356 -211.322
+       Nodes {
+        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+         Name "SCR_AI Deco Is Above Threat Level"
+         EditorPos -512 -16
+         Nodes {
+          AITaskReturnState "Return  State" {
+           Name "Return  State"
+           EditorPos -441.374 180.464
+           Result RUNNING
+          }
+         }
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "ThresholdIn"
+          }
+         }
+         AbortType AbortChildrenBranch
+         m_threatThreshold ALERTED
+        }
+       }
+       ForceNodeResult Success
+       InVariable -1
+       TestType EqualsValue
+       TestValue "true"
+      }
       SCR_AILookAtPosition "SCR_AI Look At Position" {
        Name "SCR_AI Look At Position"
        EditorPos 64 -176
@@ -552,35 +581,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
    TestType EqualsValue
    TestValue "4"
   }
-  DecoTestVariable "Test Variable" {
-   Name "Test Variable"
-   EditorPos -466.356 -211.322
-   Nodes {
-    SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-     Name "SCR_AI Deco Is Above Threat Level"
-     EditorPos -512 -16
-     Nodes {
-      AITaskReturnState "Return  State" {
-       Name "Return  State"
-       EditorPos -441.374 180.464
-       Result RUNNING
-      }
-     }
-     InPorts {
-      SingleInputPortContainer SingleInputPortContainer {
-       Port -1
-       PortName "ThresholdIn"
-      }
-     }
-     AbortType AbortChildrenBranch
-     m_threatThreshold ALERTED
-    }
-   }
-   ForceNodeResult Success
-   InVariable -1
-   TestType EqualsValue
-   TestValue "true"
-  }
   SCR_AISetStance "SCR_AI Set Stance" {
    Name "SCR_AI Set Stance"
    EditorPos 525.278 -167.333
@@ -745,37 +745,37 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
  VariablesRefs {
   VariableReference position {
    VariableType 0
-   EditorPos 1914.936 1060.064
+   EditorPos 1920 1056
   }
   VariableReference isDangerous {
    VariableType 1
-   EditorPos -745.616 -116.911
+   EditorPos -752 -112
   }
   VariableReference position {
    VariableType 0
-   EditorPos 1910.048 963.81
+   EditorPos 1904 960
   }
   VariableReference inestigateCenterPos {
    VariableType 2
-   EditorPos 1390.436 980.62
+   EditorPos 1392 976
   }
   VariableReference inestigateCenterPos {
    VariableType 2
-   EditorPos -750.918 -203.334
+   EditorPos -752 -208
   }
   VariableReference inestigateCenterPos {
    VariableType 2
-   EditorPos -1951.298 1399.071
+   EditorPos -1952 1392
    Group "{5C64A805E3F031E4}"
   }
   VariableReference result {
    VariableType 3
-   EditorPos -1304.669 1356.104
+   EditorPos -1312 1360
    Group "{5C64A805E3F031E4}"
   }
   VariableReference radius {
    VariableType 4
-   EditorPos -747.168 -44.167
+   EditorPos -752 -48
   }
   VariableReference radius {
    VariableType 4
@@ -783,66 +783,66 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   }
   VariableReference inestigateCenterPos {
    VariableType 2
-   EditorPos -208 -90.222
+   EditorPos -208 -96
   }
   VariableReference resetTimer {
    VariableType 5
-   EditorPos -747.889 46.667
+   EditorPos -752 48
   }
   VariableReference result {
    VariableType 3
-   EditorPos -894.952 1360.268
+   EditorPos -896 1360
    Group "{5C64A805E3F031E4}"
   }
   VariableReference resetTimer {
    VariableType 5
-   EditorPos -470.476 1049.366
+   EditorPos -464 1056
    Group "{5C65018B59CAAC0D}"
   }
   VariableReference resetTimer {
    VariableType 5
-   EditorPos 1080.477 1025.715
+   EditorPos 1088 1024
    Group "{5C65018A80762E48}"
   }
   VariableReference timerValue {
    VariableType 6
-   EditorPos -752.879 145.101
+   EditorPos -752 144
   }
   VariableReference timerValue {
    VariableType 6
-   EditorPos -63.333 1126.667
+   EditorPos -64 1120
    Group "{5C65018B59CAAC0D}"
   }
   VariableReference duration {
    VariableType 7
-   EditorPos -760 221.25
+   EditorPos -752 224
   }
   VariableReference duration {
    VariableType 7
-   EditorPos 1730.725 787.81
+   EditorPos 1728 784
   }
   VariableReference radius {
    VariableType 4
-   EditorPos -1833.234 1479.927
+   EditorPos -1840 1472
    Group "{5C64A805E3F031E4}"
   }
   VariableReference extraMoveParams {
    VariableType 8
-   EditorPos -2183.477 1143.391
+   EditorPos -2176 1136
    Group "{5C64A805E3F031E4}"
   }
   VariableReference inestigateCenterPos {
    VariableType 2
-   EditorPos -2845.909 1138.636
+   EditorPos -2848 1136
    Group "{5C64A805E3F031E4}"
   }
   VariableReference startPos {
    VariableType 9
-   EditorPos -814.318 303.068
+   EditorPos -816 304
   }
   VariableReference startPos {
    VariableType 9
-   EditorPos -2754.545 1058.182
+   EditorPos -2752 1056
    Group "{5C64A805E3F031E4}"
   }
   VariableReference position {

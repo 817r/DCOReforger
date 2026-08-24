@@ -1,3 +1,9 @@
+SCR_GameModeEditor GameMode_Editor_Full1 : "{DA3986AF1B5032B7}Prefabs/MP/Modes/Editor/GameMode_Editor_Full.et" {
+ coords 2928.025 66.635 1728.627
+}
+SCR_BaseGameMode GameModeSF1 : "{ECEEDB2D3737204B}Prefabs/Systems/ScenarioFramework/GameModeSF.et" {
+ coords 2485.038 144.24 2263.222
+}
 $grp PolylineShapeEntity {
  {
   coords 2493.817 147.327 2257.411
@@ -414,10 +420,6 @@ GenericEntity : "{2A27606856B8A914}Prefabs/Compositions/Slotted/SlotRoadLarge/Ba
  coords 2548.136 19.183 3087.628
  angles 0 90 0
 }
-GenericEntity : "{2ACE3A315F531CFD}Prefabs/Compositions/Slotted/SlotFlatMedium/FieldHospital_M_USSR_01.et" {
- coords 2398.813 61.514 3008.265
- angles -10.668 -14.825 4.617
-}
 $grp GameEntity : "{2CB0AA2A87842C18}Prefabs/Props/Civilian/LampKerosene_01/LampKerosene_01_military_USSR.et" {
  {
   coords 2605.775 111.735 2504.373
@@ -464,6 +466,13 @@ Vehicle Ural1 : "{4597626AF36C0858}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320.et
   DCO_TransportMissionComponent "{6902306E948EC89B}" {
    Enabled 0
   }
+  SCR_VehicleDustPerWheel "{5476BC43E4910F64}" {
+   m_aWheels +{
+    4
+    5
+   }
+   m_fDustTopSpeed 60
+  }
  }
  coords 2600.369 110.913 2508.827
  angles 0 168.964 0
@@ -503,9 +512,15 @@ $grp GenericEntity : "{7AF4B627D5C90235}Prefabs/Props/Military/Sandbags/Sandbag_
   angles 0 -136.513 0
  }
 }
-GenericEntity : "{7C20041DA3207191}Prefabs/Compositions/Slotted/SlotFlatSmall/AmmoStorage_S_USSR_01.et" {
- coords 2513.211 147.819 2306.725
- angles 0 -150 0
+$grp GenericEntity : "{7C20041DA3207191}Prefabs/Compositions/Slotted/SlotFlatSmall/AmmoStorage_S_USSR_01.et" {
+ {
+  coords 2513.211 147.819 2306.725
+  angles 0 -150 0
+ }
+ {
+  coords 1400.773 35.957 2385.896
+  angles 0 -90 0
+ }
 }
 GenericEntity : "{7C85836D444E3797}Prefabs/Compositions/Slotted/SlotRoadMedium/Checkpoint_M_USSR_01.et" {
  coords 2236.574 60.246 2076.852

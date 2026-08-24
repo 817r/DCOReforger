@@ -33,35 +33,9 @@ SCR_AIWorld SCR_AIWorld : "{E0A05C76552E7F58}Prefabs/AI/SCR_AIWorld.et" {
 PerceptionManager PerceptionManager : "{028DAEAD63E056BE}Prefabs/World/Game/PerceptionManager.et" {
  coords 1891.659 11.438 1822.161
 }
-SCR_GameModeEditor GameMode_Editor_Full : "{DA3986AF1B5032B7}Prefabs/MP/Modes/Editor/GameMode_Editor_Full.et" {
- coords 1891.659 11.326 1821.161
- m_GameMasterTarget NOBODY
- {
-  SCR_FactionManager "694E451CD8F32F8E" {
-   ID "56E685E92F1B7E7A"
-   Factions {
-    SCR_Faction "{56DEAC40D2DBC8B1}" {
-     m_bIsPlayable 1
-     m_aFriendlyFactionsIds {
-      "FIA"
-     }
-    }
-    SCR_Faction "{56DEAC40D3C2E623}" {
-     m_bIsPlayable 1
-    }
-    SCR_Faction "{56DEAC40D132400B}" {
-     m_bIsPlayable 1
-     m_aFriendlyFactionsIds {
-      "US"
-     }
-    }
-   }
-  }
- }
-}
 GameEntity : "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et" {
  components {
-  AICommander_ManagerComponent "{68F88499AF35F645}" {
+  AICommander_ManagerComponent "{69C61E8C066EE04E}" {
    m_bPreventUseLOD 1
   }
  }

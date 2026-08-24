@@ -140,7 +140,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	
 	CMD_ThreatResponseComponent GetThreatResponseComponent()
 	{
-		Print(threatComp.Type().ToString() + " < THREAT RESPONSE");
+		//Print(threatComp.Type().ToString() + " < THREAT RESPONSE");
 		return threatComp;
 	}
 	

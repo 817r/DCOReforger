@@ -4,7 +4,7 @@ class DCO_GlobalAIComponentClass: ScriptComponentClass
 
 class DCO_GlobalAIComponent: ScriptComponent
 {
-	[Attribute("1", UIWidgets.Slider, "Global AI unit skill level", "0.1 10 0.1")]
+	[Attribute("1.2", UIWidgets.Slider, "Global AI unit skill level", "0.1 10 0.1")]
 	protected float unitAimSkillAccuracy;
 	
 	[Attribute( defvalue: "15", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 60 0.01" )]
@@ -16,7 +16,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute( defvalue: "0", uiwidget: UIWidgets.Auto, desc: "Magical Ammo")]
 	protected bool m_bIsMagicallyResupplied;
 	
-	[Attribute( defvalue: "500", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0 2000 0.01" )]
+	[Attribute( defvalue: "700", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0 2000 0.01" )]
 	protected float m_fVehicleDismountDanger;
 	
 	[Attribute("2", UIWidgets.ComboBox, "AI Custom skill in combat", "", ParamEnumArray.FromEnum(DCO_AISKILL) )]
@@ -25,13 +25,20 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "How Suppression Affecting this AI", params: "0 2 0.01" )]
 	protected float m_fSuppressionEffect;
 	
-	// === ADDED: Take Cover Chance ===
 	[Attribute("0.7", UIWidgets.Range, "Base chance AI mau aktif nyari cover pas ke-detect di tempat terbuka (0-1). Di-scale lebih lanjut sama personality -- RECKLESS turun paling banyak (ceroboh), AGGRESSIVE turun sedang (combat-oriented tapi disiplin), CAUTIOUS naik.", params: "0 1 0.01" )]
 	protected float m_fTakeCoverChance;
-	// === END ADDED ===
 	
-	// Personality gak ada field di Global sama sekali -- individual (DCO_AIConfigComponent)
-	// ngeroll random sendiri, full range, tanpa gantung ke Global apapun.
+	[Attribute("70", UIWidgets.Slider, "Bobot personality STANDARD (relatif ke 3 lainnya, gak harus total 100)", params: "0 100 1")]
+	protected float m_fPersonalityWeightStandard;
+	
+	[Attribute("15", UIWidgets.Slider, "Bobot personality CAUTIOUS", params: "0 100 1")]
+	protected float m_fPersonalityWeightCautious;
+	
+	[Attribute("12", UIWidgets.Slider, "Bobot personality AGGRESSIVE", params: "0 100 1")]
+	protected float m_fPersonalityWeightAggressive;
+	
+	[Attribute("3", UIWidgets.Slider, "Bobot personality RECKLESS", params: "0 100 1")]
+	protected float m_fPersonalityWeightReckless;
 	
 	static DCO_GlobalAIComponent m_sInstance;
 	
@@ -143,11 +150,29 @@ class DCO_GlobalAIComponent: ScriptComponent
 		m_fTakeCoverChance = f;
 		return m_fTakeCoverChance;
 	}
-	// === END ADDED ===
-	
-	// === REMOVED: Personality System ===
-	// Semua field/logic personality dipindah full ke DCO_AIConfigComponent (individual).
-	// Global gak nyimpen apapun soal personality -- randomisasi full-range, gak ada
-	// param buat nyeragamin/nge-range di level Global sama sekali.
-	// === END REMOVED ===
+
+	DCO_EAIPersonality RollWeightedPersonality()
+	{
+		float total = m_fPersonalityWeightStandard + m_fPersonalityWeightCautious
+			+ m_fPersonalityWeightAggressive + m_fPersonalityWeightReckless;
+		
+		if (total <= 0.0)
+			return DCO_EAIPersonality.STANDARD; // safety -- semua bobot 0, jangan crash
+		
+		float roll = Math.RandomFloat(0.0, total);
+		
+		if (roll < m_fPersonalityWeightStandard)
+			return DCO_EAIPersonality.STANDARD;
+		roll -= m_fPersonalityWeightStandard;
+		
+		if (roll < m_fPersonalityWeightCautious)
+			return DCO_EAIPersonality.CAUTIOUS;
+		roll -= m_fPersonalityWeightCautious;
+		
+		if (roll < m_fPersonalityWeightAggressive)
+			return DCO_EAIPersonality.AGGRESSIVE;
+		
+		return DCO_EAIPersonality.RECKLESS;
+	}
+	// === END MODIFIED ===
 }

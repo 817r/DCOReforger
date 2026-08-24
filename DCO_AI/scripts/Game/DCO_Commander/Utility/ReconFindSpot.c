@@ -1,24 +1,11 @@
-class CMD_ReconEntityCollector
-{
-	ref array<IEntity> m_aEntities = {};
-
-	bool OnEntity(IEntity ent)
-	{
-		if (ent)
-			m_aEntities.Insert(ent);
-		return true;
-	}
-}
-
 class CMD_ReconSpotFinder
 {
-	static float EYE_HEIGHT         = 1.2;
-	static float CONCEALMENT_RADIUS = 8.0;
-	static float WEIGHT_LOS         = 0.55;
-	static float WEIGHT_CONCEAL     = 0.30;
-	static float WEIGHT_DIST        = 0.15;
-	static float OPTIMAL_DIST       = 80.0;
-	static int   MAX_COVER_OBJECTS  = 6;
+	static float EYE_HEIGHT               = 1.2;
+	static float WEIGHT_LOS                = 0.55;
+	static float WEIGHT_ELEVATION          = 0.30;
+	static float WEIGHT_DIST               = 0.15;
+	static float OPTIMAL_DIST              = 80.0;
+	static float OPTIMAL_HEIGHT_ADVANTAGE  = 15.0;
 
 	static vector FindBestReconSpot(
 		vector observerBase,
@@ -103,8 +90,20 @@ class CMD_ReconSpotFinder
 			return 0.0;
 
 		float distScore = ScoreDistance(candidatePos, targetPos);
+		
+		float elevScore = ScoreElevation(candidatePos, targetPos);
 
-		return (losScore * WEIGHT_LOS) + (distScore * WEIGHT_DIST);
+		return (losScore * WEIGHT_LOS) + (distScore * WEIGHT_DIST) + (elevScore * WEIGHT_ELEVATION);
+	}
+
+	protected static float ScoreElevation(vector candidatePos, vector targetPos)
+	{
+		float heightDiff = candidatePos[1] - targetPos[1];
+		
+		if (heightDiff <= 0.0)
+			return 0.0;
+		
+		return Math.Clamp(heightDiff / OPTIMAL_HEIGHT_ADVANTAGE, 0.0, 1.0);
 	}
 
 	protected static float ScoreLOS(vector fromPos, vector toPos)

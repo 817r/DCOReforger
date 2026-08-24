@@ -123,11 +123,67 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	// === ADDED: Report Quality helper ===
 	//! Konversi jarak spotter->target jadi skor quality 0.2-1.0. Deket (<=50m) =
 	//! quality penuh, jauh (>=400m) = quality minimum, linear di antaranya.
+	// === MODIFIED: Time of Day -- sekarang digabung sama faktor waktu (pagi/siang/
+	// sore/malem). Laporan siang bolong (deket solar noon) paling akurat, laporan
+	// pagi/sore (deket sunrise/sunset) sedikit turun, laporan malem paling gak
+	// akurat -- makin deket tengah malem makin parah.
 	static float ComputeReportQuality(float spotDistance)
 	{
-		return Math.Clamp(1.0 - (spotDistance - 50.0) / 350.0, 0.2, 1.0);
+		float distanceQuality = Math.Clamp(1.0 - (spotDistance - 50.0) / 350.0, 0.2, 1.0);
+		float timeOfDayFactor = ComputeTimeOfDayFactor();
+		return Math.Clamp(distanceQuality * timeOfDayFactor, 0.2, 1.0);
 	}
-	// === END ADDED ===
+	
+	//! Faktor 0.5-1.0 berdasarkan waktu game sekarang -- siang (deket solar noon)
+	//! = 1.0, pagi/sore (deket sunrise/sunset) = ~0.85, malem (deket tengah malem)
+	//! = turun sampe 0.5. Fallback 1.0 (netral, gak ngaruh) kalau world/manager/
+	//! sunrise-sunset lookup gagal -- jangan sampe report quality error gara-gara
+	//! ini.
+	protected static float ComputeTimeOfDayFactor()
+	{
+		ChimeraWorld world = ChimeraWorld.CastFrom(GetGame().GetWorld());
+		if (!world)
+			return 1.0;
+		
+		TimeAndWeatherManagerEntity manager = world.GetTimeAndWeatherManager();
+		if (!manager)
+			return 1.0;
+		
+		float sunriseTime, sunsetTime;
+		if (!manager.GetSunriseHour(sunriseTime) || !manager.GetSunsetHour(sunsetTime))
+			return 1.0;
+		
+		float currentTime = manager.GetTimeOfTheDay();
+		bool isDaytime = (currentTime >= sunriseTime && currentTime <= sunsetTime);
+		
+		if (isDaytime)
+		{
+			// Siang -- puncak (1.0) di solar noon (tengah antara sunrise-sunset),
+			// turun ke 0.85 makin deket sunrise/sunset (pagi/sore, cahaya landai)
+			float middayTime     = (sunriseTime + sunsetTime) * 0.5;
+			float halfDayLength  = Math.Max((sunsetTime - sunriseTime) * 0.5, 0.01);
+			float distFromMidday = Math.AbsFloat(currentTime - middayTime);
+			float dayProgress    = Math.Clamp(distFromMidday / halfDayLength, 0.0, 1.0);
+			
+			return Math.Lerp(1.0, 0.85, dayProgress);
+		}
+		else
+		{
+			// Malem -- turun ke 0.5 di tengah malem (paling jauh dari sunset/sunrise),
+			// 0.85 di senja/fajar (deket sunset/sunrise)
+			float nightLength      = Math.Max(24.0 - (sunsetTime - sunriseTime), 0.01);
+			float distFromSunset   = currentTime - sunsetTime;
+			if (distFromSunset < 0.0)
+				distFromSunset += 24.0; // wrap around lewat tengah malem
+			
+			float midnightPoint    = nightLength * 0.5;
+			float distFromMidnight = Math.AbsFloat(distFromSunset - midnightPoint);
+			float nightProgress    = Math.Clamp(distFromMidnight / Math.Max(midnightPoint, 0.01), 0.0, 1.0);
+			
+			return Math.Lerp(0.5, 0.85, nightProgress);
+		}
+	}
+	// === END MODIFIED ===
 
 	//--------------------------------------------------------------------
 	//! Entry point buat request artillery LANGSUNG/MANUAL (misal dari group yang
@@ -159,6 +215,21 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	{
 		if (!m_ArtySupport || !request)
 			return;
+
+		// === ADDED: BUG FIX -- sebelumnya request LOLOS masuk queue walau 0 artillery
+		// unit terdaftar sama sekali (CanCallArty() di sisi pemohon cuma ngecek izin/
+		// flag, bukan ketersediaan beneran). Efeknya: ProcessQueue diem-diem return
+		// begitu ngecek m_aUnits kosong -- request nyangkut di queue sampe expired,
+		// gak ada feedback ke pemohon, keliatan kayak "ada yang minta artillery"
+		// padahal gak bakal pernah ke-eksekusi. Sekarang ditolak DI SINI (titik
+		// pipeline final, dilewatin SEMUA jalur -- manual/cluster-auto/simple-request),
+		// sebelum sempet masuk queue sama sekali.
+		if (!m_ArtySupport.HasRegisteredUnits())
+		{
+			Print(string.Format("[DCO_ThreatResponse] Fire mission (%1) DITOLAK -- gak ada artillery unit yang terdaftar sama sekali", sourceTag));
+			return;
+		}
+		// === END ADDED ===
 
 		int shellNum = CalculateArtilleryShellCount(request, m_fArtilleryAccuracy, worldTime);
 
@@ -216,8 +287,13 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (threat.m_iReinforcementSentNumber >= m_iMaxReinforcementSent)
 			return;
 
-		if (threat.m_fPriorityScore < m_fReinforcementThreshold)
+		// === ADDED: Combat Focus -- sama pola kayak versi cluster di bawah
+		float combatFocusMod = Math.Lerp(1.8, 0.4, m_Commander.GetCombatFocus());
+		float effectiveThreshold = m_fReinforcementThreshold * combatFocusMod;
+
+		if (threat.m_fPriorityScore < effectiveThreshold)
 			return;
+		// === END ADDED ===
 
 		DispatchReinforcement(threat.m_vPosition, threat.m_eThreatLevel, threat, worldTime);
 	}
@@ -528,7 +604,15 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	    if (!m_Commander)
 	        return null;
 
+	    // === MODIFIED: BUG FIX -- sebelumnya manggil "FindClosestIdleGroupForRole_Public"
+	    // yang GAK PERNAH DIDEFINISIKAN di manapun di seluruh codebase (kemungkinan
+	    // typo/nama function yang gak pernah kelar diimplementasi). Efeknya:
+	    // reinforcement gak pernah bisa nemuin grup sama sekali, gak peduli kondisi
+	    // manpower/threshold apapun -- rusak total di level pemanggilan function.
+	    // Diganti ke FindBestIdleGroupForRole_Public yang udah confirmed jalan
+	    // (dipake TrySendCounterFlank buat flank, berhasil).
 	    return m_Commander.FindBestIdleGroupForRole_Public(role, pos);
+	    // === END MODIFIED ===
 	}
 
 	// === MODIFIED: sekarang beroperasi di level cluster (target = centroid cluster,
@@ -580,8 +664,16 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (primary.m_iReinforcementSentNumber >= m_iMaxReinforcementSent)
 			return;
 
-		if (cluster.m_fCombinedScore < m_fReinforcementThreshold)
+		// === ADDED: Combat Focus -- commander CombatFocus tinggi lebih gampang
+		// trigger reinforcement (threshold turun sampe 0.4x), CombatFocus rendah
+		// lebih cuek ke ancaman kecil, stay fokus objective (threshold naik sampe
+		// 1.8x). Netral (0.5) = threshold apa adanya.
+		float combatFocusMod = Math.Lerp(1.8, 0.4, m_Commander.GetCombatFocus());
+		float effectiveThreshold = m_fReinforcementThreshold * combatFocusMod;
+
+		if (cluster.m_fCombinedScore < effectiveThreshold)
 			return;
+		// === END ADDED ===
 
 		DispatchReinforcement(cluster.m_vCenterPos, cluster.m_eClusterLevel, primary, worldTime);
 	}
