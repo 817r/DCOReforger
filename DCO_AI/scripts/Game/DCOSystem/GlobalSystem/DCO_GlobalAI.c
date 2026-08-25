@@ -40,10 +40,27 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute("3", UIWidgets.Slider, "Bobot personality RECKLESS", params: "0 100 1")]
 	protected float m_fPersonalityWeightReckless;
 	
+	[Attribute("1", UIWidgets.CheckBox, "Baca override config dari file JSON di folder profile server. Kalau OFF, nilai di atas dipake apa adanya.", category: "Server Config")]
+	protected bool m_bUseServerConfigFile;
+	
+	[Attribute("$profile:DCO/DCO_GlobalConfig.json", UIWidgets.EditBox, "Path file JSON config. Prefix $profile: nunjuk ke folder -profile server.", category: "Server Config")]
+	protected string m_sServerConfigPath;
+	
+	[Attribute("1", UIWidgets.CheckBox, "Kalau file JSON belum ada, otomatis bikin file berisi nilai Workbench sekarang (jadi template buat admin).", category: "Server Config")]
+	protected bool m_bAutoGenerateConfigFile;
+
+	protected static bool s_bConfigLoaded = false;
+	
 	static DCO_GlobalAIComponent m_sInstance;
 	
 	static DCO_GlobalAIComponent GetInstance()
 	{
+		if (m_sInstance && !s_bConfigLoaded)
+		{
+			s_bConfigLoaded = true;
+			m_sInstance.LoadServerConfig();
+		}
+		
 		return m_sInstance;
 	}
 	
@@ -56,7 +73,190 @@ class DCO_GlobalAIComponent: ScriptComponent
 	{
 		super.OnPostInit(owner);
 		m_sInstance = this;
+		s_bConfigLoaded = false;
+		
 		SetEventMask(owner, EntityEvent.INIT);
+	}
+
+	protected void LoadServerConfig()
+	{
+		if (!m_bUseServerConfigFile)
+			return;
+		
+		if (!Replication.IsServer())
+			return;
+		
+		if (m_sServerConfigPath.IsEmpty())
+		{
+			Print("[DCO][Config] Path config kosong, skip.", LogLevel.WARNING);
+			return;
+		}
+		
+		if (!FileIO.FileExists(m_sServerConfigPath))
+		{
+			PrintFormat("[DCO][Config] File %1 gak ketemu.", m_sServerConfigPath, level: LogLevel.NORMAL);
+			
+			if (m_bAutoGenerateConfigFile)
+				WriteDefaultConfig();
+			
+			return;
+		}
+		
+		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
+		if (!ctx.LoadFromFile(m_sServerConfigPath))
+		{
+			PrintFormat("[DCO][Config] GAGAL parse %1 -- kemungkinan JSON invalid (koma nyangkut / kurung kurang). Pake nilai Workbench.",
+				m_sServerConfigPath, level: LogLevel.ERROR);
+			return;
+		}
+		
+		int applied = 0;
+		
+		float fTmp;
+		bool  bTmp;
+		int   iTmp;
+		
+		if (ctx.ReadValue("unitAimSkillAccuracy", fTmp))
+		{
+			unitAimSkillAccuracy = Math.Clamp(fTmp, 0.1, 10.0);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("timeToMaxAccuracy", fTmp))
+		{
+			m_fTimeToMaxAccuracy = Math.Clamp(fTmp, 1.0, 60.0);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("aiPerception", fTmp))
+		{
+			m_fAiPerception = Math.Clamp(fTmp, 0.5, 3.0);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("vehicleDismountDanger", fTmp))
+		{
+			m_fVehicleDismountDanger = Math.Clamp(fTmp, 0.0, 2000.0);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("suppressionEffect", fTmp))
+		{
+			m_fSuppressionEffect = Math.Clamp(fTmp, 0.0, 2.0);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("takeCoverChance", fTmp))
+		{
+			m_fTakeCoverChance = Math.Clamp(fTmp, 0.0, 1.0);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("magicallyResupplied", bTmp))
+		{
+			m_bIsMagicallyResupplied = bTmp;
+			applied++;
+		}
+
+		if (ctx.ReadValue("aiSkillDefault", iTmp))
+		{
+			m_eAISkillDefault = Math.ClampInt(iTmp, 0, 6);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("personalityWeightStandard", fTmp))
+		{
+			m_fPersonalityWeightStandard = Math.Clamp(fTmp, 0.0, 100.0);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("personalityWeightCautious", fTmp))
+		{
+			m_fPersonalityWeightCautious = Math.Clamp(fTmp, 0.0, 100.0);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("personalityWeightAggressive", fTmp))
+		{
+			m_fPersonalityWeightAggressive = Math.Clamp(fTmp, 0.0, 100.0);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("personalityWeightReckless", fTmp))
+		{
+			m_fPersonalityWeightReckless = Math.Clamp(fTmp, 0.0, 100.0);
+			applied++;
+		}
+		
+		PrintFormat("[DCO][Config] %1 setting di-override dari %2", applied, m_sServerConfigPath);
+		DumpActiveConfig();
+	}
+
+	protected void WriteDefaultConfig()
+	{
+		string dir = GetDirectoryFromPath(m_sServerConfigPath);
+		if (!dir.IsEmpty())
+			FileIO.MakeDirectory(dir);
+		
+		SCR_JsonSaveContext ctx = new SCR_JsonSaveContext();
+		
+		ctx.WriteValue("_comment", "DCO Global AI config. Hapus baris yang gak mau di-override -- yang gak ada di file ini otomatis pake nilai dari Workbench.");
+		
+		ctx.WriteValue("unitAimSkillAccuracy",       unitAimSkillAccuracy);
+		ctx.WriteValue("timeToMaxAccuracy",          m_fTimeToMaxAccuracy);
+		ctx.WriteValue("aiPerception",               m_fAiPerception);
+		ctx.WriteValue("vehicleDismountDanger",      m_fVehicleDismountDanger);
+		ctx.WriteValue("suppressionEffect",          m_fSuppressionEffect);
+		ctx.WriteValue("takeCoverChance",            m_fTakeCoverChance);
+		ctx.WriteValue("magicallyResupplied",        m_bIsMagicallyResupplied);
+		ctx.WriteValue("aiSkillDefault",             m_eAISkillDefault);
+		ctx.WriteValue("personalityWeightStandard",  m_fPersonalityWeightStandard);
+		ctx.WriteValue("personalityWeightCautious",  m_fPersonalityWeightCautious);
+		ctx.WriteValue("personalityWeightAggressive", m_fPersonalityWeightAggressive);
+		ctx.WriteValue("personalityWeightReckless",  m_fPersonalityWeightReckless);
+		
+		if (ctx.SaveToFile(m_sServerConfigPath))
+			PrintFormat("[DCO][Config] Template config dibuat di %1", m_sServerConfigPath);
+		else
+			PrintFormat("[DCO][Config] GAGAL nulis %1 -- cek permission folder profile.", m_sServerConfigPath, level: LogLevel.ERROR);
+	}
+	
+	protected string GetDirectoryFromPath(string path)
+	{
+		int lastSlash = -1;
+		int len = path.Length();
+		
+		for (int i = 0; i < len; i++)
+		{
+			string ch = path.Get(i);
+			if (ch == "/" || ch == "\\")
+				lastSlash = i;
+		}
+		
+		if (lastSlash <= 0)
+			return string.Empty;
+		
+		return path.Substring(0, lastSlash);
+	}
+	
+	void DumpActiveConfig()
+	{
+		PrintFormat("[DCO][Config] aim=%1 timeToMax=%2 perception=%3 dismount=%4",
+			unitAimSkillAccuracy, m_fTimeToMaxAccuracy, m_fAiPerception, m_fVehicleDismountDanger);
+		PrintFormat("[DCO][Config] suppression=%1 takeCover=%2 magicAmmo=%3 skill=%4",
+			m_fSuppressionEffect, m_fTakeCoverChance, m_bIsMagicallyResupplied, typename.EnumToString(DCO_AISKILL, m_eAISkillDefault));
+		PrintFormat("[DCO][Config] personality STD=%1 CAU=%2 AGR=%3 RCK=%4",
+			m_fPersonalityWeightStandard, m_fPersonalityWeightCautious,
+			m_fPersonalityWeightAggressive, m_fPersonalityWeightReckless);
+	}
+	
+	void ReloadServerConfig()
+	{
+		if (!Replication.IsServer())
+			return;
+		
+		s_bConfigLoaded = true;
+		LoadServerConfig();
 	}
 	
 	DCO_AISKILL SetAISkill(DCO_AISKILL ski)
@@ -125,8 +325,6 @@ class DCO_GlobalAIComponent: ScriptComponent
 		return m_bIsMagicallyResupplied;
 	}
 	
-	// === ADDED: getter/setter buat m_fSuppressionEffect -- fieldnya udah ada dari
-	// awal tapi belum ada getter/setternya, jadi gak bisa dibaca/ditulis dari luar.
 	float GetSuppressionEffect()
 	{
 		return m_fSuppressionEffect;
@@ -137,9 +335,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 		m_fSuppressionEffect = f;
 		return m_fSuppressionEffect;
 	}
-	// === END ADDED ===
-	
-	// === ADDED: Take Cover Chance ===
+
 	float GetTakeCoverChance()
 	{
 		return m_fTakeCoverChance;
@@ -174,5 +370,4 @@ class DCO_GlobalAIComponent: ScriptComponent
 		
 		return DCO_EAIPersonality.RECKLESS;
 	}
-	// === END MODIFIED ===
 }
