@@ -25,7 +25,7 @@ enum DCO_BuildingPosCreation
 
 enum DCO_EAIIndividualRoles
 {
-	LEADING = 0,
+	LEADING = 1 << 0,
 	SUPPRESSING = 1 << 1,
 	ANTI_ARMOR = 1 << 2,
 	COVERT = 1 << 3,

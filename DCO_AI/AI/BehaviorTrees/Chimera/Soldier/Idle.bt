@@ -55,35 +55,21 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
              Name "Parallel"
              EditorPos -992 64
              Nodes {
-              Switch Switch {
-               Name "Switch"
-               EditorPos -1824 448
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos -1660.359 307.705
                Nodes {
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos -1904 496
+                 Period 30
+                 PeriodRandom 15
+                }
                 RunBT RunBT {
                  Name "RunBT"
-                 EditorPos -2624 944
-                 BehaviorTree "{561A02A3833D9900}AI/BehaviorTrees/Chimera/Soldier/Idle_ReturnToFormation.bt"
+                 EditorPos -1600 480
+                 BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
                 }
-                Sequence Sequence {
-                 Name "Sequence"
-                 EditorPos -1548.359 787.705
-                 Nodes {
-                  AITaskIdle Idle {
-                   Name "Idle"
-                   EditorPos -1792 976
-                   Period 60
-                   PeriodRandom 30
-                  }
-                  RunBT RunBT {
-                   Name "RunBT"
-                   EditorPos -1488 960
-                   BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.bt"
-                  }
-                 }
-                }
-               }
-               RandomRange {
-                1 4
                }
               }
               RunBT RunBT {
@@ -140,6 +126,20 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
       }
      }
     }
+   }
+  }
+  Switch Switch {
+   Name "Switch"
+   EditorPos -2432 688
+   Nodes {
+    RunBT RunBT {
+     Name "RunBT"
+     EditorPos -2624 944
+     BehaviorTree "{561A02A3833D9900}AI/BehaviorTrees/Chimera/Soldier/Idle_ReturnToFormation.bt"
+    }
+   }
+   RandomRange {
+    1 4
    }
   }
  }

@@ -227,7 +227,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		if (state.GetOldRequest() && state.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 			rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 		else
+		{	
 			rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
+			rq.m_bTryFindCover = false;
+		}	
 
 		state.ApplyNewRequest(rq);
 		return true;

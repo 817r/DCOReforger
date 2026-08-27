@@ -50,10 +50,6 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 			}
 		}
 		
-		DCO_AIResupplyConfigComponent resConf = DCO_AIResupplyConfigComponent.Cast(controlledEnt.FindComponent(DCO_AIResupplyConfigComponent));
-		if (resConf)
-			m_sQueryResourceName = resConf.GetRandomMagazinePrefab(selectedWeaponComp.GetWeaponType());		
-		
 		//if (!magazineWell)
 		//	Print("FOUND NO MAGAZINE WELL");
 		//else

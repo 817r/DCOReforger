@@ -39,11 +39,11 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
       }
       Selector Selector {
        Name "Selector"
-       EditorPos 80 272
+       EditorPos 80 208
        Nodes {
-        Switch Switch {
-         Name "Switch"
-         EditorPos -224 384
+        Selector Selector {
+         Name "Selector"
+         EditorPos -208 400
          Nodes {
           DCO_FindIndoorPosition "DCO_ Find Indoor Position" {
            Name "DCO_ Find Indoor Position"
@@ -88,9 +88,6 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
             }
            }
           }
-         }
-         RandomRange {
-          1 4
          }
         }
         DecoTestVariable "Test Variable" {
@@ -207,7 +204,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
       AITaskIdle Idle {
        Name "Idle"
        EditorPos 1526.784 468.654
-       PeriodRandom 10
+       PeriodRandom 5
       }
       AITaskMove Move {
        Name "Move"
@@ -251,7 +248,8 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
       AITaskIdle Idle {
        Name "Idle"
        EditorPos 2607.591 359.987
-       PeriodRandom 10
+       Period 3
+       PeriodRandom 15
       }
      }
     }
@@ -303,19 +301,19 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
  VariablesRefs {
   VariableReference leaderEntity {
    VariableType 0
-   EditorPos -1368.277 529.056
+   EditorPos -1376 528
   }
   VariableReference stance {
    VariableType 3
-   EditorPos 1146.643 1079.678
+   EditorPos 1152 1072
   }
   VariableReference coverPos {
    VariableType 2
-   EditorPos 1137.117 997.016
+   EditorPos 1136 992
   }
   VariableReference stance {
    VariableType 3
-   EditorPos 2021.653 464.412
+   EditorPos 2016 464
   }
   VariableReference CoverQueryProps {
    VariableType 5
@@ -327,19 +325,19 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
   }
   VariableReference CoverLock {
    VariableType 1
-   EditorPos 655.581 1208.323
+   EditorPos 656 1216
   }
   VariableReference CoverQueryProps {
    VariableType 5
-   EditorPos -128.419 1128.323
+   EditorPos -128 1136
   }
   VariableReference CoverLockOutdoor {
    VariableType 8
-   EditorPos 335.581 1576.323
+   EditorPos 336 1584
   }
   VariableReference CoverLock {
    VariableType 1
-   EditorPos 607.581 1512.323
+   EditorPos 608 1520
   }
   VariableReference coverPos {
    VariableType 2

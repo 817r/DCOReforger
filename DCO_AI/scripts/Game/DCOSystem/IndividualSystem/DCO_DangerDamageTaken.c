@@ -80,7 +80,10 @@ modded class SCR_AIDangerReaction_DamageTaken
 			if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 				rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 			else
-				rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;			
+			{	
+				rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
+				rq.m_bTryFindCover = false;
+			}	
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 			return true;			
@@ -113,7 +116,10 @@ modded class SCR_AIDangerReaction_DamageTaken
 			if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 				rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 			else
-				rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;			
+			{	
+				rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
+				rq.m_bTryFindCover = false;
+			}			
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 			return true;			
@@ -149,7 +155,10 @@ modded class SCR_AIDangerReaction_DamageTaken
 			if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 				rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 			else
-				rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;			
+			{	
+				rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
+				rq.m_bTryFindCover = false;
+			}		
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 			return true;		
@@ -174,7 +183,10 @@ modded class SCR_AIDangerReaction_DamageTaken
 			if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 				rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 			else
-				rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;			
+			{	
+				rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
+				rq.m_bTryFindCover = false;
+			}		
 			m_State.ApplyNewRequest(rq);
 			m_bPushedMoveRequest = true;
 			return true;		

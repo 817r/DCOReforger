@@ -3,6 +3,17 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 	protected const float DANGER_HIGH = 2.0;
 	protected const float DANGER_MEDIUM = 0.5;
 	
+	// === ADDED: Building retreat ===
+	//! Radius cover search pas request bertipe BUILDING. Posisi tujuan ada DI DALAM
+	//! ruangan, jadi radius 30m bakal narik AI keluar gedung lagi.
+	protected const float COVER_DIST_MIN_BUILDING = 0.0;
+	protected const float COVER_DIST_MAX_BUILDING = 5.0;
+	
+	//! Masuk gedung butuh lebih lama daripada lari ke cover statis -- ada pintu,
+	//! koridor, dan routing interior yang harus dilewati.
+	protected const float MOVE_DURATION_SCALE_BUILDING = 1.5;
+	// === END ADDED ===
+	
 	//--------------------------------------------------------------------------------------------
 	override void Update()
 	{
@@ -24,7 +35,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		float sectorDanger = m_Utility.m_SectorThreatFilter.GetSectorDanger(m_iCurrentSector);
 		if (!m_bPushedRequest && !m_bReachedSafety && !m_State.IsMoving())
 		{
-			if (sectorDanger < DANGER_MEDIUM && Math.RandomFloat01() < 0.2)
+			if (sectorDanger < DANGER_MEDIUM && Math.RandomFloat01() < 0.15)
 			{
 				m_bReachedSafety = true;
 				m_ParentBehavior.OnMovementCompleted(m_State.IsInValidCover());
@@ -57,37 +68,46 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 				}
 				else
 				{
-					ECharacterStance newStance;
+					// === CHANGED: dulu blok stance di bawah tetep jalan walau
+					// PushRequestMoveDanger udah dipanggil, jadi request kabur langsung
+					// dibatalin sama ApplyRequestChangeStanceOutsideCover. Sekarang dua
+					// jalur ini eksklusif. ===
 					if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
+					{
 						PushRequestMoveDanger(threatPos, sectorDanger, sectorFlags);
-					else if (threatState == EAIThreatState.THREATENED)
-						newStance = ECharacterStance.PRONE;
+					}
 					else
-						newStance = ECharacterStance.CROUCH;
-					
-					if (newStance != m_CharacterController.GetStance())
-						m_State.ApplyRequestChangeStanceOutsideCover(newStance);
+					{
+						ECharacterStance newStance;
+						if (threatState == EAIThreatState.THREATENED)
+							newStance = ECharacterStance.PRONE;
+						else
+							newStance = ECharacterStance.CROUCH;
+						
+						if (newStance != m_CharacterController.GetStance())
+							m_State.ApplyRequestChangeStanceOutsideCover(newStance);
+					}
 				}
 			}
 			else if (distToThreat < SCR_AICombatMoveUtils.VERY_LONG_RANGE_COMBAT_DIST)
 			{
-				ECharacterStance newStance;
+				// === CHANGED: sama kayak cabang close range -- jangan push stance
+				// change setelah request gerak, itu ngebatalin request-nya. ===
 				if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
+				{
 					PushRequestMove(threatPos, sectorDanger, sectorFlags);
+				}
 				else
-					newStance = ECharacterStance.CROUCH;
-				
-				if (newStance != m_CharacterController.GetStance())
+				{
+					ECharacterStance newStance = ECharacterStance.CROUCH;
+					if (newStance != m_CharacterController.GetStance())
 						m_State.ApplyRequestChangeStanceOutsideCover(newStance);
+				}
 			}
 			else
 			{
-				// Very long range
-				
 				ECharacterStance newStance;
-				SCR_EAIThreatSectorFlags flags = m_Utility.m_SectorThreatFilter.GetSectorFlags(m_iCurrentSector);
-				
-				if ((threatState == EAIThreatState.THREATENED) || (flags & SCR_EAIThreatSectorFlags.DIRECTED_AT_ME) || causedDamage)
+				if ((threatState == EAIThreatState.THREATENED) || (sectorFlags & SCR_EAIThreatSectorFlags.DIRECTED_AT_ME) || causedDamage)
 					newStance = ECharacterStance.PRONE;
 				else
 					newStance = ECharacterStance.CROUCH;
@@ -97,6 +117,53 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			}
 		}
 	}
+	
+	//--------------------------------------------------------------------------------------------
+	// === ADDED: Building retreat ===
+	//! Tentuin tipe request: BUILDING = engine nyariin posisi di dalem gedung terdekat,
+	//! MOVE = cover statis biasa. Pola fallback-nya sama persis kayak
+	//! Modded_CombatMoveLogic_Attack.PushRequestMove() dan DCO_DangerDamageTaken.
+	protected SCR_EAICombatMoveRequestType ResolveRequestType(float danger)
+	{
+		// Percobaan sebelumnya gagal nemu gedung -> jangan ngotot, langsung cover biasa.
+		// Tanpa ini AI bisa nyangkut minta gedung terus di area yang emang gak ada gedungnya.
+		SCR_AICombatMoveRequestBase oldRq = m_State.GetOldRequest();
+		if (oldRq && oldRq.m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+			return SCR_EAICombatMoveRequestType.MOVE;
+		
+		// Danger rendah: lari jauh ke gedung lebih beresiko daripada nunduk di cover terdekat
+		if (danger <= DANGER_MEDIUM)
+			return SCR_EAICombatMoveRequestType.MOVE;
+		
+		// Udah di dalem gedung -> gak perlu nyari gedung lagi.
+		// Konsisten sama gate yang udah ada di Update().
+		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
+			return SCR_EAICombatMoveRequestType.MOVE;
+		
+		return SCR_EAICombatMoveRequestType.BUILDING;
+	}
+	
+	//! Terapin tipe request + sesuain radius cover & durasi kalau tujuannya gedung.
+	//! Dipanggil SETELAH semua field lain di-set, biar override-nya gak ketimpa
+	//! (ini persis bug yang ada di Modded_CombatMoveLogic_Attack, di mana blok
+	//! IsMovingToBuilding() ngubah variabel lokal setelah nilainya nyampe ke rq).
+	protected void ApplyRequestType(SCR_AICombatMoveRequest_Move rq, float danger, float coverDistMinNormal)
+	{
+		rq.m_eType = ResolveRequestType(danger);
+		
+		if (rq.m_eType == SCR_EAICombatMoveRequestType.BUILDING)
+		{
+			rq.m_fCoverSearchDistMin = COVER_DIST_MIN_BUILDING;
+			rq.m_fCoverSearchDistMax = COVER_DIST_MAX_BUILDING;
+			rq.m_fMoveDuration_s    *= MOVE_DURATION_SCALE_BUILDING;
+			rq.m_bTryFindCover = false;
+		}
+		else
+		{
+			rq.m_fCoverSearchDistMin = coverDistMinNormal;
+		}
+	}
+	// === END ADDED ===
 	
 	//--------------------------------------------------------------------------------------------	
 	override protected void PushRequestMove(vector threatPos, float danger, SCR_EAIThreatSectorFlags sectorFlags)
@@ -163,7 +230,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 			//rq.m_fCoverSearchSectorHalfAngleRad - not needed since direction is ANYWHERE
 			rq.m_eMovementType = EMovementType.RUN;
-			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * 2 / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
+			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * 2; // CHANGED: dulu dibagi CHARACTER_SPEED_STAND_RUN (3.6) -> cuma 0.56-0.83 detik
 			
 			rq.m_eStanceMoving = ECharacterStance.CROUCH;
 			rq.m_eStanceEnd = ECharacterStance.PRONE;
@@ -176,8 +243,11 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		rq.m_vMovePos = rq.m_vTargetPos;
 		rq.m_bCheckCoverVisibility = false;
 		rq.m_bFailIfNoCover = false;
-		rq.m_fCoverSearchDistMin = 0;
 		// rq.m_fCoverSearchSectorHalfAngleRad - not needed since direction is ANYWHERE
+		
+		// === ADDED: set m_eType (dulu gak pernah di-set = default STOP) + radius cover ===
+		ApplyRequestType(rq, danger, 5);
+		// === END ADDED ===
 		
 		rq.GetOnCompleted().Insert(OnMoveRequestCompleted);
 		
@@ -194,9 +264,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		
 		if (danger > DANGER_HIGH || (sectorFlags & SCR_EAIThreatSectorFlags.DIRECTED_AT_ME))
 		{
-			// === ADDED: Smoke grenade buat cover reposition ===
 			DCO_SmokeUtility.TryDeploySmokeForRetreat(m_Utility, threatPos, danger);
-			// === END ADDED ===
 			
 			if (closeRange)
 			{
@@ -249,7 +317,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
 			//rq.m_fCoverSearchSectorHalfAngleRad - not needed since direction is ANYWHERE
 			rq.m_eMovementType = EMovementType.RUN;
-			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * 2 / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
+			rq.m_fMoveDuration_s = Math.RandomFloat(1.0, 1.5) * 2; // CHANGED: dulu dibagi CHARACTER_SPEED_STAND_RUN (3.6) -> cuma 0.56-0.83 detik
 			
 			rq.m_eStanceMoving = ECharacterStance.CROUCH;
 			rq.m_eStanceEnd = ECharacterStance.PRONE;
@@ -262,8 +330,11 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		rq.m_vMovePos = rq.m_vTargetPos;
 		rq.m_bCheckCoverVisibility = false;
 		rq.m_bFailIfNoCover = false;
-		rq.m_fCoverSearchDistMin = 0;
 		// rq.m_fCoverSearchSectorHalfAngleRad - not needed since direction is ANYWHERE
+		
+		// === ADDED: set m_eType (dulu gak pernah di-set = default STOP) + radius cover ===
+		ApplyRequestType(rq, danger, 8);
+		// === END ADDED ===
 		
 		rq.GetOnCompleted().Insert(OnMoveRequestCompleted);
 		

@@ -87,58 +87,29 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
          PortName "Radius"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 10
+         Port 9
          PortName "ResetTimer"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 14
+         Port 13
          PortName "Timeout"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 16
+         Port 15
          PortName "Duration"
         }
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 21
+         Port 20
          PortName "StartPos"
         }
        }
-      }
-      DecoTestVariable "Test Variable" {
-       Name "Test Variable"
-       EditorPos -466.356 -211.322
-       Nodes {
-        SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
-         Name "SCR_AI Deco Is Above Threat Level"
-         EditorPos -512 -16
-         Nodes {
-          AITaskReturnState "Return  State" {
-           Name "Return  State"
-           EditorPos -441.374 180.464
-           Result RUNNING
-          }
-         }
-         InPorts {
-          SingleInputPortContainer SingleInputPortContainer {
-           Port -1
-           PortName "ThresholdIn"
-          }
-         }
-         AbortType AbortChildrenBranch
-         m_threatThreshold ALERTED
-        }
-       }
-       ForceNodeResult Success
-       InVariable -1
-       TestType EqualsValue
-       TestValue "true"
       }
       SCR_AILookAtPosition "SCR_AI Look At Position" {
        Name "SCR_AI Look At Position"
        EditorPos 64 -176
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
-         Port 9
+         Port 8
          PortName "PositionIn"
         }
         SingleInputPortContainer SingleInputPortContainer {
@@ -195,7 +166,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
              EditorPos 16 480
              Period 10
              PeriodRandom 10
-             PeriodKey 25
+             PeriodKey 24
             }
             Selector Selector {
              Name "Selector"
@@ -214,7 +185,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                    EditorPos -368.833 1297.473
                    Group "{5C65018B59CAAC0D}"
                    SetValue "false"
-                   OutVariable 12
+                   OutVariable 11
                   }
                   SCR_AISetInvestigateBehaviorParameters "SCR_AI Set Investigate Behavior Parameters" {
                    Name "SCR_AI Set Investigate Behavior Parameters"
@@ -233,7 +204,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                      PortName "Radius"
                     }
                     SingleInputPortContainer SingleInputPortContainer {
-                     Port 12
+                     Port 11
                      PortName "ResetTimer"
                     }
                     SingleInputPortContainer SingleInputPortContainer {
@@ -257,7 +228,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                }
                Group "{5C65018B59CAAC0D}"
                AbortType AbortParentNodeFurtherChildren
-               InVariable 12
+               InVariable 11
                TestType EqualsValue
                TestValue "true"
               }
@@ -271,7 +242,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                  Group "{5C65018B59CAAC0D}"
                  Period 20
                  PeriodRandom 30
-                 PeriodKey 15
+                 PeriodKey 14
                 }
                 AITaskCharacterStop "Character Stop" {
                  Name "Character Stop"
@@ -305,7 +276,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                  PortName "Radius"
                 }
                 SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 13
+                 Port 12
                  PortName "ResetTimer"
                 }
                 SingleOutputPortContainer SingleOutputPortContainer {
@@ -344,7 +315,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
              EditorPos 1888 752
              Period 10
              PeriodRandom 10
-             PeriodKey 17
+             PeriodKey 16
             }
             Sequence Sequence {
              Name "Sequence"
@@ -363,7 +334,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                  PortName "Origin"
                 }
                 SingleInputPortContainer SingleInputPortContainer {
-                 Port 8
+                 Port -1
                  PortName "Radius"
                 }
                }
@@ -374,6 +345,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                 }
                }
                m_Radius 20
+               m_ExclusionRadius 2
               }
               SCR_AILookAtPosition "SCR_AI Look At Position" {
                Name "SCR_AI Look At Position"
@@ -429,7 +401,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
          EditorPos 2736 -32
          InPorts {
           SingleInputPortContainer SingleInputPortContainer {
-           Port 24
+           Port 23
            PortName "Position"
           }
          }
@@ -446,13 +418,30 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
              Name "SCR_AI Deco Is Above Threat Level"
              EditorPos 4672 368
              Nodes {
-              SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
-               Name "SCR_AI Set Weapon Raised"
-               EditorPos 4704 592
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "Raised"
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 4720 544
+               Nodes {
+                SCR_AISetStance "SCR_AI Set Stance" {
+                 Name "SCR_AI Set Stance"
+                 EditorPos 4544 704
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "Stance"
+                  }
+                 }
+                 m_eStance CROUCH
+                }
+                SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+                 Name "SCR_AI Set Weapon Raised"
+                 EditorPos 4704 704
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "Raised"
+                  }
+                 }
                 }
                }
               }
@@ -463,22 +452,37 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
                PortName "ThresholdIn"
               }
              }
-             m_threatThreshold ALERTED
             }
             SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
              Name "SCR_AI Deco Is Above Threat Level"
              EditorPos 5008 336
              Nodes {
-              SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
-               Name "SCR_AI Set Weapon Raised"
-               EditorPos 5056 576
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "Raised"
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 5136 544
+               Nodes {
+                SCR_AISetStance "SCR_AI Set Stance" {
+                 Name "SCR_AI Set Stance"
+                 EditorPos 5056 736
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "Stance"
+                  }
+                 }
+                }
+                SCR_AISetWeaponRaised "SCR_AI Set Weapon Raised" {
+                 Name "SCR_AI Set Weapon Raised"
+                 EditorPos 5248 736
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port -1
+                   PortName "Raised"
+                  }
+                 }
+                 m_bWeaponRaised 0
                 }
                }
-               m_bWeaponRaised 0
               }
              }
              InPorts {
@@ -488,7 +492,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
               }
              }
              NegativeCondition 1
-             m_threatThreshold ALERTED
             }
            }
           }
@@ -520,7 +523,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
    Group "{5C64A805E3F031E4}"
    InTargetLocation 5
    InTargetOrientation -1
-   InPrecisionXZ 18
+   InPrecisionXZ 17
    PrecisionXZ 1
    InExtraMoveParams -1
    RequestResult 6
@@ -577,7 +580,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
     }
    }
    Group "{5C64A805E3F031E4}"
-   InVariable 11
+   InVariable 10
    TestType EqualsValue
    TestValue "4"
   }
@@ -629,7 +632,7 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
        }
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
-         Port 23
+         Port 22
          PortName "ThresholdIn"
         }
        }
@@ -669,17 +672,17 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
        EditorPos -2575.428 1063.714
        InPorts {
         SingleInputPortContainer SingleInputPortContainer {
-         Port 22
+         Port 21
          PortName "InFlankStartPos"
         }
         SingleInputPortContainer SingleInputPortContainer {
-         Port 20
+         Port 19
          PortName "InFlankEndPos"
         }
        }
        OutPorts {
         SingleOutputPortContainer SingleOutputPortContainer {
-         Port 19
+         Port 18
          PortName "OutParams"
         }
        }
@@ -698,6 +701,35 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
     }
    }
    Group "{5C64A805E3F031E4}"
+  }
+  DecoTestVariable "Test Variable" {
+   Name "Test Variable"
+   EditorPos -466.356 -211.322
+   Nodes {
+    SCR_AIDecoIsAboveThreatLevel "SCR_AI Deco Is Above Threat Level" {
+     Name "SCR_AI Deco Is Above Threat Level"
+     EditorPos -512 -16
+     Nodes {
+      AITaskReturnState "Return  State" {
+       Name "Return  State"
+       EditorPos -441.374 180.464
+       Result RUNNING
+      }
+     }
+     InPorts {
+      SingleInputPortContainer SingleInputPortContainer {
+       Port -1
+       PortName "ThresholdIn"
+      }
+     }
+     AbortType AbortChildrenBranch
+     m_threatThreshold ALERTED
+    }
+   }
+   ForceNodeResult Success
+   InVariable -1
+   TestType EqualsValue
+   TestValue "true"
   }
  }
  Variables {
@@ -776,10 +808,6 @@ BehaviorTree "{CC6CFA43E8961E69}AI/BehaviorTrees/Chimera/Soldier/MoveAndInvestig
   VariableReference radius {
    VariableType 4
    EditorPos -752 -48
-  }
-  VariableReference radius {
-   VariableType 4
-   EditorPos 1472 1104
   }
   VariableReference inestigateCenterPos {
    VariableType 2

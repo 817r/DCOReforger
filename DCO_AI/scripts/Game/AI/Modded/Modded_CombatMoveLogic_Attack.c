@@ -443,7 +443,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		else
 		{
 			rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
-			
+			rq.m_bTryFindCover = false;
 			DCO_BreachUtility.TryThrowBreachGrenade(m_Utility, rq.m_vTargetPos);
 		}
 		

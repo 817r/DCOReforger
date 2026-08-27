@@ -80,7 +80,7 @@ class DCO_MoraleCombatUtility
 		if (!moraleSystem)
 			return baseCanAim;
 		
-		if (moraleSystem.GetState() == moraleState.BREAK)
+		if (moraleSystem.GetState() == moraleState.BREAK && Math.RandomFloat01() < 0.4)
 			return false;
 		
 		return baseCanAim;

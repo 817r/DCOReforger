@@ -10,7 +10,6 @@ class DCO_AIWeaponConfigComponent: ScriptComponent
 	protected EWeaponType weapType = EWeaponType.WT_NONE;
 	
 	protected SCR_CharacterControllerComponent m_CharacterController;
-	protected DCO_AIResupplyConfigComponent resConf;
 	protected BaseWeaponComponent weap;
 	
 	//------------------------------------------------------------------------------------------------
@@ -45,8 +44,6 @@ class DCO_AIWeaponConfigComponent: ScriptComponent
 		
 		if (weap.GetOwner().GetParent())
 		{
-			resConf = DCO_AIResupplyConfigComponent.Cast(weap.GetOwner().GetParent().FindComponent(DCO_AIResupplyConfigComponent));
-			resConf.AddResupplyConfig(weapType, MagPrefab);
 			m_CharacterController = SCR_CharacterControllerComponent.Cast(owner.FindComponent(SCR_CharacterControllerComponent));
 		
 			if (m_CharacterController)
@@ -60,7 +57,6 @@ class DCO_AIWeaponConfigComponent: ScriptComponent
 		if (m_CharacterController.IsReloading() && weap.GetCurrentMagazine())
 		{
 			weap.GetCurrentMagazine().GetOwner().GetPrefabData().GetPrefab().GetResourceName();
-			resConf.AddResupplyConfig(weapType, MagPrefab);
 		}
 			
 		
