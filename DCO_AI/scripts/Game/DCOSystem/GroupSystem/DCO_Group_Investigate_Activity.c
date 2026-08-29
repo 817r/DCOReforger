@@ -102,7 +102,7 @@ modded class SCR_AIInvestigateClusterActivity
 			vector investigatePos;
 			float investigateRadius;
 			
-			if (m_ClusterState.GetTimeSinceLastNewInformation() > 20)
+			if (vector.Distance(m_ClusterState.GetCenterPosition(), m_Utility.GetOwner().GetOrigin()))
 				AccurateCalculateInvestigationArea(m_ClusterState, investigatePos, investigateRadius);
 			else
 				CalculateInvestigationArea(m_ClusterState, investigatePos, investigateRadius);
@@ -111,7 +111,7 @@ modded class SCR_AIInvestigateClusterActivity
 			if (!comms)
 				return;
 			
-			if (m_ClusterState.GetTimeSinceLastNewInformation() > 20)
+			if (vector.Distance(m_ClusterState.GetCenterPosition(), m_Utility.GetOwner().GetOrigin()))
 				SendAccurateInvestigateMessages(comms, investigatePos, investigateRadius);
 			else
 				SendInvestigateMessages(comms, investigatePos, investigateRadius);

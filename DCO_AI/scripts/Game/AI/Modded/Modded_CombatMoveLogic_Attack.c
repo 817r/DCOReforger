@@ -1022,7 +1022,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_bTryFindCover = true;
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility = true;
-		rq.m_bFailIfNoCover = true;
+		rq.m_bFailIfNoCover = false;
 		rq.m_fCoverSearchDistMin = 0;
 		rq.m_fCoverSearchDistMax = 30;
 		if (m_CharacterController.GetStance() == ECharacterStance.PRONE)

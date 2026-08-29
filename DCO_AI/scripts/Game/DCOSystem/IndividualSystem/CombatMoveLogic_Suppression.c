@@ -202,7 +202,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		if (m_State && m_State.IsMovingToBuilding())
 		{
 			coverSearchDistMin = 0;
-			coverSearchDistMax = 2;
+			coverSearchDistMax = 10;
 		}
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;

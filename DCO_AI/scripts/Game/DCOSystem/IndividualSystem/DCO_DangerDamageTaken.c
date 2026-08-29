@@ -58,7 +58,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 			rq.m_bTryFindCover = true;
 			rq.m_bUseCoverSearchDirectivity = true;
 			rq.m_bCheckCoverVisibility = true;
-			rq.m_bFailIfNoCover = true;
+			rq.m_bFailIfNoCover = false;
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.SPRINT;
@@ -141,7 +141,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 			rq.m_bTryFindCover = true;
 			rq.m_bUseCoverSearchDirectivity = true;
 			rq.m_bCheckCoverVisibility = true;
-			rq.m_bFailIfNoCover = true;
+			rq.m_bFailIfNoCover = false;
 			rq.m_eStanceMoving = ECharacterStance.STAND;
 			rq.m_eStanceEnd = ECharacterStance.CROUCH;
 			rq.m_eMovementType = EMovementType.RUN;

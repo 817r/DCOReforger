@@ -6,6 +6,10 @@ modded class SCR_AIDangerReaction_WeaponFired
 	protected static const float SUPPRESSED_ROLL_DIST_MAX = 150.0;
 	protected static const float SUPPRESSED_ROLL_CHANCE_AT_MIN = 0.35;
 	
+	protected static const float coverSearchDistMax = 20;
+	
+	protected static const float COVER_QUERY_SECTOR_ANGLE_RAD  = 0.51 * Math.PI;
+	
 	protected static ref map<IEntity, float> s_mLastInvestigateTime = new map<IEntity, float>();
 	protected static const int INVESTIGATE_MAP_PRUNE_THRESHOLD = 128;
 
@@ -91,6 +95,49 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 				SCR_AIGetOutVehicle getOutAction = new SCR_AIGetOutVehicle(utility, null, compartmentAccess.GetOwner(), priority: SCR_AIActionBase.PRIORITY_BEHAVIOR_GET_OUT_VEHICLE_HIGH_PRIORITY);
 				utility.AddAction(getOutAction);
+				
+				SCR_AICombatMoveState state = utility.m_CombatMoveState;
+				
+				if (state.IsExecutingRequest())
+					return false;
+		
+				if (utility.m_DCOConfig && utility.m_DCOConfig.IsHoldPosition())
+					return false;
+				
+				SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+
+				rq.m_eReason  = SCR_EAICombatMoveReason.STANDARD;
+				rq.m_vTargetPos = shotDir;
+				rq.m_vMovePos   = rq.m_vTargetPos;
+		
+				rq.m_bTryFindCover              = true;
+				rq.m_bUseCoverSearchDirectivity = true;
+				rq.m_bCheckCoverVisibility      = true;
+				rq.m_bFailIfNoCover             = false;
+		
+				rq.m_eStanceMoving = ECharacterStance.STAND;
+				rq.m_eStanceEnd    = ECharacterStance.CROUCH;
+				rq.m_eMovementType = EMovementType.SPRINT;
+		
+				rq.m_fCoverSearchDistMax = coverSearchDistMax;
+				rq.m_fCoverSearchDistMin = 2;
+				rq.m_fMoveDuration_s     = Math.RandomFloat(1.0, 1.5) * coverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
+		
+				rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+				rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+		
+				rq.m_bAimAtTarget    = false;
+				rq.m_bAimAtTargetEnd = true;
+		
+				if (state.GetOldRequest() && state.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+					rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+				else
+				{	
+					rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
+					rq.m_bTryFindCover = false;
+				}	
+		
+				state.ApplyNewRequest(rq);
 
 				return super.PerformReaction(utility, threatSystem, dangerEvent, dangerEventCount);
 			}
@@ -168,7 +215,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		}
 
 		AIGroup myGroup = utility.GetOwner().GetParentGroup();
-		if (myGroup && myGroup.GetLeaderAgent() == agent)
+		if (myGroup)
 		{
 			float timeTillGroupNotified_s = Math.Min(timeTillFlyby_s, timeTillGunshotHeard_s);
 

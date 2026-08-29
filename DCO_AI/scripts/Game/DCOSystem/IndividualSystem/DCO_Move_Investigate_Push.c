@@ -20,8 +20,8 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	protected static const float STANCE_SUPPRESSION_CROUCH  = 0.8;
 	protected static const float WAIT_TIME_IN_COVER_S       = 8.0;
 	protected static const float WAIT_TIME_OPEN_S           = 5.0;
-	protected static const float WAIT_SCALE_CQB             = 0.4;
-	protected static const float WAIT_SCALE_THREATENED      = 1.5;
+	protected static const float WAIT_SCALE_CQB             = 1.2;
+	protected static const float WAIT_SCALE_THREATENED      = 2;
 	protected static const float MOVE_DURATION_MIN_S        = 1.5;
 
 	protected static const string PORT_POSITION = "Position";
@@ -195,7 +195,6 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		if (isCQB)
 			scale = CQB_BOUND_SCALE;
 
-		// Jangan maju lewat standoff, dan jangan lebih dari satu bound
 		float advance = Math.Min(dist2D - STANDOFF_MIN, BOUND_DIST_MAX * scale);
 		if (advance < BOUND_DIST_MIN)
 			return false;
@@ -313,10 +312,10 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			waitTime = WAIT_TIME_IN_COVER_S;
 
 		if (m_State && m_State.IsMovingToBuilding())
-			waitTime *= 3;
+			waitTime *= 2;
 
 		if (m_Utility.m_AIInfo && m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
-			waitTime *= 5;
+			waitTime *= 3;
 
 		if (isCQB)
 			waitTime *= WAIT_SCALE_CQB;
@@ -335,29 +334,9 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	}
 
 	//------------------------------------------------------------------------------------------------
-	protected float ResolveSuppressionCutoff(bool isCQB)
-	{
-		float cutoff = SUPPRESSION_CUTOFF_DEFAULT;
-		if (isCQB)
-			cutoff = SUPPRESSION_CUTOFF_CQB;
-
-		switch (GetPersonality())
-		{
-			case DCO_EAIPersonality.CAUTIOUS:   cutoff -= 0.10; break;
-			case DCO_EAIPersonality.AGGRESSIVE: cutoff += 0.10; break;
-			case DCO_EAIPersonality.RECKLESS:   cutoff += 0.20; break;
-		}
-
-		return Math.Clamp(cutoff, 0.2, 0.98);
-	}
-
-	//------------------------------------------------------------------------------------------------
 	protected bool MoveToNextPosCondition(bool isCQB)
 	{
 		if (m_State.IsExecutingRequest())
-			return false;
-
-		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > ResolveSuppressionCutoff(isCQB))
 			return false;
 
 		bool threatened = m_Utility.m_ThreatSystem.GetState() == EAIThreatState.THREATENED;
@@ -365,7 +344,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		if (threatened && !isCQB)
 		{
 			DCO_EAIPersonality p = GetPersonality();
-			if (p == DCO_EAIPersonality.CAUTIOUS || p == DCO_EAIPersonality.STANDARD)
+			if (p == DCO_EAIPersonality.CAUTIOUS)
 				return false;
 		}
 

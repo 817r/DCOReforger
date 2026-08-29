@@ -7,15 +7,13 @@ SCR_ChimeraCharacter {
      SensorsList {
       EyesSensor "{520EA1D2DB109AAD}" {
        FOVNormal 120
-       FOVPeripheral 200
-      }
-      EarsSensor "{520EA1D2DB109AA9}" {
+       FOVPeripheral 220
+       RecognitionDetectDecay 0.1
+       RecognitionIdentifyDecay 0.02
       }
      }
     }
    }
-  }
-  DCO_AIIdentifierComponent "{68E707668754B162}" {
   }
  }
 }
