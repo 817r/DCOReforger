@@ -13,7 +13,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 	
 	protected const float BURST_FIRE_MAX_DISTANCE = 70.0;
 	
-	protected const float CLOSE_DIRECT_THREAT_DIST = 60.0;
+	protected const float CLOSE_DIRECT_THREAT_DIST = 80.0;
 	
 	protected const float GRENADE_MIN_THROW_DIST = 5.0;
 	protected const float GRENADE_MAX_THROW_DIST = 25.0;
@@ -46,12 +46,14 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			return FIRE_TREE_LOOK;
 		
 
-		if (m_CombatComponent.GetCombatMode() == EAIGroupCombatMode.HOLD_FIRE
-			&& !IsCloseDirectThreat(target, visible)
-			&& !ShouldReturnFireWhenEndangered())
+		if (m_CombatComponent.GetCombatMode() == EAIGroupCombatMode.HOLD_FIRE && !ShouldBreakDisciplineByChance(visible))
 		{
-			if (!ShouldBreakDisciplineByChance(visible))
-				return FIRE_TREE_LOOK;
+			if (IsCloseDirectThreat(target, visible))
+			{
+				if (!ShouldReturnFireWhenEndangered())
+					return FIRE_TREE_LOOK;
+			}
+				
 		}
 		
 		
@@ -113,11 +115,11 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 					lastSeenThreshold = SCR_AICombatComponent.TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK;
 			}
 			
-			lastSeenThreshold = Math.Max(SCR_AICombatComponent.TARGET_MIN_LAST_SEEN_INDIRECT_ATTACK, lastSeenThreshold * threat);
+			lastSeenThreshold = Math.Max(SCR_AICombatComponent.TARGET_MIN_LAST_SEEN_INDIRECT_ATTACK * 2, lastSeenThreshold * threat * ThreatRememberFromPersonality());
 			
 			if ((!directDamage || weaponType != EWeaponType.WT_ROCKETLAUNCHER) &&
 				target.GetTimeSinceSeen() < lastSeenThreshold &&
-				target.GetTraceFraction() > 0.5)
+				target.GetTraceFraction() > 0.4)
 			{
 				if (DCO_AmmoUtility.ShouldAvoidSuppressiveFire(m_UtilityComponent, selectedWeaponComp))
 					return FIRE_TREE_LOOK;
@@ -138,6 +140,12 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				m_UtilityComponent.AddAction(gren);
 				DCO_GrenadeUtility.NotifyGrenadeThrown(m_UtilityComponent);
 				return FIRE_TREE_THROW_GRENADE;
+			}
+			else if ((!directDamage || weaponType == EWeaponType.WT_ROCKETLAUNCHER) &&
+				target.GetTimeSinceSeen() < lastSeenThreshold &&
+				target.GetTraceFraction() > 0.4)
+			{
+				return FIRE_TREE_RPG;
 			}
 			else
 				return FIRE_TREE_LOOK;
@@ -229,5 +237,11 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		breakChance = Math.Clamp(breakChance, 0.0, 0.4);
 		
 		return Math.RandomFloat01() < breakChance;
+	}
+	
+	protected bool ThreatRememberFromPersonality()
+	{
+		float personalityScale  = DCO_PersonalityCombatUtility.GetThreatRememberFromPersonalityScale(m_UtilityComponent);
+		return personalityScale;
 	}
 }

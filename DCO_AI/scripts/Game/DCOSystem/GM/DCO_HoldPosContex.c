@@ -11,9 +11,6 @@ class DCO_HoldPositionContextAction : SCR_SelectedEntitiesContextAction
 		if (!selectedEntity)
 			return false;
 		
-		if (selectedEntity.HasEntityState(EEditableEntityState.PLAYER))
-			return false;
-		
 		return GetDCOConfig(selectedEntity) != null;
 	}
 	

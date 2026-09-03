@@ -17,21 +17,11 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	[Attribute("30.0", UIWidgets.Slider, "Radius of the Objective", "1.0 300.0 1.0")]
 	protected float m_fRadius;
 	
-	// === ADDED: Intel Fog System ===
 	[Attribute("400.0", UIWidgets.EditBox, "Radius (meter) intel coverage yang di-provide objective ini ke objective LAIN di sekitarnya. Cuma relevan kalau ObjectiveType == RECON.", category: "Intel")]
 	protected float m_fIntelCoverageRadius;
-	// === END ADDED ===
 	
-	// === REMOVED: Proximity & Relevance -- dicabut total dari scoring objective
-	// non-RECON. Priority sekarang murni base value + enemy count + contested +
-	// friendly penalty + assigned penalty.
-	// === END REMOVED ===
-	
-	// === ADDED: Priority -- Proximity ===
 	[Attribute("2500.0", UIWidgets.EditBox, "Jarak (meter) dari commander di mana proximity bonus abis (0 di jarak ini, penuh di jarak 0).", category: "Priority")]
 	protected float m_fMaxRelevantDistance;
-	// === END ADDED ===
-	
 	
 	[Attribute("0", UIWidgets.ComboBox, "Tipe objective ini", "", ParamEnumArray.FromEnum(CMD_EObjectiveType))]
 	CMD_EObjectiveType m_eObjectiveType;
@@ -50,6 +40,10 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	
 	[Attribute("", UIWidgets.Auto, "Set Captured by Commander for this objective", category: "Objective")]
 	protected ref array<string> m_sCapturedCo;
+	
+	protected ref map<FactionKey, ref array<ref DCO_SectorGarrison>> m_mSectorGarrison = new map<FactionKey, ref array<ref DCO_SectorGarrison>>();
+	protected ref map<FactionKey, int>   m_mSectorCount  = new map<FactionKey, int>();
+	protected ref map<FactionKey, float> m_mSectorOffset = new map<FactionKey, float>();
 	
 	protected float m_fLastProgressTime   = 0.0;
 	protected float m_fStaleStartTime     = 0.0;
@@ -515,6 +509,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	{
 		int current = GetCurrentAssignedGroupCount(fk);
 		SetObjectiveGroup(fk, -current);
+		ClearSectorGrid(fk);
 	}
 
 	void StartCaptureTimer(FactionKey fk, float worldTime)
@@ -561,9 +556,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		}
 		return string.Empty;
 	}
-	
-	//! Faction key yang UDAH BERHASIL capture (owner objective ini SEKARANG).
-	//! Return string kosong kalau belum ada faction manapun yang capture.
+
 	FactionKey GetOwningFaction()
 	{
 		foreach (FactionKey key, bool captured : m_mIsCaptured)
@@ -573,9 +566,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		}
 		return string.Empty;
 	}
-	
-	//! Shortcut buat UI -- progress 0-100 (persen) buat faction yang LAGI capture
-	//! SAAT INI (GetActiveCapturingFaction()). Return 0 kalau gak ada yang lagi capture.
+
 	float GetActiveCaptureProgressPercent(float worldTime)
 	{
 		FactionKey activeFaction = GetActiveCapturingFaction();
@@ -623,11 +614,9 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		bool alreadyLost;
 		if (m_mLostStatus.Find(fk, alreadyLost) && alreadyLost)
 			return true;
-	
-		// === MODIFIED: Optimasi -- 1 query buat friendly+enemy sekaligus (radius sama) ===
+
 		int friendlyCount, enemyCount;
 		CountNearbyUnitsBoth(m_fRadius, fk, friendlyCount, enemyCount);
-		// === END MODIFIED ===
 		
 		if (friendlyCount == 0 && IsCapturedBy(fk, string.Empty))
 		{
@@ -685,12 +674,89 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 			m_mIsCaptured.Insert(fk, val);
 		else
 			m_mIsCaptured.Set(fk, val);
-
-		//Print("SET " + fk + " CAPTURE " + val);
 	}
  
 	bool IsGroupSlotFull(FactionKey fk)
 	{
 		return GetCurrentAssignedGroupCount(fk) >= GetRequiredGroupCount();
+	}
+	
+	bool HasSectorGrid(FactionKey fk)
+	{
+		return m_mSectorGarrison.Contains(fk);
+	}
+
+	array<ref DCO_SectorGarrison> GetSectorGarrison(FactionKey fk)
+	{
+		array<ref DCO_SectorGarrison> sectors;
+		if (m_mSectorGarrison.Find(fk, sectors))
+			return sectors;
+
+		return null;
+	}
+
+	int GetSectorCount(FactionKey fk)
+	{
+		int count;
+		if (m_mSectorCount.Find(fk, count))
+			return count;
+
+		return 0;
+	}
+
+	float GetSectorOffset(FactionKey fk)
+	{
+		float offset;
+		if (m_mSectorOffset.Find(fk, offset))
+			return offset;
+
+		return 0.0;
+	}
+
+	void InitSectorGrid(FactionKey fk, int count, float offset)
+	{
+		if (count <= 0)
+			return;
+
+		array<ref DCO_SectorGarrison> sectors = new array<ref DCO_SectorGarrison>();
+		for (int i = 0; i < count; i++)
+			sectors.Insert(new DCO_SectorGarrison(i));
+
+		m_mSectorGarrison.Set(fk, sectors);
+		m_mSectorCount.Set(fk, count);
+		m_mSectorOffset.Set(fk, offset);
+	}
+
+	int GetStaffedSectorCount(FactionKey fk)
+	{
+		array<ref DCO_SectorGarrison> sectors = GetSectorGarrison(fk);
+		if (!sectors)
+			return 0;
+
+		int n = 0;
+		foreach (DCO_SectorGarrison sec : sectors)
+		{
+			if (sec && sec.m_Group)
+				n++;
+		}
+
+		return n;
+	}
+
+	void ClearSectorGrid(FactionKey fk)
+	{
+		array<ref DCO_SectorGarrison> sectors = GetSectorGarrison(fk);
+		if (sectors)
+		{
+			foreach (DCO_SectorGarrison sec : sectors)
+			{
+				if (sec && sec.m_Waypoint)
+					SCR_EntityHelper.DeleteEntityAndChildren(sec.m_Waypoint);
+			}
+		}
+
+		m_mSectorGarrison.Remove(fk);
+		m_mSectorCount.Remove(fk);
+		m_mSectorOffset.Remove(fk);
 	}
 }

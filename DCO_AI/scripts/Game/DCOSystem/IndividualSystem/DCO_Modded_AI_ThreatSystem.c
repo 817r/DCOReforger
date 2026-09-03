@@ -4,7 +4,7 @@ modded class SCR_AIThreatSystem
 	
 	private static const float ENDANGERED_INCREMENT = 0.25;
 	
-	static const float VIGILANT_THRESHOLD = 0.3;
+	static const float VIGILANT_THRESHOLD = 0.4;
 	static const float ALERTED_THRESHOLD = 1;
 	static const float THREATENED_THRESHOLD = 2.2;
 	

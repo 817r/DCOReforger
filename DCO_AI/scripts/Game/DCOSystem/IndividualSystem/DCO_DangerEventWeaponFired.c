@@ -6,6 +6,15 @@ modded class SCR_AIDangerReaction_WeaponFired
 	protected static const float SUPPRESSED_ROLL_DIST_MAX = 150.0;
 	protected static const float SUPPRESSED_ROLL_CHANCE_AT_MIN = 0.35;
 	
+	protected static const float DODGE_CHANCE_FALLBACK      = 0.6;
+	protected static const float DODGE_COOLDOWN_FALLBACK    = 8.0;
+	protected static const float DODGE_MAX_DIST_FALLBACK    = 250.0;
+	protected static const float DODGE_SEARCH_DIST_FALLBACK = 30.0;
+
+	protected bool m_bScaleDodgeByPersonality = true;
+
+	protected static ref map<IEntity, float> s_mLastDodgeTime = new map<IEntity, float>();
+	
 	protected static const float coverSearchDistMax = 20;
 	
 	protected static const float COVER_QUERY_SECTOR_ANGLE_RAD  = 0.51 * Math.PI;
@@ -107,7 +116,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 				SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 
 				rq.m_eReason  = SCR_EAICombatMoveReason.STANDARD;
-				rq.m_vTargetPos = shotDir;
+				rq.m_vTargetPos = shotPos;
 				rq.m_vMovePos   = rq.m_vTargetPos;
 		
 				rq.m_bTryFindCover              = true;
@@ -189,11 +198,16 @@ modded class SCR_AIDangerReaction_WeaponFired
 			if (!ignoreGunshotHeard)
 			{
 				if (timeTillGunshotHeard_s < 0)
+				{
 					OnGunshotHeard(utility, distance, dangerEventCount, shotPos);
+					TryDodge(utility, shotPos, distance);
+				}
 				else
 				{
 					utility.GetCallqueue().CallLater(OnGunshotHeard, 1000*timeTillGunshotHeard_s, false,
 						utility, distance, dangerEventCount, shotPos);
+					utility.GetCallqueue().CallLater(TryDodge, 1000*timeTillGunshotHeard_s, false,
+						utility, shotPos, distance);
 				}
 			}
 
@@ -289,6 +303,139 @@ modded class SCR_AIDangerReaction_WeaponFired
 		foreach (IEntity ent : toRemove)
 		{
 			s_mLastInvestigateTime.Remove(ent);
+		}
+	}
+	
+	protected void TryDodge(SCR_AIUtilityComponent utility, vector shotPos, float distance)
+	{
+		if (!utility || !utility.m_OwnerEntity)
+			return;
+
+		DCO_AIConfigComponent cfg = utility.m_DCOConfig;
+
+		float maxDist    = DODGE_MAX_DIST_FALLBACK;
+		float cooldown_s = DODGE_COOLDOWN_FALLBACK;
+		float chance     = DODGE_CHANCE_FALLBACK;
+		bool  scalePers  = true;
+
+		if (cfg)
+		{
+			maxDist    = cfg.GetDodgeMaxDist();
+			cooldown_s = cfg.GetDodgeCooldown();
+			chance     = cfg.GetDodgeChance();
+			scalePers  = cfg.GetDodgeScaleByPersonality();
+		}
+
+		if (distance > maxDist)
+			return;
+
+		SCR_AICombatMoveState state = utility.m_CombatMoveState;
+		if (!state || state.IsExecutingRequest())
+			return;
+
+		if (cfg && cfg.IsHoldPosition())
+			return;
+
+		if (utility.m_AIInfo && utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
+			return;
+
+		if (state.IsInValidCover())
+			return;
+
+		if (!CanDodgeNow(utility.m_OwnerEntity, cooldown_s))
+			return;
+
+		MarkDodged(utility.m_OwnerEntity, cooldown_s);
+
+		if (scalePers)
+			chance *= DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(utility);
+
+		if (Math.RandomFloat01() >= Math.Clamp(chance, 0.0, 1.0))
+			return;
+
+		PushDodgeMove(utility, state, shotPos);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PushDodgeMove(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatMoveState state, vector shotPos)
+	{
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		
+		float searchDist = DODGE_SEARCH_DIST_FALLBACK;
+		if (utility.m_DCOConfig)
+			searchDist = utility.m_DCOConfig.GetDodgeSearchDist();
+
+		rq.m_fCoverSearchDistMin = 0;
+		rq.m_fCoverSearchDistMax = searchDist;
+		rq.m_fMoveDuration_s     = searchDist / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
+
+		rq.m_eReason    = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+		rq.m_vTargetPos = shotPos;
+		rq.m_vMovePos   = rq.m_vTargetPos;
+
+		rq.m_eType         = SCR_EAICombatMoveRequestType.BUILDING;
+		rq.m_bTryFindCover = true;
+		rq.m_bFailIfNoCover = false;
+
+		rq.m_bUseCoverSearchDirectivity = true;
+		rq.m_bCheckCoverVisibility = false;
+
+		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+
+		rq.m_eStanceMoving = ECharacterStance.STAND;
+		rq.m_eStanceEnd    = ECharacterStance.CROUCH;
+		rq.m_eMovementType = EMovementType.SPRINT;
+
+		rq.m_bAimAtTarget    = false;
+		rq.m_bAimAtTargetEnd = true;
+
+		rq.m_fCoverSearchDistMin = 0;
+		rq.m_fCoverSearchDistMax = searchDist;
+		rq.m_fMoveDuration_s     = searchDist / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
+
+		state.ApplyNewRequest(rq);
+	}
+
+	protected bool CanDodgeNow(IEntity entity, float cooldown_s)
+	{
+		if (!entity)
+			return false;
+
+		float lastTime_ms;
+		if (!s_mLastDodgeTime.Find(entity, lastTime_ms))
+			return true;
+
+		return (GetGame().GetWorld().GetWorldTime() - lastTime_ms) > (cooldown_s * 1000.0);
+	}
+
+	protected void MarkDodged(IEntity entity, float cooldown_s)
+	{
+		if (!entity)
+			return;
+
+		float now_ms = GetGame().GetWorld().GetWorldTime();
+		s_mLastDodgeTime.Set(entity, now_ms);
+
+		if (s_mLastDodgeTime.Count() > INVESTIGATE_MAP_PRUNE_THRESHOLD)
+			PruneDodgeMap(now_ms, cooldown_s);
+	}
+
+	protected void PruneDodgeMap(float now_ms, float cooldown_s)
+	{
+		float staleAge_ms = cooldown_s * 1000.0 * 2.0;
+
+		array<IEntity> toRemove = {};
+
+		foreach (IEntity ent, float lastTime_ms : s_mLastDodgeTime)
+		{
+			if (!ent || (now_ms - lastTime_ms) > staleAge_ms)
+				toRemove.Insert(ent);
+		}
+
+		foreach (IEntity ent : toRemove)
+		{
+			s_mLastDodgeTime.Remove(ent);
 		}
 	}
 }

@@ -2,7 +2,11 @@ SCR_BaseGameMode {
  ID "56B2B479C6B96951"
  components {
   DCO_GlobalAIComponent "{684A9572EB976348}" {
-   m_fAiPerception 1.1
+   m_fAiPerception 1.5
+   m_fTakeCoverChance 0.8
+   m_fDodgeChance 0.8
+   m_fDodgeMaxDist 400
+   m_fDodgeSearchDist 50
   }
  }
 }

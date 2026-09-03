@@ -21,6 +21,16 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	protected vector m_vAvoidStraightPathDir;
 	protected DCO_AIMoraleSystem moraleSystem;
 	
+	protected static const float CRITICAL_BID_COOLDOWN_MS   = 3000.0;
+	protected static const float CRITICAL_BUILDING_DIST_MAX = 60.0;
+	protected static const float CRITICAL_COVER_DIST_MAX    = 25.0;
+	
+	protected static const float ENGAGED_BID_COOLDOWN_MS = 3000.0;
+	protected static const float ENGAGED_COVER_DIST_MAX  = 18.0;
+	
+	protected float m_fNextEngagedBid_ms = -1;
+	protected float m_fNextCriticalBid_ms = -1;
+	
 	//--------------------------------------------------------------------------------------------
 	protected override bool OnUpdate(AIAgent owner, float dt)
 	{
@@ -69,6 +79,62 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			return false;
 		
 		return m_Target.GetDistance() < INVESTIGATE_MAX_DIST;
+	}
+	
+	protected bool CriticalBoundCooldownReady()
+	{
+	    return GetGame().GetWorld().GetWorldTime() >= m_fNextCriticalBid_ms;
+	}
+	
+	protected void PushRequestCriticalBound()
+	{
+	    SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+	
+	    rq.m_eReason    = SCR_EAICombatMoveReason.STANDARD;
+	    rq.m_vTargetPos = ResolveRequestTargetPos();
+	    rq.m_vMovePos   = rq.m_vTargetPos;
+	
+	    rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+	    rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+	
+	    rq.m_eStanceMoving = ECharacterStance.STAND;
+	    rq.m_eStanceEnd    = ECharacterStance.CROUCH;
+	    rq.m_eMovementType = EMovementType.SPRINT;
+	
+	    rq.m_bAimAtTarget    = false;
+	    rq.m_bAimAtTargetEnd = true;
+	
+	    rq.m_bUseCoverSearchDirectivity = true;
+	    rq.m_bCheckCoverVisibility      = true;
+	    rq.m_bFailIfNoCover             = false;
+	
+	    bool buildingExhausted = m_State.GetOldRequest()
+	        && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND;
+	
+	    float searchDistMax;
+	    if (buildingExhausted)
+	    {
+	        rq.m_eType         = SCR_EAICombatMoveRequestType.MOVE;
+	        rq.m_bTryFindCover = true;
+	        searchDistMax      = CRITICAL_COVER_DIST_MAX;
+	    }
+	    else
+	    {
+	        // Tahap 1: gedung terdekat.
+	        rq.m_eType         = SCR_EAICombatMoveRequestType.BUILDING;
+	        rq.m_bTryFindCover = false;
+	        searchDistMax      = CRITICAL_BUILDING_DIST_MAX;
+	    }
+	
+	    rq.m_fCoverSearchDistMin = 0;
+	    rq.m_fCoverSearchDistMax = searchDistMax;
+	    rq.m_fMoveDuration_s     = searchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
+	
+	    rq.GetOnMovementStarted().Insert(OnMovementStarted);
+	    rq.GetOnCompleted().Insert(OnMovementCompleted);
+	
+	    m_fNextCriticalBid_ms = GetGame().GetWorld().GetWorldTime() + CRITICAL_BID_COOLDOWN_MS;
+	    m_State.ApplyNewRequest(rq);
 	}
 	
 	protected override vector ResolveRequestTargetPos()
@@ -802,26 +868,44 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			{
 				if (IsCriticalCombatMoment())
 				{
-					ECharacterStance criticalStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
-					criticalStance = DCO_MoraleCombatUtility.ApplyMoraleStanceOverride(criticalStance, moraleSystem);
-					if (criticalStance > m_eStance)
-						m_State.ApplyRequestChangeStanceOutsideCover(criticalStance);
+				    if (CriticalBoundCooldownReady())
+				    {
+				        PushRequestCriticalBound();
+				    }
+				    else
+				    {
+				        // Cuma jeda antar-bid: nunduk sambil nunggu, bukan lagi respons default.
+				        ECharacterStance criticalStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
+				        criticalStance = DCO_MoraleCombatUtility.ApplyMoraleStanceOverride(criticalStance, moraleSystem);
+				        if (criticalStance > m_eStance)
+				            m_State.ApplyRequestChangeStanceOutsideCover(criticalStance);
+				    }
 				}
 				else
 				{
-					float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
-					bool shouldStayEngaged = m_Target && m_fTargetDist <= optimalDist * 1.2 && m_Target.GetTimeSinceSeen() < 5.0;
-	
-					float takeCoverChance = 0.7;
-					if (m_Utility && m_Utility.m_DCOConfig)
-						takeCoverChance = m_Utility.m_DCOConfig.GetTakeCoverChance();
-					takeCoverChance = Math.Clamp(takeCoverChance * DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(m_Utility), 0.0, 1.0);
+				    if (GetGame().GetWorld().GetWorldTime() >= m_fNextEngagedBid_ms)
+				    {
+				        float takeCoverChance = 0.7;
+				        if (m_Utility && m_Utility.m_DCOConfig)
+				            takeCoverChance = m_Utility.m_DCOConfig.GetTakeCoverChance();
+				        takeCoverChance = Math.Clamp(takeCoverChance * DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(m_Utility), 0.0, 1.0);
 				
-					if (shouldStayEngaged && Math.RandomFloat01() < takeCoverChance)
-					{
-						if (!m_State.IsExecutingRequest())
-							PushRequestOpenArea();
-					}
+				        if (Math.RandomFloat01() < takeCoverChance)
+				        {
+				            float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
+				            bool contactFresh = m_Target && m_Target.GetTimeSinceSeen() < 5.0;
+				            bool inEngagementRange = m_Target && m_fTargetDist <= optimalDist * 1.2;
+				
+				            if (contactFresh && inEngagementRange)
+				                PushRequestEngagedBound();
+				            else
+				                PushRequestOpenArea();
+				        }
+				        else
+				        {
+				            m_fNextEngagedBid_ms = GetGame().GetWorld().GetWorldTime() + ENGAGED_BID_COOLDOWN_MS;
+				        }
+				    }
 				}
 			}			
 
@@ -838,6 +922,48 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		
 		return ENodeResult.RUNNING;
 	}
+
+	protected void PushRequestEngagedBound()
+	{
+	    SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+	
+	    rq.m_eReason    = SCR_EAICombatMoveReason.STANDARD;
+	    rq.m_vTargetPos = ResolveRequestTargetPos();
+	    rq.m_vMovePos   = rq.m_vTargetPos;
+	
+	    if (Math.RandomIntInclusive(0, 1) == 0)
+	        rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+	    else
+	        rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+	
+	    rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+	
+	    rq.m_eStanceMoving = ECharacterStance.CROUCH;
+	    rq.m_eStanceEnd    = ECharacterStance.CROUCH;
+	    rq.m_eMovementType = EMovementType.RUN;
+	
+	    rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
+	        DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
+	        IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
+	        moraleSystem);
+	    rq.m_bAimAtTargetEnd = true;
+	
+	    rq.m_eType         = SCR_EAICombatMoveRequestType.MOVE;
+	    rq.m_bTryFindCover = true;
+	    rq.m_bUseCoverSearchDirectivity = true;
+	    rq.m_bCheckCoverVisibility      = true;
+	    rq.m_bFailIfNoCover             = false;
+	
+	    rq.m_fCoverSearchDistMin = 0;
+	    rq.m_fCoverSearchDistMax = ENGAGED_COVER_DIST_MAX;
+	    rq.m_fMoveDuration_s     = (ENGAGED_COVER_DIST_MAX / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN) * MoraleAmplifyMove();
+	
+	    rq.GetOnMovementStarted().Insert(OnMovementStarted);
+	    rq.GetOnCompleted().Insert(OnMovementCompleted);
+	
+	    m_fNextEngagedBid_ms = GetGame().GetWorld().GetWorldTime() + ENGAGED_BID_COOLDOWN_MS;
+	    m_State.ApplyNewRequest(rq);
+	}
 	
 	override protected bool SuppressedInCoverCondition()
 	{
@@ -849,7 +975,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	
 	protected bool IsCriticalCombatMoment()
 	{
-		return m_eThreatState == EAIThreatState.THREATENED;
+	    return m_eThreatState == EAIThreatState.THREATENED;
+	}
+	
+	protected bool IsEngagedCombatMoment()
+	{
+	    return m_eThreatState >= EAIThreatState.ALERTED;
 	}
 	
 	float MoraleAmplifyMove()
@@ -905,9 +1036,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				}
 			}
 			
-			//rq.m_eMovementType = EMovementType.WALK;
-			// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving -- BREAK
-			// gak sempet aim-while-moving walau secara teknis diizinin ===
 			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
 				DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 				IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
@@ -1045,6 +1173,16 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 
 		
 		m_State.ApplyNewRequest(rq);
+	}
+	
+	protected bool IsOnCohessionSquad()
+	{
+		AIAgent agent = m_Utility.GetAIAgent();
+		AIGroup group = agent.GetParentGroup();
+		
+		
+		
+		return false;
 	}
 	
 	//--------------------------------------------------------------------------------------------

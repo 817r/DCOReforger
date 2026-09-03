@@ -29,22 +29,28 @@ class DCO_AIConfigComponent : ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "How Suppression Affecting this AI", params: "0 2 0.01" )]
 	protected float m_fSuppressionEffect;
 	
-	// === ADDED: Take Cover Chance ===
 	[Attribute("0.7", UIWidgets.Range, "Base chance AI mau aktif nyari cover pas ke-detect di tempat terbuka (0-1)", params: "0 1 0.01" )]
 	protected float m_fTakeCoverChance;
-	// === END ADDED ===
+
+	[Attribute("0.6", UIWidgets.Range, "Peluang AI ini dodge tiap kali denger tembakan (0-1)", params: "0 1 0.05")]
+	protected float m_fDodgeChance;
 	
-	// === ADDED: Personality System ===
+	[Attribute("8.0", UIWidgets.Slider, "Cooldown (detik) sebelum AI ini boleh dodge lagi", params: "0 120 0.5")]
+	protected float m_fDodgeCooldown;
+	
+	[Attribute("250.0", UIWidgets.Slider, "Jarak maksimum (m) tembakan yang masih memicu dodge", params: "0 1000 5")]
+	protected float m_fDodgeMaxDist;
+	
+	[Attribute("30.0", UIWidgets.Slider, "Jarak pencarian bangunan/cover saat dodge", params: "5 100 1")]
+	protected float m_fDodgeSearchDist;
+	
+	[Attribute("1", UIWidgets.CheckBox, "Skala peluang dodge pakai personality AI ini")]
+	protected bool m_bDodgeScaleByPersonality;
+	
 	[Attribute("1", UIWidgets.ComboBox, "AI Personality -- gimana gaya combat AI ini, orthogonal dari skill", "", ParamEnumArray.FromEnum(DCO_EAIPersonality))]
 	protected DCO_EAIPersonality m_ePersonality;
-	// === END ADDED ===
-	
-	// === ADDED: Hold Position ===
-	// Kalau true, AI ini gak akan generate combat-move request baru sama sekali --
-	// dia diem di posisi sekarang. Di-toggle via ToggleHoldPosition() (dipanggil dari
-	// trigger UI-nya -- context menu/radial command, dsb).
+
 	protected bool m_bHoldPosition = false;
-	// === END ADDED ===
 	
 	//------------------------------------------------------------------------------------------------
 	override void OnPostInit(IEntity owner)
@@ -66,20 +72,69 @@ class DCO_AIConfigComponent : ScriptComponent
 		m_fTimeToMaxAccuracy = settings.GetAccuracyTime();
 		m_eAISkillDefault = settings.GetAISkill();
 		m_fVehicleDismountDanger = settings.GetDismountDistance();
-		// === ADDED: m_fSuppressionEffect sebelumnya gak ikut di-sync dari Global sama
-		// sekali (fieldnya ada tapi gak pernah diisi dari default) ===
 		m_fSuppressionEffect = settings.GetSuppressionEffect();
-		// === END ADDED ===
-		// === ADDED: Take Cover Chance ===
 		m_fTakeCoverChance = settings.GetTakeCoverChance();
-		// === END ADDED ===
-		// === MODIFIED: Personality System -- sebelumnya full-random uniform (Math.
-		// RandomInt, 25% rata tiap tipe), sekarang weighted lewat Global (feedback
-		// player: kebanyakan CAUTIOUS/AGGRESSIVE, harusnya mayoritas STANDARD).
-		// Bobotnya configurable di DCO_GlobalAIComponent, gak hardcode di sini.
 		m_ePersonality = settings.RollWeightedPersonality();
-		// === END MODIFIED ===
-		
+		m_fDodgeChance             = settings.GetDodgeChance();
+		m_fDodgeCooldown           = settings.GetDodgeCooldown();
+		m_fDodgeMaxDist            = settings.GetDodgeMaxDist();
+		m_fDodgeSearchDist         = settings.GetDodgeSearchDist();
+		m_bDodgeScaleByPersonality = settings.GetDodgeScaleByPersonality();
+	}
+	
+	float GetDodgeChance()            
+	{ 
+		return m_fDodgeChance; 
+	}
+	
+	float SetDodgeChance(float f)     
+	{ 
+		m_fDodgeChance = f; 
+		return m_fDodgeChance; 
+	}
+	
+	float GetDodgeCooldown()          
+	{ 
+		return m_fDodgeCooldown; 
+	}
+	
+	float SetDodgeCooldown(float f)   
+	{ 
+		m_fDodgeCooldown = f; 
+		return m_fDodgeCooldown; 
+	}
+	
+	float GetDodgeMaxDist()           
+	{ 
+		return m_fDodgeMaxDist; 
+	}
+	
+	float SetDodgeMaxDist(float f)    
+	{ 
+		m_fDodgeMaxDist = f; 
+		return m_fDodgeMaxDist; 
+	}
+	
+	float GetDodgeSearchDist()        
+	{ 
+		return m_fDodgeSearchDist; 
+	}
+	
+	float SetDodgeSearchDist(float f) 
+	{ 
+		m_fDodgeSearchDist = f; 
+		return m_fDodgeSearchDist; 
+	}
+	
+	bool GetDodgeScaleByPersonality()       
+	{ 
+		return m_bDodgeScaleByPersonality; 
+	}
+	
+	bool SetDodgeScaleByPersonality(bool b) 
+	{ 
+		m_bDodgeScaleByPersonality = b; 
+		return m_bDodgeScaleByPersonality; 
 	}
 	
 	DCO_AISKILL SetAISkill(DCO_AISKILL ski)

@@ -59,6 +59,8 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 
 		if (!state || !charCon)
 			return false;
+		
+		Print("PROJECTILE HIT CHECK PASS");
 
 		vector shooterPos      = shooter.GetOrigin();
 		float  distanceToDanger = Math.Sqrt(distanceToDangerSq);
@@ -114,7 +116,8 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			&& distanceToDanger < IMPACT_DIST_POINT_BLANK
 			&& bulletCount > thrRepoNoTarget)
 		{
-			for (int i = 0; i < PRONE_ROLL_ATTEMPTS; i++)
+			int rollAttempt = PRONE_ROLL_ATTEMPTS * Math.RandomInt(1,3);
+			for (int i = 0; i < rollAttempt; i++)
 			{
 				if (Math.RandomIntInclusive(0, 1) == 0)
 					charCon.SetRoll(1);

@@ -1,11 +1,86 @@
 modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 {
+	protected static const float OBSERVE_DURATION_MIN_S = 1.0;
+
+	void ~SCR_AIObserveThreatSystemBehavior()
+	{
+		if (!m_Utility || !m_Utility.m_SectorThreatFilter)
+			return;
+
+		m_Utility.m_SectorThreatFilter.GetOnEscalationInvoker().Remove(OnThreatSectorEscalation);
+		m_Utility.m_SectorThreatFilter.GetOnMajorSectorChangedInvoker().Remove(OnMajorSectorChanged);
+		m_Utility.m_SectorThreatFilter.GetOnDamageTaken().Remove(OnDamageTaken);
+	}
+
+	override void OnMajorSectorChanged(SCR_AISectorThreatFilter ts, int newSectorId, int oldSectorId, float dangerValue)
+	{
+		if (newSectorId != -1 && newSectorId != oldSectorId)
+			m_iCurrentSectorObserveCounter = 0;
+
+		super.OnMajorSectorChanged(ts, newSectorId, oldSectorId, dangerValue);
+	}
+
+	override protected void SwitchToHighPriorityState(float duration_s)
+	{
+		if (duration_s <= 0)
+			duration_s = OBSERVE_DURATION_MIN_S;
+
+		super.SwitchToHighPriorityState(duration_s);
+	}
+
+	override protected float CalculateObserveDuration(int sectorId)
+	{
+		float duration_s = super.CalculateObserveDuration(sectorId);
+
+		duration_s *= DCO_PersonalityCombatUtility.GetObserveDurationScale(m_Utility);
+		duration_s *= DCO_MoraleCombatUtility.GetObserveDurationScale(m_Utility.GetMoraleSystem());
+
+		if (duration_s < OBSERVE_DURATION_MIN_S)
+			duration_s = OBSERVE_DURATION_MIN_S;
+
+		return duration_s;
+	}
+	
 	override void OnActionExecuted()
 	{
 		if (!m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
 			m_CombatMoveLogic.Update();
 		else if (m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET))
 			VehicleObserve();
+	}
+	
+	override float CustomEvaluate()
+	{
+		if (!m_bBehaviorActive)
+			return 0;
+		
+		// Makes no sense for driver
+		if (m_Utility.m_AIInfo.HasUnitState(EUnitState.PILOT))
+			return 0;
+		
+		if (m_fHighPriorityDuration_s != 0)
+		{
+			WorldTimestamp timestamp = GetGame().GetWorld().GetTimestamp();
+			float highPriorityTimePassed_s = timestamp.DiffSeconds(m_TimestampStartHighPriorityState);
+			if (highPriorityTimePassed_s > m_fHighPriorityDuration_s)
+			{
+				m_iCurrentSectorObserveCounter++;
+				StopHighPriorityState();
+			}
+		}
+
+		if (m_fHighPriorityDuration_s != 0)
+			return PRIORITY_BEHAVIOR_OBSERVE_THREATS_HIGH_PRIORITY;
+
+		if (m_Utility.ShouldKeepFormation())
+		{
+			if (!m_Utility.GetSubformationLeaderMoving() && m_Utility.GetNearSubformationLeader())
+				return PRIORITY_BEHAVIOR_OBSERVE_THREATS_LOW_PRIORITY;
+			else
+				return 0;
+		}
+		else
+			return PRIORITY_BEHAVIOR_OBSERVE_THREATS_LOW_PRIORITY;
 	}
 	
 	void VehicleObserve()

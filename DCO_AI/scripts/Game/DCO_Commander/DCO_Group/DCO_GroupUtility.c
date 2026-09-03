@@ -36,7 +36,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	protected DCOG_EGroupStatus m_eGroupStatus = DCOG_EGroupStatus.IDLE;
 	
 	[Attribute("0", UIWidgets.SearchComboBox, "", enums: ParamEnumArray.FromEnum(CMD_EGroupRole))]
-	protected CMD_EGroupRole m_eUnitCapabilities;
+	protected CMD_EGroupRole m_eGroupRoleExternal;
 	
 	[Attribute("", UIWidgets.Auto, "Blacklisted Commander to not process this Group", category: "Commander")]
 	protected ref array<string> m_sBlacklistedCo;
@@ -497,6 +497,43 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		
 		return IsPlayerGroup;
 	}
+	
+	void MoveToRoute(notnull array<SCR_AIWaypoint> wps, float worldTime)
+	{
+		if (!m_Group || wps.IsEmpty())
+			return;
+
+		float routeLength = 0.0;
+		vector prev  = GetOwner().GetOrigin();
+		vector final = prev;
+		int added = 0;
+
+		foreach (SCR_AIWaypoint wp : wps)
+		{
+			if (!wp)
+				continue;
+
+			m_Group.AddWaypoint(wp);
+
+			vector wpPos = wp.GetOrigin();
+			routeLength += vector.Distance(prev, wpPos);
+			prev  = wpPos;
+			final = wpPos;
+			added++;
+		}
+
+		if (added == 0)
+			return;
+
+		SetGroupStatus(DCOG_EGroupStatus.EXECUTING_COMMAND);
+
+		m_vOrderTarget    = final;
+		m_fOrderStartTime = worldTime;
+		m_bOrderActive    = true;
+		m_fOrderTimeout   = (routeLength / AVG_MOVE_SPEED_MPS) + ORDER_BASE_BUFFER;
+		m_vLastCheckPos   = vector.Zero;
+		m_fLastMoveTime   = 0.0;
+	}
 
 	override void EOnInit(IEntity owner)
 	{
@@ -509,8 +546,8 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		
 		SCR_AIGroup grp = SCR_AIGroup.Cast(owner);
 		
-		if (!m_eUnitCapabilities == CMD_EGroupRole.NONE)
-			SetGroupRole(m_eUnitCapabilities);
+		if (!m_eGroupRoleExternal == CMD_EGroupRole.NONE)
+			SetGroupRole(m_eGroupRoleExternal);
 		else
 			SetGroupRole(CMD_EGroupRole.NONE);
 		

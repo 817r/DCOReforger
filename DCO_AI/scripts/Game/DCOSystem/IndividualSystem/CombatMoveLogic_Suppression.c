@@ -27,11 +27,15 @@ modded class SCR_AICombatMoveLogic_Suppressive
 	//--------------------------------------------------------------------------------------------
 	protected override bool ResolveFailMoveIfNoCover()
 	{
+		// === FIXED: request tipe BUILDING mematikan m_bTryFindCover. Mewajibkan cover
+		// di situ = request yang dijamin gagal -- dua flag saling meniadakan. Ini
+		// dicek DULUAN supaya menang atas dua kondisi di bawahnya.
+		if (m_State && m_State.IsMovingToBuilding())
+			return false;
+		// === END FIXED ===
+		
 		// Don't move out of cover if we already have good vision from current cover
 		if (m_bGoodVision)
-			return true;
-		
-		if (m_State && m_State.IsMovingToBuilding())
 			return true;
 		
 		if (m_Utility.m_ThreatSystem.GetState() >= EAIThreatState.ALERTED)
@@ -54,17 +58,15 @@ modded class SCR_AICombatMoveLogic_Suppressive
 				longWaitTime = true;
 		}
 		if (longWaitTime)
-			waitTime *= 2;
-		
-		// === ADDED: samain sama Attack -- morale measure nambah wait time (morale
-		// tinggi/tertekan = lebih lama diem/hesitant sebelum gerak lagi).
-		float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 1, 2.5);
-		waitTime += mult;
-		// === END ADDED ===
-		
-		// === ADDED: Personality System ===
+			waitTime *= 4;
+
+		if (moraleSystem)
+		{
+			float mult = Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 1, 2.5);
+			waitTime += mult;
+		}
+
 		waitTime *= DCO_PersonalityCombatUtility.GetStoppedWaitTimeScale(m_Utility);
-		// === END ADDED ===
 		
 		return waitTime;
 	}
@@ -81,11 +83,10 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		rq.m_bTryFindCover = true;
 		rq.m_bUseCoverSearchDirectivity = true;
 		
-		// === ADDED: Concealment-seeking pas exposed (samain sama Attack) ===
 		bool isExposed = DCO_ConcealmentUtility.IsPositionExposed(m_MyEntity.GetOrigin(), m_MyEntity);
 		if (isExposed)
 			rq.m_bUseCoverSearchDirectivity = false;
-		// === END ADDED ===
+		
 		rq.m_bCheckCoverVisibility = true;
 
 		float coverSearchDistMin = 5;
@@ -103,7 +104,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 					rq.m_eStanceEnd = ECharacterStance.PRONE;
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 10.0;
-					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
+					moveDurationMax = coverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
 					rq.m_eMovementType = EMovementType.RUN;
 					break;
 				}
@@ -113,7 +114,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 10.0;
-					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
+					moveDurationMax = coverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
 					rq.m_eMovementType = EMovementType.RUN;
 					break;
 				}
@@ -123,14 +124,12 @@ modded class SCR_AICombatMoveLogic_Suppressive
 					rq.m_eStanceEnd = ECharacterStance.CROUCH;
 					coverSearchDistMin = 5.0;
 					coverSearchDistMax = 15.0;
-					moveDurationMax = rq.m_fCoverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
+					moveDurationMax = coverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_RUN;
 					rq.m_eMovementType = EMovementType.RUN;
 					break;
 				}
 			}
 			
-			//rq.m_eMovementType = EMovementType.WALK;
-			// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving ===
 			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
 				DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 				IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
@@ -139,7 +138,6 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		}
 		else
 		{
-			// Long range combat
 			
 			switch (m_eThreatState)
 			{
@@ -175,14 +173,12 @@ modded class SCR_AICombatMoveLogic_Suppressive
 				}
 			}
 			
-			//rq.m_eMovementType = EMovementType.RUN;
-			// === MODIFIED: dibungkus DCO_MoraleCombatUtility.CanAimWhileMoving ===
 			rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
 				DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection) &&
 				IsAimingAndMovingAllowedForWeapon(m_eWeaponType),
 				moraleSystem);
 			rq.m_bAimAtTargetEnd = true;
-		}
+		}			
 		
 		if (m_State.GetOldRequest() && m_State.GetOldRequest().m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
 			rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
@@ -191,11 +187,9 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			rq.m_eType = SCR_EAICombatMoveRequestType.BUILDING;
 			rq.m_bTryFindCover = false;
 		}
-			
 		
 		rq.m_bFailIfNoCover = ResolveFailMoveIfNoCover();
 		
-		// If we are not in cover, min cover search distance is overridden to 0, we should find any cover ASAP
 		if (!m_State.m_bInCover)
 			coverSearchDistMin = 3;
 		
@@ -206,37 +200,30 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		}
 		
 		rq.m_fCoverSearchDistMin = coverSearchDistMin;
-		// === ADDED: samain sama Attack -- morale scaling buat cover search radius & move duration.
-		// Suppression class ini sebelumnya gak punya morale hook di sini sama sekali.
-		coverSearchDistMax *= DCO_MoraleCombatUtility.GetCoverSearchDistScale(moraleSystem);
-		// === ADDED: perlebar radius search kalau exposed ===
+		coverSearchDistMax *= DCO_MoraleCombatUtility.GetCoverSearchDistScale(moraleSystem, m_Utility);
+		
 		if (isExposed)
-			coverSearchDistMax *= 1.5;
-		// === END ADDED ===
+			coverSearchDistMax *= 2;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
 		rq.m_fMoveDuration_s = moveDurationMax * MoraleAmplifyMove();
-		// === END ADDED ===
-		
-		// Subscribe to events
-		// We will pronounce voice lines once we start or end moving
+
 		rq.GetOnMovementStarted().Insert(OnMovementStarted);
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
 		
 		m_State.ApplyNewRequest(rq);
 	}
 	
-	// === ADDED: sebelumnya gak ada di Suppression (cuma ada di Attack). Dipakai di
-	// PushRequestMove buat scale move duration berdasarkan morale.
 	float MoraleAmplifyMove()
 	{
+		if (!moraleSystem)
+			return 1.0;
+		
 		return Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 2, 1);
 	}
-	// === END ADDED ===
 	
 	void MoraleAndThreatPushMove(out SCR_EAICombatMoveDirection moveDir)
 	{
-		float moveDurationMax;
-		
+		moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 		
 		switch (m_eThreatState)
 		{
@@ -251,7 +238,10 @@ modded class SCR_AICombatMoveLogic_Suppressive
 					}
 					case moraleState.MANIAC:
 					{
-						moveDir = SCR_EAICombatMoveDirection.BACKWARD;
+						if (Math.RandomIntInclusive(0,1) == 1)
+							moveDir = SCR_EAICombatMoveDirection.LEFT;
+						else
+							moveDir = SCR_EAICombatMoveDirection.RIGHT;
 						break;					
 					}
 					case moraleState.ANXIOUS:
@@ -440,16 +430,9 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		
 		if (!wp || SCR_EntityWaypoint.Cast(wp))
 		{
-			// No waypoint, or it's an entity-associated waypoint, like Follow waypoint.
-			// Therefore use standard movement logic.
-			// Otherwise they will want to run towards position where the waypoint is placed, which makes no sense.
-			// === REACTIVATED & FIXED: cohesion check (sama pola kayak Attack) ===
 			if (agent != group.GetLeaderAgent() && vector.Distance(group.GetLeaderEntity().GetOrigin(), m_MyEntity.GetOrigin()) > 50)
 			{
-				RandomGenerator cohesionRand = new RandomGenerator();
-				vector mp = cohesionRand.GenerateRandomPointInRadius(0, 30, group.GetLeaderEntity().GetOrigin(), false);
-				mp[1] = GetGame().GetWorld().GetSurfaceY(mp[0], mp[2]);
-				movePos = mp;
+				movePos = group.GetLeaderEntity().GetOrigin();
 				eDirection = SCR_EAICombatMoveDirection.FORWARD;
 				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 				avoidStraightPathDir = vector.Zero;
@@ -458,8 +441,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			{
 				movePos = targetPos;
 				MoraleAndThreatPushMove(eDirection);
-				//eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS; // Move to target
-				avoidStraightPathDir = GetAvoidStraightPathDir(); // Use flanking
+				avoidStraightPathDir = GetAvoidStraightPathDir();
 				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 			}
 		}
@@ -519,10 +501,8 @@ modded class SCR_AICombatMoveLogic_Suppressive
 	//--------------------------------------------------------------------------------------------
 	protected override bool MoveToNextPosCondition()
 	{	
-		// === ADDED: Hold Position ===
 		if (m_Utility && m_Utility.m_DCOConfig && m_Utility.m_DCOConfig.IsHoldPosition())
 			return false;
-		// === END ADDED ===
 		
 		if (m_State.IsExecutingRequest())
 			return false;
@@ -532,36 +512,23 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			// We have good vision and we are in cover, just stay here
 			return false;
 		}
-		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
 		
-		// If vision is bad, move out until we have good visibility
-		// Here we operate with visibility of the suppression volume, still concept is same as during normal attack.
-		// Most important thing is to exit area with poor vision of target, but beyond that we don't need to move.
-		if (!m_bGoodVision || (m_bGoodVision && !m_State.m_bInCover) || (m_fTargetLastSeenTime_ms == 0))
+		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);	
+
+		if (IsFirstExecution() && !m_State.m_bInCover)
+			return true;
+
+		if (m_Utility.GetCharacterController().GetWeaponObstructedState() != EWeaponObstructedState.UNOBSTRUCTED)
 		{
-			// If it's first run, ignore timers, only if:
-			// - If we are not in cover.
-			if (IsFirstExecution() && !m_State.m_bInCover)
-				return true;
-			
-			if (!m_State.IsExecutingRequest())
-			{
-				if (m_Utility.GetCharacterController().GetWeaponObstructedState() != EWeaponObstructedState.UNOBSTRUCTED)
-				{
-					if (m_CharacterController.GetStance() == ECharacterStance.CROUCH)
-						m_CharacterController.SetStanceChange(1);
-					else if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
-						m_CharacterController.SetStanceChange(2);
-					else
-						return 2 > stoppedWaitTime;
-				}
-			}
-			
-			
-			return m_State.m_fTimerStopped_s > stoppedWaitTime;
+			if (m_CharacterController.GetStance() == ECharacterStance.CROUCH)
+				m_CharacterController.SetStanceChange(1);
+			else if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
+				m_CharacterController.SetStanceChange(2);
+			else
+				return m_State.m_fTimerStopped_s > 2;
 		}
 		
-		return false;
+		return m_State.m_fTimerStopped_s > stoppedWaitTime;
 	}
 	
 	//--------------------------------------------------------------------------------------------

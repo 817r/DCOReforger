@@ -1,32 +1,6 @@
 [ComponentEditorProps(category: "GameScripted/Commander", description: "Handles enemy contact response and reinforcement")]
 class CMD_ThreatResponseComponentClass : ScriptComponentClass {}
 
-// === REWRITE NOTES ===
-// Overhaul total dari versi sebelumnya. Perubahan arsitektur utama:
-//
-// 1. THREAT CLUSTERING -- tiap Think() cycle, m_aThreats di-grouping jadi cluster
-//    (flood-fill by m_fClusterRadius, transitif -- bukan cuma pairwise kayak
-//    MergeNearbyThreats yang radiusnya lebih kecil buat dedup laporan yang sama).
-//    Semua keputusan respons aktif (reinforcement, counter-flank, artillery)
-//    dievaluasi di level CLUSTER AGGREGATE, bukan per-entry individual.
-// 2. "Kalo ga begitu bahaya ya gak usah dikirim" -- cluster yang combined score-nya
-//    di bawah m_fClusterMinResponseScore di-skip total, gak ada respons aktif sama
-//    sekali (recon tetep jalan per-entry, karena itu soal ngumpulin info, bukan
-//    eskalasi kekuatan).
-// 3. Reinforcement & counter-flank sekarang OTOMATIS ke-trigger dari Think() lewat
-//    cluster (sebelumnya reinforcement CUMA bisa lewat ReceiveReinforcementRequest
-//    eksternal yang gak pernah dipanggil dari manapun -- itu bug utama kenapa
-//    "gak jalan").
-// 4. Artillery juga otomatis dari cluster (TrySendClusterArtillery), milih shell
-//    type berdasarkan kondisi cluster: intel basi -> SMOKE, CRITICAL/HIGH + intel
-//    fresh + gak ada friendly deket -> HIGH_EXPLOSIVE, MEDIUM ke bawah -> skip
-//    (biar reinforcement aja yang handle).
-// 5. Dispersion calculation duplikat (yang sebelumnya dead code, dihitung tapi gak
-//    pernah kepake) DIHAPUS dari file ini. CMD_ArtillerySupport sekarang jadi
-//    SATU-SATUNYA source of truth buat dispersion/accuracy tembakan beneran.
-// 6. Friendly-fire safety check (HasFriendlyNearPosDefault) sekarang BENERAN
-//    dipanggil sebelum artillery dikirim (sebelumnya dead, gak pernah di-wire).
-// === END REWRITE NOTES ===
 class CMD_ThreatResponseComponent : ScriptComponent
 {
 	[Attribute("30.0", UIWidgets.EditBox, "Score minimum untuk kirim reinforcement biasa", category: "Threat")]
@@ -70,11 +44,8 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	[Attribute("0.5", UIWidgets.Range, "Akurasi artillery untuk request manual/langsung (0–1)", params: "0 1 0.01", category: "Artillery")]
 	protected float m_fArtilleryAccuracy;
 
-	// === ADDED: cooldown khusus artillery per-cluster, terpisah dari reinforcement
-	// cooldown -- artillery harusnya lebih jarang/berat daripada kirim reinforcement ===
 	[Attribute("90.0", UIWidgets.EditBox, "Cooldown (detik) artillery per-cluster", category: "Artillery")]
 	protected float m_fArtilleryCooldown;
-	// === END ADDED ===
 
 	//--------------------------------------------------------------------
 	protected AICommander_BaseComponent          m_Commander;
@@ -92,16 +63,12 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 		float worldTime = report.m_fReportTime;
 
-		// === ADDED: Report Quality -- jarak grup pelapor (spotter) ke posisi target
-		// pas laporan ini dibuat. Deket = laporan jelas/reliable, jauh = perkiraan
-		// kasar. Ini basis "akurasi intel" buat artillery (Bagian 1).
-		float reportQuality = 0.7; // default netral kalau grp entah kenapa null
+		float reportQuality = 0.7;
 		if (grp && grp.GetOwner())
 		{
 			float spotDistance = vector.Distance(grp.GetOwner().GetOrigin(), report.m_vPosition);
 			reportQuality = ComputeReportQuality(spotDistance);
 		}
-		// === END ADDED ===
 
 		CMD_ThreatEntry existing = FindNearbyThreat(report.m_vPosition);
 		if (existing)
@@ -111,7 +78,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 			existing.m_fLastUpdateTime      = worldTime;
 			existing.m_bNeedsRecon          = false;
 			existing.m_bReconSent           = false;
-			existing.m_fReportQuality       = reportQuality; // update ke laporan terbaru
+			existing.m_fReportQuality       = reportQuality;
 			return;
 		}
 
@@ -120,25 +87,18 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		m_aThreats.Insert(entry);
 	}
 	
-	// === ADDED: Report Quality helper ===
-	//! Konversi jarak spotter->target jadi skor quality 0.2-1.0. Deket (<=50m) =
-	//! quality penuh, jauh (>=400m) = quality minimum, linear di antaranya.
-	// === MODIFIED: Time of Day -- sekarang digabung sama faktor waktu (pagi/siang/
-	// sore/malem). Laporan siang bolong (deket solar noon) paling akurat, laporan
-	// pagi/sore (deket sunrise/sunset) sedikit turun, laporan malem paling gak
-	// akurat -- makin deket tengah malem makin parah.
+	array<ref CMD_ThreatEntry> GetThreats()
+	{
+		return m_aThreats;
+	}
+
 	static float ComputeReportQuality(float spotDistance)
 	{
 		float distanceQuality = Math.Clamp(1.0 - (spotDistance - 50.0) / 350.0, 0.2, 1.0);
 		float timeOfDayFactor = ComputeTimeOfDayFactor();
 		return Math.Clamp(distanceQuality * timeOfDayFactor, 0.2, 1.0);
 	}
-	
-	//! Faktor 0.5-1.0 berdasarkan waktu game sekarang -- siang (deket solar noon)
-	//! = 1.0, pagi/sore (deket sunrise/sunset) = ~0.85, malem (deket tengah malem)
-	//! = turun sampe 0.5. Fallback 1.0 (netral, gak ngaruh) kalau world/manager/
-	//! sunrise-sunset lookup gagal -- jangan sampe report quality error gara-gara
-	//! ini.
+
 	protected static float ComputeTimeOfDayFactor()
 	{
 		ChimeraWorld world = ChimeraWorld.CastFrom(GetGame().GetWorld());
@@ -158,8 +118,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		
 		if (isDaytime)
 		{
-			// Siang -- puncak (1.0) di solar noon (tengah antara sunrise-sunset),
-			// turun ke 0.85 makin deket sunrise/sunset (pagi/sore, cahaya landai)
 			float middayTime     = (sunriseTime + sunsetTime) * 0.5;
 			float halfDayLength  = Math.Max((sunsetTime - sunriseTime) * 0.5, 0.01);
 			float distFromMidday = Math.AbsFloat(currentTime - middayTime);
@@ -169,12 +127,10 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		}
 		else
 		{
-			// Malem -- turun ke 0.5 di tengah malem (paling jauh dari sunset/sunrise),
-			// 0.85 di senja/fajar (deket sunset/sunrise)
 			float nightLength      = Math.Max(24.0 - (sunsetTime - sunriseTime), 0.01);
 			float distFromSunset   = currentTime - sunsetTime;
 			if (distFromSunset < 0.0)
-				distFromSunset += 24.0; // wrap around lewat tengah malem
+				distFromSunset += 24.0;
 			
 			float midnightPoint    = nightLength * 0.5;
 			float distFromMidnight = Math.AbsFloat(distFromSunset - midnightPoint);
@@ -183,13 +139,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 			return Math.Lerp(0.5, 0.85, nightProgress);
 		}
 	}
-	// === END MODIFIED ===
 
-	//--------------------------------------------------------------------
-	//! Entry point buat request artillery LANGSUNG/MANUAL (misal dari group yang
-	//! spesifik minta fire support), terpisah dari jalur otomatis cluster di Think().
-	//! Dispersion/accuracy tembakan beneran dihitung sepenuhnya oleh CMD_ArtillerySupport
-	//! -- di sini cuma nentuin shell count dan jalanin safety check.
 	void ReceiveArtillerySupport(CMD_FireMissionRequest request, DCO_GroupUtilityComponent grp)
 	{
 		if (!m_Commander || !m_ArtySupport || !request)
@@ -197,39 +147,25 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
 
-		// === ADDED: safety check yang sebelumnya gak pernah beneran dipanggil ===
 		if (m_ArtySupport.HasFriendlyNearPosDefault(request.m_vImpactPos))
 		{
 			Print("[DCO_ThreatResponse] Fire mission manual DITOLAK -- friendly kedeteksi di area target");
 			return;
 		}
-		// === END ADDED ===
 
 		DispatchArtilleryRequest(request, worldTime, "manual");
 	}
 
-	// === ADDED: satu pipeline final buat SEMUA jalur artillery (manual, cluster-auto,
-	// simple-request) -- shellCount dihitung sekali di sini lewat CalculateArtilleryShellCount,
-	// gak lagi kepisah-pisah tiap caller ngitung sendiri. ===
 	protected void DispatchArtilleryRequest(CMD_FireMissionRequest request, float worldTime, string sourceTag)
 	{
 		if (!m_ArtySupport || !request)
 			return;
 
-		// === ADDED: BUG FIX -- sebelumnya request LOLOS masuk queue walau 0 artillery
-		// unit terdaftar sama sekali (CanCallArty() di sisi pemohon cuma ngecek izin/
-		// flag, bukan ketersediaan beneran). Efeknya: ProcessQueue diem-diem return
-		// begitu ngecek m_aUnits kosong -- request nyangkut di queue sampe expired,
-		// gak ada feedback ke pemohon, keliatan kayak "ada yang minta artillery"
-		// padahal gak bakal pernah ke-eksekusi. Sekarang ditolak DI SINI (titik
-		// pipeline final, dilewatin SEMUA jalur -- manual/cluster-auto/simple-request),
-		// sebelum sempet masuk queue sama sekali.
 		if (!m_ArtySupport.HasRegisteredUnits())
 		{
 			Print(string.Format("[DCO_ThreatResponse] Fire mission (%1) DITOLAK -- gak ada artillery unit yang terdaftar sama sekali", sourceTag));
 			return;
 		}
-		// === END ADDED ===
 
 		int shellNum = CalculateArtilleryShellCount(request, m_fArtilleryAccuracy, worldTime);
 
@@ -238,14 +174,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 		m_ArtySupport.RequestShellImpact(request.m_vImpactPos, request.m_eShellType, worldTime, shellNum);
 	}
-	// === END ADDED ===
 
-	// === MODIFIED: unifikasi shellCount -- sebelumnya request.m_iShellCount (yang
-	// diisi caller, misal berdasarkan enemyCount yang mereka liat) SAMA SEKALI GAK
-	// DIPAKE, di-override total sama hardcoded base per shell-type. Sekarang
-	// request.m_iShellCount jadi BASE (context caller dihormati), fungsi ini cuma
-	// nambahin modifier universal (accuracy/staleness) di atasnya. Satu pipeline,
-	// dipake bareng oleh SEMUA jalur artillery (manual/cluster-auto/simple-request). ===
 	int CalculateArtilleryShellCount(CMD_FireMissionRequest request, float accuracy, float worldTime)
 	{
 	    float shells = Math.Max(1, request.m_iShellCount);
@@ -268,10 +197,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	    return Math.Clamp(shells, 1, 12);
 	}
 
-	//--------------------------------------------------------------------
-	//! Entry point buat reinforcement request LANGSUNG/MANUAL dari 1 group spesifik
-	//! (bukan jalur otomatis cluster). Tetap dipertahankan buat kasus dimana ada
-	//! kode lain yang mau minta bantuan langsung tanpa nunggu Think() cycle.
 	void ReceiveReinforcementRequest(DCO_GroupUtilityComponent requestingGrp, float worldTime)
 	{
 		if (!requestingGrp)
@@ -287,13 +212,11 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (threat.m_iReinforcementSentNumber >= m_iMaxReinforcementSent)
 			return;
 
-		// === ADDED: Combat Focus -- sama pola kayak versi cluster di bawah
 		float combatFocusMod = Math.Lerp(1.8, 0.4, m_Commander.GetCombatFocus());
 		float effectiveThreshold = m_fReinforcementThreshold * combatFocusMod;
 
 		if (threat.m_fPriorityScore < effectiveThreshold)
 			return;
-		// === END ADDED ===
 
 		DispatchReinforcement(threat.m_vPosition, threat.m_eThreatLevel, threat, worldTime);
 	}
@@ -304,8 +227,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		PurgeExpiredThreats(worldTime);
 		MergeNearbyThreats();
 
-		// Pass 1: scoring & recon per-entry individual. Recon soal verifikasi 1
-		// laporan spesifik yang basi, jadi tetep per-entry, bukan per-cluster.
 		foreach (CMD_ThreatEntry threat : m_aThreats)
 		{
 			if (!threat)
@@ -318,14 +239,12 @@ class CMD_ThreatResponseComponent : ScriptComponent
 				TrySendReconForThreat(threat, worldTime);
 		}
 
-		// Pass 2: cluster jadi hot-zone, evaluasi respons AGGREGATE.
 		array<ref CMD_ThreatCluster> clusters = BuildThreatClusters();
 		foreach (CMD_ThreatCluster cluster : clusters)
 		{
 			if (!cluster || cluster.m_aMembers.IsEmpty())
 				continue;
 
-			// === "Kalo ga begitu bahaya ya gak usah dikirim" ===
 			if (cluster.m_fCombinedScore < m_fClusterMinResponseScore)
 				continue;
 
@@ -402,9 +321,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		return bestBonus;
 	}
 
-	// === MODIFIED: logic score->level diekstrak jadi ClassifyScore, dipake bareng
-	// buat entry individual (ClassifyThreat) DAN buat combined score cluster
-	// (FinalizeCluster) -- biar konsisten satu definisi threshold ===
 	protected CMD_EThreatLevel ClassifyScore(float score)
 	{
 		if (score < 20.0)
@@ -423,13 +339,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	{
 		threat.m_eThreatLevel = ClassifyScore(threat.m_fPriorityScore);
 	}
-	// === END MODIFIED ===
 
-	//--------------------------------------------------------------------
-	// === ADDED: Threat Clustering ===
-	//! Flood-fill/BFS clustering -- transitif, jadi kalau A-B deket dan B-C deket
-	//! tapi A-C sendiri di luar radius, ketiganya tetep kegabung jadi 1 cluster
-	//! (beda sama MergeNearbyThreats yang cuma pairwise buat dedup laporan sama).
 	protected ref array<ref CMD_ThreatCluster> BuildThreatClusters()
 	{
 		array<ref CMD_ThreatCluster> clusters = new array<ref CMD_ThreatCluster>();
@@ -604,19 +514,9 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	    if (!m_Commander)
 	        return null;
 
-	    // === MODIFIED: BUG FIX -- sebelumnya manggil "FindClosestIdleGroupForRole_Public"
-	    // yang GAK PERNAH DIDEFINISIKAN di manapun di seluruh codebase (kemungkinan
-	    // typo/nama function yang gak pernah kelar diimplementasi). Efeknya:
-	    // reinforcement gak pernah bisa nemuin grup sama sekali, gak peduli kondisi
-	    // manpower/threshold apapun -- rusak total di level pemanggilan function.
-	    // Diganti ke FindBestIdleGroupForRole_Public yang udah confirmed jalan
-	    // (dipake TrySendCounterFlank buat flank, berhasil).
 	    return m_Commander.FindBestIdleGroupForRole_Public(role, pos);
-	    // === END MODIFIED ===
 	}
 
-	// === MODIFIED: sekarang beroperasi di level cluster (target = centroid cluster,
-	// state di-track di primary member cluster) ===
 	protected void TrySendCounterFlank(CMD_ThreatCluster cluster, float worldTime)
 	{
 		if (!m_Commander)
@@ -646,9 +546,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		flankGrp.MoveTo(wp, worldTime);
 		primary.m_bFlankSent = true;
 	}
-	// === END MODIFIED ===
 
-	// === ADDED: reinforcement otomatis dari cluster, dipanggil langsung dari Think() ===
 	protected void TrySendClusterReinforcement(CMD_ThreatCluster cluster, float worldTime)
 	{
 		if (!m_Commander)
@@ -664,24 +562,15 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (primary.m_iReinforcementSentNumber >= m_iMaxReinforcementSent)
 			return;
 
-		// === ADDED: Combat Focus -- commander CombatFocus tinggi lebih gampang
-		// trigger reinforcement (threshold turun sampe 0.4x), CombatFocus rendah
-		// lebih cuek ke ancaman kecil, stay fokus objective (threshold naik sampe
-		// 1.8x). Netral (0.5) = threshold apa adanya.
 		float combatFocusMod = Math.Lerp(1.8, 0.4, m_Commander.GetCombatFocus());
 		float effectiveThreshold = m_fReinforcementThreshold * combatFocusMod;
 
 		if (cluster.m_fCombinedScore < effectiveThreshold)
 			return;
-		// === END ADDED ===
 
 		DispatchReinforcement(cluster.m_vCenterPos, cluster.m_eClusterLevel, primary, worldTime);
 	}
-	// === END ADDED ===
 
-	// === MODIFIED: sebelumnya "SendReinforcement(threat, worldTime)", sekarang
-	// generic -- nerima posisi/level target + entry yang nyimpen cooldown/count
-	// state, biar bisa dipake baik dari cluster (otomatis) maupun request manual ===
 	protected void DispatchReinforcement(vector targetPos, CMD_EThreatLevel level, CMD_ThreatEntry stateHolder, float worldTime)
 	{
 	    if (!m_Commander)
@@ -759,12 +648,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	            m_iMaxReinforcementSent));
 	    }
 	}
-	// === END MODIFIED ===
 
-	// === ADDED: artillery otomatis dari cluster -- milih shell type berdasarkan
-	// kondisi cluster (kesegaran intel, level ancaman, ada friendly deket apa
-	// enggak). Dispersion/accuracy tembakan beneran dihitung sepenuhnya oleh
-	// CMD_ArtillerySupport, di sini cuma nentuin POSISI, JENIS SHELL, dan JUMLAH. ===
 	protected void TrySendClusterArtillery(CMD_ThreatCluster cluster, float worldTime)
 	{
 		if (!m_Commander || !m_ArtySupport)
@@ -777,7 +661,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (worldTime - primary.m_fLastArtilleryTime < m_fArtilleryCooldown)
 			return;
 
-		// Safety -- jangan tembak kalau ada friendly deket cluster ini
 		if (m_ArtySupport.HasFriendlyNearPosDefault(cluster.m_vCenterPos))
 			return;
 
@@ -786,8 +669,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		SCR_EAIArtilleryAmmoType shellType;
 		if (!isFresh)
 		{
-			// Intel udah agak basi -- jangan gambling HE ke posisi yang mungkin
-			// udah gak akurat, smoke buat disrupt/obscure aja
 			shellType = SCR_EAIArtilleryAmmoType.SMOKE;
 		}
 		else if (cluster.m_eClusterLevel == CMD_EThreatLevel.CRITICAL || cluster.m_eClusterLevel == CMD_EThreatLevel.HIGH)
@@ -796,14 +677,9 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		}
 		else
 		{
-			// MEDIUM ke bawah gak worth artillery -- biar reinforcement aja yang handle
 			return;
 		}
 
-		// === MODIFIED: CalculateClusterShellCount sekarang cuma nentuin BASE count
-		// (context cluster -- enemy count, staleness), lalu dioper ke pipeline shared
-		// DispatchArtilleryRequest yang nambahin modifier accuracy di atasnya. Gak lagi
-		// langsung manggil RequestShellImpact di sini. ===
 		int baseShellCount = CalculateClusterShellCount(cluster, worldTime);
 
 		CMD_FireMissionRequest request = new CMD_FireMissionRequest(cluster.m_vCenterPos, shellType, worldTime, baseShellCount, cluster.m_fFreshestUpdateTime, primary.m_fReportQuality);
@@ -840,11 +716,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		return null;
 	}
 
-	// === ADDED: Simple Artillery Request ===
-	//! Beda sama FindNearbyThreat (yang radius-nya ketat, buat dedup laporan sama) --
-	//! ini nyari threat KNOWN terdekat TANPA batas radius, dipake buat resolve posisi
-	//! target request artillery sederhana. maxDist opsional buat nyegah nembak ke
-	//! threat yang kejauhan buat dianggap relevan sama group yang minta.
 	protected CMD_ThreatEntry FindClosestKnownThreat(vector pos, float maxDist = -1.0)
 	{
 		CMD_ThreatEntry best = null;
@@ -872,12 +743,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		return best;
 	}
 
-	//! Entry point buat GROUP yang butuh artillery support tapi gak tau/gak perlu
-	//! tau posisi spesifik musuh -- cuma bilang jenis efek yang dimau (HE/Smoke/dll),
-	//! posisi target otomatis diresolve dari threat TERDEKAT yang udah diketahui
-	//! commander (dari laporan kontak sebelumnya lewat ReceiveContactReport).
-	//! Return false kalau gak ada threat yang diketahui di sekitar grup (gak ada
-	//! yang bisa di-target), atau kalau ada friendly di area target (safety).
 	bool RequestArtillerySupportSimple(DCO_GroupUtilityComponent requestingGrp, SCR_EAIArtilleryAmmoType desiredShellType, float worldTime, float maxSearchDist = 300.0)
 	{
 		if (!requestingGrp || !m_ArtySupport)
@@ -898,9 +763,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 			return false;
 		}
 
-		// === MODIFIED: base shellCount dari enemyCount target, lalu lewat pipeline
-		// shared (DispatchArtilleryRequest) biar modifier accuracy/staleness konsisten
-		// sama 2 jalur lainnya (manual, cluster-auto) ===
 		int baseShellCount = 3;
 		if (target.m_iEstimatedEnemyCount > 3)
 			baseShellCount = 5;
@@ -909,7 +771,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		DispatchArtilleryRequest(request, worldTime, "simple-request");
 		return true;
 	}
-	// === END MODIFIED ===
 
 	protected void PurgeExpiredThreats(float worldTime)
 	{
@@ -978,25 +839,11 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 		m_fMergeSQ   = m_fMergeRadius * m_fMergeRadius;
 		m_fClusterSQ = m_fClusterRadius * m_fClusterRadius;
-		
-		// === ADDED: BUG FIX -- m_fThinkTimer sebelumnya mulai dari 0.0 SAMA PERSIS di
-		// semua instance (satu per commander/faction), dan m_fThinkInterval-nya fixed
-		// (gak di-scale personality apapun kayak AICommander_BaseComponent). Efeknya:
-		// SEMUA faction's threat response (BFS clustering + reinforcement + artillery
-		// evaluation) nembak bareng di FRAME YANG SAMA, tiap 45 detik, SELAMANYA --
-		// gak ada mekanisme desync apapun. Ini kemungkinan besar penyebab periodic
-		// freeze yang dilaporkan. Fix: kasih jitter random per-instance ke starting
-		// timer, biar tiap commander punya offset sendiri-sendiri.
+
 		m_fThinkTimer = Math.RandomFloat(0.0, m_fThinkInterval);
-		// === END ADDED ===
 	}
 }
 
-// === ADDED: Threat Clustering ===
-//! Grouping sementara dari beberapa CMD_ThreatEntry yang saling berdekatan --
-//! DIBANGUN ULANG tiap Think() cycle (gak persisten), state cooldown/sent tetep
-//! disimpen di CMD_ThreatEntry masing-masing (lewat GetPrimaryMember()), jadi
-//! gak butuh identity cluster yang stabil antar cycle.
 class CMD_ThreatCluster
 {
 	vector m_vCenterPos;
@@ -1006,8 +853,6 @@ class CMD_ThreatCluster
 	float m_fFreshestUpdateTime = 0.0;
 	ref array<CMD_ThreatEntry> m_aMembers = new array<CMD_ThreatEntry>();
 
-	//! Member dengan priority score individu tertinggi -- carrier buat cooldown/
-	//! sent-state seluruh cluster ini (biar gak butuh persistent cluster identity).
 	CMD_ThreatEntry GetPrimaryMember()
 	{
 		CMD_ThreatEntry best = null;
@@ -1028,4 +873,3 @@ class CMD_ThreatCluster
 		return best;
 	}
 }
-// === END ADDED ===

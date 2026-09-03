@@ -40,6 +40,21 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute("3", UIWidgets.Slider, "Bobot personality RECKLESS", params: "0 100 1")]
 	protected float m_fPersonalityWeightReckless;
 	
+	[Attribute("0.6", UIWidgets.Slider, "Peluang AI dodge (lari cari perlindungan) tiap kali denger tembakan. Di-scale personality kalau dodgeScaleByPersonality nyala.", params: "0 1 0.05")]
+	protected float m_fDodgeChance;
+
+	[Attribute("8.0", UIWidgets.Slider, "Cooldown (detik) sebelum AI yang sama boleh dodge lagi. Ini rem utamanya -- tanpa cooldown, full auto bikin dodgeChance gak ada artinya.", params: "0 120 0.5")]
+	protected float m_fDodgeCooldown;
+
+	[Attribute("250.0", UIWidgets.Slider, "Jarak maksimum (m) tembakan yang masih bisa memicu dodge.", params: "0 1000 5")]
+	protected float m_fDodgeMaxDist;
+
+	[Attribute("30.0", UIWidgets.Slider, "Jarak pencarian bangunan/cover saat dodge.", params: "5 100 1")]
+	protected float m_fDodgeSearchDist;
+
+	[Attribute("1", UIWidgets.CheckBox, "Skala peluang dodge pakai personality AI (CAUTIOUS naik, RECKLESS turun).")]
+	protected bool m_bDodgeScaleByPersonality;
+	
 	[Attribute("1", UIWidgets.CheckBox, "Baca override config dari file JSON di folder profile server. Kalau OFF, nilai di atas dipake apa adanya.", category: "Server Config")]
 	protected bool m_bUseServerConfigFile;
 	
@@ -188,6 +203,36 @@ class DCO_GlobalAIComponent: ScriptComponent
 			applied++;
 		}
 		
+		if (ctx.ReadValue("dodgeChance", fTmp))
+		{
+			m_fDodgeChance = Math.Clamp(fTmp, 0.0, 1.0);
+			applied++;
+		}
+			
+		if (ctx.ReadValue("dodgeCooldown", fTmp))
+		{
+			m_fDodgeCooldown = Math.Clamp(fTmp, 0.0, 120.0);
+			applied++;
+		}
+			
+		if (ctx.ReadValue("dodgeMaxDist", fTmp))
+		{
+			m_fDodgeMaxDist = Math.Clamp(fTmp, 0.0, 1000.0);
+			applied++;
+		}
+			
+		if (ctx.ReadValue("dodgeSearchDist", fTmp))
+		{
+			m_fDodgeSearchDist = Math.Clamp(fTmp, 5.0, 100.0);
+			applied++;
+		}
+			
+		if (ctx.ReadValue("dodgeScaleByPersonality", bTmp))
+		{
+			m_bDodgeScaleByPersonality = bTmp;
+			applied++;
+		}
+		
 		PrintFormat("[DCO][Config] %1 setting di-override dari %2", applied, m_sServerConfigPath);
 		DumpActiveConfig();
 	}
@@ -214,6 +259,11 @@ class DCO_GlobalAIComponent: ScriptComponent
 		ctx.WriteValue("personalityWeightCautious",  m_fPersonalityWeightCautious);
 		ctx.WriteValue("personalityWeightAggressive", m_fPersonalityWeightAggressive);
 		ctx.WriteValue("personalityWeightReckless",  m_fPersonalityWeightReckless);
+		ctx.WriteValue("dodgeChance",              m_fDodgeChance);
+		ctx.WriteValue("dodgeCooldown",            m_fDodgeCooldown);
+		ctx.WriteValue("dodgeMaxDist",             m_fDodgeMaxDist);
+		ctx.WriteValue("dodgeSearchDist",          m_fDodgeSearchDist);
+		ctx.WriteValue("dodgeScaleByPersonality",  m_bDodgeScaleByPersonality);
 		
 		if (ctx.SaveToFile(m_sServerConfigPath))
 			PrintFormat("[DCO][Config] Template config dibuat di %1", m_sServerConfigPath);
@@ -248,6 +298,61 @@ class DCO_GlobalAIComponent: ScriptComponent
 		PrintFormat("[DCO][Config] personality STD=%1 CAU=%2 AGR=%3 RCK=%4",
 			m_fPersonalityWeightStandard, m_fPersonalityWeightCautious,
 			m_fPersonalityWeightAggressive, m_fPersonalityWeightReckless);
+	}
+	
+	float GetDodgeChance()               
+	{ 
+		return m_fDodgeChance; 
+	}
+	
+	float SetDodgeChance(float f)        
+	{ 
+		m_fDodgeChance = f; 
+		return m_fDodgeChance; 
+	}
+	
+	float GetDodgeCooldown()             
+	{ 
+		return m_fDodgeCooldown; 
+	}
+	
+	float SetDodgeCooldown(float f)      
+	{ 
+		m_fDodgeCooldown = f; 
+		return m_fDodgeCooldown; 
+	}
+	
+	float GetDodgeMaxDist()              
+	{ 
+		return m_fDodgeMaxDist; 
+	}
+	
+	float SetDodgeMaxDist(float f)      
+	{ 
+		m_fDodgeMaxDist = f; 
+		return m_fDodgeMaxDist; 
+	}
+	
+	float GetDodgeSearchDist()           
+	{ 
+		return m_fDodgeSearchDist; 
+	}
+	
+	float SetDodgeSearchDist(float f)    
+	{ 
+		m_fDodgeSearchDist = f; 
+		return m_fDodgeSearchDist; 
+	}
+	
+	bool GetDodgeScaleByPersonality()          
+	{ 
+		return m_bDodgeScaleByPersonality; 
+	}
+	
+	bool SetDodgeScaleByPersonality(bool b)    
+	{ 
+		m_bDodgeScaleByPersonality = b;
+		return m_bDodgeScaleByPersonality; 
 	}
 	
 	void ReloadServerConfig()
@@ -353,7 +458,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 			+ m_fPersonalityWeightAggressive + m_fPersonalityWeightReckless;
 		
 		if (total <= 0.0)
-			return DCO_EAIPersonality.STANDARD; // safety -- semua bobot 0, jangan crash
+			return DCO_EAIPersonality.STANDARD;
 		
 		float roll = Math.RandomFloat(0.0, total);
 		

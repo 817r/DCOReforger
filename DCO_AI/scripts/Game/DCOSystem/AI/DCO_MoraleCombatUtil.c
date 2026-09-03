@@ -85,4 +85,28 @@ class DCO_MoraleCombatUtility
 		
 		return baseCanAim;
 	}
+	
+	//------------------------------------------------------------------------------------------------
+	//! Skala durasi observasi berdasar morale. ANXIOUS/BREAK jadi paranoid dan
+	//! ngeliatin ancaman lebih lama; MANIAC nggak peduli dan cepet balik agresif.
+	static float GetObserveDurationScale(DCO_AIMoraleSystem moraleSystem)
+	{
+		if (!moraleSystem)
+			return 1.0;
+
+		switch (moraleSystem.GetState())
+		{
+			case moraleState.MOTIVATED:
+				return 0.85;
+			case moraleState.ANXIOUS:
+				return 1.3;
+			case moraleState.MANIAC:
+				return 0.6;
+			case moraleState.BREAK:
+				return 1.5;
+			default:
+				return 1.0;
+		}
+		return 1.0;
+	}
 }

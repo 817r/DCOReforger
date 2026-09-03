@@ -105,7 +105,7 @@ modded class SCR_AIGetAimErrorOffset
 			return 1.0;
 			
 		float suppressionLevel = m_InfoComponent.GetThreatSystem().GetSuppressionMeasure(); 
-		float maxSuppressionPenalty = 1.8; 
+		float maxSuppressionPenalty = 1.85; 
 		float suppressionSpeedMultiplier = 1;
 		
 		float modifiedSuppression = suppressionLevel * suppressionSpeedMultiplier;

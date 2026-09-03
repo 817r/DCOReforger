@@ -23,6 +23,10 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	protected static const float WAIT_SCALE_CQB             = 1.2;
 	protected static const float WAIT_SCALE_THREATENED      = 2;
 	protected static const float MOVE_DURATION_MIN_S        = 1.5;
+	
+	protected static const float FLANK_WP_BIAS_MIN_DOT = 0.25;
+	
+	protected static const float CQC_CLOSE_DIST = 6.0;
 
 	protected static const string PORT_POSITION = "Position";
 
@@ -90,6 +94,84 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 
 		return ENodeResult.RUNNING;
 	}
+	
+	protected bool IsTooDangerousToAdvance(bool isCQB)
+	{
+		float cutoff = SUPPRESSION_CUTOFF_DEFAULT;
+		if (isCQB)
+			cutoff = SUPPRESSION_CUTOFF_CQB;
+
+		return m_Utility.m_ThreatSystem.GetSuppressionMeasure() > cutoff;
+	}
+	
+	protected bool CalcCQCPosition(IEntity myEntity, vector threatPos, out vector movePos)
+	{
+		vector myPos    = myEntity.GetOrigin();
+		vector toThreat = threatPos - myPos;
+		toThreat[1] = 0;
+
+		float dist2D = toThreat.Length();
+		if (dist2D < CQC_CLOSE_DIST)
+			return false;
+
+		vector fwd     = toThreat / dist2D;
+		float  advance = Math.Min(dist2D - CQC_CLOSE_DIST, BOUND_DIST_MAX);
+
+		vector candidate = myPos + (fwd * advance);
+		candidate[1] = myPos[1];
+
+		return SnapToNavmesh(candidate, movePos);
+	}
+
+	protected AIWaypoint ResolvePositionalWaypoint(AIAgent owner)
+	{
+		if (!owner)
+			return null;
+
+		AIGroup group = owner.GetParentGroup();
+		if (!group)
+			return null;
+
+		AIWaypoint wp = group.GetCurrentWaypoint();
+		if (!wp)
+			return null;
+
+		if (SCR_EntityWaypoint.Cast(wp))
+			return null;
+
+		return wp;
+	}
+
+	protected float ResolveFlankSide(vector myPos, vector right, AIWaypoint wp)
+	{
+		if (wp)
+		{
+			vector toWp = wp.GetOrigin() - myPos;
+			toWp[1] = 0;
+
+			float len = toWp.Length();
+			if (len > 1.0)
+			{
+				vector toWpDir = toWp / len;
+				float dot = vector.Dot(toWpDir, right);
+
+				// WP hampir tegak lurus sumbu kanan -> dua sisi sama aja bagusnya.
+				// Jatuh ke random biar gak selalu milih sisi yang sama.
+				if (Math.AbsFloat(dot) > FLANK_WP_BIAS_MIN_DOT)
+				{
+					if (dot > 0)
+						return 1.0;
+
+					return -1.0;
+				}
+			}
+		}
+
+		if (Math.RandomInt(0, 2) == 1)
+			return -1.0;
+
+		return 1.0;
+	}
 
 	//------------------------------------------------------------------------------------------------
 	void CombatMoveLogic(AIAgent owner, IEntity myEntity, vector threatPos, float distToThreat, bool isCQB)
@@ -110,20 +192,46 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			rq.m_eType = SCR_EAICombatMoveRequestType.INVESTIGATE;
 		}
 
-		vector movePos      = threatPos;
+		vector movePos = threatPos;
 		SCR_EAICombatMoveDirection direction = SCR_EAICombatMoveDirection.FORWARD;
+		vector avoidStraightPathDir = threatPos - myEntity.GetOrigin();
 
-		if (!assaultBuilding && Math.RandomFloat01() < m_fFlankChance)
+		AIWaypoint wp = null;
+		if (!assaultBuilding)
+			wp = ResolvePositionalWaypoint(owner);
+
+		bool followWaypoint = false;
+
+		if (wp && vector.DistanceXZ(wp.GetOrigin(), myEntity.GetOrigin()) > wp.GetCompletionRadius())
 		{
-			vector flankPos;
-			if (CalcBoundPosition(myEntity, threatPos, distToThreat, isCQB, flankPos))
+			movePos              = wp.GetOrigin();
+			direction            = SCR_EAICombatMoveDirection.FORWARD;
+			avoidStraightPathDir = vector.Zero;   // lurus ke WP, jangan dibelokin
+			followWaypoint       = true;
+		}
+		else if (!assaultBuilding)
+		{
+			if (Math.RandomFloat01() < m_fFlankChance)
 			{
-				movePos   = flankPos;
-				direction = SCR_EAICombatMoveDirection.CUSTOM_POS;
+				vector flankPos;
+				if (CalcBoundPosition(myEntity, threatPos, distToThreat, isCQB, flankPos))
+				{
+					movePos   = flankPos;
+					direction = SCR_EAICombatMoveDirection.CUSTOM_POS;
+				}
+			}
+			else if (!wp)
+			{
+				vector cqcPos;
+				if (CalcCQCPosition(myEntity, threatPos, cqcPos))
+				{
+					movePos   = cqcPos;
+					direction = SCR_EAICombatMoveDirection.FORWARD;
+				}
 			}
 		}
 
-		rq.m_vMovePos  = movePos;
+		rq.m_vMovePos   = movePos;
 		rq.m_eDirection = direction;
 
 		rq.m_bTryFindCover              = true;
@@ -164,7 +272,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		if (rq.m_eStanceMoving == ECharacterStance.CROUCH)
 			speed = SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
 
-		float advanceDist = Math.Min(distToThreat, COVER_SEARCH_DIST_MAX);
+		float advanceDist = Math.Min(vector.Distance(myEntity.GetOrigin(), movePos), COVER_SEARCH_DIST_MAX);
 		rq.m_fMoveDuration_s = Math.Max(advanceDist / speed, MOVE_DURATION_MIN_S);
 
 		rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
@@ -172,8 +280,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			m_Utility.GetMoraleSystem());
 		rq.m_bAimAtTargetEnd = true;
 
-		vector dirToTgt = threatPos - myEntity.GetOrigin();
-		rq.m_vAvoidStraightPathDir = dirToTgt;
+		rq.m_vAvoidStraightPathDir = avoidStraightPathDir;
 
 		m_State.ApplyNewRequest(rq);
 
@@ -200,7 +307,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			return false;
 
 		vector fwd   = toThreat / dist2D;
-		vector right = Vector(fwd[2], 0, -fwd[0]);   // rotasi 90 deg di sumbu Y
+		vector right = Vector(fwd[2], 0, -fwd[0]);
 
 		float side = 1.0;
 		if (Math.RandomInt(0, 2) == 1)
@@ -337,6 +444,9 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	protected bool MoveToNextPosCondition(bool isCQB)
 	{
 		if (m_State.IsExecutingRequest())
+			return false;
+		
+		if (IsTooDangerousToAdvance(isCQB))
 			return false;
 
 		bool threatened = m_Utility.m_ThreatSystem.GetState() == EAIThreatState.THREATENED;
