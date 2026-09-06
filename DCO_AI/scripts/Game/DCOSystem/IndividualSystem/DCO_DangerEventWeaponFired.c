@@ -148,7 +148,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		
 				state.ApplyNewRequest(rq);
 
-				return super.PerformReaction(utility, threatSystem, dangerEvent, dangerEventCount);
+				return true;
 			}
 		}
 
@@ -341,6 +341,9 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 		if (state.IsInValidCover())
 			return;
+		
+		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(utility.m_OwnerEntity))
+			return;
 
 		if (!CanDodgeNow(utility.m_OwnerEntity, cooldown_s))
 			return;
@@ -372,13 +375,22 @@ modded class SCR_AIDangerReaction_WeaponFired
 		rq.m_eReason    = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
 		rq.m_vTargetPos = shotPos;
 		rq.m_vMovePos   = rq.m_vTargetPos;
-
-		rq.m_eType         = SCR_EAICombatMoveRequestType.BUILDING;
-		rq.m_bTryFindCover = true;
-		rq.m_bFailIfNoCover = false;
-
-		rq.m_bUseCoverSearchDirectivity = true;
-		rq.m_bCheckCoverVisibility = false;
+		
+		if (Math.RandomFloat01() < 0.6)
+		{
+			rq.m_eType         = SCR_EAICombatMoveRequestType.BUILDING;
+			rq.m_bTryFindCover = false;
+			rq.m_bFailIfNoCover = false;		
+			rq.m_bUseCoverSearchDirectivity = false;
+			rq.m_bCheckCoverVisibility = false;
+		} else
+		{
+			rq.m_eType         = SCR_EAICombatMoveRequestType.MOVE;
+			rq.m_bTryFindCover = true;
+			rq.m_bFailIfNoCover = false;	
+			rq.m_bUseCoverSearchDirectivity = true;
+			rq.m_bCheckCoverVisibility = true;
+		}
 
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;

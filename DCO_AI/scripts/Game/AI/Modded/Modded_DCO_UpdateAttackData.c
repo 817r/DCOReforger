@@ -44,18 +44,15 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		
 		if (!selectedWeaponComp)
 			return FIRE_TREE_LOOK;
-		
 
-		if (m_CombatComponent.GetCombatMode() == EAIGroupCombatMode.HOLD_FIRE && !ShouldBreakDisciplineByChance(visible))
+		if (m_CombatComponent.GetCombatMode() == EAIGroupCombatMode.HOLD_FIRE && IsCloseDirectThreat(target, visible))
 		{
-			if (IsCloseDirectThreat(target, visible))
+			if (ShouldBreakDisciplineByChance(visible))
 			{
 				if (!ShouldReturnFireWhenEndangered())
 					return FIRE_TREE_LOOK;
 			}
-				
 		}
-		
 		
 		float targetDistance = target.GetDistance();
 		

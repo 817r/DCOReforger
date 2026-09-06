@@ -78,19 +78,9 @@ $grp Vehicle : "{81FDAD5EB644CC3D}Prefabs/Vehicles/Wheeled/M923A1/M923A1_transpo
 }
 $grp SCR_AIGroup : "{84E5BBAB25EA23E5}Prefabs/Groups/BLUFOR/Group_US_FireTeam.et" {
  Recon1_BF {
-  components {
-   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
-    m_eUnitCapabilities RECON
-   }
-  }
   coords 1862.026 56.423 1082.649
  }
  Reserve2_BF {
-  components {
-   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
-    m_eUnitCapabilities RESERVE
-   }
-  }
   coords 1827.196 52.19 1077.677
  }
  {
@@ -117,6 +107,7 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_fDelayFirstIteration 30
     m_fReserveMinimumPct 0.1
     m_bRandomPersonality 1
+    m_fDebugRefreshInterval 1
    }
   }
   coords 1833.469 50.311 1075.873
@@ -133,9 +124,26 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_bEnableManpowerBudget 0
     m_eCommanderModeExternal OFFENSIVE
     m_bRandomPersonality 1
+    m_fDebugRefreshInterval 1
    }
   }
   coords 2017.567 52.007 3050.814
+ }
+ {
+  components {
+   AICommander_AlgorithmComponent "{68F8849956F58560}" {
+    m_sDefaultMoveWaypointPrefab "{93D9BB77AC27D38C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Move_Commander.et"
+    m_sDefaultGetInWaypointPrefab "{6EB248EC45C92C3A}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetInCommander.et"
+    m_sCommanderUID "guer"
+    m_sFactionKey "FIA"
+    m_bUseSynchronizedAttack 0
+    m_fDelayFirstIteration 30
+    m_fReserveMinimumPct 0.1
+    m_bRandomPersonality 1
+    m_fDebugRefreshInterval 1
+   }
+  }
+  coords 1833.469 50.311 1075.873
  }
 }
 $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
@@ -143,14 +151,28 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 40
+    m_bDebugMode 1
+    m_fDebugRefreshInterval 1
    }
   }
   coords 2503.889 147.722 2265.835
  }
  {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_bDebugMode 1
+    m_fDebugRefreshInterval 1
+   }
+  }
   coords 2781.876 74.45 1647.594
  }
  {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_bDebugMode 1
+    m_fDebugRefreshInterval 1
+   }
+  }
   coords 3110.897 11.625 2777.594
  }
 }
@@ -161,16 +183,13 @@ Vehicle BTR1 : "{C012BB3488BEA0C2}Prefabs/Vehicles/Wheeled/BTR70/BTR70.et" {
  coords 2023.221 48.559 2907.904
 }
 SCR_AIGroup Recon1_OF : "{C8622D0595B48437}Prefabs/Groups/OPFOR/Group_USSR_AmmoTeam.et" {
- components {
-  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
-   m_eUnitCapabilities RECON
-  }
- }
  coords 2011.889 52.175 2997.099
 }
 GameEntity : "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et" {
  components {
   AICommander_ManagerComponent "{69C61E8C066EE04E}" {
+   m_bDebugMode 1
+   m_fDebugRefreshInterval 5
    m_bPreventUseLOD 1
   }
  }
@@ -189,19 +208,9 @@ $grp Vehicle : "{D9B91FAB817A6033}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_tra
 }
 $grp SCR_AIGroup : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
  Assault1_BF {
-  components {
-   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
-    m_eUnitCapabilities ASSAULT
-   }
-  }
   coords 1810.618 52.763 1085.366
  }
  Reserve1_BF {
-  components {
-   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
-    m_eUnitCapabilities RESERVE
-   }
-  }
   coords 1824.606 52.223 1097.297
  }
  {
@@ -216,27 +225,12 @@ $grp SCR_AIGroup : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.
 }
 $grp SCR_AIGroup : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
  Assault1_OF {
-  components {
-   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
-    m_eUnitCapabilities ASSAULT
-   }
-  }
   coords 2008.253 51.373 2984.958
  }
  Reserve2_OF {
-  components {
-   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
-    m_eUnitCapabilities RESERVE
-   }
-  }
   coords 1986.875 51.375 2995.678
  }
  Reserve1_OF {
-  components {
-   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
-    m_eUnitCapabilities RESERVE
-   }
-  }
   coords 1988.44 50.774 2970.515
  }
  {
@@ -244,10 +238,5 @@ $grp SCR_AIGroup : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad
  }
 }
 SCR_AIGroup Flank1_BF : "{FCF7F5DC4F83955C}Prefabs/Groups/BLUFOR/Group_US_LightFireTeam.et" {
- components {
-  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
-   m_eUnitCapabilities FLANK
-  }
- }
  coords 1846.543 53.189 1075.395
 }

@@ -15,23 +15,56 @@ class DCO_GroupConfigComponent : ScriptComponent
 	[Attribute("1", UIWidgets.Auto, "What is the Multiplier of Cohession Distance", category: "Group Cohession", params: "0.01 5 0.01")]
 	protected float m_fCohessionDistanceMult;
 	
-	AIGroup group = AIGroup.Cast(GetOwner());
+	//! JANGAN dijadiin field initializer (dulu: AIGroup group = AIGroup.Cast(GetOwner());).
+	//! Initializer dievaluasi pas construct, sebelum owner ke-assign, jadi nilainya
+	//! dijamin null selamanya dan ShouldReturnToFormation() pasti null-deref.
+	protected AIGroup m_Group;
 	
-	bool ShouldReturnToFormation(vector who)
+	//--------------------------------------------------------------------------------------------
+	protected AIGroup GetGroup()
 	{
-		return vector.Distance(group.GetLeaderEntity().GetOrigin(), who) > m_fCohessionDistance * m_fCohessionDistanceMult;
+		if (!m_Group)
+			m_Group = AIGroup.Cast(GetOwner());
+		
+		return m_Group;
 	}
 	
+	//--------------------------------------------------------------------------------------------
+	//! Jarak efektif dari Squad Leader sebelum anggota nyoba regroup.
+	float GetCohesionDistance()
+	{
+		return m_fCohessionDistance * m_fCohessionDistanceMult;
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	bool ShouldReturnToFormation(vector who)
+	{
+		AIGroup group = GetGroup();
+		
+		if (!group)
+			return false;
+		
+		IEntity leader = group.GetLeaderEntity();
+		
+		if (!leader)
+			return false;
+		
+		return vector.Distance(leader.GetOrigin(), who) > GetCohesionDistance();
+	}
+	
+	//--------------------------------------------------------------------------------------------
 	bool GroupCapableOf(DCO_EAIGroupCapabilities cap)
 	{
 		return m_fGroupCapabilities & cap;
 	}
 	
+	//--------------------------------------------------------------------------------------------
 	void AddUnitState(DCO_EAIGroupCapabilities state)
 	{
 		m_fGroupCapabilities = m_fGroupCapabilities | state;
 	}
 
+	//--------------------------------------------------------------------------------------------
 	void RemoveUnitState(DCO_EAIGroupCapabilities state)
 	{
 		if (GroupCapableOf(state))

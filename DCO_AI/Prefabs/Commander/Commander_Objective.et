@@ -4,6 +4,8 @@ GameEntity {
   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
    m_fBaseValue 70
    m_fRadius 145
+   m_fStalemateSeconds 1800
+   m_fStalemateThreshold 1800
   }
   Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
    m_vResolution 32

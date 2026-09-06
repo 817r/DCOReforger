@@ -28,8 +28,31 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	protected static const float ENGAGED_BID_COOLDOWN_MS = 3000.0;
 	protected static const float ENGAGED_COVER_DIST_MAX  = 18.0;
 	
+	//! Lama ditekan (THREATENED) sebelum AI maksa balas tembak, sebelum diskala personality.
+	protected static const float CRITICAL_RETURN_FIRE_BASE_S = 5.0;
+	
+	//! Lama "lock" reposisi selagi musuh masih dalam jarak optimal, sebelum diskala personality.
+	protected static const float REPOSITION_LOCK_BASE_S = 5.0;
+	
+	//! Area terbuka bukan lagi SYARAT buat cari cover, tapi pengali urgensi.
+	protected static const float OPEN_AREA_COVER_URGENCY      = 1.35;
+	protected static const float OPEN_AREA_BID_COOLDOWN_SCALE = 0.6;
+	
+	//! Dipakai kalau DCO_GroupConfigComponent belum kepasang di prefab grup.
+	protected static const float COHESION_DIST_FALLBACK  = 50.0;
+	protected static const float COHESION_REGROUP_RADIUS = 25.0;
+	
+	//! Dulu di-new tiap panggilan di dalam ResolveMoveRequestMovePosAndDir().
+	protected static ref RandomGenerator s_CohesionRand = new RandomGenerator();
+	
 	protected float m_fNextEngagedBid_ms = -1;
 	protected float m_fNextCriticalBid_ms = -1;
+	
+	//! Waktu masuk state THREATENED. -1 = lagi ga critical.
+	protected float m_fCriticalEnterTime_ms = -1;
+	
+	//! IsInOpenArea() = 8 raycast. Di-cache sekali per tick di EOnTaskSimulate().
+	protected bool m_bInOpenAreaCached = false;
 	
 	//--------------------------------------------------------------------------------------------
 	protected override bool OnUpdate(AIAgent owner, float dt)
@@ -84,6 +107,69 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	protected bool CriticalBoundCooldownReady()
 	{
 	    return GetGame().GetWorld().GetWorldTime() >= m_fNextCriticalBid_ms;
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	//! Dipanggil tiap tick dari EOnTaskSimulate(), SETELAH m_eThreatState di-refresh.
+	protected void UpdateCriticalTimer(float now_ms)
+	{
+		if (!IsCriticalCombatMoment())
+		{
+			m_fCriticalEnterTime_ms = -1;
+			return;
+		}
+		
+		if (m_fCriticalEnterTime_ms < 0)
+			m_fCriticalEnterTime_ms = now_ms;
+	}
+	
+	protected float GetCriticalElapsed_s(float now_ms)
+	{
+		if (m_fCriticalEnterTime_ms < 0)
+			return 0;
+		
+		return (now_ms - m_fCriticalEnterTime_ms) / 1000.0;
+	}
+	
+	//! Udah kelamaan ditekan tanpa balas — berhenti nunduk, biarin node nembak kerja.
+	//! Jalan paralel (OR) sama ShouldReturnFireWhenEndangered() di UpdateAttackData,
+	//! yang gatenya pakai BESARAN threat. Yang ini gatenya WAKTU.
+	protected bool ShouldForceReturnFire(float now_ms)
+	{
+		float threshold_s = CRITICAL_RETURN_FIRE_BASE_S * DCO_PersonalityCombatUtility.GetReturnFireDelayScale(m_Utility);
+		
+		return GetCriticalElapsed_s(now_ms) > threshold_s;
+	}
+	
+	//--------------------------------------------------------------------------------------------
+	//! true kalau unit kejauhan dari Squad Leader dan harus regroup.
+	//! Jarak diambil dari DCO_GroupConfigComponent kalau kepasang di prefab grup,
+	//! kalau ga ada jatuh ke COHESION_DIST_FALLBACK — jadi ga hard-depend ke wiring Workbench.
+	protected bool ShouldRegroupToLeader(out vector outLeaderPos)
+	{
+		outLeaderPos = vector.Zero;
+		
+		AIAgent agent = m_Utility.GetAIAgent();
+		if (!agent)
+			return false;
+		
+		AIGroup group = agent.GetParentGroup();
+		if (!group || agent == group.GetLeaderAgent())
+			return false;
+		
+		IEntity leader = group.GetLeaderEntity();
+		if (!leader)
+			return false;
+		
+		outLeaderPos = leader.GetOrigin();
+		
+		float maxDist = COHESION_DIST_FALLBACK;
+		
+		DCO_GroupConfigComponent cfg = DCO_GroupConfigComponent.Cast(group.FindComponent(DCO_GroupConfigComponent));
+		if (cfg)
+			maxDist = cfg.GetCohesionDistance();
+		
+		return vector.Distance(outLeaderPos, m_MyEntity.GetOrigin()) > maxDist;
 	}
 	
 	protected void PushRequestCriticalBound()
@@ -263,8 +349,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (IsCriticalCombatMoment())
 			return false;
 		
+		// Dulu hardcoded 10 detik. Sekarang base 5 detik, diskala personality:
+		// CAUTIOUS 3.0s / STANDARD 5.0s / AGGRESSIVE 7.0s / RECKLESS 9.0s
+		float lockTime_s = REPOSITION_LOCK_BASE_S * DCO_PersonalityCombatUtility.GetRepositionLockScale(m_Utility);
+		
 		float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
-		if (m_fTargetDist < optimalDist && m_Target.GetTimeSinceSeen() < 10)
+		if (m_fTargetDist < optimalDist && m_Target.GetTimeSinceSeen() < lockTime_s)
 			return false;
 			
 		if (m_State.IsExecutingRequest())
@@ -281,7 +371,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				return false;
 		}
 		float inClosedAreaMultiplier = 1;
-		if (IsInOpenArea(m_MyEntity))
+		if (m_bInOpenAreaCached)
 			inClosedAreaMultiplier = 2;
 		
 		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType) * inClosedAreaMultiplier;
@@ -303,10 +393,11 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		
 		if (!wp || SCR_EntityWaypoint.Cast(wp))
 		{
-			if (agent != group.GetLeaderAgent() && vector.Distance(group.GetLeaderEntity().GetOrigin(), m_MyEntity.GetOrigin()) > 40)
+			vector leaderPos;
+			
+			if (ShouldRegroupToLeader(leaderPos))
 			{
-				RandomGenerator cohesionRand = new RandomGenerator();
-				vector mp = cohesionRand.GenerateRandomPointInRadius(0, 25, group.GetLeaderEntity().GetOrigin(), false);
+				vector mp = s_CohesionRand.GenerateRandomPointInRadius(0, COHESION_REGROUP_RADIUS, leaderPos, false);
 				mp[1] = GetGame().GetWorld().GetSurfaceY(mp[0], mp[2]);
 				movePos = mp;
 				eDirection = SCR_EAICombatMoveDirection.FORWARD;
@@ -821,6 +912,12 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		m_eStance = m_CharacterController.GetStance();
 		m_fWeaponMinDist = m_CombatComp.GetSelectedWeaponMinDist();
 		m_eWeaponType = m_CombatComp.GetSelectedWeaponType();
+		
+		// IsInOpenArea() = 8 raycast. Dulu dipanggil 3x per tick (MoveToNextPosCondition,
+		// SuppressedInCoverCondition, dan fallback bound). Sekarang sekali di sini,
+		// setelah m_eThreatState valid.
+		m_bInOpenAreaCached = IsInOpenArea(m_MyEntity);
+		UpdateCriticalTimer(currentTime_ms);
 
 		if (SuppressedInCoverCondition())
 		{
@@ -864,50 +961,67 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		}
 		else if (!m_State.IsExecutingRequest() && !m_State.m_bInCover)
 		{
-			if (IsInOpenArea(m_MyEntity))
+			// IsInOpenArea BUKAN lagi gate. Dulu unit yang ga di cover TAPI juga ga di
+			// area terbuka jatuh ke sini dan ga ngelakuin apa-apa — diam nembak selamanya.
+			// Sekarang semua unit not-in-cover dapet jalur cari cover; open area cuma
+			// naikin urgensinya.
+			if (IsCriticalCombatMoment())
 			{
-				if (IsCriticalCombatMoment())
+				if (ShouldForceReturnFire(currentTime_ms))
 				{
-				    if (CriticalBoundCooldownReady())
-				    {
-				        PushRequestCriticalBound();
-				    }
-				    else
-				    {
-				        // Cuma jeda antar-bid: nunduk sambil nunggu, bukan lagi respons default.
-				        ECharacterStance criticalStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
-				        criticalStance = DCO_MoraleCombatUtility.ApplyMoraleStanceOverride(criticalStance, moraleSystem);
-				        if (criticalStance > m_eStance)
-				            m_State.ApplyRequestChangeStanceOutsideCover(criticalStance);
-				    }
+					// Udah lewat ambang ditekan tanpa balas. Sengaja TIDAK push move
+					// request apa pun dan TIDAK push stance turun — tujuannya balas
+					// tembak, bukan pindah. Naikin dari PRONE biar senjata ga keblok.
+					if (m_eStance == ECharacterStance.PRONE)
+						m_CharacterController.SetStanceChange(1);
+				}
+				else if (CriticalBoundCooldownReady())
+				{
+					PushRequestCriticalBound();
 				}
 				else
 				{
-				    if (GetGame().GetWorld().GetWorldTime() >= m_fNextEngagedBid_ms)
-				    {
-				        float takeCoverChance = 0.7;
-				        if (m_Utility && m_Utility.m_DCOConfig)
-				            takeCoverChance = m_Utility.m_DCOConfig.GetTakeCoverChance();
-				        takeCoverChance = Math.Clamp(takeCoverChance * DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(m_Utility), 0.0, 1.0);
-				
-				        if (Math.RandomFloat01() < takeCoverChance)
-				        {
-				            float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
-				            bool contactFresh = m_Target && m_Target.GetTimeSinceSeen() < 5.0;
-				            bool inEngagementRange = m_Target && m_fTargetDist <= optimalDist * 1.2;
-				
-				            if (contactFresh && inEngagementRange)
-				                PushRequestEngagedBound();
-				            else
-				                PushRequestOpenArea();
-				        }
-				        else
-				        {
-				            m_fNextEngagedBid_ms = GetGame().GetWorld().GetWorldTime() + ENGAGED_BID_COOLDOWN_MS;
-				        }
-				    }
+					// Cuma jeda antar-bid: nunduk sambil nunggu, bukan lagi respons default.
+					ECharacterStance criticalStance = ResolveStanceOutsideCover(m_bCloseRangeCombat, m_eThreatState);
+					criticalStance = DCO_MoraleCombatUtility.ApplyMoraleStanceOverride(criticalStance, moraleSystem);
+					if (criticalStance > m_eStance)
+						m_State.ApplyRequestChangeStanceOutsideCover(criticalStance);
 				}
-			}			
+			}
+			else if (currentTime_ms >= m_fNextEngagedBid_ms)
+			{
+				float takeCoverChance = 0.7;
+				if (m_Utility && m_Utility.m_DCOConfig)
+					takeCoverChance = m_Utility.m_DCOConfig.GetTakeCoverChance();
+				
+				takeCoverChance *= DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(m_Utility);
+				
+				if (m_bInOpenAreaCached)
+					takeCoverChance *= OPEN_AREA_COVER_URGENCY;
+				
+				takeCoverChance = Math.Clamp(takeCoverChance, 0.0, 1.0);
+				
+				if (Math.RandomFloat01() < takeCoverChance)
+				{
+					float optimalDist = ResolveOptimalDistance(m_fWeaponMinDist);
+					bool contactFresh = m_Target && m_Target.GetTimeSinceSeen() < 5.0;
+					bool inEngagementRange = m_Target && m_fTargetDist <= optimalDist * 1.2;
+					
+					if (contactFresh && inEngagementRange)
+						PushRequestEngagedBound();
+					else
+						PushRequestOpenArea();
+				}
+				else
+				{
+					float bidCooldown_ms = ENGAGED_BID_COOLDOWN_MS;
+					
+					if (m_bInOpenAreaCached)
+						bidCooldown_ms *= OPEN_AREA_BID_COOLDOWN_SCALE;
+					
+					m_fNextEngagedBid_ms = currentTime_ms + bidCooldown_ms;
+				}
+			}
 
 		} else if (!m_State.IsExecutingRequest())
 		{
@@ -967,7 +1081,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	
 	override protected bool SuppressedInCoverCondition()
 	{
-		if (IsInOpenArea(m_MyEntity) && m_eThreatState == EAIThreatState.THREATENED && moraleSystem.GetState() >= moraleState.MANIAC)
+		if (m_bInOpenAreaCached && m_eThreatState == EAIThreatState.THREATENED && moraleSystem.GetState() >= moraleState.MANIAC)
 			return true;
 		
 		return m_State.m_bInCover && m_eThreatState == EAIThreatState.THREATENED && moraleSystem.GetState() >= moraleState.MANIAC;
@@ -1173,16 +1287,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 
 		
 		m_State.ApplyNewRequest(rq);
-	}
-	
-	protected bool IsOnCohessionSquad()
-	{
-		AIAgent agent = m_Utility.GetAIAgent();
-		AIGroup group = agent.GetParentGroup();
-		
-		
-		
-		return false;
 	}
 	
 	//--------------------------------------------------------------------------------------------

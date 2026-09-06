@@ -6,6 +6,21 @@ class DCO_GroupUtilityComponentClass : ScriptComponentClass
 
 class DCO_GroupUtilityComponent : ScriptComponent
 {
+	// === ADDED: Group Debug ===
+	// CATATAN ERGONOMI: checkbox ini per-prefab grup. Kalau mau nyalain buat
+	// semua grup sekaligus, nyalainnya harus di prefab dasar yang diwarisi --
+	// bukan satu-satu di tiap grup di world.
+	[Attribute("0", UIWidgets.CheckBox, desc: "Gambar overlay grup ini (role, tugas, status order) sebagai teks 3D. Cuma kelihatan waktu Game Master kebuka.", category: "Group Debug")]
+	protected bool m_bDebugMode;
+
+	[Attribute("0.5", UIWidgets.EditBox, "Interval (detik) gambar ulang overlay grup.", category: "Group Debug")]
+	protected float m_fDebugRefreshInterval;
+
+	protected ref array<ref Shape> m_aDebugShapes = new array<ref Shape>();
+	protected ref array<ref DebugTextWorldSpace> m_aDebugTexts = new array<ref DebugTextWorldSpace>();
+	protected float m_fDebugTimer = 0.0;
+	// === END ADDED ===
+
 	[Attribute("0", UIWidgets.EditBox, "Radius pencarian kendaraan", category: "Commander")]
 	protected bool m_bIsDedicatedTransport;
 	
@@ -464,7 +479,104 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		m_FormationComponent = AIFormationComponent.Cast(owner.FindComponent(AIFormationComponent));
 		//
 		SetEventMask(owner, EntityEvent.INIT);
+
+		// === ADDED: grup butuh tick sendiri buat overlay-nya. ===
+		SetEventMask(owner, EntityEvent.FRAME);
 	}
+
+	override void EOnFrame(IEntity owner, float timeSlice)
+	{
+		UpdateGroupDebug(timeSlice);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	// === ADDED: Group Debug ===
+	//! Overlay milik grup. TANPA bola -- cuma teks yang nempel di posisi grup, plus
+	//! panah ke objective yang dia pegang. Semuanya dibaca live dari komponen ini
+	//! sendiri, jadi labelnya ngikutin grupnya waktu jalan.
+	protected void UpdateGroupDebug(float timeSlice)
+	{
+		if (!m_bDebugMode)
+		{
+			if (!m_aDebugShapes.IsEmpty() || !m_aDebugTexts.IsEmpty())
+			{
+				m_aDebugShapes.Clear();
+				m_aDebugTexts.Clear();
+			}
+			return;
+		}
+
+		m_fDebugTimer += timeSlice;
+		if (m_fDebugTimer < m_fDebugRefreshInterval)
+			return;
+
+		m_fDebugTimer = 0.0;
+
+		m_aDebugShapes.Clear();
+		m_aDebugTexts.Clear();
+
+		if (!DCO_DebugDraw.IsLocalPlayerInGM())
+			return;
+
+		vector g     = GetOwner().GetOrigin();
+		int    role  = m_eGroupRole;
+		int    color = DCO_DebugDraw.RoleColor(role);
+
+		CMD_AICommanderObjectiveComponent obj = GetGroupObjective();
+
+		string taskLine;
+		if (obj && obj.GetOwner())
+			taskLine = string.Format("task: %1  (%2 away)",
+				obj.GetOwner().GetName(),
+				DCO_DebugDraw.M(vector.Distance(g, obj.GetOwner().GetOrigin())));
+		else
+			taskLine = "task: none";
+
+		string cmdLine;
+		if (myCommander)
+			cmdLine = "commander: " + myCommander.GetCommanderUID();
+		else
+			cmdLine = "commander: none";
+
+		// strengthPct persis rumus yang dipakai FindBestIdleGroupForRole buat nyekor
+		// kandidat -- ini yang nentuin grup mana kepilih duluan.
+		int   units       = GetUnitCount();
+		float strengthPct = Math.Clamp(units / 12.0 * 100.0, 0.0, 100.0);
+
+		string label = string.Format(
+			"%1  x%2  (id %3)\n%4\n%5\n%6",
+			DCO_DebugDraw.RoleName(role),
+			units,
+			GetGroupID(),
+			DCO_DebugDraw.GroupStatusName(GetGroupStatus()),
+			taskLine,
+			cmdLine);
+
+		string flagsLine = string.Format(
+			"strength %1%% -- selection score input\nwp %2 | order %3 | override %4 | orderable %5\nvehicle %6 | transport %7 | player %8",
+			Math.Round(strengthPct),
+			DCO_DebugDraw.YesNo(IsGroupHaveWaypoint()),
+			DCO_DebugDraw.YesNo(IsOrderActive()),
+			DCO_DebugDraw.YesNo(CanCommanderOverrideRole()),
+			DCO_DebugDraw.YesNo(CanItHaveOrder()),
+			DCO_DebugDraw.YesNo(HasOwnedVehicle()),
+			DCO_DebugDraw.YesNo(IsDedicatedTransport()),
+			DCO_DebugDraw.YesNo(IsPlayerGroup()));
+
+		m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(Vector(g[0], g[1] + 12.0, g[2]), label,     17.0, color));
+		m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(Vector(g[0], g[1] +  4.0, g[2]), flagsLine, 15.0, color));
+
+		if (obj && obj.GetOwner())
+		{
+			vector t = obj.GetOwner().GetOrigin();
+			m_aDebugShapes.Insert(Shape.CreateArrow(
+				Vector(g[0], g[1] + 1.5, g[2]),
+				Vector(t[0], t[1] + 1.5, t[2]),
+				1.2, color, DCO_DebugDraw.Flags()));
+		}
+	}
+	// === END ADDED ===
+
 	
 	void RegisterCommanderToGroup(AICommander_BaseComponent cmd)
 	{

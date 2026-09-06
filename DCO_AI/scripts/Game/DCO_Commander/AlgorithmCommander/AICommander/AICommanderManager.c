@@ -15,6 +15,18 @@ class CMD_ObjectiveContextCache
 
 class AICommander_ManagerComponent : ScriptComponent
 {
+	// === ADDED: Manager Debug ===
+	[Attribute("0", UIWidgets.CheckBox, desc: "Gambar overlay manager (tally faction, commander, objective) di posisi entity ini.", category: "Manager Debug")]
+	protected bool m_bDebugMode;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Interval (detik) gambar ulang overlay manager.", category: "Manager Debug")]
+	protected float m_fDebugRefreshInterval;
+
+	protected ref array<ref Shape> m_aDebugShapes = new array<ref Shape>();
+	protected ref array<ref DebugTextWorldSpace> m_aDebugTexts = new array<ref DebugTextWorldSpace>();
+	protected float m_fDebugTimer = 0.0;
+	// === END ADDED ===
+
 	[Attribute("0", UIWidgets.EditBox, "Is Use LOD Or No", category: "Simulation")]
 	protected bool m_bPreventUseLOD;
 	
@@ -206,7 +218,11 @@ class AICommander_ManagerComponent : ScriptComponent
 			if (obj.IsCapturedBy(fk, forCommander.GetCommanderUID()))
 				continue;
  
-			float score = obj.ComputePriorityScore(fk, worldTime, forCommander.GetOwner().GetOrigin(), forCommander.GetCombatFocus());
+			// === MODIFIED: kirim commander UID biar cache skor di objective bisa di-key
+			// per pemanggil. Tanpa ini semua commander sefaction share satu entry cache
+			// dan yang nanya belakangan dapet skor punya yang nanya duluan.
+			float score = obj.ComputePriorityScore(fk, worldTime, forCommander.GetOwner().GetOrigin(), forCommander.GetCombatFocus(), forCommander.GetCommanderUID());
+			// === END MODIFIED ===
  
 			bool inserted = false;
 			for (int i = 0; i < sorted.Count(); i++)
@@ -375,7 +391,98 @@ class AICommander_ManagerComponent : ScriptComponent
 	{
 		super.OnPostInit(owner);
 		SetEventMask(owner, EntityEvent.INIT);
+
+		// === ADDED: manager butuh tick sendiri buat overlay-nya. ===
+		SetEventMask(owner, EntityEvent.FRAME);
 	}
+
+	override void EOnFrame(IEntity owner, float timeSlice)
+	{
+		UpdateManagerDebug(timeSlice);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	// === ADDED: Manager Debug ===
+	//! Overlay milik manager: tally global yang gak dimiliki commander manapun --
+	//! daftar faction dari FactionManager, jumlah commander per faction, dan
+	//! pembagian kepemilikan objective.
+	//!
+	//! Digambar di posisi entity manager sendiri. Kalau entity-nya ada di tempat yang
+	//! gak kelihatan di map, pindahin aja -- ini murni penanda debug.
+	protected void UpdateManagerDebug(float timeSlice)
+	{
+		if (!m_bDebugMode)
+		{
+			if (!m_aDebugShapes.IsEmpty() || !m_aDebugTexts.IsEmpty())
+			{
+				m_aDebugShapes.Clear();
+				m_aDebugTexts.Clear();
+			}
+			return;
+		}
+
+		m_fDebugTimer += timeSlice;
+		if (m_fDebugTimer < m_fDebugRefreshInterval)
+			return;
+
+		m_fDebugTimer = 0.0;
+
+		m_aDebugShapes.Clear();
+		m_aDebugTexts.Clear();
+
+		if (!DCO_DebugDraw.IsLocalPlayerInGM())
+			return;
+
+		vector p = GetOwner().GetOrigin();
+
+		m_aDebugShapes.Insert(Shape.CreateSphere(
+			DCO_DebugDraw.COLOR_MANAGER, DCO_DebugDraw.Flags(), p, DCO_DebugDraw.MARKER_BIG));
+
+		m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(
+			Vector(p[0], p[1] + 20.0, p[2]), BuildManagerDebugText(), 18.0, DCO_DebugDraw.COLOR_MANAGER));
+	}
+
+	protected string BuildManagerDebugText()
+	{
+		string body = string.Format(
+			"COMMANDER MANAGER\nfactions %1   commanders %2   objectives %3",
+			m_aAvailableFactions.Count(),
+			m_aCommander.Count(),
+			m_aObjective.Count());
+
+		// Per faction: berapa commander dan berapa objective yang dia pegang. Ini
+		// jawaban buat "siapa lagi menang" tanpa harus keliling ngecek objective satu
+		// per satu.
+		foreach (FactionKey fk : m_aAvailableFactions)
+		{
+			int cmdCount = 0;
+			foreach (AICommander_BaseComponent c : m_aCommander)
+			{
+				if (c && c.GetCommanderFactionKey() == fk)
+					cmdCount = cmdCount + 1;
+			}
+
+			int own = 0;
+			foreach (CMD_AICommanderObjectiveComponent o : m_aObjective)
+			{
+				if (o && o.GetOwningFaction() == fk)
+					own = own + 1;
+			}
+
+			body = body + string.Format("\n  %1 : %2 cmd, %3 objectives", fk, cmdCount, own);
+		}
+
+		int neutral = 0;
+		foreach (CMD_AICommanderObjectiveComponent n : m_aObjective)
+		{
+			if (n && n.GetOwningFaction().IsEmpty())
+				neutral = neutral + 1;
+		}
+
+		return body + string.Format("\n  Neutral : %1 objectives", neutral);
+	}
+	// === END ADDED ===
+
 	
 	override void EOnInit(IEntity owner)
 	{

@@ -1,0 +1,140 @@
+$grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 7098.285 313.344 6005.023
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 8020.215 182.719 7757.506
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 9815.236 55.396 9465.591
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 7753.871 313.185 8134.286
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 11992.924 3.339 10873.696
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 12062.343 2.188 10410.043
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 50
+   }
+  }
+  coords 10527.815 22.406 9722.147
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 11404.178 86.313 10516.788
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 250
+   }
+  }
+  coords 7631.372 20.473 4974.798
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 11839.317 9.258 10678.097
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 9633.288 130.335 10039.513
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_sObjectiveName "Ugoldar"
+    m_fRadius 250
+    m_sInitialOwnerCommanderUID "Overlord"
+   }
+  }
+  coords 6700.821 25.531 3875.023
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 8576.463 95.869 9327.609
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 9614.037 11.562 8673.541
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 12039.245 2.156 10596.433
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 100
+   }
+  }
+  coords 11839.413 20.819 10440.952
+ }
+ {
+  components {
+   CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+    m_fRadius 120
+   }
+  }
+  coords 6015.07 186.155 4568.243
+ }
+}

@@ -214,4 +214,49 @@ class DCO_PersonalityCombatUtility
 		}
 		return 1.0;
 	}
+
+	//! Skala lama AI nunduk sebelum nekat nembak balik pas ditekan terus-terusan.
+	//! >1 = lebih lama nunduk. Dipakai bareng CRITICAL_RETURN_FIRE_BASE_S (5s).
+	//! Hasil: CAUTIOUS 8.0s / STANDARD 5.0s / AGGRESSIVE 3.5s / RECKLESS 2.0s
+	static float GetReturnFireDelayScale(SCR_AIUtilityComponent utility)
+	{
+		DCO_EAIPersonality p = GetPersonalitySafe(utility);
+
+		switch (p)
+		{
+			case DCO_EAIPersonality.CAUTIOUS:
+				return 1.6;
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 0.7;
+			case DCO_EAIPersonality.RECKLESS:
+				return 0.4;
+			default:
+				return 1.0;
+		}
+		return 1.0;
+	}
+
+	//! Skala lama "lock" reposisi selama musuh masih dalam jarak tembak optimal.
+	//! <1 = lebih cepat rela ninggalin posisi buat cari cover.
+	//! Sengaja BERLAWANAN arah sama GetStoppedWaitTimeScale: yang itu ngatur
+	//! "betah diam di posisi bagus", yang ini ngatur "keras kepala tetap nembak".
+	//! Dipakai bareng REPOSITION_LOCK_BASE_S (5s).
+	//! Hasil: CAUTIOUS 3.0s / STANDARD 5.0s / AGGRESSIVE 7.0s / RECKLESS 9.0s
+	static float GetRepositionLockScale(SCR_AIUtilityComponent utility)
+	{
+		DCO_EAIPersonality p = GetPersonalitySafe(utility);
+
+		switch (p)
+		{
+			case DCO_EAIPersonality.CAUTIOUS:
+				return 0.6;
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 1.4;
+			case DCO_EAIPersonality.RECKLESS:
+				return 1.8;
+			default:
+				return 1.0;
+		}
+		return 1.0;
+	}
 }
