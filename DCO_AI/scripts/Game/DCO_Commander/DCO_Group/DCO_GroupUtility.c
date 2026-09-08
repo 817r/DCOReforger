@@ -478,10 +478,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		m_UtilityComp = SCR_AIGroupUtilityComponent.Cast(owner.FindComponent(SCR_AIGroupUtilityComponent));
 		m_FormationComponent = AIFormationComponent.Cast(owner.FindComponent(AIFormationComponent));
 		//
-		SetEventMask(owner, EntityEvent.INIT);
-
-		// === ADDED: grup butuh tick sendiri buat overlay-nya. ===
-		SetEventMask(owner, EntityEvent.FRAME);
+		SetEventMask(owner, EntityEvent.INIT);		
 	}
 
 	override void EOnFrame(IEntity owner, float timeSlice)
@@ -680,7 +677,8 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		Faction fc = grp.GetFaction();
 		if (fc)
 			fk = grp.GetFaction().GetFactionKey();
-		AICommander_ManagerComponent.GetInstance().RegisterGroup(this);
+		if(!AICommander_ManagerComponent.GetInstance().RegisterGroup(this))
+			return;
 		
 		if (myCommander)
 		{
@@ -703,5 +701,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		
 		if (m_eGroupRole == CMD_EGroupRole.ARTILLERY)
 			GetGame().GetCallqueue().CallLater(CheckGroupIsHaveOrder, 10000, true);
+		
+		SetEventMask(owner, EntityEvent.FRAME);
 	}
 }

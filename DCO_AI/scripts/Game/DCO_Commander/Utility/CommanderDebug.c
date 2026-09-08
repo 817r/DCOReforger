@@ -207,6 +207,35 @@ class DCO_DebugDraw
 		return "unknown";
 	}
 
+	static string ThreatLevelName(int level)
+	{
+		switch (level)
+		{
+			case CMD_EThreatLevel.NEGLIGIBLE: return "NEGLIGIBLE";
+			case CMD_EThreatLevel.LOW:        return "LOW";
+			case CMD_EThreatLevel.MEDIUM:     return "MEDIUM";
+			case CMD_EThreatLevel.HIGH:       return "HIGH";
+			case CMD_EThreatLevel.CRITICAL:   return "CRITICAL";
+		}
+		return "UNKNOWN";
+	}
+
+	//! Skala tunggal dari abu ke merah. Warna di sini membawa arti tingkat bahaya,
+	//! jadi sengaja tidak memakai palet faction -- dua hal berbeda tidak boleh dibaca
+	//! dengan kunci warna yang sama.
+	static int ThreatLevelColor(int level)
+	{
+		switch (level)
+		{
+			case CMD_EThreatLevel.NEGLIGIBLE: return 0xFF888888; // abu
+			case CMD_EThreatLevel.LOW:        return 0xFF66CC66; // hijau
+			case CMD_EThreatLevel.MEDIUM:     return 0xFFFFCC22; // kuning
+			case CMD_EThreatLevel.HIGH:       return 0xFFFF8822; // oranye
+			case CMD_EThreatLevel.CRITICAL:   return 0xFFFF3322; // merah
+		}
+		return COLOR_NEUTRAL;
+	}
+
 	static int RoleColor(int role)
 	{
 		switch (role)

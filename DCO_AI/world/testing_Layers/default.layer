@@ -109,6 +109,10 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_bRandomPersonality 1
     m_fDebugRefreshInterval 1
    }
+   CMD_ThreatResponseComponent "{68FE1C39956A7026}" {
+    m_bDebugMode 1
+    m_fDebugRefreshInterval 1
+   }
   }
   coords 1833.469 50.311 1075.873
  }
@@ -124,6 +128,10 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_bEnableManpowerBudget 0
     m_eCommanderModeExternal OFFENSIVE
     m_bRandomPersonality 1
+    m_fDebugRefreshInterval 1
+   }
+   CMD_ThreatResponseComponent "{68FE1C39956A7026}" {
+    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }

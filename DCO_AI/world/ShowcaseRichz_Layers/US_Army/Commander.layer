@@ -4,6 +4,7 @@ GenericEntity : "{448DA6A93EA0F9CF}Prefabs/GameMode/PlayerScaledGroupSpawner.et"
    m_aGroupPrefabs {
     "{FCF7F5DC4F83955C}Prefabs/Groups/BLUFOR/Group_US_LightFireTeam.et"
    }
+   m_fSpawnInterval 15
    m_iMaxGroups 15
    m_fSpawnRadius 15
    m_bInvertScaling 1
@@ -23,5 +24,5 @@ GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
    m_fDebugRefreshInterval 1
   }
  }
- coords 6389.512 6.312 3297.824
+ coords 6007.247 64.596 3633.123
 }

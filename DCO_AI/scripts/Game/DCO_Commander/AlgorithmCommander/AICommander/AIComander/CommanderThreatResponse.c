@@ -48,6 +48,23 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	protected float m_fArtilleryCooldown;
 
 	//--------------------------------------------------------------------
+	// === ADDED: Threat Debug ===
+	[Attribute("0", UIWidgets.CheckBox, desc: "Gambar overlay threat system: tiap laporan kontak, skornya, dan klaster responsnya. Cuma kelihatan waktu Game Master kebuka.", category: "Threat Debug")]
+	protected bool m_bDebugMode;
+
+	[Attribute("0.5", UIWidgets.EditBox, "Interval (detik) gambar ulang overlay threat.", category: "Threat Debug")]
+	protected float m_fDebugRefreshInterval;
+
+	protected ref array<ref Shape> m_aDebugShapes = new array<ref Shape>();
+	protected ref array<ref DebugTextWorldSpace> m_aDebugTexts = new array<ref DebugTextWorldSpace>();
+	protected float m_fDebugTimer = 0.0;
+
+	//! Klaster dibangun ulang tiap Think lalu dibuang. Disimpan di sini kalau debug
+	//! menyala -- tanpa itu overlay cuma bisa menggambar entry mentah, dan justru
+	//! bagian yang menentukan respons tidak terlihat.
+	protected ref array<ref CMD_ThreatCluster> m_aDebugClusters;
+	// === END ADDED ===
+
 	protected AICommander_BaseComponent          m_Commander;
 	protected CMD_ArtillerySupport				 m_ArtySupport;
 	protected ref array<ref CMD_ThreatEntry>     m_aThreats    = new array<ref CMD_ThreatEntry>();
@@ -240,6 +257,15 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		}
 
 		array<ref CMD_ThreatCluster> clusters = BuildThreatClusters();
+
+		// === ADDED: hanya disimpan kalau debug menyala, supaya tidak ada referensi
+		// yang menahan objek hidup di jalur normal. ===
+		if (m_bDebugMode)
+			m_aDebugClusters = clusters;
+		else
+			m_aDebugClusters = null;
+		// === END ADDED ===
+
 		foreach (CMD_ThreatCluster cluster : clusters)
 		{
 			if (!cluster || cluster.m_aMembers.IsEmpty())
@@ -806,6 +832,13 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	//--------------------------------------------------------------------
 	override void EOnFrame(IEntity owner, float timeSlice)
 	{
+		// === ADDED: sengaja DI ATAS guard server. Daftar ancaman dibangun di server,
+		// tapi shape dirender lokal -- di hosted/single-player mesinnya sama jadi
+		// kelihatan, di client murni m_aThreats kosong dan overlay cuma menggambar
+		// header dengan angka nol.
+		UpdateThreatDebug(timeSlice);
+		// === END ADDED ===
+
 		if (!Replication.IsServer())
 			return;
 
@@ -817,6 +850,197 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
 		Think(worldTime);
 	}
+
+	//------------------------------------------------------------------------------------------------
+	// === ADDED: Threat Debug ===
+	//! Overlay milik threat system. Menggambar apa yang commander KIRA ada di luar
+	//! sana -- laporan kontak, skornya, klaster responsnya -- bukan apa yang benar-benar
+	//! ada. Bedanya penting: kalau overlay ini menunjukkan ancaman di tempat yang sudah
+	//! kosong, berarti masalahnya di kedaluwarsa laporan, bukan di pengambilan keputusan.
+	//!
+	//! Klaster dibangun ulang tiap Think lalu dibuang, jadi kalau debug menyala hasilnya
+	//! disimpan dulu -- kalau tidak, overlay cuma bisa menggambar entry mentah dan
+	//! justru bagian yang menentukan respons tidak terlihat.
+	protected void UpdateThreatDebug(float timeSlice)
+	{
+		if (!m_bDebugMode)
+		{
+			if (!m_aDebugShapes.IsEmpty() || !m_aDebugTexts.IsEmpty())
+			{
+				m_aDebugShapes.Clear();
+				m_aDebugTexts.Clear();
+			}
+			return;
+		}
+
+		m_fDebugTimer += timeSlice;
+		if (m_fDebugTimer < m_fDebugRefreshInterval)
+			return;
+
+		m_fDebugTimer = 0.0;
+
+		m_aDebugShapes.Clear();
+		m_aDebugTexts.Clear();
+
+		if (!DCO_DebugDraw.IsLocalPlayerInGM())
+			return;
+
+		int   flags     = DCO_DebugDraw.Flags();
+		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+
+		DrawThreatHeader(flags, worldTime);
+		DrawThreatEntries(flags, worldTime);
+		DrawThreatClusters(flags, worldTime);
+	}
+
+	//! Ringkasan di posisi entity commander: jumlah, irama think, dan seluruh ambang
+	//! yang menentukan keputusan. Ambangnya ditampilkan supaya waktu sebuah ancaman
+	//! tidak direspons, kamu bisa langsung lihat dia jatuh di bawah ambang yang mana.
+	protected void DrawThreatHeader(int flags, float worldTime)
+	{
+		vector p = GetOwner().GetOrigin();
+
+		int clusterCount = 0;
+		if (m_aDebugClusters)
+			clusterCount = m_aDebugClusters.Count();
+
+		string a = string.Format(
+			"THREAT SYSTEM\nthreats %1   clusters %2\nthink every %3s   next in %4s",
+			m_aThreats.Count(),
+			clusterCount,
+			DCO_DebugDraw.F1(m_fThinkInterval),
+			DCO_DebugDraw.F1(Math.Max(m_fThinkInterval - m_fThinkTimer, 0.0)));
+
+		string b = string.Format(
+			"\nengage >= %1   reinforce >= %2   cluster gate >= %3\nexpiry %4s   merge %5m   cluster %6m",
+			DCO_DebugDraw.F1(m_fEngageThreshold),
+			DCO_DebugDraw.F1(m_fReinforcementThreshold),
+			DCO_DebugDraw.F1(m_fClusterMinResponseScore),
+			DCO_DebugDraw.F1(m_fThreatExpiry),
+			Math.Round(m_fMergeRadius),
+			Math.Round(m_fClusterRadius));
+
+		string c = string.Format(
+			"\nmax reinforce %1/cluster   cd %2s\nflank dist %3m   arty cd %4s   stale %5s",
+			m_iMaxReinforcementSent,
+			DCO_DebugDraw.F1(m_fReinforcementCooldown),
+			Math.Round(m_fFlankDistance),
+			DCO_DebugDraw.F1(m_fArtilleryCooldown),
+			DCO_DebugDraw.F1(m_fStalenessThreshold));
+
+		m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(
+			Vector(p[0], p[1] + 64.0, p[2]), a + b + c, 16.0, 0xFFFF8822));
+	}
+
+	//! Tiap laporan kontak: penanda kecil berwarna tingkat bahaya, plus angka mentah
+	//! yang membentuk skornya dan status respons yang sudah dikirim.
+	protected void DrawThreatEntries(int flags, float worldTime)
+	{
+		for (int i = 0; i < m_aThreats.Count(); i++)
+		{
+			CMD_ThreatEntry t = m_aThreats.Get(i);
+			if (!t)
+				continue;
+
+			int color = DCO_DebugDraw.ThreatLevelColor(t.m_eThreatLevel);
+
+			m_aDebugShapes.Insert(Shape.CreateSphere(color, flags, t.m_vPosition, 1.5));
+
+			float age      = worldTime - t.m_fFirstReportTime;
+			float lastSeen = worldTime - t.m_fLastUpdateTime;
+
+			string stale;
+			if (lastSeen >= m_fStalenessThreshold)
+				stale = "  STALE";
+			else
+				stale = "";
+
+			string head = string.Format(
+				"THREAT %1/%2   %3\nscore %4   enemies %5   quality %6\nage %7s   last seen %8s ago%9",
+				i + 1,
+				m_aThreats.Count(),
+				DCO_DebugDraw.ThreatLevelName(t.m_eThreatLevel),
+				DCO_DebugDraw.F1(t.m_fPriorityScore),
+				t.m_iEstimatedEnemyCount,
+				DCO_DebugDraw.F1(t.m_fReportQuality),
+				DCO_DebugDraw.F1(age),
+				DCO_DebugDraw.F1(lastSeen),
+				stale);
+
+			string engaging = "none";
+			if (t.m_sEngagingGroupName && t.m_sEngagingGroupName.GetOwner())
+				engaging = t.m_sEngagingGroupName.GetOwner().GetName();
+
+			string flags2 = string.Format(
+				"\nengaged %1   reinforced %2/%3\nflank %4   arty %5   recon %6/%7\nengaging: %8",
+				DCO_DebugDraw.YesNo(t.m_bEngaged),
+				t.m_iReinforcementSentNumber,
+				m_iMaxReinforcementSent,
+				DCO_DebugDraw.YesNo(t.m_bFlankSent),
+				DCO_DebugDraw.YesNo(t.m_bArtilleryCalled),
+				DCO_DebugDraw.YesNo(t.m_bNeedsRecon),
+				DCO_DebugDraw.YesNo(t.m_bReconSent),
+				engaging);
+
+			m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(
+				Vector(t.m_vPosition[0], t.m_vPosition[1] + 14.0, t.m_vPosition[2]),
+				head + flags2, 15.0, color));
+		}
+	}
+
+	//! Klaster: penanda di titik pusat, garis ke tiap anggotanya, dan yang paling
+	//! penting -- apakah skor gabungannya lolos gerbang respons atau tidak. Itu satu
+	//! angka yang menentukan seluruh cabang reinforcement, flank, dan artileri.
+	protected void DrawThreatClusters(int flags, float worldTime)
+	{
+		if (!m_aDebugClusters)
+			return;
+
+		for (int c = 0; c < m_aDebugClusters.Count(); c++)
+		{
+			CMD_ThreatCluster cl = m_aDebugClusters.Get(c);
+			if (!cl || cl.m_aMembers.IsEmpty())
+				continue;
+
+			int color = DCO_DebugDraw.ThreatLevelColor(cl.m_eClusterLevel);
+
+			m_aDebugShapes.Insert(Shape.CreateSphere(color, flags, cl.m_vCenterPos, 3.0));
+
+			foreach (CMD_ThreatEntry m : cl.m_aMembers)
+			{
+				if (!m)
+					continue;
+
+				m_aDebugShapes.Insert(Shape.CreateArrow(
+					Vector(cl.m_vCenterPos[0], cl.m_vCenterPos[1] + 2.0, cl.m_vCenterPos[2]),
+					Vector(m.m_vPosition[0], m.m_vPosition[1] + 2.0, m.m_vPosition[2]),
+					1.5, color, flags));
+			}
+
+			string gate;
+			if (cl.m_fCombinedScore < m_fClusterMinResponseScore)
+				gate = "BELOW GATE -- no response";
+			else if (cl.m_eClusterLevel == CMD_EThreatLevel.HIGH || cl.m_eClusterLevel == CMD_EThreatLevel.CRITICAL)
+				gate = "active: flank + reinforce + arty";
+			else
+				gate = "active: reinforce + arty";
+
+			m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(
+				Vector(cl.m_vCenterPos[0], cl.m_vCenterPos[1] + 30.0, cl.m_vCenterPos[2]),
+				string.Format(
+					"CLUSTER %1/%2   %3\ncombined %4 vs gate %5\nenemies %6   members %7\n%8",
+					c + 1,
+					m_aDebugClusters.Count(),
+					DCO_DebugDraw.ThreatLevelName(cl.m_eClusterLevel),
+					DCO_DebugDraw.F1(cl.m_fCombinedScore),
+					DCO_DebugDraw.F1(m_fClusterMinResponseScore),
+					cl.m_iTotalEstimatedEnemies,
+					cl.m_aMembers.Count(),
+					gate),
+				16.0, color));
+		}
+	}
+	// === END ADDED ===
 
 	override protected void OnPostInit(IEntity owner)
 	{

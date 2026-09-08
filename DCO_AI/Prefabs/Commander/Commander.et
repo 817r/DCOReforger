@@ -5,8 +5,12 @@ GameEntity : "{C28F5F51499CB912}Prefabs/Commander/US_Commander.et" {
    m_sDefaultMoveWaypointPrefab "{93D9BB77AC27D38C}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Move_Commander.et"
    m_sDefaultGetInWaypointPrefab "{6EB248EC45C92C3A}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_GetInCommander.et"
    m_fObjectiveAtTheSameTime 4
+   m_fSyncAttackMaxWaitTime 360
+   m_fPatrolFrontlineDrift 100
    m_fTransportDistanceThreshold 400
    m_fVehicleSearchRadius 200
+   m_fPreemptionCooldown 600
+   m_fReconWaitTimeout 600
   }
   CMD_ArtillerySupport "{6928FC9E431A42AF}" {
   }

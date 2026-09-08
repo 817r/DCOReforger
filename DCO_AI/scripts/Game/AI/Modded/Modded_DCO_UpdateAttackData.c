@@ -15,8 +15,10 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 	
 	protected const float CLOSE_DIRECT_THREAT_DIST = 80.0;
 	
-	protected const float GRENADE_MIN_THROW_DIST = 5.0;
-	protected const float GRENADE_MAX_THROW_DIST = 25.0;
+	// === MOVED: GRENADE_MIN_THROW_DIST / GRENADE_MAX_THROW_DIST pindah ke
+	// DCO_GrenadeUtility. Dua konstanta itu ada di sini tapi gak pernah dipakai satu
+	// kali pun -- gate aslinya hardcoded "< 20" tanpa batas bawah. Sekarang batasnya
+	// ditegakkan di DCO_GrenadeUtility.IsThrowSafe(), dipakai bareng jalur suppress. ===
 
 	override int ResolveFireTree(BaseTarget target, bool visible, bool weaponReady, out float fireRate)
 	{
@@ -128,9 +130,17 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 								
 				return FIRE_TREE_SUPPRESSIVE;
 			}
-			else if (target.GetTimeSinceSeen() > 2 && target.GetDistance() < 20 && target.GetTraceFraction() > 0.5
+			// === MODIFIED: gate lempar granat ===
+			// Dibuang dari kondisi ini:
+			//   target.GetDistance() < 20   -> pindah ke IsThrowSafe (5-25m, ada batas bawah)
+			//   target.GetTraceFraction() > 0.5
+			//       Itu trace PELURU mata-ke-target. Nilai > 0.5 artinya ada yang ngalangin
+			//       separuh jalan -- alias ADA TEMBOK. Dipakai sebagai izin lempar, padahal
+			//       buat granat itu justru kondisi penolakan. Diganti validasi busur.
+			else if (target.GetTimeSinceSeen() > 2
 				&& m_CombatComponent.HasWeaponOfType(EWeaponType.WT_FRAGGRENADE)
-				&& DCO_GrenadeUtility.CanThrowGrenadeNow(m_UtilityComponent))
+				&& DCO_GrenadeUtility.CanThrowGrenadeNow(m_UtilityComponent)
+				&& DCO_GrenadeUtility.IsThrowSafe(m_UtilityComponent, target.GetLastSeenPosition()))
 			{
 				SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, target.GetLastSeenPosition(), EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + 
 				SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER);

@@ -90,11 +90,25 @@ modded class SCR_AIUpdateTargetSuppressionData
 			return FIRE_TREE_SUPPRESSIVE;
 		else if (!targetVisible && m_UtilityComponent.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER) && vector.Distance(m_UtilityComponent.GetOrigin(), suppressionVolume.GetCenterPosition()) > 10)
 			return FIRE_TREE_RPG;
-		else if (!targetVisible && m_UtilityComponent.m_AIInfo.HasRole(EUnitRole.HAS_FRAG_GRENADE) && vector.Distance(m_UtilityComponent.GetOrigin(), suppressionVolume.GetCenterPosition()) < 30)
+		// === MODIFIED: gate lempar granat ===
+		// ResolveFireTree() dipanggil dari EOnTaskSimulate -- TIAP TICK. Sebelumnya
+		// cabang ini cuma dijaga "jarak < 30", tanpa cooldown dan tanpa
+		// NotifyGrenadeThrown(). Artinya unit yang lagi suppress, target gak keliatan,
+		// dalam 30m, punya frag -> nge-queue SCR_AIThrowGrenadeToBehavior BARU tiap
+		// frame. DCO_GrenadeUtility udah ada dan udah jalan di jalur attack, tapi jalur
+		// ini gak pernah disambungin ke situ.
+		//
+		// Cek jarak "< 30" dibuang -- batasnya sekarang 5-25m di IsThrowSafe, yang juga
+		// punya batas BAWAH (jalur ini sebelumnya gak punya sama sekali).
+		else if (!targetVisible
+			&& m_UtilityComponent.m_AIInfo.HasRole(EUnitRole.HAS_FRAG_GRENADE)
+			&& DCO_GrenadeUtility.CanThrowGrenadeNow(m_UtilityComponent)
+			&& DCO_GrenadeUtility.IsThrowSafe(m_UtilityComponent, suppressionVolume.GetCenterPosition()))
 		{
 			SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, suppressionVolume.GetCenterPosition(), EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + 
 			SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER);
 			m_UtilityComponent.AddAction(gren);		
+			DCO_GrenadeUtility.NotifyGrenadeThrown(m_UtilityComponent);
 			return FIRE_TREE_LOOK;
 		}
 		

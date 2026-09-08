@@ -462,14 +462,14 @@ class AICommander_ManagerComponent : ScriptComponent
 					cmdCount = cmdCount + 1;
 			}
 
-			int own = 0;
+			int held = 0;
 			foreach (CMD_AICommanderObjectiveComponent o : m_aObjective)
 			{
 				if (o && o.GetOwningFaction() == fk)
-					own = own + 1;
+					held = held + 1;
 			}
 
-			body = body + string.Format("\n  %1 : %2 cmd, %3 objectives", fk, cmdCount, own);
+			body = body + string.Format("\n  %1 : %2 cmd, %3 objectives", fk, cmdCount, held);
 		}
 
 		int neutral = 0;
