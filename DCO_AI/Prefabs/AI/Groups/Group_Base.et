@@ -4,6 +4,7 @@ SCR_AIGroup {
   DCO_GroupConfigComponent "{6A3E4BE6FC92B3C8}" {
   }
   DCO_GroupContactReporterComponent "{68FE1C39A63FE239}" {
+   m_fScanInterval 15
   }
   DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
   }

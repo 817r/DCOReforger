@@ -982,7 +982,11 @@ class AICommander_BaseComponent : ScriptComponent
 				return;
 		}
 		
-		int enemyCount = obj.CountNearbyUnits(obj.GetIntelCoverageRadius(), m_sFactionKey, false);
+		// === MODIFIED: census objective (satu query dipakai bareng) ===
+		int reconFriendlyCount;
+		int enemyCount;
+		obj.CountNearbyUnitsCached(obj.GetIntelCoverageRadius(), m_sFactionKey, reconFriendlyCount, enemyCount);
+		// === END MODIFIED ===
 		
 		if (!m_mLastReconRevealTime.Contains(obj))
 			m_mLastReconRevealTime.Insert(obj, worldTime);
@@ -1367,7 +1371,12 @@ class AICommander_BaseComponent : ScriptComponent
 		if (!threat || !threat.GetOwner())
 			return 0.0;
 
-		float enemies = threat.CountNearbyUnits(threat.GetRadius(), m_sFactionKey, false);
+		// === MODIFIED: census objective ===
+		int segFriendly;
+		int segEnemies;
+		threat.CountNearbyUnitsCached(threat.GetRadius(), m_sFactionKey, segFriendly, segEnemies);
+		float enemies = segEnemies;
+		// === END MODIFIED ===
 		float dist    = Math.Max(vector.Distance(node, threat.GetOwner().GetOrigin()), 1.0);
 
 		return enemies * (1000.0 / dist);
@@ -1532,8 +1541,9 @@ class AICommander_BaseComponent : ScriptComponent
 		m_aFrontlineReconTracks.Insert(track);
 		// === END ADDED ===
 		
-		Print(string.Format("[%1] Frontline Recon: %2 -> scouting deket %3",
-			m_sCommanderUID, reconGrp.GetOwner().GetName(), frontlinePos.ToString()));
+		if (m_bDebugMode)
+			Print(string.Format("[%1] Frontline Recon: %2 -> scouting deket %3",
+				m_sCommanderUID, reconGrp.GetOwner().GetName(), frontlinePos.ToString()));
 	}
 	
 	//! Lepas grup frontline recon yang udah expired balik ke RESERVE, biar pool
@@ -1561,8 +1571,9 @@ class AICommander_BaseComponent : ScriptComponent
 				{
 					track.m_Squad.CompleteAllWaypoints();
 					track.m_Squad.SetGroupRole(CMD_EGroupRole.RESERVE);
-					Print(string.Format("[%1] Frontline Recon selesai -- %2 dilepas balik ke RESERVE",
-						m_sCommanderUID, track.m_Squad.GetOwner().GetName()));
+					if (m_bDebugMode)
+						Print(string.Format("[%1] Frontline Recon selesai -- %2 dilepas balik ke RESERVE",
+							m_sCommanderUID, track.m_Squad.GetOwner().GetName()));
 				}
 				m_aFrontlineReconTracks.Remove(i);
 			}
@@ -1639,6 +1650,34 @@ class AICommander_BaseComponent : ScriptComponent
 	}
 	// === END ADDED ===
 	
+	// === ADDED: dipakai 2 tempat di SendIdleGroupsToReserve (kandidat captured
+	// yang di-precompute, dan kandidat fallback per grup). Isinya persis logic lama.
+	//! Makin dekat kandidat ke objective yang BELUM kita pegang, makin tinggi (0..1).
+	//! 0.5 kalau semua objective sudah milik kita.
+	protected float ComputeReserveFrontlineScore(vector cand, AICommander_ManagerComponent mgr)
+	{
+	    float nearestNonOwnedDistSq = float.MAX;
+
+	    if (mgr)
+	    {
+	        foreach (CMD_AICommanderObjectiveComponent fobj : mgr.m_aObjective)
+	        {
+	            if (!fobj || fobj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+	                continue;
+
+	            float d = vector.DistanceSq(cand, fobj.GetOwner().GetOrigin());
+	            if (d < nearestNonOwnedDistSq)
+	                nearestNonOwnedDistSq = d;
+	        }
+	    }
+
+	    if (nearestNonOwnedDistSq == float.MAX)
+	        return 0.5;
+
+	    return 1.0 / (1.0 + Math.Sqrt(nearestNonOwnedDistSq) / 500.0);
+	}
+	// === END ADDED ===
+
 	protected void SendIdleGroupsToReserve()
 	{
 	    AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
@@ -1656,6 +1695,14 @@ class AICommander_BaseComponent : ScriptComponent
 	
 	        capturedObjPositions.Insert(obj.GetOwner().GetOrigin());
 	    }
+
+	    // === MODIFIED: skor frontline tiap objective captured gak bergantung sama grup,
+	    // jadi dihitung SEKALI di sini -- dulu diulang per grup idle
+	    // (O(grup x captured x semua objective)). ===
+	    array<float> capturedFrontlineScore = new array<float>();
+	    foreach (vector capPos : capturedObjPositions)
+	        capturedFrontlineScore.Insert(ComputeReserveFrontlineScore(capPos, mgr));
+	    // === END MODIFIED ===
 
 	    float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
 
@@ -1680,44 +1727,35 @@ class AICommander_BaseComponent : ScriptComponent
 			if (!grp.CanItHaveOrder())
 				continue;
 	
-	        array<vector> candidatePositions = new array<vector>();
-	        foreach (vector cp : capturedObjPositions)
-	            candidatePositions.Insert(cp);
+	        // === MODIFIED: pakai list captured + skor yang udah dihitung di atas, tanpa
+	        // copy per grup. Kandidat fallback (gak punya objective) dihitung di tempat. ===
+	        array<vector> candidatePositions = capturedObjPositions;
+	        array<float>  candidateFrontline = capturedFrontlineScore;
 
-	        if (candidatePositions.IsEmpty())
+	        if (capturedObjPositions.IsEmpty())
 	        {
+	            vector fallbackPos;
 	            vector frontline, frontFacing;
 	            if (GetNearestFrontlinePoint(grp.GetOwner().GetOrigin(), frontline, frontFacing))
-	                candidatePositions.Insert(frontline);
+	                fallbackPos = frontline;
 	            else
-	                candidatePositions.Insert(grp.GetOwner().GetOrigin());
+	                fallbackPos = grp.GetOwner().GetOrigin();
+
+	            candidatePositions = new array<vector>();
+	            candidateFrontline = new array<float>();
+	            candidatePositions.Insert(fallbackPos);
+	            candidateFrontline.Insert(ComputeReserveFrontlineScore(fallbackPos, mgr));
 	        }
-	  
-	        AICommander_ManagerComponent frontlineMgr = AICommander_ManagerComponent.GetInstance();
 	        
 	        vector nearestCandidate = candidatePositions[0];
 	        float bestCombinedScore = -1.0;
 	        
-	        foreach (vector cand : candidatePositions)
+	        int candCount = candidatePositions.Count();
+	        for (int c = 0; c < candCount; c++)
 	        {
-	            float nearestNonOwnedDistSq = float.MAX;
-	            if (frontlineMgr)
-	            {
-	                foreach (CMD_AICommanderObjectiveComponent fobj : frontlineMgr.m_aObjective)
-	                {
-	                    if (!fobj || fobj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
-	                        continue;
-	                    float d = vector.DistanceSq(cand, fobj.GetOwner().GetOrigin());
-	                    if (d < nearestNonOwnedDistSq)
-	                        nearestNonOwnedDistSq = d;
-	                }
-	            }
-	            
-	            float frontlineScore;
-	            if (nearestNonOwnedDistSq == float.MAX)
-	                frontlineScore = 0.5;
-	            else
-	                frontlineScore = 1.0 / (1.0 + Math.Sqrt(nearestNonOwnedDistSq) / 500.0);
+	            vector cand          = candidatePositions[c];
+	            float frontlineScore = candidateFrontline[c];
+	            // === END MODIFIED ===
 	            
 	            float practicalScore = 1.0 / (1.0 + vector.Distance(grp.GetOwner().GetOrigin(), cand) / 500.0);
 	            
@@ -2252,8 +2290,11 @@ class AICommander_BaseComponent : ScriptComponent
 			// CheckIsItLost() di ThinkDefensive dan di ReclaimStaleAssignments SELALU
 			// false, bikin dua jalur itu mati. Kepemilikan status lost sekarang
 			// dipegang sisi defensive; di sini cukup cek langsung tanpa mutasi.
-			int friendlyNear = obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, true);
-			int enemyNear    = obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, false);
+			// === MODIFIED: satu panggilan census, bukan dua sphere query ===
+			int friendlyNear;
+			int enemyNear;
+			obj.CountNearbyUnitsCached(obj.GetRadius(), m_sFactionKey, friendlyNear, enemyNear);
+			// === END MODIFIED ===
 
 			if (friendlyNear > 0 && enemyNear >= friendlyNear * 3)
 				continue; // lagi kalah telak di situ -- jangan tambah komit cycle ini
@@ -2262,7 +2303,10 @@ class AICommander_BaseComponent : ScriptComponent
 			AssignRolesToObjective(obj, worldTime, contextCache);
 		}
 		
-		Print(string.Format("[%1] THINK OFFENSIVE", m_sCommanderUID));
+		// === MODIFIED: log per-cycle cuma waktu debug ===
+		if (m_bDebugMode)
+			Print(string.Format("[%1] THINK OFFENSIVE", m_sCommanderUID));
+		// === END MODIFIED ===
 	}
 	
 	protected void ThinkDefensive(float worldTime)
@@ -2310,8 +2354,13 @@ class AICommander_BaseComponent : ScriptComponent
 			hasAnyWork = true;
 		}
 		
-		Print(hasAnyWork.ToString() + " < HAS DEFEND WORK FOR " + m_sCommanderUID + " " + m_sFactionKey);
-		Print(string.Format("[%1] THINK DEFENSIVE", m_sCommanderUID));
+		// === MODIFIED: log per-cycle cuma waktu debug ===
+		if (m_bDebugMode)
+		{
+			Print(hasAnyWork.ToString() + " < HAS DEFEND WORK FOR " + m_sCommanderUID + " " + m_sFactionKey);
+			Print(string.Format("[%1] THINK DEFENSIVE", m_sCommanderUID));
+		}
+		// === END MODIFIED ===
 		// === MODIFIED: SendIdleGroupsToReserve() dicabut dari sini -- sekarang dipanggil
 		// terpusat 1x per Think() cycle di Think() sendiri, gak lagi gated hasAnyWork ===
 	}
@@ -4363,8 +4412,11 @@ class AICommander_BaseComponent : ScriptComponent
 	        if (obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
 	            continue;
 
-	        int friendlyNear = obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, true);
-	        int enemyNear    = obj.CountNearbyUnits(obj.GetRadius(), m_sFactionKey, false);
+	        // === MODIFIED: satu panggilan census, bukan dua sphere query ===
+	        int friendlyNear;
+	        int enemyNear;
+	        obj.CountNearbyUnitsCached(obj.GetRadius(), m_sFactionKey, friendlyNear, enemyNear);
+	        // === END MODIFIED ===
 
 	        if (friendlyNear < enemyNear && obj.GetCurrentAssignedGroupCount(m_sFactionKey) > 0)
 	        {
@@ -4608,10 +4660,11 @@ class AICommander_BaseComponent : ScriptComponent
 		if (dedicatedTeam)
 		{
 			dedicatedTeam.AssignJob(passengerGroup, destination, this, worldTime);
-			Print(string.Format("[%1] TRANSPORT via dedicated team: %2 carrying %3",
-				m_sCommanderUID,
-				dedicatedTeam.GetOwner().GetName(),
-				passengerGroup.GetOwner().GetName()));
+			if (m_bDebugMode)
+				Print(string.Format("[%1] TRANSPORT via dedicated team: %2 carrying %3",
+					m_sCommanderUID,
+					dedicatedTeam.GetOwner().GetName(),
+					passengerGroup.GetOwner().GetName()));
 			return true;
 		}
 		// === END ADDED ===
@@ -4702,8 +4755,9 @@ class AICommander_BaseComponent : ScriptComponent
 	        
 	        vector shellImpact = Vector(px, py, pz);
 	        
-	        Print(string.Format("[Artillery] Shell %1 impact at %2 (radius: %3m from center)",
-	            i + 1, shellImpact.ToString(), radius.ToString()));
+	        if (m_bDebugMode)
+	            Print(string.Format("[Artillery] Shell %1 impact at %2 (radius: %3m from center)",
+	                i + 1, shellImpact.ToString(), radius.ToString()));
 	        
 	        // TODO: spawn explosion / effect di shellImpact
 	    }

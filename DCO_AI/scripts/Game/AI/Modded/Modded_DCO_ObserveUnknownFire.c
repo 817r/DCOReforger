@@ -15,7 +15,12 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 	override void OnMajorSectorChanged(SCR_AISectorThreatFilter ts, int newSectorId, int oldSectorId, float dangerValue)
 	{
 		if (newSectorId != -1 && newSectorId != oldSectorId)
+		{
 			m_iCurrentSectorObserveCounter = 0;
+
+			if (DCO_IsObserveDebugOn())
+				DCO_ObserveDebug(string.Format("SECTOR CHANGE %1 -> %2 danger=%3 (counter reset)", oldSectorId, newSectorId, dangerValue));
+		}
 
 		super.OnMajorSectorChanged(ts, newSectorId, oldSectorId, dangerValue);
 	}
@@ -24,6 +29,9 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 	{
 		if (duration_s <= 0)
 			duration_s = OBSERVE_DURATION_MIN_S;
+
+		if (DCO_IsObserveDebugOn())
+			DCO_ObserveDebug(string.Format("HIGH PRIORITY START duration=%1s counter=%2", duration_s, m_iCurrentSectorObserveCounter));
 
 		super.SwitchToHighPriorityState(duration_s);
 	}
@@ -44,7 +52,23 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 	override void OnActionExecuted()
 	{
 		if (!m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
-			m_CombatMoveLogic.Update();
+		{
+			// Update tetap dipanggil: ini yang menjalankan request di combat move state.
+			// Request cover dilindungi di SCR_AICombatMoveState.ApplyNewRequest, bukan dengan menghentikan Update.
+			if (DCO_IsObserveDebugOn() && m_Utility.m_CombatMoveState)
+			{
+				SCR_AICombatMoveRequestBase rqBefore = m_Utility.m_CombatMoveState.GetRequest();
+				m_CombatMoveLogic.Update();
+				SCR_AICombatMoveRequestBase rqAfter = m_Utility.m_CombatMoveState.GetRequest();
+
+				if (rqAfter && rqAfter != rqBefore)
+					DCO_ObserveDebug(string.Format("OBSERVE pushed request highPrio=%1s", m_fHighPriorityDuration_s));
+			}
+			else
+			{
+				m_CombatMoveLogic.Update();
+			}
+		}
 		else if (m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET))
 			VehicleObserve();
 	}
@@ -65,6 +89,10 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 			if (highPriorityTimePassed_s > m_fHighPriorityDuration_s)
 			{
 				m_iCurrentSectorObserveCounter++;
+
+				if (DCO_IsObserveDebugOn())
+					DCO_ObserveDebug(string.Format("HIGH PRIORITY STOP after=%1s counter=%2", highPriorityTimePassed_s, m_iCurrentSectorObserveCounter));
+
 				StopHighPriorityState();
 			}
 		}
@@ -151,5 +179,23 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 		float waitTime = Math.RandomFloat(20, 30);
 
 		return waitTime;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	// DCO DEBUG — ikut flag m_bDebugCoverReaction di danger reaction WeaponFired
+	//------------------------------------------------------------------------------------------------
+	protected bool DCO_IsObserveDebugOn()
+	{
+		return SCR_AIDangerReaction_WeaponFired.DCO_IsCoverDebugOn();
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void DCO_ObserveDebug(string msg)
+	{
+		string entName = "null";
+		if (m_Utility && m_Utility.m_OwnerEntity)
+			entName = m_Utility.m_OwnerEntity.ToString();
+
+		Print(string.Format("[DCO_Cover] t=%1 %2 | %3", GetGame().GetWorld().GetWorldTime(), entName, msg), LogLevel.NORMAL);
 	}
 };

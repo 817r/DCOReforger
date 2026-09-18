@@ -22,6 +22,31 @@ modded class SCR_AIDangerReaction_WeaponFired
 	protected static ref map<IEntity, float> s_mLastInvestigateTime = new map<IEntity, float>();
 	protected static const int INVESTIGATE_MAP_PRUNE_THRESHOLD = 128;
 
+	//------------------------------------------------------------------------------------------------
+	// REALISTIC REACTION — konstanta
+	//------------------------------------------------------------------------------------------------
+	protected static const float HEAD_HEIGHT                   = 1.6;
+	protected static const float MISS_DIST_DIRECT              = 2.0;   // <= ini dianggap dibidik langsung (missScore = 1)
+	protected static const float MISS_DIST_IRRELEVANT          = 25.0;  // >= ini tembakan bukan untuk AI ini (missScore = 0)
+	protected static const float MISS_DIST_NOT_TOWARD_ME       = 9999.0;
+
+	protected static const float THREAT_WEIGHT_MISS            = 0.6;
+	protected static const float THREAT_WEIGHT_PROXIMITY       = 0.25;
+	protected static const float THREAT_WEIGHT_BURST           = 0.15;
+	protected static const float THREAT_BURST_SATURATION       = 5.0;   // jumlah event yang dianggap "burst penuh"
+
+	protected static const int   BUILDING_FALLBACK_POLL_MS     = 250;
+	protected static const int   BUILDING_FALLBACK_MAX_POLLS   = 8;     // total ~2 detik nunggu hasil pencarian bangunan
+
+	//------------------------------------------------------------------------------------------------
+	// COVER PROTECT — lama waktu request cover dilindungi di combat move state
+	//------------------------------------------------------------------------------------------------
+	protected static const float COVER_MOVE_HOLD_MARGIN_S      = 1.0;   // tambahan hold setelah durasi move
+	protected static const float COVER_BUILDING_HOLD_MARGIN_S  = 0.25;  // tambahan hold setelah jendela poll bangunan
+
+	//! Salinan flag debug supaya bisa dibaca class lain (combat move state, observe behavior)
+	protected static bool s_bDCOCoverDebug;
+
 	[Attribute("50.0", UIWidgets.EditBox, "Jarak maksimum (m) tembakan SENYAP yang bikin AI mau maju investigasi.")]
 	protected float m_fSuppressedInvestigateDist;
 
@@ -33,6 +58,93 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 	[Attribute("20.0", UIWidgets.EditBox, "Cooldown (detik) sebelum AI yang sama boleh dikasih behavior investigasi lagi. Nyegah numpuk pas ditembakin beruntun.")]
 	protected float m_fInvestigateCooldown;
+
+	//------------------------------------------------------------------------------------------------
+	// REALISTIC REACTION — attribute
+	//------------------------------------------------------------------------------------------------
+	[Attribute("1", UIWidgets.CheckBox, "Pakai model reaksi realistis (jangkauan dengar, noleh berbasis score, cari cover prioritas bangunan). Kalau mati, balik ke IsAudiable + TryDodge lama.")]
+	protected bool m_bUseRealisticReaction;
+
+	[Attribute("180.0", UIWidgets.EditBox, "Jangkauan dengar (m) tembakan SENYAP. Tembakan normal pakai AUDIBLE_DISTANCE_NORMAL vanilla.")]
+	protected float m_fSuppressedAudibleRange;
+
+	[Attribute("0.5", UIWidgets.EditBox, "Pengali jangkauan dengar kalau AI di dalam kendaraan (0.5 = kira-kira -6 dB).")]
+	protected float m_fInVehicleHearingFactor;
+
+	[Attribute("0.3", UIWidgets.EditBox, "Audibility >= nilai ini = pasti dengar. Di bawahnya peluang = audibility / nilai ini.")]
+	protected float m_fAudibleGuaranteeThreshold;
+
+	[Attribute("5.0", UIWidgets.EditBox, "Error arah minimum (derajat) saat AI memperkirakan posisi penembak.")]
+	protected float m_fDirectionErrorBaseDeg;
+
+	[Attribute("20.0", UIWidgets.EditBox, "Tambahan error arah maksimum (derajat) saat tembakan hampir tidak terdengar.")]
+	protected float m_fDirectionErrorExtraDeg;
+
+	[Attribute("60.0", UIWidgets.EditBox, "Jarak (m) di mana AI pasti noleh ke arah tembakan.")]
+	protected float m_fLookDistFull;
+
+	[Attribute("400.0", UIWidgets.EditBox, "Jarak (m) maksimum AI mau noleh. Di atas ini tidak noleh.")]
+	protected float m_fLookDistMax;
+
+	[Attribute("0.2", UIWidgets.EditBox, "Peluang dasar noleh di jarak maksimum.")]
+	protected float m_fLookChanceAtMax;
+
+	[Attribute("0.5", UIWidgets.EditBox, "Bonus peluang noleh berdasarkan threat score (0..1 dikali nilai ini).")]
+	protected float m_fLookThreatBonus;
+
+	[Attribute("0.15", UIWidgets.EditBox, "Delay reaksi noleh minimum (detik) setelah suara sampai.")]
+	protected float m_fLookDelayMin;
+
+	[Attribute("0.35", UIWidgets.EditBox, "Delay reaksi noleh maksimum (detik) setelah suara sampai.")]
+	protected float m_fLookDelayMax;
+
+	[Attribute("0.2", UIWidgets.EditBox, "Delay minimum (detik) sebelum AI mulai lari ke cover.")]
+	protected float m_fCoverDelayMin;
+
+	[Attribute("0.6", UIWidgets.EditBox, "Delay maksimum (detik) sebelum AI mulai lari ke cover.")]
+	protected float m_fCoverDelayMax;
+
+	[Attribute("0.7", UIWidgets.EditBox, "Threat score >= nilai ini: fallback cover (non-bangunan) berakhir tiarap, bukan jongkok.")]
+	protected float m_fHighThreatProneThreshold;
+
+	[Attribute("1", UIWidgets.CheckBox, "Setelah sampai di cover, AI noleh lagi ke arah perkiraan tembakan (tolehan awal biasanya sudah kalah sama gerakan).")]
+	protected bool m_bLookAfterCover;
+
+	[Attribute("3", UIWidgets.EditBox, "Berapa kali tolehan setelah sampai di cover diulang, supaya pandangan bertahan.")]
+	protected int m_iLookAfterCoverRepeats;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Jeda (detik) antar tolehan setelah sampai di cover.")]
+	protected float m_fLookAfterCoverInterval;
+
+	[Attribute("0.3", UIWidgets.EditBox, "Jeda tambahan (detik) setelah gerakan selesai sebelum AI noleh ke arah tembakan.")]
+	protected float m_fLookAfterCoverDelay;
+
+	[Attribute("12.0", UIWidgets.EditBox, "Batas atas (m) jarak pencarian cover, membatasi nilai dari DodgeSearchDist supaya AI tidak sprint jauh-jauh.")]
+	protected float m_fCoverSearchDistCap;
+
+	[Attribute("0.4", UIWidgets.EditBox, "Threat score minimum supaya AI mau lari ke cover. Di bawah ini AI cuma noleh dan turun stance.")]
+	protected float m_fCoverThreatGate;
+
+	[Attribute("1", UIWidgets.CheckBox, "Turunkan stance kalau threat di bawah gate (bukan lari ke cover).")]
+	protected bool m_bLowerStanceOnLowThreat;
+
+	[Attribute("8.0", UIWidgets.EditBox, "Jarak waktu minimum (detik) dari gerakan cover terakhir AI ini, termasuk yang dari reaksi peluru mendarat.")]
+	protected float m_fSharedMoveCooldown;
+
+	[Attribute("0", UIWidgets.CheckBox, "Coba cari BANGUNAN dulu sebelum cover biasa. Matikan supaya AI langsung cari cover biasa saja.")]
+	protected bool m_bCoverPreferBuilding;
+
+	[Attribute("1", UIWidgets.CheckBox, "Cover = VERY HIGH PRIORITY: tanpa roll chance, menimpa combat move yang sedang jalan, dan request sistem lain ditolak selama AI lari ke cover.")]
+	protected bool m_bCoverVeryHighPriority;
+
+	//------------------------------------------------------------------------------------------------
+	// DEBUG
+	//------------------------------------------------------------------------------------------------
+	[Attribute("0", UIWidgets.CheckBox, "Debug: print log reaksi tembakan (dengar, noleh, cover, fallback bangunan).")]
+	protected bool m_bDebugCoverReaction;
+
+	[Attribute("100.0", UIWidgets.EditBox, "Debug: hanya log tembakan yang jaraknya <= nilai ini (m), supaya log tidak banjir.")]
+	protected float m_fDebugMaxDist;
 
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
@@ -152,10 +264,44 @@ modded class SCR_AIDangerReaction_WeaponFired
 			}
 		}
 
-		bool isAudible = IsAudiable(distance, isShotSuppressed);
+		s_bDCOCoverDebug = m_bDebugCoverReaction;
+
+		// Model dengar: realistis (jangkauan efektif) atau lama (IsAudiable)
+		float audibility = 0;
+		bool isAudible;
+		if (m_bUseRealisticReaction)
+		{
+			audibility = ComputeAudibility(distance, isShotSuppressed, isInVehicle);
+			isAudible  = RollAudible(audibility);
+		}
+		else
+		{
+			isAudible = IsAudiable(distance, isShotSuppressed);
+		}
 
 		if (!isFlyby && !isAudible)
 			return false;
+
+		// Perkiraan posisi penembak + threat score, dihitung sekali di sini supaya konsisten untuk semua reaksi yang ditunda
+		vector perceivedShotPos = shotPos;
+		float  threatScore      = 0;
+		if (m_bUseRealisticReaction && isAudible)
+		{
+			perceivedShotPos = ComputePerceivedShotPos(myOrigin, shotPos, audibility);
+
+			float missDist = ComputeMissDistance(myOrigin, shotPos, shotDir);
+			threatScore    = ComputeThreatScore(missDist, audibility, dangerEventCount);
+
+			if (IsDebugOn(distance))
+			{
+				DebugCover(utility.m_OwnerEntity, string.Format("PERCEIVE dist=%1 suppressed=%2 flyby=%3 audibility=%4 miss=%5 events=%6 threat=%7 perceivedErr=%8m",
+					distance, isShotSuppressed, isFlyby, audibility, missDist, dangerEventCount, threatScore, vector.Distance(perceivedShotPos, shotPos)));
+			}
+		}
+		else if (m_bUseRealisticReaction && IsDebugOn(distance))
+		{
+			DebugCover(utility.m_OwnerEntity, string.Format("PERCEIVE dist=%1 NOT AUDIBLE (audibility=%2) flyby=%3 -> tidak ada reaksi cover", distance, audibility, isFlyby));
+		}
 
 		float timeTillFlyby_s = float.MAX;
 		float timeTillGunshotHeard_s = float.MAX;
@@ -195,36 +341,39 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 			bool ignoreGunshotHeard = isFlyby && timeTillFlyby_s < timeTillGunshotHeard_s;
 
-			if (!ignoreGunshotHeard)
+			if (m_bUseRealisticReaction && IsDebugOn(distance))
+			{
+				DebugCover(utility.m_OwnerEntity, string.Format("TIMING flyby_in=%1s heard_in=%2s ignoreHeard=%3 endangeringGroup=%4 executingNow=%5",
+					timeTillFlyby_s, timeTillGunshotHeard_s, ignoreGunshotHeard, endangeringForGroup, utility.m_CombatMoveState && utility.m_CombatMoveState.IsExecutingRequest()));
+			}
+
+			if (!ignoreGunshotHeard || endangeringForGroup)
 			{
 				if (timeTillGunshotHeard_s < 0)
 				{
 					OnGunshotHeard(utility, distance, dangerEventCount, shotPos);
-					TryDodge(utility, shotPos, distance);
+
+					if (m_bUseRealisticReaction)
+						ReactToGunshot(utility, perceivedShotPos, distance, threatScore);
+					else
+						TryDodge(utility, shotPos, distance);
 				}
 				else
 				{
 					utility.GetCallqueue().CallLater(OnGunshotHeard, 1000*timeTillGunshotHeard_s, false,
 						utility, distance, dangerEventCount, shotPos);
-					utility.GetCallqueue().CallLater(TryDodge, 1000*timeTillGunshotHeard_s, false,
-						utility, shotPos, distance);
+
+					if (m_bUseRealisticReaction)
+					{
+						utility.GetCallqueue().CallLater(ReactToGunshot, 1000*timeTillGunshotHeard_s, false,
+							utility, perceivedShotPos, distance, threatScore);
+					}
+					else
+					{
+						utility.GetCallqueue().CallLater(TryDodge, 1000*timeTillGunshotHeard_s, false,
+							utility, shotPos, distance);
+					}
 				}
-			}
-
-			if (isShotSuppressed && !isInVehicle && distance < m_fSuppressedInvestigateDist
-				&& CanInvestigateNow(utility.m_OwnerEntity))
-			{
-				SCR_AIMoveAndInvestigateBehavior investigate = new SCR_AIMoveAndInvestigateBehavior(
-					utility, null, shotPos,
-					SCR_AIActionBase.PRIORITY_BEHAVIOR_MOVE_AND_INVESTIGATE,
-					SCR_AIActionBase.PRIORITY_LEVEL_NORMAL,
-					isDangerous: true,
-					radius: m_fInvestigateRadius,
-					targetUnitType: EAIUnitType.UnitType_Infantry,
-					duration: m_fInvestigateDuration);
-
-				utility.AddAction(investigate);
-				MarkInvestigated(utility.m_OwnerEntity);
 			}
 		}
 
@@ -260,6 +409,621 @@ modded class SCR_AIDangerReaction_WeaponFired
 		float chance = Math.Lerp(SUPPRESSED_ROLL_CHANCE_AT_MIN, 0.0, t);
  
 		return Math.RandomFloat01() < chance;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	static bool DCO_IsCoverDebugOn()
+	{
+		return s_bDCOCoverDebug;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	// DEBUG — helper
+	//------------------------------------------------------------------------------------------------
+	protected bool IsDebugOn(float distance)
+	{
+		return m_bDebugCoverReaction && distance <= m_fDebugMaxDist;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void DebugCover(IEntity ent, string msg)
+	{
+		string entName = "null";
+		if (ent)
+			entName = ent.ToString();
+
+		Print(string.Format("[DCO_Cover] t=%1 %2 | %3", GetGame().GetWorld().GetWorldTime(), entName, msg), LogLevel.NORMAL);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected string DebugFailReason(SCR_AICombatMoveRequestBase rq)
+	{
+		if (!rq)
+			return "none";
+
+		return typename.EnumToString(SCR_EAICombatMoveRequestFailReason, rq.m_eFailReason);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	// REALISTIC REACTION — perhitungan
+	//------------------------------------------------------------------------------------------------
+
+	//! 1 = sangat jelas (dekat), 0 = di luar jangkauan dengar
+	protected float ComputeAudibility(float dist, bool isSuppressed, bool isInVehicle)
+	{
+		float rangeEff = AUDIBLE_DISTANCE_NORMAL;
+		if (isSuppressed)
+			rangeEff = m_fSuppressedAudibleRange;
+
+		if (isInVehicle)
+			rangeEff *= m_fInVehicleHearingFactor;
+
+		if (rangeEff <= 0)
+			return 0;
+
+		return Math.Clamp(1.0 - (dist / rangeEff), 0.0, 1.0);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected bool RollAudible(float audibility)
+	{
+		if (audibility <= 0)
+			return false;
+
+		if (m_fAudibleGuaranteeThreshold <= 0 || audibility >= m_fAudibleGuaranteeThreshold)
+			return true;
+
+		float chance = audibility / m_fAudibleGuaranteeThreshold;
+		return Math.RandomFloat01() < chance;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Posisi penembak menurut AI: shotPos diputar di sekitar AI (sumbu Y) dengan error sudut
+	protected vector ComputePerceivedShotPos(vector myOrigin, vector shotPos, float audibility)
+	{
+		float errorDeg = m_fDirectionErrorBaseDeg + (1.0 - audibility) * m_fDirectionErrorExtraDeg;
+		if (errorDeg <= 0)
+			return shotPos;
+
+		float angleRad = Math.RandomFloat(-errorDeg, errorDeg) * Math.DEG2RAD;
+		float c = Math.Cos(angleRad);
+		float s = Math.Sin(angleRad);
+
+		vector offset = shotPos - myOrigin;
+		float rx = offset[0] * c - offset[2] * s;
+		float rz = offset[0] * s + offset[2] * c;
+
+		return myOrigin + Vector(rx, offset[1], rz);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Jarak tegak lurus dari kepala AI ke lintasan peluru. MISS_DIST_NOT_TOWARD_ME kalau AI di belakang penembak.
+	protected float ComputeMissDistance(vector myOrigin, vector shotPos, vector shotDir)
+	{
+		float dirLen = shotDir.Length();
+		if (dirLen < 0.001)
+			return MISS_DIST_NOT_TOWARD_ME;
+
+		vector dir     = shotDir * (1.0 / dirLen);
+		vector headPos = myOrigin + Vector(0, HEAD_HEIGHT, 0);
+		vector toMe    = headPos - shotPos;
+
+		float t = vector.Dot(toMe, dir);
+		if (t < 0)
+			return MISS_DIST_NOT_TOWARD_ME;
+
+		vector perpendicular = toMe - dir * t;
+		return perpendicular.Length();
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 0..1 — gabungan seberapa dekat peluru ke AI, seberapa dekat penembak, dan jumlah tembakan
+	protected float ComputeThreatScore(float missDist, float audibility, int dangerEventCount)
+	{
+		float missScore = 0;
+		if (missDist <= MISS_DIST_DIRECT)
+			missScore = 1.0;
+		else if (missDist < MISS_DIST_IRRELEVANT)
+			missScore = 1.0 - (missDist - MISS_DIST_DIRECT) / (MISS_DIST_IRRELEVANT - MISS_DIST_DIRECT);
+
+		float burstScore = Math.Clamp(dangerEventCount / THREAT_BURST_SATURATION, 0.0, 1.0);
+
+		float threat = missScore * THREAT_WEIGHT_MISS
+					 + audibility * THREAT_WEIGHT_PROXIMITY
+					 + burstScore * THREAT_WEIGHT_BURST;
+
+		return Math.Clamp(threat, 0.0, 1.0);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected float ComputeLookChance(float distance, float threatScore)
+	{
+		if (distance > m_fLookDistMax)
+			return 0;
+
+		float baseChance = 1.0;
+		if (distance > m_fLookDistFull && m_fLookDistMax > m_fLookDistFull)
+		{
+			float t = (distance - m_fLookDistFull) / (m_fLookDistMax - m_fLookDistFull);
+			baseChance = Math.Lerp(1.0, m_fLookChanceAtMax, t);
+		}
+
+		return Math.Clamp(baseChance + threatScore * m_fLookThreatBonus, 0.0, 1.0);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	// REALISTIC REACTION — eksekusi
+	//------------------------------------------------------------------------------------------------
+
+	//! Dipanggil saat suara tembakan sampai. Jadwalkan noleh (refleks) lalu cari cover.
+	protected void ReactToGunshot(SCR_AIUtilityComponent utility, vector perceivedShotPos, float distance, float threatScore)
+	{
+		if (!utility || !utility.m_OwnerEntity)
+			return;
+
+		bool dbg = IsDebugOn(distance);
+
+		float lookChance = ComputeLookChance(distance, threatScore);
+		float lookRoll   = Math.RandomFloat01();
+		int lookDelay_ms = -1;
+		if (lookRoll < lookChance)
+		{
+			lookDelay_ms = (int)(Math.RandomFloat(m_fLookDelayMin, m_fLookDelayMax) * 1000.0);
+			utility.GetCallqueue().CallLater(LookAtShot, lookDelay_ms, false, utility, perceivedShotPos);
+		}
+
+		int coverDelay_ms = (int)(Math.RandomFloat(m_fCoverDelayMin, m_fCoverDelayMax) * 1000.0);
+		utility.GetCallqueue().CallLater(TryTakeCoverFromShot, coverDelay_ms, false, utility, perceivedShotPos, distance, threatScore);
+
+		if (dbg)
+		{
+			DebugCover(utility.m_OwnerEntity, string.Format("HEARD dist=%1 threat=%2 lookChance=%3 roll=%4 lookDelay=%5ms coverDelay=%6ms executingNow=%7",
+				distance, threatScore, lookChance, lookRoll, lookDelay_ms, coverDelay_ms, utility.m_CombatMoveState && utility.m_CombatMoveState.IsExecutingRequest()));
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void LookAtShot(SCR_AIUtilityComponent utility, vector perceivedShotPos)
+	{
+		if (!utility || !utility.m_OwnerEntity)
+			return;
+
+		if (!utility.m_LookAction)
+		{
+			if (m_bDebugCoverReaction)
+				DebugCover(utility.m_OwnerEntity, "LOOK gagal: m_LookAction null");
+			return;
+		}
+
+		utility.m_LookAction.LookAt(perceivedShotPos, SCR_AILookAction.PRIO_DANGER_EVENT);
+
+		if (m_bDebugCoverReaction)
+			DebugCover(utility.m_OwnerEntity, string.Format("LOOK -> %1", perceivedShotPos));
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Turun satu tingkat stance tanpa bergerak
+	protected void LowerStance(SCR_AIUtilityComponent utility)
+	{
+		if (!utility || !utility.m_CombatComponent)
+			return;
+
+		SCR_CharacterControllerComponent charCon = utility.m_CombatComponent.GetCharacterController();
+		if (!charCon)
+			return;
+
+		if (charCon.GetStance() == ECharacterStance.STAND)
+			charCon.SetStanceChange(2);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Jadwalkan tolehan ke arah tembakan setelah gerakan ke cover selesai
+	protected void ScheduleLookAfterCover(notnull SCR_AIUtilityComponent utility, vector perceivedShotPos, float moveDuration_s)
+	{
+		if (!m_bLookAfterCover || m_iLookAfterCoverRepeats <= 0)
+			return;
+
+		int delay_ms = (int)((moveDuration_s + m_fLookAfterCoverDelay) * 1000.0);
+
+		utility.GetCallqueue().CallLater(LookAfterCover, delay_ms, false,
+			utility, perceivedShotPos, m_iLookAfterCoverRepeats);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void LookAfterCover(SCR_AIUtilityComponent utility, vector perceivedShotPos, int repeatsLeft)
+	{
+		if (!utility || !utility.m_OwnerEntity)
+			return;
+
+		LookAtShot(utility, perceivedShotPos);
+
+		repeatsLeft--;
+		if (repeatsLeft <= 0)
+			return;
+
+		utility.GetCallqueue().CallLater(LookAfterCover, (int)(m_fLookAfterCoverInterval * 1000.0), false,
+			utility, perceivedShotPos, repeatsLeft);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void TryTakeCoverFromShot(SCR_AIUtilityComponent utility, vector perceivedShotPos, float distance, float threatScore)
+	{
+		if (!utility || !utility.m_OwnerEntity)
+			return;
+
+		DCO_AIConfigComponent cfg = utility.m_DCOConfig;
+
+		float maxDist    = DODGE_MAX_DIST_FALLBACK;
+		float cooldown_s = DODGE_COOLDOWN_FALLBACK;
+		float chance     = DODGE_CHANCE_FALLBACK;
+		bool  scalePers  = true;
+
+		if (cfg)
+		{
+			maxDist    = cfg.GetDodgeMaxDist();
+			cooldown_s = cfg.GetDodgeCooldown();
+			chance     = cfg.GetDodgeChance();
+			scalePers  = cfg.GetDodgeScaleByPersonality();
+		}
+
+		bool dbg = IsDebugOn(distance);
+		IEntity ownerEnt = utility.m_OwnerEntity;
+
+		if (distance > maxDist)
+		{
+			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: dist %1 > maxDist %2", distance, maxDist));
+			return;
+		}
+
+		SCR_AICombatMoveState state = utility.m_CombatMoveState;
+		if (!state)
+		{
+			if (dbg) DebugCover(ownerEnt, "COVER STOP: m_CombatMoveState null");
+			return;
+		}
+
+		if (m_bCoverVeryHighPriority)
+		{
+			// Masih lari ke cover dari tembakan sebelumnya -> jangan ganggu
+			if (state.DCO_IsCoverProtected())
+			{
+				if (dbg) DebugCover(ownerEnt, "COVER STOP: sudah lari ke cover (protected)");
+				return;
+			}
+
+			if (state.IsExecutingRequest() && dbg)
+				DebugCover(ownerEnt, string.Format("COVER OVERRIDE: request lain sedang jalan -> akan ditimpa (oldRq fail=%1)", DebugFailReason(state.GetOldRequest())));
+		}
+		else if (state.IsExecutingRequest())
+		{
+			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: IsExecutingRequest = true (oldRq fail=%1)", DebugFailReason(state.GetOldRequest())));
+			return;
+		}
+
+		if (cfg && cfg.IsHoldPosition())
+		{
+			if (dbg) DebugCover(ownerEnt, "COVER STOP: HoldPosition");
+			return;
+		}
+
+		if (utility.m_AIInfo && utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
+		{
+			if (dbg) DebugCover(ownerEnt, "COVER STOP: IN_VEHICLE");
+			return;
+		}
+
+		if (state.IsInValidCover())
+		{
+			if (dbg) DebugCover(ownerEnt, "COVER STOP: IsInValidCover = true");
+			return;
+		}
+
+		// Ancaman kecil (tembakan jauh / tidak mengarah ke AI): cukup turun stance, tidak perlu lari
+		if (threatScore < m_fCoverThreatGate)
+		{
+			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: threat %1 < gate %2 -> turun stance saja", threatScore, m_fCoverThreatGate));
+
+			if (m_bLowerStanceOnLowThreat)
+				LowerStance(utility);
+
+			return;
+		}
+
+		// Budget gerakan bersama: batasi total pergerakan AI ini dari semua danger reaction
+		if (!DCO_CoverMoveBudget.CanMove(ownerEnt, m_fSharedMoveCooldown))
+		{
+			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: budget gerakan (gerak terakhir %1s lalu, minimal %2s)",
+				DCO_CoverMoveBudget.GetTimeSinceLastMove(ownerEnt), m_fSharedMoveCooldown));
+			return;
+		}
+
+		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(ownerEnt))
+		{
+			if (dbg) DebugCover(ownerEnt, "COVER STOP: di dalam bangunan");
+			return;
+		}
+
+		if (!CanDodgeNow(ownerEnt, cooldown_s))
+		{
+			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: cooldown aktif (%1s)", cooldown_s));
+			return;
+		}
+
+		// Cooldown ditandai sebelum roll (disengaja, cegah spam percobaan)
+		MarkDodged(ownerEnt, cooldown_s);
+
+		float baseChance = chance;
+		float persScale  = 1.0;
+		if (scalePers)
+		{
+			persScale = DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(utility);
+			chance *= persScale;
+		}
+
+		// Makin tinggi ancaman, makin mendekati pasti cari cover
+		chance = Math.Clamp(chance, 0.0, 1.0);
+		chance = chance + threatScore * (1.0 - chance);
+
+		// Very high priority: selalu lari ke cover
+		if (m_bCoverVeryHighPriority)
+			chance = 1.0;
+
+		float coverRoll = Math.RandomFloat01();
+		if (coverRoll >= chance)
+		{
+			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: roll gagal roll=%1 chance=%2 (base=%3 pers=%4 threat=%5) -> cooldown tetap jalan",
+				coverRoll, chance, baseChance, persScale, threatScore));
+			return;
+		}
+
+		// Bangunan dimatikan: langsung cover biasa
+		if (!m_bCoverPreferBuilding)
+		{
+			if (dbg) DebugCover(ownerEnt, string.Format("COVER GO: MOVE-cover (bangunan dimatikan) roll=%1 chance=%2 threat=%3", coverRoll, chance, threatScore));
+			PushCoverMove(utility, state, perceivedShotPos, threatScore);
+			return;
+		}
+
+		// Prioritas bangunan. Kalau request sebelumnya baru gagal karena tidak ada bangunan, langsung cover biasa.
+		SCR_AICombatMoveRequestBase oldRq = state.GetOldRequest();
+		if (oldRq && oldRq.m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+		{
+			if (dbg) DebugCover(ownerEnt, string.Format("COVER GO: MOVE langsung (oldRq gagal NO_BUILDING_FOUND) roll=%1 chance=%2 threat=%3", coverRoll, chance, threatScore));
+			PushCoverMove(utility, state, perceivedShotPos, threatScore);
+			return;
+		}
+
+		if (dbg) DebugCover(ownerEnt, string.Format("COVER GO: BUILDING dulu roll=%1 chance=%2 threat=%3 oldRq fail=%4", coverRoll, chance, threatScore, DebugFailReason(oldRq)));
+
+		SCR_AICombatMoveRequest_Move buildingRq = PushBuildingMove(utility, state, perceivedShotPos);
+		utility.GetCallqueue().CallLater(CheckBuildingFallback, BUILDING_FALLBACK_POLL_MS, false,
+			utility, buildingRq, perceivedShotPos, threatScore, BUILDING_FALLBACK_MAX_POLLS);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Catatan: radius pencarian bangunan diatur BUILDING_SEARCH_RADIUS_BT di file .bt, bukan m_fCoverSearchDistMax.
+	protected SCR_AICombatMoveRequest_Move PushBuildingMove(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatMoveState state, vector perceivedShotPos)
+	{
+		float searchDist = DODGE_SEARCH_DIST_FALLBACK;
+		if (utility.m_DCOConfig)
+			searchDist = utility.m_DCOConfig.GetDodgeSearchDist();
+
+		if (m_fCoverSearchDistCap > 0)
+			searchDist = Math.Min(searchDist, m_fCoverSearchDistCap);
+
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+
+		rq.m_eType      = SCR_EAICombatMoveRequestType.BUILDING;
+		rq.m_eReason    = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+		rq.m_vTargetPos = perceivedShotPos;
+		rq.m_vMovePos   = rq.m_vTargetPos;
+
+		rq.m_bTryFindCover              = false;
+		rq.m_bFailIfNoCover             = false;
+		rq.m_bUseCoverSearchDirectivity = false;
+		rq.m_bCheckCoverVisibility      = false;
+
+		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+
+		rq.m_eStanceMoving = ECharacterStance.STAND;
+		rq.m_eStanceEnd    = ECharacterStance.CROUCH;
+		rq.m_eMovementType = EMovementType.SPRINT;
+
+		rq.m_bAimAtTarget    = false;
+		rq.m_bAimAtTargetEnd = true;
+
+		rq.m_fCoverSearchDistMin = 0;
+		rq.m_fCoverSearchDistMax = searchDist;
+		rq.m_fMoveDuration_s     = searchDist / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
+
+		DCO_CoverMoveBudget.MarkMove(utility.m_OwnerEntity);
+
+		float buildingHold_s = (BUILDING_FALLBACK_POLL_MS * BUILDING_FALLBACK_MAX_POLLS) / 1000.0 + COVER_BUILDING_HOLD_MARGIN_S;
+
+		// Proteksi bangunan minimal selama jendela fallback, maksimal selama durasi lari
+		if (m_bCoverVeryHighPriority)
+			state.DCO_ApplyCoverRequest(rq, Math.Max(buildingHold_s, rq.m_fMoveDuration_s + COVER_MOVE_HOLD_MARGIN_S));
+		else
+			state.ApplyNewRequest(rq);
+
+		ScheduleLookAfterCover(utility, perceivedShotPos, rq.m_fMoveDuration_s);
+
+		if (m_bDebugCoverReaction)
+			DebugCover(utility.m_OwnerEntity, string.Format("PUSH BUILDING searchDist=%1 executingAfter=%2", searchDist, state.IsExecutingRequest()));
+
+		return rq;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Cover biasa yang harus menutupi AI dari arah perkiraan tembakan
+	protected void PushCoverMove(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatMoveState state, vector perceivedShotPos, float threatScore)
+	{
+		float searchDist = DODGE_SEARCH_DIST_FALLBACK;
+		if (utility.m_DCOConfig)
+			searchDist = utility.m_DCOConfig.GetDodgeSearchDist();
+
+		if (m_fCoverSearchDistCap > 0)
+			searchDist = Math.Min(searchDist, m_fCoverSearchDistCap);
+
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+
+		rq.m_eType      = SCR_EAICombatMoveRequestType.MOVE;
+		rq.m_eReason    = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+		rq.m_vTargetPos = perceivedShotPos;
+		rq.m_vMovePos   = rq.m_vTargetPos;
+
+		rq.m_bTryFindCover              = true;
+		rq.m_bFailIfNoCover             = false;
+		rq.m_bUseCoverSearchDirectivity = true;
+		rq.m_bCheckCoverVisibility      = true;
+
+		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+
+		rq.m_eStanceMoving = ECharacterStance.STAND;
+		rq.m_eMovementType = EMovementType.SPRINT;
+
+		if (threatScore >= m_fHighThreatProneThreshold)
+			rq.m_eStanceEnd = ECharacterStance.PRONE;
+		else
+			rq.m_eStanceEnd = ECharacterStance.CROUCH;
+
+		rq.m_bAimAtTarget    = false;
+		rq.m_bAimAtTargetEnd = true;
+
+		rq.m_fCoverSearchDistMin = 0;
+		rq.m_fCoverSearchDistMax = searchDist;
+		rq.m_fMoveDuration_s     = searchDist / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
+
+		DCO_CoverMoveBudget.MarkMove(utility.m_OwnerEntity);
+
+		if (m_bCoverVeryHighPriority)
+			state.DCO_ApplyCoverRequest(rq, rq.m_fMoveDuration_s + COVER_MOVE_HOLD_MARGIN_S);
+		else
+			state.ApplyNewRequest(rq);
+
+		ScheduleLookAfterCover(utility, perceivedShotPos, rq.m_fMoveDuration_s);
+
+		if (m_bDebugCoverReaction)
+		{
+			DebugCover(utility.m_OwnerEntity, string.Format("PUSH MOVE-cover searchDist=%1 stanceEnd=%2 executingAfter=%3",
+				searchDist, typename.EnumToString(ECharacterStance, rq.m_eStanceEnd), state.IsExecutingRequest()));
+		}
+
+		utility.GetCallqueue().CallLater(CheckCoverMoveWatchdog, BUILDING_FALLBACK_POLL_MS, false,
+			utility, rq, BUILDING_FALLBACK_MAX_POLLS);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Kalau request cover pun tidak pernah dieksekusi, lepas proteksi supaya AI tidak beku di tempat.
+	protected void CheckCoverMoveWatchdog(SCR_AIUtilityComponent utility, SCR_AICombatMoveRequest_Move coverRq, int pollsLeft)
+	{
+		if (!utility || !utility.m_OwnerEntity || !coverRq)
+			return;
+
+		SCR_AICombatMoveState state = utility.m_CombatMoveState;
+		if (!state)
+			return;
+
+		if (state.IsExecutingRequest())
+		{
+			if (m_bDebugCoverReaction)
+				DebugCover(utility.m_OwnerEntity, "MOVE-cover OK: request dieksekusi");
+			return;
+		}
+
+		if (coverRq.m_eFailReason != SCR_EAICombatMoveRequestFailReason.NONE)
+		{
+			if (m_bDebugCoverReaction)
+				DebugCover(utility.m_OwnerEntity, string.Format("MOVE-cover GAGAL fail=%1 -> lepas proteksi", DebugFailReason(coverRq)));
+
+			state.DCO_ReleaseCoverProtection("cover-failed");
+			return;
+		}
+
+		pollsLeft--;
+		if (pollsLeft <= 0)
+		{
+			if (m_bDebugCoverReaction)
+				DebugCover(utility.m_OwnerEntity, "MOVE-cover STUCK: tidak pernah dieksekusi -> lepas proteksi, AI balik ke behavior normal");
+
+			state.DCO_ReleaseCoverProtection("cover-stuck");
+			return;
+		}
+
+		utility.GetCallqueue().CallLater(CheckCoverMoveWatchdog, BUILDING_FALLBACK_POLL_MS, false,
+			utility, coverRq, pollsLeft);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Pantau request bangunan. Kalau gagal karena tidak ada bangunan, langsung ganti ke cover biasa.
+	protected void CheckBuildingFallback(SCR_AIUtilityComponent utility, SCR_AICombatMoveRequest_Move buildingRq, vector perceivedShotPos, float threatScore, int pollsLeft)
+	{
+		if (!utility || !utility.m_OwnerEntity || !buildingRq)
+			return;
+
+		SCR_AICombatMoveState state = utility.m_CombatMoveState;
+		if (!state)
+			return;
+
+		IEntity ownerEnt = utility.m_OwnerEntity;
+		bool executing   = state.IsExecutingRequest();
+
+		if (m_bDebugCoverReaction)
+		{
+			DebugCover(ownerEnt, string.Format("BUILDING POLL left=%1 fail=%2 executing=%3 isOldRq=%4",
+				pollsLeft, DebugFailReason(buildingRq), executing, state.GetOldRequest() == SCR_AICombatMoveRequestBase.Cast(buildingRq)));
+		}
+
+		if (buildingRq.m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
+		{
+			// Jangan timpa request lain yang sudah jalan (mis. dari reaksi vanilla)
+			if (executing && !m_bCoverVeryHighPriority)
+			{
+				if (m_bDebugCoverReaction) DebugCover(ownerEnt, "FALLBACK STOP: bangunan tidak ada, tapi ada request lain yang jalan -> tidak push cover");
+				return;
+			}
+
+			if (utility.m_DCOConfig && utility.m_DCOConfig.IsHoldPosition())
+			{
+				if (m_bDebugCoverReaction) DebugCover(ownerEnt, "FALLBACK STOP: HoldPosition");
+				return;
+			}
+
+			if (m_bDebugCoverReaction) DebugCover(ownerEnt, "FALLBACK GO: bangunan tidak ada -> push MOVE-cover");
+			PushCoverMove(utility, state, perceivedShotPos, threatScore);
+			return;
+		}
+
+		// Request sudah dijalankan BT -> sudah beres, tidak perlu poll lagi
+		if (executing)
+		{
+			if (m_bDebugCoverReaction)
+				DebugCover(ownerEnt, "BUILDING OK: request dieksekusi");
+			return;
+		}
+
+		pollsLeft--;
+		if (pollsLeft <= 0)
+		{
+			// Tidak gagal, tapi juga tidak pernah dieksekusi: BT tidak mengambil request ini.
+			// Jangan biarkan AI beku -> coba cover biasa sekali, lalu lepas proteksi kalau itu pun tidak jalan.
+			if (m_bDebugCoverReaction)
+				DebugCover(ownerEnt, string.Format("BUILDING STUCK: tidak dieksekusi (fail=%1) -> coba MOVE-cover", DebugFailReason(buildingRq)));
+
+			if (utility.m_DCOConfig && utility.m_DCOConfig.IsHoldPosition())
+			{
+				state.DCO_ReleaseCoverProtection("stuck-hold");
+				return;
+			}
+
+			PushCoverMove(utility, state, perceivedShotPos, threatScore);
+			return;
+		}
+
+		utility.GetCallqueue().CallLater(CheckBuildingFallback, BUILDING_FALLBACK_POLL_MS, false,
+			utility, buildingRq, perceivedShotPos, threatScore, pollsLeft);
 	}
 
 	protected bool CanInvestigateNow(IEntity entity)
@@ -367,6 +1131,9 @@ modded class SCR_AIDangerReaction_WeaponFired
 		float searchDist = DODGE_SEARCH_DIST_FALLBACK;
 		if (utility.m_DCOConfig)
 			searchDist = utility.m_DCOConfig.GetDodgeSearchDist();
+
+		if (m_fCoverSearchDistCap > 0)
+			searchDist = Math.Min(searchDist, m_fCoverSearchDistCap);
 
 		rq.m_fCoverSearchDistMin = 0;
 		rq.m_fCoverSearchDistMax = searchDist;

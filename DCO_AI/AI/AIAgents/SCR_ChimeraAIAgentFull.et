@@ -5,6 +5,13 @@ SCR_ChimeraAIAgent {
   }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
    m_aDangerReactions {
+    SCR_AIDangerReaction_ProjectileHit "{5464DCF38EF5DDBF}" {
+     m_iBulletsPinned 4
+     m_fPinnedDuration_s 12
+     m_fCoverMoveCooldown_s 10
+    }
+    SCR_AIDangerReaction_WeaponFired "{5464DCF38FDA35C3}" {
+    }
     SCR_AIDangerReaction_Killzone "{68CB4305748A0BF6}" {
      m_eType Danger_Killzone
     }

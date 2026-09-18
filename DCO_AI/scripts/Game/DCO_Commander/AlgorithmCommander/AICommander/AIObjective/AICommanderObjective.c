@@ -152,6 +152,32 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	protected float m_fScanTimer      = 0.0;
 	protected bool  m_bHasScanned     = false;
 
+	// === ADDED: Census Cache + Active Gate ===
+	// Satu spatial query per objective per m_fPresenceScanInterval, di radius terbesar
+	// yang dipakai siapapun (GetCensusRadius). Semua count (commander maupun
+	// ScanPresence) baca dari hasil yang sama dan cuma nge-filter jarak.
+	[Attribute("60.0", UIWidgets.EditBox, "Detik objective tetap ACTIVE setelah terakhir diproses commander. Lewat dari ini objective IDLE: scan presence dan geser kontrol berhenti total. Harus lebih besar dari think interval commander terlama (default 30s x personality sampai 1.5 = 45s). 0 = gate mati, objective selalu active.", category: "Objective")]
+	protected float m_fIdleTimeout;
+
+	protected ref array<FactionKey> m_aCensusFaction = {};
+	protected ref array<float>      m_aCensusDistSq  = {};
+	protected float m_fCensusTime   = 0.0;
+	protected float m_fCensusRadius = 0.0;
+	protected bool  m_bCensusValid  = false;
+
+	// Target sementara buat QueryCallbackCensus -- cuma hidup selama CollectCensus jalan.
+	protected array<FactionKey> m_aCollectFaction;
+	protected array<float>      m_aCollectDistSq;
+	protected ref set<IEntity>  m_CollectSeen = new set<IEntity>();
+	protected vector            m_vCollectCenter;
+
+	protected ref map<FactionKey, int> m_mCountScratch = new map<FactionKey, int>();
+
+	protected float m_fLastProcessedTime     = 0.0;
+	protected bool  m_bEverProcessed         = false;
+	protected bool  m_bSuppressProcessedMark = false;
+	// === END ADDED ===
+
 	ref map<FactionKey, bool>  m_mIsCaptured       = new map<FactionKey, bool>();
 
 	ref map<FactionKey, CMD_EObjectiveState> m_mObjectiveState = new map<FactionKey, CMD_EObjectiveState>();
@@ -209,6 +235,10 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	bool IsUncontested(FactionKey fk, float worldTime)
 	{
+	    // === ADDED ===
+	    MarkProcessed(worldTime);
+	    // === END ADDED ===
+
 	    float lastSeen;
 	    if (!m_mLastEnemySeenTime.Find(fk, lastSeen))
 	        return false;
@@ -223,6 +253,9 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	int AssessObjective(FactionKey fk, float worldTime)
 	{
+	    // === ADDED ===
+	    MarkProcessed(worldTime);
+	    // === END ADDED ===
 
 	    if (!m_bHasScanned)
 	        return GetCaptureStatus(fk);
@@ -392,6 +425,10 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	    if (currentState == CMD_EObjectiveState.COMPLETED || currentState == CMD_EObjectiveState.FAILED)
 	        return 0.0;
 
+	    // === ADDED: di-score = sedang diproses commander, termasuk kalau hasilnya dari cache ===
+	    MarkProcessed(worldTime);
+	    // === END ADDED ===
+
 	    string cacheKey = forFaction + "|" + commanderUID;
 
 	    float cacheAge;
@@ -402,7 +439,11 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	            return cachedScore;
 	    }
 
-	    int enemyCount = CountNearbyUnits(m_fThreatRadius, forFaction, false);
+	    // === MODIFIED: baca dari census, bukan sphere query sendiri ===
+	    int enemyCount;
+	    int friendlyAtThreatRadius;
+	    CountNearbyUnitsCached(m_fThreatRadius, forFaction, friendlyAtThreatRadius, enemyCount);
+	    // === END MODIFIED ===
 
 	    float contestedRaw = 0.0;
 
@@ -413,7 +454,11 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	            contestedRaw = Math.Lerp(25.0, 0.0, elapsed / 120.0);
 	    }
 
-	    int friendlyCount = CountNearbyUnits(m_fFriendlyRadius, forFaction, true);
+	    // === MODIFIED: baca dari census, bukan sphere query sendiri ===
+	    int friendlyCount;
+	    int enemyAtFriendlyRadius;
+	    CountNearbyUnitsCached(m_fFriendlyRadius, forFaction, friendlyCount, enemyAtFriendlyRadius);
+	    // === END MODIFIED ===
 	    float friendlyPenalty = Math.Clamp(friendlyCount * 5.0, 0.0, 30.0);
 
 	    float assignedPenalty = 0.0;
@@ -482,105 +527,6 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	    return finalScore;
 	}
 
-	bool QueryCallback(IEntity e)
-	{
-		SCR_ChimeraCharacter chr = SCR_ChimeraCharacter.Cast(e);
-		if (!chr)
-			return true;
-
-		SCR_CharacterPerceivableComponent percive = SCR_CharacterPerceivableComponent.Cast(e.FindComponent(SCR_CharacterPerceivableComponent));
-		if (!percive)
-			return true;
-
-		if (!nearby.Contains(e))
-		{
-			nearby.Insert(e);
-		}
-
-		return true;
-	}
-
-	ref array<IEntity> nearby = {};
-
-	int CountNearbyUnits(float radius, FactionKey factionKey, bool isFriendly)
-	{
-		int count  = 0;
-		vector pos = GetOwner().GetOrigin();
-
-		nearby.Clear();
-		GetGame().GetWorld().QueryEntitiesBySphere(pos, radius, QueryCallback);
-
-		foreach (IEntity ent : nearby)
-		{
-			if (!ent)
-				continue;
-
-			SCR_ChimeraCharacter grp = SCR_ChimeraCharacter.Cast(ent);
-			if (!grp)
-				continue;
-
-			SCR_CharacterPerceivableComponent percive = SCR_CharacterPerceivableComponent.Cast(ent.FindComponent(SCR_CharacterPerceivableComponent));
-			if (!percive)
-				continue;
-
-			Faction fc = percive.GetPerceivedFaction();
-			if (!fc)
-				continue;
-
-			SCR_FactionManager factionManager = SCR_FactionManager.Cast(GetGame().GetFactionManager());
-			if (!SCR_FactionManager)
-				continue;
-
-			Faction myfac = factionManager.GetFactionByKey(factionKey);
-			if (!myfac)
-				continue;
-
-			SCR_Faction f = SCR_Faction.Cast(myfac);
-			bool sameFaction = (fc.GetFactionKey() == factionKey);
-			bool IsFriendlyFaction = f.IsFactionFriendly(fc);
-
-			if (isFriendly && (sameFaction || IsFriendlyFaction))
-				count++;
-			else if (!isFriendly && (!sameFaction || !IsFriendlyFaction))
-				count++;
-		}
-
-		return count;
-	}
-
-	void CountNearbyUnitsBoth(float radius, FactionKey factionKey, out int friendlyCount, out int enemyCount)
-	{
-		friendlyCount = 0;
-		enemyCount    = 0;
-		vector pos    = GetOwner().GetOrigin();
-
-		nearby.Clear();
-		GetGame().GetWorld().QueryEntitiesBySphere(pos, radius, null, QueryCallback, EQueryEntitiesFlags.ALL);
-
-		foreach (IEntity ent : nearby)
-		{
-			if (!ent)
-				continue;
-
-			SCR_ChimeraCharacter chr = SCR_ChimeraCharacter.Cast(ent);
-			if (!chr)
-				continue;
-
-			SCR_CharacterPerceivableComponent percive = SCR_CharacterPerceivableComponent.Cast(ent.FindComponent(SCR_CharacterPerceivableComponent));
-			if (!percive)
-				continue;
-
-			Faction fc = percive.GetPerceivedFaction();
-			if (!fc)
-				continue;
-
-			if (fc.GetFactionKey() == factionKey)
-				friendlyCount++;
-			else
-				enemyCount++;
-		}
-	}
-
 	void SetObjectiveState(FactionKey fk, CMD_EObjectiveState state)
 	{
 		if (m_mObjectiveState.Contains(fk))
@@ -620,22 +566,36 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		if (m_fPresenceScanInterval <= 0.0)
 			return;
 
+		// === MODIFIED: ResolveInitialOwner dipindah ke atas timer. Objective IDLE gak
+		// pernah scan, tapi owner awal tetap harus ke-set -- tanpa itu IsCapturedBy()
+		// false terus, commander defensive gak pernah nyentuh objective ini, dan
+		// objective-nya gak pernah jadi ACTIVE. Setelah resolved fungsinya langsung return.
+		ResolveInitialOwner();
+
 		m_fScanTimer += timeSlice;
 
 		if (m_fScanTimer < m_fPresenceScanInterval)
 			return;
 
+		// Timer tetap di-reset walau IDLE -- elapsed gak pernah numpuk jadi lonjakan
+		// waktu objective aktif lagi. Waktu selama IDLE memang gak dihitung.
 		float elapsed  = m_fScanTimer;
 		m_fScanTimer   = 0.0;
 
 		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
 
-		ScanPresence(worldTime);
+		bool active = IsProcessedActive(worldTime);
+
+		if (active)
+			ScanPresenceFromCensus(worldTime);
+		else if (m_bDebugMode)
+			m_aDebugShapes.Clear(); // dulu di-clear ScanPresence; tanpa ini shape numpuk tiap interval
 
 		UpdateObjectiveDebug(worldTime);
 
-		ResolveInitialOwner();
-		AdvanceControl(worldTime, elapsed);
+		if (active)
+			AdvanceControl(worldTime, elapsed);
+		// === END MODIFIED ===
 
 	}
 
@@ -677,76 +637,233 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		InitializeObjective();
 	}
 
-	bool QueryCallbackScan(IEntity e)
+	//------------------------------------------------------------------------------------------------
+	// === ADDED: Census Cache ===
+	//! Radius census = radius terbesar yang dipakai caller. Intel coverage cuma ikut
+	//! kalau objective ini RECON (default-nya 400m -- gak perlu dibayar objective biasa).
+	//! Caller yang minta radius lebih besar dari ini jatuh ke query langsung.
+	float GetCensusRadius()
 	{
+		float r = Math.Max(m_fRadius, Math.Max(m_fThreatRadius, m_fFriendlyRadius));
+
+		if (m_eObjectiveType == CMD_EObjectiveType.RECON)
+			r = Math.Max(r, m_fIntelCoverageRadius);
+
+		return r;
+	}
+
+	bool QueryCallbackCensus(IEntity e)
+	{
+		if (!e || !m_aCollectFaction || !m_aCollectDistSq)
+			return true;
+
 		SCR_ChimeraCharacter chr = SCR_ChimeraCharacter.Cast(e);
 		if (!chr)
-			return true;;
+			return true;
+
+		if (m_CollectSeen.Contains(e))
+			return true;
+
+		m_CollectSeen.Insert(e);
 
 		SCR_CharacterPerceivableComponent percive = SCR_CharacterPerceivableComponent.Cast(e.FindComponent(SCR_CharacterPerceivableComponent));
 		if (!percive)
-			return true;;
+			return true;
 
-		if (!nearbyScan.Contains(e))
-		{
-			nearbyScan.Insert(e);
-		}
+		Faction fc = percive.GetPerceivedFaction();
+		if (!fc)
+			return true;
+
+		m_aCollectFaction.Insert(fc.GetFactionKey());
+		m_aCollectDistSq.Insert(vector.DistanceSq(m_vCollectCenter, e.GetOrigin()));
 
 		return true;
 	}
 
-	ref array<IEntity> nearbyScan = {};
-
-	void ScanPresence(float worldTime)
+	//! Satu sphere query, hasilnya faction + jarak kuadrat per karakter.
+	protected void CollectCensus(float radius, notnull array<FactionKey> outFaction, notnull array<float> outDistSq)
 	{
-		m_mFactionPresence.Clear();
-		float m_iTotalPresenceTemp = 0;
+		outFaction.Clear();
+		outDistSq.Clear();
+		m_CollectSeen.Clear();
 
-		vector pos = GetOwner().GetOrigin();
+		m_aCollectFaction = outFaction;
+		m_aCollectDistSq  = outDistSq;
+		m_vCollectCenter  = GetOwner().GetOrigin();
 
-		nearbyScan.Clear();
-		GetGame().GetWorld().QueryEntitiesBySphere(pos, m_fRadius, QueryCallbackScan);
+		GetGame().GetWorld().QueryEntitiesBySphere(m_vCollectCenter, radius, QueryCallbackCensus);
 
-		if (m_bDebugMode)
+		m_aCollectFaction = null;
+		m_aCollectDistSq  = null;
+		m_CollectSeen.Clear();
+	}
+
+	//! Rebuild kalau census sudah berumur >= m_fPresenceScanInterval.
+	//! Interval <= 0 = cache mati, tiap panggilan query (sama kayak perilaku lama).
+	protected void EnsureCensus(float worldTime)
+	{
+		float radius = GetCensusRadius();
+
+		if (m_bCensusValid
+			&& m_fPresenceScanInterval > 0.0
+			&& m_fCensusRadius == radius
+			&& (worldTime - m_fCensusTime) < m_fPresenceScanInterval)
+			return;
+
+		CollectCensus(radius, m_aCensusFaction, m_aCensusDistSq);
+
+		m_fCensusRadius = radius;
+		m_fCensusTime   = worldTime;
+		m_bCensusValid  = true;
+	}
+
+	//! Friendly & enemy sekaligus dari census.
+	//! Semantik: faction sendiri atau yang allied = friendly, sisanya = enemy.
+	void CountNearbyUnitsCached(float radius, FactionKey factionKey, out int friendlyCount, out int enemyCount)
+	{
+		friendlyCount = 0;
+		enemyCount    = 0;
+
+		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		MarkProcessed(worldTime);
+
+		// Diambil sekali, bukan per entity. Kalau gagal: 0/0, sama kayak versi lama
+		// (dulu tiap entity di-skip kalau faction sendiri gak ketemu).
+		SCR_FactionManager factionManager = SCR_FactionManager.Cast(GetGame().GetFactionManager());
+		if (!factionManager)
+			return;
+
+		SCR_Faction myFaction = SCR_Faction.Cast(factionManager.GetFactionByKey(factionKey));
+		if (!myFaction)
+			return;
+
+		array<FactionKey> factions;
+		array<float>      distSq;
+
+		if (radius <= GetCensusRadius())
 		{
-			m_aDebugShapes.Clear();
-			Print(nearbyScan.Count().ToString() + " < Number of counted Entity Inside > " + m_sObjectiveName);
-			int flags = ShapeFlags.TRANSP | ShapeFlags.WIREFRAME;
-			m_aDebugShapes.Insert(Shape.CreateSphere(Color.BLUE, flags, pos, m_fRadius));
-
+			EnsureCensus(worldTime);
+			factions = m_aCensusFaction;
+			distSq   = m_aCensusDistSq;
+		}
+		else
+		{
+			factions = new array<FactionKey>();
+			distSq   = new array<float>();
+			CollectCensus(radius, factions, distSq);
 		}
 
-		foreach (IEntity ent : nearbyScan)
+		// Kelompokkan per faction dulu -- relasi faction cukup di-resolve per faction
+		// (biasanya 2-4), bukan per karakter.
+		float radiusSq = radius * radius;
+		m_mCountScratch.Clear();
+
+		int entryCount = factions.Count();
+		for (int i = 0; i < entryCount; i++)
 		{
-			if (!ent)
+			if (distSq[i] > radiusSq)
 				continue;
 
-			SCR_ChimeraCharacter chr = SCR_ChimeraCharacter.Cast(ent);
-			if (!chr)
+			FactionKey entryKey = factions[i];
+
+			int entryUnits;
+			if (!m_mCountScratch.Find(entryKey, entryUnits))
+				entryUnits = 0;
+
+			m_mCountScratch.Set(entryKey, entryUnits + 1);
+		}
+
+		foreach (FactionKey groupKey, int groupUnits : m_mCountScratch)
+		{
+			if (groupKey == factionKey)
+			{
+				friendlyCount += groupUnits;
+				continue;
+			}
+
+			Faction other = factionManager.GetFactionByKey(groupKey);
+			if (other && myFaction.IsFactionFriendly(other))
+				friendlyCount += groupUnits;
+			else
+				enemyCount += groupUnits;
+		}
+	}
+
+	//! Isi m_mFactionPresence dari census yang di-filter ke m_fRadius.
+	//! Satu-satunya penulis presence (dipanggil EOnFrame dan MarkProcessed).
+	void ScanPresenceFromCensus(float worldTime)
+	{
+		EnsureCensus(worldTime);
+
+		m_mFactionPresence.Clear();
+		int total = 0;
+
+		float radiusSq = m_fRadius * m_fRadius;
+
+		int entryCount = m_aCensusFaction.Count();
+		for (int i = 0; i < entryCount; i++)
+		{
+			if (m_aCensusDistSq[i] > radiusSq)
 				continue;
 
-			SCR_CharacterPerceivableComponent percive = SCR_CharacterPerceivableComponent.Cast(ent.FindComponent(SCR_CharacterPerceivableComponent));
-			if (!percive)
-				continue;
-
-			Faction fc = percive.GetPerceivedFaction();
-			if (!fc)
-				continue;
-
-			FactionKey key = fc.GetFactionKey();
+			FactionKey key = m_aCensusFaction[i];
 
 			int current;
 			if (!m_mFactionPresence.Find(key, current))
 				current = 0;
 
 			m_mFactionPresence.Set(key, current + 1);
-			m_iTotalPresenceTemp = m_iTotalPresenceTemp + 1;
+			total = total + 1;
 		}
 
-		m_iTotalPresence = m_iTotalPresenceTemp;
-		m_fLastScanTime = worldTime;
-		m_bHasScanned   = true;
+		if (m_bDebugMode)
+		{
+			m_aDebugShapes.Clear();
+			Print(total.ToString() + " < Number of counted Entity Inside > " + m_sObjectiveName);
+			int flags = ShapeFlags.TRANSP | ShapeFlags.WIREFRAME;
+			m_aDebugShapes.Insert(Shape.CreateSphere(Color.BLUE, flags, GetOwner().GetOrigin(), m_fRadius));
+		}
+
+		m_iTotalPresence = total;
+		m_fLastScanTime  = worldTime;
+		m_bHasScanned    = true;
 	}
+	// === END ADDED ===
+
+	//------------------------------------------------------------------------------------------------
+	// === ADDED: Active Gate ===
+	//! Dipanggil tiap kali commander memproses objective ini. Kalau objective baru
+	//! bangun dari IDLE, presence langsung di-refresh -- data lama bisa berumur menit.
+	void MarkProcessed(float worldTime)
+	{
+		if (m_bSuppressProcessedMark)
+			return;
+
+		bool wasActive = IsProcessedActive(worldTime);
+
+		m_fLastProcessedTime = worldTime;
+		m_bEverProcessed     = true;
+
+		if (wasActive)
+			return;
+
+		if (!Replication.IsServer() || m_fPresenceScanInterval <= 0.0)
+			return;
+
+		ScanPresenceFromCensus(worldTime);
+	}
+
+	bool IsProcessedActive(float worldTime)
+	{
+		if (m_fIdleTimeout <= 0.0)
+			return true;
+
+		if (!m_bEverProcessed)
+			return false;
+
+		return (worldTime - m_fLastProcessedTime) <= m_fIdleTimeout;
+	}
+	// === END ADDED ===
 
 	float GetControl(FactionKey fk)
 	{
@@ -1018,9 +1135,16 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(
 			Vector(pos[0], pos[1] + 30.0, pos[2]), BuildDebugHeader(),   21.0, color));
 
+		// === MODIFIED: overlay manggil ComputePriorityScore -- jangan sampai itu
+		// dianggap "commander memproses" dan objective IDLE kebangun cuma gara-gara debug.
+		m_bSuppressProcessedMark = true;
+		string scoreText = BuildDebugCommanderScores(worldTime);
+		m_bSuppressProcessedMark = false;
+
 		m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(
-			Vector(pos[0], pos[1] + 41.0, pos[2]), BuildDebugCommanderScores(worldTime), 16.0,
+			Vector(pos[0], pos[1] + 41.0, pos[2]), scoreText, 16.0,
 			DCO_DebugDraw.COLOR_COMMANDER));
+		// === END MODIFIED ===
 
 		m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(
 			Vector(pos[0], pos[1] + 21.0, pos[2]), BuildDebugControl(),  16.0, color));
@@ -1125,6 +1249,17 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 			DCO_DebugDraw.F1(GetPresenceScanAge(worldTime)),
 			m_iTotalPresence,
 			m_mFactionPresence.Count());
+
+		// === ADDED: status gate + census ===
+		if (IsProcessedActive(worldTime))
+			body = body + "\nstate ACTIVE";
+		else
+			body = body + string.Format("\nstate IDLE (gak diproses > %1s)", DCO_DebugDraw.F1(m_fIdleTimeout));
+
+		body = body + string.Format("\ncensus r %1   %2 entries",
+			DCO_DebugDraw.M(GetCensusRadius()),
+			m_aCensusFaction.Count());
+		// === END ADDED ===
 
 		if (!m_bHasScanned)
 			return body + "\n(not scanned yet)";
@@ -1460,6 +1595,10 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	bool CheckAndMarkIfLost(FactionKey fk)
 	{
+		// === ADDED: commander defensive ngecek objective miliknya = memproses ===
+		MarkProcessed(GetGame().GetWorld().GetWorldTime() / 1000.0);
+		// === END ADDED ===
+
 		return CheckIsItLost(fk);
 	}
 
