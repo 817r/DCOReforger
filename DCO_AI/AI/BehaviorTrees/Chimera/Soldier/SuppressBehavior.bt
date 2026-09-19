@@ -376,6 +376,52 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
            TestType EqualsValue
            TestValue "3"
           }
+          DecoTestVariable "Test Variable" {
+           Name "Test Variable"
+           EditorPos 4592 464
+           Nodes {
+            Sequence Sequence {
+             Name "Sequence"
+             EditorPos 4608 816
+             Nodes {
+              DCO_AIGetSuppressionVolumeRandomPosition "DCO_AI Get Suppression Volume Random Position" {
+               Name "DCO_AI Get Suppression Volume Random Position"
+               EditorPos 4064 1120
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 21
+                 PortName "SuppressionVolume"
+                }
+               }
+               OutPorts {
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port 22
+                 PortName "RandomPos"
+                }
+                SingleOutputPortContainer SingleOutputPortContainer {
+                 Port -1
+                 PortName "Distance_m"
+                }
+               }
+              }
+              RunBT RunBT {
+               Name "RunBT"
+               EditorPos 4912 1104
+               InPorts {
+                SingleInputPortContainer SingleInputPortContainer {
+                 Port 22
+                 PortName "shootPos"
+                }
+               }
+               BehaviorTree "{3910CE568158C4DE}AI/BehaviorTrees/Chimera/Soldier/DCO_Ugl.bt"
+              }
+             }
+            }
+           }
+           InVariable 20
+           TestType EqualsValue
+           TestValue "4"
+          }
          }
         }
         DecoTestVariable "Test Variable" {
@@ -515,6 +561,18 @@ BehaviorTree "{447C5FFBE68FF9FE}AI/BehaviorTrees/Chimera/Soldier/SuppressBehavio
   VariableReference iFireTreeId {
    VariableType 4
    EditorPos 1696 -144
+  }
+  VariableReference iFireTreeId {
+   VariableType 4
+   EditorPos 4416 560
+  }
+  VariableReference SuppressionVolume {
+   VariableType 0
+   EditorPos 3776 1232
+  }
+  VariableReference SuppressionRandomPos {
+   VariableType 7
+   EditorPos 4592 1248
   }
  }
  Groups {

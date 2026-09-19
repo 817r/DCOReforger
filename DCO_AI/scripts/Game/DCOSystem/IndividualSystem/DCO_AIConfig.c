@@ -49,6 +49,14 @@ class DCO_AIConfigComponent : ScriptComponent
 	
 	[Attribute("1", UIWidgets.ComboBox, "AI Personality -- gimana gaya combat AI ini, orthogonal dari skill", "", ParamEnumArray.FromEnum(DCO_EAIPersonality))]
 	protected DCO_EAIPersonality m_ePersonality;
+	
+	// === ADDED: Weapon usage (di-snapshot dari global pas init, bisa diubah per unit lewat GM) ===
+	[Attribute("0.5", UIWidgets.Slider, "Seberapa sering AI ini lempar frag grenade. 0 = gak pernah, 0.5 = default, 1 = sering banget", params: "0 1 0.01")]
+	protected float m_fGrenadeUsage;
+	
+	[Attribute("0.5", UIWidgets.Slider, "Seberapa sering AI ini pakai grenade launcher (UGL). 0 = gak pernah, 0.5 = default, 1 = sering banget", params: "0 1 0.01")]
+	protected float m_fGLUsage;
+	// === END ADDED ===
 
 	protected bool m_bHoldPosition = false;
 	
@@ -80,6 +88,8 @@ class DCO_AIConfigComponent : ScriptComponent
 		m_fDodgeMaxDist            = settings.GetDodgeMaxDist();
 		m_fDodgeSearchDist         = settings.GetDodgeSearchDist();
 		m_bDodgeScaleByPersonality = settings.GetDodgeScaleByPersonality();
+		m_fGrenadeUsage            = settings.GetGrenadeUsage();	// === ADDED ===
+		m_fGLUsage                 = settings.GetGLUsage();		// === ADDED ===
 	}
 	
 	float GetDodgeChance()            
@@ -240,6 +250,36 @@ class DCO_AIConfigComponent : ScriptComponent
 	{
 		m_ePersonality = p;
 		return m_ePersonality;
+	}
+	// === END ADDED ===
+	
+	// === ADDED: Weapon usage ===
+	float GetGrenadeUsage()
+	{
+		return m_fGrenadeUsage;
+	}
+	
+	float SetGrenadeUsage(float f)
+	{
+		m_fGrenadeUsage = Math.Clamp(f, 0.0, 1.0);
+		return m_fGrenadeUsage;
+	}
+	
+	float GetGLUsage()
+	{
+		return m_fGLUsage;
+	}
+	
+	float SetGLUsage(float f)
+	{
+		m_fGLUsage = Math.Clamp(f, 0.0, 1.0);
+		return m_fGLUsage;
+	}
+	
+	//! Pengali chance dari slider usage: 0 -> 0, 0.5 -> 1 (default), 1 -> 2.
+	static float UsageToChanceScale(float usage)
+	{
+		return Math.Clamp(usage, 0.0, 1.0) * 2.0;
 	}
 	// === END ADDED ===
 	

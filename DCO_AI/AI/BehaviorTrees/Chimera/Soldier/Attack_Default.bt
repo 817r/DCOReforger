@@ -566,6 +566,38 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
              TestType EqualsValue
              TestValue "7"
             }
+            DecoTestVariable "Test Variable" {
+             Name "Test Variable"
+             EditorPos 9328 1904
+             Nodes {
+              Sequence Sequence {
+               Name "Sequence"
+               EditorPos 9338.512 2121.304
+               Nodes {
+                RunBT RunBT {
+                 Name "RunBT"
+                 EditorPos 8874.512 2297.304
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainerClass {
+                   Port 41
+                   PortName "shootPos"
+                  }
+                 }
+                 BehaviorTree "{3910CE568158C4DE}AI/BehaviorTrees/Chimera/Soldier/DCO_Ugl.bt"
+                }
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos 9530.512 2329.304
+                 Period 3
+                 PeriodRandom 5
+                }
+               }
+              }
+             }
+             InVariable 40
+             TestType EqualsValue
+             TestValue "8"
+            }
            }
           }
          }
@@ -651,167 +683,167 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
  VariablesRefs {
   VariableReference targetEntity {
    VariableType 0
-   EditorPos -55.212 863.317
+   EditorPos -48 864
   }
   VariableReference targetEntity {
    VariableType 0
-   EditorPos 4827.916 2148.709
+   EditorPos 4832 2144
    Group "{6104A9A79618AE3B}"
   }
   VariableReference targetLastSeenPosition {
    VariableType 1
-   EditorPos 1184.902 2698.634
+   EditorPos 1184 2704
    Group "{6104A9A7B6BA75BB}"
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos -639.546 860.293
+   EditorPos -640 864
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 338.658 1166.462
+   EditorPos 336 1168
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 2054.969 2087.532
+   EditorPos 2048 2080
    Group "{6104A9A7FBF7849F}"
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 2700.2 2073.102
+   EditorPos 2704 2080
    Group "{6104A9A7E61EB5D4}"
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 3341.278 2317.242
+   EditorPos 3344 2320
    Group "{6104A9A7E952BF07}"
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 394.839 2363.768
+   EditorPos 400 2368
    Group "{6104A9A7B6BA75BB}"
   }
   VariableReference targetEntity {
    VariableType 0
-   EditorPos 588.967 2863.207
+   EditorPos 592 2864
    Group "{6104A9A7B6BA75BB}"
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos 884.833 1234.25
+   EditorPos 880 1232
   }
   VariableReference targetLastSeenPosition {
    VariableType 1
-   EditorPos 1502.968 1187.636
+   EditorPos 1504 1184
   }
   VariableReference IsTargetVisible {
    VariableType 4
-   EditorPos 1502.968 1109.155
+   EditorPos 1504 1104
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 1502.968 1344.599
+   EditorPos 1504 1344
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 1101.091 1958.909
+   EditorPos 1104 1952
    Group "{6104A9A7B6BA75BB}"
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 2136.111 1964.999
+   EditorPos 2144 1968
    Group "{6104A9A7FBF7849F}"
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 2776.262 1964.54
+   EditorPos 2784 1968
    Group "{6104A9A7E61EB5D4}"
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 3758.226 1987.357
+   EditorPos 3760 1984
    Group "{6104A9A7E952BF07}"
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 4881.984 1975.818
+   EditorPos 4880 1968
    Group "{6104A9A79618AE3B}"
   }
   VariableReference eAimpointType0 {
    VariableType 7
-   EditorPos 2082.108 2161.452
+   EditorPos 2080 2160
    Group "{6104A9A7FBF7849F}"
   }
   VariableReference eAimpointType1 {
    VariableType 3
-   EditorPos 2085.858 2235.202
+   EditorPos 2080 2240
    Group "{6104A9A7FBF7849F}"
   }
   VariableReference eAimpointType0 {
    VariableType 7
-   EditorPos 2721.182 2146.823
+   EditorPos 2720 2144
    Group "{6104A9A7E61EB5D4}"
   }
   VariableReference eAimpointType1 {
    VariableType 3
-   EditorPos 2721.728 2219.066
+   EditorPos 2720 2224
    Group "{6104A9A7E61EB5D4}"
   }
   VariableReference eAimpointType0 {
    VariableType 7
-   EditorPos 1502.968 1423.081
+   EditorPos 1504 1424
   }
   VariableReference eAimpointType1 {
    VariableType 3
-   EditorPos 1502.968 1501.563
+   EditorPos 1504 1504
   }
   VariableReference WeaponReady {
    VariableType 2
-   EditorPos 898.377 1333.831
+   EditorPos 896 1328
   }
   VariableReference suppressionVolume {
    VariableType 8
-   EditorPos 3927.528 2236.487
+   EditorPos 3920 2240
    Group "{6104A9A7E952BF07}"
   }
   VariableReference fireRate {
    VariableType 9
-   EditorPos 1502.968 1580.044
+   EditorPos 1504 1584
   }
   VariableReference fireRate {
    VariableType 9
-   EditorPos 4225.123 2325.491
+   EditorPos 4224 2320
    Group "{6104A9A7E952BF07}"
   }
   VariableReference baseTarget {
    VariableType 5
-   EditorPos -325.286 1217.393
+   EditorPos -320 1216
   }
   VariableReference vInitialDirToTgt {
    VariableType 10
-   EditorPos -641 943.769
+   EditorPos -640 944
   }
   VariableReference vInitialDirToTgt {
    VariableType 10
-   EditorPos 337.273 1247.273
+   EditorPos 336 1248
   }
   VariableReference aimPoint {
    VariableType 11
-   EditorPos 587.199 2783.13
+   EditorPos 592 2784
    Group "{6104A9A7B6BA75BB}"
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 5502.25 1974.672
+   EditorPos 5504 1968
    Group "{6290F9A91D6F20D5}"
   }
   VariableReference threatPosition {
    VariableType 12
-   EditorPos 1502.968 1266.118
+   EditorPos 1504 1264
   }
   VariableReference threatPosition {
    VariableType 12
-   EditorPos 5415.428 2139.457
+   EditorPos 5408 2144
    Group "{6290F9A91D6F20D5}"
   }
   VariableReference targetLastSeenPosition {
@@ -820,15 +852,23 @@ BehaviorTree "{3EA0ED1A7C3B8FE5}AI/BehaviorTrees/Chimera/Soldier/Attack_Default.
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 6567.07 1932.276
+   EditorPos 6560 1936
   }
   VariableReference iFireTreeId {
    VariableType 6
-   EditorPos 7841.582 1957.58
+   EditorPos 7840 1952
   }
   VariableReference targetLastSeenPosition {
    VariableType 1
-   EditorPos 7306.512 2329.304
+   EditorPos 7312 2336
+  }
+  VariableReference iFireTreeId {
+   VariableType 6
+   EditorPos 9104 2000
+  }
+  VariableReference targetLastSeenPosition {
+   VariableType 1
+   EditorPos 8560 2368
   }
  }
  Groups {

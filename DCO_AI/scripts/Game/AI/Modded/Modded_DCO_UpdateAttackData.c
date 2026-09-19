@@ -9,6 +9,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 	protected const int FIRE_TREE_LOOK_THREATS	= 5;
 	protected const int FIRE_TREE_THROW_GRENADE	= 6;
 	protected const int FIRE_TREE_RPG			= 7;
+	protected const int FIRE_TREE_GL			= 8;	// === ADDED: tree GL (UGL), wiring di Attack_Default.bt ===
 	
 	
 	protected const float BURST_FIRE_MAX_DISTANCE = 70.0;
@@ -120,6 +121,18 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			
 			// === ADDED: titik lempar hasil resolver (direct / roll-in / bank) ===
 			vector grenadeThrowPos;
+			
+			// === ADDED: GL / UGL ===
+			// HARUS di atas cabang SUPPRESSIVE: kondisi cabang itu nangkep hampir semua
+			// kasus target gak keliatan, jadi GL gak akan pernah kena kalau ditaruh di bawah.
+			// Gate lengkap (UGL, jarak, commit, cooldown, roll, amunisi, kawan, tumbukan)
+			// ada di DCO_UGLUtility.ShouldUseGL().
+			if (target.GetTimeSinceSeen() < lastSeenThreshold
+				&& DCO_UGLUtility.ShouldUseGL(m_UtilityComponent, selectedWeaponComp, target.GetLastSeenPosition()))
+			{
+				return FIRE_TREE_GL;
+			}
+			// === END ADDED ===
 			
 			if ((!directDamage || weaponType != EWeaponType.WT_ROCKETLAUNCHER) &&
 				target.GetTimeSinceSeen() < lastSeenThreshold &&

@@ -25,6 +25,11 @@ class DCO_BreachUtility
 
 		if (!utility.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_FRAGGRENADE))
 			return false;
+		
+		// === ADDED: slider Grenade Usage = 0 -> gak breach pakai frag juga ===
+		if (utility.m_DCOConfig && utility.m_DCOConfig.GetGrenadeUsage() <= 0.0)
+			return false;
+		// === END ADDED ===
 
 		IEntity myEntity = utility.m_OwnerEntity;
 		if (!myEntity)

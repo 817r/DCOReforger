@@ -14,6 +14,7 @@ modded class SCR_AIUpdateTargetSuppressionData
 	protected const int FIRE_TREE_SUPPRESSIVE	= 1;
 	protected const int FIRE_TREE_GRENADE		= 2;
 	protected const int FIRE_TREE_RPG			= 3;
+	protected const int FIRE_TREE_GL			= 4;
 	
 	// Related to visibility check
 	protected float m_fVisibilityCheckTimer = VISIBILITY_CHECK_INTERVAL_S; // We need the vision check to run right on start. This data is required by movement logic.
@@ -85,6 +86,12 @@ modded class SCR_AIUpdateTargetSuppressionData
 		// === ADDED: titik lempar hasil resolver (direct / roll-in / bank) ===
 		vector grenadeThrowPos;
 		
+		// === ADDED: senjata terpilih buat gate GL ===
+		BaseWeaponComponent glWeapon;
+		int glMuzzleId;
+		if (m_UtilityComponent.m_CombatComponent)
+			m_UtilityComponent.m_CombatComponent.GetSelectedWeapon(glWeapon, glMuzzleId);
+		
 		// Friendly in aim?
 		if (m_PerceptionComponent.GetFriendlyInLineOfFire())
 			return FIRE_TREE_LOOK;
@@ -93,16 +100,10 @@ modded class SCR_AIUpdateTargetSuppressionData
 			return FIRE_TREE_SUPPRESSIVE;
 		else if (!targetVisible && m_UtilityComponent.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER) && vector.Distance(m_UtilityComponent.GetOrigin(), suppressionVolume.GetCenterPosition()) > 10)
 			return FIRE_TREE_RPG;
-		// === MODIFIED: gate lempar granat ===
-		// ResolveFireTree() dipanggil dari EOnTaskSimulate -- TIAP TICK. Sebelumnya
-		// cabang ini cuma dijaga "jarak < 30", tanpa cooldown dan tanpa
-		// NotifyGrenadeThrown(). Artinya unit yang lagi suppress, target gak keliatan,
-		// dalam 30m, punya frag -> nge-queue SCR_AIThrowGrenadeToBehavior BARU tiap
-		// frame. DCO_GrenadeUtility udah ada dan udah jalan di jalur attack, tapi jalur
-		// ini gak pernah disambungin ke situ.
-		//
-		// Cek jarak "< 30" dibuang -- batasnya sekarang 5-25m di IsThrowSafe, yang juga
-		// punya batas BAWAH (jalur ini sebelumnya gak punya sama sekali).
+		else if (!targetVisible
+			&& DCO_UGLUtility.ShouldUseGL(m_UtilityComponent, glWeapon, suppressionVolume.GetCenterPosition()))
+			return FIRE_TREE_GL;
+
 		else if (!targetVisible
 			&& m_UtilityComponent.m_AIInfo
 			&& m_UtilityComponent.m_AIInfo.HasRole(EUnitRole.HAS_FRAG_GRENADE)

@@ -2,9 +2,8 @@
 enum DCO_EGrenadeThrowMode
 {
 	NONE,
-	DIRECT,		// busur langsung ke target
-	ROLL_IN,	// mendarat di depan target lalu menggelinding masuk
-	BANK		// dipantulkan ke tembok di dekat target
+	DIRECT		// busur langsung ke target
+	// === REMOVED: ROLL_IN & BANK -- lemparan cuma boleh busur langsung yang bersih ===
 }
 
 class DCO_GrenadeUtility
@@ -54,6 +53,15 @@ class DCO_GrenadeUtility
 		IEntity myEntity = utility.m_OwnerEntity;
 		float worldTime_ms = GetGame().GetWorld().GetWorldTime();
 		
+		// === ADDED: slider Grenade Usage. 0 = gak pernah (cek sebelum apapun, gak makan roll) ===
+		float usageScale = 1.0;
+		if (utility.m_DCOConfig)
+			usageScale = DCO_AIConfigComponent.UsageToChanceScale(utility.m_DCOConfig.GetGrenadeUsage());
+		
+		if (usageScale <= 0.0)
+			return false;
+		// === END ADDED ===
+		
 		float lastThrow;
 		if (s_mLastGrenadeThrowTime.Find(myEntity, lastThrow))
 		{
@@ -73,6 +81,7 @@ class DCO_GrenadeUtility
 		// === END ADDED ===
 		
 		float chance = DCO_PersonalityCombatUtility.GetGrenadeThrowChance(utility);
+		chance = Math.Clamp(chance * usageScale, 0.0, 1.0);	// === ADDED: slider Grenade Usage ===
 		if (Math.RandomFloat01() > chance)
 			return false;
 		
@@ -261,7 +270,7 @@ class DCO_GrenadeUtility
 	// === END ADDED ===
 	
 	//================================================================================================
-	// === ADDED: RESOLVER TITIK LEMPAR (direct -> roll-in -> wall bank) ===
+	// === ADDED: RESOLVER TITIK LEMPAR (direct only) ===
 	//
 	// Model lintasan diambil dari vanilla. SCR_AIGetAimDistanceCompensation buat granat manggil
 	// BallisticTable.GetHeightFromProjectile(jarak3D, out waktu, entityGranat, coef) -> heightOffset,
@@ -274,35 +283,15 @@ class DCO_GrenadeUtility
 	// kecepatan atau gravitasi -- semua dari ballistic table yang sama dengan yang dipakai vanilla.
 	//
 	// Titik yang dihasilkan dioper ke SCR_AIThrowGrenadeToBehavior sebagai TargetPosition,
-	// vanilla yang ngitung sudutnya. Kita cuma milih TITIK TUMBUKAN PERTAMA.
+	// vanilla yang ngitung sudutnya.
+	//
+	// === MODIFIED: mode ROLL_IN dan BANK (pantul tembok) dibuang. Pantulan tembok bikin
+	// granat balik ke arah pelempar (target & pelempar ada di sisi tembok yang sama, dan
+	// restitution-nya cuma tebakan). Sekarang aturannya simpel: busur langsung ke target
+	// harus bersih dari halangan. Kalau ketutup apapun -> gak lempar.
 	//================================================================================================
 	
 	static const float INIT_SPEED_COEF        = 1.0;   // ThrowGrenadeTo.bt gak nyambungin port ini -> default 1.0
-	
-	// Roll-in
-	static const float ROLL_RATIO_START       = 0.9;   // kandidat di 90% / 80% / 70% jarak
-	static const float ROLL_RATIO_STEP        = 0.1;
-	static const int   ROLL_RATIO_COUNT       = 3;
-	static const float ROLL_LATERAL_OFFSET    = 1.5;   // offset kiri/kanan tiap rasio
-	static const float ROLL_MAX_DIST          = 4.0;   // jarak gulir maksimum titik mendarat -> target
-	static const float ROLL_MAX_RISE          = 0.5;   // granat gak ngegelinding nanjak
-	static const float ROLL_PATH_HEIGHT       = 0.3;   // tinggi trace jalur gulir / jalur pantul
-	
-	// Wall bank
-	static const float BANK_MAX_DIST          = 15.0;  // cuma jarak pendek (CQB / breach)
-	static const int   BANK_DIR_COUNT         = 8;
-	static const float BANK_WALL_SEARCH       = 3.0;   // radius cari tembok dari target
-	static const float BANK_PROBE_HEIGHT      = 1.0;
-	static const float BANK_MAX_REBOUND       = 3.0;   // panjang kaki kedua (tembok -> target) maksimum
-	static const float BANK_RESTITUTION       = 0.4;   // TUNE IN-GAME: kehilangan energi pas mantul
-	static const float BANK_IMPACT_MIN_H      = 0.2;   // tinggi tumbukan ke tembok relatif lantai target
-	static const float BANK_IMPACT_MAX_H      = 2.2;
-	static const float BANK_APPROACH_RATIO    = 0.9;   // busur dicek sampai 90% jalan ke tembok
-	static const float BANK_WALL_OFFSET       = 0.3;
-	
-	// Snap tanah kandidat
-	static const float GROUND_SNAP_UP         = 1.0;
-	static const float GROUND_SNAP_DOWN       = 4.0;
 	
 	// Debug: set true di Workbench buat gambar busur kandidat + print mode
 	static const bool  DEBUG_THROW            = false;
@@ -316,8 +305,8 @@ class DCO_GrenadeUtility
 	
 	//------------------------------------------------------------------------------------------------
 	//! Gerbang tunggal lempar frag. Return true + throwPos = titik yang harus dioper ke
-	//! SCR_AIThrowGrenadeToBehavior. Bisa sama dengan targetPos (direct) atau titik lain
-	//! (roll-in / bank). Return false = gak ada lemparan yang aman.
+	//! SCR_AIThrowGrenadeToBehavior (selalu = targetPos, direct only).
+	//! Return false = busur ketutup / gak ada lemparan yang aman.
 	static bool ResolveThrowPos(SCR_AIUtilityComponent utility, vector targetPos, out vector throwPos)
 	{
 		throwPos = targetPos;
@@ -346,24 +335,11 @@ class DCO_GrenadeUtility
 		
 		DCO_EGrenadeThrowMode mode = DCO_EGrenadeThrowMode.NONE;
 		
+		// === MODIFIED: direct only. Fallback roll-in / wall bank dibuang. ===
 		if (IsTrajectoryClear(self, grenade, start, targetPos, ARC_END_RATIO))
 		{
 			throwPos = targetPos;
 			mode     = DCO_EGrenadeThrowMode.DIRECT;
-		}
-		else
-		{
-			vector altPos;
-			if (FindRollInPos(self, grenade, start, targetPos, altPos))
-			{
-				throwPos = altPos;
-				mode     = DCO_EGrenadeThrowMode.ROLL_IN;
-			}
-			else if (dist <= BANK_MAX_DIST && FindBankPos(self, grenade, start, targetPos, altPos))
-			{
-				throwPos = altPos;
-				mode     = DCO_EGrenadeThrowMode.BANK;
-			}
 		}
 		
 		if (DEBUG_THROW)
@@ -455,222 +431,6 @@ class DCO_GrenadeUtility
 		param.LayerMask = EPhysicsLayerDefs.Projectile;
 		
 		return GetGame().GetWorld().TraceMove(param, null) >= 1.0;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	//! Titik lantai di bawah pos, dicari di sekitar ketinggian refY (lantai target).
-	protected static bool SnapToGround(IEntity self, vector pos, float refY, out vector ground)
-	{
-		vector from = pos;
-		from[1] = refY + GROUND_SNAP_UP;
-		
-		vector to = pos;
-		to[1] = refY - GROUND_SNAP_DOWN;
-		
-		TraceParam param = new TraceParam();
-		param.Start     = from;
-		param.End       = to;
-		param.Exclude   = self;
-		param.Flags     = TraceFlags.WORLD | TraceFlags.ENTS;
-		param.LayerMask = EPhysicsLayerDefs.Projectile;
-		
-		float frac = GetGame().GetWorld().TraceMove(param, null);
-		if (frac >= 1.0 || frac <= 0.0)
-			return false;
-		
-		ground = from + (to - from) * frac;
-		return true;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	//! A. ROLL-IN: mendarat lebih pendek / geser samping, lalu menggelinding ke target.
-	//! Berguna kalau ujung busur ketutup (atap teras, pintu, pohon) tapi jalur tanahnya terbuka.
-	protected static bool FindRollInPos(IEntity self, IEntity grenade, vector start, vector target, out vector outPos)
-	{
-		vector selfPos = self.GetOrigin();
-		
-		vector toTarget = target - selfPos;
-		toTarget[1] = 0;
-		
-		float d = toTarget.Length();
-		if (d < 0.5)
-			return false;
-		
-		vector fwd   = toTarget * (1.0 / d);
-		vector right = Vector(fwd[2], 0, -fwd[0]);
-		vector pathUp = vector.Up * ROLL_PATH_HEIGHT;
-		
-		for (int i = 0; i < ROLL_RATIO_COUNT; i++)
-		{
-			float ratio = ROLL_RATIO_START - i * ROLL_RATIO_STEP;
-			
-			for (int j = 0; j < 3; j++)
-			{
-				float lateral = 0;
-				if (j == 1)
-					lateral = ROLL_LATERAL_OFFSET;
-				else if (j == 2)
-					lateral = -ROLL_LATERAL_OFFSET;
-				
-				vector cand = selfPos + fwd * (d * ratio) + right * lateral;
-				
-				// --- Geometri murah dulu ---
-				vector ground;
-				if (!SnapToGround(self, cand, target[1], ground))
-					continue;
-				
-				if (vector.DistanceXZ(ground, target) > ROLL_MAX_DIST)
-					continue;
-				
-				if (target[1] - ground[1] > ROLL_MAX_RISE)
-					continue;
-				
-				if (vector.DistanceXZ(selfPos, ground) < GRENADE_MIN_THROW_DIST)
-					continue;
-				
-				// Kalau ternyata gak ngegelinding, dia meledak di titik mendarat
-				if (HasFriendlyInBlast(self, ground))
-					continue;
-				
-				// --- Jalur gulir ---
-				if (!IsSegmentClear(self, ground + pathUp, target + pathUp))
-				{
-					DbgLine(ground + pathUp, target + pathUp, Color.RED);
-					continue;
-				}
-				
-				// --- Busur ke titik mendarat ---
-				if (!IsTrajectoryClear(self, grenade, start, ground, ARC_END_RATIO))
-					continue;
-				
-				DbgLine(ground + pathUp, target + pathUp, Color.YELLOW);
-				outPos = ground;
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	//------------------------------------------------------------------------------------------------
-	//! B. WALL BANK (metode cermin): target dicerminkan terhadap bidang tembok, lalu kaki kedua
-	//! diperpanjang 1/restitusi. Vanilla membidik ke titik virtual di balik tembok itu; lintasannya
-	//! nabrak tembok di titik pantul, dan setelah kehilangan energi, pantulannya berhenti dekat target.
-	protected static bool FindBankPos(IEntity self, IEntity grenade, vector start, vector target, out vector outPos)
-	{
-		vector selfPos = self.GetOrigin();
-		vector probe   = target + vector.Up * BANK_PROBE_HEIGHT;
-		
-		for (int k = 0; k < BANK_DIR_COUNT; k++)
-		{
-			float angRad = (k * 360.0 / BANK_DIR_COUNT) * Math.DEG2RAD;
-			vector dir = Vector(Math.Cos(angRad), 0, Math.Sin(angRad));
-			
-			// --- Cari tembok di sekitar target ---
-			TraceParam wallTrace = new TraceParam();
-			wallTrace.Start     = probe;
-			wallTrace.End       = probe + dir * BANK_WALL_SEARCH;
-			wallTrace.Exclude   = self;
-			wallTrace.Flags     = TraceFlags.WORLD | TraceFlags.ENTS;
-			wallTrace.LayerMask = EPhysicsLayerDefs.Projectile;
-			
-			float frac = GetGame().GetWorld().TraceMove(wallTrace, null);
-			if (frac >= 1.0)
-				continue;
-			
-			vector wallPt = probe + dir * (BANK_WALL_SEARCH * frac);
-			
-			// Normal horizontal; permukaan yang terlalu miring (lantai/atap) dibuang
-			vector n = wallTrace.TraceNorm;
-			n[1] = 0;
-			float nLen = n.Length();
-			if (nLen < 0.5)
-				continue;
-			n = n * (1.0 / nLen);
-			
-			// --- Pelempar harus ada di depan muka tembok ---
-			vector startToWall = start - wallPt;
-			startToWall[1] = 0;
-			float startPlaneDist = vector.Dot(startToWall, n);
-			if (startPlaneDist <= 0.5)
-				continue;
-			
-			vector targetToWall = target - wallPt;
-			targetToWall[1] = 0;
-			float targetPlaneDist = vector.Dot(targetToWall, n);
-			if (targetPlaneDist <= 0.1)
-				continue;
-			
-			// --- Cermin target & titik pantul ---
-			vector mirror = target - n * (2.0 * targetPlaneDist);
-			
-			vector startToMirror = mirror - start;
-			startToMirror[1] = 0;
-			float denom = vector.Dot(startToMirror, n);
-			if (denom > -0.01)
-				continue;
-			
-			float tHit = startPlaneDist / -denom;
-			if (tHit <= 0 || tHit >= 1)
-				continue;
-			
-			vector bank = start + startToMirror * tHit;
-			bank[1] = target[1];
-			
-			float leg2 = vector.DistanceXZ(bank, target);
-			if (leg2 < 0.1 || leg2 > BANK_MAX_REBOUND)
-				continue;
-			
-			// --- Titik virtual: kaki kedua diperpanjang 1/restitusi ---
-			vector legDir = mirror - bank;
-			legDir[1] = 0;
-			vector virt = bank + legDir * (1.0 / BANK_RESTITUTION);
-			virt[1] = target[1];
-			
-			if (vector.DistanceXZ(selfPos, virt) > GRENADE_MAX_THROW_DIST)
-				continue;
-			
-			// --- Tinggi tumbukan ke tembok harus masuk akal ---
-			float a, b;
-			if (!ComputeArcCoeffs(grenade, start, virt, a, b))
-				continue;
-			
-			float virtDist = vector.DistanceXZ(start, virt);
-			if (virtDist < 0.5)
-				continue;
-			
-			float uWall = vector.DistanceXZ(start, bank) / virtDist;
-			float yWall = start[1] + a * uWall + b * uWall * uWall;
-			
-			if (yWall < target[1] + BANK_IMPACT_MIN_H || yWall > target[1] + BANK_IMPACT_MAX_H)
-				continue;
-			
-			vector impact = bank;
-			impact[1] = yWall;
-			
-			// --- Tembok beneran ada di titik & ketinggian tumbukan ---
-			if (IsSegmentClear(self, impact + n * 0.5, impact - n * 0.3))
-				continue;
-			
-			// --- Busur sampai tembok ---
-			if (!IsTrajectoryClear(self, grenade, start, virt, uWall * BANK_APPROACH_RATIO))
-				continue;
-			
-			// --- Jalur pantul ke target ---
-			vector rebound = impact + n * BANK_WALL_OFFSET;
-			vector targetPath = target + vector.Up * ROLL_PATH_HEIGHT;
-			if (!IsSegmentClear(self, rebound, targetPath))
-			{
-				DbgLine(rebound, targetPath, Color.RED);
-				continue;
-			}
-			
-			DbgLine(rebound, targetPath, Color.BLUE);
-			outPos = virt;
-			return true;
-		}
-		
-		return false;
 	}
 	
 	//------------------------------------------------------------------------------------------------

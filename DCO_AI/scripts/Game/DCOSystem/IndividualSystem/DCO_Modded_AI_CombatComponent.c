@@ -135,6 +135,13 @@ modded class SCR_AICombatComponent
 				weaponBlacklist = s_aWeaponBlacklistFragGrenades;
 		}
 		
+		// === ADDED: slider Grenade Usage = 0 -> selector vanilla juga gak boleh milih frag.
+		// Tanpa ini, "0 = gak pernah" bocor lewat jalur selector (frag jadi selected weapon
+		// lalu dilempar lewat fire tree biasa, di luar DCO_GrenadeUtility).
+		if (m_Utility && m_Utility.m_DCOConfig && m_Utility.m_DCOConfig.GetGrenadeUsage() <= 0.0)
+			weaponBlacklist = s_aWeaponBlacklistFragGrenades;
+		// === END ADDED ===
+		
 		bool useCompartmentWeapons = m_AIInfo.HasUnitState(EUnitState.IN_TURRET); // True when we are in a turret
 		
 		// Which assigned targets array to use?

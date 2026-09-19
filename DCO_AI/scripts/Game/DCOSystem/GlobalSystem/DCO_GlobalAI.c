@@ -55,6 +55,15 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute("1", UIWidgets.CheckBox, "Skala peluang dodge pakai personality AI (CAUTIOUS naik, RECKLESS turun).")]
 	protected bool m_bDodgeScaleByPersonality;
 	
+	// === ADDED: Weapon usage (Unlikely 0 <-> 1 Likely). 0.5 = perilaku default.
+	// Chance efektif = chance dasar x (usage x 2), di-clamp 0-1. 0 = gak pernah dipakai.
+	[Attribute("0.5", UIWidgets.Slider, "Seberapa sering AI lempar frag grenade. 0 = gak pernah, 0.5 = default, 1 = sering banget (chance dikali 2).", params: "0 1 0.01", category: "Weapon Usage")]
+	protected float m_fGrenadeUsage;
+	
+	[Attribute("0.5", UIWidgets.Slider, "Seberapa sering AI pakai grenade launcher (UGL). 0 = gak pernah, 0.5 = default, 1 = sering banget (chance dikali 2).", params: "0 1 0.01", category: "Weapon Usage")]
+	protected float m_fGLUsage;
+	// === END ADDED ===
+	
 	[Attribute("1", UIWidgets.CheckBox, "Baca override config dari file JSON di folder profile server. Kalau OFF, nilai di atas dipake apa adanya.", category: "Server Config")]
 	protected bool m_bUseServerConfigFile;
 	
@@ -233,6 +242,20 @@ class DCO_GlobalAIComponent: ScriptComponent
 			applied++;
 		}
 		
+		// === ADDED: Weapon usage ===
+		if (ctx.ReadValue("grenadeUsage", fTmp))
+		{
+			m_fGrenadeUsage = Math.Clamp(fTmp, 0.0, 1.0);
+			applied++;
+		}
+		
+		if (ctx.ReadValue("glUsage", fTmp))
+		{
+			m_fGLUsage = Math.Clamp(fTmp, 0.0, 1.0);
+			applied++;
+		}
+		// === END ADDED ===
+		
 		PrintFormat("[DCO][Config] %1 setting di-override dari %2", applied, m_sServerConfigPath);
 		DumpActiveConfig();
 	}
@@ -264,6 +287,8 @@ class DCO_GlobalAIComponent: ScriptComponent
 		ctx.WriteValue("dodgeMaxDist",             m_fDodgeMaxDist);
 		ctx.WriteValue("dodgeSearchDist",          m_fDodgeSearchDist);
 		ctx.WriteValue("dodgeScaleByPersonality",  m_bDodgeScaleByPersonality);
+		ctx.WriteValue("grenadeUsage",             m_fGrenadeUsage);	// === ADDED ===
+		ctx.WriteValue("glUsage",                  m_fGLUsage);		// === ADDED ===
 		
 		if (ctx.SaveToFile(m_sServerConfigPath))
 			PrintFormat("[DCO][Config] Template config dibuat di %1", m_sServerConfigPath);
@@ -298,6 +323,8 @@ class DCO_GlobalAIComponent: ScriptComponent
 		PrintFormat("[DCO][Config] personality STD=%1 CAU=%2 AGR=%3 RCK=%4",
 			m_fPersonalityWeightStandard, m_fPersonalityWeightCautious,
 			m_fPersonalityWeightAggressive, m_fPersonalityWeightReckless);
+		// === ADDED ===
+		PrintFormat("[DCO][Config] grenadeUsage=%1 glUsage=%2", m_fGrenadeUsage, m_fGLUsage);
 	}
 	
 	float GetDodgeChance()               
@@ -452,6 +479,30 @@ class DCO_GlobalAIComponent: ScriptComponent
 		return m_fTakeCoverChance;
 	}
 
+	// === ADDED: Weapon usage ===
+	float GetGrenadeUsage()
+	{
+		return m_fGrenadeUsage;
+	}
+	
+	float SetGrenadeUsage(float f)
+	{
+		m_fGrenadeUsage = Math.Clamp(f, 0.0, 1.0);
+		return m_fGrenadeUsage;
+	}
+	
+	float GetGLUsage()
+	{
+		return m_fGLUsage;
+	}
+	
+	float SetGLUsage(float f)
+	{
+		m_fGLUsage = Math.Clamp(f, 0.0, 1.0);
+		return m_fGLUsage;
+	}
+	// === END ADDED ===
+	
 	DCO_EAIPersonality RollWeightedPersonality()
 	{
 		float total = m_fPersonalityWeightStandard + m_fPersonalityWeightCautious

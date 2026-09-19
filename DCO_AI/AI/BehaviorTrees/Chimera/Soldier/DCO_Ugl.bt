@@ -1,0 +1,253 @@
+BehaviorTree {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_Ugl.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos -48 -48
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos -48 144
+     Nodes {
+      Sequence Sequence {
+       Name "Sequence"
+       EditorPos -512 384
+       Nodes {
+        DCO_AIGetUGLWeapon "DCO_AI GetUGL Weapon" {
+         Name "DCO_AI GetUGL Weapon"
+         EditorPos -1072 608
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 0
+           PortName "WeaponComponent"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 1
+           PortName "MuzzleId"
+          }
+         }
+        }
+        SCR_AISwitchWeapon "SCR_AI Switch Weapon" {
+         Name "SCR_AI Switch Weapon"
+         EditorPos -448 608
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 0
+           PortName "WeaponComponent"
+          }
+         }
+        }
+        SCR_AISwitchMuzzle "SCR_AI Switch Muzzle" {
+         Name "SCR_AI Switch Muzzle"
+         EditorPos -208 608
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 1
+           PortName "MuzzleId"
+          }
+         }
+        }
+        SCR_AIGetFireTimes "SCR_AI Get Fire Times" {
+         Name "SCR_AI Get Fire Times"
+         EditorPos 80 608
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "TargetEntity"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 2
+           PortName "TargetPosition"
+          }
+          SingleInputPortContainer SingleInputPortContainer {
+           Port -1
+           PortName "FireRateCoef"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 4
+           PortName "FireTime"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 3
+           PortName "StabilizationTime"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "RejectAimingTime"
+          }
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port -1
+           PortName "ShotSpan"
+          }
+         }
+         m_iFirePattern Suppress
+        }
+       }
+      }
+      Parallel Parallel {
+       Name "Parallel"
+       EditorPos 944 624
+       Nodes {
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 608 1024
+         Nodes {
+          SCR_AIGetAimDistanceCompensation "SCR_AI Get Aim Distance Compensation" {
+           Name "SCR_AI Get Aim Distance Compensation"
+           EditorPos 298.746 1234.05
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "TargetEntity"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 6
+             PortName "TargetPosition"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "VectorIn"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port -1
+             PortName "InitialSpeedCoefficient"
+            }
+           }
+           OutPorts {
+            SingleOutputPortContainer SingleOutputPortContainer {
+             Port 5
+             PortName "VectorOut"
+            }
+           }
+          }
+          AITaskCharacterAim "Character Aim" {
+           Name "Character Aim"
+           EditorPos 1053.893 1183.795
+           InAimAtPosition 7
+           InAimOffset 5
+          }
+         }
+        }
+        Sequence Sequence {
+         Name "Sequence"
+         EditorPos 1632 1136
+         Nodes {
+          AITaskIdle Idle {
+           Name "Idle"
+           EditorPos 1439.425 1387.913
+           PeriodKey 8
+          }
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 1776 1600
+           Nodes {
+            SCR_AIDecoWeaponUnobstructed "SCR_AI Deco Weapon Unobstructed" {
+             Name "SCR_AI Deco Weapon Unobstructed"
+             EditorPos 1504 1776
+             Nodes {
+              AITaskFire Fire {
+               Name "Fire"
+               EditorPos 1584 1936
+               PeriodKey 9
+              }
+             }
+            }
+            AITaskReload Reload {
+             Name "Reload"
+             EditorPos 1872 1808
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 2128 1808
+            }
+            DCO_AIGLShotDone "DCO_AIGL Shot Done" {
+             Name "DCO_AIGL Shot Done"
+             EditorPos 2320 1824
+            }
+            AITaskReturnState "Return State" {
+             Name "Return State"
+             EditorPos 2592 1808
+             Result SUCCESS
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableObject weaponComponent {
+   Flags 0
+   Desc ""
+  }
+  BtVariableInteger muzzleId {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector shootPos {
+   Flags Input
+   Desc ""
+  }
+  BtVariableScalar fireTime {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar stabilizationTime {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector shootPosCompensated {
+   Flags 0
+   Desc ""
+  }
+ }
+ VariablesRefs {
+  VariableReference weaponComponent {
+   VariableType 0
+   EditorPos -752 608
+  }
+  VariableReference muzzleId {
+   VariableType 1
+   EditorPos -768 720
+  }
+  VariableReference shootPos {
+   VariableType 2
+   EditorPos -144 736
+  }
+  VariableReference stabilizationTime {
+   VariableType 4
+   EditorPos 400 704
+  }
+  VariableReference fireTime {
+   VariableType 3
+   EditorPos 400 624
+  }
+  VariableReference shootPosCompensated {
+   VariableType 5
+   EditorPos 640 1312
+  }
+  VariableReference shootPos {
+   VariableType 2
+   EditorPos 96 1296
+  }
+  VariableReference shootPos {
+   VariableType 2
+   EditorPos 752 1216
+  }
+  VariableReference stabilizationTime {
+   VariableType 4
+   EditorPos 1152 1472
+  }
+  VariableReference fireTime {
+   VariableType 3
+   EditorPos 1376 2000
+  }
+ }
+}

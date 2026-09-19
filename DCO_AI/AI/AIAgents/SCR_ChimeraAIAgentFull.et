@@ -2,6 +2,8 @@ SCR_ChimeraAIAgent {
  ID "50C4E8413B94E8B0"
  components {
   DCO_AIConfigComponent "{68B10290AA2AA4DA}" {
+   m_fGrenadeUsage 0.6
+   m_fGLUsage 0.8
   }
   SCR_AIConfigComponent "{5122F2C32CDD251C}" {
    m_aDangerReactions {
