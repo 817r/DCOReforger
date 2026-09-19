@@ -82,6 +82,9 @@ modded class SCR_AIUpdateTargetSuppressionData
 		if (executedBehavior && executedBehavior.m_bUseCombatMove && !m_UtilityComponent.m_CombatMoveState.m_bAimAtTarget)
 			return FIRE_TREE_INVALID;
 		
+		// === ADDED: titik lempar hasil resolver (direct / roll-in / bank) ===
+		vector grenadeThrowPos;
+		
 		// Friendly in aim?
 		if (m_PerceptionComponent.GetFriendlyInLineOfFire())
 			return FIRE_TREE_LOOK;
@@ -101,11 +104,12 @@ modded class SCR_AIUpdateTargetSuppressionData
 		// Cek jarak "< 30" dibuang -- batasnya sekarang 5-25m di IsThrowSafe, yang juga
 		// punya batas BAWAH (jalur ini sebelumnya gak punya sama sekali).
 		else if (!targetVisible
+			&& m_UtilityComponent.m_AIInfo
 			&& m_UtilityComponent.m_AIInfo.HasRole(EUnitRole.HAS_FRAG_GRENADE)
 			&& DCO_GrenadeUtility.CanThrowGrenadeNow(m_UtilityComponent)
-			&& DCO_GrenadeUtility.IsThrowSafe(m_UtilityComponent, suppressionVolume.GetCenterPosition()))
+			&& DCO_GrenadeUtility.ResolveThrowPos(m_UtilityComponent, suppressionVolume.GetCenterPosition(), grenadeThrowPos))
 		{
-			SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, suppressionVolume.GetCenterPosition(), EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + 
+			SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, grenadeThrowPos, EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + 
 			SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER);
 			m_UtilityComponent.AddAction(gren);		
 			DCO_GrenadeUtility.NotifyGrenadeThrown(m_UtilityComponent);

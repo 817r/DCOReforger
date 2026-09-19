@@ -2,24 +2,46 @@ modded class SCR_AIGetAimErrorOffset
 {
 	static const float VERY_CLOSE_RANGE_THRESHOLD = 20.0;
 	static const float CLOSE_RANGE_THRESHOLD = 60.0;
-	static const float LONG_RANGE_THRESHOLD = 250.0;
+	static const float LONG_RANGE_THRESHOLD = 200.0;
 	static const float AIMING_ERROR_SCALE = 1.0;
 
-	static const float AIMING_ERROR_FACTOR_MAX = 1.6;
+	static const float AIMING_ERROR_FACTOR_MAX = 1.4;
 	
 	// RESERVE FOR FINAL CALCULATION
 	static const float MAXIMAL_TOLERANCE = 10.0;
-	static const float MINIMAL_TOLERANCE = 0.01;
+	static const float MINIMAL_TOLERANCE = 0.005;
 	
 	// AIMING ERROR FACTOR GLOBAL
 	static const float AIMING_ERROR_FACTOR_MIN = 0.12; 
 	
 	// AIMING ERROR FACTOR DISTANCE VARIANCE
 	static const float AIMING_ERROR_VERY_CLOSE_RANGE_FACTOR_MIN = 0.03;
-	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.12;
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.1;
 	
 	private SCR_AIInfoComponent m_InfoComponent;
 	private SCR_CharacterControllerComponent charCon;
+	
+	//------------------------------------------------------------------------------------------------
+	// === ADDED: SELEKSI AIMPOINT (sticky + visibilitas + bobot kepala per skill & jarak) ===
+	//------------------------------------------------------------------------------------------------
+	static const float AIM_HOLD_MIN_S            = 1.5;    // lama aimpoint dipertahankan sebelum pilih ulang
+	static const float AIM_HOLD_MAX_S            = 3.0;
+	static const float AIM_VIS_RECHECK_S         = 0.5;    // interval cek ulang visibilitas aimpoint yang di-hold
+	static const float AIM_VIS_TRACE_MIN_FRAC    = 0.98;   // trace tembus >= ini = kelihatan
+	static const float AIM_EYE_HEIGHT_FALLBACK   = 1.6;
+	
+	static const float HEAD_AIM_FULL_DIST        = 100.0;  // head chance penuh sampai sini
+	static const float HEAD_AIM_MIN_DIST         = 300.0;  // turun linear sampai sini
+	static const float HEAD_AIM_FAR_SCALE        = 0.3;    // pengali head chance di/lewat HEAD_AIM_MIN_DIST
+	
+	// State per agent (satu instance node per agent). Disimpan TIPE + INDEX, bukan objek AimPoint:
+	// posisi AimPoint bisa aja snapshot pas diambil, jadi tiap tick diambil ulang supaya ngikutin target.
+	protected IEntity         m_DCOAimTargetEnt;
+	protected EAimPointType   m_eDCOAimType;
+	protected int             m_iDCOAimIndex = -1;
+	protected float           m_fDCOAimHoldUntil_ms;
+	protected float           m_fDCOAimNextVisCheck_ms;
+	protected ref array<ref AimPoint> m_aDCOAimBuffer = {};
 	
 	override float GetDistanceFactor(float distance)
 	{
@@ -185,7 +207,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case EWeaponType.WT_SNIPERRIFLE:
 			{
-				return 0.2;
+				return 0.1;
 			}
 			case EWeaponType.WT_AUTOCANNON:
 			{
@@ -248,7 +270,7 @@ modded class SCR_AIGetAimErrorOffset
 			}
 			case DCO_AISKILL.TERMINATOR :
 			{
-				sigma = 0.0001;
+				sigma = 0;
 				break;
 			}
 		}
@@ -328,7 +350,8 @@ modded class SCR_AIGetAimErrorOffset
 		aimpointTypes[1] = aimpointType1;
 		aimpointTypes[2] = m_eAimPointType;
 		
-		AimPoint aimPoint = GetAimPoint(target, aimpointTypes);
+		// === MODIFIED: GetAimPoint vanilla (random tiap tick, buta visibilitas) diganti seleksi DCO ===
+		AimPoint aimPoint = DCO_SelectAimPoint(entity, target, aimpointTypes);
 		
 		if (!aimPoint)
 		{
@@ -426,4 +449,209 @@ modded class SCR_AIGetAimErrorOffset
 		m_InfoComponent = SCR_AIInfoComponent.Cast(owner.FindComponent(SCR_AIInfoComponent));
 		charCon = SCR_CharacterControllerComponent.Cast(ent.FindComponent(SCR_CharacterControllerComponent));
 	}
+
+	//------------------------------------------------------------------------------------------------
+	// === ADDED: SELEKSI AIMPOINT ===
+	//------------------------------------------------------------------------------------------------
+	
+	//! Pengganti GetAimPoint vanilla:
+	//! - aimpoint dipertahankan AIM_HOLD_MIN..MAX detik per target (gak lompat-lompat tiap tick)
+	//! - pilih aimpoint yang KELIHATAN (trace mata -> aimpoint); kalau gak ada yang kelihatan,
+	//!   fallback ke perilaku vanilla supaya AI tetap bisa nembakin cover
+	//! - urutan NORMAL -> WEAK (karakter jalan kaki, non-sniper) bisa ditukar jadi kepala dulu
+	//!   berdasarkan roll head chance (skill DCO x faktor jarak). Roll cuma pas pilih ulang.
+	protected AimPoint DCO_SelectAimPoint(IEntity self, BaseTarget target, EAimPointType aimpointTypes[3])
+	{
+		PerceivableComponent perceivable = target.GetPerceivableComponent();
+		if (!perceivable)
+			return null;
+		
+		IEntity targetEnt = target.GetTargetEntity();
+		float now_ms = GetGame().GetWorld().GetWorldTime();
+		
+		// --- Masih dalam masa hold untuk target yang sama ---
+		if (targetEnt && targetEnt == m_DCOAimTargetEnt && m_iDCOAimIndex >= 0 && now_ms < m_fDCOAimHoldUntil_ms)
+		{
+			AimPoint held = DCO_GetAimPointByIndex(perceivable, m_eDCOAimType, m_iDCOAimIndex);
+			if (held)
+			{
+				if (now_ms < m_fDCOAimNextVisCheck_ms)
+					return held;
+				
+				m_fDCOAimNextVisCheck_ms = now_ms + AIM_VIS_RECHECK_S * 1000.0;
+				
+				if (DCO_IsAimPointVisible(self, targetEnt, held))
+					return held;
+			}
+		}
+		
+		return DCO_PickNewAimPoint(self, target, perceivable, aimpointTypes, now_ms);
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	protected AimPoint DCO_PickNewAimPoint(IEntity self, BaseTarget target, PerceivableComponent perceivable, EAimPointType aimpointTypes[3], float now_ms)
+	{
+		IEntity targetEnt = target.GetTargetEntity();
+		
+		EAimPointType order[3];
+		order[0] = aimpointTypes[0];
+		order[1] = aimpointTypes[1];
+		order[2] = aimpointTypes[2];
+		
+		// Bobot kepala cuma berlaku buat urutan standar karakter (NORMAL lalu WEAK).
+		// Sniper (INCAPACITATE dulu) & target di kendaraan (WEAK dulu) gak disentuh.
+		if (order[0] == EAimPointType.NORMAL && order[1] == EAimPointType.WEAK && targetEnt)
+		{
+			float dist = vector.Distance(self.GetOrigin(), targetEnt.GetOrigin());
+			if (Math.RandomFloat01() < DCO_GetHeadAimChance(dist))
+			{
+				order[0] = EAimPointType.WEAK;
+				order[1] = EAimPointType.NORMAL;
+			}
+		}
+		
+		EAimPointType fallbackType = -1;
+		
+		for (int i = 0; i < 3; i++)
+		{
+			EAimPointType type = order[i];
+			if (type == -1)
+				continue;
+			
+			m_aDCOAimBuffer.Clear();
+			perceivable.GetAimpointsOfType(m_aDCOAimBuffer, type);
+			
+			int count = m_aDCOAimBuffer.Count();
+			if (count == 0)
+				continue;
+			
+			if (fallbackType == -1)
+				fallbackType = type;
+			
+			// Mulai dari index acak, lalu keliling -> tetap ada variasi antar aimpoint setipe
+			int startIdx = Math.RandomInt(0, count);
+			for (int k = 0; k < count; k++)
+			{
+				int idx = (startIdx + k) % count;
+				AimPoint candidate = m_aDCOAimBuffer[idx];
+				if (!candidate)
+					continue;
+				
+				if (!DCO_IsAimPointVisible(self, targetEnt, candidate))
+					continue;
+				
+				DCO_StoreAimSelection(targetEnt, type, idx, now_ms, Math.RandomFloat(AIM_HOLD_MIN_S, AIM_HOLD_MAX_S));
+				return candidate;
+			}
+		}
+		
+		// --- Gak ada yang kelihatan: perilaku vanilla (tipe pertama yang ada, index acak).
+		// Hold pendek supaya cepat dicek lagi begitu target nongol.
+		if (fallbackType == -1)
+		{
+			m_iDCOAimIndex  = -1;
+			m_DCOAimTargetEnt = null;
+			return null;
+		}
+		
+		m_aDCOAimBuffer.Clear();
+		perceivable.GetAimpointsOfType(m_aDCOAimBuffer, fallbackType);
+		
+		int fbCount = m_aDCOAimBuffer.Count();
+		if (fbCount == 0)
+		{
+			m_iDCOAimIndex  = -1;
+			m_DCOAimTargetEnt = null;
+			return null;
+		}
+		
+		int fbIdx = Math.RandomInt(0, fbCount);
+		DCO_StoreAimSelection(targetEnt, fallbackType, fbIdx, now_ms, AIM_VIS_RECHECK_S);
+		return m_aDCOAimBuffer[fbIdx];
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	protected void DCO_StoreAimSelection(IEntity targetEnt, EAimPointType type, int idx, float now_ms, float hold_s)
+	{
+		m_DCOAimTargetEnt        = targetEnt;
+		m_eDCOAimType            = type;
+		m_iDCOAimIndex           = idx;
+		m_fDCOAimHoldUntil_ms    = now_ms + hold_s * 1000.0;
+		m_fDCOAimNextVisCheck_ms = now_ms + AIM_VIS_RECHECK_S * 1000.0;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	//! Ambil ulang aimpoint yang di-hold (tipe + index). Null kalau jumlah aimpoint berubah.
+	protected AimPoint DCO_GetAimPointByIndex(PerceivableComponent perceivable, EAimPointType type, int idx)
+	{
+		m_aDCOAimBuffer.Clear();
+		perceivable.GetAimpointsOfType(m_aDCOAimBuffer, type);
+		
+		if (idx < 0 || idx >= m_aDCOAimBuffer.Count())
+			return null;
+		
+		return m_aDCOAimBuffer[idx];
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	//! Kelihatan = trace mata -> aimpoint tembus, atau yang kena adalah badan target sendiri.
+	protected bool DCO_IsAimPointVisible(IEntity self, IEntity targetEnt, AimPoint aimPoint)
+	{
+		if (!self || !aimPoint)
+			return false;
+		
+		vector eye;
+		ChimeraCharacter selfChar = ChimeraCharacter.Cast(self);
+		if (selfChar)
+			eye = selfChar.EyePosition();
+		else
+			eye = self.GetOrigin() + vector.Up * AIM_EYE_HEIGHT_FALLBACK;
+		
+		TraceParam param = new TraceParam();
+		param.Start     = eye;
+		param.End       = aimPoint.GetPosition();
+		param.Exclude   = self;
+		param.Flags     = TraceFlags.WORLD | TraceFlags.ENTS;
+		param.LayerMask = EPhysicsLayerDefs.Projectile;
+		
+		float frac = GetGame().GetWorld().TraceMove(param, null);
+		if (frac >= AIM_VIS_TRACE_MIN_FRAC)
+			return true;
+		
+		if (targetEnt && param.TraceEnt && param.TraceEnt.GetRootParent() == targetEnt.GetRootParent())
+			return true;
+		
+		return false;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	//! Peluang ngincer kepala: bobot skill DCO x faktor jarak (penuh s/d 100m, 0.3x di 300m+).
+	protected float DCO_GetHeadAimChance(float distance)
+	{
+		float chance = 0.2;
+		
+		if (m_CombatComponent && m_CombatComponent.GetUtilityComponent() && m_CombatComponent.GetUtilityComponent().m_DCOConfig)
+		{
+			switch (m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAISkill())
+			{
+				case DCO_AISKILL.NOOB:        chance = 0.05; break;
+				case DCO_AISKILL.ROOKIE:      chance = 0.10; break;
+				case DCO_AISKILL.REGULAR:     chance = 0.20; break;
+				case DCO_AISKILL.VETERAN:     chance = 0.35; break;
+				case DCO_AISKILL.EXPERT:      chance = 0.50; break;
+				case DCO_AISKILL.SPECIAL_OPS: chance = 0.65; break;
+				case DCO_AISKILL.TERMINATOR:  chance = 0.80; break;
+			}
+		}
+		
+		float distScale = 1.0;
+		if (distance > HEAD_AIM_FULL_DIST)
+		{
+			float t = Math.Clamp((distance - HEAD_AIM_FULL_DIST) / (HEAD_AIM_MIN_DIST - HEAD_AIM_FULL_DIST), 0.0, 1.0);
+			distScale = Math.Lerp(1.0, HEAD_AIM_FAR_SCALE, t);
+		}
+		
+		return chance * distScale;
+	}
+	// === END ADDED ===
 }

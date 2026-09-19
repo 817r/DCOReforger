@@ -1,3 +1,102 @@
+//------------------------------------------------------------------------------------------------
+//! Kunci arah tolehan ke sumber tembakan per AI (dipakai SCR_AIDangerReaction_WeaponFired)
+class DCO_ShotLookLock
+{
+	IEntity m_Source;
+	vector  m_vPos;
+	float   m_fDist;
+	float   m_fPriority;
+	float   m_fUntil_ms;
+	int     m_iToken;
+}
+
+//------------------------------------------------------------------------------------------------
+//! Bias arah dodge / cover ke waypoint grup. Dipakai reaksi WeaponFired & ProjectileHit.
+//! - AI di LUAR radius WP  -> lari ke arah WP (FORWARD ke titik WP)
+//! - AI di DALAM radius WP -> arah asli dipakai, KECUALI perkiraan titik akhirnya keluar radius -> dibelokin ke WP
+//! Entity waypoint (follow, dll) diabaikan, sama kayak DCO_Move_Investigate_Push.
+class DCO_DodgeWaypointUtility
+{
+	//------------------------------------------------------------------------------------------------
+	static AIWaypoint ResolvePositionalWaypoint(notnull SCR_AIUtilityComponent utility)
+	{
+		AIAgent agent = utility.GetOwner();
+		if (!agent)
+			return null;
+
+		AIGroup group = agent.GetParentGroup();
+		if (!group)
+			return null;
+
+		AIWaypoint wp = group.GetCurrentWaypoint();
+		if (!wp)
+			return null;
+
+		if (SCR_EntityWaypoint.Cast(wp))
+			return null;
+
+		return wp;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Perkiraan kasar titik akhir dodge berdasarkan arah request (relatif ke ancaman)
+	static vector ProjectDodgeEndPos(vector myPos, vector threatPos, SCR_EAICombatMoveDirection direction, float dist)
+	{
+		vector toThreat = threatPos - myPos;
+		toThreat[1] = 0;
+
+		float len = toThreat.Length();
+		if (len < 0.1)
+			return myPos;
+
+		vector fwd   = toThreat * (1.0 / len);
+		vector right = Vector(fwd[2], 0, -fwd[0]);
+
+		switch (direction)
+		{
+			case SCR_EAICombatMoveDirection.FORWARD:  return myPos + fwd * dist;
+			case SCR_EAICombatMoveDirection.BACKWARD: return myPos - fwd * dist;
+			case SCR_EAICombatMoveDirection.LEFT:     return myPos - right * dist;
+			case SCR_EAICombatMoveDirection.RIGHT:    return myPos + right * dist;
+		}
+
+		// ANYWHERE / CUSTOM_POS: cover di sekitar posisi sekarang
+		return myPos;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Belokkan request ke WP kalau perlu. Return true kalau request diubah.
+	//! Panggil SETELAH m_vTargetPos & m_eDirection di-set, SEBELUM request di-apply.
+	static bool ApplyWaypointBias(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatMoveRequest_Move rq, float searchDist)
+	{
+		if (!utility.m_OwnerEntity)
+			return false;
+
+		AIWaypoint wp = ResolvePositionalWaypoint(utility);
+		if (!wp)
+			return false;
+
+		vector myPos    = utility.m_OwnerEntity.GetOrigin();
+		vector wpPos    = wp.GetOrigin();
+		float  wpRadius = wp.GetCompletionRadius();
+
+		bool outside = vector.DistanceXZ(myPos, wpPos) > wpRadius;
+		if (!outside)
+		{
+			vector endPos = ProjectDodgeEndPos(myPos, rq.m_vTargetPos, rq.m_eDirection, searchDist);
+			if (vector.DistanceXZ(endPos, wpPos) <= wpRadius)
+				return false;
+		}
+
+		// m_vTargetPos tetap posisi ancaman -> cover masih dicek terhadap arah tembakan
+		rq.m_vMovePos              = wpPos;
+		rq.m_eDirection            = SCR_EAICombatMoveDirection.FORWARD;
+		rq.m_vAvoidStraightPathDir = vector.Zero;
+
+		return true;
+	}
+}
+
 [BaseContainerProps()]
 modded class SCR_AIDangerReaction_WeaponFired
 {
@@ -46,6 +145,10 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 	//! Salinan flag debug supaya bisa dibaca class lain (combat move state, observe behavior)
 	protected static bool s_bDCOCoverDebug;
+
+	//! Kunci arah tolehan aktif per AI
+	protected static ref map<IEntity, ref DCO_ShotLookLock> s_mLookLocks = new map<IEntity, ref DCO_ShotLookLock>();
+	protected static const int LOOK_LOCK_MAP_PRUNE_THRESHOLD = 128;
 
 	[Attribute("50.0", UIWidgets.EditBox, "Jarak maksimum (m) tembakan SENYAP yang bikin AI mau maju investigasi.")]
 	protected float m_fSuppressedInvestigateDist;
@@ -119,6 +222,24 @@ modded class SCR_AIDangerReaction_WeaponFired
 	[Attribute("0.3", UIWidgets.EditBox, "Jeda tambahan (detik) setelah gerakan selesai sebelum AI noleh ke arah tembakan.")]
 	protected float m_fLookAfterCoverDelay;
 
+	//------------------------------------------------------------------------------------------------
+	// LOOK PRIORITY — noleh ke sumber terdekat + kunci arah
+	//------------------------------------------------------------------------------------------------
+	[Attribute("1", UIWidgets.CheckBox, "Noleh diprioritaskan ke sumber tembakan TERDEKAT. Arah tolehan dikunci selama Look Lock Duration; tembakan yang lebih jauh tidak bisa merebut arah.")]
+	protected bool m_bLookPreferClosest;
+
+	[Attribute("3.0", UIWidgets.EditBox, "Lama (detik) arah tolehan dikunci setelah dengar tembakan. Tembakan lanjutan dari penembak yang sama memperpanjang kunci.")]
+	protected float m_fLookLockDuration;
+
+	[Attribute("0.8", UIWidgets.EditBox, "Sumber baru boleh merebut arah kalau jaraknya <= nilai ini x jarak sumber yang sedang dikunci. Di bawah 1 supaya tidak geleng-geleng antara dua penembak yang jaraknya mirip.")]
+	protected float m_fLookOverrideDistRatio;
+
+	[Attribute("0.5", UIWidgets.EditBox, "Interval (detik) arah tolehan dipasang ulang selama terkunci, supaya orientasi tidak lepas.")]
+	protected float m_fLookLockRefreshInterval;
+
+	[Attribute("10.0", UIWidgets.EditBox, "Bonus prioritas look maksimum (di jarak 0), menurun linear sampai 0 di Look Dist Max. Dibatasi di bawah PRIO_UNKNOWN_TARGET supaya tidak mengalahkan target asli.")]
+	protected float m_fLookPriorityProximityBonus;
+
 	[Attribute("12.0", UIWidgets.EditBox, "Batas atas (m) jarak pencarian cover, membatasi nilai dari DodgeSearchDist supaya AI tidak sprint jauh-jauh.")]
 	protected float m_fCoverSearchDistCap;
 
@@ -136,6 +257,36 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 	[Attribute("1", UIWidgets.CheckBox, "Cover = VERY HIGH PRIORITY: tanpa roll chance, menimpa combat move yang sedang jalan, dan request sistem lain ditolak selama AI lari ke cover.")]
 	protected bool m_bCoverVeryHighPriority;
+
+	[Attribute("1", UIWidgets.CheckBox, "Roll peluang lari ke cover pakai DodgeChance dari DCO config (+ skala personality kalau aktif), walau Cover Very High Priority nyala. Very High Priority tetap berlaku buat menimpa & proteksi request, cuma gak lagi maksa chance = 1.")]
+	protected bool m_bUseDodgeChanceOnCover;
+
+	//------------------------------------------------------------------------------------------------
+	// ARAH GERAK COVER
+	//------------------------------------------------------------------------------------------------
+	[Attribute("1", UIWidgets.CheckBox, "Arah lari ke cover diacak pakai bobot di bawah (mundur / kiri / kanan / bebas). Matikan supaya balik ke perilaku lama.")]
+	protected bool m_bRandomizeCoverDirection;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah MUNDUR (menjauhi ancaman).")]
+	protected float m_fCoverDirWeightBackward;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah KIRI (menyamping relatif ke ancaman).")]
+	protected float m_fCoverDirWeightLeft;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah KANAN (menyamping relatif ke ancaman).")]
+	protected float m_fCoverDirWeightRight;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah BEBAS (ANYWHERE, cover terdekat dari arah mana pun).")]
+	protected float m_fCoverDirWeightAnywhere;
+
+	[Attribute("1", UIWidgets.CheckBox, "Bobot arah di atas dikali skala personality (CAUTIOUS lebih sering mundur, AGGRESSIVE/RECKLESS lebih sering menyamping/maju). Matikan supaya semua personality pakai bobot yang sama.")]
+	protected bool m_bScaleCoverDirByPersonality;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Pengali bobot arah MAJU dari personality (AGGRESSIVE 0.5, RECKLESS 1.0, lainnya 0). 0 = tidak pernah maju. Maju cuma dipakai untuk cover biasa (bukan bangunan) dan saat threat di bawah High Threat Prone Threshold.")]
+	protected float m_fCoverDirForwardWeightScale;
+
+	[Attribute("1", UIWidgets.CheckBox, "Kalau grup punya waypoint posisi, dodge/cover diarahkan ke waypoint. Di luar radius WP -> lari ke WP. Di dalam radius -> arah biasa, kecuali bakal keluar radius -> dibelokin ke WP.")]
+	protected bool m_bDodgeTowardWaypoint;
 
 	//------------------------------------------------------------------------------------------------
 	// DEBUG
@@ -244,7 +395,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 				rq.m_fCoverSearchDistMin = 2;
 				rq.m_fMoveDuration_s     = Math.RandomFloat(1.0, 1.5) * coverSearchDistMax / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
 		
-				rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+				rq.m_eDirection = ResolveCoverDirectionForUnit(utility, false);
 				rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 		
 				rq.m_bAimAtTarget    = false;
@@ -258,6 +409,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 					rq.m_bTryFindCover = false;
 				}	
 		
+				ApplyWaypointDodgeBias(utility, rq, coverSearchDistMax);
+
 				state.ApplyNewRequest(rq);
 
 				return true;
@@ -354,7 +507,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 					OnGunshotHeard(utility, distance, dangerEventCount, shotPos);
 
 					if (m_bUseRealisticReaction)
-						ReactToGunshot(utility, perceivedShotPos, distance, threatScore);
+						ReactToGunshot(utility, perceivedShotPos, distance, threatScore, instigatorEntity);
 					else
 						TryDodge(utility, shotPos, distance);
 				}
@@ -366,7 +519,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 					if (m_bUseRealisticReaction)
 					{
 						utility.GetCallqueue().CallLater(ReactToGunshot, 1000*timeTillGunshotHeard_s, false,
-							utility, perceivedShotPos, distance, threatScore);
+							utility, perceivedShotPos, distance, threatScore, instigatorEntity);
 					}
 					else
 					{
@@ -556,7 +709,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 	//------------------------------------------------------------------------------------------------
 
 	//! Dipanggil saat suara tembakan sampai. Jadwalkan noleh (refleks) lalu cari cover.
-	protected void ReactToGunshot(SCR_AIUtilityComponent utility, vector perceivedShotPos, float distance, float threatScore)
+	protected void ReactToGunshot(SCR_AIUtilityComponent utility, vector perceivedShotPos, float distance, float threatScore, IEntity sourceEntity = null)
 	{
 		if (!utility || !utility.m_OwnerEntity)
 			return;
@@ -569,7 +722,10 @@ modded class SCR_AIDangerReaction_WeaponFired
 		if (lookRoll < lookChance)
 		{
 			lookDelay_ms = (int)(Math.RandomFloat(m_fLookDelayMin, m_fLookDelayMax) * 1000.0);
-			utility.GetCallqueue().CallLater(LookAtShot, lookDelay_ms, false, utility, perceivedShotPos);
+			if (m_bLookPreferClosest)
+				utility.GetCallqueue().CallLater(LookAtShotLocked, lookDelay_ms, false, utility, perceivedShotPos, distance, sourceEntity);
+			else
+				utility.GetCallqueue().CallLater(LookAtShot, lookDelay_ms, false, utility, perceivedShotPos);
 		}
 
 		int coverDelay_ms = (int)(Math.RandomFloat(m_fCoverDelayMin, m_fCoverDelayMax) * 1000.0);
@@ -579,6 +735,154 @@ modded class SCR_AIDangerReaction_WeaponFired
 		{
 			DebugCover(utility.m_OwnerEntity, string.Format("HEARD dist=%1 threat=%2 lookChance=%3 roll=%4 lookDelay=%5ms coverDelay=%6ms executingNow=%7",
 				distance, threatScore, lookChance, lookRoll, lookDelay_ms, coverDelay_ms, utility.m_CombatMoveState && utility.m_CombatMoveState.IsExecutingRequest()));
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------
+	// LOOK PRIORITY — eksekusi
+	//------------------------------------------------------------------------------------------------
+
+	//! Prioritas look: makin dekat makin tinggi, tapi tidak melewati PRIO_UNKNOWN_TARGET
+	protected float ComputeLookPriority(float distance)
+	{
+		float basePrio = SCR_AILookAction.PRIO_DANGER_EVENT;
+
+		float closeness = 1.0;
+		if (m_fLookDistMax > 0)
+			closeness = Math.Clamp(1.0 - (distance / m_fLookDistMax), 0.0, 1.0);
+
+		float prio = basePrio + closeness * m_fLookPriorityProximityBonus;
+
+		float cap = SCR_AILookAction.PRIO_UNKNOWN_TARGET - 0.1;
+		if (cap > basePrio)
+			return Math.Min(prio, cap);
+
+		return basePrio;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Noleh dengan arbitrase jarak: sumber terdekat menang, arah dikunci dan dipasang ulang berkala.
+	protected void LookAtShotLocked(SCR_AIUtilityComponent utility, vector perceivedShotPos, float distance, IEntity sourceEntity)
+	{
+		if (!utility || !utility.m_OwnerEntity || !utility.m_LookAction)
+			return;
+
+		IEntity ownerEnt = utility.m_OwnerEntity;
+		float now_ms = GetGame().GetWorld().GetWorldTime();
+
+		DCO_ShotLookLock lock = s_mLookLocks.Get(ownerEnt);
+		bool active = false;
+		if (lock)
+			active = now_ms < lock.m_fUntil_ms;
+
+		if (active)
+		{
+			bool sameSource = sourceEntity && lock.m_Source == sourceEntity;
+
+			// Sumber lain yang tidak cukup dekat -> arah tetap terkunci ke sumber sekarang
+			if (!sameSource && distance > lock.m_fDist * m_fLookOverrideDistRatio)
+			{
+				if (m_bDebugCoverReaction)
+					DebugCover(ownerEnt, string.Format("LOOK SKIP: terkunci ke sumber %1m, sumber baru %2m (ratio %3)", lock.m_fDist, distance, m_fLookOverrideDistRatio));
+				return;
+			}
+
+			// Penembak yang sama nembak lagi -> perbarui posisi & perpanjang kunci, loop refresh yang jalan dipakai terus
+			if (sameSource)
+			{
+				lock.m_vPos      = perceivedShotPos;
+				lock.m_fDist     = distance;
+				lock.m_fPriority = ComputeLookPriority(distance);
+				lock.m_fUntil_ms = now_ms + m_fLookLockDuration * 1000.0;
+
+				utility.m_LookAction.LookAt(lock.m_vPos, lock.m_fPriority);
+
+				if (m_bDebugCoverReaction)
+					DebugCover(ownerEnt, string.Format("LOOK EXTEND: sumber sama %1m prio=%2", distance, lock.m_fPriority));
+				return;
+			}
+		}
+
+		if (!lock)
+		{
+			lock = new DCO_ShotLookLock();
+			s_mLookLocks.Set(ownerEnt, lock);
+
+			if (s_mLookLocks.Count() > LOOK_LOCK_MAP_PRUNE_THRESHOLD)
+				PruneLookLockMap(now_ms);
+		}
+
+		lock.m_Source    = sourceEntity;
+		lock.m_vPos      = perceivedShotPos;
+		lock.m_fDist     = distance;
+		lock.m_fPriority = ComputeLookPriority(distance);
+		lock.m_fUntil_ms = now_ms + m_fLookLockDuration * 1000.0;
+		lock.m_iToken++;
+
+		utility.m_LookAction.LookAt(lock.m_vPos, lock.m_fPriority);
+
+		if (m_bDebugCoverReaction)
+			DebugCover(ownerEnt, string.Format("LOOK LOCK -> %1 dist=%2m prio=%3 durasi=%4s (menimpa aktif=%5)", perceivedShotPos, distance, lock.m_fPriority, m_fLookLockDuration, active));
+
+		if (m_fLookLockRefreshInterval > 0)
+		{
+			utility.GetCallqueue().CallLater(RefreshLookLock, (int)(m_fLookLockRefreshInterval * 1000.0), false,
+				utility, lock.m_iToken);
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Pasang ulang arah tolehan selama kunci masih aktif. Token beda = kunci sudah diganti, loop ini berhenti.
+	protected void RefreshLookLock(SCR_AIUtilityComponent utility, int token)
+	{
+		if (!utility || !utility.m_OwnerEntity || !utility.m_LookAction)
+			return;
+
+		DCO_ShotLookLock lock = s_mLookLocks.Get(utility.m_OwnerEntity);
+		if (!lock || lock.m_iToken != token)
+			return;
+
+		if (GetGame().GetWorld().GetWorldTime() >= lock.m_fUntil_ms)
+		{
+			if (m_bDebugCoverReaction)
+				DebugCover(utility.m_OwnerEntity, "LOOK UNLOCK: durasi kunci habis");
+			return;
+		}
+
+		utility.m_LookAction.LookAt(lock.m_vPos, lock.m_fPriority);
+
+		utility.GetCallqueue().CallLater(RefreshLookLock, (int)(m_fLookLockRefreshInterval * 1000.0), false,
+			utility, token);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Posisi yang sedang dikunci kalau ada, kalau tidak pakai posisi fallback
+	protected vector ResolveLockedLookPos(notnull SCR_AIUtilityComponent utility, vector fallbackPos)
+	{
+		if (!m_bLookPreferClosest || !utility.m_OwnerEntity)
+			return fallbackPos;
+
+		DCO_ShotLookLock lock = s_mLookLocks.Get(utility.m_OwnerEntity);
+		if (!lock || GetGame().GetWorld().GetWorldTime() >= lock.m_fUntil_ms)
+			return fallbackPos;
+
+		return lock.m_vPos;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PruneLookLockMap(float now_ms)
+	{
+		array<IEntity> toRemove = {};
+
+		foreach (IEntity ent, DCO_ShotLookLock lock : s_mLookLocks)
+		{
+			if (!ent || !lock || now_ms >= lock.m_fUntil_ms)
+				toRemove.Insert(ent);
+		}
+
+		foreach (IEntity entRemove : toRemove)
+		{
+			s_mLookLocks.Remove(entRemove);
 		}
 	}
 
@@ -635,7 +939,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		if (!utility || !utility.m_OwnerEntity)
 			return;
 
-		LookAtShot(utility, perceivedShotPos);
+		LookAtShot(utility, ResolveLockedLookPos(utility, perceivedShotPos));
 
 		repeatsLeft--;
 		if (repeatsLeft <= 0)
@@ -764,8 +1068,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 		chance = Math.Clamp(chance, 0.0, 1.0);
 		chance = chance + threatScore * (1.0 - chance);
 
-		// Very high priority: selalu lari ke cover
-		if (m_bCoverVeryHighPriority)
+		// Very high priority: selalu lari ke cover, kecuali DodgeChance dari config dipakai
+		if (m_bCoverVeryHighPriority && !m_bUseDodgeChanceOnCover)
 			chance = 1.0;
 
 		float coverRoll = Math.RandomFloat01();
@@ -823,7 +1127,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 		rq.m_bUseCoverSearchDirectivity = false;
 		rq.m_bCheckCoverVisibility      = false;
 
-		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		// BUILDING: jangan pernah maju, supaya AI tidak sprint masuk bangunan ke arah musuh
+		rq.m_eDirection = ResolveCoverDirectionForUnit(utility, false);
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 
 		rq.m_eStanceMoving = ECharacterStance.STAND;
@@ -836,6 +1141,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 		rq.m_fCoverSearchDistMin = 0;
 		rq.m_fCoverSearchDistMax = searchDist;
 		rq.m_fMoveDuration_s     = searchDist / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
+
+		ApplyWaypointDodgeBias(utility, rq, searchDist);
 
 		DCO_CoverMoveBudget.MarkMove(utility.m_OwnerEntity);
 
@@ -850,7 +1157,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		ScheduleLookAfterCover(utility, perceivedShotPos, rq.m_fMoveDuration_s);
 
 		if (m_bDebugCoverReaction)
-			DebugCover(utility.m_OwnerEntity, string.Format("PUSH BUILDING searchDist=%1 executingAfter=%2", searchDist, state.IsExecutingRequest()));
+			DebugCover(utility.m_OwnerEntity, string.Format("PUSH BUILDING searchDist=%1 dir=%2 executingAfter=%3", searchDist, typename.EnumToString(SCR_EAICombatMoveDirection, rq.m_eDirection), state.IsExecutingRequest()));
 
 		return rq;
 	}
@@ -878,7 +1185,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 		rq.m_bUseCoverSearchDirectivity = true;
 		rq.m_bCheckCoverVisibility      = true;
 
-		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		// Maju cuma boleh kalau threat di bawah threshold tiarap
+		rq.m_eDirection = ResolveCoverDirectionForUnit(utility, threatScore < m_fHighThreatProneThreshold);
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 
 		rq.m_eStanceMoving = ECharacterStance.STAND;
@@ -896,6 +1204,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 		rq.m_fCoverSearchDistMax = searchDist;
 		rq.m_fMoveDuration_s     = searchDist / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
 
+		ApplyWaypointDodgeBias(utility, rq, searchDist);
+
 		DCO_CoverMoveBudget.MarkMove(utility.m_OwnerEntity);
 
 		if (m_bCoverVeryHighPriority)
@@ -907,8 +1217,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 		if (m_bDebugCoverReaction)
 		{
-			DebugCover(utility.m_OwnerEntity, string.Format("PUSH MOVE-cover searchDist=%1 stanceEnd=%2 executingAfter=%3",
-				searchDist, typename.EnumToString(ECharacterStance, rq.m_eStanceEnd), state.IsExecutingRequest()));
+			DebugCover(utility.m_OwnerEntity, string.Format("PUSH MOVE-cover searchDist=%1 dir=%2 stanceEnd=%3 executingAfter=%4",
+				searchDist, typename.EnumToString(SCR_EAICombatMoveDirection, rq.m_eDirection), typename.EnumToString(ECharacterStance, rq.m_eStanceEnd), state.IsExecutingRequest()));
 		}
 
 		utility.GetCallqueue().CallLater(CheckCoverMoveWatchdog, BUILDING_FALLBACK_POLL_MS, false,
@@ -1159,7 +1469,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 			rq.m_bCheckCoverVisibility = true;
 		}
 
-		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		// Path lama: maju cuma untuk MOVE-cover, bukan BUILDING
+		rq.m_eDirection = ResolveCoverDirectionForUnit(utility, rq.m_eType == SCR_EAICombatMoveRequestType.MOVE);
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 
 		rq.m_eStanceMoving = ECharacterStance.STAND;
@@ -1173,7 +1484,76 @@ modded class SCR_AIDangerReaction_WeaponFired
 		rq.m_fCoverSearchDistMax = searchDist;
 		rq.m_fMoveDuration_s     = searchDist / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
 
+		ApplyWaypointDodgeBias(utility, rq, searchDist);
+
 		state.ApplyNewRequest(rq);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Toggle + debug untuk DCO_DodgeWaypointUtility.ApplyWaypointBias
+	protected void ApplyWaypointDodgeBias(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatMoveRequest_Move rq, float searchDist)
+	{
+		if (!m_bDodgeTowardWaypoint)
+			return;
+
+		if (!DCO_DodgeWaypointUtility.ApplyWaypointBias(utility, rq, searchDist))
+			return;
+
+		if (m_bDebugCoverReaction)
+			DebugCover(utility.m_OwnerEntity, string.Format("WP BIAS: dodge dibelokin ke waypoint %1", rq.m_vMovePos));
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Arah lari ke cover. Randomize mati = mundur (perilaku lama).
+	protected SCR_EAICombatMoveDirection ResolveCoverDirection()
+	{
+		if (!m_bRandomizeCoverDirection)
+			return SCR_EAICombatMoveDirection.BACKWARD;
+
+		return PickCoverDirection();
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Pilih arah lari ke cover berdasarkan bobot. Semua bobot 0 = mundur.
+	protected SCR_EAICombatMoveDirection PickCoverDirection()
+	{
+		float wBack     = Math.Max(0.0, m_fCoverDirWeightBackward);
+		float wLeft     = Math.Max(0.0, m_fCoverDirWeightLeft);
+		float wRight    = Math.Max(0.0, m_fCoverDirWeightRight);
+		float wAnywhere = Math.Max(0.0, m_fCoverDirWeightAnywhere);
+
+		float total = wBack + wLeft + wRight + wAnywhere;
+		if (total <= 0)
+			return SCR_EAICombatMoveDirection.BACKWARD;
+
+		float r = Math.RandomFloat(0, total);
+
+		if (r < wBack)
+			return SCR_EAICombatMoveDirection.BACKWARD;
+		r -= wBack;
+
+		if (r < wLeft)
+			return SCR_EAICombatMoveDirection.LEFT;
+		r -= wLeft;
+
+		if (r < wRight)
+			return SCR_EAICombatMoveDirection.RIGHT;
+
+		return SCR_EAICombatMoveDirection.ANYWHERE;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Arah lari ke cover dengan skala personality.
+	//! Randomize mati / skala personality mati = sama persis dengan ResolveCoverDirection().
+	//! allowForward: izinkan arah MAJU (hanya AGGRESSIVE/RECKLESS yang punya bobot maju).
+	protected SCR_EAICombatMoveDirection ResolveCoverDirectionForUnit(SCR_AIUtilityComponent utility, bool allowForward)
+	{
+		if (!m_bRandomizeCoverDirection || !m_bScaleCoverDirByPersonality || !utility)
+			return ResolveCoverDirection();
+
+		return DCO_PersonalityCombatUtility.PickCoverDirectionForPersonality(utility,
+			m_fCoverDirWeightBackward, m_fCoverDirWeightLeft, m_fCoverDirWeightRight, m_fCoverDirWeightAnywhere,
+			m_fCoverDirForwardWeightScale, allowForward);
 	}
 
 	protected bool CanDodgeNow(IEntity entity, float cooldown_s)

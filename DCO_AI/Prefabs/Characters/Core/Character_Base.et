@@ -6,10 +6,8 @@ SCR_ChimeraCharacter {
     PerceptionComponent "{54A2CBC75F06064B}" {
      SensorsList {
       EyesSensor "{520EA1D2DB109AAD}" {
-       FOVNormal 120
+       FOVNormal 150
        FOVPeripheral 220
-       RecognitionDetectDecay 0.1
-       RecognitionIdentifyDecay 0.02
       }
      }
     }

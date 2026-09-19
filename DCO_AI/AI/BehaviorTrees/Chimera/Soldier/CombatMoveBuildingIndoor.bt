@@ -53,34 +53,6 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
         }
        }
       }
-      DecoIsInVehicle "Is In Vehicle" {
-       Name "Is In Vehicle"
-       EditorPos -32 784
-       Nodes {
-        Sequence Sequence {
-         Name "Sequence"
-         EditorPos 32 1008
-         Nodes {
-          SCR_AISetCombatMoveRequestFailReason "SCR_AI Set Combat Move Request Fail Reason" {
-           Name "SCR_AI Set Combat Move Request Fail Reason"
-           EditorPos -352 1248
-           InPorts {
-            SingleInputPortContainer SingleInputPortContainer {
-             Port 0
-             PortName "Request"
-            }
-           }
-           m_eFailReason MOVEMENT_FAILED
-          }
-          AITaskReturnState "Return State" {
-           Name "Return State"
-           EditorPos 99.421 1245.323
-           Result FAIL
-          }
-         }
-        }
-       }
-      }
       Sequence Sequence {
        Name "Sequence"
        EditorPos 1072 496
@@ -124,7 +96,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
              }
              OutPorts {
               SingleOutputPortContainer SingleOutputPortContainer {
-               Port 32
+               Port 30
                PortName "Position Found"
               }
               SingleOutputPortContainer SingleOutputPortContainer {
@@ -272,67 +244,17 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
            Name "Parallel"
            EditorPos 5440 2560
            Nodes {
-            Sequence Sequence {
-             Name "Sequence"
-             EditorPos 4240 3040
-             Nodes {
-              SCR_AIGetRandomLookPosition "SCR_AI Get Random Look Position" {
-               Name "SCR_AI Get Random Look Position"
-               EditorPos 3952 3200
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 27
-                 PortName "InPos"
-                }
-               }
-               OutPorts {
-                SingleOutputPortContainer SingleOutputPortContainer {
-                 Port 28
-                 PortName "OutPos"
-                }
-               }
-               m_fTangent 0.65
-              }
-              SCR_AILookAtPosition "SCR_AI Look At Position" {
-               Name "SCR_AI Look At Position"
-               EditorPos 4508.752 3221.573
-               InPorts {
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port 28
-                 PortName "PositionIn"
-                }
-                SingleInputPortContainer SingleInputPortContainer {
-                 Port -1
-                 PortName "PriorityIn"
-                }
-               }
-               OutPorts {
-                SingleOutputPortContainer SingleOutputPortContainer {
-                 Port -1
-                 PortName "PositionOut"
-                }
-               }
-               m_fPriority 40
-              }
-              AITaskIdle Idle {
-               Name "Idle"
-               EditorPos 4813.1 3219.833
-               Period 3
-               PeriodRandom 5
-              }
-             }
-            }
             Selector Selector {
              Name "Selector"
-             EditorPos 5552 3328
+             EditorPos 4912 2928
              Nodes {
               Sequence Sequence {
                Name "Sequence"
-               EditorPos 5120 3712
+               EditorPos 4480 3312
                Nodes {
                 AITaskMove Move {
                  Name "Move"
-                 EditorPos 4752 3968
+                 EditorPos 4112 3568
                  InTargetLocation 23
                  InPrecisionXZ 24
                  InPrecisionY 25
@@ -341,19 +263,19 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                 }
                 AITaskSetVariable "Set Variable" {
                  Name "Set Variable"
-                 EditorPos 5305.561 4056.635
+                 EditorPos 4665.561 3656.635
                  SetValue "1"
-                 OutVariable 29
+                 OutVariable 27
                 }
                }
               }
               Sequence Sequence {
                Name "Sequence"
-               EditorPos 6304 3936
+               EditorPos 5664 3536
                Nodes {
                 SCR_AISetCombatMoveRequestFailReason "SCR_AI Set Combat Move Request Fail Reason" {
                  Name "SCR_AI Set Combat Move Request Fail Reason"
-                 EditorPos 5968 4256
+                 EditorPos 5328 3856
                  InPorts {
                   SingleInputPortContainer SingleInputPortContainer {
                    Port 12
@@ -364,9 +286,9 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                 }
                 AITaskSetVariable "Set Variable" {
                  Name "Set Variable"
-                 EditorPos 6480 4256
+                 EditorPos 5840 3856
                  SetValue "2"
-                 OutVariable 30
+                 OutVariable 28
                 }
                }
               }
@@ -387,7 +309,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                 }
                }
                AbortType AbortChildrenBranchAndParentFurtherChildren
-               InVariable 31
+               InVariable 29
                TestType EqualsValue
                TestValue "0"
               }
@@ -402,7 +324,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                 }
                }
                AbortType AbortChildrenBranchAndParentFurtherChildren
-               InVariable 31
+               InVariable 29
                TestType EqualsValue
                TestValue "1"
               }
@@ -417,14 +339,14 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
                 }
                }
                AbortType AbortChildrenBranchAndParentFurtherChildren
-               InVariable 31
+               InVariable 29
                TestType EqualsValue
                TestValue "2"
               }
              }
             }
            }
-           UseChildResult 2
+           UseChildResult 1
           }
           Sequence Sequence {
            Name "Sequence"
@@ -435,7 +357,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
              EditorPos 5872 1648
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 33
+               Port 31
                PortName "Stance"
               }
              }
@@ -445,7 +367,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
              EditorPos 6176 1664
              InPorts {
               SingleInputPortContainer SingleInputPortContainer {
-               Port 34
+               Port 32
                PortName "InCover"
               }
               SingleInputPortContainer SingleInputPortContainer {
@@ -594,7 +516,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
   }
   VariableReference Rq {
    VariableType 0
-   EditorPos 5824 4336
+   EditorPos 5184 3936
   }
   VariableReference myPos {
    VariableType 9
@@ -638,35 +560,27 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
   }
   VariableReference MovePos {
    VariableType 14
-   EditorPos 4512 4032
+   EditorPos 3872 3632
   }
   VariableReference PrecisionXZ {
    VariableType 12
-   EditorPos 4496 4144
+   EditorPos 3856 3744
   }
   VariableReference PrecisionY {
    VariableType 11
-   EditorPos 4464 4240
+   EditorPos 3824 3840
   }
   VariableReference AutoOrientation {
    VariableType 13
-   EditorPos 4448 4336
-  }
-  VariableReference MovePos {
-   VariableType 14
-   EditorPos 3680 3248
-  }
-  VariableReference lookPos {
-   VariableType 16
-   EditorPos 4288 3296
+   EditorPos 3808 3936
   }
   VariableReference MoveState {
    VariableType 10
-   EditorPos 5376 4192
+   EditorPos 4736 3792
   }
   VariableReference MoveState {
    VariableType 10
-   EditorPos 6528 4400
+   EditorPos 5890.313 3997.687
   }
   VariableReference MoveState {
    VariableType 10
@@ -682,7 +596,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
   }
   VariableReference IsMovingToCover {
    VariableType 15
-   EditorPos 5858.211 1836.035
+   EditorPos 5856 1840
   }
  }
 }

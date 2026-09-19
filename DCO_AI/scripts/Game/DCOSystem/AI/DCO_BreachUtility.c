@@ -53,8 +53,15 @@ class DCO_BreachUtility
 				return false;
 		}
 
+		// === ADDED: validasi lintasan + cari pantulan tembok / roll-in lewat resolver.
+		// Sebelumnya breach gak ngecek busur sama sekali, padahal konteksnya indoor.
+		// Resolver juga ngecek radius ledak 8m di titik akhir (termasuk diri sendiri).
+		vector throwPos;
+		if (!DCO_GrenadeUtility.ResolveThrowPos(utility, entryPos, throwPos))
+			return false;
+		
 		SCR_AIThrowGrenadeToBehavior breach = new SCR_AIThrowGrenadeToBehavior(
-			utility, null, entryPos, EWeaponType.WT_FRAGGRENADE, 1,
+			utility, null, throwPos, EWeaponType.WT_FRAGGRENADE, 1,
 			SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER);
 		utility.AddAction(breach);
 

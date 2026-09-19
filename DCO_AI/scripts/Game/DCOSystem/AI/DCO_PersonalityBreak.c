@@ -259,4 +259,125 @@ class DCO_PersonalityCombatUtility
 		}
 		return 1.0;
 	}
+
+	//------------------------------------------------------------------------------------------------
+	// ARAH GERAK COVER - skala bobot arah per personality
+	// Dipakai SCR_AIDangerReaction_WeaponFired & SCR_AIDangerReaction_ProjectileHit.
+	// Bobot dasar tetap dari attribute reaksi, personality cuma mengalikan.
+	//------------------------------------------------------------------------------------------------
+
+	//! Pengali bobot MUNDUR. RECKLESS 0 = tidak pernah mundur (kecuali semua bobot jadi 0).
+	static float GetCoverDirBackwardScale(SCR_AIUtilityComponent utility)
+	{
+		DCO_EAIPersonality p = GetPersonalitySafe(utility);
+
+		switch (p)
+		{
+			case DCO_EAIPersonality.CAUTIOUS:
+				return 2.0;
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 0.3;
+			case DCO_EAIPersonality.RECKLESS:
+				return 0.0;
+			default:
+				return 1.0;
+		}
+		return 1.0;
+	}
+
+	//! Pengali bobot KIRI & KANAN (menyamping relatif ke ancaman).
+	static float GetCoverDirLateralScale(SCR_AIUtilityComponent utility)
+	{
+		DCO_EAIPersonality p = GetPersonalitySafe(utility);
+
+		switch (p)
+		{
+			case DCO_EAIPersonality.CAUTIOUS:
+				return 1.0;
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 1.5;
+			case DCO_EAIPersonality.RECKLESS:
+				return 1.5;
+			default:
+				return 1.0;
+		}
+		return 1.0;
+	}
+
+	//! Pengali bobot BEBAS (ANYWHERE, cover terdekat dari arah mana pun).
+	static float GetCoverDirAnywhereScale(SCR_AIUtilityComponent utility)
+	{
+		DCO_EAIPersonality p = GetPersonalitySafe(utility);
+
+		switch (p)
+		{
+			case DCO_EAIPersonality.CAUTIOUS:
+				return 0.5;
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 1.0;
+			case DCO_EAIPersonality.RECKLESS:
+				return 0.5;
+			default:
+				return 1.0;
+		}
+		return 1.0;
+	}
+
+	//! Bobot MAJU (absolut, bukan pengali - tidak ada bobot dasar maju di attribute reaksi).
+	//! CAUTIOUS & STANDARD 0 = perilaku lama tidak berubah.
+	static float GetCoverDirForwardWeight(SCR_AIUtilityComponent utility)
+	{
+		DCO_EAIPersonality p = GetPersonalitySafe(utility);
+
+		switch (p)
+		{
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 0.5;
+			case DCO_EAIPersonality.RECKLESS:
+				return 1.0;
+			default:
+				return 0.0;
+		}
+		return 0.0;
+	}
+
+	//! Pilih arah lari ke cover dari bobot dasar reaksi x skala personality.
+	//! allowForward = false -> arah MAJU tidak pernah dipilih (bangunan, threat tinggi, peluru mendarat).
+	//! Semua bobot hasil 0 = mundur (sama dengan konvensi PickCoverDirection lama).
+	static SCR_EAICombatMoveDirection PickCoverDirectionForPersonality(SCR_AIUtilityComponent utility, float baseBack, float baseLeft, float baseRight, float baseAnywhere, float forwardWeightScale, bool allowForward)
+	{
+		float lateralScale = GetCoverDirLateralScale(utility);
+
+		float wBack     = Math.Max(0.0, baseBack)     * GetCoverDirBackwardScale(utility);
+		float wLeft     = Math.Max(0.0, baseLeft)     * lateralScale;
+		float wRight    = Math.Max(0.0, baseRight)    * lateralScale;
+		float wAnywhere = Math.Max(0.0, baseAnywhere) * GetCoverDirAnywhereScale(utility);
+
+		float wForward = 0.0;
+		if (allowForward)
+			wForward = Math.Max(0.0, GetCoverDirForwardWeight(utility) * forwardWeightScale);
+
+		float total = wBack + wLeft + wRight + wForward + wAnywhere;
+		if (total <= 0)
+			return SCR_EAICombatMoveDirection.BACKWARD;
+
+		float r = Math.RandomFloat(0, total);
+
+		if (r < wBack)
+			return SCR_EAICombatMoveDirection.BACKWARD;
+		r -= wBack;
+
+		if (r < wLeft)
+			return SCR_EAICombatMoveDirection.LEFT;
+		r -= wLeft;
+
+		if (r < wRight)
+			return SCR_EAICombatMoveDirection.RIGHT;
+		r -= wRight;
+
+		if (r < wForward)
+			return SCR_EAICombatMoveDirection.FORWARD;
+
+		return SCR_EAICombatMoveDirection.ANYWHERE;
+	}
 }

@@ -12,6 +12,12 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 	protected static const float COVER_PROTECT_MARGIN_S = 1.0;
 	protected static const int   PINNED_MAP_PRUNE_THRESHOLD = 128;
 
+	protected static const float DODGE_CHANCE_FALLBACK = 0.6;
+	protected static const int   DODGE_ROLL_MAP_PRUNE_THRESHOLD = 128;
+
+	//! Waktu (world time ms) roll dodge terakhir per AI, biar gak roll ulang tiap peluru
+	protected static ref map<IEntity, float> s_mLastDodgeRollTime = new map<IEntity, float>();
+
 	//! Sampai kapan (world time ms) AI dianggap tertekan / pinned
 	protected static ref map<IEntity, float> s_mPinnedUntil = new map<IEntity, float>();
 
@@ -79,6 +85,33 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 	[Attribute("1", UIWidgets.CheckBox, "Reaksi untuk impact di jarak menengah (antara IMPACT_DIST_VERY_CLOSE dan batas 3 m).")]
 	protected bool m_bReactToNearMiss;
 
+	[Attribute("1", UIWidgets.CheckBox, "Roll peluang lari ke cover pakai DodgeChance dari DCO config (+ skala personality kalau aktif). Roll ditandai sebelum dilempar, jadi gagal roll = gak roll ulang sampai Cover Move Cooldown habis, kecuali ancaman dari arah baru.")]
+	protected bool m_bUseDodgeChance;
+
+	//------------------------------------------------------------------------------------------------
+	// ARAH GERAK COVER
+	//------------------------------------------------------------------------------------------------
+	[Attribute("1", UIWidgets.CheckBox, "Arah lari ke cover diacak pakai bobot di bawah (mundur / kiri / kanan / bebas). Matikan supaya balik ke perilaku lama.")]
+	protected bool m_bRandomizeCoverDirection;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah MUNDUR (menjauhi ancaman).")]
+	protected float m_fCoverDirWeightBackward;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah KIRI (menyamping relatif ke ancaman).")]
+	protected float m_fCoverDirWeightLeft;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah KANAN (menyamping relatif ke ancaman).")]
+	protected float m_fCoverDirWeightRight;
+
+	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah BEBAS (ANYWHERE, cover terdekat dari arah mana pun).")]
+	protected float m_fCoverDirWeightAnywhere;
+
+	[Attribute("1", UIWidgets.CheckBox, "Bobot arah di atas dikali skala personality (CAUTIOUS lebih sering mundur, AGGRESSIVE/RECKLESS lebih sering menyamping). Peluru mendarat = tidak pernah maju. Cuma berlaku kalau Randomize Cover Direction nyala.")]
+	protected bool m_bScaleCoverDirByPersonality;
+
+	[Attribute("1", UIWidgets.CheckBox, "Kalau grup punya waypoint posisi, lari ke cover diarahkan ke waypoint. Di luar radius WP -> lari ke WP. Di dalam radius -> arah biasa, kecuali bakal keluar radius -> dibelokin ke WP.")]
+	protected bool m_bDodgeTowardWaypoint;
+
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
 		vector impactPos = dangerEvent.GetPosition();
@@ -109,8 +142,6 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 
 		if (!state || !charCon)
 			return false;
-		
-		Print("PROJECTILE HIT CHECK PASS");
 
 		vector shooterPos      = shooter.GetOrigin();
 		float  distanceToDanger = Math.Sqrt(distanceToDangerSq);
@@ -299,6 +330,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		if (utility.m_DCOConfig && utility.m_DCOConfig.IsHoldPosition())
 			return false;
 
+		// Peluang lari pakai DodgeChance dari config
+		if (m_bUseDodgeChance && !RollDodgeChance(utility, threatFromNewDirection))
+			return false;
+
 		if (deploySmoke)
 			DCO_SmokeUtility.TryDeploySmokeForRetreat(utility, shooterPos);
 
@@ -326,7 +361,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		rq.m_fMoveDuration_s     = Math.RandomFloat(1.0, 1.5) * coverSearchDistMax / speedReference;
 		m_fLastCoverMoveDuration_s = rq.m_fMoveDuration_s;
 
-		rq.m_eDirection = ResolveDirection(randomDirection);
+		rq.m_eDirection = ResolveDirectionForUnit(utility, randomDirection);
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 
 		// Jalan mundur sambil membidik bikin gerakan aneh dan lambat
@@ -350,6 +385,9 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			rq.m_bFailIfNoCover = false;	// BUILDING + TryFindCover=false + FailIfNoCover=true = gagal diam-diam
 		}	
 
+		if (m_bDodgeTowardWaypoint)
+			DCO_DodgeWaypointUtility.ApplyWaypointBias(utility, rq, coverSearchDistMax);
+
 		DCO_CoverMoveBudget.MarkMove(utility.m_OwnerEntity);
 
 		// Prioritas di atas reaksi cover dari WeaponFired, sekaligus melindungi request ini dari sistem lain
@@ -359,6 +397,67 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			state.ApplyNewRequest(rq);
 
 		return true;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Roll DodgeChance dari config. Waktu roll ditandai SEBELUM roll (disengaja, cegah spam roll tiap peluru).
+	//! Ancaman dari arah baru boleh roll ulang walau masih dalam cooldown roll.
+	protected bool RollDodgeChance(notnull SCR_AIUtilityComponent utility, bool threatFromNewDirection)
+	{
+		IEntity ownerEnt = utility.m_OwnerEntity;
+		if (!ownerEnt)
+			return false;
+
+		float now_ms = GetGame().GetWorld().GetWorldTime();
+
+		if (!threatFromNewDirection)
+		{
+			float lastRoll_ms;
+			if (s_mLastDodgeRollTime.Find(ownerEnt, lastRoll_ms))
+			{
+				if ((now_ms - lastRoll_ms) < (m_fCoverMoveCooldown_s * 1000.0))
+					return false;
+			}
+		}
+
+		s_mLastDodgeRollTime.Set(ownerEnt, now_ms);
+
+		if (s_mLastDodgeRollTime.Count() > DODGE_ROLL_MAP_PRUNE_THRESHOLD)
+			PruneDodgeRollMap(now_ms);
+
+		float chance    = DODGE_CHANCE_FALLBACK;
+		bool  scalePers = true;
+
+		DCO_AIConfigComponent cfg = utility.m_DCOConfig;
+		if (cfg)
+		{
+			chance    = cfg.GetDodgeChance();
+			scalePers = cfg.GetDodgeScaleByPersonality();
+		}
+
+		if (scalePers)
+			chance *= DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(utility);
+
+		return Math.RandomFloat01() < Math.Clamp(chance, 0.0, 1.0);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PruneDodgeRollMap(float now_ms)
+	{
+		float staleAge_ms = m_fCoverMoveCooldown_s * 1000.0 * 2.0;
+
+		array<IEntity> toRemove = {};
+
+		foreach (IEntity ent, float lastTime_ms : s_mLastDodgeRollTime)
+		{
+			if (!ent || (now_ms - lastTime_ms) > staleAge_ms)
+				toRemove.Insert(ent);
+		}
+
+		foreach (IEntity entRemove : toRemove)
+		{
+			s_mLastDodgeRollTime.Remove(entRemove);
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------
@@ -466,8 +565,41 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 	}
 
 	//------------------------------------------------------------------------------------------------
+	//! Pilih arah lari ke cover berdasarkan bobot. Semua bobot 0 = mundur.
+	protected SCR_EAICombatMoveDirection PickCoverDirection()
+	{
+		float wBack     = Math.Max(0.0, m_fCoverDirWeightBackward);
+		float wLeft     = Math.Max(0.0, m_fCoverDirWeightLeft);
+		float wRight    = Math.Max(0.0, m_fCoverDirWeightRight);
+		float wAnywhere = Math.Max(0.0, m_fCoverDirWeightAnywhere);
+
+		float total = wBack + wLeft + wRight + wAnywhere;
+		if (total <= 0)
+			return SCR_EAICombatMoveDirection.BACKWARD;
+
+		float r = Math.RandomFloat(0, total);
+
+		if (r < wBack)
+			return SCR_EAICombatMoveDirection.BACKWARD;
+		r -= wBack;
+
+		if (r < wLeft)
+			return SCR_EAICombatMoveDirection.LEFT;
+		r -= wLeft;
+
+		if (r < wRight)
+			return SCR_EAICombatMoveDirection.RIGHT;
+
+		return SCR_EAICombatMoveDirection.ANYWHERE;
+	}
+
+	//------------------------------------------------------------------------------------------------
 	protected SCR_EAICombatMoveDirection ResolveDirection(bool randomDirection)
 	{
+		// Arah diacak pakai bobot -> abaikan flag randomDirection per rule
+		if (m_bRandomizeCoverDirection)
+			return PickCoverDirection();
+
 		if (!randomDirection)
 			return SCR_EAICombatMoveDirection.BACKWARD;
 
@@ -478,6 +610,19 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			return SCR_EAICombatMoveDirection.LEFT;
 
 		return SCR_EAICombatMoveDirection.RIGHT;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! ResolveDirection + skala personality. Peluru mendarat sudah bahaya langsung -> arah MAJU dimatikan.
+	//! Randomize mati / skala personality mati = sama persis dengan ResolveDirection().
+	protected SCR_EAICombatMoveDirection ResolveDirectionForUnit(SCR_AIUtilityComponent utility, bool randomDirection)
+	{
+		if (!m_bRandomizeCoverDirection || !m_bScaleCoverDirByPersonality || !utility)
+			return ResolveDirection(randomDirection);
+
+		return DCO_PersonalityCombatUtility.PickCoverDirectionForPersonality(utility,
+			m_fCoverDirWeightBackward, m_fCoverDirWeightLeft, m_fCoverDirWeightRight, m_fCoverDirWeightAnywhere,
+			0.0, false);
 	}
 
 	//! Suppress setelah AI selesai bergerak, supaya tidak lari sambil nembak

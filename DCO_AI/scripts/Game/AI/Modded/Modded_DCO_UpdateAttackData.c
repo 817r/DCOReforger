@@ -42,10 +42,12 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		bool directDamage;
 		float weaponMinDist, weaponMaxDist;
 		m_CombatComponent.GetSelectedWeaponProperties(weaponMinDist, weaponMaxDist, directDamage);
-		EWeaponType weaponType = selectedWeaponComp.GetWeaponType();
 		
+		// === MODIFIED: null-check dipindah SEBELUM GetWeaponType() (sebelumnya deref dulu baru dicek) ===
 		if (!selectedWeaponComp)
 			return FIRE_TREE_LOOK;
+		
+		EWeaponType weaponType = selectedWeaponComp.GetWeaponType();
 
 		if (m_CombatComponent.GetCombatMode() == EAIGroupCombatMode.HOLD_FIRE && IsCloseDirectThreat(target, visible))
 		{
@@ -116,6 +118,9 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			
 			lastSeenThreshold = Math.Max(SCR_AICombatComponent.TARGET_MIN_LAST_SEEN_INDIRECT_ATTACK * 2, lastSeenThreshold * threat * ThreatRememberFromPersonality());
 			
+			// === ADDED: titik lempar hasil resolver (direct / roll-in / bank) ===
+			vector grenadeThrowPos;
+			
 			if ((!directDamage || weaponType != EWeaponType.WT_ROCKETLAUNCHER) &&
 				target.GetTimeSinceSeen() < lastSeenThreshold &&
 				target.GetTraceFraction() > 0.4)
@@ -140,13 +145,18 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			else if (target.GetTimeSinceSeen() > 2
 				&& m_CombatComponent.HasWeaponOfType(EWeaponType.WT_FRAGGRENADE)
 				&& DCO_GrenadeUtility.CanThrowGrenadeNow(m_UtilityComponent)
-				&& DCO_GrenadeUtility.IsThrowSafe(m_UtilityComponent, target.GetLastSeenPosition()))
+				&& DCO_GrenadeUtility.ResolveThrowPos(m_UtilityComponent, target.GetLastSeenPosition(), grenadeThrowPos))
 			{
-				SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, target.GetLastSeenPosition(), EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + 
+				SCR_AIThrowGrenadeToBehavior gren = new SCR_AIThrowGrenadeToBehavior(m_UtilityComponent, null, grenadeThrowPos, EWeaponType.WT_FRAGGRENADE, 1, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + 
 				SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER);
 				m_UtilityComponent.AddAction(gren);
 				DCO_GrenadeUtility.NotifyGrenadeThrown(m_UtilityComponent);
-				return FIRE_TREE_THROW_GRENADE;
+				
+				// === MODIFIED: sebelumnya return FIRE_TREE_THROW_GRENADE -> Attack_Default.bt
+				// ngejalanin DCO_Suppress_Grenade.bt yang JUGA ngelempar frag (ke last seen pos,
+				// bukan ke titik resolver). Lemparan sekarang cuma lewat behavior, sama kayak
+				// jalur suppression.
+				return FIRE_TREE_LOOK;
 			}
 			else if ((!directDamage || weaponType == EWeaponType.WT_ROCKETLAUNCHER) &&
 				target.GetTimeSinceSeen() < lastSeenThreshold &&

@@ -10,7 +10,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute( defvalue: "15", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 60 0.01" )]
 	protected float m_fTimeToMaxAccuracy;
 	
-	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0.5 3 0.01" )]
+	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0.5 5 0.01" )]
 	protected float m_fAiPerception;
 	
 	[Attribute( defvalue: "0", uiwidget: UIWidgets.Auto, desc: "Magical Ammo")]
@@ -145,7 +145,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 		
 		if (ctx.ReadValue("aiPerception", fTmp))
 		{
-			m_fAiPerception = Math.Clamp(fTmp, 0.5, 3.0);
+			m_fAiPerception = Math.Clamp(fTmp, 0.5, 5.0);
 			applied++;
 		}
 		
