@@ -46,6 +46,14 @@ class DCO_AIConfigComponent : ScriptComponent
 	
 	[Attribute("1", UIWidgets.CheckBox, "Skala peluang dodge pakai personality AI ini")]
 	protected bool m_bDodgeScaleByPersonality;
+
+	// === ADDED: Dodge shot threshold (di-snapshot dari global pas init, bisa diubah per unit lewat GM) ===
+	[Attribute("1", UIWidgets.Slider, "Jumlah tembakan musuh (yang cukup ngancem) sebelum AI ini mau dodge. 1 = langsung di tembakan pertama.", params: "1 20 1")]
+	protected int m_iDodgeShotThreshold;
+
+	[Attribute("5.0", UIWidgets.Slider, "Jendela waktu (detik) ngitung tembakan buat AI ini. Gak ada tembakan baru selama ini -> hitungan balik ke 0.", params: "1 30 0.5")]
+	protected float m_fDodgeShotWindow;
+	// === END ADDED ===
 	
 	[Attribute("1", UIWidgets.ComboBox, "AI Personality -- gimana gaya combat AI ini, orthogonal dari skill", "", ParamEnumArray.FromEnum(DCO_EAIPersonality))]
 	protected DCO_EAIPersonality m_ePersonality;
@@ -90,6 +98,8 @@ class DCO_AIConfigComponent : ScriptComponent
 		m_bDodgeScaleByPersonality = settings.GetDodgeScaleByPersonality();
 		m_fGrenadeUsage            = settings.GetGrenadeUsage();	// === ADDED ===
 		m_fGLUsage                 = settings.GetGLUsage();		// === ADDED ===
+		m_iDodgeShotThreshold      = settings.GetDodgeShotThreshold();	// === ADDED ===
+		m_fDodgeShotWindow         = settings.GetDodgeShotWindow();		// === ADDED ===
 	}
 	
 	float GetDodgeChance()            
@@ -275,6 +285,30 @@ class DCO_AIConfigComponent : ScriptComponent
 		m_fGLUsage = Math.Clamp(f, 0.0, 1.0);
 		return m_fGLUsage;
 	}
+
+	// === ADDED: Dodge shot threshold ===
+	int GetDodgeShotThreshold()
+	{
+		return m_iDodgeShotThreshold;
+	}
+
+	int SetDodgeShotThreshold(int i)
+	{
+		m_iDodgeShotThreshold = Math.ClampInt(i, 1, 20);
+		return m_iDodgeShotThreshold;
+	}
+
+	float GetDodgeShotWindow()
+	{
+		return m_fDodgeShotWindow;
+	}
+
+	float SetDodgeShotWindow(float f)
+	{
+		m_fDodgeShotWindow = Math.Clamp(f, 1.0, 30.0);
+		return m_fDodgeShotWindow;
+	}
+	// === END ADDED ===
 	
 	//! Pengali chance dari slider usage: 0 -> 0, 0.5 -> 1 (default), 1 -> 2.
 	static float UsageToChanceScale(float usage)

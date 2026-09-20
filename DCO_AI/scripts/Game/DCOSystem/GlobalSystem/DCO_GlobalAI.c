@@ -4,13 +4,13 @@ class DCO_GlobalAIComponentClass: ScriptComponentClass
 
 class DCO_GlobalAIComponent: ScriptComponent
 {
-	[Attribute("1.2", UIWidgets.Slider, "Global AI unit skill level", "0.1 10 0.1")]
+	[Attribute("1.8", UIWidgets.Slider, "Global AI unit skill level", "0.1 10 0.1")]
 	protected float unitAimSkillAccuracy;
 	
 	[Attribute( defvalue: "15", uiwidget: UIWidgets.Slider, desc: "Unit skill", params: "1 60 0.01" )]
 	protected float m_fTimeToMaxAccuracy;
 	
-	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0.5 5 0.01" )]
+	[Attribute( defvalue: "1.5", uiwidget: UIWidgets.Slider, desc: "Unit Perception", params: "0.5 5 0.01" )]
 	protected float m_fAiPerception;
 	
 	[Attribute( defvalue: "0", uiwidget: UIWidgets.Auto, desc: "Magical Ammo")]
@@ -25,13 +25,13 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "How Suppression Affecting this AI", params: "0 2 0.01" )]
 	protected float m_fSuppressionEffect;
 	
-	[Attribute("0.7", UIWidgets.Range, "Base chance AI mau aktif nyari cover pas ke-detect di tempat terbuka (0-1). Di-scale lebih lanjut sama personality -- RECKLESS turun paling banyak (ceroboh), AGGRESSIVE turun sedang (combat-oriented tapi disiplin), CAUTIOUS naik.", params: "0 1 0.01" )]
+	[Attribute("0.9", UIWidgets.Range, "Base chance AI mau aktif nyari cover pas ke-detect di tempat terbuka (0-1). Di-scale lebih lanjut sama personality -- RECKLESS turun paling banyak (ceroboh), AGGRESSIVE turun sedang (combat-oriented tapi disiplin), CAUTIOUS naik.", params: "0 1 0.01" )]
 	protected float m_fTakeCoverChance;
 	
-	[Attribute("70", UIWidgets.Slider, "Bobot personality STANDARD (relatif ke 3 lainnya, gak harus total 100)", params: "0 100 1")]
+	[Attribute("80", UIWidgets.Slider, "Bobot personality STANDARD (relatif ke 3 lainnya, gak harus total 100)", params: "0 100 1")]
 	protected float m_fPersonalityWeightStandard;
 	
-	[Attribute("15", UIWidgets.Slider, "Bobot personality CAUTIOUS", params: "0 100 1")]
+	[Attribute("7", UIWidgets.Slider, "Bobot personality CAUTIOUS", params: "0 100 1")]
 	protected float m_fPersonalityWeightCautious;
 	
 	[Attribute("12", UIWidgets.Slider, "Bobot personality AGGRESSIVE", params: "0 100 1")]
@@ -54,13 +54,21 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	[Attribute("1", UIWidgets.CheckBox, "Skala peluang dodge pakai personality AI (CAUTIOUS naik, RECKLESS turun).")]
 	protected bool m_bDodgeScaleByPersonality;
+
+	// === ADDED: Dodge shot threshold ===
+	[Attribute("1", UIWidgets.Slider, "Jumlah tembakan musuh (yang cukup ngancem) sebelum AI mau dodge. 1 = langsung di tembakan pertama (perilaku lama).", params: "1 20 1")]
+	protected int m_iDodgeShotThreshold;
+
+	[Attribute("5.0", UIWidgets.Slider, "Jendela waktu (detik) ngitung tembakan. Kalau gak ada tembakan baru selama ini, hitungan balik ke 0.", params: "1 30 0.5")]
+	protected float m_fDodgeShotWindow;
+	// === END ADDED ===
 	
 	// === ADDED: Weapon usage (Unlikely 0 <-> 1 Likely). 0.5 = perilaku default.
 	// Chance efektif = chance dasar x (usage x 2), di-clamp 0-1. 0 = gak pernah dipakai.
 	[Attribute("0.5", UIWidgets.Slider, "Seberapa sering AI lempar frag grenade. 0 = gak pernah, 0.5 = default, 1 = sering banget (chance dikali 2).", params: "0 1 0.01", category: "Weapon Usage")]
 	protected float m_fGrenadeUsage;
 	
-	[Attribute("0.5", UIWidgets.Slider, "Seberapa sering AI pakai grenade launcher (UGL). 0 = gak pernah, 0.5 = default, 1 = sering banget (chance dikali 2).", params: "0 1 0.01", category: "Weapon Usage")]
+	[Attribute("0.7", UIWidgets.Slider, "Seberapa sering AI pakai grenade launcher (UGL). 0 = gak pernah, 0.5 = default, 1 = sering banget (chance dikali 2).", params: "0 1 0.01", category: "Weapon Usage")]
 	protected float m_fGLUsage;
 	// === END ADDED ===
 	
@@ -242,6 +250,20 @@ class DCO_GlobalAIComponent: ScriptComponent
 			applied++;
 		}
 		
+		// === ADDED: Dodge shot threshold ===
+		if (ctx.ReadValue("dodgeShotThreshold", iTmp))
+		{
+			m_iDodgeShotThreshold = Math.ClampInt(iTmp, 1, 20);
+			applied++;
+		}
+
+		if (ctx.ReadValue("dodgeShotWindow", fTmp))
+		{
+			m_fDodgeShotWindow = Math.Clamp(fTmp, 1.0, 30.0);
+			applied++;
+		}
+		// === END ADDED ===
+
 		// === ADDED: Weapon usage ===
 		if (ctx.ReadValue("grenadeUsage", fTmp))
 		{
@@ -289,6 +311,8 @@ class DCO_GlobalAIComponent: ScriptComponent
 		ctx.WriteValue("dodgeScaleByPersonality",  m_bDodgeScaleByPersonality);
 		ctx.WriteValue("grenadeUsage",             m_fGrenadeUsage);	// === ADDED ===
 		ctx.WriteValue("glUsage",                  m_fGLUsage);		// === ADDED ===
+		ctx.WriteValue("dodgeShotThreshold",       m_iDodgeShotThreshold);	// === ADDED ===
+		ctx.WriteValue("dodgeShotWindow",          m_fDodgeShotWindow);		// === ADDED ===
 		
 		if (ctx.SaveToFile(m_sServerConfigPath))
 			PrintFormat("[DCO][Config] Template config dibuat di %1", m_sServerConfigPath);
@@ -325,6 +349,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 			m_fPersonalityWeightAggressive, m_fPersonalityWeightReckless);
 		// === ADDED ===
 		PrintFormat("[DCO][Config] grenadeUsage=%1 glUsage=%2", m_fGrenadeUsage, m_fGLUsage);
+		PrintFormat("[DCO][Config] dodgeShotThreshold=%1 dodgeShotWindow=%2s", m_iDodgeShotThreshold, m_fDodgeShotWindow); // === ADDED ===
 	}
 	
 	float GetDodgeChance()               
@@ -381,6 +406,30 @@ class DCO_GlobalAIComponent: ScriptComponent
 		m_bDodgeScaleByPersonality = b;
 		return m_bDodgeScaleByPersonality; 
 	}
+
+	// === ADDED: Dodge shot threshold ===
+	int GetDodgeShotThreshold()
+	{
+		return m_iDodgeShotThreshold;
+	}
+
+	int SetDodgeShotThreshold(int i)
+	{
+		m_iDodgeShotThreshold = Math.ClampInt(i, 1, 20);
+		return m_iDodgeShotThreshold;
+	}
+
+	float GetDodgeShotWindow()
+	{
+		return m_fDodgeShotWindow;
+	}
+
+	float SetDodgeShotWindow(float f)
+	{
+		m_fDodgeShotWindow = Math.Clamp(f, 1.0, 30.0);
+		return m_fDodgeShotWindow;
+	}
+	// === END ADDED ===
 	
 	void ReloadServerConfig()
 	{

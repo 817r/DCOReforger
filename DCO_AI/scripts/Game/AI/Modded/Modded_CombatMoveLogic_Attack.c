@@ -8,7 +8,8 @@ modded enum SCR_EAICombatMoveRequestType
 {
 	INVESTIGATE,
 	RESUPPLYING,
-	BUILDING
+	BUILDING,
+	INDOOR_RELOCATE
 }
 
 modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase

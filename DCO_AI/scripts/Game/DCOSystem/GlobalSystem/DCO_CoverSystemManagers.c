@@ -102,6 +102,45 @@ class SCR_CoverManagerComponent : ScriptComponent
 
 		return true;
 	}
+	
+	static IEntity DCO_GetBuildingAt(IEntity entity, float traceDistance = 10.0)
+	{
+		if (!entity)
+			return null;
+
+		World world = GetGame().GetWorld();
+		if (!world)
+			return null;
+
+		vector origin = entity.GetOrigin();
+
+		TraceParam trace = new TraceParam();
+		trace.Flags   = TraceFlags.ENTS;
+		trace.Start   = origin;
+		trace.End     = origin + Vector(0, traceDistance, 0);
+		trace.Exclude = entity;
+
+		float hitFraction = world.TraceMove(trace, null);
+		if (hitFraction >= 1.0)
+			return null;
+
+		if (!trace.TraceEnt)
+			return null;
+
+		IEntity root = trace.TraceEnt.GetRootParent();
+		if (!root)
+			return null;
+
+		DCO_BuildingPositionComponent buildingComp = DCO_BuildingPositionComponent.Cast(root.FindComponent(DCO_BuildingPositionComponent));
+		if (!buildingComp)
+			return null;
+
+		IEntity building = buildingComp.GetBuildingEntity();
+		if (!building)
+			return root;
+
+		return building;
+	}
 
 	//! Lepaskan booking milik agent dan lupakan posisinya.
 	//! Returns true jika ada booking yang ditemukan dan dihapus.

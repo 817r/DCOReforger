@@ -167,6 +167,11 @@ BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMov
                       RunBT RunBT {
                        Name "RunBT"
                        EditorPos 1555.416 2399.75
+                       InPorts {
+                        SingleInputPortContainer SingleInputPortContainerClass {
+                         PortName "request"
+                        }
+                       }
                        BehaviorTree "{2BE8802BEF507B6D}AI/BehaviorTrees/Chimera/Soldier/CombatMoveRequest_Stop.bt"
                        InBehaviorTree 16
                       }
@@ -274,6 +279,26 @@ BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMov
                      InVariable 8
                      TestType EqualsValue
                      TestValue "6"
+                    }
+                    DecoTestVariable "Test Variable" {
+                     Name "Test Variable"
+                     EditorPos 5728 2112
+                     Nodes {
+                      RunBT RunBT {
+                       Name "RunBT"
+                       EditorPos 5584 2560
+                       InPorts {
+                        SingleInputPortContainer SingleInputPortContainerClass {
+                         Port 22
+                         PortName "rq"
+                        }
+                       }
+                       BehaviorTree "{8C27311D56CAB0A8}AI/BehaviorTrees/Chimera/Soldier/DCO_IndoorRelocate.bt"
+                      }
+                     }
+                     InVariable -1
+                     TestType EqualsValue
+                     TestValue "7"
                     }
                    }
                    Group "{5E32C718C7D2785F}"
@@ -397,38 +422,38 @@ BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMov
  VariablesRefs {
   VariableReference request {
    VariableType 0
-   EditorPos -217.095 84.587
+   EditorPos -224 80
    Group "{5E32C718C7D2785F}"
   }
   VariableReference restart {
    VariableType 1
-   EditorPos 726.936 29.524
+   EditorPos 720 32
    Group "{5E32C718C7D2785F}"
   }
   VariableReference restart {
    VariableType 1
-   EditorPos 1546.73 326.564
+   EditorPos 1552 320
    Group "{5E32C718C7D2785F}"
   }
   VariableReference executeRequest {
    VariableType 3
-   EditorPos 371.587 -921.547
+   EditorPos 368 -928
   }
   VariableReference executeRequest {
    VariableType 3
-   EditorPos 1341.107 392.667
+   EditorPos 1344 400
   }
   VariableReference executeRequest {
    VariableType 3
-   EditorPos 3039.214 1.615
+   EditorPos 3040 0
   }
   VariableReference executeRequest {
    VariableType 3
-   EditorPos 4008.386 466.321
+   EditorPos 4016 464
   }
   VariableReference request {
    VariableType 0
-   EditorPos 153.065 2072.867
+   EditorPos 160 2080
   }
   VariableReference eRequestType {
    VariableType 2
@@ -436,47 +461,47 @@ BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMov
   }
   VariableReference restartDelayed {
    VariableType 4
-   EditorPos 483.096 102.143
+   EditorPos 480 96
   }
   VariableReference restartDelayed {
    VariableType 4
-   EditorPos 2552.424 -319.242
+   EditorPos 2560 -320
   }
   VariableReference restartDelayed {
    VariableType 4
-   EditorPos 3346.507 -297.54
+   EditorPos 3344 -304
   }
   VariableReference request {
    VariableType 0
-   EditorPos 3374.917 510.75
+   EditorPos 3376 512
   }
   VariableReference request {
    VariableType 0
-   EditorPos 3092.144 1290
+   EditorPos 3088 1296
   }
   VariableReference request {
    VariableType 0
-   EditorPos 3172.143 855
+   EditorPos 3168 848
   }
   VariableReference request {
    VariableType 0
-   EditorPos 640.833 2383.333
+   EditorPos 640 2384
   }
   VariableReference request {
    VariableType 0
-   EditorPos 1160.833 2457.5
+   EditorPos 1168 2464
   }
   VariableReference request {
    VariableType 0
-   EditorPos 1708.833 2553.643
+   EditorPos 1712 2560
   }
   VariableReference request {
    VariableType 0
-   EditorPos 2330.5 2647.666
+   EditorPos 2336 2640
   }
   VariableReference request {
    VariableType 0
-   EditorPos 3028.408 2767.143
+   EditorPos 3024 2768
   }
   VariableReference request {
    VariableType 0
@@ -485,6 +510,10 @@ BehaviorTree "{B4954823621D32B6}AI/BehaviorTrees/Chimera/Soldier/HandleCombatMov
   VariableReference request {
    VariableType 0
    EditorPos 4672 2640
+  }
+  VariableReference request {
+   VariableType 0
+   EditorPos 5373.492 2677.706
   }
  }
 }

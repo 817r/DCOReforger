@@ -113,6 +113,15 @@ modded class SCR_AIDangerReaction_WeaponFired
 	protected bool m_bScaleDodgeByPersonality = true;
 
 	protected static ref map<IEntity, float> s_mLastDodgeTime = new map<IEntity, float>();
+
+	// === ADDED: Dodge shot threshold ===
+	//! Hitungan tembakan per AI, pake idiom static map yang sama kayak s_mLastDodgeTime
+	//! (instance reaction ini belum tentu satu per agent).
+	protected static ref map<IEntity, int>   s_mDodgeShotCount   = new map<IEntity, int>();
+	protected static ref map<IEntity, float> s_mDodgeShotLast_ms = new map<IEntity, float>();
+	protected static const int   DODGE_SHOT_THRESHOLD_FALLBACK = 1;
+	protected static const float DODGE_SHOT_WINDOW_FALLBACK    = 5.0;
+	// === END ADDED ===
 	
 	protected static const float coverSearchDistMax = 20;
 	
@@ -979,6 +988,24 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
+		// === ADDED: Dodge shot threshold ===
+		// Dihitung SEBELUM guard state (lagi jalan / di cover / dll) -- tekanan tembakan tetap numpuk
+		// walau AI belum bisa dodge. Cuma tembakan yang lolos threat gate yang dihitung.
+		int   shotThreshold = DODGE_SHOT_THRESHOLD_FALLBACK;
+		float shotWindow_s  = DODGE_SHOT_WINDOW_FALLBACK;
+		if (cfg)
+		{
+			shotThreshold = cfg.GetDodgeShotThreshold();
+			shotWindow_s  = cfg.GetDodgeShotWindow();
+		}
+
+		int shotCount;
+		if (threatScore >= m_fCoverThreatGate)
+			shotCount = RegisterDodgeShot(ownerEnt, shotWindow_s);
+		else
+			shotCount = GetDodgeShotCount(ownerEnt, shotWindow_s);
+		// === END ADDED ===
+
 		SCR_AICombatMoveState state = utility.m_CombatMoveState;
 		if (!state)
 		{
@@ -1047,6 +1074,14 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
+		// === ADDED: Dodge shot threshold ===
+		if (shotCount < shotThreshold)
+		{
+			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: tembakan %1/%2 (window %3s)", shotCount, shotThreshold, shotWindow_s));
+			return;
+		}
+		// === END ADDED ===
+
 		if (!CanDodgeNow(ownerEnt, cooldown_s))
 		{
 			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: cooldown aktif (%1s)", cooldown_s));
@@ -1055,6 +1090,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 		// Cooldown ditandai sebelum roll (disengaja, cegah spam percobaan)
 		MarkDodged(ownerEnt, cooldown_s);
+		ResetDodgeShots(ownerEnt); // === ADDED: Dodge shot threshold -- satu percobaan dodge = hitungan mulai lagi
 
 		float baseChance = chance;
 		float persScale  = 1.0;
@@ -1403,6 +1439,18 @@ modded class SCR_AIDangerReaction_WeaponFired
 		if (distance > maxDist)
 			return;
 
+		// === ADDED: Dodge shot threshold ===
+		int   shotThreshold = DODGE_SHOT_THRESHOLD_FALLBACK;
+		float shotWindow_s  = DODGE_SHOT_WINDOW_FALLBACK;
+		if (cfg)
+		{
+			shotThreshold = cfg.GetDodgeShotThreshold();
+			shotWindow_s  = cfg.GetDodgeShotWindow();
+		}
+
+		int shotCount = RegisterDodgeShot(utility.m_OwnerEntity, shotWindow_s);
+		// === END ADDED ===
+
 		SCR_AICombatMoveState state = utility.m_CombatMoveState;
 		if (!state || state.IsExecutingRequest())
 			return;
@@ -1419,10 +1467,16 @@ modded class SCR_AIDangerReaction_WeaponFired
 		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(utility.m_OwnerEntity))
 			return;
 
+		// === ADDED: Dodge shot threshold ===
+		if (shotCount < shotThreshold)
+			return;
+		// === END ADDED ===
+
 		if (!CanDodgeNow(utility.m_OwnerEntity, cooldown_s))
 			return;
 
 		MarkDodged(utility.m_OwnerEntity, cooldown_s);
+		ResetDodgeShots(utility.m_OwnerEntity); // === ADDED: Dodge shot threshold
 
 		if (scalePers)
 			chance *= DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(utility);
@@ -1555,6 +1609,79 @@ modded class SCR_AIDangerReaction_WeaponFired
 			m_fCoverDirWeightBackward, m_fCoverDirWeightLeft, m_fCoverDirWeightRight, m_fCoverDirWeightAnywhere,
 			m_fCoverDirForwardWeightScale, allowForward);
 	}
+
+	//================================================================================================
+	// === ADDED: Dodge shot threshold ===
+	//================================================================================================
+
+	//------------------------------------------------------------------------------------------------
+	//! Hitungan tembakan saat ini. Kalau tembakan terakhir udah lewat window, dianggap 0.
+	protected int GetDodgeShotCount(IEntity entity, float window_s)
+	{
+		if (!entity)
+			return 0;
+
+		float last_ms;
+		if (!s_mDodgeShotLast_ms.Find(entity, last_ms))
+			return 0;
+
+		if ((GetGame().GetWorld().GetWorldTime() - last_ms) > (window_s * 1000.0))
+			return 0;
+
+		int count;
+		s_mDodgeShotCount.Find(entity, count);
+		return count;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Tambah satu tembakan, return hitungan baru. Window-nya geser: tiap tembakan baru
+	//! nyambung rentetan, jeda lebih lama dari window mulai dari nol lagi.
+	protected int RegisterDodgeShot(IEntity entity, float window_s)
+	{
+		if (!entity)
+			return 0;
+
+		int count = GetDodgeShotCount(entity, window_s) + 1;
+
+		float now_ms = GetGame().GetWorld().GetWorldTime();
+		s_mDodgeShotCount.Set(entity, count);
+		s_mDodgeShotLast_ms.Set(entity, now_ms);
+
+		if (s_mDodgeShotLast_ms.Count() > INVESTIGATE_MAP_PRUNE_THRESHOLD)
+			PruneDodgeShotMaps(now_ms, window_s);
+
+		return count;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void ResetDodgeShots(IEntity entity)
+	{
+		if (!entity)
+			return;
+
+		s_mDodgeShotCount.Remove(entity);
+		s_mDodgeShotLast_ms.Remove(entity);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PruneDodgeShotMaps(float now_ms, float window_s)
+	{
+		float staleAge_ms = window_s * 1000.0 * 2.0;
+
+		array<IEntity> toRemove = {};
+		foreach (IEntity ent, float last_ms : s_mDodgeShotLast_ms)
+		{
+			if (!ent || (now_ms - last_ms) > staleAge_ms)
+				toRemove.Insert(ent);
+		}
+
+		foreach (IEntity ent : toRemove)
+		{
+			s_mDodgeShotCount.Remove(ent);
+			s_mDodgeShotLast_ms.Remove(ent);
+		}
+	}
+	// === END ADDED ===
 
 	protected bool CanDodgeNow(IEntity entity, float cooldown_s)
 	{

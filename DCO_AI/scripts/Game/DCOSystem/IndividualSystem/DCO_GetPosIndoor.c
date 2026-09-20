@@ -47,6 +47,20 @@ class DCO_FindIndoorPosition: AITaskScripted
 	[Attribute("1.2", UIWidgets.EditBox, "Radius (m) ngecek pintu. KECIL -- cuma nyegah AI berdiri MENGHALANGI pintu.", category: "Hard Filter")]
 	protected float m_fDoorBlockRadius;
 
+	// === ADDED: Hindari pintu ===
+	[Attribute("2.5", UIWidgets.EditBox, "Radius (m) zona hindari pintu. Di dalem zona ini skor dikurangin, makin deket pintu makin gede. Di luar hard filter m_fDoorBlockRadius.", category: "Door Avoidance")]
+	protected float m_fDoorAvoidRadius;
+
+	[Attribute("0.3", UIWidgets.Range, "Pengurangan skor maksimum (tepat di pintu). Turun linear ke 0 di m_fDoorAvoidRadius.", params: "0 1 0.05", category: "Door Avoidance")]
+	protected float m_fDoorAvoidPenalty;
+
+	[Attribute("1", UIWidgets.CheckBox, "Tolak posisi di celah sempit (kusen tanpa daun pintu, lorong melengkung). Deteksi pake ray yang udah ada, gak nambah trace.", category: "Door Avoidance")]
+	protected bool m_bRejectChokepoints;
+
+	[Attribute("1.4", UIWidgets.EditBox, "Lebar (m) di bawah ini dianggap celah sempit: dua ray berlawanan arah sama-sama kena dinding dan totalnya segini.", category: "Door Avoidance")]
+	protected float m_fChokepointWidth;
+	// === END ADDED ===
+
 	[Attribute("3.0", UIWidgets.EditBox, "Jarak minimum (m) ke posisi yang udah di-book AI lain.", category: "Hard Filter")]
 	protected float m_fMinBookedDistance;
 
@@ -88,6 +102,8 @@ class DCO_FindIndoorPosition: AITaskScripted
 	protected static const float EXIT_MARGIN      = 0.5;   //! Ray harus bersih segini lewat batas gedung buat dianggap "keluar"
 	protected static const float ACQUIRE_RETRY_MS = 2000.0; //! Jeda sebelum nyari gedung lagi setelah gagal di searchPos yang sama
 	protected static const float BOUNDS_MARGIN    = 0.5;   //! Toleransi cek "posisi masih di dalam bounds gedung"
+	protected static const float DOOR_SAME_FLOOR_DY = 1.5;  //! ADDED: beda tinggi segini ke titik pintu = masih satu lantai
+	protected static const float DOOR_MIN_SCORE     = 0.01; //! ADDED: penalti pintu gak bikin kandidat dibuang -- tetep jadi pilihan terakhir di gedung kecil
 
 	//--------------------------------------------------------------------
 	protected IEntity m_Building;
@@ -98,6 +114,8 @@ class DCO_FindIndoorPosition: AITaskScripted
 	protected ref array<IEntity> m_aQueryFoundBuilding = {};
 	protected ref array<IEntity> m_aQueryCharacters    = {};
 	protected ref array<IEntity> m_aQueryDoors         = {};
+	protected ref array<vector>  m_aDoorPoints         = {}; // ADDED: titik referensi pintu (engsel + tengah daun pintu)
+	protected ref array<float>   m_aRayHitDist         = {}; // ADDED: jarak kena tiap ray dari ScoreCandidate terakhir
 
 	protected ref array<int>    m_aCells     = {};
 	protected ref array<vector> m_aEvaluated = {};
@@ -681,12 +699,15 @@ class DCO_FindIndoorPosition: AITaskScripted
 		int   blockedDirections = 0;
 		float fireValue         = 0;
 
+		m_aRayHitDist.Clear(); // ADDED: Hindari pintu
+
 		for (int i = 0; i < RAY_COUNT; i++)
 		{
 			float angleRad = (i * 360.0 / RAY_COUNT_F) * Math.DEG2RAD;
 			vector dir = Vector(Math.Cos(angleRad), 0, Math.Sin(angleRad));
 
 			float hitDist = TraceFraction(probeOrigin, probeOrigin + dir * RAY_MAX_DIST) * RAY_MAX_DIST;
+			m_aRayHitDist.Insert(hitDist); // ADDED: Hindari pintu
 
 			if (hitDist < WALL_NEAR_DIST)
 			{
@@ -717,19 +738,111 @@ class DCO_FindIndoorPosition: AITaskScripted
 		if (blockedDirections >= RAY_COUNT)
 			return -1;
 
+		// === ADDED: Hindari pintu ===
+		if (m_bRejectChokepoints && IsChokepoint())
+			return -1;
+		// === END ADDED ===
+
 		if (m_bRequireFireLine && fireValue <= 0)
 			return -1;
 
 		float coverScore = blockedDirections / RAY_COUNT_F;
 		float fireScore  = Math.Min(fireValue, FIRE_LINE_IDEAL) / FIRE_LINE_IDEAL;
 
+		// === CHANGED: dua return di bawah dikurangin penalti pintu (ApplyDoorPenalty) ===
 		if (totalWeight <= 0)
-			return coverScore + bonus;
+			return ApplyDoorPenalty(coverScore + bonus, pos);
 
 		float score = (m_fWeightCover * coverScore) + (m_fWeightFireLine * fireScore) + cheapPart;
 
-		return score / totalWeight + bonus;
+		return ApplyDoorPenalty(score / totalWeight + bonus, pos);
 	}
+
+	//================================================================================================
+	// === ADDED: Hindari pintu ===
+	//================================================================================================
+
+	//------------------------------------------------------------------------------------------------
+	//! Dua titik per pintu: origin (biasanya engsel) dan tengah bounds daun pintu (tengah kusen kalau
+	//! tertutup, area ayunan kalau kebuka). Tinggi disamain ke origin biar cek lantai konsisten.
+	protected void BuildDoorPoints()
+	{
+		m_aDoorPoints.Clear();
+
+		foreach (IEntity d : m_aQueryDoors)
+		{
+			if (!d)
+				continue;
+
+			vector origin = d.GetOrigin();
+			m_aDoorPoints.Insert(origin);
+
+			// Bounds lokal -> world, pola yang sama kayak bounds gedung di AcquireBuilding / SnapshotOccupants.
+			vector mins, maxs;
+			d.GetBounds(mins, maxs);
+
+			vector center = d.CoordToParent((mins + maxs) * 0.5);
+			center[1] = origin[1];
+
+			if (vector.DistanceSq(center, origin) > 0.01)
+				m_aDoorPoints.Insert(center);
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Jarak XZ ke titik pintu terdekat di lantai yang sama. float.MAX kalau gak ada.
+	protected float GetNearestDoorDistXZ(vector pos)
+	{
+		float best = float.MAX;
+
+		foreach (vector p : m_aDoorPoints)
+		{
+			if (Math.AbsFloat(p[1] - pos[1]) > DOOR_SAME_FLOOR_DY)
+				continue;
+
+			float d = vector.DistanceXZ(p, pos);
+			if (d < best)
+				best = d;
+		}
+
+		return best;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Penalti linear: penuh di pintu, 0 di m_fDoorAvoidRadius. Penalti cuma NGURANGIN skor,
+	//! jadi upper bound early-out di ScoreCandidate tetap valid.
+	protected float ApplyDoorPenalty(float score, vector pos)
+	{
+		if (m_fDoorAvoidRadius <= 0 || m_fDoorAvoidPenalty <= 0)
+			return score;
+
+		float d = GetNearestDoorDistXZ(pos);
+		if (d >= m_fDoorAvoidRadius)
+			return score;
+
+		float t = 1.0 - (d / m_fDoorAvoidRadius);
+		return Math.Max(score - m_fDoorAvoidPenalty * t, DOOR_MIN_SCORE);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Celah sempit = ada pasangan ray berlawanan (i, i + RAY_COUNT/2) yang dua-duanya kena dinding
+	//! dan total jaraknya < m_fChokepointWidth. Nangkep kusen tanpa daun pintu yang gak punya
+	//! BaseDoorComponent. Pake jarak ray dari ScoreCandidate, gak ada trace tambahan.
+	protected bool IsChokepoint()
+	{
+		int half = RAY_COUNT / 2; // integer division memang disengaja (8 -> 4)
+		if (m_aRayHitDist.Count() < RAY_COUNT)
+			return false;
+
+		for (int i = 0; i < half; i++)
+		{
+			if ((m_aRayHitDist[i] + m_aRayHitDist[i + half]) < m_fChokepointWidth)
+				return true;
+		}
+
+		return false;
+	}
+	// === END ADDED ===
 
 	//------------------------------------------------------------------------------------------------
 	//! Snapshot karakter + pintu di area gedung, sekali per pencarian.
@@ -742,6 +855,10 @@ class DCO_FindIndoorPosition: AITaskScripted
 		float  radius = 0.5 * vector.Distance(m_vLocalMins, m_vLocalMaxs) + Math.Max(m_fOccupancyRadius, m_fDoorBlockRadius);
 
 		GetGame().GetWorld().QueryEntitiesBySphere(center, radius, QueryCallbackC);
+
+		// === ADDED: Hindari pintu ===
+		BuildDoorPoints();
+		// === END ADDED ===
 	}
 
 	//------------------------------------------------------------------------------------------------
@@ -786,6 +903,13 @@ class DCO_FindIndoorPosition: AITaskScripted
 			if (d && vector.DistanceSq(d.GetOrigin(), pos) < doorRadSq)
 				return true;
 		}
+
+		// === ADDED: Hindari pintu ===
+		// Origin pintu biasanya di engsel. Cek juga tengah daun pintunya, biar sisi kusen
+		// yang jauh dari engsel gak lolos.
+		if (GetNearestDoorDistXZ(pos) < m_fDoorBlockRadius)
+			return true;
+		// === END ADDED ===
 
 		SCR_CoverManagerComponent coverMgr = SCR_CoverManagerComponent.GetInstance();
 		if (coverMgr)

@@ -580,7 +580,7 @@ BehaviorTree "{9E87C51C88638786}AI/BehaviorTrees/Chimera/Soldier/CombatMoveBuild
   }
   VariableReference MoveState {
    VariableType 10
-   EditorPos 5890.313 3997.687
+   EditorPos 5888 4000
   }
   VariableReference MoveState {
    VariableType 10

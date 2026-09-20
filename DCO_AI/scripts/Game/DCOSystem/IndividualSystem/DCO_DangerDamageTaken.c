@@ -55,6 +55,12 @@ modded class SCR_AIDangerReaction_DamageTaken
 		if (!state)
 			return false;
 
+		// === ADDED: Indoor defense ===
+		// Kena hit = satu-satunya pemicu relocate di dalem gedung. Gate di ApplyNewRequest
+		// yang mutusin: kalau unit di dalem gedung, request mundur di bawah diganti INDOOR_RELOCATE.
+		state.DCO_MarkIndoorRelocateTrigger();
+		// === END ADDED ===
+
 		SCR_AICombatComponent combat = utility.m_CombatComponent;
 
 		if (!combat)
