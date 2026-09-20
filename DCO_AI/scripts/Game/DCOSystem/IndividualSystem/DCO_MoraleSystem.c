@@ -38,6 +38,15 @@ class DCO_AIMoraleSystem
 	private static const float SUPPRESSION_BULLET_INCREMENT			=			0.005;
 	private static const float LOW_SUPPLY							=			0.05;
 	
+	private static const float MORALE_SUPPRESSION_IMPACT_INCREMENT	=			0.04;
+	private static const float MORALE_SUPPRESSION_FLYBY_INCREMENT	=			0.02;
+	private static const float MORALE_SUPPRESSION_CAP				=			3.0;
+
+	private static const float MORALE_SUPPRESSION_COVER_SCALE		=			0.5;
+
+	private static const float MORALE_SUPPRESSION_GRACE_MS			=			4000.0;
+	private static const float MORALE_SUPPRESSION_GRACE_RECOVERY	=			0.02 * 0.001;
+	
 	private float m_fMoraleTotal;
 	private float m_fMoraleSuppression;
 	private float m_fMoraleSuppressionPlus;
@@ -48,6 +57,8 @@ class DCO_AIMoraleSystem
 	private float m_fMoraleThreat;
 	private float m_fMoraleThreatMod;
 	
+	private float m_fLastSuppressionHit_ms;
+
 	private float friendlys = 1;
 	
 	private SCR_AIUtilityComponent				m_Utility;
@@ -219,6 +230,17 @@ class DCO_AIMoraleSystem
 			friendlys = moraleAgent.GetParentGroup().GetAgentsCount();
 		m_fMoraleSuppression -= m_fMoraleSuppression * (MORALE_SUPPRESSION_RECOVERY + (friendlys * MORALE_BOOST_FRIENDLY_VALUE)) * timeSlice;
 		m_fMoraleSuppressionPlus -= m_fMoraleSuppressionPlus * MORALE_SUPPRESSION_RECOVERY * timeSlice;
+		
+		// === ADDED: Grace period recovery -- udah lama gak ditembakin, recovery suppression
+		// dipercepat. Ditambah DI ATAS recovery normal, bukan gantiin.
+		float graceNow_ms = GetGame().GetWorld().GetWorldTime();
+		if (graceNow_ms - m_fLastSuppressionHit_ms > MORALE_SUPPRESSION_GRACE_MS)
+		{
+			m_fMoraleSuppression -= m_fMoraleSuppression * MORALE_SUPPRESSION_GRACE_RECOVERY * timeSlice;
+			m_fMoraleSuppression = Math.Max(m_fMoraleSuppression, 0.0);
+		}
+		// === END ADDED ===
+		
 		if (m_Combat)
 		{
 			if (m_Combat.GetCurrentTarget())
@@ -253,7 +275,11 @@ class DCO_AIMoraleSystem
 	void ThreatProjectileFlyby(int count)
 	{
 		m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.0);
-		m_fMoraleSuppression += Math.Clamp(m_fMoraleSuppression + m_fMoraleSuppressionPlus, 0, 1.5);
+		// === FIXED: dulu `m_fMoraleSuppression += Clamp(m_fMoraleSuppression + plus, 0, 1.5)`
+		// -> nilai jadi 2x lipat tiap peluru (clamp cuma ngebatesin increment-nya).
+		// Sekarang lewat soft cap + Suppression Effect + cover + personality.
+		ApplySuppressionGain(ComputeSuppressionGain(count, MORALE_SUPPRESSION_FLYBY_INCREMENT));
+		// === END FIXED ===
 	}
 	
 	void DropAim()
@@ -265,7 +291,9 @@ class DCO_AIMoraleSystem
 	void ThreatBulletImpact(int count)
 	{			
 		m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.2);
-		m_fMoraleSuppression += Math.Clamp(m_fMoraleSuppression + m_fMoraleSuppressionPlus, 0, 4.5);
+		// === FIXED: sama kayak flyby -- ganti doubling jadi soft cap ===
+		ApplySuppressionGain(ComputeSuppressionGain(count, MORALE_SUPPRESSION_IMPACT_INCREMENT));
+		// === END FIXED ===
 	}
 	
 	void threatmodifierToMorale(float modifier)
@@ -277,4 +305,70 @@ class DCO_AIMoraleSystem
 	{
 		return friendlys * MORALE_BOOST_FIXED_FRIENDLY_VALUE;
 	}
+	
+	// === ADDED: Suppression soft cap + Suppression Effect + cover + personality ===
+	//------------------------------------------------------------------------------------------------
+	//! Gain mentah dari sejumlah peluru, udah dikali semua pengali.
+	//! Suppression Effect 0 = gain 0 = kebal morale-drop dari suppression.
+	private float ComputeSuppressionGain(int count, float baseIncrement)
+	{
+		float fCount = count; // hindari int math
+		float gain = fCount * baseIncrement;
+		
+		if (!m_Utility)
+			return gain;
+		
+		// Suppression Effect (per unit, dari DCO_AIConfigComponent)
+		if (m_Utility.m_DCOConfig)
+			gain *= Math.Max(m_Utility.m_DCOConfig.GetSuppressionEffect(), 0.0);
+		
+		// Cover bonus
+		if (m_Utility.m_CombatMoveState && m_Utility.m_CombatMoveState.m_bInCover)
+			gain *= MORALE_SUPPRESSION_COVER_SCALE;
+		
+		// Personality
+		gain *= GetPersonalitySuppressionGainScale();
+		
+		return gain;
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	//! Tambah gain dengan soft cap: makin deket ke MORALE_SUPPRESSION_CAP, makin kecil efeknya.
+	//! Sekalian nyatet waktu hit buat grace period.
+	private void ApplySuppressionGain(float gain)
+	{
+		m_fLastSuppressionHit_ms = GetGame().GetWorld().GetWorldTime();
+		
+		if (gain <= 0.0)
+			return;
+		
+		float headroom = 1.0 - (m_fMoraleSuppression / MORALE_SUPPRESSION_CAP);
+		headroom = Math.Clamp(headroom, 0.0, 1.0);
+		
+		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + gain * headroom, 0.0, MORALE_SUPPRESSION_CAP);
+	}
+	
+	//------------------------------------------------------------------------------------------------
+	//! Seberapa cepet morale personality ini jatuh karena suppression.
+	//! Beda sama GetMoraleThresholdScale: itu ngatur KAPAN state ganti, ini ngatur SECEPAT APA turunnya.
+	private float GetPersonalitySuppressionGainScale()
+	{
+		if (!m_Utility || !m_Utility.m_DCOConfig)
+			return 1.0;
+		
+		switch (m_Utility.m_DCOConfig.GetPersonality())
+		{
+			case DCO_EAIPersonality.CAUTIOUS:
+				return 1.3;
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 0.8;
+			case DCO_EAIPersonality.RECKLESS:
+				return 0.6;
+			default:
+				return 1.0;
+		}
+		
+		return 1.0;
+	}
+	// === END ADDED ===
 }

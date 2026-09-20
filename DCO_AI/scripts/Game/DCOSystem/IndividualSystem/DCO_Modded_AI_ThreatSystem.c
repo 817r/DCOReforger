@@ -17,6 +17,15 @@ modded class SCR_AIThreatSystem
 	
 	float m_fThreatFlyBy;
 	
+	private static const float ENDANGERED_DIST_NEAR = 25.0;
+	private static const float ENDANGERED_DIST_FAR = 300.0;
+	private static const float ENDANGERED_DIST_NEAR_SCALE = 2.0;
+	private static const float ENDANGERED_DIST_FAR_SCALE = 0.4;
+	
+	private static const float ENDANGERED_SEEN_FRESH_S = 2.0;
+	private static const float ENDANGERED_SEEN_STALE_S = 11.0;
+	private static const float ENDANGERED_SEEN_STALE_SCALE = 0.4;
+	
 	override void ThreatBulletImpact(int count)
 	{
 		#ifdef AI_DEBUG
@@ -33,7 +42,12 @@ modded class SCR_AIThreatSystem
 		#ifdef AI_DEBUG
 		AddDebugMessage(string.Format("ThreatProjectileFlyby"));
 		#endif
-		m_fThreatFlyBy = Math.Clamp(m_fThreatSuppression + count * SUPPRESSION_BULLET_INCREMENT, 0, 1.2);
+		// === FIXED: dulu `Clamp(m_fThreatSuppression + count * INC, 0, 1.2)` -- base-nya
+		// m_fThreatSuppression (bukan m_fThreatFlyBy) jadi gak akumulatif, dan nilai itu
+		// nyangkut permanen karena gak ada falloff. Sekarang akumulatif dari dirinya sendiri,
+		// cap 1.2 tetap, falloff ditambah di Update().
+		m_fThreatFlyBy = Math.Clamp(m_fThreatFlyBy + count * SUPPRESSION_BULLET_INCREMENT, 0, 1.2);
+		// === END FIXED ===
 		m_Combat.DangerSuppressedDecreaseAIM(count/2);
 		m_Utility.GetMoraleSystem().ThreatProjectileFlyby(count);
 	}
@@ -44,10 +58,33 @@ modded class SCR_AIThreatSystem
 		m_fThreatSuppression -= m_fThreatSuppression * THREAT_SUPPRESSION_DROP_RATE * timeSlice;
 		m_fThreatShotsFired -= m_fThreatShotsFired * THREAT_SHOT_DROP_RATE * timeSlice;
 		
+		// === ADDED: falloff buat flyby, rate sama kayak suppression ===
+		m_fThreatFlyBy -= m_fThreatFlyBy * THREAT_SUPPRESSION_DROP_RATE * timeSlice;
+		m_fThreatFlyBy = Math.Max(m_fThreatFlyBy, 0.0);
+		// === END ADDED ===
+		
 		if (m_Combat)
 		{
-			if (m_Combat.GetCurrentTarget())
-				m_fThreatIsEndangered = ENDANGERED_INCREMENT;
+			// === FIXED: dulu flat `m_fThreatIsEndangered = ENDANGERED_INCREMENT` begitu punya
+			// target, gak peduli jarak / seberapa basi info-nya. Sekarang diskala jarak +
+			// visibilitas. Naik langsung (reaksi cepet), turun pelan pakai drop rate vanilla
+			// (gak kedip-kedip pas target sebentar ketutup).
+			BaseTarget endangeredTarget = m_Combat.GetCurrentTarget();
+			if (endangeredTarget)
+			{
+				float targetDist = endangeredTarget.GetDistance();
+				float distClamped = Math.Clamp(targetDist, ENDANGERED_DIST_NEAR, ENDANGERED_DIST_FAR);
+				float distScale = Math.Map(distClamped, ENDANGERED_DIST_NEAR, ENDANGERED_DIST_FAR, ENDANGERED_DIST_NEAR_SCALE, ENDANGERED_DIST_FAR_SCALE);
+				
+				float sinceSeen = endangeredTarget.GetTimeSinceSeen();
+				float seenClamped = Math.Clamp(sinceSeen, ENDANGERED_SEEN_FRESH_S, ENDANGERED_SEEN_STALE_S);
+				float seenScale = Math.Map(seenClamped, ENDANGERED_SEEN_FRESH_S, ENDANGERED_SEEN_STALE_S, 1.0, ENDANGERED_SEEN_STALE_SCALE);
+				
+				float endangeredTargetValue = ENDANGERED_INCREMENT * distScale * seenScale;
+				float endangeredDecayed = m_fThreatIsEndangered - m_fThreatIsEndangered * THREAT_ENDANGERED_DROP_RATE * timeSlice;
+				m_fThreatIsEndangered = Math.Max(endangeredTargetValue, endangeredDecayed);
+			}
+			// === END FIXED ===
 			else
 				m_fThreatIsEndangered -= m_fThreatIsEndangered * THREAT_ENDANGERED_DROP_RATE * timeSlice;
 		}
