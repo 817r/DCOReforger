@@ -12,6 +12,11 @@ class CMD_AICommanderObjectiveComponentClass : ScriptComponentClass
 
 class CMD_AICommanderObjectiveComponent : ScriptComponent
 {
+	// === ADDED: Manager Auto-Spawn ===
+	[Attribute("", UIWidgets.ResourceNamePicker, desc: "Prefab entity yang punya AICommander_ManagerComponent. Di-spawn otomatis (server) kalau entity ini init sebelum ada manager di world. Kosong = gak auto-spawn.", "et", category: "Commander Manager")]
+	protected ResourceName m_sManagerPrefab;
+	// === END ADDED ===
+	
 	[Attribute("50.0", UIWidgets.EditBox, "Base strategic value (0–100). Makin tinggi makin penting.", category: "Objective")]
 	protected float m_fBaseValue;
 
@@ -407,8 +412,19 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	protected void InitializeObjective()
 	{
+		// === ADDED: Manager Auto-Spawn ===
+		AICommander_ManagerComponent.GetOrSpawnInstance(m_sManagerPrefab, m_OwnerEntity);
+		// === END ADDED ===
 		if (!AICommander_ManagerComponent.GetInstance())
 			return;
+		
+		// === ADDED: Manager Auto-Spawn -- urutan EOnInit antar entity gak
+		// dijamin. Kalau objective init duluan dari manager yang ditaruh di world,
+		// m_aAvailableFactions masih kosong dan map state/assigned objective ini
+		// gak keisi faction apa pun. InitializeCommanderManager idempotent. ===
+		AICommander_ManagerComponent.GetInstance().InitializeCommanderManager();
+		// === END ADDED ===
+		
 		AICommander_ManagerComponent.GetInstance().RegisterObjective(this);
 		for(int i = 0; i < AICommander_ManagerComponent.GetInstance().m_aAvailableFactions.Count(); i++)
 		{

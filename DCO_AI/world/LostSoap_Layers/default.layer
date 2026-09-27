@@ -33,6 +33,22 @@ SCR_AIWorld SCR_AIWorld : "{E0A05C76552E7F58}Prefabs/AI/SCR_AIWorld.et" {
 PerceptionManager PerceptionManager : "{028DAEAD63E056BE}Prefabs/World/Game/PerceptionManager.et" {
  coords 1891.659 11.438 1822.161
 }
+SCR_GameModeEditor GameMode_Editor_Full1 : "{DA3986AF1B5032B7}Prefabs/MP/Modes/Editor/GameMode_Editor_Full.et" {
+ coords 2928.025 66.635 1728.627
+ {
+  SCR_FactionManager "6A6E178CFC485779" {
+   ID "56E685E92F1B7E7A"
+   Factions {
+    SCR_Faction "{56DEAC40D2DBC8B1}" {
+     m_bIsPlayable 1
+    }
+    SCR_Faction "{56DEAC40D132400B}" {
+     m_bIsPlayable 1
+    }
+   }
+  }
+ }
+}
 GameEntity : "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et" {
  components {
   AICommander_ManagerComponent "{69C61E8C066EE04E}" {

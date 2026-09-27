@@ -391,8 +391,13 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		// Sekarang di-enable LANGSUNG di sini, tapi cuma kalau m_GroupUtil beneran
 		// ketemu (kalau gak ketemu, percuma juga di-enable karena EOnFrame bakal
 		// early-return terus lewat null-check di atas). ===
-		if (m_GroupUtil)
-			SetEventMask(owner, EntityEvent.FRAME);
+		// === MODIFIED (Commander Assignment GM): FRAME gak lagi di-enable di
+		// sini. Group mulai dormant; scanning baru nyala waktu group di-assign ke
+		// commander (DCO_GroupUtilityComponent.ActivateForCommander ->
+		// InitializeContactReport) dan mati lagi waktu di-release. ===
+		//if (m_GroupUtil)
+		//	SetEventMask(owner, EntityEvent.FRAME);
+		// === END MODIFIED ===
 		// === END MODIFIED ===
 	}
 	
@@ -401,6 +406,29 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	//! satu-satunya jalan buat ngaktifin scanning, EOnInit udah self-sufficient.
 	void InitializeContactReport()
 	{
+		// === ADDED: Manager Auto-Spawn -- EOnInit ke-skip (gate manager) kalau
+		// group di-spawn sebelum ada manager. Isi referensinya sekarang; gate
+		// EOnInit sendiri tetap dipertahankan. ===
+		if (!m_MyEntity)
+		{
+			m_MyEntity  = GetOwner();
+			m_Group     = SCR_AIGroup.Cast(m_MyEntity);
+			m_GroupUtil = DCO_GroupUtilityComponent.Cast(m_MyEntity.FindComponent(DCO_GroupUtilityComponent));
+		}
+		// === END ADDED ===
+		
 		SetEventMask(m_MyEntity, EntityEvent.FRAME);	
 	}
+	
+	// === ADDED: Commander Assignment (GM) -- pasangan InitializeContactReport,
+	// dipanggil waktu group di-release dari commander. ===
+	void DeactivateContactReport()
+	{
+		if (!m_MyEntity)
+			return;
+		
+		ClearEventMask(m_MyEntity, EntityEvent.FRAME);
+		m_fScanTimer = 0.0;
+	}
+	// === END ADDED ===
 }

@@ -256,10 +256,17 @@ class DCO_TransportMissionComponent : ScriptComponent
 
 	override void EOnFrame(IEntity owner, float timeSlice)
 	{
+		// === MODIFIED (Commander Assignment GM): dulu polling RegisterVehicle
+		// TIAP FRAME selama belum punya commander (auto-assign by faction).
+		// Sekarang vehicle cuma di-assign manual lewat GM, dan FRAME cuma nyala
+		// selama punya commander -- jadi ini cuma jaring pengaman. ===
+		//if (!m_Commander)
+		//{
+		//	AICommander_ManagerComponent.GetInstance().RegisterVehicle(owner);
+		//}
 		if (!m_Commander)
-		{
-			AICommander_ManagerComponent.GetInstance().RegisterVehicle(owner);
-		}
+			return;
+		// === END MODIFIED ===
 			
 		
 		if (!Replication.IsServer())
@@ -287,7 +294,59 @@ class DCO_TransportMissionComponent : ScriptComponent
 		
 		Vehicle veh = Vehicle.Cast(owner);
 		m_eVehType = veh.m_eVehicleType;
-		SetEventMask(owner, EntityEvent.FRAME);
+		// === MODIFIED (Commander Assignment GM): vehicle mulai dormant, FRAME
+		// baru nyala di ActivateForCommander. ===
+		//SetEventMask(owner, EntityEvent.FRAME);
+		// === END MODIFIED ===
 		
 	}
+	
+	// === ADDED: Commander Assignment (GM) ===
+	DCO_GroupUtilityComponent GetPassengerGroup()
+	{
+		return m_PassengerGroup;
+	}
+	
+	AICommander_BaseComponent GetCommanderOwner()
+	{
+		return m_Commander;
+	}
+	
+	//! Dipanggil AICommander_BaseComponent.AssignVehicle.
+	void ActivateForCommander(AICommander_BaseComponent cmd)
+	{
+		if (!cmd)
+			return;
+		
+		m_Commander = cmd;
+		
+		// === ADDED: Manager Auto-Spawn -- EOnInit ke-skip kalau vehicle di-spawn
+		// sebelum ada manager, jadi m_eVehType belum keisi. ===
+		Vehicle veh = Vehicle.Cast(GetOwner());
+		if (veh)
+			m_eVehType = veh.m_eVehicleType;
+		// === END ADDED ===
+		
+		SetEventMask(GetOwner(), EntityEvent.FRAME);
+	}
+	
+	//! Dipanggil AICommander_BaseComponent.ReleaseVehicle. Misi yang lagi jalan
+	//! di-abort, ownership grup dilepas, balik dormant.
+	void ReleaseFromCommander(float worldTime)
+	{
+		if (IsActiveVehicle())
+			AbortMission(worldTime);
+		
+		if (m_OwnerGroup)
+		{
+			if (m_OwnerGroup.GetOwnedVehicle() == GetOwner())
+				m_OwnerGroup.SetOwnedVehicle(null);
+			m_OwnerGroup = null;
+		}
+		
+		m_PassengerGroup = null;
+		m_Commander = null;
+		ClearEventMask(GetOwner(), EntityEvent.FRAME);
+	}
+	// === END ADDED ===
 }

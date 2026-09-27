@@ -30,12 +30,38 @@ modded class SCR_AIGroupUtilityComponent
 	}
 	
 	
+	// === ADDED: Commander Assignment (GM) -- snapshot combat mode external
+	// sebelum commander ambil alih, biar bisa dibalikin pas group di-release. ===
+	EAIGroupCombatMode DCO_GetCombatModeExternal()
+	{
+		return m_eCombatModeExternal;
+	}
+	// === END ADDED ===
+	
 	override void EvaluateCombatMode()
 	{
 		if (!AICommander_ManagerComponent.GetInstance())
 		{
 			super.EvaluateCombatMode();
+			// === ADDED: tanpa return, habis evaluasi vanilla tetep lanjut ke
+			// logika DCO di bawah dan nimpa hasilnya. ===
+			return;
+			// === END ADDED ===
 		}
+		
+		// === ADDED: Commander Assignment (GM) -- group dormant (belum/gak
+		// di-assign ke commander) pake evaluasi vanilla penuh. Dulu jatuh ke
+		// "if (!groupUtil.GetMyCommander()) return;" di bawah -> gak dapet
+		// evaluasi combat mode sama sekali. ===
+		if (!utilDco)
+			utilDco = DCO_GroupUtilityComponent.Cast(m_Owner.FindComponent(DCO_GroupUtilityComponent));
+		
+		if (!utilDco || !utilDco.GetMyCommander())
+		{
+			super.EvaluateCombatMode();
+			return;
+		}
+		// === END ADDED ===
 		
 	    if (m_eCombatModeExternal != EAIGroupCombatMode.RETURN_FIRE)
 	    {

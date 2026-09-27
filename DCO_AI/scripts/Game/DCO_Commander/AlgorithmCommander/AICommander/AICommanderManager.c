@@ -38,6 +38,33 @@ class AICommander_ManagerComponent : ScriptComponent
 	
 	protected static AICommander_ManagerComponent s_Instance;
 	
+	// === ADDED: Commander Roster ===
+	//! Daftar commander yang di-replicate ke client dalam bentuk satu string:
+	//! "UID|FactionKey;UID|FactionKey;..." -- udah ke-sort by UID di server.
+	//! Server DAN client sama-sama baca daftar lewat roster ini (bukan dari
+	//! m_aCommander), jadi urutan index di dropdown GM (client) dan di
+	//! ReadVariable/WriteVariable (server) dijamin identik. Client juga gak
+	//! bergantung ke entity commander ke-stream atau nggak.
+	//!
+	//! Butuh RplComponent di entity manager biar ke-replicate. Tanpa itu (SP /
+	//! editor) tetap jalan karena server = client.
+	[RplProp()]
+	protected string m_sCommanderRoster;
+	
+	protected const string ROSTER_ENTRY_SEP = ";";
+	protected const string ROSTER_FIELD_SEP = "|";
+	
+	//! Cache hasil parse roster. Di-parse ulang lazy kalau string-nya berubah
+	//! (m_sParsedRoster != m_sCommanderRoster) -- jadi gak perlu ngandelin
+	//! onRplName callback, termasuk buat client yang join belakangan.
+	protected ref array<string> m_aRosterUIDs = {};
+	protected ref array<FactionKey> m_aRosterFactions = {};
+	protected string m_sParsedRoster;
+	
+	//! Counter buat UID otomatis. Server-only, cuma naik.
+	protected int m_iAutoUIDCounter = 0;
+	// === END ADDED ===
+	
 	bool IsPreventLODUsage()
 	{
 		return m_bPreventUseLOD;
@@ -67,15 +94,225 @@ class AICommander_ManagerComponent : ScriptComponent
 	
 	bool RegisterCommander(AICommander_BaseComponent cmd)
 	{
+		// === ADDED: Commander Roster -- UID harus unik SEBELUM masuk list,
+		// karena dedicated assignment & IsCapturedBy matching-nya pake UID.
+		// Commander yang di-spawn GM dari prefab yang sama bakal bawa UID sama. ===
+		if (!cmd)
+			return false;
+		
+		if (Replication.IsServer())
+			EnsureUniqueCommanderUID(cmd);
+		// === END ADDED ===
+		
 		if (!m_aCommander.Contains(cmd))
 			m_aCommander.Insert(cmd);
 		
 		Print("REGISTERING : " + cmd.GetCommanderUID() + " FACTION : " + cmd.GetCommanderFactionKey());
+		
+		// === ADDED: Commander Roster ===
+		if (Replication.IsServer())
+			RebuildCommanderRoster();
+		// === END ADDED ===
+		
 		return true;
 	}
 	
+	// === ADDED: Commander Roster ===
+	//! Dipanggil commander dari OnDelete-nya. Release group/vehicle milik
+	//! commander ini BELUM di sini -- itu masuk di step activate/release.
+	bool UnregisterCommander(AICommander_BaseComponent cmd)
+	{
+		if (!cmd)
+			return false;
+		
+		if (m_aCommander.Contains(cmd))
+			m_aCommander.RemoveItem(cmd);
+		
+		Print("UNREGISTERING : " + cmd.GetCommanderUID() + " FACTION : " + cmd.GetCommanderFactionKey());
+		
+		if (Replication.IsServer())
+			RebuildCommanderRoster();
+		
+		return true;
+	}
+	
+	//! Server-only. Kalau UID kosong, bentrok sama commander lain yang udah
+	//! register, atau ngandung separator roster, ganti ke "<FactionKey>-<n>".
+	protected void EnsureUniqueCommanderUID(AICommander_BaseComponent cmd)
+	{
+		string uid = cmd.GetCommanderUID();
+		
+		bool invalid = uid.IsEmpty() || uid.Contains(ROSTER_ENTRY_SEP) || uid.Contains(ROSTER_FIELD_SEP);
+		if (!invalid && !IsCommanderUIDTaken(uid, cmd))
+			return;
+		
+		string prefix = cmd.GetCommanderFactionKey();
+		if (prefix.IsEmpty())
+			prefix = "CMD";
+		
+		string newUid;
+		while (true)
+		{
+			m_iAutoUIDCounter++;
+			newUid = prefix + "-" + m_iAutoUIDCounter.ToString();
+			if (!IsCommanderUIDTaken(newUid, cmd))
+				break;
+		}
+		
+		Print(string.Format("[CMD_Manager] Commander UID '%1' invalid/duplicate -> '%2'", uid, newUid), LogLevel.WARNING);
+		cmd.SetCommanderUID(newUid);
+	}
+	
+	protected bool IsCommanderUIDTaken(string uid, AICommander_BaseComponent self)
+	{
+		foreach (AICommander_BaseComponent other : m_aCommander)
+		{
+			if (!other || other == self)
+				continue;
+			
+			if (other.GetCommanderUID() == uid)
+				return true;
+		}
+		
+		return false;
+	}
+	
+	//! Server-only. Susun ulang roster dari m_aCommander, sort by UID, lalu
+	//! replicate.
+	protected void RebuildCommanderRoster()
+	{
+		array<string> entries = {};
+		foreach (AICommander_BaseComponent cmd : m_aCommander)
+		{
+			if (!cmd)
+				continue;
+			
+			entries.Insert(cmd.GetCommanderUID() + ROSTER_FIELD_SEP + cmd.GetCommanderFactionKey());
+		}
+		
+		// UID ada di depan tiap entry, jadi sort string = sort by UID.
+		entries.Sort();
+		
+		string roster;
+		for (int i = 0; i < entries.Count(); i++)
+		{
+			if (i > 0)
+				roster = roster + ROSTER_ENTRY_SEP;
+			roster = roster + entries[i];
+		}
+		
+		if (roster == m_sCommanderRoster)
+			return;
+		
+		m_sCommanderRoster = roster;
+		Replication.BumpMe();
+	}
+	
+	protected void ParseCommanderRosterIfChanged()
+	{
+		if (m_sParsedRoster == m_sCommanderRoster)
+			return;
+		
+		m_sParsedRoster = m_sCommanderRoster;
+		m_aRosterUIDs.Clear();
+		m_aRosterFactions.Clear();
+		
+		if (m_sCommanderRoster.IsEmpty())
+			return;
+		
+		array<string> entries = {};
+		m_sCommanderRoster.Split(ROSTER_ENTRY_SEP, entries, true);
+		
+		foreach (string entry : entries)
+		{
+			array<string> fields = {};
+			entry.Split(ROSTER_FIELD_SEP, fields, false);
+			if (fields.IsEmpty() || fields[0].IsEmpty())
+				continue;
+			
+			m_aRosterUIDs.Insert(fields[0]);
+			if (fields.Count() >= 2)
+				m_aRosterFactions.Insert(fields[1]);
+			else
+				m_aRosterFactions.Insert(string.Empty);
+		}
+	}
+	
+	//! Server & client. UID commander milik faction fk, urut by UID. Ini yang
+	//! jadi sumber isi dropdown GM (client) dan resolusi index (server).
+	int GetRosterUIDsForFaction(FactionKey fk, notnull out array<string> outUIDs)
+	{
+		outUIDs.Clear();
+		ParseCommanderRosterIfChanged();
+		
+		for (int i = 0; i < m_aRosterUIDs.Count(); i++)
+		{
+			if (m_aRosterFactions[i] == fk)
+				outUIDs.Insert(m_aRosterUIDs[i]);
+		}
+		
+		return outUIDs.Count();
+	}
+	
+	//! Server-only. Ganti UID commander dari GM. Tolak kalau kosong, bentrok,
+	//! atau ngandung separator roster. Roster langsung di-rebuild biar dropdown
+	//! assign ikut berubah.
+	bool RenameCommander(AICommander_BaseComponent cmd, string newUID)
+	{
+		if (!Replication.IsServer() || !cmd)
+			return false;
+		
+		if (newUID.IsEmpty() || newUID.Contains(ROSTER_ENTRY_SEP) || newUID.Contains(ROSTER_FIELD_SEP))
+		{
+			Print(string.Format("[CMD_Manager] Nama commander '%1' gak valid (kosong atau pake ';' / '|')", newUID), LogLevel.WARNING);
+			return false;
+		}
+		
+		if (newUID == cmd.GetCommanderUID())
+			return true;
+		
+		if (IsCommanderUIDTaken(newUID, cmd))
+		{
+			Print(string.Format("[CMD_Manager] Nama commander '%1' udah dipake commander lain", newUID), LogLevel.WARNING);
+			return false;
+		}
+		
+		cmd.SetCommanderUID(newUID);
+		RebuildCommanderRoster();
+		return true;
+	}
+	
+	//! Server-only (m_aCommander cuma lengkap & otoritatif di server).
+	AICommander_BaseComponent FindCommanderByUID(string uid)
+	{
+		if (uid.IsEmpty())
+			return null;
+		
+		foreach (AICommander_BaseComponent cmd : m_aCommander)
+		{
+			if (cmd && cmd.GetCommanderUID() == uid)
+				return cmd;
+		}
+		
+		return null;
+	}
+	// === END ADDED ===
+	
 	void InitializeCommanderManager()
 	{
+		// === ADDED: Manager Auto-Spawn -- sekarang dipanggil juga dari
+		// objective & GetOrSpawnInstance (urutan EOnInit antar entity gak
+		// dijamin), jadi harus idempotent: jangan isi faction dua kali. ===
+		if (!m_aAvailableFactions.IsEmpty())
+			return;
+		
+		if (!GetGame().GetFactionManager())
+		{
+			Print("[CMD_Manager] FactionManager belum ada -- daftar faction kosong", LogLevel.WARNING);
+			return;
+		}
+		// === END ADDED ===
+		
 		array<Faction> AvailableFactions = {};
 		FactionManager fm = GetGame().GetFactionManager();
 		
@@ -366,6 +603,62 @@ class AICommander_ManagerComponent : ScriptComponent
 	{
 		return s_Instance;
 	}
+	
+	// === ADDED: Manager Auto-Spawn ===
+	//! Balikin manager yang ada; kalau belum ada dan kita di server, spawn
+	//! prefab manager di posisi context. Client gak pernah spawn -- manager
+	//! nyampe ke client lewat replikasi.
+	//!
+	//! Aman dari double-spawn: s_Instance diisi di constructor manager, yang
+	//! jalan sinkron di dalam SpawnEntityPrefab. Caller kedua di frame yang sama
+	//! udah lihat instance dari caller pertama.
+	static AICommander_ManagerComponent GetOrSpawnInstance(ResourceName managerPrefab, IEntity context)
+	{
+		if (s_Instance)
+			return s_Instance;
+		
+		if (!Replication.IsServer() || !context)
+			return null;
+		
+		if (managerPrefab.IsEmpty())
+		{
+			Print(string.Format("[CMD_Manager] %1 init tanpa manager dan Manager Prefab kosong -- gak di-spawn", context.GetName()), LogLevel.WARNING);
+			return null;
+		}
+		
+		Resource res = Resource.Load(managerPrefab);
+		if (!res || !res.IsValid())
+		{
+			Print(string.Format("[CMD_Manager] Manager Prefab gak valid: %1", managerPrefab), LogLevel.ERROR);
+			return null;
+		}
+		
+		EntitySpawnParams params = new EntitySpawnParams();
+		params.TransformMode = ETransformMode.WORLD;
+		params.Transform[3] = context.GetOrigin();
+		
+		IEntity ent = GetGame().SpawnEntityPrefab(res, context.GetWorld(), params);
+		if (!ent)
+		{
+			Print(string.Format("[CMD_Manager] Gagal spawn manager: %1", managerPrefab), LogLevel.ERROR);
+			return null;
+		}
+		
+		if (!s_Instance)
+		{
+			Print(string.Format("[CMD_Manager] Prefab %1 gak punya AICommander_ManagerComponent", managerPrefab), LogLevel.ERROR);
+			return null;
+		}
+		
+		// Faction harus siap sekarang juga -- caller (objective) langsung baca
+		// m_aAvailableFactions, dan EOnInit manager hasil spawn belum tentu udah
+		// jalan di titik ini.
+		s_Instance.InitializeCommanderManager();
+		
+		Print(string.Format("[CMD_Manager] Manager di-spawn otomatis oleh %1", context.GetName()));
+		return s_Instance;
+	}
+	// === END ADDED ===
 	
 	void AICommander_ManagerComponent(IEntityComponentSource src, IEntity ent, IEntity parent)
 	{

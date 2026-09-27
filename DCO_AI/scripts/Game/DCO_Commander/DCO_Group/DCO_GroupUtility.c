@@ -47,6 +47,11 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	protected CMD_ThreatResponseComponent threatComp;
 	protected DCO_TransportTeamComponent DedicatedTransport;
 	protected DCO_GroupContactReporterComponent contactReportComponent;
+	
+	// === ADDED: Commander Assignment (GM) -- combat mode external sebelum
+	// commander ambil alih; dibalikin waktu release. ===
+	protected EAIGroupCombatMode m_eCombatModeBeforeCommander = EAIGroupCombatMode.FIRE_AT_WILL;
+	// === END ADDED ===
  
 	protected DCOG_EGroupStatus m_eGroupStatus = DCOG_EGroupStatus.IDLE;
 	
@@ -100,6 +105,46 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	bool HasOwnedVehicle()
 	{
 		return m_OwnedVehicle != null;
+	}
+	// === END ADDED ===
+	
+	// === ADDED: GM Commander Attributes -- dipanggil waktu commander di-rename
+	// dari GM, biar UID dedicated gak nyangkut ke nama lama. ===
+	void SetDedicatedCommanderUID(string uid)
+	{
+		m_sDedicatedCo = uid;
+	}
+	// === END ADDED ===
+	
+	// === ADDED: Manager Auto-Spawn ===
+	//! Server. Dipanggil AICommander_BaseComponent.AssignGroup. Kalau EOnInit
+	//! ke-skip (group di-spawn sebelum ada manager) atau delayedInit belum jalan
+	//! (group baru di-spawn < 5 detik), jalanin sekarang. Gate "gak ada manager =
+	//! diem total" di EOnInit tetap dipertahankan.
+	void EnsureDormantInit()
+	{
+		if (!fk.IsEmpty())
+			return;
+		
+		if (!m_bIsProcessedByCommander && !m_bCanHaveCommander)
+			return;
+		
+		if (!contactReportComponent)
+			contactReportComponent = DCO_GroupContactReporterComponent.Cast(GetOwner().FindComponent(DCO_GroupContactReporterComponent));
+		
+		// Batalin delayedInit yang masih nunggu biar gak jalan dua kali.
+		GetGame().GetCallqueue().Remove(delayedInit);
+		delayedInit(GetOwner());
+	}
+	// === END ADDED ===
+	
+	// === ADDED: Commander Assignment (GM) -- dipake GM attribute buat nentuin
+	// group ini boleh muncul di dropdown Commander. Pakai kondisi yang sama
+	// dengan gate EOnInit. Dua-duanya Attribute prefab, jadi nilainya identik
+	// di server & client. ===
+	bool IsCommanderEligible()
+	{
+		return m_bIsProcessedByCommander || m_bCanHaveCommander;
 	}
 	// === END ADDED ===
 	
@@ -460,7 +505,12 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	
 	void OnGroupRemoved()
 	{
-		AICommander_ManagerComponent.GetInstance().UnregisterGroup(this);
+		// === MODIFIED (Manager Auto-Spawn): null-check -- group bisa mati waktu
+		// belum ada manager di world. ===
+		//AICommander_ManagerComponent.GetInstance().UnregisterGroup(this);
+		if (AICommander_ManagerComponent.GetInstance())
+			AICommander_ManagerComponent.GetInstance().UnregisterGroup(this);
+		// === END MODIFIED ===
 		
 		if (m_OwnedVehicle)
 		{
@@ -655,10 +705,14 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		
 		SCR_AIGroup grp = SCR_AIGroup.Cast(owner);
 		
-		if (!m_eGroupRoleExternal == CMD_EGroupRole.NONE)
-			SetGroupRole(m_eGroupRoleExternal);
-		else
-			SetGroupRole(CMD_EGroupRole.NONE);
+		// === MODIFIED (Commander Assignment GM): SetGroupRole dipindah ke
+		// ActivateForCommander. SetGroupRole selalu nyetel combat mode
+		// RETURN_FIRE, yang bikin group dormant jadi pasif di evaluasi vanilla. ===
+		//if (!m_eGroupRoleExternal == CMD_EGroupRole.NONE)
+		//	SetGroupRole(m_eGroupRoleExternal);
+		//else
+		//	SetGroupRole(CMD_EGroupRole.NONE);
+		// === END MODIFIED ===
 		
 		contactReportComponent = DCO_GroupContactReporterComponent.Cast(owner.FindComponent(DCO_GroupContactReporterComponent));
 		GetGame().GetCallqueue().CallLater(delayedInit, 5000, false, owner);
@@ -677,13 +731,18 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		Faction fc = grp.GetFaction();
 		if (fc)
 			fk = grp.GetFaction().GetFactionKey();
-		if(!AICommander_ManagerComponent.GetInstance().RegisterGroup(this))
-			return;
-		
-		if (myCommander)
-		{
-			contactReportComponent.InitializeContactReport();
-		}
+		// === MODIFIED (Commander Assignment GM): gak auto-register lagi. Group
+		// dormant sampai GM assign ke commander (AICommander_BaseComponent.
+		// AssignGroup -> ActivateForCommander). delayedInit sekarang cuma resolve
+		// faction + setup vehicle vanilla. ===
+		//if(!AICommander_ManagerComponent.GetInstance().RegisterGroup(this))
+		//	return;
+		//
+		//if (myCommander)
+		//{
+		//	contactReportComponent.InitializeContactReport();
+		//}
+		// === END MODIFIED ===
 		
 		foreach(string s : m_sUsableVehicle)
 		{
@@ -699,9 +758,78 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			}
 		}
 		
+		// === MODIFIED (Commander Assignment GM): dipindah ke ActivateForCommander. ===
+		//if (m_eGroupRole == CMD_EGroupRole.ARTILLERY)
+		//	GetGame().GetCallqueue().CallLater(CheckGroupIsHaveOrder, 10000, true);
+		//
+		//SetEventMask(owner, EntityEvent.FRAME);
+		// === END MODIFIED ===
+	}
+	
+	// === ADDED: Commander Assignment (GM) ===
+	//! Dipanggil AICommander_BaseComponent.AssignGroup SETELAH group masuk
+	//! registry commander. Isinya yang dulu jalan otomatis di EOnInit/delayedInit.
+	void ActivateForCommander(AICommander_BaseComponent cmd)
+	{
+		if (!cmd)
+			return;
+		
+		if (m_UtilityComp)
+			m_eCombatModeBeforeCommander = m_UtilityComp.DCO_GetCombatModeExternal();
+		
+		m_sDedicatedCo = cmd.GetCommanderUID();
+		RegisterCommanderToGroup(cmd);
+		
+		if (!m_eGroupRoleExternal == CMD_EGroupRole.NONE)
+			SetGroupRole(m_eGroupRoleExternal);
+		else
+			SetGroupRole(CMD_EGroupRole.NONE);
+		
+		if (contactReportComponent)
+			contactReportComponent.InitializeContactReport();
+		
 		if (m_eGroupRole == CMD_EGroupRole.ARTILLERY)
 			GetGame().GetCallqueue().CallLater(CheckGroupIsHaveOrder, 10000, true);
 		
-		SetEventMask(owner, EntityEvent.FRAME);
+		SetEventMask(GetOwner(), EntityEvent.FRAME);
 	}
+	
+	//! Dipanggil AICommander_BaseComponent.ReleaseGroup SETELAH state di sisi
+	//! commander/objective/transport dibersihin. Group balik dormant: waypoint
+	//! lama dibuang, role/objective/order direset, combat mode dibalikin.
+	void ReleaseFromCommander()
+	{
+		GetGame().GetCallqueue().Remove(CheckGroupIsHaveOrder);
+		
+		if (m_Group)
+			m_Group.CompleteAllWaypoints();
+		
+		if (m_OwnedVehicle)
+		{
+			DCO_TransportMissionComponent mission = DCO_TransportMissionComponent.Cast(m_OwnedVehicle.FindComponent(DCO_TransportMissionComponent));
+			if (mission && mission.IsOwnedBy(this))
+				mission.ReleaseOwnership();
+			m_OwnedVehicle = null;
+		}
+		
+		currentObjective = null;
+		ClearAssignment();
+		SetGroupStatus(DCOG_EGroupStatus.IDLE);
+		ResetOrderTracking();
+		
+		myCommander = null;
+		threatComp = null;
+		m_sDedicatedCo = string.Empty;
+		
+		if (contactReportComponent)
+			contactReportComponent.DeactivateContactReport();
+		
+		if (m_UtilityComp)
+			m_UtilityComp.SetCombatMode(m_eCombatModeBeforeCommander);
+		
+		ClearEventMask(GetOwner(), EntityEvent.FRAME);
+		m_aDebugShapes.Clear();
+		m_aDebugTexts.Clear();
+	}
+	// === END ADDED ===
 }

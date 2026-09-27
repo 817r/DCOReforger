@@ -360,8 +360,47 @@ class DCO_TransportTeamComponent : ScriptComponent
 		if (!m_SelfGroupUtil)
 			return;
 		
-		Registering();
+		// === MODIFIED (Commander Assignment GM): gak auto-register ke commander
+		// pertama yang faction-nya cocok lagi. Registrasi sekarang lewat
+		// AICommander_BaseComponent.AssignGroup waktu group-nya di-assign GM.
+		// (Catatan: di sini fk group juga masih kosong -- fk baru diisi di
+		// delayedInit group 5 detik kemudian -- jadi dulu pun praktis gak
+		// pernah ke-register.) ===
+		//Registering();
+		// === END MODIFIED ===
 	}
+	
+	// === ADDED: Commander Assignment (GM) ===
+	DCO_GroupUtilityComponent GetPassengerGroup()
+	{
+		return m_PassengerGroup;
+	}
+	
+	//! Passenger-nya di-release dari commander di tengah job: lepas passenger,
+	//! team balik ke rally (team-nya sendiri masih milik commander).
+	void CancelJobForReleasedPassenger(float worldTime)
+	{
+		m_PassengerGroup = null;
+		
+		if (m_eTeamState != DCO_ETransportTeamState.AVAILABLE && m_eTeamState != DCO_ETransportTeamState.RETURNING)
+			ReturnToRally(worldTime);
+	}
+	
+	//! Team-nya sendiri di-release dari commander: job dibatalin tanpa RTB
+	//! (gak ada commander buat spawn waypoint), balik AVAILABLE.
+	void ReleaseFromCommander(float worldTime)
+	{
+		if (m_PassengerGroup)
+		{
+			m_PassengerGroup.SetGroupStatus(DCOG_EGroupStatus.IDLE);
+			m_PassengerGroup = null;
+		}
+		
+		m_Commander = null;
+		m_bRegistered = false;
+		SetTeamState(DCO_ETransportTeamState.AVAILABLE, worldTime);
+	}
+	// === END ADDED ===
 	
 	void Registering()
 	{

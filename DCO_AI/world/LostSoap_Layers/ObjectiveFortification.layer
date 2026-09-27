@@ -1,9 +1,3 @@
-SCR_GameModeEditor GameMode_Editor_Full1 : "{DA3986AF1B5032B7}Prefabs/MP/Modes/Editor/GameMode_Editor_Full.et" {
- coords 2928.025 66.635 1728.627
-}
-SCR_BaseGameMode GameModeSF1 : "{ECEEDB2D3737204B}Prefabs/Systems/ScenarioFramework/GameModeSF.et" {
- coords 2485.038 144.24 2263.222
-}
 $grp PolylineShapeEntity {
  {
   coords 2493.817 147.327 2257.411
@@ -404,9 +398,15 @@ $grp PolylineShapeEntity {
   }
  }
 }
-GenericEntity : "{084825E68F0FAF86}Prefabs/Compositions/Slotted/SlotFlatSmall/MachineGunNest_Scoped_S_USSR_01.et" {
- coords 2416.706 55.261 3039.176
- angles -2.897 75.382 -7.517
+$grp GenericEntity : "{084825E68F0FAF86}Prefabs/Compositions/Slotted/SlotFlatSmall/MachineGunNest_Scoped_S_USSR_01.et" {
+ {
+  coords 2416.706 55.261 3039.176
+  angles -2.897 75.382 -7.517
+ }
+ {
+  coords 2066.176 47.609 3410.333
+  angles -5.317 119.806 2.094
+ }
 }
 GenericEntity : "{114DE81321786CD9}Prefabs/Compositions/Slotted/SlotFlatSmall/MachineGunNest_S_USSR_01_PKM.et" {
  coords 2555.172 137.713 2234.453
@@ -415,6 +415,24 @@ GenericEntity : "{114DE81321786CD9}Prefabs/Compositions/Slotted/SlotFlatSmall/Ma
 GenericEntity : "{1EB5949DF6738E38}Prefabs/Compositions/Slotted/SlotFlatSmall/VehicleMaintenance_S_USSR_01.et" {
  coords 2527.571 144.174 2281.566
  angles 0 148.08 0
+}
+$grp GenericEntity : "{28D63631873AA636}Prefabs/Compositions/Slotted/SlotFlatSmall/MortarPlacement_S_USSR_01.et" {
+ {
+  coords 1748.861 39.935 2720.626
+  angles 2.889 119.928 -1.432
+ }
+ {
+  coords 1735.19 40.253 2716.528
+  angles -3.761 119.58 3
+ }
+ {
+  coords 1941.037 57.227 3289.516
+  angles 0.334 119.705 1.221
+ }
+ {
+  coords 1935.758 57.253 3277.609
+  angles -0.777 119.713 -0.444
+ }
 }
 GenericEntity : "{2A27606856B8A914}Prefabs/Compositions/Slotted/SlotRoadLarge/Barricade_L_USSR_01.et" {
  coords 2548.136 19.183 3087.628
@@ -465,6 +483,20 @@ Vehicle Ural1 : "{4597626AF36C0858}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320.et
  components {
   DCO_TransportMissionComponent "{6902306E948EC89B}" {
    Enabled 0
+  }
+  SCR_VehicleDustPerWheel "{5476BC43E4910F64}" {
+   m_aWheels +{
+    4
+    5
+   }
+   m_fDustTopSpeed 60
+  }
+  SCR_VehicleDustPerWheel "{5476BC43E4910F64}" {
+   m_aWheels +{
+    4
+    5
+   }
+   m_fDustTopSpeed 60
   }
   SCR_VehicleDustPerWheel "{5476BC43E4910F64}" {
    m_aWheels +{

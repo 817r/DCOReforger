@@ -3,7 +3,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 100
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -13,7 +12,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 100
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -23,7 +21,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 100
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -33,7 +30,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 100
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -46,7 +42,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
     m_sCapturedCo {
      "Fikri"
     }
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -59,7 +54,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
     m_sCapturedCo {
      "Fikri"
     }
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -69,7 +63,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 50
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -79,7 +72,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 100
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -89,7 +81,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 250
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -102,7 +93,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
     m_sCapturedCo {
      "Fikri"
     }
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -112,7 +102,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 100
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -124,7 +113,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
     m_sObjectiveName "Ugoldar"
     m_fRadius 250
     m_sInitialOwnerCommanderUID "Overlord"
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -134,7 +122,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 100
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -144,7 +131,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 100
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -157,7 +143,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
     m_sCapturedCo {
      "Fikri"
     }
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -170,7 +155,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
     m_sCapturedCo {
      "Fikri"
     }
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -180,7 +164,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 120
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -190,7 +173,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 120
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -200,7 +182,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 120
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -210,7 +191,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 80
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -220,7 +200,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
     m_fRadius 80
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -229,7 +208,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
  {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -238,7 +216,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
  {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }
@@ -247,7 +224,6 @@ $grp GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
  {
   components {
    CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
-    m_bDebugMode 1
     m_fDebugRefreshInterval 1
    }
   }

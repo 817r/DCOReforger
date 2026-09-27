@@ -1,17 +1,3 @@
-GenericEntity : "{448DA6A93EA0F9CF}Prefabs/GameMode/PlayerScaledGroupSpawner.et" {
- components {
-  SCR_PlayerScaledGroupSpawner "{690E987F784D1AAE}" {
-   m_aGroupPrefabs {
-    "{30ED11AA4F0D41E5}Prefabs/Groups/OPFOR/Group_USSR_FireGroup.et"
-   }
-   m_fSpawnInterval 15
-   m_iMaxGroups 15
-   m_fSpawnRadius 50
-   m_bInvertScaling 1
-  }
- }
- coords 11913.047 5.42 10666.948
-}
 GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
  components {
   AICommander_AlgorithmComponent "{68F8849956F58560}" {

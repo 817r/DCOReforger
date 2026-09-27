@@ -124,6 +124,18 @@ enum DCO_EPatrolPattern
 
 class AICommander_BaseComponent : ScriptComponent
 {
+	// === ADDED: GM Commander Attributes -- nilai dasar sebelum dimodifikasi
+	// personality (diisi di InitializeCommander). ===
+	protected float m_fBaseThinkInterval;
+	protected int m_iBaseRetreatThreshold;
+	protected float m_fBaseStalemateResponseCooldown;
+	// === END ADDED ===
+	
+	// === ADDED: Manager Auto-Spawn ===
+	[Attribute("", UIWidgets.ResourceNamePicker, desc: "Prefab entity yang punya AICommander_ManagerComponent. Di-spawn otomatis (server) kalau entity ini init sebelum ada manager di world. Kosong = gak auto-spawn.", "et", category: "Commander Manager")]
+	protected ResourceName m_sManagerPrefab;
+	// === END ADDED ===
+	
 	[Attribute("", UIWidgets.Font, desc: "UID of the Commander.", category: "Commander General Setting")]
 	protected string m_sCommanderUID;
 	
@@ -553,8 +565,253 @@ class AICommander_BaseComponent : ScriptComponent
 		return true;
 	}
 	
+	// === ADDED: Commander Assignment (GM) ===
+	//! Titik masuk tunggal buat assign group ke commander ini (dipanggil GM
+	//! attribute). Kalau group lagi dipegang commander lain, di-release dulu.
+	bool AssignGroup(DCO_GroupUtilityComponent grp)
+	{
+		if (!Replication.IsServer() || !grp)
+			return false;
+		
+		// === ADDED: Manager Auto-Spawn -- group yang di-spawn sebelum ada
+		// manager gak pernah jalan delayedInit (fk kosong). Selesain init dormant-nya
+		// sekarang. Sekalian ngilangin jeda 5 detik buat group yang baru di-spawn. ===
+		grp.EnsureDormantInit();
+		// === END ADDED ===
+		
+		if (grp.GetFactionKey().IsEmpty() || grp.GetFactionKey() != m_sFactionKey)
+			return false;
+		
+		AICommander_BaseComponent current = grp.GetMyCommander();
+		if (current == this)
+			return true;
+		
+		if (current)
+			current.ReleaseGroup(grp);
+		
+		// Activate DULU baru RegisterGroup: role (termasuk ARTILLERY dari
+		// m_eGroupRoleExternal) baru di-set di ActivateForCommander, dan
+		// RegisterGroup ngerouting grup ARTILLERY ke artySupport berdasarkan role.
+		grp.ActivateForCommander(this);
+		RegisterGroup(grp);
+		
+		DCO_TransportTeamComponent selfTeam = DCO_TransportTeamComponent.Cast(grp.GetOwner().FindComponent(DCO_TransportTeamComponent));
+		if (selfTeam)
+			RegisterTransportTeam(selfTeam);
+		
+		Print(string.Format("[%1] AssignGroup: %2", m_sCommanderUID, grp.GetOwner().GetName()));
+		return true;
+	}
+	
+	//! Lepas group dari commander ini dan balikin ke dormant. Urutan penting:
+	//! bersihin state commander/objective/transport DULU (butuh role & objective
+	//! grup yang masih utuh), baru reset sisi grup paling akhir.
+	void ReleaseGroup(DCO_GroupUtilityComponent grp)
+	{
+		if (!Replication.IsServer() || !grp)
+			return;
+		
+		// === ADDED: Teardown Guard ===
+		if (!GetGame() || !GetGame().GetWorld())
+			return;
+		// === END ADDED ===
+		
+		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		CMD_EGroupRole role = grp.GetGroupRole();
+		CMD_AICommanderObjectiveComponent obj = grp.GetGroupObjective();
+		
+		// --- Objective: ngikutin aturan ReclaimStaleAssignments ---
+		if (obj)
+		{
+			if (role == CMD_EGroupRole.DEFEND)
+			{
+				// DEFEND gak pernah nambah counter -> gak boleh ngurangin. Tapi
+				// sector-nya harus dikosongin: m_Group cuma jadi null kalau
+				// entity grupnya hancur, jadi grup yang masih hidup bakal
+				// "ngisi" sector selamanya dan NeedsReplenish() gak pernah true.
+				array<ref DCO_SectorGarrison> sectors = obj.GetSectorGarrison(m_sFactionKey);
+				if (sectors)
+				{
+					foreach (DCO_SectorGarrison sec : sectors)
+					{
+						if (sec && sec.m_Group == grp)
+							sec.m_Group = null;
+					}
+				}
+			}
+			else if (role != CMD_EGroupRole.NONE
+				&& role != CMD_EGroupRole.RESERVE
+				&& role != CMD_EGroupRole.TRANSPORT
+				&& role != CMD_EGroupRole.RETREAT
+				&& role != CMD_EGroupRole.ARTILLERY)
+			{
+				if (obj.GetCurrentAssignedGroupCount(m_sFactionKey) > 0)
+					obj.SetObjectiveGroup(m_sFactionKey, -1);
+			}
+		}
+		
+		// --- Container commander ---
+		UnregisterGroup(grp);
+		
+		if (artySupport)
+			artySupport.UnregisterArtilleryGroup(grp);
+		
+		if (m_mPatrolMemory.Contains(grp))
+			m_mPatrolMemory.Remove(grp);
+		
+		for (int i = m_aFrontlineReconTracks.Count() - 1; i >= 0; i--)
+		{
+			CMD_FrontlineReconTrack track = m_aFrontlineReconTracks[i];
+			if (track && track.m_Squad == grp)
+				m_aFrontlineReconTracks.Remove(i);
+		}
+		
+		// --- Transport ---
+		// Grup ini passenger dedicated team milik commander ini.
+		foreach (DCO_TransportTeamComponent team : m_aTransportTeams)
+		{
+			if (team && team.GetPassengerGroup() == grp)
+				team.CancelJobForReleasedPassenger(worldTime);
+		}
+		
+		// Grup ini sendiri dedicated transport team.
+		DCO_TransportTeamComponent selfTeam = DCO_TransportTeamComponent.Cast(grp.GetOwner().FindComponent(DCO_TransportTeamComponent));
+		if (selfTeam && m_aTransportTeams.Contains(selfTeam))
+		{
+			selfTeam.ReleaseFromCommander(worldTime);
+			m_aTransportTeams.RemoveItem(selfTeam);
+		}
+		
+		// Grup ini passenger misi vehicle umum milik commander ini.
+		foreach (IEntity veh : m_aVehicle)
+		{
+			if (!veh)
+				continue;
+			
+			DCO_TransportMissionComponent mission = DCO_TransportMissionComponent.Cast(veh.FindComponent(DCO_TransportMissionComponent));
+			if (mission && mission.GetPassengerGroup() == grp && mission.IsActiveVehicle())
+				mission.AbortMission(worldTime);
+		}
+		
+		// --- Sisi grup (paling akhir) ---
+		grp.ReleaseFromCommander();
+		
+		Print(string.Format("[%1] ReleaseGroup: %2", m_sCommanderUID, grp.GetOwner().GetName()));
+	}
+	
+	//! Titik masuk tunggal buat assign vehicle ke commander ini (GM attribute).
+	bool AssignVehicle(IEntity veh)
+	{
+		if (!Replication.IsServer() || !veh)
+			return false;
+		
+		DCO_TransportMissionComponent mission = DCO_TransportMissionComponent.Cast(veh.FindComponent(DCO_TransportMissionComponent));
+		if (!mission)
+			return false;
+		
+		SCR_VehicleFactionAffiliationComponent fac = SCR_VehicleFactionAffiliationComponent.Cast(veh.FindComponent(SCR_VehicleFactionAffiliationComponent));
+		if (!fac)
+			return false;
+		
+		FactionKey vehFk;
+		if (fac.GetAffiliatedFaction())
+			vehFk = fac.GetAffiliatedFactionKey();
+		else
+			vehFk = fac.GetDefaultFactionKey();
+		
+		if (vehFk != m_sFactionKey)
+			return false;
+		
+		AICommander_BaseComponent current = mission.GetCommanderOwner();
+		if (current == this)
+			return true;
+		
+		if (current)
+			current.ReleaseVehicle(veh);
+		
+		RegisterVehicle(veh);
+		mission.ActivateForCommander(this);
+		
+		Print(string.Format("[%1] AssignVehicle: %2", m_sCommanderUID, veh.GetName()));
+		return true;
+	}
+	
+	void ReleaseVehicle(IEntity veh)
+	{
+		if (!Replication.IsServer() || !veh)
+			return;
+		
+		// === ADDED: Teardown Guard ===
+		if (!GetGame() || !GetGame().GetWorld())
+			return;
+		// === END ADDED ===
+		
+		if (m_aVehicle.Contains(veh))
+			m_aVehicle.RemoveItem(veh);
+		
+		DCO_TransportMissionComponent mission = DCO_TransportMissionComponent.Cast(veh.FindComponent(DCO_TransportMissionComponent));
+		if (mission)
+			mission.ReleaseFromCommander(GetGame().GetWorld().GetWorldTime() / 1000.0);
+		
+		Print(string.Format("[%1] ReleaseVehicle: %2", m_sCommanderUID, veh.GetName()));
+	}
+	
+	//! Dipanggil dari OnDelete: semua grup (termasuk artileri), transport team,
+	//! dan vehicle milik commander ini balik dormant. Pake COPY list karena
+	//! Release* ngubah container aslinya.
+	protected void ReleaseEverything()
+	{
+		array<DCO_GroupUtilityComponent> groups = {};
+		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
+		{
+			if (g)
+				groups.Insert(g);
+		}
+		
+		if (artySupport)
+		{
+			array<DCO_GroupUtilityComponent> artyUnits = {};
+			artySupport.GetRegisteredUnits(artyUnits);
+			foreach (DCO_GroupUtilityComponent a : artyUnits)
+			{
+				if (!groups.Contains(a))
+					groups.Insert(a);
+			}
+		}
+		
+		foreach (DCO_GroupUtilityComponent grp : groups)
+		{
+			if (grp && grp.GetMyCommander() == this)
+				ReleaseGroup(grp);
+		}
+		
+		// Transport team yang grupnya gak ada di m_aOwnedGroup.
+		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		foreach (DCO_TransportTeamComponent team : m_aTransportTeams)
+		{
+			if (team)
+				team.ReleaseFromCommander(worldTime);
+		}
+		m_aTransportTeams.Clear();
+		
+		array<IEntity> vehicles = {};
+		foreach (IEntity v : m_aVehicle)
+		{
+			if (v)
+				vehicles.Insert(v);
+		}
+		
+		foreach (IEntity veh : vehicles)
+			ReleaseVehicle(veh);
+	}
+	// === END ADDED ===
+	
 	protected void InitializeCommander()
 	{
+		// === ADDED: Manager Auto-Spawn -- commander yang ditaruh GM sebelum ada
+		// manager gak jadi commander setengah-init lagi. ===
+		AICommander_ManagerComponent.GetOrSpawnInstance(m_sManagerPrefab, m_MyEnt);
+		// === END ADDED ===
 		if (!AICommander_ManagerComponent.GetInstance()) return;
 		AICommander_ManagerComponent.GetInstance().RegisterCommander(this);
 		threatComp = CMD_ThreatResponseComponent.Cast(m_MyEnt.FindComponent(CMD_ThreatResponseComponent));
@@ -569,6 +826,14 @@ class AICommander_BaseComponent : ScriptComponent
 			m_fPatience    = Math.RandomFloat01();
 			m_fCombatFocus = Math.RandomFloat01();
 		}
+		// === ADDED: GM Commander Attributes -- simpen nilai dasar SEBELUM
+		// dikali modifier personality. Tanpa ini, ganti personality dari GM bakal
+		// ngalikan nilai yang udah dikali (efeknya numpuk tiap kali diubah). ===
+		m_fBaseThinkInterval             = m_fThinkInterval;
+		m_iBaseRetreatThreshold          = m_iRetreatThreshold;
+		m_fBaseStalemateResponseCooldown = m_fStalemateResponseCooldown;
+		// === END ADDED ===
+		
 		float adaptMod   = Math.Lerp(1.5, 0.5, m_fAdaptability);
 		m_fThinkInterval = m_fThinkInterval * adaptMod;
 		float resilienceMod = Math.Lerp(2.0, 0.5, m_fResilience);
@@ -585,6 +850,85 @@ class AICommander_BaseComponent : ScriptComponent
 		Print(string.Format("[%1] < Think Timer | > Think Interval [%2] | [%3] < Commander ", m_fThinkTimer, m_fThinkInterval, m_sCommanderUID));
 	}
 	
+	// === ADDED: GM Commander Attributes ===
+	// GetCommanderMode() udah ada di bawah (dekat ForceOffensiveMode).
+	float GetAggression()                         { return m_fAggression; }
+	float GetAdaptability()                        { return m_fAdaptability; }
+	float GetRiskTaking()                          { return m_fRiskTaking; }
+	float GetResilience()                          { return m_fResilience; }
+	float GetPatience()                            { return m_fPatience; }
+	
+	void SetCommanderMode(CMD_ECommanderMode mode)
+	{
+		m_eCommanderModeExternal = mode;
+		m_eCommanderMode = mode;
+	}
+	
+	void SetAggression(float value)  { m_fAggression  = Math.Clamp(value, 0, 1); }
+	void SetRiskTaking(float value)  { m_fRiskTaking  = Math.Clamp(value, 0, 1); }
+	void SetCombatFocus(float value) { m_fCombatFocus = Math.Clamp(value, 0, 1); }
+	
+	void SetAdaptability(float value)
+	{
+		m_fAdaptability = Math.Clamp(value, 0, 1);
+		ApplyPersonalityDerived();
+	}
+	
+	void SetResilience(float value)
+	{
+		m_fResilience = Math.Clamp(value, 0, 1);
+		ApplyPersonalityDerived();
+	}
+	
+	void SetPatience(float value)
+	{
+		m_fPatience = Math.Clamp(value, 0, 1);
+		ApplyPersonalityDerived();
+	}
+	
+	//! Hitung ulang nilai turunan dari nilai DASAR, pakai rumus yang sama persis
+	//! dengan InitializeCommander. Think timer yang lagi jalan sengaja gak
+	//! di-reset -- cycle berikutnya baru pakai interval baru.
+	protected void ApplyPersonalityDerived()
+	{
+		if (m_fBaseThinkInterval <= 0)
+			return;
+		
+		m_fThinkInterval             = m_fBaseThinkInterval * Math.Lerp(1.5, 0.5, m_fAdaptability);
+		m_iRetreatThreshold          = Math.Max(1, Math.Round(m_iBaseRetreatThreshold * Math.Lerp(2.0, 0.5, m_fResilience)));
+		m_fStalemateResponseCooldown = m_fBaseStalemateResponseCooldown * Math.Lerp(0.4, 2.5, m_fPatience);
+	}
+	
+	//! Ganti nama (UID) commander dari GM. Manager yang validasi unik-nya, lalu
+	//! semua group yang dedicated ke commander ini di-update supaya UID-nya gak
+	//! nyangkut ke nama lama.
+	bool RenameCommanderFromGM(string newUID)
+	{
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!mgr || !mgr.RenameCommander(this, newUID))
+			return false;
+		
+		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
+		{
+			if (grp)
+				grp.SetDedicatedCommanderUID(newUID);
+		}
+		
+		if (artySupport)
+		{
+			array<DCO_GroupUtilityComponent> artyUnits = {};
+			artySupport.GetRegisteredUnits(artyUnits);
+			foreach (DCO_GroupUtilityComponent arty : artyUnits)
+			{
+				if (arty)
+					arty.SetDedicatedCommanderUID(newUID);
+			}
+		}
+		
+		return true;
+	}
+	// === END ADDED ===
+	
 	CMD_ThreatResponseComponent GetThreatResponseComponent()
 	{
 		return threatComp;
@@ -599,6 +943,18 @@ class AICommander_BaseComponent : ScriptComponent
 	{
 		return m_sCommanderUID;
 	}
+	
+	// === ADDED: Commander Roster ===
+	//! Dipanggil manager kalau UID kosong/duplikat. Server-only -- UID yang
+	//! otoritatif sampai ke client lewat roster manager, bukan lewat field ini.
+	void SetCommanderUID(string uid)
+	{
+		if (!Replication.IsServer())
+			return;
+		
+		m_sCommanderUID = uid;
+	}
+	// === END ADDED ===
 	
 	void SwitchToDefensive(float worldTime)
 	{
@@ -4817,4 +5173,25 @@ class AICommander_BaseComponent : ScriptComponent
 		m_MyEnt = owner;
 		InitializeCommander();
 	}
+	
+	// === ADDED: Commander Roster -- commander yang dihapus GM harus keluar
+	// dari manager, kalau nggak bakal nyangkut di m_aCommander & roster. ===
+	override void OnDelete(IEntity owner)
+	{
+		// === ADDED: Commander Assignment (GM) -- lepas semua yang dipegang
+		// sebelum keluar dari manager. ===
+		// === ADDED: Teardown Guard -- waktu world ditutup (akhir misi / keluar
+		// ke editor), GetGame().GetWorld() udah null duluan dan semua group &
+		// vehicle juga lagi dihancurin. Gak ada yang perlu di-release. ===
+		if (Replication.IsServer() && GetGame() && GetGame().GetWorld())
+			ReleaseEverything();
+		// === END ADDED ===
+		
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (mgr)
+			mgr.UnregisterCommander(this);
+		
+		super.OnDelete(owner);
+	}
+	// === END ADDED ===
 }

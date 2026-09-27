@@ -143,6 +143,21 @@ class CMD_ArtillerySupport : ScriptComponent
 		}
 	}
 	
+	// === ADDED: Commander Assignment (GM) -- commander yang dihapus perlu tau
+	// grup artileri mana aja yang dia pegang buat di-release. Return COPY, karena
+	// caller bakal manggil UnregisterArtilleryGroup di tengah loop. ===
+	int GetRegisteredUnits(notnull out array<DCO_GroupUtilityComponent> outUnits)
+	{
+		outUnits.Clear();
+		foreach (DCO_GroupUtilityComponent u : m_aUnits)
+		{
+			if (u)
+				outUnits.Insert(u);
+		}
+		return outUnits.Count();
+	}
+	// === END ADDED ===
+	
 	// === ADDED: Artillery Availability Check -- public getter, biar caller (misal
 	// CommanderThreatResponse.c) bisa cek "ada gak artillery yang beneran terdaftar"
 	// SEBELUM masukin request ke queue -- daripada request nyangkut di queue sampe
