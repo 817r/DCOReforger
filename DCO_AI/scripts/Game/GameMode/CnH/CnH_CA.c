@@ -14,7 +14,7 @@ class CNH_CaptureArea : ScriptComponent
 
     [Attribute("5", UIWidgets.EditBox, desc: "Kecepatan Capture per tick")]
     int m_iCaptureSpeed;
-	
+
     [Attribute("50", UIWidgets.EditBox, desc: "Kecepatan Capture per tick")]
     int m_iSectorLossPenalty;
 
@@ -23,7 +23,7 @@ class CNH_CaptureArea : ScriptComponent
     string m_sCapturingFaction = "";
 
     ref map<string, int> m_mFactionCounts = new map<string, int>();
-    
+
     CNH_CaptureManager m_Manager;
 
     override void EOnInit(IEntity owner)
@@ -41,6 +41,7 @@ class CNH_CaptureArea : ScriptComponent
     {
         m_mFactionCounts.Clear();
 
+        DCO_Perf.Count("q:CnH_CA");
         GetGame().GetWorld().QueryEntitiesBySphere(GetOwner().GetOrigin(), m_fRadius, ProcessEntity, FilterEntity, EQueryEntitiesFlags.DYNAMIC | EQueryEntitiesFlags.STATIC);
 
         string dominantFaction = "";
@@ -80,7 +81,7 @@ class CNH_CaptureArea : ScriptComponent
 			else
             {
                 m_fCaptureProgress = Math.Clamp(m_fCaptureProgress - m_iCaptureSpeed, 0, 100);
-                
+
                 if (m_fCaptureProgress == 0)
                 {
                     m_sCapturingFaction = dominantFaction;
@@ -88,9 +89,9 @@ class CNH_CaptureArea : ScriptComponent
                     {
                         if (m_Manager)
                         {
-                            m_Manager.RemoveScore(m_sCurrentOwner, m_iSectorLossPenalty); 
+                            m_Manager.RemoveScore(m_sCurrentOwner, m_iSectorLossPenalty);
                         }
-                        
+
                         m_sCurrentOwner = "";
                     }
                 }
@@ -102,7 +103,7 @@ class CNH_CaptureArea : ScriptComponent
             m_Manager.AddScore(m_sCurrentOwner, m_iPointsPerTick);
         }
     }
-	
+
     bool FilterEntity(IEntity ent)
     {
         return ent.Type().IsInherited(ChimeraCharacter);
@@ -111,8 +112,8 @@ class CNH_CaptureArea : ScriptComponent
     bool ProcessEntity(IEntity ent)
     {
         DamageManagerComponent damageManager = DamageManagerComponent.Cast(ent.FindComponent(DamageManagerComponent));
-        if (damageManager && damageManager.GetState() == EDamageState.DESTROYED) 
-            return true; 
+        if (damageManager && damageManager.GetState() == EDamageState.DESTROYED)
+            return true;
 
         FactionAffiliationComponent factionComp = FactionAffiliationComponent.Cast(ent.FindComponent(FactionAffiliationComponent));
         if (factionComp)
@@ -121,7 +122,7 @@ class CNH_CaptureArea : ScriptComponent
             if (faction)
             {
                 string factionKey = faction.GetFactionKey();
-                
+
                 int currentCount = 0;
                 m_mFactionCounts.Find(factionKey, currentCount);
                 m_mFactionCounts.Set(factionKey, currentCount + 1);

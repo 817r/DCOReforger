@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{3F3CDF4FDF9A8ACB}Configs/Editor/PlaceableEntities/DCO/DCO_Waypoints.conf"
+ Configurations {
+  CONFResourceClass PC {
+  }
+  CONFResourceClass XBOX_ONE : PC {
+  }
+  CONFResourceClass XBOX_SERIES : PC {
+  }
+  CONFResourceClass PS4 : PC {
+  }
+  CONFResourceClass PS5 : PC {
+  }
+  CONFResourceClass HEADLESS : PC {
+  }
+ }
+}

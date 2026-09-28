@@ -1,0 +1,24 @@
+GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
+ ID "A1DBB2FF6748D6D9"
+ components {
+  Persistence "{6A78E93752891708}" {
+  }
+  AICommander_AlgorithmComponent "{68F8849956F58560}" {
+   m_sManagerPrefab "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et"
+   m_sFactionKey "US"
+  }
+  SCR_EditableEntityComponent "{B5ED04B5DB9DAE89}" {
+   m_EntityType SYSTEM
+   m_UIInfo SCR_EditableEntityUIInfo "{D7A6EBDB2ACA30AC}" {
+    Name "AI Commander"
+    Description "DCO AI Commander. Set its faction, mode and personality in the attributes, then assign groups of that faction to it (group attribute Commander). Mortar team: place a mortar, then a group of up to 4 soldiers within 40 m of it; it becomes a mortar team automatically. Transport team: put a group of up to 3 soldiers in an unarmed vehicle with 4+ free cargo seats, one of them driving; it becomes a transport team automatically."
+    Icon "{FDE4238500835875}UI/Textures/Editor/EditableEntities/Waypoints/EditableEntity_Waypoint_Move.edds"
+    m_aAuthoredLabels {
+     ENTITYTYPE_SYSTEM
+    }
+    m_bFullBackgroundAssetCard 0
+   }
+   m_bAutoRegister ALWAYS
+  }
+ }
+}

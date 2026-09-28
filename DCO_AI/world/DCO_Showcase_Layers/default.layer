@@ -1,0 +1,607 @@
+GameEntity DCO_CommanderManager : "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et" {
+ components {
+  AICommander_ManagerComponent "{69C61E8C066EE04E}" {
+   m_bPreventUseLOD 1
+  }
+ }
+ coords 2600 90 1800
+}
+GenericEntity DCO_BenchLogger {
+ components {
+  DCO_BenchmarkLoggerComponent "{6A7E3C19B4D20B01}" {
+   m_sRunLabel "airbase_assault"
+  }
+ }
+ coords 2600 90 1810
+}
+GameEntity US_Commander : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
+ components {
+  AICommander_AlgorithmComponent "{68F8849956F58560}" {
+   m_sCommanderUID "US_CMD"
+   m_sFactionKey "US"
+   m_eCommanderModeExternal 0
+   m_fAggression 0.7
+  }
+ }
+ coords 2582 123 2342
+}
+GameEntity USSR_Commander : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
+ components {
+  AICommander_AlgorithmComponent "{68F8849956F58560}" {
+   m_sCommanderUID "USSR_CMD"
+   m_sFactionKey "USSR"
+   m_eCommanderModeExternal 1
+   m_fResilience 0.8
+  }
+ }
+ coords 1400 38 2550
+}
+GameEntity FIA_Commander : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
+ components {
+  AICommander_AlgorithmComponent "{68F8849956F58560}" {
+   m_sCommanderUID "FIA_CMD"
+   m_sFactionKey "FIA"
+   m_eCommanderModeExternal 1
+   m_bRandomPersonality 1
+  }
+ }
+ coords 2094 54 2940
+}
+GameEntity OBJ_Barracks : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 90
+   m_sObjectiveName "Airbase Barracks"
+   m_fRadius 90
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 3
+   m_iMaxGroupCount 6
+   m_sBlacklistedCo {
+    "FIA_CMD"
+   }
+  }
+ }
+ coords 1445 37.3 2367
+}
+GameEntity OBJ_Airfield : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 80
+   m_sObjectiveName "Airbase Airfield"
+   m_fRadius 120
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 3
+   m_iMaxGroupCount 6
+   m_sBlacklistedCo {
+    "FIA_CMD"
+   }
+  }
+ }
+ coords 1250 38.2 2800
+}
+GameEntity OBJ_US_HQ : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 40
+   m_sObjectiveName "US Hill HQ"
+   m_fRadius 60
+   m_sInitialOwnerCommanderUID "US_CMD"
+   m_iDefendGroupCount 2
+   m_iMaxGroupCount 4
+   m_sBlacklistedCo {
+    "USSR_CMD" "FIA_CMD"
+   }
+  }
+ }
+ coords 2582 122.3 2342
+}
+GameEntity OBJ_FIA_Camp : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 50
+   m_sObjectiveName "FIA Farm Camp"
+   m_fRadius 50
+   m_sInitialOwnerCommanderUID "FIA_CMD"
+   m_iDefendGroupCount 2
+   m_iMaxGroupCount 4
+   m_sBlacklistedCo {
+    "US_CMD" "USSR_CMD"
+   }
+  }
+ }
+ coords 2094 53.8 2940
+}
+GameEntity OBJ_FIA_Supply : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 40
+   m_sObjectiveName "FIA Supply Cache"
+   m_fRadius 40
+   m_sInitialOwnerCommanderUID "FIA_CMD"
+   m_iDefendGroupCount 2
+   m_iMaxGroupCount 4
+   m_sBlacklistedCo {
+    "US_CMD" "USSR_CMD"
+   }
+  }
+ }
+ coords 1215 12.9 1903
+}
+SCR_AIGroup USSR_Rifle_1 : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1445 38.3 2367
+}
+SCR_AIGroup USSR_Rifle_2 : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1470 38.4 2395
+}
+SCR_AIGroup USSR_Rifle_3 : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1425 37 2340
+}
+SCR_AIGroup USSR_Rifle_4 : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1250 39.2 2800
+}
+SCR_AIGroup USSR_Rifle_5 : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1290 39 2830
+}
+SCR_AIGroup USSR_MG_1 : "{A2F75E45C66B1C0A}Prefabs/Groups/OPFOR/Group_USSR_MachineGunTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1400 38.5 2550
+}
+SCR_AIGroup USSR_AT_1 : "{96BAB56E6558788E}Prefabs/Groups/OPFOR/Group_USSR_Team_AT.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1275 40 2760
+}
+Vehicle USSR_BTR_Veh : "{C012BB3488BEA0C2}Prefabs/Vehicles/Wheeled/BTR70/BTR70.et" {
+ coords 1420 36.6 2480
+ angles 0 270 0
+}
+SCR_BoardingTimedWaypoint USSR_BTR_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 1420 36.1 2480
+ CompletionRadius 10
+}
+SCR_AIGroup USSR_BTR_Crew : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "USSR_BTR_Veh"
+   }
+  }
+ }
+ coords 1426 37.1 2486
+ m_aStaticWaypoints {
+  "USSR_BTR_GetIn"
+ }
+}
+Vehicle USSR_UAZ_1_Veh : "{0B4DEA8078B78A9B}Prefabs/Vehicles/Wheeled/UAZ469/UAZ469_PKM.et" {
+ coords 1440 37.6 2470
+ angles 0 270 0
+}
+SCR_BoardingTimedWaypoint USSR_UAZ_1_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 1440 37.1 2470
+ CompletionRadius 10
+}
+SCR_AIGroup USSR_UAZ_1_Crew : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "USSR_UAZ_1_Veh"
+   }
+  }
+ }
+ coords 1446 38.1 2476
+ m_aStaticWaypoints {
+  "USSR_UAZ_1_GetIn"
+ }
+}
+Vehicle USSR_UAZ_2_Veh : "{0B4DEA8078B78A9B}Prefabs/Vehicles/Wheeled/UAZ469/UAZ469_PKM.et" {
+ coords 1290 39.5 2720
+ angles 0 90 0
+}
+SCR_BoardingTimedWaypoint USSR_UAZ_2_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 1290 39 2720
+ CompletionRadius 10
+}
+SCR_AIGroup USSR_UAZ_2_Crew : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "USSR_UAZ_2_Veh"
+   }
+  }
+ }
+ coords 1296 40 2726
+ m_aStaticWaypoints {
+  "USSR_UAZ_2_GetIn"
+ }
+}
+Vehicle USSR_Truck_1 : "{D9B91FAB817A6033}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_transport_covered.et" {
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1400 36.2 2500
+ angles 0 0 0
+}
+Vehicle USSR_Truck_2 : "{D9B91FAB817A6033}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_transport_covered.et" {
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1385 36.5 2510
+ angles 0 0 0
+}
+GenericEntity USSR_Arty_1_Mortar : "{28D63631873AA636}Prefabs/Compositions/Slotted/SlotFlatSmall/MortarPlacement_S_USSR_01.et" {
+ coords 1325 36.38 2665
+ angles 0 90 0
+}
+SCR_AIGroup USSR_Arty_1_Crew : "{CB58D90EA14430AD}Prefabs/Groups/OPFOR/Group_USSR_SentryTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 10
+   m_sUsableVehicle {
+    "USSR_Arty_1_Mortar"
+   }
+  }
+ }
+ coords 1317 37.38 2673
+}
+GenericEntity USSR_Arty_2_Mortar : "{28D63631873AA636}Prefabs/Compositions/Slotted/SlotFlatSmall/MortarPlacement_S_USSR_01.et" {
+ coords 1295 36.45 2655
+ angles 0 90 0
+}
+SCR_AIGroup USSR_Arty_2_Crew : "{CB58D90EA14430AD}Prefabs/Groups/OPFOR/Group_USSR_SentryTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 10
+   m_sUsableVehicle {
+    "USSR_Arty_2_Mortar"
+   }
+  }
+ }
+ coords 1287 37.45 2663
+}
+SCR_AIGroup US_Rifle_1 : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2590 124.5 2320
+}
+SCR_AIGroup US_Rifle_2 : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2595 122.8 2345
+}
+SCR_AIGroup US_Rifle_3 : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2575 125.8 2325
+}
+SCR_AIGroup US_Rifle_4 : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2605 121.1 2335
+}
+SCR_AIGroup US_Rifle_5 : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2565 127.2 2360
+}
+SCR_AIGroup US_MG_1 : "{958039B857396B7B}Prefabs/Groups/BLUFOR/Group_US_MachineGunTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2582 123.3 2342
+}
+SCR_AIGroup US_AT_1 : "{FAEA8B9E1252F56E}Prefabs/Groups/BLUFOR/Group_US_Team_LAT.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2560 133 2310
+}
+SCR_AIGroup US_Recon_1 : "{F65B7BB712F46FEE}Prefabs/Groups/BLUFOR/Group_US_ReconTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2550 135 2350
+}
+Vehicle US_LAV_Veh : "{0FBF8F010F81A4E5}Prefabs/Vehicles/Wheeled/LAV25/LAV25.et" {
+ coords 2620 111.5 2385
+ angles 0 270 0
+}
+SCR_BoardingTimedWaypoint US_LAV_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 2620 111 2385
+ CompletionRadius 10
+}
+SCR_AIGroup US_LAV_Crew : "{FCF7F5DC4F83955C}Prefabs/Groups/BLUFOR/Group_US_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "US_LAV_Veh"
+   }
+  }
+ }
+ coords 2626 112 2391
+ m_aStaticWaypoints {
+  "US_LAV_GetIn"
+ }
+}
+Vehicle US_HMMWV_1_Veh : "{3EA6F47D95867114}Prefabs/Vehicles/Wheeled/M998/M1025_armed_M2HB.et" {
+ coords 2632 112.1 2372
+ angles 0 270 0
+}
+SCR_BoardingTimedWaypoint US_HMMWV_1_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 2632 111.6 2372
+ CompletionRadius 10
+}
+SCR_AIGroup US_HMMWV_1_Crew : "{FCF7F5DC4F83955C}Prefabs/Groups/BLUFOR/Group_US_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "US_HMMWV_1_Veh"
+   }
+  }
+ }
+ coords 2638 112.6 2378
+ m_aStaticWaypoints {
+  "US_HMMWV_1_GetIn"
+ }
+}
+Vehicle US_HMMWV_2_Veh : "{3EA6F47D95867114}Prefabs/Vehicles/Wheeled/M998/M1025_armed_M2HB.et" {
+ coords 2626 112.9 2400
+ angles 0 270 0
+}
+SCR_BoardingTimedWaypoint US_HMMWV_2_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 2626 112.4 2400
+ CompletionRadius 10
+}
+SCR_AIGroup US_HMMWV_2_Crew : "{FCF7F5DC4F83955C}Prefabs/Groups/BLUFOR/Group_US_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "US_HMMWV_2_Veh"
+   }
+  }
+ }
+ coords 2632 113.4 2406
+ m_aStaticWaypoints {
+  "US_HMMWV_2_GetIn"
+ }
+}
+Vehicle US_Truck_1 : "{81FDAD5EB644CC3D}Prefabs/Vehicles/Wheeled/M923A1/M923A1_transport_covered.et" {
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2600 119 2370
+ angles 0 270 0
+}
+Vehicle US_Truck_2 : "{81FDAD5EB644CC3D}Prefabs/Vehicles/Wheeled/M923A1/M923A1_transport_covered.et" {
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2610 119.4 2360
+ angles 0 270 0
+}
+GenericEntity US_Arty_1_Mortar : "{2323F9E4C524F047}Prefabs/Compositions/Slotted/SlotFlatSmall/MortarPlacement_S_US_01.et" {
+ coords 2946 42.09 2500
+ angles 0 270 0
+}
+SCR_AIGroup US_Arty_1_Crew : "{3BF36BDEEB33AEC9}Prefabs/Groups/BLUFOR/Group_US_SentryTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 10
+   m_sUsableVehicle {
+    "US_Arty_1_Mortar"
+   }
+  }
+ }
+ coords 2938 43.09 2508
+}
+GenericEntity US_Arty_2_Mortar : "{2323F9E4C524F047}Prefabs/Compositions/Slotted/SlotFlatSmall/MortarPlacement_S_US_01.et" {
+ coords 2970 44.5 2460
+ angles 0 270 0
+}
+SCR_AIGroup US_Arty_2_Crew : "{3BF36BDEEB33AEC9}Prefabs/Groups/BLUFOR/Group_US_SentryTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 10
+   m_sUsableVehicle {
+    "US_Arty_2_Mortar"
+   }
+  }
+ }
+ coords 2962 45.5 2468
+}
+SCR_AIGroup FIA_Rifle_1 : "{CE41AF625D05D0F0}Prefabs/Groups/INDFOR/Group_FIA_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2094 54.8 2940
+}
+SCR_AIGroup FIA_Rifle_2 : "{CE41AF625D05D0F0}Prefabs/Groups/INDFOR/Group_FIA_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2120 54.7 2950
+}
+SCR_AIGroup FIA_Fire_1 : "{5BEA04939D148B1D}Prefabs/Groups/INDFOR/Group_FIA_FireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2060 52.8 2930
+}
+SCR_AIGroup FIA_MG_1 : "{22F33D3EC8F281AB}Prefabs/Groups/INDFOR/Group_FIA_MachineGunTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2085 54.5 2945
+}
+SCR_AIGroup FIA_AT_1 : "{2CC26054775FBA2C}Prefabs/Groups/INDFOR/Group_FIA_Team_AT.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2100 55 2955
+}
+SCR_AIGroup FIA_Rifle_3 : "{CE41AF625D05D0F0}Prefabs/Groups/INDFOR/Group_FIA_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1215 13.9 1903
+}
+SCR_AIGroup FIA_Fire_2 : "{5BEA04939D148B1D}Prefabs/Groups/INDFOR/Group_FIA_FireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1205 14.4 1895
+}
+Vehicle FIA_Technical_1_Veh : "{E72D78E7F45532EC}Prefabs/Vehicles/Wheeled/UAZ469/UAZ469_UK59_FIA.et" {
+ coords 2080 53.4 2925
+ angles 0 180 0
+}
+SCR_BoardingTimedWaypoint FIA_Technical_1_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 2080 52.9 2925
+ CompletionRadius 10
+}
+SCR_AIGroup FIA_Technical_1_Crew : "{1BB20A4B3A53D0F5}Prefabs/Groups/INDFOR/Group_FIA_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "FIA_Technical_1_Veh"
+   }
+  }
+ }
+ coords 2086 53.9 2931
+ m_aStaticWaypoints {
+  "FIA_Technical_1_GetIn"
+ }
+}
+Vehicle FIA_Technical_2_Veh : "{22B327C6752EC4D4}Prefabs/Vehicles/Wheeled/UAZ469/UAZ469_PKM_FIA.et" {
+ coords 2110 54.4 2925
+ angles 0 180 0
+}
+SCR_BoardingTimedWaypoint FIA_Technical_2_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 2110 53.9 2925
+ CompletionRadius 10
+}
+SCR_AIGroup FIA_Technical_2_Crew : "{1BB20A4B3A53D0F5}Prefabs/Groups/INDFOR/Group_FIA_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "FIA_Technical_2_Veh"
+   }
+  }
+ }
+ coords 2116 54.9 2931
+ m_aStaticWaypoints {
+  "FIA_Technical_2_GetIn"
+ }
+}
+Vehicle FIA_Truck_1 : "{B70E6D12A8EC2410}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_FIA_transport_covered.et" {
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 2070 53.7 2955
+ angles 0 180 0
+}
+Vehicle FIA_Van_1 : "{D6C8D37EA81A3985}Prefabs/Vehicles/Wheeled/S1203/S1203_transport_FIA.et" {
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 1225 13.1 1915
+ angles 0 0 0
+}

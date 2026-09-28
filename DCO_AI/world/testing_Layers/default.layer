@@ -105,7 +105,7 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_sCommanderUID "rifleSquad"
     m_sFactionKey "US"
     m_fDelayFirstIteration 30
-    m_fReserveMinimumPct 0.1
+    m_fReservePercent 10
     m_bRandomPersonality 1
     m_fDebugRefreshInterval 1
    }
@@ -125,7 +125,7 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_sFactionKey "USSR"
     m_bUseSynchronizedAttack 0
     m_fDelayFirstIteration 15
-    m_bEnableManpowerBudget 0
+    m_fReservePercent 0
     m_eCommanderModeExternal OFFENSIVE
     m_bRandomPersonality 1
     m_fDebugRefreshInterval 1
@@ -146,7 +146,7 @@ $grp GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
     m_sFactionKey "FIA"
     m_bUseSynchronizedAttack 0
     m_fDelayFirstIteration 30
-    m_fReserveMinimumPct 0.1
+    m_fReservePercent 10
     m_bRandomPersonality 1
     m_fDebugRefreshInterval 1
    }

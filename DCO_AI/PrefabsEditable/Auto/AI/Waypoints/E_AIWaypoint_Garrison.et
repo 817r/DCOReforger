@@ -1,0 +1,25 @@
+DCO_GarrisonWaypoint : "{F22E21BBBF46819E}Prefabs/AI/Waypoints/AIWaypoint_Garrison.et" {
+ ID "663CBEF736DEBDE0"
+ components {
+  SCR_EditableEntityVisibilityChildComponent "{D4F0FFF3A650214E}" : "{CA7D13FC9D385E8F}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityVisibilityChildComponent.ct" {
+  }
+  SCR_EditableWaypointComponent "{628362A8FC585AB5}" : "{89CF6086B34A8800}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityComponent.ct" {
+   m_UIInfo SCR_EditableEntityUIInfo "{8DFC587F143A402D}" {
+    Name "Garrison (DCO)"
+    Icon "{1B3B38AAA1577734}UI/Textures/Editor/EditableEntities/Waypoints/EditableEntity_Waypoint_Defend.edds"
+    m_aAutoLabels {
+     ENTITYTYPE_SYSTEM SIZE_XL
+    }
+   }
+   m_EntityInteraction SCR_EditableAttachableEntityInteraction "{0D3AF49D9CF381AF}" {
+    m_aAttachableTypes {
+     GROUP
+    }
+   }
+  }
+  SCR_WaypointAreaMeshComponent "{225F9ED8E3103160}" : "{3CE012874EA1DC23}Prefabs/Editor/Components/Waypoint_SCR_WaypointAreaMeshComponent.ct" {
+  }
+  RplComponent "{89EE1CCE9856EA44}" : "{B193E926C1935A4C}Prefabs/Editor/Components/Default_RplComponent.ct" {
+  }
+ }
+}

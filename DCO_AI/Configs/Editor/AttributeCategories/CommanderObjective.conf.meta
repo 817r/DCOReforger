@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{4F8D1B7E2A6C3950}Configs/Editor/AttributeCategories/CommanderObjective.conf"
+ Configurations {
+  CONFResourceClass PC {
+  }
+  CONFResourceClass XBOX_ONE : PC {
+  }
+  CONFResourceClass XBOX_SERIES : PC {
+  }
+  CONFResourceClass PS4 : PC {
+  }
+  CONFResourceClass PS5 : PC {
+  }
+  CONFResourceClass HEADLESS : PC {
+  }
+ }
+}

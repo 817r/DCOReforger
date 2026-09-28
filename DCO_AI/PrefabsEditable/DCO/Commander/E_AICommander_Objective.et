@@ -1,0 +1,25 @@
+GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
+ ID "068BDCBE523D5545"
+ components {
+  Persistence "{6A78E9376AF11A8B}" {
+  }
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_sManagerPrefab "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et"
+  }
+  SCR_EditableEntityComponent "{3F9E07529B15CF03}" {
+   m_EntityType SYSTEM
+   m_UIInfo SCR_EditableEntityUIInfo "{5290894495FEE180}" {
+    Name "AI Commander Objective"
+    Description "Objective for DCO AI Commanders to capture and hold. The area shows the capture radius."
+    Icon "{3E3FB434FBFA4872}UI/Textures/Editor/EditableEntities/Objectives/EditableEntity_Objective_Attack.edds"
+    m_aAuthoredLabels {
+     ENTITYTYPE_SYSTEM
+    }
+    m_bFullBackgroundAssetCard 0
+   }
+   m_bAutoRegister ALWAYS
+  }
+  SCR_EditableEntityVisibilityChildComponent "{6C1A7E3D90B25F48}" : "{CA7D13FC9D385E8F}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityVisibilityChildComponent.ct" {
+  }
+ }
+}

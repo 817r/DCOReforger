@@ -1,0 +1,7 @@
+enum DCO_EAIPersonality
+{
+	CAUTIOUS,
+	STANDARD,
+	AGGRESSIVE,
+	RECKLESS
+}

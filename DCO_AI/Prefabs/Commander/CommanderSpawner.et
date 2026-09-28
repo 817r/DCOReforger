@@ -1,0 +1,13 @@
+GameEntity {
+ ID "A9C8C965AF63D510"
+ components {
+  DCO_CommanderSpawnerComponent "{0276BC3EDF17988D}" {
+  }
+  RplComponent "{C6E9BB680CD76720}" {
+   SpatialRelevancy 0
+   Streamable Disabled
+  }
+  Hierarchy "{910AA5583B75EF1A}" {
+  }
+ }
+}

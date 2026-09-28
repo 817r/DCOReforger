@@ -1,0 +1,13 @@
+RichTextWidgetClass {
+ Name "Label"
+ IgnoreCursor 1
+ Color 1 1 1 1
+ Text ""
+ "Font Size" 14
+ "Min Font Size" 14
+ FontProperties FontProperties "{7EA9864EC11B4385}" {
+  Font "{EABA4FE9D014CCEF}UI/Fonts/RobotoCondensed/RobotoCondensed_Bold.fnt"
+  ShadowSize 2
+  ShadowOffset 1 1
+ }
+}

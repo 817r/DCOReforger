@@ -1,8 +1,0 @@
-enum GroupTactics
-{
-	ADVANCE,
-	ASSAULT,
-	DEFEND,
-	BYPASS,
-	WITHDRAW
-}

@@ -59,11 +59,9 @@ BehaviorTree "{1E48A459B4D3CA77}AI/BehaviorTrees/Chimera/Soldier/Idle.bt" {
                Name "Sequence"
                EditorPos -1660.359 307.705
                Nodes {
-                AITaskIdle Idle {
-                 Name "Idle"
+                DCO_AIIdleWait "DCO_AI Idle Wait" {
+                 Name "DCO_AI Idle Wait"
                  EditorPos -1904 496
-                 Period 30
-                 PeriodRandom 15
                 }
                 RunBT RunBT {
                  Name "RunBT"

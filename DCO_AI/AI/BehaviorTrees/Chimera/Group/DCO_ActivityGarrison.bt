@@ -1,0 +1,16 @@
+BehaviorTree "{DF477A9E86FB6974}AI/BehaviorTrees/Chimera/Group/DCO_ActivityGarrison.bt" {
+ Name "AI/BehaviorTrees/Chimera/Group/DCO_ActivityGarrison.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    AITaskIdle Idle {
+     Name "Idle"
+     EditorPos 0 -100
+     Period 1
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,113 @@
+BehaviorTree "{0E404EC509057417}AI/BehaviorTrees/Chimera/Soldier/DCO_GarrisonHold.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_GarrisonHold.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 0 -150
+     Nodes {
+      DCO_AIGarrisonGetSlot "DCO_AI Garrison Get Slot" {
+       Name "DCO_AI Garrison Get Slot"
+       EditorPos -900 100
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 0
+         PortName "SlotPos"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 1
+         PortName "Stance"
+        }
+       }
+      }
+      SCR_AICharacterSetMovementSpeed "SCR_AI Character Set Movement Speed" {
+       Name "SCR_AI Character Set Movement Speed"
+       EditorPos -600 100
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "Speed"
+        }
+       }
+       m_eSpeed RUN
+      }
+      AITaskMove Move {
+       Name "Move"
+       EditorPos -300 100
+       InTargetLocation 2
+       PrecisionXZ 0.4
+       PrecisionY 1
+      }
+      SCR_AISetStance "SCR_AI Set Stance" {
+       Name "SCR_AI Set Stance"
+       EditorPos 0 100
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port 3
+         PortName "Stance"
+        }
+       }
+      }
+      SCR_AISetCombatMoveState "SCR_AI Set Combat Move State" {
+       Name "SCR_AI Set Combat Move State"
+       EditorPos 300 100
+       InPorts {
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "InCover"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "ExposedInCover"
+        }
+        SingleInputPortContainer SingleInputPortContainer {
+         Port -1
+         PortName "AimAtTarget"
+        }
+       }
+       m_bSetInCover 1
+       m_bInCoverValue 1
+       m_bSetExposedInCover 1
+       m_bExposedInCoverValue 1
+      }
+      DCO_AIGarrisonHold "DCO_AI Garrison Hold" {
+       Name "DCO_AI Garrison Hold"
+       EditorPos 600 100
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableVector slotPos {
+   Flags 0
+   Desc "vector"
+  }
+  BtVariableInteger stance {
+   Flags 0
+   Desc "int"
+  }
+ }
+ VariablesRefs {
+  VariableReference slotPos {
+   VariableType 0
+   EditorPos -900 300
+  }
+  VariableReference stance {
+   VariableType 1
+   EditorPos -900 380
+  }
+  VariableReference slotPos {
+   VariableType 0
+   EditorPos -300 300
+  }
+  VariableReference stance {
+   VariableType 1
+   EditorPos 0 300
+  }
+ }
+}

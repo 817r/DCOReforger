@@ -84,6 +84,22 @@ BehaviorTree {
          }
          m_iFirePattern Suppress
         }
+        DCO_AIScatterExplosivePos "DCO_AI Scatter Explosive Pos" {
+         Name "DCO_AI Scatter Explosive Pos"
+         EditorPos 400 608
+         InPorts {
+          SingleInputPortContainer SingleInputPortContainer {
+           Port 10
+           PortName "PositionIn"
+          }
+         }
+         OutPorts {
+          SingleOutputPortContainer SingleOutputPortContainer {
+           Port 11
+           PortName "PositionOut"
+          }
+         }
+        }
        }
       }
       Parallel Parallel {
@@ -207,6 +223,10 @@ BehaviorTree {
    Flags 0
    Desc ""
   }
+  BtVariableVector shootPosScattered {
+   Flags 0
+   Desc ""
+  }
  }
  VariablesRefs {
   VariableReference weaponComponent {
@@ -233,12 +253,12 @@ BehaviorTree {
    VariableType 5
    EditorPos 640 1312
   }
-  VariableReference shootPos {
-   VariableType 2
+  VariableReference shootPosScattered {
+   VariableType 6
    EditorPos 96 1296
   }
-  VariableReference shootPos {
-   VariableType 2
+  VariableReference shootPosScattered {
+   VariableType 6
    EditorPos 752 1216
   }
   VariableReference stabilizationTime {
@@ -248,6 +268,14 @@ BehaviorTree {
   VariableReference fireTime {
    VariableType 3
    EditorPos 1376 2000
+  }
+  VariableReference shootPos {
+   VariableType 2
+   EditorPos 160 800
+  }
+  VariableReference shootPosScattered {
+   VariableType 6
+   EditorPos 672 800
   }
  }
 }

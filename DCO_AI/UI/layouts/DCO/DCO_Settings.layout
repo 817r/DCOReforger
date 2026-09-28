@@ -1,0 +1,250 @@
+HorizontalLayoutWidgetClass {
+ Name "DCOSettings"
+ components {
+  DCO_SettingsSubMenu "{150D4ADC01193FB5}" {
+  }
+ }
+ {
+  ScrollLayoutWidgetClass "{38739F422958346B}" {
+   Name "ScrollLayout0"
+   Slot LayoutSlot "{8C9C867E3EBCF7BA}" {
+    Padding -2 72 2 0
+    SizeMode Fill
+    FillWeight 1.433
+   }
+   Color 0.761 0.392 0.078 1
+   style Small
+   {
+    VerticalLayoutWidgetClass "{69002A841082CC99}" {
+     Name "Content"
+     Slot AlignableSlot "{7660EED6FA572114}" {
+      HorizontalAlign 3
+      VerticalAlign 3
+      Padding -4 0 10 0
+     }
+     {
+      VerticalLayoutWidgetClass "{15E82E69CBF6071E}" : "{FEEEB639F2735BA1}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsTitle.layout" {
+       Name "TitleOrder"
+       Slot LayoutSlot "{7DD0AA6E83F76EAB}" {
+       }
+       components {
+        SCR_LabelComponent "{58B30C1A8E56F0FF}" {
+         m_sLabel "Commander Order Notifications"
+        }
+       }
+      }
+      ButtonWidgetClass "{8F0DEF108B2CE582}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "OrderSize"
+       Slot LayoutSlot "{1730C5ED6B4DEC6E}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Size"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1%"
+         m_bRoundValue 1
+        }
+       }
+      }
+      ButtonWidgetClass "{BFB3753279F153CB}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "OrderPos"
+       Slot LayoutSlot "{B4BBAE8C3659C42C}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Position"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Top left" "Top" "Top right" "Left" "Center" "Right" "Bottom left" "Bottom" "Bottom right"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{AC5795481A1026BA}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "OrderOffX"
+       Slot LayoutSlot "{9318DE974B43B209}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Distance from side edge"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1 px"
+         m_bRoundValue 1
+        }
+       }
+      }
+      ButtonWidgetClass "{081A4CD86BEDF4DE}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "OrderOffY"
+       Slot LayoutSlot "{FD227E2288B13703}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Distance from top / bottom edge"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1 px"
+         m_bRoundValue 1
+        }
+       }
+      }
+      VerticalLayoutWidgetClass "{4895B34B4AA848DF}" : "{FEEEB639F2735BA1}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsTitle.layout" {
+       Name "TitleContact"
+       Slot LayoutSlot "{8A04D2B3D099C15E}" {
+       }
+       components {
+        SCR_LabelComponent "{58B30C1A8E56F0FF}" {
+         m_sLabel "Squad Contact Notifications"
+        }
+       }
+      }
+      ButtonWidgetClass "{05B71945B3DE2C16}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "ContactShow"
+       Slot LayoutSlot "{548EA1B0AFB6638C}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Show"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "No" "Yes"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{38D246D94D6F7EFC}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "ContactSize"
+       Slot LayoutSlot "{98D4A105269981EC}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Size"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1%"
+         m_bRoundValue 1
+        }
+       }
+      }
+      ButtonWidgetClass "{F1E265420AF73F9D}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "ContactPos"
+       Slot LayoutSlot "{38FA893FA10BF8D4}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Position"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Top left" "Top" "Top right" "Left" "Center" "Right" "Bottom left" "Bottom" "Bottom right"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{CBD3B20464F2C837}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "ContactOffX"
+       Slot LayoutSlot "{C4FCEBAF8FCC7D49}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Distance from side edge"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1 px"
+         m_bRoundValue 1
+        }
+       }
+      }
+      ButtonWidgetClass "{A9F4759F97FAD81E}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "ContactOffY"
+       Slot LayoutSlot "{7D451E8AB34B86FC}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Distance from top / bottom edge"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1 px"
+         m_bRoundValue 1
+        }
+       }
+      }
+      ButtonWidgetClass "{F01F164541DED0EC}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "ContactHold"
+       Slot LayoutSlot "{94A7F232545CF05E}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Time on screen"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1 s"
+         m_bRoundValue 1
+        }
+       }
+      }
+      ButtonWidgetClass "{22517C76A1525E1E}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "ContactSound"
+       Slot LayoutSlot "{524B9391DB24A4C9}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Radio sound"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "No" "Yes"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      VerticalLayoutWidgetClass "{422B1E8EBA78B609}" : "{FEEEB639F2735BA1}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsTitle.layout" {
+       Name "TitleMap"
+       Slot LayoutSlot "{C9CD5F72528FE96A}" {
+       }
+       components {
+        SCR_LabelComponent "{58B30C1A8E56F0FF}" {
+         m_sLabel "Map"
+        }
+       }
+      }
+      ButtonWidgetClass "{E00E3078EF4385DE}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "MapPalette"
+       Slot LayoutSlot "{74B793AB336AB268}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "AI marker colors"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Paper map (dark)" "Bright" "Black"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+  VerticalLayoutWidgetClass "{C65D6748ECD866D2}" {
+   Name "Description"
+   Slot LayoutSlot "{045887B68759256E}" {
+    SizeMode Fill
+   }
+  }
+ }
+}

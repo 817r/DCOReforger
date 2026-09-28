@@ -1,25 +1,8 @@
-// FILE: addons/GMC_MyMod/Scripts/Game/Respawner/GMC_SpawnBalancerComponent.c
-//
-// Cara pakai:
-//  1. Attach komponen ini ke entity yang SAMA dengan GMC_RespawnerComponent
-//  2. Set m_iBaseUnitCount  → jumlah AI saat 0 player
-//  3. Set m_fMultiplierPerPlayer → float positif = naik per player, negatif = turun
-//  4. Set m_iMinUnits / m_iMaxUnits → batas bawah & atas hasil kalkulasi
-//
-// Formula:
-//   balancedCount = clamp(base + floor(playerCount * multiplier), min, max)
-//
-// Contoh multiplier +2.0, base 4, 3 player → 4 + floor(3*2.0) = 10 AI
-// Contoh multiplier -1.0, base 6, 3 player → 6 + floor(3*-1.0) = 3 AI
-
 [ComponentEditorProps(category: "GMC_MyMod/Spawner", description: "Adjusts max AI spawn count based on connected player count")]
 class GMC_SpawnBalancerComponentClass : ScriptComponentClass {}
 
 class GMC_SpawnBalancerComponent : ScriptComponent
 {
-	//--------------------------------------------------------------------
-	// EDITOR ATTRIBUTES
-
 	[Attribute("4", UIWidgets.EditBox, "Jumlah AI dasar (saat 0 player online)")]
 	protected int m_iBaseUnitCount;
 
@@ -36,17 +19,10 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 	[Attribute("0", UIWidgets.CheckBox, "Aktifkan debug print?")]
 	protected bool m_bDebugLog;
 
-	//--------------------------------------------------------------------
-	// RUNTIME STATE
-
 	protected int m_iCurrentPlayerCount = 0;
 	protected int m_iLastBalancedCount   = 0;
 
-	// Event: dipanggil saat balanced count berubah → Invoke(int newCount, int playerCount)
 	protected ref ScriptInvoker m_OnBalanceChanged;
-
-	//--------------------------------------------------------------------
-	// LIFECYCLE
 
 	override void OnPostInit(IEntity owner)
 	{
@@ -54,10 +30,8 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 
 		if (!Replication.IsServer()) return;
 
-		// Hitung awal (0 player)
 		m_iLastBalancedCount = ComputeCount(1);
 
-		// Subscribe ke game mode player events
 		SCR_BaseGameMode gm = SCR_BaseGameMode.Cast(GetGame().GetGameMode());
 		if (!gm)
 		{
@@ -68,7 +42,6 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 		gm.GetOnPlayerRegistered().Insert(OnPlayerRegistered);
 		gm.GetOnPlayerDisconnected().Insert(OnPlayerDisconnected);
 
-		// Hitung ulang dengan jumlah player yang sudah ada saat init
 		RefreshPlayerCount();
 	}
 
@@ -76,7 +49,6 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 	{
 		super.OnDelete(owner);
 
-		// Unsubscribe agar tidak dangling pointer
 		SCR_BaseGameMode gm = SCR_BaseGameMode.Cast(GetGame().GetGameMode());
 		if (gm)
 		{
@@ -85,28 +57,21 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 		}
 	}
 
-	//--------------------------------------------------------------------
-	// PUBLIC API
-
-	//! Kembalikan jumlah AI yang seharusnya di-spawn sekarang
 	int GetBalancedCount()
 	{
 		return m_iLastBalancedCount;
 	}
 
-	//! Kembalikan jumlah player saat ini yang terlacak
 	int GetPlayerCount()
 	{
 		return m_iCurrentPlayerCount;
 	}
 
-	//! Preview hasil kalkulasi untuk jumlah player tertentu (tanpa mengubah state)
 	int PreviewCountForPlayers(int playerCount)
 	{
 		return ComputeCount(playerCount);
 	}
 
-	//! Override multiplier dari kode lain saat runtime
 	void SetMultiplier(float multiplier)
 	{
 		if (!Replication.IsServer()) return;
@@ -115,7 +80,6 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 		DebugLog(string.Format("Multiplier diubah ke %.2f → balanced count = %1", multiplier, m_iLastBalancedCount));
 	}
 
-	//! Override base unit count dari kode lain saat runtime
 	void SetBaseUnitCount(int baseCount)
 	{
 		if (!Replication.IsServer()) return;
@@ -123,7 +87,6 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 		Recalculate();
 	}
 
-	//! Kembalikan string ringkasan status (untuk debug)
 	string GetStatusString()
 	{
 		return string.Format(
@@ -137,19 +100,11 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 		);
 	}
 
-	//--------------------------------------------------------------------
-	// SCRIPTINVOKER GETTER
-
-	//! Subscribe untuk dengar perubahan balanced count
-	//! Callback signature: void OnBalanceChanged(int newCount, int playerCount)
 	ScriptInvoker GetOnBalanceChanged()
 	{
 		if (!m_OnBalanceChanged) m_OnBalanceChanged = new ScriptInvoker();
 		return m_OnBalanceChanged;
 	}
-
-	//--------------------------------------------------------------------
-	// STATIC HELPER
 
 	static GMC_SpawnBalancerComponent GetFrom(IEntity entity)
 	{
@@ -157,16 +112,11 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 		return GMC_SpawnBalancerComponent.Cast(entity.FindComponent(GMC_SpawnBalancerComponent));
 	}
 
-	//--------------------------------------------------------------------
-	// INTERNAL
-
-	//! Hitung ulang dari data player manager langsung
 	protected void RefreshPlayerCount()
 	{
 		PlayerManager pm = GetGame().GetPlayerManager();
 		if (!pm) return;
 
-		// Hitung player yang benar-benar connected
 		array<int> playerIDs = new array<int>();
 		pm.GetAllPlayers(playerIDs);
 		m_iCurrentPlayerCount = playerIDs.Count();
@@ -174,12 +124,11 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 		Recalculate();
 	}
 
-	//! Hitung ulang balanced count dan fire event kalau berubah
 	protected void Recalculate()
 	{
 		int newCount = ComputeCount(m_iCurrentPlayerCount);
 
-		if (newCount == m_iLastBalancedCount) return; // tidak ada perubahan
+		if (newCount == m_iLastBalancedCount) return;
 
 		m_iLastBalancedCount = newCount;
 
@@ -190,7 +139,6 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 			m_OnBalanceChanged.Invoke(m_iLastBalancedCount, m_iCurrentPlayerCount);
 	}
 
-	//! Formula inti: base + floor(playerCount × multiplier), di-clamp ke [min, max]
 	protected int ComputeCount(int playerCount)
 	{
 		float raw   = m_iBaseUnitCount + (playerCount * m_fMultiplierPerPlayer);
@@ -198,7 +146,6 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 		return Math.Clamp(floor, m_iMinUnits, m_iMaxUnits);
 	}
 
-	//! Dipanggil engine saat player baru terdaftar
 	protected void OnPlayerRegistered(int playerID)
 	{
 		m_iCurrentPlayerCount++;
@@ -206,7 +153,6 @@ class GMC_SpawnBalancerComponent : ScriptComponent
 		Recalculate();
 	}
 
-	//! Dipanggil engine saat player disconnect
 	protected void OnPlayerDisconnected(int playerID, KickCauseCode cause, int timeout)
 	{
 		m_iCurrentPlayerCount = Math.Max(0, m_iCurrentPlayerCount - 1);

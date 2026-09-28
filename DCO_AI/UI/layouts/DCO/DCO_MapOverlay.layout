@@ -1,0 +1,16 @@
+FrameWidgetClass {
+ Name "DCO_MapOverlayRoot"
+ {
+  CanvasWidgetClass "{2DC207DDE71606AF}" {
+   Name "Canvas"
+   Slot FrameWidgetSlot "{4C9208C500C87723}" {
+    Anchor 0 0 1 1
+    OffsetLeft 0
+    OffsetTop 0
+    OffsetRight 0
+    OffsetBottom 0
+   }
+   IgnoreCursor 1
+  }
+ }
+}

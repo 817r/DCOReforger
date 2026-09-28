@@ -19,10 +19,10 @@ class SCR_PlayerScaledGroupSpawner : ScriptComponent
 
     [Attribute("1.0", UIWidgets.EditBox, desc: "Multiplier: Pengali jumlah grup per 1 player")]
     float m_fGroupsPerPlayer;
-	
+
     [Attribute("5.0", UIWidgets.EditBox, desc: "Radius Spawn di dekat point")]
     float m_fSpawnRadius;
-	
+
     [Attribute("300.0", UIWidgets.EditBox, desc: "Safe Radius: Jarak minimal player agar tidak terjadi spawn (meter)")]
     float m_fSafeRadius;
 
@@ -30,7 +30,7 @@ class SCR_PlayerScaledGroupSpawner : ScriptComponent
     bool m_bInvertScaling;
 
     protected ref array<IEntity> m_aSpawnedGroups = {};
-	
+
     override void OnPostInit(IEntity owner)
     {
         super.OnPostInit(owner);
@@ -47,12 +47,12 @@ class SCR_PlayerScaledGroupSpawner : ScriptComponent
     {
         if (!Replication.IsServer())
             return;
-		
+
         CleanUpDeadGroups();
 
         if (m_fSafeRadius > 0 && IsPlayerNearby())
         {
-            return; 
+            return;
         }
 
         int playerCount = 1;
@@ -63,7 +63,7 @@ class SCR_PlayerScaledGroupSpawner : ScriptComponent
         }
 
         int targetGroups;
-        
+
         if (m_bInvertScaling)
         {
             targetGroups = m_iMaxGroups - Math.Round(playerCount * m_fGroupsPerPlayer);
@@ -72,12 +72,12 @@ class SCR_PlayerScaledGroupSpawner : ScriptComponent
         {
             targetGroups = m_iMinGroups + Math.Round(playerCount * m_fGroupsPerPlayer);
         }
-        
+
         targetGroups = Math.ClampInt(targetGroups, m_iMinGroups, m_iMaxGroups);
 
         if (m_aSpawnedGroups.Count() >= targetGroups)
             return;
-		
+
         SpawnRandomGroup(targetGroups);
     }
 
@@ -96,15 +96,15 @@ class SCR_PlayerScaledGroupSpawner : ScriptComponent
             if (playerEnt)
             {
                 float dist = vector.Distance(playerEnt.GetOrigin(), myPos);
-                
+
                 if (dist <= m_fSafeRadius)
                 {
-                    return true; 
+                    return true;
                 }
             }
         }
-        
-        return false; 
+
+        return false;
     }
 
     void SpawnRandomGroup(int currentTarget)
@@ -118,17 +118,16 @@ class SCR_PlayerScaledGroupSpawner : ScriptComponent
         Resource resource = Resource.Load(selectedPrefab);
         if (!resource || !resource.IsValid())
             return;
-            
+
         RandomGenerator rand = new RandomGenerator();
-	    
+
         EntitySpawnParams params = new EntitySpawnParams();
         params.TransformMode = ETransformMode.WORLD;
-        
-        vector as = rand.GenerateRandomPointInRadius(0, m_fSpawnRadius, GetOwner().GetOrigin(), false);
-        
-        // Fix: Pastikan nilai ketinggian daratan dimasukkan ke koordinat Y dari vektor `as`
-        as[1] = GetGame().GetWorld().GetSurfaceY(as[0], as[2]); 
-        
+
+        vector as = rand.GenerateRandomPointInRadius(0, Math.Max(m_fSpawnRadius, 1), GetOwner().GetOrigin(), false);
+
+        as[1] = GetGame().GetWorld().GetSurfaceY(as[0], as[2]);
+
         params.Transform[3] = as;
 
         IEntity newGroup = GetGame().SpawnEntityPrefab(resource, null, params);
@@ -148,7 +147,7 @@ class SCR_PlayerScaledGroupSpawner : ScriptComponent
             }
         }
     }
-    
+
     void ~SCR_PlayerScaledGroupSpawner()
     {
         if (GetGame() && GetGame().GetCallqueue())

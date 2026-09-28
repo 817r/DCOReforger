@@ -1,0 +1,26 @@
+BehaviorTree "{1A217EA4A311F3BC}AI/BehaviorTrees/Waypoints/DCO_WP_Garrison.bt" {
+ Name "AI/BehaviorTrees/Waypoints/DCO_WP_Garrison.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 0 -150
+     Nodes {
+      DCO_AIStartGarrison "DCO_AI Start Garrison" {
+       Name "DCO_AI Start Garrison"
+       EditorPos -200 50
+      }
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos 100 50
+       Period 5
+      }
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,743 @@
+GameEntity DCO_CommanderManager : "{C86E906A7F2AC38A}Prefabs/Commander/CommanderManager.et" {
+ coords 4450 6.5 11000
+}
+GenericEntity DCO_ScenarioFactions {
+ components {
+  DCO_ScenarioFactionsComponent "{6D2F8A41C7E3B905}" {
+   m_aPlayableFactions {
+    "US"
+   }
+  }
+ }
+ coords 4452 6.5 11002
+}
+GameEntity US_Commander : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
+ components {
+  AICommander_AlgorithmComponent "{68F8849956F58560}" {
+   m_sCommanderUID "US_CMD"
+   m_sFactionKey "US"
+   m_eCommanderModeExternal 0
+   m_fThinkInterval 30
+   m_fDelayFirstIteration 45
+   m_fAggression 0.7
+  }
+ }
+ coords 4450 6.47 11000
+}
+GameEntity USSR_Commander : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
+ components {
+  AICommander_AlgorithmComponent "{68F8849956F58560}" {
+   m_sCommanderUID "USSR_CMD"
+   m_sFactionKey "USSR"
+   m_eCommanderModeExternal 2
+   m_fThinkInterval 30
+   m_fDelayFirstIteration 45
+  }
+ }
+ coords 10150 6.16 1600
+}
+GameEntity OBJ_US_Base : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 30
+   m_sObjectiveName "US Main Base"
+   m_fRadius 120
+   m_sInitialOwnerCommanderUID "US_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 2
+   m_sBlacklistedCo {
+    "USSR_CMD"
+   }
+  }
+ }
+ coords 4405.8 1.6 11035.3
+}
+GameEntity OBJ_Meaux : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 60
+   m_sObjectiveName "Meaux"
+   m_fRadius 120
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 3
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 4511.4 21 9770.5
+}
+GameEntity OBJ_Kermovan : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 50
+   m_sObjectiveName "Kermovan"
+   m_fRadius 120
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 3
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 6436.9 10.1 9667.3
+}
+GameEntity OBJ_Tyrone : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 60
+   m_sObjectiveName "Tyrone"
+   m_fRadius 120
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 3
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 5007.1 49.3 8921.3
+}
+GameEntity OBJ_Gravette : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 60
+   m_sObjectiveName "Gravette"
+   m_fRadius 130
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 3
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 4011.7 32.3 7883.4
+}
+GameEntity OBJ_Montignac : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 80
+   m_sObjectiveName "Montignac"
+   m_fRadius 150
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 2
+   m_iMaxGroupCount 4
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 5124.4 175.5 6980.6
+}
+GameEntity OBJ_EntreDeux : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 70
+   m_sObjectiveName "Entre-Deux"
+   m_fRadius 130
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 3
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 6014.6 216.7 7178.4
+}
+GameEntity OBJ_Provins : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 70
+   m_sObjectiveName "Provins"
+   m_fRadius 130
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 3
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 5573.9 89.1 5895.1
+}
+GameEntity OBJ_Chotain : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 80
+   m_sObjectiveName "Chotain"
+   m_fRadius 150
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 2
+   m_iMaxGroupCount 4
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 6991 121.2 6075.4
+}
+GameEntity OBJ_Figari : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 60
+   m_sObjectiveName "Figari"
+   m_fRadius 120
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 3
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 5125.9 52.7 5495.7
+}
+GameEntity OBJ_Levie : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 70
+   m_sObjectiveName "Levie"
+   m_fRadius 130
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 3
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 7459.7 131.3 4816.3
+}
+GameEntity OBJ_LevieBase : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 100
+   m_sObjectiveName "Levie Military Base"
+   m_fRadius 150
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 2
+   m_iMaxGroupCount 4
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 7449.1 164.6 4306.4
+}
+GameEntity OBJ_Morton : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 90
+   m_sObjectiveName "Morton"
+   m_fRadius 160
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 2
+   m_iMaxGroupCount 4
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 4982.5 2.2 3846.9
+}
+GameEntity OBJ_Regina : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 70
+   m_sObjectiveName "Regina"
+   m_fRadius 130
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 3
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 7293.5 139.5 2175.3
+}
+GameEntity OBJ_Durras : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 70
+   m_sObjectiveName "Durras"
+   m_fRadius 130
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 1
+   m_iMaxGroupCount 3
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 8895.6 96.3 2709.2
+}
+GameEntity OBJ_USSR_HQ : "{AC056675B421EB3A}PrefabsEditable/DCO/Commander/E_AICommander_Objective.et" {
+ components {
+  CMD_AICommanderObjectiveComponent "{68F8849B52695EB0}" {
+   m_fBaseValue 120
+   m_sObjectiveName "USSR Headquarters"
+   m_fRadius 150
+   m_sInitialOwnerCommanderUID "USSR_CMD"
+   m_iDefendGroupCount 2
+   m_iMaxGroupCount 5
+   m_sBlacklistedCo {
+    
+   }
+  }
+ }
+ coords 10172.6 2.6 1539.5
+}
+SCR_SpawnPoint US_Spawn_1 : "{CEA2B24051A44525}PrefabsEditable/SpawnPoints/E_SpawnPoint_US.et" {
+ coords 4460 5.44 11010
+}
+SCR_SpawnPoint US_Spawn_2 : "{CEA2B24051A44525}PrefabsEditable/SpawnPoints/E_SpawnPoint_US.et" {
+ coords 4470 7.5 10990
+}
+GenericEntity US_Arsenal : "{C1AB654F77ABA58B}PrefabsEditable/Auto/Props/Military/Compositions/US/E_ArsenalBox_US.et" {
+ coords 4455 3.02 11015
+ angles 0 90 0
+}
+Vehicle US_Player_HMMWV_1 : "{3EA6F47D95867114}Prefabs/Vehicles/Wheeled/M998/M1025_armed_M2HB.et" {
+ coords 4490 9.21 10990
+ angles 0 180 0
+}
+Vehicle US_Player_HMMWV_2 : "{3EA6F47D95867114}Prefabs/Vehicles/Wheeled/M998/M1025_armed_M2HB.et" {
+ coords 4498 9.24 10990
+ angles 0 180 0
+}
+Vehicle US_Player_Truck : "{81FDAD5EB644CC3D}Prefabs/Vehicles/Wheeled/M923A1/M923A1_transport_covered.et" {
+ coords 4506 9.58 10990
+ angles 0 180 0
+}
+SCR_AIGroup US_Rifle_1 : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4440 7.88 10975
+}
+SCR_AIGroup US_Rifle_2 : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4455 9.08 10965
+}
+SCR_AIGroup US_Rifle_3 : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4470 10.73 10955
+}
+SCR_AIGroup US_Rifle_4 : "{DDF3799FA1387848}Prefabs/Groups/BLUFOR/Group_US_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4485 12.31 10945
+}
+SCR_AIGroup US_Recon_1 : "{F65B7BB712F46FEE}Prefabs/Groups/BLUFOR/Group_US_ReconTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4430 7.84 10990
+}
+SCR_AIGroup US_Recon_2 : "{F65B7BB712F46FEE}Prefabs/Groups/BLUFOR/Group_US_ReconTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4425 7.41 10975
+}
+SCR_AIGroup US_LAT_1 : "{FAEA8B9E1252F56E}Prefabs/Groups/BLUFOR/Group_US_Team_LAT.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4500 13.75 10960
+}
+SCR_AIGroup US_LAT_2 : "{FAEA8B9E1252F56E}Prefabs/Groups/BLUFOR/Group_US_Team_LAT.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4510 14.41 10950
+}
+SCR_AIGroup US_MG_1 : "{958039B857396B7B}Prefabs/Groups/BLUFOR/Group_US_MachineGunTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4495 10.61 10975
+}
+Vehicle US_HMMWV_1_Veh : "{3EA6F47D95867114}Prefabs/Vehicles/Wheeled/M998/M1025_armed_M2HB.et" {
+ coords 4520 12.11 11010
+ angles 0 180 0
+}
+SCR_BoardingTimedWaypoint US_HMMWV_1_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 4520 11.31 11010
+ CompletionRadius 10
+}
+SCR_AIGroup US_HMMWV_1_Crew : "{FCF7F5DC4F83955C}Prefabs/Groups/BLUFOR/Group_US_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "US_HMMWV_1_Veh"
+   }
+  }
+ }
+ coords 4520 10.19 11020
+ m_aStaticWaypoints {
+  "US_HMMWV_1_GetIn"
+ }
+}
+Vehicle US_HMMWV_2_Veh : "{3EA6F47D95867114}Prefabs/Vehicles/Wheeled/M998/M1025_armed_M2HB.et" {
+ coords 4530 14.27 11010
+ angles 0 180 0
+}
+SCR_BoardingTimedWaypoint US_HMMWV_2_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 4530 13.47 11010
+ CompletionRadius 10
+}
+SCR_AIGroup US_HMMWV_2_Crew : "{FCF7F5DC4F83955C}Prefabs/Groups/BLUFOR/Group_US_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "US_HMMWV_2_Veh"
+   }
+  }
+ }
+ coords 4530 13.09 11020
+ m_aStaticWaypoints {
+  "US_HMMWV_2_GetIn"
+ }
+}
+Vehicle US_Truck_1 : "{81FDAD5EB644CC3D}Prefabs/Vehicles/Wheeled/M923A1/M923A1_transport_covered.et" {
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4540 15.74 10990
+ angles 0 180 0
+}
+Vehicle US_Truck_2 : "{81FDAD5EB644CC3D}Prefabs/Vehicles/Wheeled/M923A1/M923A1_transport_covered.et" {
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4550 17.3 10990
+ angles 0 180 0
+}
+Vehicle US_Transport_Veh : "{81FDAD5EB644CC3D}Prefabs/Vehicles/Wheeled/M923A1/M923A1_transport_covered.et" {
+ coords 4560 18.74 10990
+ angles 0 180 0
+}
+SCR_BoardingTimedWaypoint US_Transport_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 4560 17.94 10990
+ CompletionRadius 10
+}
+SCR_AIGroup US_Transport_Crew : "{FCF7F5DC4F83955C}Prefabs/Groups/BLUFOR/Group_US_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_bIsDedicatedTransport 1
+  }
+  DCO_TransportTeamComponent "{6D2F8A41C7E3B911}" {
+  }
+ }
+ coords 4560 18.78 11000
+ m_aStaticWaypoints {
+  "US_Transport_GetIn"
+ }
+}
+GenericEntity US_Arty_Mortar : "{2323F9E4C524F047}Prefabs/Compositions/Slotted/SlotFlatSmall/MortarPlacement_S_US_01.et" {
+ coords 4470 8.94 10930
+ angles 0 180 0
+}
+SCR_AIGroup US_Arty_Crew : "{3BF36BDEEB33AEC9}Prefabs/Groups/BLUFOR/Group_US_SentryTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 10
+   m_sUsableVehicle {
+    "US_Arty_Mortar"
+   }
+  }
+ }
+ coords 4478 11.28 10938
+}
+SCR_AIGroup USSR_Reserve_1 : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 10140 7.19 1620
+}
+SCR_AIGroup USSR_Reserve_2 : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 10160 7.19 1630
+}
+SCR_AIGroup USSR_AT_1 : "{96BAB56E6558788E}Prefabs/Groups/OPFOR/Group_USSR_Team_AT.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 10180 7.41 1625
+}
+Vehicle USSR_BTR_Veh : "{C012BB3488BEA0C2}Prefabs/Vehicles/Wheeled/BTR70/BTR70.et" {
+ coords 10120 10.64 1640
+ angles 0 0 0
+}
+SCR_BoardingTimedWaypoint USSR_BTR_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 10120 9.84 1640
+ CompletionRadius 10
+}
+SCR_AIGroup USSR_BTR_Crew : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "USSR_BTR_Veh"
+   }
+  }
+ }
+ coords 10125 9.56 1650
+ m_aStaticWaypoints {
+  "USSR_BTR_GetIn"
+ }
+}
+Vehicle USSR_UAZ_Veh : "{0B4DEA8078B78A9B}Prefabs/Vehicles/Wheeled/UAZ469/UAZ469_PKM.et" {
+ coords 10200 18.71 1640
+ angles 0 0 0
+}
+SCR_BoardingTimedWaypoint USSR_UAZ_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 10200 17.91 1640
+ CompletionRadius 10
+}
+SCR_AIGroup USSR_UAZ_Crew : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 9
+   m_sUsableVehicle {
+    "USSR_UAZ_Veh"
+   }
+  }
+ }
+ coords 10205 21.97 1650
+ m_aStaticWaypoints {
+  "USSR_UAZ_GetIn"
+ }
+}
+Vehicle USSR_Truck_1 : "{D9B91FAB817A6033}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_transport_covered.et" {
+ components {
+  DCO_TransportMissionComponent "{6902306E948EC89B}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 10220 13.27 1620
+ angles 0 0 0
+}
+Vehicle USSR_Transport_Veh : "{D9B91FAB817A6033}Prefabs/Vehicles/Wheeled/Ural4320/Ural4320_transport_covered.et" {
+ coords 10235 12.77 1620
+ angles 0 0 0
+}
+SCR_BoardingTimedWaypoint USSR_Transport_GetIn : "{B049D4C74FBC0C4D}Prefabs/AI/Waypoints/AIWaypoint_GetInNearest.et" {
+ coords 10235 11.97 1620
+ CompletionRadius 10
+}
+SCR_AIGroup USSR_Transport_Crew : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_bIsDedicatedTransport 1
+  }
+  DCO_TransportTeamComponent "{6D2F8A41C7E3B911}" {
+  }
+ }
+ coords 10235 14.88 1630
+ m_aStaticWaypoints {
+  "USSR_Transport_GetIn"
+ }
+}
+GenericEntity USSR_Arty_HQ_Mortar : "{28D63631873AA636}Prefabs/Compositions/Slotted/SlotFlatSmall/MortarPlacement_S_USSR_01.et" {
+ coords 10110 6 1600
+ angles 0 0 0
+}
+SCR_AIGroup USSR_Arty_HQ_Crew : "{CB58D90EA14430AD}Prefabs/Groups/OPFOR/Group_USSR_SentryTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 10
+   m_sUsableVehicle {
+    "USSR_Arty_HQ_Mortar"
+   }
+  }
+ }
+ coords 10118 8 1608
+}
+SCR_AIGroup USSR_Meaux : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4523 22.08 9782
+}
+SCR_AIGroup USSR_Kermovan : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 6449 10.83 9679
+}
+SCR_AIGroup USSR_Tyrone : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 5019 48.67 8933
+}
+SCR_AIGroup USSR_Gravette : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4024 34.52 7895
+}
+SCR_AIGroup USSR_Montignac : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 5136 176.38 6993
+}
+SCR_AIGroup USSR_EntreDeux : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 6027 215.63 7190
+}
+SCR_AIGroup USSR_Provins : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 5586 90.38 5907
+}
+SCR_AIGroup USSR_Chotain : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 7003 122.5 6087
+}
+SCR_AIGroup USSR_Figari : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 5138 53.06 5508
+}
+SCR_AIGroup USSR_Levie : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 7472 132.09 4828
+}
+SCR_AIGroup USSR_LevieBase : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 7461 165.56 4318
+}
+SCR_AIGroup USSR_Morton : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 4994 3.19 3859
+}
+SCR_AIGroup USSR_Regina : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 7306 139.78 2187
+}
+SCR_AIGroup USSR_Durras : "{657590C1EC9E27D3}Prefabs/Groups/OPFOR/Group_USSR_LightFireTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 8908 97.67 2721
+}
+SCR_AIGroup USSR_HQ_Guard : "{E552DABF3636C2AD}Prefabs/Groups/OPFOR/Group_USSR_RifleSquad.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+  }
+ }
+ coords 10187 4.11 1554
+}
+GenericEntity USSR_Arty_Levie_Mortar : "{28D63631873AA636}Prefabs/Compositions/Slotted/SlotFlatSmall/MortarPlacement_S_USSR_01.et" {
+ coords 7419 163.39 4276
+ angles 0 0 0
+}
+SCR_AIGroup USSR_Arty_Levie_Crew : "{CB58D90EA14430AD}Prefabs/Groups/OPFOR/Group_USSR_SentryTeam.et" {
+ components {
+  DCO_GroupUtilityComponent "{68F88490FE5CE629}" {
+   m_bAutoAssign 1
+   m_eGroupRoleExternal 10
+   m_sUsableVehicle {
+    "USSR_Arty_Levie_Mortar"
+   }
+  }
+ }
+ coords 7427 164.58 4284
+}

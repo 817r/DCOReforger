@@ -1,0 +1,76 @@
+FrameWidgetClass {
+ Name "rootFrame"
+ {
+  FrameWidgetClass "{6D3A1F0B9C27E452}" {
+   Name "Toast"
+   Slot FrameWidgetSlot "{6D3A1F0B9C27E453}" {
+    Anchor 1 0.5 1 0.5
+    PositionX -40
+    OffsetLeft -500
+    PositionY 0
+    OffsetTop -17
+    SizeX 460
+    OffsetRight 40
+    SizeY 34
+    OffsetBottom -17
+   }
+   {
+    ImageWidgetClass "{6D3A1F0B9C27E454}" {
+     Name "Bg"
+     Slot FrameWidgetSlot "{6D3A1F0B9C27E455}" {
+      Anchor 0 0 1 1
+      PositionX 0
+      OffsetLeft 0
+      PositionY 0
+      OffsetTop 0
+      SizeX 0
+      OffsetRight 0
+      SizeY 0
+      OffsetBottom 0
+     }
+     Color 0 0 0 0.62
+    }
+    ImageWidgetClass "{6D3A1F0B9C27E456}" {
+     Name "Accent"
+     Slot FrameWidgetSlot "{6D3A1F0B9C27E457}" {
+      Anchor 0 0 0 0
+      PositionX 0
+      OffsetLeft 0
+      PositionY 0
+      OffsetTop 0
+      SizeX 4
+      OffsetRight -4
+      SizeY 34
+      OffsetBottom -34
+     }
+     Color 0.353 0.667 0.941 1
+    }
+    RichTextWidgetClass "{6D3A1F0B9C27E458}" {
+     Name "Text"
+     Slot FrameWidgetSlot "{6D3A1F0B9C27E459}" {
+      Anchor 0 0 0 0
+      PositionX 14
+      OffsetLeft 14
+      PositionY 0
+      OffsetTop 0
+      SizeX 440
+      OffsetRight -454
+      SizeY 34
+      OffsetBottom -34
+     }
+     Clipping Ancestor
+     Color 1 1 1 1
+     Text ""
+     "Font Size" 17
+     "Min Font Size" 17
+     "Vertical Alignment" Center
+     FontProperties FontProperties "{6D3A1F0B9C27E45A}" {
+      Font "{3E7733BAC8C831F6}UI/Fonts/RobotoCondensed/RobotoCondensed_Regular.fnt"
+      ShadowSize 2
+      ShadowOffset 1 1
+     }
+    }
+   }
+  }
+ }
+}

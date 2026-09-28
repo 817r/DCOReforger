@@ -12,6 +12,8 @@ GameEntity {
    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
   }
   RplComponent "{690E9870386388B0}" {
+   SpatialRelevancy 0
+   Streamable Disabled
   }
   Hierarchy "{690E98703AAC4821}" {
   }

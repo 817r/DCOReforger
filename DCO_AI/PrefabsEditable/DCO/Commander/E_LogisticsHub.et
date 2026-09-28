@@ -1,0 +1,20 @@
+GameEntity : "{CCABD77FB75994EF}Prefabs/Commander/LogisticsHub.et" {
+ ID "20109641F91FAD0F"
+ components {
+  Persistence "{6A78E93761755A42}" {
+  }
+  SCR_EditableEntityComponent "{2380A969155E90CD}" {
+   m_EntityType SYSTEM
+   m_UIInfo SCR_EditableEntityUIInfo "{A317A8EDA38A0C0A}" {
+    Name "AI Commander Logistics Hub"
+    Description "Logistics hub for DCO AI Commanders: transport teams rally here, casualties are brought here and recover into the commander manpower, extracted squads regroup here. Set its faction in the attributes (Auto = nearest commander)."
+    Icon "{FDE4238500835875}UI/Textures/Editor/EditableEntities/Waypoints/EditableEntity_Waypoint_Move.edds"
+    m_aAuthoredLabels {
+     ENTITYTYPE_SYSTEM
+    }
+    m_bFullBackgroundAssetCard 0
+   }
+   m_bAutoRegister ALWAYS
+  }
+ }
+}

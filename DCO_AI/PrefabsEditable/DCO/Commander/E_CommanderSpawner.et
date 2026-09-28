@@ -1,0 +1,18 @@
+GameEntity : "{46702BA1D8E33B2A}Prefabs/Commander/CommanderSpawner.et" {
+ ID "137CE4A935CB92EA"
+ components {
+  SCR_EditableEntityComponent "{E7CE39C4C4E231AA}" {
+   m_EntityType SYSTEM
+   m_UIInfo SCR_EditableEntityUIInfo "{B6064FFFCC04EFF7}" {
+    Name "AI Commander Spawner"
+    Description "Spawns groups and hands them straight to an AI Commander (specific, weakest or nearest of a faction). Triggers: mission start, Spawn now (context menu), objective lost/captured, commander manpower below a value. Optional reinforcement stock, safe radius and faction AI cap. Empty group list = random groups from the commander's faction."
+    Icon "{FDE4238500835875}UI/Textures/Editor/EditableEntities/Waypoints/EditableEntity_Waypoint_Move.edds"
+    m_aAuthoredLabels {
+     ENTITYTYPE_SYSTEM
+    }
+    m_bFullBackgroundAssetCard 0
+   }
+   m_bAutoRegister ALWAYS
+  }
+ }
+}

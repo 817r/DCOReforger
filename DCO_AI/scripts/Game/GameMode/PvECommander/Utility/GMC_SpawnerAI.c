@@ -1,13 +1,8 @@
-// FILE: addons/GMC_MyMod/Scripts/Game/Respawner/GMC_RespawnerComponent.c
-
 [ComponentEditorProps(category: "GMC_MyMod/Spawner", description: "Spawns and respawns a configurable group of units")]
 class GMC_RespawnerComponentClass : ScriptComponentClass {}
 
 class GMC_RespawnerComponent : ScriptComponent
 {
-	//--------------------------------------------------------------------
-	// EDITOR ATTRIBUTES
-
 	[Attribute("", UIWidgets.Auto, "Daftar konfigurasi group (dipilih random tiap spawn)")]
 	protected ref array<ref GMC_RespawnGroupConfig> m_aGroupConfigs;
 
@@ -23,13 +18,8 @@ class GMC_RespawnerComponent : ScriptComponent
 	[Attribute("0", UIWidgets.CheckBox, "Debug log?")]
 	protected bool m_bDebugLog;
 
-	//--------------------------------------------------------------------
-	// RUNTIME STATE
-
-	// Referensi langsung ke SCR_AIGroup yang sedang aktif
 	protected SCR_AIGroup m_ActiveGroup;
 
-	// True setelah group pernah punya agent (mencegah trigger wipe di frame pertama)
 	protected bool  m_bGroupWasPopulated = false;
 
 	protected float m_fRespawnTimer   = 0.0;
@@ -37,9 +27,6 @@ class GMC_RespawnerComponent : ScriptComponent
 
 	protected ref ScriptInvoker m_OnGroupSpawned;
 	protected ref ScriptInvoker m_OnGroupWiped;
-
-	//--------------------------------------------------------------------
-	// LIFECYCLE
 
 	override void OnPostInit(IEntity owner)
 	{
@@ -65,19 +52,16 @@ class GMC_RespawnerComponent : ScriptComponent
 	{
 		if (!Replication.IsServer()) return;
 
-		// --- Pantau group yang sedang aktif ---
 		if (!m_bWaitingRespawn && m_ActiveGroup)
 		{
 			int agentCount = m_ActiveGroup.GetAgentsCount();
 
-			// Tandai group sudah pernah punya agent
 			if (!m_bGroupWasPopulated && agentCount > 0)
 			{
 				m_bGroupWasPopulated = true;
 				DebugLog("Group populated: " + agentCount.ToString() + " agents");
 			}
 
-			// Deteksi wipe: group pernah berisi tapi sekarang kosong
 			if (m_bGroupWasPopulated && agentCount == 0)
 			{
 				m_ActiveGroup        = null;
@@ -95,7 +79,6 @@ class GMC_RespawnerComponent : ScriptComponent
 			}
 		}
 
-		// --- Countdown respawn ---
 		if (!m_bWaitingRespawn) return;
 
 		m_fRespawnTimer -= timeSlice;
@@ -117,15 +100,11 @@ class GMC_RespawnerComponent : ScriptComponent
 		m_ActiveGroup = null;
 	}
 
-	//--------------------------------------------------------------------
-	// SPAWN
-
 	void SpawnGroup()
 	{
 		if (!Replication.IsServer()) return;
 		if (!m_aGroupConfigs || m_aGroupConfigs.IsEmpty()) return;
 
-		// Pilih config random
 		GMC_RespawnGroupConfig cfg = m_aGroupConfigs[Math.RandomInt(0, m_aGroupConfigs.Count())];
 		if (!cfg || cfg.m_sGroupPrefab == string.Empty)
 		{
@@ -133,7 +112,6 @@ class GMC_RespawnerComponent : ScriptComponent
 			return;
 		}
 
-		// Budget dari balancer (kalau tidak ada, tidak dibatasi)
 		GMC_SpawnBalancerComponent balancer = GMC_SpawnBalancerComponent.GetFrom(GetOwner());
 		if (balancer)
 		{
@@ -146,7 +124,6 @@ class GMC_RespawnerComponent : ScriptComponent
 			}
 		}
 
-		// Spawn group di posisi acak sekitar entity ini
 		float  angle    = Math.RandomFloat(0.0, 360.0);
 		float  dist     = Math.RandomFloat(0.0, m_fSpawnRadius);
 		vector spawnPos = GetOwner().GetOrigin() + vector.FromYaw(angle) * dist;
@@ -170,8 +147,6 @@ class GMC_RespawnerComponent : ScriptComponent
 			return;
 		}
 
-		// Simpan referensi group.
-		// Agents belum tentu ready di frame ini — EOnFrame yang detect saat populated.
 		m_ActiveGroup        = SCR_AIGroup.Cast(spawned);
 		m_bGroupWasPopulated = false;
 
@@ -197,9 +172,6 @@ class GMC_RespawnerComponent : ScriptComponent
 		return m_ActiveGroup.GetAgentsCount();
 	}
 
-	//--------------------------------------------------------------------
-	// SCRIPTINVOKERS
-
 	ScriptInvoker GetOnGroupSpawned()
 	{
 		if (!m_OnGroupSpawned) m_OnGroupSpawned = new ScriptInvoker();
@@ -217,9 +189,6 @@ class GMC_RespawnerComponent : ScriptComponent
 		if (!entity) return null;
 		return GMC_RespawnerComponent.Cast(entity.FindComponent(GMC_RespawnerComponent));
 	}
-
-	//--------------------------------------------------------------------
-	// CALLBACKS
 
 	protected void OnBalanceChanged(int newCount, int playerCount)
 	{

@@ -5,7 +5,7 @@ class CNH_CaptureManager : ScriptComponent
 {
     [Attribute("1000", UIWidgets.EditBox, desc: "Skor maksimal untuk menang")]
     int m_iMaxScore;
-	
+
     [Attribute("3", UIWidgets.EditBox, desc: "Jumlah Base dicapture untuk menang")]
     int m_iMaxBaseToCapture;
 
@@ -31,7 +31,7 @@ class CNH_CaptureManager : ScriptComponent
 			{
 				baseTaken++;
 				m_mFactionBaseTaken.Set(factionKey, currentScore);
-			}	
+			}
 		}
 
         if (currentScore >= m_iMaxScore)
@@ -43,7 +43,7 @@ class CNH_CaptureManager : ScriptComponent
 			EndGame(fId);
         }
     }
-	
+
 	void EndGame(int fcId)
 	{
 		SCR_GameModeEndData endData = SCR_GameModeEndData.CreateSimple(EGameOverTypes.ENDREASON_SCORELIMIT, winnerFactionId: fcId);
@@ -60,17 +60,17 @@ class CNH_CaptureManager : ScriptComponent
         {
             currentScore -= points;
 
-            if (currentScore < 0) 
+            if (currentScore < 0)
                 currentScore = 0;
 
             m_mFactionScores.Set(factionKey, currentScore);
-			
+
 			int baseTaken = 0;
 			if(m_mFactionBaseTaken.Find(factionKey, baseTaken))
 			{
 				baseTaken--;
 				m_mFactionBaseTaken.Set(factionKey, currentScore);
-			}	
+			}
         }
     }
 }

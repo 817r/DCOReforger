@@ -45,7 +45,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
          Name "Selector"
          EditorPos -208 400
          Nodes {
-          DCO_FindIndoorPosition "DCO_ Find Indoor Position" {
+          DCO_FindIndoorPositionIdle "DCO_ Find Indoor Position" {
            Name "DCO_ Find Indoor Position"
            EditorPos -688 656
            InPorts {
@@ -98,7 +98,7 @@ BehaviorTree "{A6AEE04E3F972650}AI/BehaviorTrees/Chimera/Soldier/Idle_TakeCover.
            Name "Sequence"
            EditorPos 352 720
            Nodes {
-            SCR_AICreateBasicCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
+            DCO_AICreateIdleCoverQueryProps "SCR_AI Create Basic Cover Query Props" {
              Name "SCR_AI Create Basic Cover Query Props"
              EditorPos -208.419 1000.323
              InPorts {

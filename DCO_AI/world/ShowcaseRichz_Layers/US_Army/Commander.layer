@@ -3,10 +3,8 @@ GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
   AICommander_AlgorithmComponent "{68F8849956F58560}" {
    m_sCommanderUID "Overlord"
    m_sFactionKey "US"
-   m_bEnableManpowerBudget 0
+   m_fReservePercent 0
    m_bRandomPersonality 1
-   m_fDefendShareMin 0.1
-   m_fDefendShareMax 0.25
    m_fDebugRefreshInterval 1
   }
  }

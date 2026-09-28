@@ -1,0 +1,321 @@
+enum moraleState
+{
+	NORMAL,
+	MOTIVATED,
+	ANXIOUS,
+	MANIAC,
+	BREAK
+}
+
+typedef func SCR_AIMoraleStateChangedCallback;
+void SCR_AIMoraleStateChangedCallback(moraleState prevState, moraleState newState);
+typedef ScriptInvokerBase<SCR_AIMoraleStateChangedCallback> SCR_AIMoraleStateChangedInvoker;
+
+class DCO_AIMoraleSystem
+{
+	private static const float MORALE_SHOT_RECOVERY 				= 			0.00015 * 0.001;
+	private static const float MORALE_SUPPRESSION_RECOVERY 			= 			0.0001 * 0.001;
+	private static const float MORALE_ENDANGERED_RECOVERY 			= 			0.0002 * 0.001;
+	private static const float LOW_SUPPLY_RECOVERY					=			0.01 * 0.001;
+	private static const float MORALE_RECOVERY_THREAT_STATE			=			0.003 * 0.001;
+
+	private static const float MORALE_BOOST_FRIENDLY_VALUE			=			0.002 * 0.001;
+	private static const float MORALE_BOOST_FIXED_FRIENDLY_VALUE	=			0.08;
+
+	private static const float MORALE_DROP_BLEEDING_FIXED_INCREMENT	=			0.35;
+
+	private static const float MOTIVATED_THRESHOLD 					= 			0.4;
+	private static const float ANXIOUS_THRESHOLD					=			1.5;
+	private static const float MANIAC_THRESHOLD						=			2.0;
+	private static const float BREAK_THRESHOLD						=			3.7;
+
+	private static const float ENDANGERED_INCREMENT 				= 			0.02 * 0.001;
+	private static const float SUPPRESSION_BULLET_INCREMENT			=			0.005;
+	private static const float LOW_SUPPLY							=			0.05;
+
+	private static const float MORALE_SUPPRESSION_IMPACT_INCREMENT	=			0.04;
+	private static const float MORALE_SUPPRESSION_FLYBY_INCREMENT	=			0.02;
+	private static const float MORALE_SUPPRESSION_CAP				=			3.0;
+
+	private static const float MORALE_SUPPRESSION_COVER_SCALE		=			0.5;
+
+	private static const float MORALE_SUPPRESSION_GRACE_MS			=			4000.0;
+	private static const float MORALE_SUPPRESSION_GRACE_RECOVERY	=			0.02 * 0.001;
+
+	private float m_fMoraleTotal;
+	private float m_fMoraleSuppression;
+	private float m_fMoraleSuppressionPlus;
+	private float m_fMoraleInjury;
+	private float m_fMoraleEndangered;
+	private float m_fMoraleEndangeredPlus;
+	private float m_fMoraleSupply;
+	private float m_fMoraleThreat;
+
+	private float m_fLastSuppressionHit_ms;
+
+	private float friendlys = 1;
+
+	private SCR_AIUtilityComponent				m_Utility;
+	private SCR_AICombatComponent				m_Combat;
+	private SCR_DamageManagerComponent			m_DamageManager;
+	private SCR_AIThreatSystem					m_Threat;
+
+	private SCR_ChimeraAIAgent m_Agent;
+
+	private EAIThreatState m_ThreatState;
+	private moraleState m_State;
+
+	protected float m_fNextUpdate_ms = 2000;
+	protected float m_fUpdateInterval_ms = 2000.0;
+
+	private ref SCR_AIMoraleStateChangedInvoker m_OnThreatStateChanged = new SCR_AIMoraleStateChangedInvoker();
+
+	void DCO_AIMoraleSystem(SCR_AIUtilityComponent utility)
+	{
+		m_Utility = utility;
+		m_Combat = utility.m_CombatComponent;
+		m_Threat = utility.m_ThreatSystem;
+
+		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
+		if (!agent)
+			return;
+
+		m_Agent = agent;
+		m_State = moraleState.NORMAL;
+	}
+
+	void RegisterDamageManager(SCR_DamageManagerComponent dmg)
+	{
+		m_DamageManager = dmg;
+
+		if (m_DamageManager)
+		{
+			m_DamageManager.GetOnDamageOverTimeAdded().Insert(OnDamageOverTimeAdded);
+			m_DamageManager.GetOnDamageOverTimeRemoved().Insert(OnDamageOverTimeRemoved);
+		}
+	}
+
+	SCR_AIMoraleStateChangedInvoker GetOnThreatStateChanged()
+	{
+		return m_OnThreatStateChanged;
+	}
+
+	moraleState GetState()
+	{
+		return m_State;
+	}
+
+	protected void OnDamageOverTimeAdded(EDamageType dType, float dps, HitZone hz)
+	{
+		if (dType != EDamageType.BLEEDING)
+			return;
+
+		if (m_DamageManager.IsDamagedOverTime(EDamageType.BLEEDING))
+			m_fMoraleInjury += MORALE_DROP_BLEEDING_FIXED_INCREMENT;
+	}
+
+	protected void OnDamageOverTimeRemoved(EDamageType dType, HitZone hz)
+	{
+		if (dType != EDamageType.BLEEDING)
+			return;
+
+		if (!m_DamageManager.IsDamagedOverTime(EDamageType.BLEEDING))
+			m_fMoraleInjury = m_fMoraleInjury - MORALE_DROP_BLEEDING_FIXED_INCREMENT;
+	}
+
+	float GetMoraleMeasureWithoutInjuryFactor()
+	{
+		return m_fMoraleTotal - m_fMoraleInjury;
+	}
+
+	float GetMoraleMeasure()
+	{
+		return m_fMoraleTotal;
+	}
+
+	#ifdef WORKBENCH
+	void ShowDebug()
+	{
+		Color color;
+
+		switch (m_State)
+		{
+			case moraleState.NORMAL:
+			{
+				color = Color.FromInt(Color.GREEN);
+				break;
+			}
+			case moraleState.ANXIOUS:
+			{
+				color = Color.FromInt(Color.BLUE);
+				break;
+			}
+			case moraleState.MOTIVATED:
+			{
+				color = Color.FromInt(Color.YELLOW);
+				break;
+			}
+			case moraleState.MANIAC:
+			{
+				color = Color.FromInt(Color.ORANGE);
+				break;
+			}
+			case moraleState.BREAK:
+			{
+				color = Color.FromInt(Color.RED);
+				break;
+			}
+		}
+
+		SCR_AIDebugVisualization.VisualizeMessage(m_Utility.m_OwnerEntity, typename.EnumToString(moraleState, m_State), EAIDebugCategory.INFO, 1.4, color);
+	}
+	#endif
+
+	private void StateTransition(moraleState newState)
+	{
+		if (newState == m_State)
+			return;
+
+		m_OnThreatStateChanged.Invoke(m_State, newState);
+
+		m_State = newState;
+	}
+
+	private void UpdateState()
+	{
+		moraleState newState = moraleState.NORMAL;
+		float personalityScale = DCO_PersonalityCombatUtility.GetMoraleThresholdScale(m_Utility);
+		float breakThresholdScaled = BREAK_THRESHOLD * personalityScale;
+		float maniacThresholdScaled = MANIAC_THRESHOLD * personalityScale;
+		float anxiousThresholdScaled = ANXIOUS_THRESHOLD * personalityScale;
+		float motivatedThresholdScaled = MOTIVATED_THRESHOLD * personalityScale;
+
+		if (m_fMoraleTotal > breakThresholdScaled)
+			newState = moraleState.BREAK;
+		else if (m_fMoraleTotal > maniacThresholdScaled)
+			newState = moraleState.MANIAC;
+		else if (m_fMoraleTotal > anxiousThresholdScaled)
+			newState = moraleState.ANXIOUS;
+		else if (m_fMoraleTotal > motivatedThresholdScaled)
+			newState = moraleState.MOTIVATED;
+
+		StateTransition(newState);
+	}
+
+	void Update(SCR_AIUtilityComponent utility, float timeSlice)
+	{
+		AIAgent moraleAgent = m_Utility.GetAIAgent();
+		if (moraleAgent && moraleAgent.GetParentGroup())
+			friendlys = moraleAgent.GetParentGroup().GetAgentsCount();
+		m_fMoraleSuppression -= m_fMoraleSuppression * (MORALE_SUPPRESSION_RECOVERY + (friendlys * MORALE_BOOST_FRIENDLY_VALUE)) * timeSlice;
+		m_fMoraleSuppressionPlus -= m_fMoraleSuppressionPlus * MORALE_SUPPRESSION_RECOVERY * timeSlice;
+
+		float graceNow_ms = GetGame().GetWorld().GetWorldTime();
+		if (graceNow_ms - m_fLastSuppressionHit_ms > MORALE_SUPPRESSION_GRACE_MS)
+		{
+			m_fMoraleSuppression -= m_fMoraleSuppression * MORALE_SUPPRESSION_GRACE_RECOVERY * timeSlice;
+			m_fMoraleSuppression = Math.Max(m_fMoraleSuppression, 0.0);
+		}
+
+		if (m_Combat)
+		{
+			if (m_Combat.GetCurrentTarget())
+			{
+				m_fMoraleEndangeredPlus += ENDANGERED_INCREMENT * timeSlice;
+				m_fMoraleEndangered = Math.Clamp(m_fMoraleEndangered + m_fMoraleEndangeredPlus, 0 , 1.2);
+			}
+			else
+			{
+				m_fMoraleEndangered -= m_fMoraleEndangered * MORALE_ENDANGERED_RECOVERY * timeSlice;
+				m_fMoraleEndangeredPlus -= m_fMoraleEndangeredPlus * MORALE_ENDANGERED_RECOVERY * timeSlice;
+			}
+		}
+
+		m_fMoraleTotal = Math.Clamp((m_fMoraleSuppression + m_fMoraleInjury + m_fMoraleEndangered + m_fMoraleSupply) - friendlyMoraleBoost(), 0, 4.5);
+		UpdateState();
+		float currentTime_ms = GetGame().GetWorld().GetWorldTime();
+		if (currentTime_ms > m_fNextUpdate_ms)
+		{
+			DropAim();
+		}
+		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
+#ifdef WORKBENCH
+		ShowDebug();
+#endif
+	}
+
+	void ThreatProjectileFlyby(int count)
+	{
+		m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.0);
+		ApplySuppressionGain(ComputeSuppressionGain(count, MORALE_SUPPRESSION_FLYBY_INCREMENT));
+	}
+
+	void DropAim()
+	{
+		float drop = Math.Map(m_fMoraleTotal, 0, 4.5, 0, 10);
+		m_Combat.MoraleDropAIM(drop);
+	}
+
+	void ThreatBulletImpact(int count)
+	{
+		m_fMoraleSuppressionPlus = Math.Clamp(m_fMoraleSuppressionPlus + count * SUPPRESSION_BULLET_INCREMENT, 0, 3.2);
+		ApplySuppressionGain(ComputeSuppressionGain(count, MORALE_SUPPRESSION_IMPACT_INCREMENT));
+	}
+
+	float friendlyMoraleBoost()
+	{
+		return friendlys * MORALE_BOOST_FIXED_FRIENDLY_VALUE;
+	}
+
+	private float ComputeSuppressionGain(int count, float baseIncrement)
+	{
+		float fCount = count;
+		float gain = fCount * baseIncrement;
+
+		if (!m_Utility)
+			return gain;
+
+		if (m_Utility.m_DCOConfig)
+			gain *= Math.Max(m_Utility.m_DCOConfig.GetSuppressionEffect(), 0.0);
+
+		if (m_Utility.m_CombatMoveState && m_Utility.m_CombatMoveState.m_bInCover)
+			gain *= MORALE_SUPPRESSION_COVER_SCALE;
+
+		gain *= GetPersonalitySuppressionGainScale();
+
+		return gain;
+	}
+
+	private void ApplySuppressionGain(float gain)
+	{
+		m_fLastSuppressionHit_ms = GetGame().GetWorld().GetWorldTime();
+
+		if (gain <= 0.0)
+			return;
+
+		float headroom = 1.0 - (m_fMoraleSuppression / MORALE_SUPPRESSION_CAP);
+		headroom = Math.Clamp(headroom, 0.0, 1.0);
+
+		m_fMoraleSuppression = Math.Clamp(m_fMoraleSuppression + gain * headroom, 0.0, MORALE_SUPPRESSION_CAP);
+	}
+
+	private float GetPersonalitySuppressionGainScale()
+	{
+		if (!m_Utility || !m_Utility.m_DCOConfig)
+			return 1.0;
+
+		switch (m_Utility.m_DCOConfig.GetPersonality())
+		{
+			case DCO_EAIPersonality.CAUTIOUS:
+				return 1.3;
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 0.8;
+			case DCO_EAIPersonality.RECKLESS:
+				return 0.6;
+			default:
+				return 1.0;
+		}
+
+		return 1.0;
+	}
+}

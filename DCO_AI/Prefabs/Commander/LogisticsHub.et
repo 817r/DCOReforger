@@ -1,0 +1,13 @@
+GameEntity {
+ ID "F50D1829CACB1569"
+ components {
+  DCO_LogisticsHubComponent "{6B1FEF7FFCEB02B0}" {
+  }
+  RplComponent "{8D6E05EA4324F35D}" {
+   SpatialRelevancy 0
+   Streamable Disabled
+  }
+  Hierarchy "{558AA92F41563050}" {
+  }
+ }
+}

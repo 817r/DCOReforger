@@ -4,6 +4,8 @@ GameEntity {
   AICommander_ManagerComponent "{69C61E8C066EE04E}" {
   }
   RplComponent "{690E98702C7BA9B2}" {
+   SpatialRelevancy 0
+   Streamable Disabled
   }
   Hierarchy "{690F0BAC7AA6FE56}" {
   }

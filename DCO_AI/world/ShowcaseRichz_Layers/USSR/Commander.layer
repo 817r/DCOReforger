@@ -4,10 +4,8 @@ GameEntity : "{8DA50434D445950F}Prefabs/Commander/Commander.et" {
    m_sCommanderUID "Fikri"
    m_sFactionKey "USSR"
    m_bUseSynchronizedAttack 0
-   m_bEnableManpowerBudget 0
+   m_fReservePercent 0
    m_bRandomPersonality 1
-   m_fDefendShareMin 0.1
-   m_fDefendShareMax 0.25
    m_fDebugRefreshInterval 1
   }
  }
