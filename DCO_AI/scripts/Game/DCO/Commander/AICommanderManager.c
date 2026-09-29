@@ -670,7 +670,7 @@ class AICommander_ManagerComponent : ScriptComponent
 		vector p = GetOwner().GetOrigin();
 
 		m_aDebugShapes.Insert(Shape.CreateSphere(
-			DCO_DebugDraw.COLOR_MANAGER, DCO_DebugDraw.Flags(), p, DCO_DebugDraw.MARKER_BIG));
+			DCO_DebugDraw.COLOR_MANAGER, DCO_DebugDraw.Flags(), p, 2.0));
 
 		m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(
 			Vector(p[0], p[1] + 20.0, p[2]), BuildManagerDebugText(), 18.0, DCO_DebugDraw.COLOR_MANAGER));

@@ -14,12 +14,6 @@ modded class SCR_AIGroupUtilityComponent
 	ref ScriptInvokerBase<SCR_AIOnTacticChange> m_OnTacticsChange = new ScriptInvokerBase<SCR_AIOnTacticChange>();
 	protected DCO_GroupUtilityComponent utilDco;
 
-	protected static const float DCO_POSTURE_EVAL_INTERVAL_MS = 3000.0;
-	protected static const float DCO_POSTURE_MIN_HOLD_MS      = 15000.0;
-	protected static const float DCO_FIRST_CONTACT_MS         = 60000.0;
-	protected static const float DCO_LOW_THREAT               = 0.33;
-	protected static const int   DCO_DOMINANT_RATIO           = 2;
-	protected static const float DCO_HEAVY_SUPPRESSION        = 0.85;
 
 	protected DCO_GroupTactics m_eDCOPostureOverride = DCO_GroupTactics.AUTOMATIC;
 	protected DCO_GroupTactics m_eDCOPosture = DCO_GroupTactics.BALANCE;
@@ -108,7 +102,7 @@ modded class SCR_AIGroupUtilityComponent
 
 		if (now_ms >= m_fDCONextPostureEval_ms)
 		{
-			m_fDCONextPostureEval_ms = now_ms + DCO_POSTURE_EVAL_INTERVAL_MS;
+			m_fDCONextPostureEval_ms = now_ms + 3000.0;
 			int st = DCO_Perf.Begin();
 			DCO_UpdatePosture(now_ms);
 			DCO_Perf.End("grp_posture", st);
@@ -173,7 +167,6 @@ modded class SCR_AIGroupUtilityComponent
 		return false;
 	}
 
-	protected static const float DCO_STRENGTH_CACHE_MS = 1000.0;
 	protected ref DCO_StrengthInfo m_DCOFriendly = new DCO_StrengthInfo();
 	protected ref DCO_StrengthInfo m_DCOFriendlyVsVeh = new DCO_StrengthInfo();
 	protected ref DCO_StrengthInfo m_DCOEnemyTotal = new DCO_StrengthInfo();
@@ -185,7 +178,7 @@ modded class SCR_AIGroupUtilityComponent
 		float now = GetGame().GetWorld().GetWorldTime();
 		if (enemyHasVehicles)
 		{
-			if (m_fDCOFriendlyVsVehAt_ms < 0 || now - m_fDCOFriendlyVsVehAt_ms >= DCO_STRENGTH_CACHE_MS)
+			if (m_fDCOFriendlyVsVehAt_ms < 0 || now - m_fDCOFriendlyVsVehAt_ms >= 1000.0)
 			{
 				m_fDCOFriendlyVsVehAt_ms = now;
 				DCO_Strength.OfGroup(SCR_AIGroup.Cast(m_Owner), true, m_DCOFriendlyVsVeh);
@@ -193,7 +186,7 @@ modded class SCR_AIGroupUtilityComponent
 			return m_DCOFriendlyVsVeh;
 		}
 
-		if (m_fDCOFriendlyAt_ms < 0 || now - m_fDCOFriendlyAt_ms >= DCO_STRENGTH_CACHE_MS)
+		if (m_fDCOFriendlyAt_ms < 0 || now - m_fDCOFriendlyAt_ms >= 1000.0)
 		{
 			m_fDCOFriendlyAt_ms = now;
 			DCO_Strength.OfGroup(SCR_AIGroup.Cast(m_Owner), false, m_DCOFriendly);
@@ -204,7 +197,7 @@ modded class SCR_AIGroupUtilityComponent
 	DCO_StrengthInfo DCO_GetClusterStrength(SCR_AITargetClusterState s)
 	{
 		float now = GetGame().GetWorld().GetWorldTime();
-		if (s.m_fDCOStrengthAt_ms < 0 || now - s.m_fDCOStrengthAt_ms >= DCO_STRENGTH_CACHE_MS)
+		if (s.m_fDCOStrengthAt_ms < 0 || now - s.m_fDCOStrengthAt_ms >= 1000.0)
 		{
 			s.m_fDCOStrengthAt_ms = now;
 			DCO_Strength.OfCluster(s.m_Cluster, s.m_DCOStrength);
@@ -217,24 +210,18 @@ modded class SCR_AIGroupUtilityComponent
 		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
 		if (cfg)
 			return cfg.GetSuperiorRatio();
-		return DCO_DOMINANT_RATIO;
+		return 2;
 	}
 
 	bool DCO_IsSuperiorTo(SCR_AITargetClusterState s)
 	{
-		if (!s || s.m_iCountAlive <= 0 || m_fThreatMeasure >= DCO_HEAVY_SUPPRESSION)
+		if (!s || s.m_iCountAlive <= 0 || m_fThreatMeasure >= 0.85)
 			return false;
 
 		DCO_StrengthInfo enemy = DCO_GetClusterStrength(s);
 		return DCO_Strength.IsSuperior(DCO_GetFriendlyStrength(enemy.m_bHasVehicles), enemy, DCO_GetSuperiorRatio());
 	}
 
-	protected static const float DCO_OVERMATCH_EVAL_MS = 1000.0;
-	protected static const float DCO_OVERMATCH_CONFIDENT_S = 5.0;
-	protected static const float DCO_OVERMATCH_OTHER_DIST_M = 150.0;
-	protected static const float DCO_OVERMATCH_OTHER_FRESH_S = 10.0;
-	protected static const float DCO_OVERMATCH_OTHER_COS = 0.707;
-	protected static const float DCO_OVERMATCH_HYSTERESIS = 0.2;
 
 	protected SCR_AITargetClusterState m_DCOOvermatch;
 	protected float m_fDCONextOvermatch_ms;
@@ -292,7 +279,7 @@ modded class SCR_AIGroupUtilityComponent
 			EAITargetInfoCategory cat = tgt.m_eCategory;
 			if (cat == EAITargetInfoCategory.DESTROYED || cat == EAITargetInfoCategory.DISARMED)
 				continue;
-			if (cat != EAITargetInfoCategory.IDENTIFIED || t - tgt.m_fTimestamp > DCO_OVERMATCH_CONFIDENT_S)
+			if (cat != EAITargetInfoCategory.IDENTIFIED || t - tgt.m_fTimestamp > 5.0)
 				return false;
 		}
 		return true;
@@ -312,11 +299,11 @@ modded class SCR_AIGroupUtilityComponent
 		foreach (SCR_AIGroupTargetCluster c : m_Perception.m_aTargetClusters)
 		{
 			SCR_AITargetClusterState s = c.m_State;
-			if (!s || s == main || s.m_iCountAlive <= 0 || s.GetTimeSinceLastNewInformation() > DCO_OVERMATCH_OTHER_FRESH_S)
+			if (!s || s == main || s.m_iCountAlive <= 0 || s.GetTimeSinceLastNewInformation() > 10.0)
 				continue;
 
 			bool firing = s.m_iCountEndangering > 0;
-			if (!firing && (s.m_iCountDetected <= 0 || s.m_fDistMin > DCO_OVERMATCH_OTHER_DIST_M))
+			if (!firing && (s.m_iCountDetected <= 0 || s.m_fDistMin > 150.0))
 				continue;
 
 			vector d = s.GetCenterPosition() - p;
@@ -325,7 +312,7 @@ modded class SCR_AIGroupUtilityComponent
 				continue;
 			d.Normalize();
 
-			if (vector.Dot(d, mainDir) < DCO_OVERMATCH_OTHER_COS)
+			if (vector.Dot(d, mainDir) < 0.707)
 				return true;
 		}
 		return false;
@@ -341,7 +328,7 @@ modded class SCR_AIGroupUtilityComponent
 	{
 		if (now_ms < m_fDCONextOvermatch_ms)
 			return;
-		m_fDCONextOvermatch_ms = now_ms + DCO_OVERMATCH_EVAL_MS;
+		m_fDCONextOvermatch_ms = now_ms + 1000.0;
 
 		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
 		if (!cfg || !cfg.GetOvermatchAssault())
@@ -362,16 +349,16 @@ modded class SCR_AIGroupUtilityComponent
 			SCR_AITargetClusterState s = m_DCOOvermatch;
 			if (s.m_iCountAlive <= 0 || s.m_eState != EAITargetClusterState.ATTACKING || !s.m_Cluster || !m_Perception.m_aTargetClusters.Contains(s.m_Cluster))
 				DCO_EndOvermatch("done");
-			else if (m_fThreatMeasure >= DCO_HEAVY_SUPPRESSION)
+			else if (m_fThreatMeasure >= 0.85)
 				DCO_EndOvermatch("suppressed");
-			else if (DCO_OvermatchRatio(s) < threshold - DCO_OVERMATCH_HYSTERESIS)
+			else if (DCO_OvermatchRatio(s) < threshold - 0.2)
 				DCO_EndOvermatch("ratio");
 			else if (DCO_HasOtherContact(s))
 				DCO_EndOvermatch("contact");
 			return;
 		}
 
-		if (m_fThreatMeasure >= DCO_HEAVY_SUPPRESSION)
+		if (m_fThreatMeasure >= 0.85)
 			return;
 
 		float maxDist = cfg.GetOvermatchMaxDist();
@@ -407,9 +394,6 @@ modded class SCR_AIGroupUtilityComponent
 			DCO_BenchmarkLoggerComponent.Event(string.Format("overmatch_abort grp=%1 reason=%2 dist=%3", m_Owner, reason, Math.Round(dist)));
 	}
 
-	protected static const float DCO_CQB_SCAN_MS = 2000.0;
-	protected static const float DCO_CQB_TRIGGER_M = 100.0;
-	protected static const float DCO_CQB_FRESH_S = 10.0;
 
 	protected ref DCO_CQBClear m_DCOCQB;
 	protected float m_fDCONextCQB_ms;
@@ -442,7 +426,7 @@ modded class SCR_AIGroupUtilityComponent
 
 		if (now_ms < m_fDCONextCQB_ms)
 			return;
-		m_fDCONextCQB_ms = now_ms + DCO_CQB_SCAN_MS;
+		m_fDCONextCQB_ms = now_ms + 2000.0;
 
 		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
 		if (!cfg || !cfg.GetCQBEnabled() || !Replication.IsServer())
@@ -501,11 +485,11 @@ modded class SCR_AIGroupUtilityComponent
 
 		float t = pm.GetTime();
 		vector p = leader.GetOrigin();
-		float bestSq = DCO_CQB_TRIGGER_M * DCO_CQB_TRIGGER_M;
+		float bestSq = 100.0 * 100.0;
 		IEntity best;
 		foreach (SCR_AITargetInfo tgt : m_Perception.m_aTargets)
 		{
-			if (!tgt || !tgt.m_Entity || tgt.m_eCategory != EAITargetInfoCategory.IDENTIFIED || t - tgt.m_fTimestamp > DCO_CQB_FRESH_S)
+			if (!tgt || !tgt.m_Entity || tgt.m_eCategory != EAITargetInfoCategory.IDENTIFIED || t - tgt.m_fTimestamp > 10.0)
 				continue;
 
 			IEntity building = SCR_CoverManagerComponent.DCO_GetBuildingAt(tgt.m_Entity);
@@ -523,7 +507,6 @@ modded class SCR_AIGroupUtilityComponent
 		return best;
 	}
 
-	protected static const float DCO_NIGHT_UPDATE_MS = 2000.0;
 	protected float m_fDCONextNight_ms;
 	protected float m_fDCONextFlare_ms;
 	protected float m_fDCONextIllum_ms;
@@ -543,7 +526,7 @@ modded class SCR_AIGroupUtilityComponent
 	{
 		if (now_ms < m_fDCONextNight_ms || !Replication.IsServer())
 			return;
-		m_fDCONextNight_ms = now_ms + DCO_NIGHT_UPDATE_MS;
+		m_fDCONextNight_ms = now_ms + 2000.0;
 
 		if (!DCO_Night.IsActive() || m_Owner.IsSlave())
 			return;
@@ -564,7 +547,7 @@ modded class SCR_AIGroupUtilityComponent
 		if (now_ms < m_fDCONextFlare_ms || !m_Perception)
 			return;
 
-		bool contact = m_fThreatMeasure > DCO_LOW_THREAT;
+		bool contact = m_fThreatMeasure > 0.33;
 		if (utilDco)
 			contact = utilDco.HasState(DCO_EGroupState.IN_CONTACT);
 		if (!contact)
@@ -577,7 +560,7 @@ modded class SCR_AIGroupUtilityComponent
 			SCR_AITargetClusterState s = c.m_State;
 			if (!s || s.m_iCountAlive <= 0 || s.GetTimeSinceLastNewInformation() > DCO_Night.CONTACT_FRESH_S)
 				continue;
-			if (s.m_fDistMin < DCO_Night.FLARE_MIN_M || s.m_fDistMin > DCO_Night.FLARE_MAX_M || s.m_fDistMin >= bestDist)
+			if (s.m_fDistMin < 100.0 || s.m_fDistMin > 400.0 || s.m_fDistMin >= bestDist)
 				continue;
 			bestDist = s.m_fDistMin;
 			best = c;
@@ -607,7 +590,7 @@ modded class SCR_AIGroupUtilityComponent
 		if (!tr)
 			return;
 
-		m_fDCONextIllum_ms = now_ms + DCO_Night.ILLUM_REQUEST_MS;
+		m_fDCONextIllum_ms = now_ms + 120000.0;
 		CMD_FireMissionRequest req = new CMD_FireMissionRequest(center, SCR_EAIArtilleryAmmoType.ILLUMINATION, now_ms / 1000.0, 1);
 		req.m_sSource = "squad_illum";
 		req.m_sTier = "illum";
@@ -642,11 +625,11 @@ modded class SCR_AIGroupUtilityComponent
 				motivated++;
 		}
 
-		bool inCombat    = enemies > 0 || m_fThreatMeasure > SCR_AIThreatSystem.VIGILANT_THRESHOLD;
-		bool lowThreat   = m_fThreatMeasure < DCO_LOW_THREAT;
+		bool inCombat    = enemies > 0 || m_fThreatMeasure > 0.4;
+		bool lowThreat   = m_fThreatMeasure < 0.33;
 		bool winning     = mine.m_fStrength > m_DCOEnemyTotal.m_fStrength;
 		bool outnumbered = mine.m_fStrength < m_DCOEnemyTotal.m_fStrength;
-		bool dominant    = DCO_IsOvermatch() || (enemies > 0 && m_fThreatMeasure < DCO_HEAVY_SUPPRESSION
+		bool dominant    = DCO_IsOvermatch() || (enemies > 0 && m_fThreatMeasure < 0.85
 			&& DCO_Strength.IsSuperior(mine, m_DCOEnemyTotal, DCO_GetSuperiorRatio()));
 		bool highMorale  = motivated * 2 > friends;
 
@@ -662,7 +645,7 @@ modded class SCR_AIGroupUtilityComponent
 
 			if (dominant)
 				next = DCO_GroupTactics.AGGRESIVE;
-			else if (now_ms - m_fDCOFirstContact_ms < DCO_FIRST_CONTACT_MS)
+			else if (now_ms - m_fDCOFirstContact_ms < 60000.0)
 				next = DCO_GroupTactics.DEFENSIVE;
 			else if ((winning || highMorale) && lowThreat)
 				next = DCO_GroupTactics.AGGRESIVE;
@@ -677,7 +660,7 @@ modded class SCR_AIGroupUtilityComponent
 		if (next == m_eDCOPosture)
 			return;
 
-		if (!dominant && m_fDCOPostureChanged_ms >= 0 && now_ms - m_fDCOPostureChanged_ms < DCO_POSTURE_MIN_HOLD_MS)
+		if (!dominant && m_fDCOPostureChanged_ms >= 0 && now_ms - m_fDCOPostureChanged_ms < 15000.0)
 			return;
 
 		m_eDCOPosture = next;
@@ -878,7 +861,6 @@ modded class SCR_AIGroupUtilityComponent
 }
 modded class SCR_AIGroupFireteamManager
 {
-	protected static const float DCO_BOUND_TURN_MS = 8000;
 
 	bool DCO_IsBoundingTurn(AIAgent agent, out bool outBounding)
 	{
@@ -903,7 +885,7 @@ modded class SCR_AIGroupFireteamManager
 			return true;
 
 		outBounding = true;
-		int turn = (int)(GetGame().GetWorld().GetWorldTime() / DCO_BOUND_TURN_MS) % count;
+		int turn = (int)(GetGame().GetWorld().GetWorldTime() / 8000.0) % count;
 		return myIndex == turn;
 	}
 }

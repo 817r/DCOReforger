@@ -1,19 +1,6 @@
 class DCO_CQC
 {
-	static const float CQC_DIST = 12.0;
-	static const float AIM_SPEEDUP = 3.0;
-	static const float MOVING_PENALTY_SCALE = 0.4;
-	static const float TARGET_SWITCH_SCALE = 0.3;
-	static const float COVER_MAX_DIST = 6.0;
-	static const float STEP_MAX_S = 2.0;
 
-	static const float LEAN_OFFSET = 0.45;
-	static const float LEAN_EVAL_MS = 500;
-	static const float LEAN_HOLD_MS = 1500;
-	static const float LEAN_MAX_DIST = 150;
-	static const float LEAN_TARGET_SEEN_S = 10;
-	static const float LEAN_AIM_HEIGHT = 1.3;
-	static const float LEAN_MAX_SPEED = 0.5;
 
 	static float TargetDistance(SCR_AIUtilityComponent utility)
 	{
@@ -29,7 +16,7 @@ class DCO_CQC
 
 	static bool IsCQC(SCR_AIUtilityComponent utility)
 	{
-		return TargetDistance(utility) < CQC_DIST;
+		return TargetDistance(utility) < 12.0;
 	}
 
 	static bool IsTargetInMyBuilding(SCR_AIUtilityComponent utility)
@@ -115,10 +102,10 @@ class DCO_CQC
 			|| DCO_AICombatMoveRequest_IndoorRelocate.Cast(rq))
 			return;
 
-		if (rq.m_bTryFindCover && rq.m_fCoverSearchDistMax > COVER_MAX_DIST)
+		if (rq.m_bTryFindCover && rq.m_fCoverSearchDistMax > 6.0)
 		{
-			rq.m_fCoverSearchDistMax = COVER_MAX_DIST;
-			rq.m_fCoverSearchDistMin = Math.Min(rq.m_fCoverSearchDistMin, COVER_MAX_DIST * 0.5);
+			rq.m_fCoverSearchDistMax = 6.0;
+			rq.m_fCoverSearchDistMin = Math.Min(rq.m_fCoverSearchDistMin, 6.0 * 0.5);
 		}
 
 		switch (rq.m_eDirection)
@@ -127,7 +114,7 @@ class DCO_CQC
 			case SCR_EAICombatMoveDirection.LEFT:
 			case SCR_EAICombatMoveDirection.RIGHT:
 			case SCR_EAICombatMoveDirection.ANYWHERE:
-				rq.m_fMoveDuration_s = Math.Min(rq.m_fMoveDuration_s, STEP_MAX_S);
+				rq.m_fMoveDuration_s = Math.Min(rq.m_fMoveDuration_s, 2.0);
 				break;
 		}
 
@@ -145,7 +132,7 @@ class DCO_CQC
 			return 0;
 		dir.Normalize();
 		vector right = -(dir * vector.Up);
-		eye = eye - right * (currentLean * LEAN_OFFSET);
+		eye = eye - right * (currentLean * 0.45);
 
 		if (IsClear(self, target, eye, targetPos))
 			return 0;
@@ -161,7 +148,7 @@ class DCO_CQC
 
 	protected static bool IsSideOpen(ChimeraCharacter self, IEntity target, vector eye, vector side, vector targetPos)
 	{
-		vector peek = eye + side * LEAN_OFFSET;
+		vector peek = eye + side * 0.45;
 		return IsClear(self, null, eye, peek) && IsClear(self, target, peek, targetPos);
 	}
 

@@ -116,7 +116,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		DCO_Perf.End("cmd_contact_intake", pt);
 	}
 
-	protected static const float LOW_PRIORITY_MERGE_M = 75;
 
 	protected void DoReceiveContactReport(CMD_ContactReport report, DCO_GroupUtilityComponent grp)
 	{
@@ -141,7 +140,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 		CMD_ThreatEntry existing = FindNearbyThreat(report.m_vPosition);
 		if (!existing && report.m_bLowPriority)
-			existing = FindThreatWithin(report.m_vPosition, LOW_PRIORITY_MERGE_M);
+			existing = FindThreatWithin(report.m_vPosition, 75.0);
 		if (existing)
 		{
 			if (worldTime < existing.m_fLastUpdateTime)
@@ -1835,7 +1834,6 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		primary.m_fLastArtilleryTime = worldTime;
 	}
 
-	protected static const float DEFENSIVE_FIRE_MARGIN = 250.0;
 
 	protected bool IsApproachingHeldObjective(CMD_ThreatCluster cluster)
 	{
@@ -1860,7 +1858,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 			float dist = toObj.Length();
 			if (dist <= obj.GetRadius())
 				return true;
-			if (dist <= obj.GetRadius() + DEFENSIVE_FIRE_MARGIN && vector.Dot(vel, toObj) > 0)
+			if (dist <= obj.GetRadius() + 250.0 && vector.Dot(vel, toObj) > 0)
 				return true;
 		}
 		return false;

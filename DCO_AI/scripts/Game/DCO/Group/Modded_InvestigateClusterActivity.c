@@ -1,13 +1,5 @@
 modded class SCR_AIInvestigateClusterActivity
 {
-	protected static const float DCO_BOUND_STEP_DEFENSIVE_M  = 15.0;
-	protected static const float DCO_BOUND_STEP_M            = 25.0;
-	protected static const float DCO_BOUND_STEP_AGGRESSIVE_M = 40.0;
-	protected static const float DCO_BOUND_PASS_M            = 10.0;
-	protected static const float DCO_BOUND_ARRIVE_M          = 10.0;
-	protected static const float DCO_BOUND_SEARCH_RADIUS_M   = 5.0;
-	protected static const float DCO_BOUND_TIMEOUT_MS        = 20000.0;
-	protected static const float DCO_UPDATE_INTERVAL_MS      = 1000.0;
 
 	protected bool   m_bDCOStarted;
 	protected bool   m_bDCOFinal;
@@ -42,7 +34,7 @@ modded class SCR_AIInvestigateClusterActivity
 
 		if (now_ms < m_fDCONextUpdate_ms)
 			return;
-		m_fDCONextUpdate_ms = now_ms + DCO_UPDATE_INTERVAL_MS;
+		m_fDCONextUpdate_ms = now_ms + 1000.0;
 
 		if (m_Utility.DCO_GetPosture() == DCO_GroupTactics.EVASIVE)
 		{
@@ -54,7 +46,7 @@ modded class SCR_AIInvestigateClusterActivity
 			return;
 
 		bool arrived  = DCO_TeamArrived(DCO_GetMovingTeam(), m_vDCOBoundPos);
-		bool timedOut = now_ms - m_fDCOBoundStart_ms > DCO_BOUND_TIMEOUT_MS;
+		bool timedOut = now_ms - m_fDCOBoundStart_ms > 20000.0;
 		if (!arrived && !timedOut)
 			return;
 
@@ -96,16 +88,16 @@ modded class SCR_AIInvestigateClusterActivity
 
 		vector dir = toArea / dist;
 
-		float step = DCO_BOUND_STEP_M;
+		float step = 25.0;
 		switch (m_Utility.DCO_GetPosture())
 		{
-			case DCO_GroupTactics.DEFENSIVE: step = DCO_BOUND_STEP_DEFENSIVE_M; break;
-			case DCO_GroupTactics.AGGRESIVE: step = DCO_BOUND_STEP_AGGRESSIVE_M; break;
+			case DCO_GroupTactics.DEFENSIVE: step = 15.0; break;
+			case DCO_GroupTactics.AGGRESIVE: step = 40.0; break;
 		}
 
 		vector toCover = coverPos - movingPos;
 		toCover[1] = 0;
-		float advance = Math.Max(step, vector.Dot(toCover, dir) + DCO_BOUND_PASS_M);
+		float advance = Math.Max(step, vector.Dot(toCover, dir) + 10.0);
 
 		if (advance >= dist - areaRadius)
 		{
@@ -134,7 +126,7 @@ modded class SCR_AIInvestigateClusterActivity
 			return;
 		}
 
-		DCO_SendInvestigate(comms, DCO_GetMovingTeam(), m_vDCOBoundPos, DCO_BOUND_SEARCH_RADIUS_M, DCO_BOUND_TIMEOUT_MS * 0.001);
+		DCO_SendInvestigate(comms, DCO_GetMovingTeam(), m_vDCOBoundPos, 5.0, 20000.0 * 0.001);
 		DCO_SendCover(comms, DCO_GetCoverTeam(), areaPos);
 	}
 
@@ -186,7 +178,7 @@ modded class SCR_AIInvestigateClusterActivity
 
 				SCR_ChimeraAIAgent chimeraAgent = SCR_ChimeraAIAgent.Cast(agent);
 				if (chimeraAgent && chimeraAgent.m_UtilityComponent)
-					chimeraAgent.m_UtilityComponent.LookAt(watchPos, DCO_BOUND_TIMEOUT_MS * 0.001);
+					chimeraAgent.m_UtilityComponent.LookAt(watchPos, 20000.0 * 0.001);
 			}
 		}
 	}
@@ -256,7 +248,7 @@ modded class SCR_AIInvestigateClusterActivity
 					continue;
 
 				total++;
-				if (vector.DistanceXZ(agent.GetControlledEntity().GetOrigin(), pos) < DCO_BOUND_ARRIVE_M)
+				if (vector.DistanceXZ(agent.GetControlledEntity().GetOrigin(), pos) < 10.0)
 					near++;
 			}
 		}

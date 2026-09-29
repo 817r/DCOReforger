@@ -188,7 +188,6 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	protected ref map<string, float> m_mScoreCacheAge = new map<string, float>();
 
 	protected ref map<string, string> m_mScoreBreakdown = new map<string, string>();
-	static const float CACHE_DURATION = 3.0;
 
 	protected float m_fLastContestedTime = 0.0;
 
@@ -409,7 +408,6 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		}
 	}
 
-	static const float RANKING_CENSUS_MAX_AGE = 30.0;
 
 	float ComputePriorityScore(FactionKey forFaction, float worldTime, vector commanderPos, float combatFocus = 0.5, string commanderUID = "")
 	{
@@ -421,7 +419,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	    string cacheKey = forFaction + "|" + commanderUID;
 
 	    float cacheAge;
-	    if (m_mScoreCacheAge.Find(cacheKey, cacheAge) && (worldTime - cacheAge) < CACHE_DURATION)
+	    if (m_mScoreCacheAge.Find(cacheKey, cacheAge) && (worldTime - cacheAge) < 3.0)
 	    {
 	        float cachedScore;
 	        if (m_mCachedScore.Find(cacheKey, cachedScore))
@@ -433,7 +431,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	    int enemyCount;
 	    int friendlyAtThreatRadius;
-	    CountNearbyUnitsCached(m_fThreatRadius, forFaction, friendlyAtThreatRadius, enemyCount, RANKING_CENSUS_MAX_AGE);
+	    CountNearbyUnitsCached(m_fThreatRadius, forFaction, friendlyAtThreatRadius, enemyCount, 30.0);
 
 	    float contestedRaw = 0.0;
 
@@ -446,7 +444,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	    int friendlyCount;
 	    int enemyAtFriendlyRadius;
-	    CountNearbyUnitsCached(m_fFriendlyRadius, forFaction, friendlyCount, enemyAtFriendlyRadius, RANKING_CENSUS_MAX_AGE);
+	    CountNearbyUnitsCached(m_fFriendlyRadius, forFaction, friendlyCount, enemyAtFriendlyRadius, 30.0);
 	    m_bSuppressProcessedMark = prevSuppress;
 	    float friendlyPenalty = Math.Clamp(friendlyCount * 5.0, 0.0, 30.0);
 
@@ -1101,7 +1099,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		else
 			color = DCO_DebugDraw.FactionColor(m_sOwnerFaction);
 
-		m_aDebugShapes.Insert(Shape.CreateSphere(color, flags, pos, DCO_DebugDraw.MARKER_BIG));
+		m_aDebugShapes.Insert(Shape.CreateSphere(color, flags, pos, 2.0));
 
 		DrawDebugControlBar(Vector(pos[0], pos[1] + 8.0, pos[2]), flags);
 

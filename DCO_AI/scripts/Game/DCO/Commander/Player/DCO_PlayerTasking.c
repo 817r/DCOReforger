@@ -51,24 +51,9 @@ class DCO_PlayerRoleExclude
 
 class DCO_PlayerTasking
 {
-	static const int ROLE_BIT_ASSAULT = 1;
-	static const int ROLE_BIT_FIX = 2;
-	static const int ROLE_BIT_BLOCK = 4;
-	static const int ROLE_BIT_RECON = 8;
 
-	protected static const ResourceName TASK_PREFAB = "{1D0F815858EE24AD}Prefabs/Tasks/BaseTask.et";
 	protected static const ResourceName ICONS = "{10C0A9A305E8B3A4}UI/Imagesets/Tasks/Task_Icons.imageset";
-	protected static const int DELETE_DELAY_MS = 10000;
-	protected static const float MIN_ARRIVE_M = 40;
-	protected static const float ACCEPT_PROGRESS_M = 30;
 	protected static const float WALK_MPS = 1.8;
-	protected static const float DRIVE_MPS = 8;
-	protected static const float ACCEPT_FAIL_COOLDOWN_S = 120;
-	protected static const float DESC_REFRESH_S = 15;
-	protected static const float REQUEST_OTHER_CD_S = 60;
-	protected static const float EXCLUDE_S = 300;
-	protected static const float PLAYER_DECISIVE_BONUS = 1.5;
-	protected static const float FLANK_ANGLE = 70;
 
 	protected ref map<int, ref DCO_PlayerTaskEntry> m_mTasks = new map<int, ref DCO_PlayerTaskEntry>();
 	protected ref map<int, ref DCO_PlayerReliability> m_mReliability = new map<int, ref DCO_PlayerReliability>();
@@ -127,10 +112,10 @@ class DCO_PlayerTasking
 	{
 		switch (bit)
 		{
-			case ROLE_BIT_ASSAULT:	return "@role_assault";
-			case ROLE_BIT_FIX:		return "@role_fix";
-			case ROLE_BIT_BLOCK:	return "@role_block";
-			case ROLE_BIT_RECON:	return "@role_recon";
+			case 1:	return "@role_assault";
+			case 2:		return "@role_fix";
+			case 4:	return "@role_block";
+			case 8:	return "@role_recon";
 		}
 		return "@role_assault";
 	}
@@ -139,10 +124,10 @@ class DCO_PlayerTasking
 	{
 		switch (bit)
 		{
-			case ROLE_BIT_ASSAULT:	return "Assault/Maneuver";
-			case ROLE_BIT_FIX:		return "Fix/SBF";
-			case ROLE_BIT_BLOCK:	return "Block/Anvil";
-			case ROLE_BIT_RECON:	return "Recon/Infiltration";
+			case 1:	return "Assault/Maneuver";
+			case 2:		return "Fix/SBF";
+			case 4:	return "Block/Anvil";
+			case 8:	return "Recon/Infiltration";
 		}
 		return "Defend";
 	}
@@ -223,7 +208,7 @@ class DCO_PlayerTasking
 				float dist = vector.DistanceXZ(from, e.m_vPos);
 				if (!e.m_bAccepted)
 				{
-					if (e.m_fStartDist - dist >= ACCEPT_PROGRESS_M || dist <= ArriveRadius(e))
+					if (e.m_fStartDist - dist >= 30.0 || dist <= ArriveRadius(e))
 						Accept(cmd, grp, id, e, from);
 					else if (now - e.m_fCreated_s > cmd.GetPlayerAcceptTime())
 					{
@@ -257,7 +242,7 @@ class DCO_PlayerTasking
 				&& vector.DistanceXZ(from, e.m_Objective.GetOwner().GetOrigin()) <= e.m_Objective.GetRadius() && !early.Contains(e.m_Objective))
 				early.Insert(e.m_Objective);
 
-			if (e.m_eType == DCO_EPlayerTaskType.MOVE && now - e.m_fLastDesc_s >= DESC_REFRESH_S)
+			if (e.m_eType == DCO_EPlayerTaskType.MOVE && now - e.m_fLastDesc_s >= 15.0)
 			{
 				e.m_fLastDesc_s = now;
 				e.m_Task.SetTaskDescription(BuildDescription(cmd, e));
@@ -449,7 +434,7 @@ class DCO_PlayerTasking
 			Composition(grp, units, mg, vehicle);
 			float v = DCO_CommanderTactics.RoleScore(units, mg, vehicle, vector.DistanceXZ(LeaderPos(grp), pos), role, small, fireSupport);
 			if (DCO_CommanderTactics.IsDecisive(role))
-				v += PLAYER_DECISIVE_BONUS;
+				v += 1.5;
 			if (v > outScore)
 			{
 				outScore = v;
@@ -549,7 +534,7 @@ class DCO_PlayerTasking
 			return;
 		}
 
-		m_mOtherCd.Set(id, now + REQUEST_OTHER_CD_S);
+		m_mOtherCd.Set(id, now + 60.0);
 		DropForOther(cmd, grp, id, e, "request");
 	}
 
@@ -588,7 +573,7 @@ class DCO_PlayerTasking
 		DCO_PlayerRoleExclude ex = new DCO_PlayerRoleExclude();
 		ex.m_Obj = e.m_Objective;
 		ex.m_iBits = bit;
-		ex.m_fUntil_s = Now() + EXCLUDE_S;
+		ex.m_fUntil_s = Now() + 300.0;
 		m_mExclude.Set(id, ex);
 
 		string taskName = "the task";
@@ -689,14 +674,14 @@ class DCO_PlayerTasking
 	{
 		flank = false;
 		array<CMD_AICommanderObjectiveComponent> skip = {};
-		if ((grp.DCO_GetPlayerRoles() & ROLE_BIT_ASSAULT) == 0)
+		if ((grp.DCO_GetPlayerRoles() & 1) == 0)
 		{
 			foreach (CMD_AICommanderObjectiveComponent o : cmd.GetObjectiveList())
 				skip.Insert(o);
 		}
 
 		DCO_PlayerRoleExclude ex = ActiveExclude(id);
-		if (ex && (ex.m_iBits & ROLE_BIT_ASSAULT) != 0)
+		if (ex && (ex.m_iBits & 1) != 0)
 			skip.Insert(ex.m_Obj);
 
 		array<CMD_AICommanderObjectiveComponent> spread = {};
@@ -722,7 +707,7 @@ class DCO_PlayerTasking
 				int side = 1;
 				if (id % 2 != 0)
 					side = -1;
-				pos = cmd.FlankPoint(pos, objPos, vector.DistanceXZ(pos, objPos), FLANK_ANGLE, side);
+				pos = cmd.FlankPoint(pos, objPos, vector.DistanceXZ(pos, objPos), 70.0, side);
 				flank = true;
 			}
 		}
@@ -799,7 +784,7 @@ class DCO_PlayerTasking
 	{
 		float speed = WALK_MPS;
 		if (vehicle)
-			speed = DRIVE_MPS;
+			speed = 8.0;
 		return dist / speed * cmd.GetPlayerEtaFactor();
 	}
 
@@ -895,7 +880,7 @@ class DCO_PlayerTasking
 			case DCO_CommanderTactics.ROLE_BLOCK:
 				msg = "arrived_block";
 				break;
-			case DCO_CommanderTactics.ROLE_MANEUVER:
+			case 1:
 				msg = "arrived_strike";
 				break;
 		}
@@ -911,7 +896,7 @@ class DCO_PlayerTasking
 
 		m_iSeq++;
 		string taskID = string.Format("DCO_%1_%2_%3", cmd.GetCommanderUID(), groupID, m_iSeq);
-		SCR_Task task = ts.CreateTask(TASK_PREFAB, taskID, name, BuildDescription(cmd, e), e.m_vPos);
+		SCR_Task task = ts.CreateTask("{1D0F815858EE24AD}Prefabs/Tasks/BaseTask.et", taskID, name, BuildDescription(cmd, e), e.m_vPos);
 		if (!task)
 			return null;
 
@@ -956,7 +941,7 @@ class DCO_PlayerTasking
 				if (e.m_eTactic == DCO_ETactic.HAMMER_AND_ANVIL)
 					return "Anvil: block the " + dir + " of " + objName;
 				return "Block: cut off the " + dir + " of " + objName;
-			case DCO_CommanderTactics.ROLE_MANEUVER:
+			case 1:
 				icon = "Icon_Task_Move";
 				return "Infiltrate " + objName;
 		}
@@ -1021,7 +1006,7 @@ class DCO_PlayerTasking
 				if (e.m_eTactic == DCO_ETactic.HAMMER_AND_ANVIL)
 					return "Anvil: block the escape route " + DCO_PlayerComms.Bearing(e.m_Objective.GetOwner().GetOrigin(), e.m_vPos) + " of " + objName + ". Stay hidden and hold fire until the enemy is in the kill zone. The assault waits until you are in position.";
 				return "Block: cut the route " + DCO_PlayerComms.Bearing(e.m_Objective.GetOwner().GetOrigin(), e.m_vPos) + " of " + objName + ". Stop reinforcements coming in and the enemy getting out.";
-			case DCO_CommanderTactics.ROLE_MANEUVER:
+			case 1:
 				return "Infiltration: move covered and quiet to the key point inside " + objName + ". Avoid contact until you are in position, then strike.";
 		}
 
@@ -1053,8 +1038,8 @@ class DCO_PlayerTasking
 	protected float ArriveRadius(DCO_PlayerTaskEntry e)
 	{
 		if (!e.m_Objective)
-			return MIN_ARRIVE_M;
-		return Math.Max(e.m_Objective.GetRadius(), MIN_ARRIVE_M);
+			return 40.0;
+		return Math.Max(e.m_Objective.GetRadius(), 40.0);
 	}
 
 	protected int EntryBit(DCO_PlayerTaskEntry e)
@@ -1063,7 +1048,7 @@ class DCO_PlayerTasking
 			return DCO_CommanderTactics.RoleBit(e.m_eTactic, e.m_iRole);
 		if (e.m_eType == DCO_EPlayerTaskType.DEFEND)
 			return 0;
-		return ROLE_BIT_ASSAULT;
+		return 1;
 	}
 
 	protected string EntryRoleLabel(DCO_PlayerTaskEntry e)
@@ -1204,7 +1189,7 @@ class DCO_PlayerTasking
 
 		rel.m_iFails++;
 		if (acceptance)
-			rel.m_fCooldownUntil_s = Now() + ACCEPT_FAIL_COOLDOWN_S;
+			rel.m_fCooldownUntil_s = Now() + 120.0;
 
 		if (rel.m_iFails >= cmd.GetPlayerFailLimit())
 		{
@@ -1250,7 +1235,7 @@ class DCO_PlayerTasking
 		}
 
 		ts.SetTaskState(e.m_Task, state);
-		GetGame().GetCallqueue().CallLater(DeleteTask, DELETE_DELAY_MS, false, e.m_Task.GetTaskID());
+		GetGame().GetCallqueue().CallLater(DeleteTask, 10000, false, e.m_Task.GetTaskID());
 		Print(string.Format("[DCO_PlayerTask] %1 -> %2", e.m_Task.GetTaskID(), typename.EnumToString(SCR_ETaskState, state)));
 	}
 

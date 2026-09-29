@@ -1,27 +1,19 @@
 class DCO_AimUtility
 {
-	protected static const float EYE_HEIGHT_M       = 1.6;
-	protected static const float LOS_TRACE_MIN      = 0.5;
-	protected static const float STALE_TARGET_POS_S = 12.0;
 
 	static vector ResolveOrientationPos(IEntity myEntity, vector threatPos, float traceFraction, float timeSinceSeen)
 	{
 		if (!myEntity)
 			return threatPos;
 
-		if (traceFraction > LOS_TRACE_MIN && timeSinceSeen < STALE_TARGET_POS_S)
+		if (traceFraction > 0.5 && timeSinceSeen < 12.0)
 			return threatPos;
 
 		vector flat = threatPos;
-		flat[1] = myEntity.GetOrigin()[1] + EYE_HEIGHT_M;
+		flat[1] = myEntity.GetOrigin()[1] + 1.6;
 		return flat;
 	}
 
-	static const float FRAG_SCATTER_RATIO       = 0.08;
-	static const float GL_SCATTER_RATIO         = 0.035;
-	protected static const float SKILL_SIGMA_REGULAR    = 1.7;
-	protected static const float SUPPRESSION_PENALTY    = 1.85;
-	protected static const float AIM_IMPROVEMENT_FLOOR  = 0.5;
 
 	static float SkillSigma(DCO_AISKILL skill)
 	{
@@ -35,7 +27,7 @@ class DCO_AimUtility
 			case DCO_AISKILL.SPECIAL_OPS: return 0.2;
 			case DCO_AISKILL.TERMINATOR:  return 0;
 		}
-		return SKILL_SIGMA_REGULAR;
+		return 1.7;
 	}
 
 	static float GetSightMagnification(SCR_AICombatComponent combat)
@@ -59,11 +51,11 @@ class DCO_AimUtility
 		if (!utility || !utility.m_OwnerEntity || !utility.m_DCOConfig)
 			return targetPos;
 
-		float ratio = FRAG_SCATTER_RATIO;
+		float ratio = 0.08;
 		float accuracy = utility.m_DCOConfig.GetAccuracy();
 		if (grenadeLauncher)
 		{
-			ratio = GL_SCATTER_RATIO;
+			ratio = 0.035;
 			accuracy = utility.m_DCOConfig.GetGLAccuracy();
 		}
 
@@ -72,13 +64,13 @@ class DCO_AimUtility
 
 		IEntity self = utility.m_OwnerEntity;
 		float sigma = vector.DistanceXZ(self.GetOrigin(), targetPos) * ratio
-			* SkillSigma(utility.m_DCOConfig.GetAISkill()) / (SKILL_SIGMA_REGULAR * accuracy);
+			* SkillSigma(utility.m_DCOConfig.GetAISkill()) / (1.7 * accuracy);
 
 		if (utility.m_ThreatSystem)
-			sigma *= Math.Lerp(1.0, SUPPRESSION_PENALTY, Math.Clamp(utility.m_ThreatSystem.GetSuppressionMeasure(), 0, 1));
+			sigma *= Math.Lerp(1.0, 1.85, Math.Clamp(utility.m_ThreatSystem.GetSuppressionMeasure(), 0, 1));
 
 		if (utility.m_CombatComponent)
-			sigma *= Math.Clamp(utility.m_CombatComponent.GetCurrentAimImprovement(), AIM_IMPROVEMENT_FLOOR, 1.0);
+			sigma *= Math.Clamp(utility.m_CombatComponent.GetCurrentAimImprovement(), 0.5, 1.0);
 
 		ChimeraCharacter character = ChimeraCharacter.Cast(self);
 		if (character && character.GetCharacterController())

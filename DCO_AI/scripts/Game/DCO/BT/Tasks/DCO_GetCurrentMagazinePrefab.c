@@ -2,7 +2,6 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 {
 	protected static const string PORT_PREFAB_RESOURCE_NAME = "PrefabResourceName";
 	protected static const string PORT_WEAPON_COMPONENT = "WeaponComponent";
-	protected static const string PORT_MAGAZINE_WELL = "MagazineWellArray";
 
 	protected ResourceName m_sQueryResourceName;
 
@@ -46,7 +45,7 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 			}
 		}
 
-		SetVariableOut(PORT_MAGAZINE_WELL, magazineWell);
+		SetVariableOut("MagazineWellArray", magazineWell);
 		SetVariableOut(PORT_PREFAB_RESOURCE_NAME, m_sQueryResourceName);
 
 		return ENodeResult.SUCCESS;
@@ -66,6 +65,6 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 	protected static ref TStringArray s_aVarsIn = {PORT_WEAPON_COMPONENT};
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 
-	protected static ref TStringArray s_aVarsOut = { PORT_PREFAB_RESOURCE_NAME, PORT_MAGAZINE_WELL };
+	protected static ref TStringArray s_aVarsOut = { PORT_PREFAB_RESOURCE_NAME, "MagazineWellArray" };
 	override TStringArray GetVariablesOut() { return s_aVarsOut; }
 }

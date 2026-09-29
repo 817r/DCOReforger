@@ -367,7 +367,7 @@ class AICommander_BaseComponent : ScriptComponent
 	protected int m_iAllowedTactics;
 
 	int GetAllowedTactics()					{ return m_iAllowedTactics; }
-	void SetAllowedTactics(int mask)		{ m_iAllowedTactics = mask & DCO_CommanderTactics.ALL_TACTICS; }
+	void SetAllowedTactics(int mask)		{ m_iAllowedTactics = mask & 8191; }
 
 	protected ref DCO_CommanderTactics m_Tactics = new DCO_CommanderTactics();
 	protected bool m_bTacticAborting;
@@ -2917,7 +2917,6 @@ class AICommander_BaseComponent : ScriptComponent
 		return task == DCO_EGroupTask.ATTACK || task == DCO_EGroupTask.FLANK;
 	}
 
-	static const float CAPABILITY_MATCH_BONUS = 30.0;
 
 	static int DefaultCapabilitiesForTask(DCO_EGroupTask task)
 	{
@@ -3042,7 +3041,7 @@ class AICommander_BaseComponent : ScriptComponent
 			float distSq = vector.DistanceSq(grp.GetOwner().GetOrigin(), targetPos);
 
 			score = score - Math.Min(Math.Sqrt(distSq) / 25.0, 80.0);
-			score = score + CountCapabilityMatches(grp, wantedCaps) * CAPABILITY_MATCH_BONUS;
+			score = score + CountCapabilityMatches(grp, wantedCaps) * 30.0;
 
 			bool better = false;
 
@@ -5406,7 +5405,7 @@ class AICommander_BaseComponent : ScriptComponent
 		vector p     = GetOwner().GetOrigin();
 		float  now   = GetGame().GetWorld().GetWorldTime() / 1000.0;
 
-		m_aDebugShapes.Insert(Shape.CreateSphere(DCO_DebugDraw.COLOR_COMMANDER, flags, p, DCO_DebugDraw.MARKER_BIG));
+		m_aDebugShapes.Insert(Shape.CreateSphere(DCO_DebugDraw.COLOR_COMMANDER, flags, p, 2.0));
 
 		m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(Vector(p[0], p[1] + 46.0, p[2]), BuildDebugHeader(now),   22.0, DCO_DebugDraw.COLOR_COMMANDER));
 		m_aDebugTexts.Insert(DCO_DebugDraw.SpawnText(Vector(p[0], p[1] + 37.0, p[2]), BuildDebugForce(),       17.0, DCO_DebugDraw.COLOR_COMMANDER));
@@ -5690,8 +5689,6 @@ class AICommander_BaseComponent : ScriptComponent
 	    }
 	}
 
-	protected static const float SWEEP_GROUP_MARGIN = 50;
-	protected static const float CAPTURE_BLOCK_LOG_S = 30;
 	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mCaptureBlockLog = new map<CMD_AICommanderObjectiveComponent, float>();
 
 	protected bool CQBBlocksCapture(CMD_AICommanderObjectiveComponent obj, float worldTime)
@@ -5706,7 +5703,7 @@ class AICommander_BaseComponent : ScriptComponent
 			return false;
 
 		SweepBuilding(obj, building, now_ms);
-		if (worldTime - m_mCaptureBlockLog.Get(obj) > CAPTURE_BLOCK_LOG_S)
+		if (worldTime - m_mCaptureBlockLog.Get(obj) > 30.0)
 		{
 			m_mCaptureBlockLog.Set(obj, worldTime);
 			DCO_BenchmarkLoggerComponent.Event(string.Format("capture_blocked obj=%1 building=%2 faction=%3", obj.GetOwner().GetName(), building, m_sFactionKey));
@@ -5726,7 +5723,7 @@ class AICommander_BaseComponent : ScriptComponent
 		reg.FindBuildings(obj.GetOwner().GetOrigin(), obj.GetRadius(), buildings);
 		foreach (IEntity b : buildings)
 		{
-			if (DCO_BuildingClear.State(b, m_sFactionKey) == DCO_BuildingClear.CLEARED)
+			if (DCO_BuildingClear.State(b, m_sFactionKey) == 3)
 				continue;
 			if (!SweepBuilding(obj, b, now_ms))
 				return;
@@ -5736,7 +5733,7 @@ class AICommander_BaseComponent : ScriptComponent
 	protected bool SweepBuilding(CMD_AICommanderObjectiveComponent obj, IEntity building, float now_ms)
 	{
 		vector p = obj.GetOwner().GetOrigin();
-		float r = obj.GetRadius() + SWEEP_GROUP_MARGIN;
+		float r = obj.GetRadius() + 50.0;
 		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
 		{
 			if (!g || g.GetGroupObjective() != obj || g.IsPlayerGroup() || vector.DistanceXZ(g.GetOwner().GetOrigin(), p) > r)

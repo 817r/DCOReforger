@@ -9,22 +9,9 @@ class DCO_GrenadeUtility
 	protected static ref map<IEntity, float> s_mLastGrenadeThrowTime = new map<IEntity, float>();
 
 	protected static ref map<IEntity, float> s_mLastGrenadeRollTime = new map<IEntity, float>();
-	static const float GRENADE_ROLL_INTERVAL_MS = 3000.0;
 
-	static const float GRENADE_COOLDOWN_MS = 20000.0;
 
-	static const float GRENADE_MIN_THROW_DIST = 5.0;
-	static const float GRENADE_MAX_THROW_DIST = 40.0;
 
-	static const float THROW_ORIGIN_HEIGHT   = 1.6;
-	static const float TARGET_CLEAR_HEIGHT   = 0.5;
-	static const float ARC_END_RATIO         = 0.85;
-	static const int   ARC_SEGMENTS          = 5;
-	static const float APEX_RISE_RATIO       = 0.35;
-	static const float APEX_RISE_MIN         = 2.0;
-	static const float APEX_RISE_MAX         = 8.0;
-	static const float MIN_USABLE_HEADROOM   = 1.0;
-	static const float FRIENDLY_BLAST_RADIUS = 15.0;
 
 	protected static ref array<IEntity> s_aBlastCheckResult = {};
 
@@ -46,14 +33,14 @@ class DCO_GrenadeUtility
 		float lastThrow;
 		if (s_mLastGrenadeThrowTime.Find(myEntity, lastThrow))
 		{
-			if ((worldTime_ms - lastThrow) < GRENADE_COOLDOWN_MS)
+			if ((worldTime_ms - lastThrow) < 20000.0)
 				return false;
 		}
 
 		float lastRoll;
 		if (s_mLastGrenadeRollTime.Find(myEntity, lastRoll))
 		{
-			if ((worldTime_ms - lastRoll) < GRENADE_ROLL_INTERVAL_MS)
+			if ((worldTime_ms - lastRoll) < 3000.0)
 				return false;
 		}
 
@@ -87,25 +74,25 @@ class DCO_GrenadeUtility
 		flatDelta[1] = 0.0;
 		float dist = flatDelta.Length();
 
-		if (dist < GRENADE_MIN_THROW_DIST)
+		if (dist < 5.0)
 			return false;
 
-		if (dist > GRENADE_MAX_THROW_DIST)
+		if (dist > 40.0)
 			return false;
 
 		if (HasFriendlyInBlast(self, targetPos))
 			return false;
 
 		vector start = selfPos;
-		start[1] = start[1] + THROW_ORIGIN_HEIGHT;
+		start[1] = start[1] + 1.6;
 
 		vector end = targetPos;
-		end[1] = end[1] + TARGET_CLEAR_HEIGHT;
+		end[1] = end[1] + 0.5;
 
-		float apexRise = Math.Clamp(dist * APEX_RISE_RATIO, APEX_RISE_MIN, APEX_RISE_MAX);
+		float apexRise = Math.Clamp(dist * 0.35, 2.0, 8.0);
 
 		float headroom = GetHeadroom(self, start, apexRise);
-		if (headroom < MIN_USABLE_HEADROOM)
+		if (headroom < 1.0)
 			return false;
 
 		if (headroom < apexRise)
@@ -132,12 +119,12 @@ class DCO_GrenadeUtility
 	{
 		BaseWorld world = GetGame().GetWorld();
 
-		float segs = ARC_SEGMENTS;
+		float segs = 5;
 		vector prev = start;
 
-		for (int i = 1; i <= ARC_SEGMENTS; i++)
+		for (int i = 1; i <= 5; i++)
 		{
-			float t = (i / segs) * ARC_END_RATIO;
+			float t = (i / segs) * 0.85;
 
 			vector point = ArcPoint(start, end, apexRise, t);
 
@@ -178,7 +165,7 @@ class DCO_GrenadeUtility
 		string myFactionKey = selfFac.GetAffiliatedFaction().GetFactionKey();
 
 		DCO_Perf.Count("q:DCO_GrenadeUtility");
-		GetGame().GetWorld().QueryEntitiesBySphere(pos, FRIENDLY_BLAST_RADIUS, null, BlastQueryCallback, EQueryEntitiesFlags.DYNAMIC);
+		GetGame().GetWorld().QueryEntitiesBySphere(pos, 15.0, null, BlastQueryCallback, EQueryEntitiesFlags.DYNAMIC);
 
 		foreach (IEntity ent : s_aBlastCheckResult)
 		{
@@ -204,9 +191,7 @@ class DCO_GrenadeUtility
 		return true;
 	}
 
-	static const float INIT_SPEED_COEF        = 1.0;
 
-	static const bool  DEBUG_THROW            = false;
 
 	protected static ref map<IEntity, IEntity> s_mCachedGrenade = new map<IEntity, IEntity>();
 	protected static ref array<IEntity> s_aItemBuffer = {};
@@ -228,7 +213,7 @@ class DCO_GrenadeUtility
 		DbgClear();
 
 		float dist = vector.DistanceXZ(selfPos, targetPos);
-		if (dist < GRENADE_MIN_THROW_DIST || dist > GRENADE_MAX_THROW_DIST)
+		if (dist < 5.0 || dist > 40.0)
 			return false;
 
 		if (HasFriendlyInBlast(self, targetPos))
@@ -237,17 +222,17 @@ class DCO_GrenadeUtility
 		IEntity grenade = FindFragGrenade(self);
 
 		vector start = selfPos;
-		start[1] = start[1] + THROW_ORIGIN_HEIGHT;
+		start[1] = start[1] + 1.6;
 
 		DCO_EGrenadeThrowMode mode = DCO_EGrenadeThrowMode.NONE;
 
-		if (IsTrajectoryClear(self, grenade, start, targetPos, ARC_END_RATIO))
+		if (IsTrajectoryClear(self, grenade, start, targetPos, 0.85))
 		{
 			throwPos = targetPos;
 			mode     = DCO_EGrenadeThrowMode.DIRECT;
 		}
 
-		if (DEBUG_THROW)
+		if (false)
 		{
 			Print(string.Format("[DCO_Grenade] %1 dist=%2 mode=%3 realBallistics=%4 throwPos=%5",
 				self, dist, typename.EnumToString(DCO_EGrenadeThrowMode, mode), grenade != null, throwPos), LogLevel.NORMAL);
@@ -267,7 +252,7 @@ class DCO_GrenadeUtility
 		if (grenade)
 		{
 			float flightTime;
-			float h = BallisticTable.GetHeightFromProjectile(vector.Distance(start, end), flightTime, grenade, INIT_SPEED_COEF);
+			float h = BallisticTable.GetHeightFromProjectile(vector.Distance(start, end), flightTime, grenade, 1.0);
 
 			if (flightTime > 0.01 && h > 0)
 			{
@@ -277,7 +262,7 @@ class DCO_GrenadeUtility
 			}
 		}
 
-		float apexRise = Math.Clamp(dxz * APEX_RISE_RATIO, APEX_RISE_MIN, APEX_RISE_MAX);
+		float apexRise = Math.Clamp(dxz * 0.35, 2.0, 8.0);
 		a = dy + 4.0 * apexRise;
 		b = -4.0 * apexRise;
 		return true;
@@ -298,10 +283,10 @@ class DCO_GrenadeUtility
 		if (!ComputeArcCoeffs(grenade, start, end, a, b))
 			return false;
 
-		float segs = ARC_SEGMENTS;
+		float segs = 5;
 		vector prev = start;
 
-		for (int i = 1; i <= ARC_SEGMENTS; i++)
+		for (int i = 1; i <= 5; i++)
 		{
 			vector point = ArcPointAt(start, end, a, b, (i / segs) * uEnd);
 
@@ -373,7 +358,7 @@ class DCO_GrenadeUtility
 	protected static void DbgClear()
 	{
 		#ifdef WORKBENCH
-		if (DEBUG_THROW)
+		if (false)
 			s_aDbgShapes.Clear();
 		#endif
 	}
@@ -381,7 +366,7 @@ class DCO_GrenadeUtility
 	protected static void DbgLine(vector from, vector to, int color)
 	{
 		#ifdef WORKBENCH
-		if (!DEBUG_THROW)
+		if (!false)
 			return;
 
 		vector pts[2];

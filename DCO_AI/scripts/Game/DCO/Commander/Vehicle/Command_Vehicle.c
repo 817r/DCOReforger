@@ -46,12 +46,11 @@ class CMD_VehicleFinder
 		return !mission.IsOwnedBy(requestingGroup);
 	}
 
-	static const float SEAT_EXCESS_PENALTY_M = 10;
 
 	static float SeatFitPenalty(IEntity vehicle, int requiredSeats)
 	{
 		SCR_BaseCompartmentManagerComponent compMgr = SCR_BaseCompartmentManagerComponent.Cast(vehicle.FindComponent(SCR_BaseCompartmentManagerComponent));
-		return Math.Max(CountFreeSeats(compMgr) - requiredSeats, 0) * SEAT_EXCESS_PENALTY_M;
+		return Math.Max(CountFreeSeats(compMgr) - requiredSeats, 0) * 10.0;
 	}
 
 	static int CountFreeSeats(SCR_BaseCompartmentManagerComponent compMgr)

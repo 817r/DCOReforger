@@ -85,15 +85,8 @@ class DCO_DodgeWaypointUtility
 [BaseContainerProps()]
 modded class SCR_AIDangerReaction_WeaponFired
 {
-	protected static const float DISMOUNT_DIST_FALLBACK = 700.0;
-	protected static const float SUPPRESSED_ROLL_DIST_MIN = 30.0;
-	protected static const float SUPPRESSED_ROLL_DIST_MAX = 150.0;
-	protected static const float SUPPRESSED_ROLL_CHANCE_AT_MIN = 0.35;
 
 	protected static const float DODGE_CHANCE_FALLBACK      = 0.6;
-	protected static const float DODGE_COOLDOWN_FALLBACK    = 8.0;
-	protected static const float DODGE_MAX_DIST_FALLBACK    = 250.0;
-	protected static const float DODGE_SEARCH_DIST_FALLBACK = 30.0;
 
 	protected bool m_bScaleDodgeByPersonality = true;
 
@@ -101,36 +94,20 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 	protected static ref map<IEntity, int>   s_mDodgeShotCount   = new map<IEntity, int>();
 	protected static ref map<IEntity, float> s_mDodgeShotLast_ms = new map<IEntity, float>();
-	protected static const int   DODGE_SHOT_THRESHOLD_FALLBACK = 1;
-	protected static const float DODGE_SHOT_WINDOW_FALLBACK    = 5.0;
 
 	protected static const float coverSearchDistMax = 20;
 
 	protected static const float COVER_QUERY_SECTOR_ANGLE_RAD  = 0.51 * Math.PI;
 
 	protected static ref map<IEntity, float> s_mLastInvestigateTime = new map<IEntity, float>();
-	protected static const int INVESTIGATE_MAP_PRUNE_THRESHOLD = 128;
 
-	protected static const float HEAD_HEIGHT                   = 1.6;
-	protected static const float MISS_DIST_DIRECT              = 2.0;
-	protected static const float MISS_DIST_IRRELEVANT          = 25.0;
-	protected static const float MISS_DIST_NOT_TOWARD_ME       = 9999.0;
 
-	protected static const float THREAT_WEIGHT_MISS            = 0.6;
-	protected static const float THREAT_WEIGHT_PROXIMITY       = 0.25;
-	protected static const float THREAT_WEIGHT_BURST           = 0.15;
-	protected static const float THREAT_BURST_SATURATION       = 5.0;
 
-	protected static const int   BUILDING_FALLBACK_POLL_MS     = 250;
-	protected static const int   BUILDING_FALLBACK_MAX_POLLS   = 8;
 
-	protected static const float COVER_MOVE_HOLD_MARGIN_S      = 1.0;
-	protected static const float COVER_BUILDING_HOLD_MARGIN_S  = 0.25;
 
 	protected static bool s_bDCOCoverDebug;
 
 	protected static ref map<IEntity, ref DCO_ShotLookLock> s_mLookLocks = new map<IEntity, ref DCO_ShotLookLock>();
-	protected static const int LOOK_LOCK_MAP_PRUNE_THRESHOLD = 128;
 
 	[Attribute("50.0", UIWidgets.EditBox, "Jarak maksimum (m) tembakan SENYAP yang bikin AI mau maju investigasi.")]
 	protected float m_fSuppressedInvestigateDist;
@@ -309,7 +286,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		float  distance         = vector.Distance(myOrigin, shotPos);
 		float  distanceSQ       = vector.DistanceSq(myOrigin, shotPos);
 
-		float dismountDist = DISMOUNT_DIST_FALLBACK;
+		float dismountDist = 700.0;
 		if (utility.m_DCOConfig)
 			dismountDist = utility.m_DCOConfig.GetDismountDistance();
 
@@ -321,7 +298,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 		if (isInVehicle)
 		{
-			if (distance < DCO_VehicleCombat.AT_SCAN_RANGE && DCO_IsLauncherShot(instigatorEntity))
+			if (distance < 350.0 && DCO_IsLauncherShot(instigatorEntity))
 				DCO_VehicleCombat.ReportATThreat(DCO_VehicleCombat.GetVehicle(utility.m_OwnerEntity), instigatorEntity, shotPos);
 
 			if (distanceSQ > dismountDistSq)
@@ -527,14 +504,14 @@ modded class SCR_AIDangerReaction_WeaponFired
 		if (!isSuppressed)
 			return dist < AUDIBLE_DISTANCE_NORMAL;
 
-		if (dist <= SUPPRESSED_ROLL_DIST_MIN)
+		if (dist <= 30.0)
 			return true;
 
-		if (dist >= SUPPRESSED_ROLL_DIST_MAX)
+		if (dist >= 150.0)
 			return false;
 
-		float t = (dist - SUPPRESSED_ROLL_DIST_MIN) / (SUPPRESSED_ROLL_DIST_MAX - SUPPRESSED_ROLL_DIST_MIN);
-		float chance = Math.Lerp(SUPPRESSED_ROLL_CHANCE_AT_MIN, 0.0, t);
+		float t = (dist - 30.0) / (150.0 - 30.0);
+		float chance = Math.Lerp(0.35, 0.0, t);
 
 		return Math.RandomFloat01() < chance;
 	}
@@ -614,15 +591,15 @@ modded class SCR_AIDangerReaction_WeaponFired
 	{
 		float dirLen = shotDir.Length();
 		if (dirLen < 0.001)
-			return MISS_DIST_NOT_TOWARD_ME;
+			return 9999.0;
 
 		vector dir     = shotDir * (1.0 / dirLen);
-		vector headPos = myOrigin + Vector(0, HEAD_HEIGHT, 0);
+		vector headPos = myOrigin + Vector(0, 1.6, 0);
 		vector toMe    = headPos - shotPos;
 
 		float t = vector.Dot(toMe, dir);
 		if (t < 0)
-			return MISS_DIST_NOT_TOWARD_ME;
+			return 9999.0;
 
 		vector perpendicular = toMe - dir * t;
 		return perpendicular.Length();
@@ -631,16 +608,16 @@ modded class SCR_AIDangerReaction_WeaponFired
 	protected float ComputeThreatScore(float missDist, float audibility, int dangerEventCount)
 	{
 		float missScore = 0;
-		if (missDist <= MISS_DIST_DIRECT)
+		if (missDist <= 2.0)
 			missScore = 1.0;
-		else if (missDist < MISS_DIST_IRRELEVANT)
-			missScore = 1.0 - (missDist - MISS_DIST_DIRECT) / (MISS_DIST_IRRELEVANT - MISS_DIST_DIRECT);
+		else if (missDist < 25.0)
+			missScore = 1.0 - (missDist - 2.0) / (25.0 - 2.0);
 
-		float burstScore = Math.Clamp(dangerEventCount / THREAT_BURST_SATURATION, 0.0, 1.0);
+		float burstScore = Math.Clamp(dangerEventCount / 5.0, 0.0, 1.0);
 
-		float threat = missScore * THREAT_WEIGHT_MISS
-					 + audibility * THREAT_WEIGHT_PROXIMITY
-					 + burstScore * THREAT_WEIGHT_BURST;
+		float threat = missScore * 0.6
+					 + audibility * 0.25
+					 + burstScore * 0.15;
 
 		return Math.Clamp(threat, 0.0, 1.0);
 	}
@@ -750,7 +727,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 			lock = new DCO_ShotLookLock();
 			s_mLookLocks.Set(ownerEnt, lock);
 
-			if (s_mLookLocks.Count() > LOOK_LOCK_MAP_PRUNE_THRESHOLD)
+			if (s_mLookLocks.Count() > 128)
 				PruneLookLockMap(now_ms);
 		}
 
@@ -887,8 +864,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 		DCO_AIConfigComponent cfg = utility.m_DCOConfig;
 
-		float maxDist    = DODGE_MAX_DIST_FALLBACK;
-		float cooldown_s = DODGE_COOLDOWN_FALLBACK;
+		float maxDist    = 250.0;
+		float cooldown_s = 8.0;
 		float chance     = DODGE_CHANCE_FALLBACK;
 		bool  scalePers  = true;
 
@@ -909,8 +886,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
-		int   shotThreshold = DODGE_SHOT_THRESHOLD_FALLBACK;
-		float shotWindow_s  = DODGE_SHOT_WINDOW_FALLBACK;
+		int   shotThreshold = 1;
+		float shotWindow_s  = 5.0;
 		if (cfg)
 		{
 			shotThreshold = cfg.GetDodgeShotThreshold();
@@ -1043,13 +1020,13 @@ modded class SCR_AIDangerReaction_WeaponFired
 		if (dbg) DebugCover(ownerEnt, string.Format("COVER GO: BUILDING dulu roll=%1 chance=%2 threat=%3 oldRq fail=%4", coverRoll, chance, threatScore, DebugFailReason(oldRq)));
 
 		SCR_AICombatMoveRequest_Move buildingRq = PushBuildingMove(utility, state, perceivedShotPos);
-		utility.GetCallqueue().CallLater(CheckBuildingFallback, BUILDING_FALLBACK_POLL_MS, false,
-			utility, buildingRq, perceivedShotPos, threatScore, BUILDING_FALLBACK_MAX_POLLS);
+		utility.GetCallqueue().CallLater(CheckBuildingFallback, 250, false,
+			utility, buildingRq, perceivedShotPos, threatScore, 8);
 	}
 
 	protected SCR_AICombatMoveRequest_Move PushBuildingMove(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatMoveState state, vector perceivedShotPos)
 	{
-		float searchDist = DODGE_SEARCH_DIST_FALLBACK;
+		float searchDist = 30.0;
 		if (utility.m_DCOConfig)
 			searchDist = utility.m_DCOConfig.GetDodgeSearchDist();
 
@@ -1086,10 +1063,10 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 		DCO_CoverMoveBudget.MarkMove(utility.m_OwnerEntity);
 
-		float buildingHold_s = (BUILDING_FALLBACK_POLL_MS * BUILDING_FALLBACK_MAX_POLLS) / 1000.0 + COVER_BUILDING_HOLD_MARGIN_S;
+		float buildingHold_s = (250 * 8) / 1000.0 + 0.25;
 
 		if (m_bCoverVeryHighPriority)
-			state.DCO_ApplyCoverRequest(rq, Math.Max(buildingHold_s, rq.m_fMoveDuration_s + COVER_MOVE_HOLD_MARGIN_S));
+			state.DCO_ApplyCoverRequest(rq, Math.Max(buildingHold_s, rq.m_fMoveDuration_s + 1.0));
 		else
 			state.ApplyNewRequest(rq);
 
@@ -1103,7 +1080,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 	protected void PushCoverMove(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatMoveState state, vector perceivedShotPos, float threatScore)
 	{
-		float searchDist = DODGE_SEARCH_DIST_FALLBACK;
+		float searchDist = 30.0;
 		if (utility.m_DCOConfig)
 			searchDist = utility.m_DCOConfig.GetDodgeSearchDist();
 
@@ -1141,7 +1118,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		DCO_CoverMoveBudget.MarkMove(utility.m_OwnerEntity);
 
 		if (m_bCoverVeryHighPriority)
-			state.DCO_ApplyCoverRequest(rq, rq.m_fMoveDuration_s + COVER_MOVE_HOLD_MARGIN_S);
+			state.DCO_ApplyCoverRequest(rq, rq.m_fMoveDuration_s + 1.0);
 		else
 			state.ApplyNewRequest(rq);
 
@@ -1153,8 +1130,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 				searchDist, typename.EnumToString(SCR_EAICombatMoveDirection, rq.m_eDirection), typename.EnumToString(ECharacterStance, rq.m_eStanceEnd), state.IsExecutingRequest()));
 		}
 
-		utility.GetCallqueue().CallLater(CheckCoverMoveWatchdog, BUILDING_FALLBACK_POLL_MS, false,
-			utility, rq, BUILDING_FALLBACK_MAX_POLLS);
+		utility.GetCallqueue().CallLater(CheckCoverMoveWatchdog, 250, false,
+			utility, rq, 8);
 	}
 
 	protected void CheckCoverMoveWatchdog(SCR_AIUtilityComponent utility, SCR_AICombatMoveRequest_Move coverRq, int pollsLeft)
@@ -1192,7 +1169,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
-		utility.GetCallqueue().CallLater(CheckCoverMoveWatchdog, BUILDING_FALLBACK_POLL_MS, false,
+		utility.GetCallqueue().CallLater(CheckCoverMoveWatchdog, 250, false,
 			utility, coverRq, pollsLeft);
 	}
 
@@ -1256,7 +1233,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
-		utility.GetCallqueue().CallLater(CheckBuildingFallback, BUILDING_FALLBACK_POLL_MS, false,
+		utility.GetCallqueue().CallLater(CheckBuildingFallback, 250, false,
 			utility, buildingRq, perceivedShotPos, threatScore, pollsLeft);
 	}
 
@@ -1282,7 +1259,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		float now_ms = GetGame().GetWorld().GetWorldTime();
 		s_mLastInvestigateTime.Set(entity, now_ms);
 
-		if (s_mLastInvestigateTime.Count() > INVESTIGATE_MAP_PRUNE_THRESHOLD)
+		if (s_mLastInvestigateTime.Count() > 128)
 			PruneInvestigateMap(now_ms);
 	}
 
@@ -1311,8 +1288,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 		DCO_AIConfigComponent cfg = utility.m_DCOConfig;
 
-		float maxDist    = DODGE_MAX_DIST_FALLBACK;
-		float cooldown_s = DODGE_COOLDOWN_FALLBACK;
+		float maxDist    = 250.0;
+		float cooldown_s = 8.0;
 		float chance     = DODGE_CHANCE_FALLBACK;
 		bool  scalePers  = true;
 
@@ -1327,8 +1304,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 		if (distance > maxDist)
 			return;
 
-		int   shotThreshold = DODGE_SHOT_THRESHOLD_FALLBACK;
-		float shotWindow_s  = DODGE_SHOT_WINDOW_FALLBACK;
+		int   shotThreshold = 1;
+		float shotWindow_s  = 5.0;
 		if (cfg)
 		{
 			shotThreshold = cfg.GetDodgeShotThreshold();
@@ -1375,7 +1352,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 	{
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 
-		float searchDist = DODGE_SEARCH_DIST_FALLBACK;
+		float searchDist = 30.0;
 		if (utility.m_DCOConfig)
 			searchDist = utility.m_DCOConfig.GetDodgeSearchDist();
 
@@ -1512,7 +1489,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		s_mDodgeShotCount.Set(entity, count);
 		s_mDodgeShotLast_ms.Set(entity, now_ms);
 
-		if (s_mDodgeShotLast_ms.Count() > INVESTIGATE_MAP_PRUNE_THRESHOLD)
+		if (s_mDodgeShotLast_ms.Count() > 128)
 			PruneDodgeShotMaps(now_ms, window_s);
 
 		return count;
@@ -1565,7 +1542,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		float now_ms = GetGame().GetWorld().GetWorldTime();
 		s_mLastDodgeTime.Set(entity, now_ms);
 
-		if (s_mLastDodgeTime.Count() > INVESTIGATE_MAP_PRUNE_THRESHOLD)
+		if (s_mLastDodgeTime.Count() > 128)
 			PruneDodgeMap(now_ms, cooldown_s);
 	}
 

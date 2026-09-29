@@ -21,9 +21,7 @@ class DCO_GarrisonBuilding
 
 class DCO_GarrisonRegistry
 {
-	static const int TRACE_BUDGET_PER_FRAME = 60;
 	static const float MIN_BUILDING_HALF_WIDTH = 4.0;
-	static const int UNREACHABLE_FAILS = 2;
 
 	protected static ref DCO_GarrisonRegistry s_Instance;
 	static bool s_bDebugDraw;
@@ -141,7 +139,6 @@ class DCO_GarrisonRegistry
 		return b && b.m_Owner && b.m_Owner != group;
 	}
 
-	protected static const float SOFT_OWNER_TTL_MS = 180000;
 	protected ref map<IEntity, AIGroup> m_mSoftOwner = new map<IEntity, AIGroup>();
 	protected ref map<IEntity, float> m_mSoftTime = new map<IEntity, float>();
 
@@ -172,7 +169,7 @@ class DCO_GarrisonRegistry
 		AIGroup soft;
 		if (!m_mSoftOwner.Find(building, soft))
 			return false;
-		if (!soft || soft.GetAgentsCount() == 0 || GetGame().GetWorld().GetWorldTime() - m_mSoftTime.Get(building) > SOFT_OWNER_TTL_MS)
+		if (!soft || soft.GetAgentsCount() == 0 || GetGame().GetWorld().GetWorldTime() - m_mSoftTime.Get(building) > 180000.0)
 		{
 			m_mSoftOwner.Remove(building);
 			m_mSoftTime.Remove(building);
@@ -276,7 +273,7 @@ class DCO_GarrisonRegistry
 	protected void ProcessQueue()
 	{
 		m_iFramesBusy++;
-		int budget = TRACE_BUDGET_PER_FRAME;
+		int budget = 60;
 		while (budget > 0 && !m_aQueue.IsEmpty())
 		{
 			DCO_GarrisonSlotGenerator gen = m_aQueue[0];
@@ -331,7 +328,7 @@ class DCO_GarrisonRegistry
 		foreach (DCO_GarrisonSlot src : prefabSlots.m_aSlots)
 		{
 			DCO_GarrisonSlot s = src.Duplicate();
-			s.m_bUnreachable = src.m_iFailCount >= UNREACHABLE_FAILS;
+			s.m_bUnreachable = src.m_iFailCount >= 2;
 			s.m_vWorldPos = b.m_Entity.CoordToParent(s.m_vLocalPos);
 			vector dir = b.m_Entity.VectorToParent(DCO_GarrisonSlot.YawToDir(s.m_fLocalYaw));
 			dir[1] = 0;

@@ -1,31 +1,21 @@
 class DCO_UISettings
 {
-	protected static const string FILE = "$profile:DCO_UI.json";
 	static const ref array<string> POSITIONS = {"topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright"};
 	static const ref array<string> POSITION_NAMES = {"Top left", "Top", "Top right", "Left", "Center", "Right", "Bottom left", "Bottom", "Bottom right"};
 
-	protected static const float DEFAULT_SCALE = 0.8;
-	protected static const string DEFAULT_POS = "bottomleft";
-	protected static const float DEFAULT_OFF_X = 60;
-	protected static const float DEFAULT_OFF_Y = 25;
-	protected static const float DEFAULT_C_SCALE = 0.8;
-	protected static const string DEFAULT_C_POS = "right";
-	protected static const float DEFAULT_C_OFF_X = 40;
-	protected static const float DEFAULT_C_OFF_Y = 0;
-	protected static const float DEFAULT_C_HOLD = 5;
 
 	protected static bool s_bLoaded;
-	protected static float s_fScale = DEFAULT_SCALE;
-	protected static string s_sPos = DEFAULT_POS;
-	protected static float s_fOffX = DEFAULT_OFF_X;
-	protected static float s_fOffY = DEFAULT_OFF_Y;
+	protected static float s_fScale = 0.8;
+	protected static string s_sPos = "bottomleft";
+	protected static float s_fOffX = 60.0;
+	protected static float s_fOffY = 25.0;
 
 	protected static bool s_bContactShow = true;
-	protected static float s_fContactScale = DEFAULT_C_SCALE;
-	protected static string s_sContactPos = DEFAULT_C_POS;
-	protected static float s_fContactOffX = DEFAULT_C_OFF_X;
-	protected static float s_fContactOffY = DEFAULT_C_OFF_Y;
-	protected static float s_fContactHold = DEFAULT_C_HOLD;
+	protected static float s_fContactScale = 0.8;
+	protected static string s_sContactPos = "right";
+	protected static float s_fContactOffX = 40.0;
+	protected static float s_fContactOffY = 0.0;
+	protected static float s_fContactHold = 5.0;
 	protected static bool s_bContactSound = true;
 	protected static int s_iMapPalette = 0;
 
@@ -56,16 +46,16 @@ class DCO_UISettings
 	static void ResetAll()
 	{
 		Load();
-		s_fScale = DEFAULT_SCALE;
-		s_sPos = DEFAULT_POS;
-		s_fOffX = DEFAULT_OFF_X;
-		s_fOffY = DEFAULT_OFF_Y;
+		s_fScale = 0.8;
+		s_sPos = "bottomleft";
+		s_fOffX = 60.0;
+		s_fOffY = 25.0;
 		s_bContactShow = true;
-		s_fContactScale = DEFAULT_C_SCALE;
-		s_sContactPos = DEFAULT_C_POS;
-		s_fContactOffX = DEFAULT_C_OFF_X;
-		s_fContactOffY = DEFAULT_C_OFF_Y;
-		s_fContactHold = DEFAULT_C_HOLD;
+		s_fContactScale = 0.8;
+		s_sContactPos = "right";
+		s_fContactOffX = 40.0;
+		s_fContactOffY = 0.0;
+		s_fContactHold = 5.0;
 		s_bContactSound = true;
 		s_iMapPalette = 0;
 		Save();
@@ -152,11 +142,11 @@ class DCO_UISettings
 		if (s_bLoaded)
 			return;
 		s_bLoaded = true;
-		if (!FileIO.FileExists(FILE))
+		if (!FileIO.FileExists("$profile:DCO_UI.json"))
 			return;
 
 		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
-		if (!ctx.LoadFromFile(FILE))
+		if (!ctx.LoadFromFile("$profile:DCO_UI.json"))
 			return;
 
 		float f;
@@ -204,6 +194,6 @@ class DCO_UISettings
 		ctx.WriteValue("contactHold", s_fContactHold);
 		ctx.WriteValue("contactSound", s_bContactSound);
 		ctx.WriteValue("mapPalette", s_iMapPalette);
-		ctx.SaveToFile(FILE);
+		ctx.SaveToFile("$profile:DCO_UI.json");
 	}
 }

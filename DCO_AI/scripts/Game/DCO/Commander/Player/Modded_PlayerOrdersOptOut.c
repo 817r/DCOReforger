@@ -152,6 +152,17 @@ modded class SCR_PlayerControllerGroupComponent
 		DCO_MapOverlay.SetData(groups, objectives);
 	}
 
+	void DCO_SendTransportMarks(array<float> marks)
+	{
+		Rpc(RPC_DCO_TransportMarks, marks);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Owner)]
+	protected void RPC_DCO_TransportMarks(array<float> marks)
+	{
+		DCO_MapOverlay.SetTransport(marks);
+	}
+
 	void DCO_RequestOrders(bool decline, string commanderUID)
 	{
 		Rpc(RPC_DCO_Orders, decline, commanderUID);
@@ -180,7 +191,6 @@ modded class SCR_PlayerControllerGroupComponent
 
 modded class SCR_GroupSubMenuBase
 {
-	protected static const string DCO_ORDERS_ACTION = "MenuLockGroup";
 	protected SCR_InputButtonComponent m_DCO_OrdersButton;
 	protected bool m_bDCO_Pending;
 	protected bool m_bDCO_PendingDecline;
@@ -192,7 +202,7 @@ modded class SCR_GroupSubMenuBase
 		if (!m_PlayerGroupController)
 			return;
 
-		m_DCO_OrdersButton = CreateNavigationButton(DCO_ORDERS_ACTION, "Commander Orders", true);
+		m_DCO_OrdersButton = CreateNavigationButton("MenuLockGroup", "Commander Orders", true);
 		if (m_DCO_OrdersButton)
 			m_DCO_OrdersButton.m_OnActivated.Insert(DCO_ToggleOrders);
 	}

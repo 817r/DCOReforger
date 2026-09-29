@@ -59,34 +59,6 @@ class DCO_CounterAttack
 class DCO_CommanderDefense
 {
 	protected static const float TICK_S = 2;
-	protected static const float PLAN_S = 60;
-	protected static const float PLAN_COOLDOWN_S = 180;
-	protected static const float SITE_MIN = 60;
-	protected static const float SITE_MAX = 180;
-	protected static const float SITE_RING = 110;
-	protected static const float RALLY_DIST = 150;
-	protected static const float OWN_OBJ_CLEAR = 100;
-	protected static const float SET_DIST = 40;
-	protected static const float MOVE_MAX_S = 300;
-	protected static const float TARGET_FRESH_S = 5;
-	protected static const float TARGET_GONE_S = 15;
-	protected static const float WITHDRAW_MAX_S = 150;
-	protected static const float OPEN_DELAY_S = 3;
-	protected static const float MSR_WINDOW_S = 1200;
-	protected static const float MSR_PASS_GAP_S = 90;
-	protected static const float MSR_MATCH_DIST = 150;
-	protected static const float MSR_MIN_SPEED = 4;
-	protected static const int MSR_SIGHTINGS = 2;
-	protected static const float DANGER_TTL_S = 1200;
-	protected static const float DANGER_RADIUS = 150;
-	protected static const float CB_NOTIFY_RADIUS = 150;
-	protected static const float CB_TTL_S = 600;
-	protected static const float CB_FIRE_COOLDOWN_S = 120;
-	protected static const int CB_SHELLS = 4;
-	protected static const float HUNTER_TIMEOUT_S = 600;
-	protected static const int OP_TEAM = 3;
-	protected static const float COUNTER_RANGE = 1200;
-	protected static const float COUNTER_MIN_ENEMY = 4;
 
 	protected ref array<ref DCO_Ambush> m_aAmbush = {};
 	protected ref array<ref DCO_OPPost> m_aOP = {};
@@ -119,7 +91,7 @@ class DCO_CommanderDefense
 		UpdateCB(cmd, now);
 
 		m_fPlanTimer += TICK_S;
-		if (m_fPlanTimer < PLAN_S)
+		if (m_fPlanTimer < 60.0)
 			return;
 		m_fPlanTimer = 0;
 		PurgeDangers(now);
@@ -180,7 +152,7 @@ class DCO_CommanderDefense
 			return;
 		foreach (DCO_RoadTrack t : m_aRoads)
 		{
-			if (t.m_bUsed || t.m_iCount < MSR_SIGHTINGS || now - t.m_fLast > MSR_WINDOW_S)
+			if (t.m_bUsed || t.m_iCount < 2 || now - t.m_fLast > 1200.0)
 				continue;
 			if (!CanStartAmbush(cmd, now))
 				return;
@@ -193,7 +165,7 @@ class DCO_CommanderDefense
 
 	protected void StartAmbush(AICommander_BaseComponent cmd, int kind, vector kill, vector approachDir, bool vehicle, string reason, CMD_AICommanderObjectiveComponent obj, float now)
 	{
-		m_fNextAmbush = now + PLAN_COOLDOWN_S;
+		m_fNextAmbush = now + 180.0;
 		string objName = "none";
 		if (obj)
 			objName = obj.GetOwner().GetName();
@@ -225,7 +197,7 @@ class DCO_CommanderDefense
 		vector away = site - kill;
 		away[1] = 0;
 		away.Normalize();
-		a.m_vRally = Surface(site + away * RALLY_DIST);
+		a.m_vRally = Surface(site + away * 150.0);
 		if (IsWet(a.m_vRally))
 			a.m_vRally = site;
 
@@ -251,7 +223,7 @@ class DCO_CommanderDefense
 		array<vector> cands = {};
 		array<float> bonus = {};
 		array<DCO_TerrainPoint> pts = {};
-		DCO_TerrainCache.Query(DCO_ETerrainFlag.FOREST_EDGE | DCO_ETerrainFlag.HILLTOP | DCO_ETerrainFlag.OVERWATCH, kill, SITE_MAX, pts);
+		DCO_TerrainCache.Query(DCO_ETerrainFlag.FOREST_EDGE | DCO_ETerrainFlag.HILLTOP | DCO_ETerrainFlag.OVERWATCH, kill, 180.0, pts);
 		foreach (DCO_TerrainPoint p : pts)
 		{
 			float b = p.m_fRelElev * 0.1;
@@ -263,7 +235,7 @@ class DCO_CommanderDefense
 		for (int i = 0; i < 12; i++)
 		{
 			float ang = i * 30 * Math.DEG2RAD;
-			cands.Insert(kill + Vector(Math.Cos(ang), 0, Math.Sin(ang)) * SITE_RING);
+			cands.Insert(kill + Vector(Math.Cos(ang), 0, Math.Sin(ang)) * 110.0);
 			bonus.Insert(0);
 		}
 
@@ -273,7 +245,7 @@ class DCO_CommanderDefense
 		{
 			vector c = Surface(raw);
 			float d = vector.DistanceXZ(c, kill);
-			if (d < SITE_MIN || d > SITE_MAX)
+			if (d < 60.0 || d > 180.0)
 				continue;
 			vector rel = c - kill;
 			rel[1] = 0;
@@ -284,7 +256,7 @@ class DCO_CommanderDefense
 			if (IsWet(c) || NearOwnObjective(cmd, c) || NearThreat(cmd, c, 100) || !HasLOS(c, kill))
 				continue;
 
-			float s = bonus[k] + (1 - Math.AbsFloat(along)) * 2 - Math.AbsFloat(d - SITE_RING) / 60;
+			float s = bonus[k] + (1 - Math.AbsFloat(along)) * 2 - Math.AbsFloat(d - 110.0) / 60;
 			if (s > best)
 			{
 				best = s;
@@ -355,7 +327,7 @@ class DCO_CommanderDefense
 			{
 				case 0:
 				{
-					if (AllNear(a, a.m_vPos, SET_DIST) || now - a.m_fStateTime > MOVE_MAX_S)
+					if (AllNear(a, a.m_vPos, 40.0) || now - a.m_fStateTime > 300.0)
 					{
 						float moveS = now - a.m_fStateTime;
 						a.m_iState = 1;
@@ -395,7 +367,7 @@ class DCO_CommanderDefense
 					int enemies = CountTargets(a, a.m_vPos, 300, dummy);
 					if (now - a.m_fStateTime > cmd.GetAmbushFireTime())
 						Withdraw(cmd, a, "fire_time", now);
-					else if (now - a.m_fLastTarget > TARGET_GONE_S)
+					else if (now - a.m_fLastTarget > 15.0)
 						Withdraw(cmd, a, "target_gone", now);
 					else if (enemies > Strength(a) * 1.5)
 						Withdraw(cmd, a, "enemy_stronger", now);
@@ -403,7 +375,7 @@ class DCO_CommanderDefense
 				}
 				case 3:
 				{
-					if (AllNear(a, a.m_vRally, SET_DIST) || now - a.m_fStateTime > WITHDRAW_MAX_S)
+					if (AllNear(a, a.m_vRally, 40.0) || now - a.m_fStateTime > 150.0)
 					{
 						foreach (DCO_GroupUtilityComponent rg : a.m_aGroups)
 						{
@@ -424,7 +396,7 @@ class DCO_CommanderDefense
 		a.m_iState = 2;
 		a.m_fStateTime = now;
 		a.m_fLastTarget = now;
-		a.m_fOpenAt = now + OPEN_DELAY_S;
+		a.m_fOpenAt = now + 3.0;
 
 		DCO_GroupUtilityComponent opener;
 		foreach (DCO_GroupUtilityComponent g : a.m_aGroups)
@@ -477,7 +449,7 @@ class DCO_CommanderDefense
 			int n = 0;
 			foreach (SCR_AITargetInfo t : u.GetPercGroupComp().m_aTargets)
 			{
-				if (!t || pmNow - t.m_fTimestamp > TARGET_FRESH_S)
+				if (!t || pmNow - t.m_fTimestamp > 5.0)
 					continue;
 				if (t.m_eCategory != EAITargetInfoCategory.DETECTED && t.m_eCategory != EAITargetInfoCategory.IDENTIFIED)
 					continue;
@@ -536,7 +508,7 @@ class DCO_CommanderDefense
 		float now = report.m_fInfoTime;
 		vector vel = report.m_vVelocity;
 		vel[1] = 0;
-		if (vel.Length() >= MSR_MIN_SPEED)
+		if (vel.Length() >= 4.0)
 			TrackRoadSighting(report.m_vPosition, vel, now);
 
 		if (grp && grp.GetOwner() && grp.HasState(DCO_EGroupState.SUPPRESSED)
@@ -558,11 +530,11 @@ class DCO_CommanderDefense
 		vector dir = vel.Normalized();
 		foreach (DCO_RoadTrack t : m_aRoads)
 		{
-			if (now - t.m_fLast > MSR_WINDOW_S || vector.DistanceXZ(t.m_vPos, pos) > MSR_MATCH_DIST)
+			if (now - t.m_fLast > 1200.0 || vector.DistanceXZ(t.m_vPos, pos) > 150.0)
 				continue;
 			if (Math.AbsFloat(t.m_vDir[0] * dir[0] + t.m_vDir[2] * dir[2]) < 0.6)
 				continue;
-			if (now - t.m_fLast >= MSR_PASS_GAP_S)
+			if (now - t.m_fLast >= 90.0)
 			{
 				t.m_iCount++;
 				Event(string.Format("def_msr_sighting pos=%1 count=%2", t.m_vPos, t.m_iCount));
@@ -585,15 +557,15 @@ class DCO_CommanderDefense
 	{
 		foreach (CMD_ThreatEntry d : m_aDanger)
 		{
-			if (vector.DistanceXZ(d.m_vBelievedPos, pos) < DANGER_RADIUS)
+			if (vector.DistanceXZ(d.m_vBelievedPos, pos) < 150.0)
 			{
 				d.m_fLastUpdateTime = now;
 				return;
 			}
 		}
 		CMD_ThreatEntry e = new CMD_ThreatEntry(pos, 4, now, null);
-		e.m_fBelievedUncertainty = DANGER_RADIUS;
-		e.m_fUncertainty = DANGER_RADIUS;
+		e.m_fBelievedUncertainty = 150.0;
+		e.m_fUncertainty = 150.0;
 		m_aDanger.Insert(e);
 		Event(string.Format("def_danger_zone pos=%1", pos));
 	}
@@ -602,7 +574,7 @@ class DCO_CommanderDefense
 	{
 		for (int i = m_aDanger.Count() - 1; i >= 0; i--)
 		{
-			if (now - m_aDanger[i].m_fLastUpdateTime > DANGER_TTL_S)
+			if (now - m_aDanger[i].m_fLastUpdateTime > 1200.0)
 				m_aDanger.Remove(i);
 		}
 	}
@@ -627,7 +599,7 @@ class DCO_CommanderDefense
 			vector rel = d.m_vBelievedPos - from;
 			float len2 = Math.Max(seg[0] * seg[0] + seg[2] * seg[2], 1);
 			float tt = Math.Clamp((rel[0] * seg[0] + rel[2] * seg[2]) / len2, 0, 1);
-			if (vector.DistanceXZ(from + seg * tt, d.m_vBelievedPos) < DANGER_RADIUS)
+			if (vector.DistanceXZ(from + seg * tt, d.m_vBelievedPos) < 150.0)
 				return true;
 		}
 		return false;
@@ -695,7 +667,7 @@ class DCO_CommanderDefense
 		p.m_sPurpose = purpose;
 		p.m_fStart = now;
 
-		if (parent.GetUnitCount() <= OP_TEAM + 1)
+		if (parent.GetUnitCount() <= 3 + 1)
 			p.m_Group = parent;
 		else
 		{
@@ -706,7 +678,7 @@ class DCO_CommanderDefense
 			AIAgent leader = pg.GetLeaderAgent();
 			foreach (AIAgent ag : agents)
 			{
-				if (ag && ag != leader && team.Count() < OP_TEAM)
+				if (ag && ag != leader && team.Count() < 3)
 					team.Insert(ag);
 			}
 			SCR_AIGroup ng = DCO_Logistics.SplitIntoNewGroup(pg, team, cmd);
@@ -834,7 +806,7 @@ class DCO_CommanderDefense
 	protected bool TryCounterAttack(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, float now)
 	{
 		vector p = obj.GetOwner().GetOrigin();
-		float enemy = Math.Max(cmd.EstimateEnemyAt(obj), COUNTER_MIN_ENEMY);
+		float enemy = Math.Max(cmd.EstimateEnemyAt(obj), 4.0);
 		float need = cmd.GetMinAttackRatio() * enemy;
 
 		array<DCO_GroupUtilityComponent> cands = {};
@@ -846,7 +818,7 @@ class DCO_CommanderDefense
 			if (!g.CanCommanderOverrideRole() || !g.CanItHaveOrder() || !cmd.CanCommitGroup(g))
 				continue;
 			float d = vector.DistanceXZ(g.GetOwner().GetOrigin(), p);
-			if (d > COUNTER_RANGE)
+			if (d > 1200.0)
 				continue;
 			int at = 0;
 			while (at < dists.Count() && dists[at] <= d)
@@ -903,7 +875,7 @@ class DCO_CommanderDefense
 				continue;
 			foreach (DCO_GroupUtilityComponent g : victim.GetOwnedGroups())
 			{
-				if (g && g.GetOwner() && vector.DistanceXZ(g.GetOwner().GetOrigin(), impact) <= CB_NOTIFY_RADIUS)
+				if (g && g.GetOwner() && vector.DistanceXZ(g.GetOwner().GetOrigin(), impact) <= 150.0)
 				{
 					victim.GetDefense().OnIndirectFire(victim, unit.GetOwner(), unit.GetOwner().GetOrigin(), now);
 					break;
@@ -956,7 +928,7 @@ class DCO_CommanderDefense
 		for (int i = m_aCB.Count() - 1; i >= 0; i--)
 		{
 			DCO_CBTrack t = m_aCB[i];
-			if (now - t.m_fLast > CB_TTL_S)
+			if (now - t.m_fLast > 600.0)
 			{
 				ReleaseHunter(t);
 				m_aCB.Remove(i);
@@ -964,7 +936,7 @@ class DCO_CommanderDefense
 			}
 
 			vector est = t.m_Entry.m_vBelievedPos;
-			if (t.m_Hunter && (now - t.m_fHunterStart > HUNTER_TIMEOUT_S || t.m_Hunter.GetTask() != DCO_EGroupTask.REINFORCE))
+			if (t.m_Hunter && (now - t.m_fHunterStart > 600.0 || t.m_Hunter.GetTask() != DCO_EGroupTask.REINFORCE))
 				ReleaseHunter(t);
 
 			CMD_ArtillerySupport arty = cmd.GetArtySupport();
@@ -973,18 +945,18 @@ class DCO_CommanderDefense
 				tier = arty.ResolveTier(t.m_Entry.m_fBelievedUncertainty);
 			if (tier != "none")
 			{
-				if (!arty.HasRegisteredUnits() || now - t.m_fLastFire < CB_FIRE_COOLDOWN_S)
+				if (!arty.HasRegisteredUnits() || now - t.m_fLastFire < 120.0)
 					continue;
-				CMD_FireMissionRequest req = new CMD_FireMissionRequest(est, SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE, now, CB_SHELLS, t.m_fLast, 0.8);
+				CMD_FireMissionRequest req = new CMD_FireMissionRequest(est, SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE, now, 4, t.m_fLast, 0.8);
 				arty.ApplyTier(req, tier, t.m_Entry.m_fBelievedUncertainty, "cb");
 				if (arty.HasFriendlyNearRequest(req, now))
 				{
 					CMD_ArtillerySupport.LogDenied(req, "friendly");
 					continue;
 				}
-				arty.RequestShellImpact(req, now, CB_SHELLS);
+				arty.RequestShellImpact(req, now, 4);
 				t.m_fLastFire = now;
-				Event(string.Format("def_cb_fire unc=%1 error=%2 shells=%3", Math.Round(t.m_Entry.m_fBelievedUncertainty), Math.Round(vector.DistanceXZ(est, t.m_vTruePos)), CB_SHELLS));
+				Event(string.Format("def_cb_fire unc=%1 error=%2 shells=%3", Math.Round(t.m_Entry.m_fBelievedUncertainty), Math.Round(vector.DistanceXZ(est, t.m_vTruePos)), 4));
 				continue;
 			}
 
@@ -995,7 +967,7 @@ class DCO_CommanderDefense
 				continue;
 			h.CompleteAllWaypoints();
 			h.SetTask(DCO_EGroupTask.REINFORCE);
-			h.DCO_SetHold(now + HUNTER_TIMEOUT_S);
+			h.DCO_SetHold(now + 600.0);
 			if (!cmd.SpawnMoveRoute(h, h.GetOwner().GetOrigin(), est, now))
 			{
 				h.SetTask(DCO_EGroupTask.NONE);
@@ -1100,7 +1072,7 @@ class DCO_CommanderDefense
 			return false;
 		foreach (CMD_AICommanderObjectiveComponent o : mgr.m_aObjective)
 		{
-			if (o && o.IsCapturedBy(cmd.GetCommanderFactionKey()) && vector.DistanceXZ(o.GetOwner().GetOrigin(), p) < o.GetRadius() + OWN_OBJ_CLEAR)
+			if (o && o.IsCapturedBy(cmd.GetCommanderFactionKey()) && vector.DistanceXZ(o.GetOwner().GetOrigin(), p) < o.GetRadius() + 100.0)
 				return true;
 		}
 		return false;

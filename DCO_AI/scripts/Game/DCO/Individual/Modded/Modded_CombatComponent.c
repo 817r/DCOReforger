@@ -1,27 +1,9 @@
 modded class SCR_AICombatComponent
 {
-	static const int			 TARGET_ENDANGERED_TIMEOUT_S = 12;
-	static const float			 ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.1;
 
-	static const float AIM_IMPROVEMENT_INCREASE = 0.001;
-	static const float AIM_IMPROVEMENT_DECREASE = 0.005;
-	static const float AIM_MORALE = 0.00001;
-	static const float AIM_IMPROVEMENT_CONST_DECREASE = AIM_IMPROVEMENT_DECREASE;
-	static const float AIM_IMPROVEMENT_CONST_DECREASE_SUPPRESSED_MULTIPLIER = 2;
-	static const float AIM_IMPROVEMENT_TARGET = 0.3;
-	static const float AIM_IMPROVEMENT_MIN = 0.05;
+	static const float AIM_IMPROVEMENT_CONST_DECREASE = 0.005;
 
-	static const float SCOPE_PERCEPTION_GAIN = 0.15;
-	static const float SCOPE_TUNNEL_HALF_ANGLE = 20.0;
-	static const float SCOPE_TUNNEL_DELAY_PER_MAG = 1.0;
 
-	          static const float TARGET_MAX_LAST_SEEN = 11.0;
-	protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.5;
-	protected static const float TARGET_MAX_DISTANCE_VEHICLE = 800.0;
-	protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.2;
-	protected static const float TARGET_MAX_TIME_SINCE_ENDANGERED = 5.0;
-	protected static const float TARGET_SCORE_RETREAT = 75.0;
-	static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 98.5;
 
 	protected const float PERCEPTION_FACTOR_SAFE = 1.2;
 	protected const float PERCEPTION_FACTOR_VIGILANT = 4.2;
@@ -52,7 +34,7 @@ modded class SCR_AICombatComponent
 	protected void DCO_ResolveEngagement(out float infantry, out float vehicle)
 	{
 		infantry = TARGET_MAX_DISTANCE_INFANTRY;
-		vehicle = TARGET_MAX_DISTANCE_VEHICLE;
+		vehicle = 800.0;
 
 		SCR_ChimeraAIAgent agent = GetAiAgent();
 		if (!agent)
@@ -82,12 +64,12 @@ modded class SCR_AICombatComponent
 		if (closeCombat)
 		{
 			m_WeaponTargetSelector.SetSelectionProperties(TARGET_MAX_LAST_SEEN_DIRECT_ATTACK_CLOSE, TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_CLOSE, TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK_CLOSE,
-				TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN, m_fDCOEngageInfantry, m_fDCOEngageVehicle, TARGET_MAX_TIME_SINCE_ENDANGERED, TARGET_MAX_DISTANCE_DISARMED);
+				0.5, m_fDCOEngageInfantry, m_fDCOEngageVehicle, 5.0, 0.2);
 			return;
 		}
 
-		m_WeaponTargetSelector.SetSelectionProperties(TARGET_MAX_LAST_SEEN_DIRECT_ATTACK, TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK, TARGET_MAX_LAST_SEEN,
-			TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN, m_fDCOEngageInfantry, m_fDCOEngageVehicle, TARGET_MAX_TIME_SINCE_ENDANGERED, TARGET_MAX_DISTANCE_DISARMED);
+		m_WeaponTargetSelector.SetSelectionProperties(TARGET_MAX_LAST_SEEN_DIRECT_ATTACK, TARGET_MAX_LAST_SEEN_INDIRECT_ATTACK, 11.0,
+			0.5, m_fDCOEngageInfantry, m_fDCOEngageVehicle, 5.0, 0.2);
 	}
 
 	void DecreaseAim()
@@ -101,7 +83,7 @@ modded class SCR_AICombatComponent
 	{
 		float penalty = 3.0;
 		if (DCO_CQC.IsCQC(m_Utility))
-			penalty *= DCO_CQC.TARGET_SWITCH_SCALE;
+			penalty *= 0.3;
 		m_fTimeElapsed -= slicedTime * penalty;
     	if (m_fTimeElapsed < 0)
 			m_fTimeElapsed = 0;
@@ -134,18 +116,18 @@ modded class SCR_AICombatComponent
 		float now = GetGame().GetWorld().GetWorldTime();
 		if (now < m_fDCOLeanNextEval_ms)
 			return;
-		m_fDCOLeanNextEval_ms = now + DCO_CQC.LEAN_EVAL_MS;
+		m_fDCOLeanNextEval_ms = now + 500.0;
 
 		float wanted = 0;
 		bool canLean = m_SelectedTarget && m_SelectedTarget.GetTargetEntity() && !ch.IsInVehicle()
-			&& m_SelectedTarget.GetTimeSinceSeen() < DCO_CQC.LEAN_TARGET_SEEN_S
+			&& m_SelectedTarget.GetTimeSinceSeen() < 10.0
 			&& m_CharacterController.GetStance() != ECharacterStance.PRONE
-			&& (!ch.GetPhysics() || ch.GetPhysics().GetVelocity().Length() < DCO_CQC.LEAN_MAX_SPEED);
+			&& (!ch.GetPhysics() || ch.GetPhysics().GetVelocity().Length() < 0.5);
 
 		if (canLean)
 		{
-			vector targetPos = m_SelectedTarget.GetLastSeenPosition() + vector.Up * DCO_CQC.LEAN_AIM_HEIGHT;
-			if (vector.Distance(ch.GetOrigin(), targetPos) < DCO_CQC.LEAN_MAX_DIST)
+			vector targetPos = m_SelectedTarget.GetLastSeenPosition() + vector.Up * 1.3;
+			if (vector.Distance(ch.GetOrigin(), targetPos) < 150.0)
 				wanted = DCO_CQC.ResolveLean(ch, m_SelectedTarget.GetTargetEntity(), targetPos, m_fDCOLean);
 
 			if (wanted == 0 && m_fDCOLean != 0 && now < m_fDCOLeanHoldUntil_ms)
@@ -155,12 +137,12 @@ modded class SCR_AICombatComponent
 		if (wanted == m_fDCOLean)
 		{
 			if (wanted != 0)
-				m_fDCOLeanHoldUntil_ms = now + DCO_CQC.LEAN_HOLD_MS;
+				m_fDCOLeanHoldUntil_ms = now + 1500.0;
 			return;
 		}
 
 		m_fDCOLean = wanted;
-		m_fDCOLeanHoldUntil_ms = now + DCO_CQC.LEAN_HOLD_MS;
+		m_fDCOLeanHoldUntil_ms = now + 1500.0;
 		m_CharacterController.SetWantedLeaning(wanted);
 	}
 
@@ -321,7 +303,7 @@ modded class SCR_AICombatComponent
 		BaseTarget targetCantAttack;
 		float targetCantAttackScore;
 		m_WeaponTargetSelector.GetMostRelevantTargetCantAttack(targetCantAttack, targetCantAttackScore);
-		if (targetCantAttackScore < TARGET_SCORE_RETREAT)
+		if (targetCantAttackScore < 75.0)
 			targetCantAttack = null;
 		if (targetCantAttack != m_SelectedRetreatTarget)
 		{
@@ -391,7 +373,7 @@ modded class SCR_AICombatComponent
 
 		float extraMag = DCO_GetScopedADSExtraMag();
 		if (extraMag > 0)
-			perceptionFactor *= 1 + extraMag * SCOPE_PERCEPTION_GAIN;
+			perceptionFactor *= 1 + extraMag * 0.15;
 
 		perceptionComp.SetPerceptionFactor(perceptionFactor);
 	}
@@ -407,7 +389,7 @@ modded class SCR_AICombatComponent
 			return null;
 
 		BaseTarget target = m_Utility.m_PerceptionComponent.GetTargetPerceptionObject(shooter, ETargetCategory.ENEMY);
-		if (!target || target.GetTimeSinceSeen() > DCO_VehicleCombat.AT_SEEN_MAX_S)
+		if (!target || target.GetTimeSinceSeen() > 6.0)
 			return null;
 
 		return target;
@@ -432,7 +414,7 @@ modded class SCR_AICombatComponent
 			return false;
 
 		float extraMag = DCO_GetScopedADSExtraMag();
-		if (extraMag <= 0 || candidate.GetTimeSinceSideRecognized() > extraMag * SCOPE_TUNNEL_DELAY_PER_MAG)
+		if (extraMag <= 0 || candidate.GetTimeSinceSideRecognized() > extraMag * 1.0)
 			return false;
 
 		vector me = ownerEntity.GetOrigin();
@@ -440,7 +422,7 @@ modded class SCR_AICombatComponent
 		vector toOther = other.GetOrigin() - me;
 		toCurrent[1] = 0;
 		toOther[1] = 0;
-		return vector.Dot(toCurrent.Normalized(), toOther.Normalized()) < Math.Cos(SCOPE_TUNNEL_HALF_ANGLE * Math.DEG2RAD);
+		return vector.Dot(toCurrent.Normalized(), toOther.Normalized()) < Math.Cos(20.0 * Math.DEG2RAD);
 	}
 
 	override void EOnInit(IEntity owner)
@@ -460,7 +442,7 @@ modded class SCR_AICombatComponent
 		if (m_fDurationN <= 0 || accuracy <= 0)
 			return false;
 
-		m_fTargetAccuracy = Math.Clamp(AIM_IMPROVEMENT_TARGET / accuracy, AIM_IMPROVEMENT_MIN, m_fStartAccuracy);
+		m_fTargetAccuracy = Math.Clamp(0.3 / accuracy, 0.05, m_fStartAccuracy);
 		return true;
 	}
 
@@ -488,9 +470,9 @@ modded class SCR_AICombatComponent
 		if (DCO_CQC.IsCQC(m_Utility))
 		{
 			if (aimProgressRate > 0)
-				aimProgressRate *= DCO_CQC.AIM_SPEEDUP;
+				aimProgressRate *= 3.0;
 			else
-				aimProgressRate *= DCO_CQC.MOVING_PENALTY_SCALE;
+				aimProgressRate *= 0.4;
 		}
 
 		m_fTimeElapsed += timeSlice * aimProgressRate;

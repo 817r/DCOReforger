@@ -1,7 +1,5 @@
 class DCO_CoverMoveBudget
 {
-	protected static const int PRUNE_THRESHOLD = 128;
-	protected static const float PRUNE_STALE_AGE_MS = 30000.0;
 
 	protected static ref map<IEntity, float> s_mLastMoveTime = new map<IEntity, float>();
 
@@ -25,7 +23,7 @@ class DCO_CoverMoveBudget
 		float now_ms = GetGame().GetWorld().GetWorldTime();
 		s_mLastMoveTime.Set(entity, now_ms);
 
-		if (s_mLastMoveTime.Count() > PRUNE_THRESHOLD)
+		if (s_mLastMoveTime.Count() > 128)
 			Prune(now_ms);
 	}
 
@@ -47,7 +45,7 @@ class DCO_CoverMoveBudget
 
 		foreach (IEntity ent, float lastTime_ms : s_mLastMoveTime)
 		{
-			if (!ent || (now_ms - lastTime_ms) > PRUNE_STALE_AGE_MS)
+			if (!ent || (now_ms - lastTime_ms) > 30000.0)
 				toRemove.Insert(ent);
 		}
 

@@ -106,38 +106,11 @@ class DCO_TacticSituation
 
 class DCO_CommanderTactics
 {
-	static const float ROAD_SNAP_M = 50;
 	static const int ROLE_FIX = 0;
-	static const int ROLE_MANEUVER = 1;
 	static const int ROLE_BLOCK = 2;
 	static const int ROLE_ASSAULT = 3;
-	static const int ROLE_RESERVE = 4;
-	static const int ROLE_LEAD = 5;
-	static const int ALL_TACTICS = 8191;
 
 	protected static const float TICK_S = 5;
-	protected static const float MTC_FOLLOW_M = 250;
-	protected static const float MTC_TIMEOUT_S = 600;
-	protected static const float PROBE_S = 150;
-	protected static const float PROBE_LOSS = 0.25;
-	protected static const float ANVIL_TIMEOUT_S = 240;
-	protected static const float ANVIL_ARRIVE_M = 60;
-	protected static const float BLOCK_MIN_M = 150;
-	protected static const float BLOCK_MAX_M = 300;
-	protected static const float REEVAL_S = 120;
-	protected static const float SIEGE_TIMEOUT_S = 900;
-	protected static const float BYPASS_COOLDOWN_S = 600;
-	protected static const float RAID_COOLDOWN_S = 300;
-	protected static const float FAIL_MEMORY_S = 900;
-	protected static const float BOUND_STEP_M = 125;
-	protected static const float BOUND_ARRIVE_M = 30;
-	protected static const float BOUND_FINAL_M = 150;
-	protected static const float PURSUIT_M = 400;
-	protected static const float PURSUIT_S = 180;
-	protected static const float INFIL_MAX_UNITS = 6;
-	protected static const float HARASS_S = 120;
-	protected static const float ENEMY_WATCH_M = 300;
-	protected static const int HARASS_SHELLS = 3;
 
 	protected ref map<CMD_AICommanderObjectiveComponent, ref DCO_TacticPlan> m_mPlans = new map<CMD_AICommanderObjectiveComponent, ref DCO_TacticPlan>();
 	protected ref map<CMD_AICommanderObjectiveComponent, int> m_mFailedMask = new map<CMD_AICommanderObjectiveComponent, int>();
@@ -213,7 +186,7 @@ class DCO_CommanderTactics
 
 		DCO_GroupUtilityComponent anvil = p.FirstWithRole(ROLE_BLOCK);
 		bool hasAnvil = anvil != null;
-		bool ready = anvil && vector.DistanceXZ(anvil.GetOwner().GetOrigin(), p.m_vBlock) <= ANVIL_ARRIVE_M;
+		bool ready = anvil && vector.DistanceXZ(anvil.GetOwner().GetOrigin(), p.m_vBlock) <= 60.0;
 		int playerAnvil = p.PlayerWithRole(ROLE_BLOCK);
 		if (!anvil && playerAnvil >= 0)
 		{
@@ -232,7 +205,7 @@ class DCO_CommanderTactics
 			return false;
 		}
 
-		if (now - p.m_fStart > ANVIL_TIMEOUT_S || !hasAnvil)
+		if (now - p.m_fStart > 240.0 || !hasAnvil)
 		{
 			p.m_eTactic = DCO_ETactic.FLANKING;
 			string why = "anvil_timeout";
@@ -322,7 +295,7 @@ class DCO_CommanderTactics
 			if (!IsUsable(cmd, g))
 				continue;
 			s.m_iGroups++;
-			if (g.GetUnitCount() <= INFIL_MAX_UNITS)
+			if (g.GetUnitCount() <= 6.0)
 				s.m_iSmallGroups++;
 			if (g.HasMG() || g.IsArmor())
 				s.m_bFireSupport = true;
@@ -334,7 +307,7 @@ class DCO_CommanderTactics
 		DCO_ObjectiveIntel intel = ops.GetIntel(obj);
 		float enemy = ops.EstimateDefenders(obj);
 		if (intel.m_bArmor)
-			enemy += DCO_Strength.W_TANK;
+			enemy += 8.0;
 		s.m_fRatio = friendly / Math.Max(enemy, 1);
 		s.m_fConfidence = intel.m_fConfidence;
 		s.m_bEverSeen = intel.m_bEverSeen;
@@ -355,7 +328,7 @@ class DCO_CommanderTactics
 		CMD_ThreatResponseComponent threat = cmd.GetThreatResponseComponent();
 		if (threat)
 		{
-			float nearSq = (obj.GetRadius() + ENEMY_WATCH_M) * (obj.GetRadius() + ENEMY_WATCH_M);
+			float nearSq = (obj.GetRadius() + 300.0) * (obj.GetRadius() + 300.0);
 			foreach (CMD_ThreatEntry te : threat.GetThreats())
 			{
 				if (!te || vector.DistanceSqXZ(te.m_vPosition, objPos) > nearSq)
@@ -472,7 +445,7 @@ class DCO_CommanderTactics
 			BaseRoad road;
 			float dist;
 			roads.GetClosestRoad(p, road, dist);
-			if (road && dist <= ROAD_SNAP_M)
+			if (road && dist <= 50.0)
 			{
 				dir = p - objPos;
 				src = "road";
@@ -588,7 +561,7 @@ class DCO_CommanderTactics
 	protected bool RecentlyFailed(CMD_AICommanderObjectiveComponent obj, int t)
 	{
 		float at;
-		if (!m_mFailedAt.Find(obj, at) || DCO_CommanderOps.Now() - at > FAIL_MEMORY_S)
+		if (!m_mFailedAt.Find(obj, at) || DCO_CommanderOps.Now() - at > 900.0)
 			return false;
 		return (m_mFailedMask.Get(obj) & Bit(t)) != 0;
 	}
@@ -613,7 +586,7 @@ class DCO_CommanderTactics
 		{
 			if (!IsUsable(cmd, g))
 				continue;
-			if (small && g.GetUnitCount() > INFIL_MAX_UNITS)
+			if (small && g.GetUnitCount() > 6.0)
 				continue;
 			if (fireSupport && !g.HasMG() && !g.IsArmor())
 				continue;
@@ -632,20 +605,20 @@ class DCO_CommanderTactics
 		switch (role)
 		{
 			case ROLE_FIX:
-				return DCO_PlayerTasking.ROLE_BIT_FIX;
+				return 2;
 			case ROLE_BLOCK:
-				return DCO_PlayerTasking.ROLE_BIT_BLOCK;
-			case ROLE_MANEUVER:
+				return 4;
+			case 1:
 				if (t == DCO_ETactic.INFILTRATION)
-					return DCO_PlayerTasking.ROLE_BIT_RECON;
+					return 8;
 				break;
 		}
-		return DCO_PlayerTasking.ROLE_BIT_ASSAULT;
+		return 1;
 	}
 
 	static bool IsDecisive(int role)
 	{
-		return role == ROLE_ASSAULT || role == ROLE_MANEUVER || role == ROLE_BLOCK || role == ROLE_LEAD;
+		return role == ROLE_ASSAULT || role == 1 || role == ROLE_BLOCK || role == 5;
 	}
 
 	static string RoleName(int role)
@@ -653,18 +626,18 @@ class DCO_CommanderTactics
 		switch (role)
 		{
 			case ROLE_FIX:		return "FIX";
-			case ROLE_MANEUVER:	return "MANEUVER";
+			case 1:	return "MANEUVER";
 			case ROLE_BLOCK:	return "BLOCK";
 			case ROLE_ASSAULT:	return "ASSAULT";
-			case ROLE_RESERVE:	return "RESERVE";
-			case ROLE_LEAD:		return "LEAD";
+			case 4:	return "RESERVE";
+			case 5:		return "LEAD";
 		}
 		return "NONE";
 	}
 
 	static float RoleScore(int units, bool mg, bool vehicle, float dist, int role, bool small, bool fireSupport)
 	{
-		if (small && units > INFIL_MAX_UNITS)
+		if (small && units > 6.0)
 			return -1000;
 
 		float v = 5 - dist / 250;
@@ -759,13 +732,13 @@ class DCO_CommanderTactics
 					g = null;
 				break;
 			}
-			case ROLE_MANEUVER:
+			case 1:
 			{
 				g = PickGroup(cmd, objPos, true, false);
 				if (g && cmd.TacticCommit(g, obj, DCO_EGroupTask.RECON, CoveredVia(g.GetOwner().GetOrigin(), pos), now))
 				{
 					cmd.TacticAppendMove(g, pos, now);
-					p.AddGroup(g, ROLE_MANEUVER, pos);
+					p.AddGroup(g, 1, pos);
 				}
 				else
 					g = null;
@@ -800,13 +773,13 @@ class DCO_CommanderTactics
 			{
 				DCO_GroupUtilityComponent lead = PickGroup(cmd, objPos, false, false);
 				if (lead && cmd.TacticCommit(lead, obj, DCO_EGroupTask.ATTACK, objPos, now))
-					p.AddGroup(lead, ROLE_LEAD, objPos);
+					p.AddGroup(lead, 5, objPos);
 				DCO_GroupUtilityComponent follow = PickGroup(cmd, objPos, false, false);
 				if (follow && lead)
 				{
 					vector fpos = FollowPos(lead.GetOwner().GetOrigin(), objPos);
 					if (cmd.TacticCommit(follow, obj, DCO_EGroupTask.ATTACK, fpos, now))
-						p.AddGroup(follow, ROLE_RESERVE, fpos);
+						p.AddGroup(follow, 4, fpos);
 				}
 				break;
 			}
@@ -844,13 +817,13 @@ class DCO_CommanderTactics
 			case DCO_ETactic.INFILTRATION:
 			{
 				p.m_vTarget = KeyPoint(obj);
-				if (TryPlayerRole(cmd, p, ROLE_MANEUVER, p.m_vTarget, true, false, now))
+				if (TryPlayerRole(cmd, p, 1, p.m_vTarget, true, false, now))
 					break;
 				DCO_GroupUtilityComponent inf = PickGroup(cmd, objPos, true, false);
 				if (inf && cmd.TacticCommit(inf, obj, DCO_EGroupTask.RECON, CoveredVia(inf.GetOwner().GetOrigin(), p.m_vTarget), now))
 				{
 					cmd.TacticAppendMove(inf, p.m_vTarget, now);
-					p.AddGroup(inf, ROLE_MANEUVER, p.m_vTarget);
+					p.AddGroup(inf, 1, p.m_vTarget);
 				}
 				break;
 			}
@@ -882,7 +855,7 @@ class DCO_CommanderTactics
 			case DCO_ETactic.BYPASS:
 			{
 				SendFix(cmd, p, 1, now);
-				cmd.SetObjectiveCooldown(obj, BYPASS_COOLDOWN_S);
+				cmd.SetObjectiveCooldown(obj, 600.0);
 				p.m_iPhase = 1;
 				break;
 			}
@@ -918,18 +891,18 @@ class DCO_CommanderTactics
 	protected void Harass(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now)
 	{
 		CMD_ArtillerySupport arty = cmd.GetArtySupport();
-		if (!arty || !arty.HasRegisteredUnits() || now - p.m_fLastFire < HARASS_S)
+		if (!arty || !arty.HasRegisteredUnits() || now - p.m_fLastFire < 120.0)
 			return;
 
 		p.m_fLastFire = now;
-		CMD_FireMissionRequest req = new CMD_FireMissionRequest(p.m_Obj.GetOwner().GetOrigin(), SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE, now, HARASS_SHELLS);
+		CMD_FireMissionRequest req = new CMD_FireMissionRequest(p.m_Obj.GetOwner().GetOrigin(), SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE, now, 3);
 		arty.ApplyTier(req, "area", p.m_Obj.GetRadius(), "tactic_" + Name(p.m_eTactic));
 		if (arty.HasFriendlyNearRequest(req, now))
 		{
 			CMD_ArtillerySupport.LogDenied(req, "friendly");
 			return;
 		}
-		arty.RequestShellImpact(req, now, HARASS_SHELLS);
+		arty.RequestShellImpact(req, now, 3);
 	}
 
 	protected vector FollowPos(vector leadPos, vector objPos)
@@ -939,7 +912,7 @@ class DCO_CommanderTactics
 		if (back.Length() < 1)
 			return leadPos;
 		back.Normalize();
-		vector pos = leadPos + back * MTC_FOLLOW_M;
+		vector pos = leadPos + back * 250.0;
 		pos[1] = GetGame().GetWorld().GetSurfaceY(pos[0], pos[2]);
 		return pos;
 	}
@@ -947,9 +920,9 @@ class DCO_CommanderTactics
 	protected vector BlockPos(CMD_AICommanderObjectiveComponent obj, vector dir)
 	{
 		vector objPos = obj.GetOwner().GetOrigin();
-		float dist = obj.GetRadius() + (BLOCK_MIN_M + BLOCK_MAX_M) * 0.5;
+		float dist = obj.GetRadius() + (150.0 + 300.0) * 0.5;
 		vector pos = objPos + dir * dist;
-		vector cover = DCO_TerrainCache.QueryBest(DCO_ETerrainFlag.FOREST_EDGE | DCO_ETerrainFlag.HILLTOP | DCO_ETerrainFlag.OVERWATCH, pos, (BLOCK_MAX_M - BLOCK_MIN_M) * 0.5 + 50, string.Empty, pos);
+		vector cover = DCO_TerrainCache.QueryBest(DCO_ETerrainFlag.FOREST_EDGE | DCO_ETerrainFlag.HILLTOP | DCO_ETerrainFlag.OVERWATCH, pos, (300.0 - 150.0) * 0.5 + 50, string.Empty, pos);
 		if (cover != vector.Zero)
 			pos = cover;
 		pos[1] = GetGame().GetWorld().GetSurfaceY(pos[0], pos[2]);
@@ -1033,10 +1006,10 @@ class DCO_CommanderTactics
 
 	protected bool UpdateMTC(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now)
 	{
-		DCO_GroupUtilityComponent lead = p.FirstWithRole(ROLE_LEAD);
+		DCO_GroupUtilityComponent lead = p.FirstWithRole(5);
 		DCO_ObjectiveIntel intel = cmd.GetOps().GetIntel(p.m_Obj);
 		bool contact = (lead && lead.HasState(DCO_EGroupState.IN_CONTACT)) || (intel.m_bEverSeen && intel.m_fConfidence >= 0.3);
-		if (contact || !lead || now - p.m_fStart > MTC_TIMEOUT_S)
+		if (contact || !lead || now - p.m_fStart > 600.0)
 		{
 			string why = "contact";
 			if (!lead)
@@ -1049,7 +1022,7 @@ class DCO_CommanderTactics
 			return true;
 		}
 
-		DCO_GroupUtilityComponent follow = p.FirstWithRole(ROLE_RESERVE);
+		DCO_GroupUtilityComponent follow = p.FirstWithRole(4);
 		if (follow && !follow.HasState(DCO_EGroupState.IN_CONTACT))
 		{
 			vector fpos = FollowPos(lead.GetOwner().GetOrigin(), p.m_Obj.GetOwner().GetOrigin());
@@ -1072,8 +1045,8 @@ class DCO_CommanderTactics
 				start += p.m_aStartUnits[i];
 			}
 
-			bool losses = start > 0 && units <= start * (1 - PROBE_LOSS);
-			if (now - p.m_fStart < PROBE_S && !losses && (units > 0 || !p.m_mPlayerRoles.IsEmpty()))
+			bool losses = start > 0 && units <= start * (1 - 0.25);
+			if (now - p.m_fStart < 150.0 && !losses && (units > 0 || !p.m_mPlayerRoles.IsEmpty()))
 				return false;
 
 			p.m_iPhase = 1;
@@ -1109,7 +1082,7 @@ class DCO_CommanderTactics
 				cmd.TacticRelease(g3, p.m_Obj);
 		}
 		cmd.TacticAbort(p.m_Obj, now);
-		cmd.SetObjectiveCooldown(p.m_Obj, RAID_COOLDOWN_S);
+		cmd.SetObjectiveCooldown(p.m_Obj, 300.0);
 		Event(string.Format("tactic_result obj=%1 tactic=%2 result=raid_done", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic)));
 		return true;
 	}
@@ -1117,7 +1090,7 @@ class DCO_CommanderTactics
 	protected bool UpdateStandoff(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now, bool siege)
 	{
 		Harass(cmd, p, now);
-		if (now - p.m_fLastEval < REEVAL_S)
+		if (now - p.m_fLastEval < 120.0)
 			return false;
 		p.m_fLastEval = now;
 
@@ -1140,7 +1113,7 @@ class DCO_CommanderTactics
 			return true;
 		}
 
-		if (now - p.m_fStart < SIEGE_TIMEOUT_S)
+		if (now - p.m_fStart < 900.0)
 			return false;
 
 		foreach (DCO_GroupUtilityComponent g2 : p.m_aGroups)
@@ -1156,7 +1129,7 @@ class DCO_CommanderTactics
 
 	protected bool UpdateBypass(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now)
 	{
-		if (now - p.m_fStart < BYPASS_COOLDOWN_S)
+		if (now - p.m_fStart < 600.0)
 			return false;
 
 		foreach (DCO_GroupUtilityComponent g : p.m_aGroups)
@@ -1176,7 +1149,7 @@ class DCO_CommanderTactics
 			return;
 
 		vector objPos = obj.GetOwner().GetOrigin();
-		float finalDist = obj.GetRadius() + BOUND_FINAL_M;
+		float finalDist = obj.GetRadius() + 150.0;
 
 		array<DCO_GroupUtilityComponent> groups = {};
 		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
@@ -1204,11 +1177,11 @@ class DCO_CommanderTactics
 		}
 
 		p.m_iPhase = 1;
-		DCO_GroupUtilityComponent mover = p.FirstWithRole(ROLE_MANEUVER);
+		DCO_GroupUtilityComponent mover = p.FirstWithRole(1);
 		if (mover && groups.Contains(mover))
 		{
 			int mi = p.m_aGroups.Find(mover);
-			if (vector.DistanceXZ(mover.GetOwner().GetOrigin(), p.m_aGoals[mi]) > BOUND_ARRIVE_M && now - p.m_fPhaseStart < 90)
+			if (vector.DistanceXZ(mover.GetOwner().GetOrigin(), p.m_aGoals[mi]) > 30.0 && now - p.m_fPhaseStart < 90)
 				return;
 			p.m_aRoles[mi] = ROLE_FIX;
 			SCR_AIWaypoint sup = cmd.SpawnSuppressWP(objPos);
@@ -1236,18 +1209,18 @@ class DCO_CommanderTactics
 		vector dir = objPos - rear.GetOwner().GetOrigin();
 		dir[1] = 0;
 		dir.Normalize();
-		float step = Math.Min(BOUND_STEP_M, Math.Max(rearDist - obj.GetRadius(), 20));
+		float step = Math.Min(125.0, Math.Max(rearDist - obj.GetRadius(), 20));
 		vector goal = rear.GetOwner().GetOrigin() + dir * step;
 		goal[1] = GetGame().GetWorld().GetSurfaceY(goal[0], goal[2]);
 
 		int ri = p.m_aGroups.Find(rear);
 		if (ri < 0)
 		{
-			p.AddGroup(rear, ROLE_MANEUVER, goal);
+			p.AddGroup(rear, 1, goal);
 		}
 		else
 		{
-			p.m_aRoles[ri] = ROLE_MANEUVER;
+			p.m_aRoles[ri] = 1;
 			p.m_aGoals[ri] = goal;
 		}
 		foreach (DCO_GroupUtilityComponent fixer : groups)
@@ -1278,7 +1251,7 @@ class DCO_CommanderTactics
 		if (p.m_iPhase != 0)
 			return;
 
-		DCO_GroupUtilityComponent inf = p.FirstWithRole(ROLE_MANEUVER);
+		DCO_GroupUtilityComponent inf = p.FirstWithRole(1);
 		if (!inf)
 		{
 			p.m_iPhase = 1;
@@ -1373,7 +1346,7 @@ class DCO_CommanderTactics
 
 		away[1] = 0;
 		away.Normalize();
-		vector goal = objPos + away * (obj.GetRadius() + PURSUIT_M);
+		vector goal = objPos + away * (obj.GetRadius() + 400.0);
 		goal[1] = GetGame().GetWorld().GetSurfaceY(goal[0], goal[2]);
 		cmd.TacticMove(best, goal, now);
 
@@ -1381,7 +1354,7 @@ class DCO_CommanderTactics
 		p.m_Obj = obj;
 		p.m_eTactic = DCO_ETactic.PURSUIT;
 		p.m_fStart = now;
-		p.AddGroup(best, ROLE_RESERVE, goal);
+		p.AddGroup(best, 4, goal);
 		m_aPursuits.Insert(p);
 		Event(string.Format("tactic_phase obj=%1 tactic=PURSUIT phase=start grp=%2 enemies=%3", obj.GetOwner().GetName(), best.GetOwner(), enemies));
 	}
@@ -1391,7 +1364,7 @@ class DCO_CommanderTactics
 		for (int i = m_aPursuits.Count() - 1; i >= 0; i--)
 		{
 			DCO_TacticPlan p = m_aPursuits[i];
-			DCO_GroupUtilityComponent g = p.FirstWithRole(ROLE_RESERVE);
+			DCO_GroupUtilityComponent g = p.FirstWithRole(4);
 			if (!g || !p.m_Obj)
 			{
 				m_aPursuits.Remove(i);
@@ -1399,7 +1372,7 @@ class DCO_CommanderTactics
 			}
 
 			bool arrived = vector.DistanceXZ(g.GetOwner().GetOrigin(), p.m_aGoals[0]) <= 50;
-			if (!arrived && now - p.m_fStart < PURSUIT_S)
+			if (!arrived && now - p.m_fStart < 180.0)
 				continue;
 
 			cmd.TacticMove(g, p.m_Obj.GetOwner().GetOrigin(), now);

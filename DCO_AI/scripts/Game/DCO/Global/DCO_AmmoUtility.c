@@ -1,8 +1,5 @@
 class DCO_AmmoUtility
 {
-	protected static const int AMMO_HARDSTOP_ROUNDS = 2;
-	protected static const int AMMO_CRITICAL_ROUNDS  = 10;
-	protected static const int AMMO_LOW_ROUNDS       = 25;
 
 	static bool ShouldAvoidSuppressiveFire(SCR_AIUtilityComponent utility, BaseWeaponComponent weapon)
 	{
@@ -17,7 +14,7 @@ class DCO_AmmoUtility
 			return false;
 
 		int currentAmmo = mag.GetAmmoCount();
-		int effectiveHardStop = Math.Round(AMMO_HARDSTOP_ROUNDS * GetPersonalityAmmoBias(utility));
+		int effectiveHardStop = Math.Round(2 * GetPersonalityAmmoBias(utility));
 
 		return currentAmmo <= effectiveHardStop;
 	}
@@ -37,8 +34,8 @@ class DCO_AmmoUtility
 		int currentAmmo = mag.GetAmmoCount();
 		float personalityBias = GetPersonalityAmmoBias(utility);
 
-		int effectiveCritical = Math.Round(AMMO_CRITICAL_ROUNDS * personalityBias);
-		int effectiveLow      = Math.Round(AMMO_LOW_ROUNDS * personalityBias);
+		int effectiveCritical = Math.Round(10 * personalityBias);
+		int effectiveLow      = Math.Round(25 * personalityBias);
 
 		if (currentAmmo <= effectiveCritical)
 			return 0.25;

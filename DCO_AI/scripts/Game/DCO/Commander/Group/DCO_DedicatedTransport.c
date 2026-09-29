@@ -89,15 +89,6 @@ class DCO_TransportTeamComponent : ScriptComponent
 	protected IEntity                   m_BadVehicle;
 	bool						m_bRegistered      = false;
 
-	static const float VEHICLE_SPEED_MPS = 3.0;
-	protected static const float LOAD_DIST_M = 30;
-	protected static const float RESUPPLY_DIST_M = 50;
-	protected static const float HOT_CHECK_M = 300;
-	protected static const float RETARGET_S = 10;
-	protected static const float RETARGET_M = 40;
-	protected static const float STUCK_S = 45;
-	protected static const float STUCK_M = 10;
-	protected static const float NEAR_ARRIVE_M = 75;
 
 	void SetCommander(AICommander_BaseComponent cmd)
 	{
@@ -294,7 +285,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 	{
 		UpdatePickup();
 		SetTeamState(DCO_ETransportTeamState.MOVING_TO_PASSENGER, worldTime);
-		m_fStateTimeout = m_fBoardingTimeout + vector.Distance(GetTeamPos(), m_Job.m_vPickup) / VEHICLE_SPEED_MPS;
+		m_fStateTimeout = m_fBoardingTimeout + vector.Distance(GetTeamPos(), m_Job.m_vPickup) / 3.0;
 		m_fLastRetarget = worldTime;
 		TeamMoveTo(m_Job.m_vPickup, worldTime);
 
@@ -352,6 +343,50 @@ class DCO_TransportTeamComponent : ScriptComponent
 		}
 	}
 
+	protected void FollowPlayerLeader(float worldTime)
+	{
+		if (vector.DistanceXZ(GetTeamPos(), m_Job.m_vPickup) <= 150.0)
+			return;
+
+		IEntity leader;
+		foreach (SCR_AIGroup pg : m_Job.m_aPlayerGroups)
+		{
+			if (!pg)
+				continue;
+			leader = GetGame().GetPlayerManager().GetPlayerControlledEntity(pg.GetLeaderID());
+			if (!IsActiveMember(leader))
+			{
+				leader = null;
+				array<IEntity> ents = {};
+				GetPlayerEntities(pg, ents);
+				foreach (IEntity e : ents)
+				{
+					if (IsActiveMember(e))
+					{
+						leader = e;
+						break;
+					}
+				}
+			}
+			if (leader)
+				break;
+		}
+		if (!leader)
+			return;
+
+		vector lp = leader.GetOrigin();
+		if (vector.DistanceXZ(lp, m_Job.m_vPickup) <= 50.0)
+			return;
+
+		vector np = DCO_Logistics.SnapPickup(lp);
+		m_Job.m_fPickupShift += vector.DistanceXZ(np, m_Job.m_vPickup);
+		DCO_Logistics.Log(m_Job, "pickup_follow", string.Format("from=%1 to=%2 shift=%3", m_Job.m_vPickup, np, Math.Round(m_Job.m_fPickupShift)));
+		m_Job.m_vPickup = np;
+		TeamMoveTo(np, worldTime);
+		if (m_Commander && m_Commander.GetLogistics())
+			m_Commander.GetLogistics().OnPickupMoved(m_Job, GetTeamPos());
+	}
+
 	protected void Tick(float worldTime)
 	{
 		switch (m_eTeamState)
@@ -386,13 +421,20 @@ class DCO_TransportTeamComponent : ScriptComponent
 			return;
 		}
 
-		if (worldTime - m_fLastRetarget > RETARGET_S)
+		if (worldTime - m_fLastRetarget > 10.0)
 		{
 			m_fLastRetarget = worldTime;
-			vector old = m_Job.m_vPickup;
-			UpdatePickup();
-			if (vector.DistanceXZ(old, m_Job.m_vPickup) > RETARGET_M)
-				TeamMoveTo(m_Job.m_vPickup, worldTime);
+			if (m_Job.m_aGroups.IsEmpty() && !m_Job.m_aPlayerGroups.IsEmpty() && m_Job.m_eKind != DCO_ELogiJob.MEDEVAC)
+			{
+				FollowPlayerLeader(worldTime);
+			}
+			else
+			{
+				vector old = m_Job.m_vPickup;
+				UpdatePickup();
+				if (vector.DistanceXZ(old, m_Job.m_vPickup) > 40.0)
+					TeamMoveTo(m_Job.m_vPickup, worldTime);
+			}
 		}
 
 		if (vector.DistanceXZ(GetTeamPos(), m_Job.m_vPickup) <= m_fBoardingDist)
@@ -558,7 +600,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 				continue;
 			}
 
-			if (vector.DistanceXZ(c.GetOrigin(), veh.GetOrigin()) > LOAD_DIST_M)
+			if (vector.DistanceXZ(c.GetOrigin(), veh.GetOrigin()) > 30.0)
 				continue;
 
 			if (!LoadCasualty(c, veh))
@@ -622,7 +664,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			foreach (AIAgent a : agents)
 			{
 				IEntity ent = a.GetControlledEntity();
-				if (!IsActiveMember(ent) || vector.DistanceXZ(ent.GetOrigin(), veh.GetOrigin()) > RESUPPLY_DIST_M)
+				if (!IsActiveMember(ent) || vector.DistanceXZ(ent.GetOrigin(), veh.GetOrigin()) > 50.0)
 					continue;
 
 				SCR_InventoryStorageManagerComponent inv = SCR_InventoryStorageManagerComponent.Cast(ent.FindComponent(SCR_InventoryStorageManagerComponent));
@@ -693,7 +735,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 		}
 
 		SetTeamState(DCO_ETransportTeamState.MOVING_TO_DESTINATION, worldTime);
-		m_fStateTimeout = Math.Max(m_fDriveTimeout, 60.0 + vector.Distance(GetTeamPos(), m_Job.m_vLZ) / VEHICLE_SPEED_MPS);
+		m_fStateTimeout = Math.Max(m_fDriveTimeout, 60.0 + vector.Distance(GetTeamPos(), m_Job.m_vLZ) / 3.0);
 		TeamMoveTo(m_Job.m_vLZ, worldTime);
 
 		Print(string.Format("[DCO_TransportTeam] %1 berangkat job #%2 | naik %3 | tertinggal %4",
@@ -713,7 +755,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 		DCO_Logistics logi;
 		if (m_Commander)
 			logi = m_Commander.GetLogistics();
-		if (logi && !m_Job.m_bAltUsed && dist < HOT_CHECK_M && logi.IsLZHot(m_Commander, m_Job, m_SelfGroupUtil))
+		if (logi && !m_Job.m_bAltUsed && dist < 300.0 && logi.IsLZHot(m_Commander, m_Job, m_SelfGroupUtil))
 		{
 			m_Job.m_bAltUsed = true;
 			logi.RequestEscort(m_Commander, m_Job, m_Job.m_vLZ, worldTime);
@@ -721,6 +763,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			{
 				DCO_Logistics.Log(m_Job, "lz_hot", string.Format("from=%1 to=%2", m_Job.m_vLZ, m_Job.m_vAltLZ));
 				m_Job.m_vLZ = m_Job.m_vAltLZ;
+				logi.OnLZDiverted(m_Job);
 				TeamMoveTo(m_Job.m_vLZ, worldTime);
 				return;
 			}
@@ -970,18 +1013,18 @@ class DCO_TransportTeamComponent : ScriptComponent
 	protected bool CheckStuck(float worldTime, vector target)
 	{
 		vector pos = GetTeamPos();
-		if (vector.DistanceXZ(pos, m_vProgressPos) > STUCK_M)
+		if (vector.DistanceXZ(pos, m_vProgressPos) > 10.0)
 		{
 			m_vProgressPos = pos;
 			m_fProgressTime = worldTime;
 			return false;
 		}
-		if (worldTime - m_fProgressTime < STUCK_S)
+		if (worldTime - m_fProgressTime < 45.0)
 			return false;
 
 		m_fProgressTime = worldTime;
 		float dist = vector.DistanceXZ(pos, target);
-		if (dist <= NEAR_ARRIVE_M)
+		if (dist <= 75.0)
 		{
 			LogEvent(string.Format("logi_near_arrive team=%1 state=%2 dist=%3", GetOwner().GetName(), typename.EnumToString(DCO_ETransportTeamState, m_eTeamState), Math.Round(dist)));
 			if (m_eTeamState == DCO_ETransportTeamState.MOVING_TO_PASSENGER)
@@ -1169,6 +1212,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			m_Job.m_bAltUsed = true;
 			DCO_Logistics.Log(m_Job, "lz_threat", string.Format("from=%1 to=%2", m_Job.m_vLZ, m_Job.m_vAltLZ));
 			m_Job.m_vLZ = m_Job.m_vAltLZ;
+			logi.OnLZDiverted(m_Job);
 		}
 
 		if (m_Job && m_eTeamState == DCO_ETransportTeamState.MOVING_TO_PASSENGER)

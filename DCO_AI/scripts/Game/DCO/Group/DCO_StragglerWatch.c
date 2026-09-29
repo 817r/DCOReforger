@@ -10,11 +10,7 @@ class DCO_StragglerEntry
 
 class DCO_StragglerWatch
 {
-	protected static const float INTERVAL_MS = 5000;
-	protected static const float PROGRESS_M = 3;
 	protected static const int MAX_RETRIES = 1;
-	protected static const float ALT_OFFSET_M = 15;
-	protected static const float COHESION_FALLBACK = 50;
 	protected static const float REGROUP_PRIORITY = SCR_AIActionBase.PRIORITY_BEHAVIOR_ATTACK_SELECTED + 1;
 
 	protected ref map<AIAgent, ref DCO_StragglerEntry> m_mEntries = new map<AIAgent, ref DCO_StragglerEntry>();
@@ -30,7 +26,7 @@ class DCO_StragglerWatch
 	{
 		if (now_ms < m_fNext_ms)
 			return;
-		m_fNext_ms = now_ms + INTERVAL_MS;
+		m_fNext_ms = now_ms + 5000.0;
 
 		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
 		if (garrison || (cfg && !cfg.GetStragglerEnabled()) || !CanWatch(group))
@@ -49,7 +45,7 @@ class DCO_StragglerWatch
 			log = cfg.GetStragglerLog();
 		}
 
-		float cohesion = COHESION_FALLBACK;
+		float cohesion = 50.0;
 		DCO_GroupConfigComponent gcfg = DCO_GroupConfigComponent.Cast(group.FindComponent(DCO_GroupConfigComponent));
 		if (gcfg)
 			cohesion = gcfg.GetCohesionDistance();
@@ -97,7 +93,7 @@ class DCO_StragglerWatch
 				continue;
 			}
 
-			if (dist < e.m_fBestDist - PROGRESS_M)
+			if (dist < e.m_fBestDist - 3.0)
 			{
 				e.m_fBestDist = dist;
 				e.m_fBestTime_ms = now_ms;
@@ -202,7 +198,7 @@ class DCO_StragglerWatch
 		if (Math.RandomInt(0, 2) == 0)
 			side = -side;
 
-		vector p = leaderPos + side * ALT_OFFSET_M;
+		vector p = leaderPos + side * 15.0;
 		p[1] = GetGame().GetWorld().GetSurfaceY(p[0], p[2]);
 		return p;
 	}

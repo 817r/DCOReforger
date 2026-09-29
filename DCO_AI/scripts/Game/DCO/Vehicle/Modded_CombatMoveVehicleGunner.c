@@ -34,7 +34,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		IEntity atShooter;
 		vector atPos;
 		if (DCO_VehicleCombat.GetATThreat(m_MyVehicle, atShooter, atPos)
-			&& vector.Distance(atPos, m_MyVehicle.GetOrigin()) < DCO_VehicleCombat.AT_EVADE_DIST)
+			&& vector.Distance(atPos, m_MyVehicle.GetOrigin()) < 250.0)
 		{
 			if (DCO_VehicleCombat.CanPushEvade(m_DriverState))
 			{
@@ -260,7 +260,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 
 	override protected bool MoveFromTargetCondition()
 	{
-		if (!DCO_IsATKnown() && m_fTargetDist > DCO_VehicleCombat.NO_AT_MIN_DIST)
+		if (!DCO_IsATKnown() && m_fTargetDist > 25.0)
 			return false;
 		return super.MoveFromTargetCondition();
 	}
@@ -270,7 +270,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		float dist = ResolveOptimalDistance(m_fWeaponMinDist);
 		if (!DCO_IsATKnown())
 		{
-			dist = DCO_VehicleCombat.NO_AT_STANDOFF;
+			dist = 60.0;
 		}
 		else
 		{
@@ -334,7 +334,7 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		IEntity atShooter;
 		vector atPos;
 		if (DCO_VehicleCombat.GetATThreat(m_MyVehicle, atShooter, atPos)
-			&& vector.Distance(atPos, m_MyVehicle.GetOrigin()) < DCO_VehicleCombat.AT_EVADE_DIST)
+			&& vector.Distance(atPos, m_MyVehicle.GetOrigin()) < 250.0)
 		{
 			if (DCO_VehicleCombat.CanPushEvade(m_DriverState))
 			{
@@ -425,7 +425,7 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		DCO_GroupTactics posture = DCO_VehiclePositioning.GetPosture(m_Utility);
 		float standoff = 150;
 		if (!DCO_VehicleCombat.IsATKnown(m_MyVehicle, m_Utility))
-			standoff = DCO_VehicleCombat.NO_AT_STANDOFF;
+			standoff = 60.0;
 		vector firePos;
 		if (DCO_VehiclePositioning.FindFirePosition(m_MyVehicle, center, standoff * DCO_VehiclePositioning.GetStandoffScale(posture),
 			DCO_VehiclePositioning.GetHullDownWeight(posture), vector.Zero, 0, firePos))

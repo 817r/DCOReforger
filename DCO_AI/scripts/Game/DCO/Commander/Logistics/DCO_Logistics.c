@@ -31,6 +31,8 @@ class DCO_LogiJob : Managed
 	DCO_GroupUtilityComponent m_Escort;
 	int m_iBoarded;
 	int m_iLeft;
+	float m_fPickupShift;
+	bool m_bMarked;
 
 	bool IsTransportKind()
 	{
@@ -83,15 +85,7 @@ class DCO_Logistics
 {
 	protected static const float TICK_S = 2;
 	protected static const float SCAN_S = 10;
-	static const float VEHICLE_ETA_MPS = 7;
 	protected static const float WALK_MPS = 1.4;
-	protected static const float BOARD_OVERHEAD_S = 45;
-	protected static const float DOWN_MIN_S = 45;
-	protected static const float QUEUE_TIMEOUT_S = 300;
-	protected static const float LZ_STEP_M = 50;
-	protected static const int LZ_STEPS = 8;
-	protected static const float DETOUR_MARGIN_M = 75;
-	protected static const float MEDEVAC_SEARCH_M = 100;
 
 	protected ref array<ref DCO_LogiJob> m_aJobs = {};
 	protected ref array<ref DCO_HubCasualty> m_aHubCasualties = {};
@@ -302,7 +296,7 @@ class DCO_Logistics
 				continue;
 			}
 
-			float eta = (vector.Distance(t.GetTeamPos(), job.m_vPickup) + vector.Distance(job.m_vPickup, job.m_vDest)) / VEHICLE_ETA_MPS + BOARD_OVERHEAD_S;
+			float eta = (vector.Distance(t.GetTeamPos(), job.m_vPickup) + vector.Distance(job.m_vPickup, job.m_vDest)) / 7.0 + 45.0;
 			if (DCO_TransportTeamComponent.CountFreeCargo(veh) < seats)
 				eta += 120;
 
@@ -324,8 +318,135 @@ class DCO_Logistics
 		Log(job, "assign", string.Format("team=%1 wait=%2s eta=%3s seats=%4", team.GetOwner().GetName(),
 			Math.Round(now - job.m_fCreated), Math.Round(eta), job.SeatsNeeded()));
 
-		if (job.m_iRequester > 0)
+		if (!job.m_aPlayerGroups.IsEmpty() && job.m_eKind != DCO_ELogiJob.MEDEVAC)
+		{
+			AnnounceLZ(job, eta);
+			SendMarks(job, false);
+		}
+		else if (job.m_iRequester > 0)
+		{
 			DCO_Radio.Player(job.m_iRequester, "LOGISTICS", "logi_enroute", DCO_ERadioKind.INFO, DCO_Radio.P("kind", KindKey(job.m_eKind), "eta", DCO_Radio.N(Math.Max(1, eta / 60))));
+		}
+	}
+
+	protected void AnnounceLZ(DCO_LogiJob job, float eta)
+	{
+		float off = vector.DistanceXZ(job.m_vDest, job.m_vLZ);
+		string etaMin = DCO_Radio.N(Math.Max(1, eta / 60));
+		foreach (SCR_AIGroup pg : job.m_aPlayerGroups)
+		{
+			if (!pg)
+				continue;
+			if (off < 25)
+				DCO_Radio.Group(pg.GetGroupID(), "LOGISTICS", "logi_inbound_mark", DCO_ERadioKind.INFO, DCO_Radio.P("grid", DCO_PlayerComms.Grid(job.m_vLZ), "eta", etaMin));
+			else
+				DCO_Radio.Group(pg.GetGroupID(), "LOGISTICS", "logi_inbound", DCO_ERadioKind.INFO, DCO_Radio.P("grid", DCO_PlayerComms.Grid(job.m_vLZ), "dist", DCO_Radio.N(off), "dir", DCO_Radio.Dir(job.m_vDest, job.m_vLZ), "eta", etaMin));
+		}
+	}
+
+	void SendMarks(DCO_LogiJob job, bool clear)
+	{
+		if (clear && !job.m_bMarked)
+			return;
+
+		array<float> marks = {};
+		if (!clear)
+		{
+			job.m_bMarked = true;
+			marks.Insert(job.m_vPickup[0]);
+			marks.Insert(job.m_vPickup[2]);
+			marks.Insert(job.m_vLZ[0]);
+			marks.Insert(job.m_vLZ[2]);
+			if (!job.m_bAltUsed && vector.DistanceXZ(job.m_vAltLZ, job.m_vLZ) > 1)
+			{
+				marks.Insert(job.m_vAltLZ[0]);
+				marks.Insert(job.m_vAltLZ[2]);
+			}
+		}
+
+		foreach (SCR_AIGroup pg : job.m_aPlayerGroups)
+		{
+			if (!pg)
+				continue;
+			foreach (int pid : pg.GetPlayerIDs())
+			{
+				SCR_PlayerControllerGroupComponent comp = SCR_PlayerControllerGroupComponent.GetPlayerControllerComponent(pid);
+				if (comp)
+					comp.DCO_SendTransportMarks(marks);
+			}
+		}
+	}
+
+	void OnPickupMoved(DCO_LogiJob job, vector teamPos)
+	{
+		SendMarks(job, false);
+		if (job.m_fPickupShift < 300)
+			return;
+
+		job.m_fPickupShift = 0;
+		string etaMin = DCO_Radio.N(Math.Max(1, vector.Distance(teamPos, job.m_vPickup) / 7.0 / 60));
+		foreach (SCR_AIGroup pg : job.m_aPlayerGroups)
+		{
+			if (pg)
+				DCO_Radio.Group(pg.GetGroupID(), "LOGISTICS", "logi_pickup_moved", DCO_ERadioKind.INFO, DCO_Radio.P("grid", DCO_PlayerComms.Grid(job.m_vPickup), "eta", etaMin));
+		}
+	}
+
+	void OnLZDiverted(DCO_LogiJob job)
+	{
+		if (job.m_aPlayerGroups.IsEmpty())
+			return;
+
+		SendMarks(job, false);
+		foreach (SCR_AIGroup pg : job.m_aPlayerGroups)
+		{
+			if (pg)
+				DCO_Radio.Group(pg.GetGroupID(), "LOGISTICS", "logi_lz_divert", DCO_ERadioKind.WARNING, DCO_Radio.P("grid", DCO_PlayerComms.Grid(job.m_vLZ)));
+		}
+	}
+
+	static vector SnapPickup(vector p)
+	{
+		SCR_AIWorld aiWorld = SCR_AIWorld.Cast(GetGame().GetAIWorld());
+		RoadNetworkManager roads;
+		if (aiWorld)
+			roads = aiWorld.GetRoadNetworkManager();
+		if (roads)
+		{
+			BaseRoad road;
+			float dist;
+			roads.GetClosestRoad(p, road, dist, true);
+			if (road && dist <= 100)
+			{
+				array<vector> pts = {};
+				road.GetPoints(pts);
+				vector best = p;
+				float bestSq = float.MAX;
+				foreach (vector rp : pts)
+				{
+					float dSq = vector.DistanceSqXZ(rp, p);
+					if (dSq < bestSq)
+					{
+						bestSq = dSq;
+						best = rp;
+					}
+				}
+				if (bestSq <= 10000)
+					return Surface(best);
+			}
+		}
+
+		vector open;
+		if (SCR_WorldTools.FindEmptyTerrainPosition(open, p, 100, 4, 3))
+			return Surface(open);
+		return Surface(p);
+	}
+
+	protected static bool IsValidDest(vector from, vector p)
+	{
+		if (p == vector.Zero || vector.DistanceXZ(from, p) > 8000)
+			return false;
+		return p[1] - GetGame().GetWorld().GetSurfaceY(p[0], p[2]) < 50;
 	}
 
 	protected void Dispatch(AICommander_BaseComponent cmd, float now)
@@ -377,7 +498,7 @@ class DCO_Logistics
 			if (j.m_Team)
 				continue;
 
-			if (j.IsEmpty() || now - j.m_fCreated > QUEUE_TIMEOUT_S)
+			if (j.IsEmpty() || now - j.m_fCreated > 300.0)
 			{
 				foreach (DCO_GroupUtilityComponent g : j.m_aGroups)
 				{
@@ -396,6 +517,7 @@ class DCO_Logistics
 	{
 		float now = Now();
 		ReleaseEscort(job);
+		SendMarks(job, true);
 		Log(job, "done", string.Format("result=%1 why=%2 eta=%3s actual=%4s boarded=%5 left=%6", success, why,
 			Math.Round(job.m_fEta), Math.Round(now - job.m_fAssigned), job.m_iBoarded, job.m_iLeft));
 
@@ -510,7 +632,7 @@ class DCO_Logistics
 				continue;
 			}
 
-			if (now - since < DOWN_MIN_S || DCO_MedicDispatcher.IsBooked(ent))
+			if (now - since < 45.0 || DCO_MedicDispatcher.IsBooked(ent))
 				continue;
 
 			AddCasualty(cmd, ent, now, -1);
@@ -770,13 +892,13 @@ class DCO_Logistics
 	protected vector ShiftSafe(AICommander_BaseComponent cmd, vector dest, vector dir)
 	{
 		float safe = cmd.GetLogiLZSafeDist();
-		for (int i = 0; i <= LZ_STEPS; i++)
+		for (int i = 0; i <= 8; i++)
 		{
-			vector p = dest + dir * (i * LZ_STEP_M);
+			vector p = dest + dir * (i * 50.0);
 			if (!IsNearThreat(cmd, p, safe))
 				return Surface(p);
 		}
-		return Surface(dest + dir * (LZ_STEPS * LZ_STEP_M));
+		return Surface(dest + dir * (8 * 50.0));
 	}
 
 	protected static vector Surface(vector p)
@@ -863,7 +985,7 @@ class DCO_Logistics
 				if (push.LengthSq() < 1)
 					push = Vector(-seg[2], 0, seg[0]);
 				push.Normalize();
-				outPts.Insert(Surface(pick.m_vBelievedPos + push * (safe + pick.m_fBelievedUncertainty + DETOUR_MARGIN_M)));
+				outPts.Insert(Surface(pick.m_vBelievedPos + push * (safe + pick.m_fBelievedUncertainty + 75.0)));
 			}
 		}
 		outPts.Insert(to);
@@ -913,7 +1035,7 @@ class DCO_Logistics
 		DCO_TransportTeamComponent team = BestTeamFor(cmd, probe, eta);
 		if (!team)
 			return -1;
-		pickup = vector.Distance(team.GetTeamPos(), from) / VEHICLE_ETA_MPS;
+		pickup = vector.Distance(team.GetTeamPos(), from) / 7.0;
 		return eta;
 	}
 
@@ -1008,7 +1130,15 @@ class DCO_Logistics
 
 		vector dest = target;
 		if (kind == DCO_ELogiJob.EXTRACT)
+		{
 			dest = cmd.GetHubFor(ppos, m_sHubSource);
+		}
+		else if (!IsValidDest(ppos, target))
+		{
+			DCO_Radio.Player(pid, "LOGISTICS", "logi_no_dest", DCO_ERadioKind.WARNING);
+			DCO_BenchmarkLoggerComponent.Event(string.Format("logi_reject player=%1 reason=no_dest target=%2", pid, target));
+			return;
+		}
 
 		DCO_LogiJob job = NewJob(kind, ppos, dest, now);
 		job.m_aPlayerGroups.Insert(pgrp);
@@ -1027,7 +1157,7 @@ class DCO_Logistics
 
 		m_aQuery.Clear();
 		DCO_Perf.Count("q:DCO_Logistics");
-		GetGame().GetWorld().QueryEntitiesBySphere(pos, MEDEVAC_SEARCH_M, QueryCallback, null, EQueryEntitiesFlags.DYNAMIC);
+		GetGame().GetWorld().QueryEntitiesBySphere(pos, 100.0, QueryCallback, null, EQueryEntitiesFlags.DYNAMIC);
 		foreach (IEntity e : m_aQuery)
 		{
 			SCR_ChimeraCharacter c = SCR_ChimeraCharacter.Cast(e);

@@ -5,8 +5,6 @@ class SCR_DCOAIFindTurrets: AITaskScripted
 
 	static const string PORT_CENTER_OF_SEARCH		= "OriginIn";
 	static const string PORT_RADIUS					= "RadiusIn";
-	static const string PORT_TURRET_NUMBER			= "TurretNumber";
-	static const string PORT_TURRET_FOUND			= "TurretsFound";
 
 	protected TagSystem m_tagSystem;
 	protected SCR_AIGroup m_groupOwner;
@@ -34,8 +32,8 @@ class SCR_DCOAIFindTurrets: AITaskScripted
 	{
 		if (!m_tagSystem)
 		{
-			ClearVariable(PORT_TURRET_NUMBER);
-			ClearVariable(PORT_TURRET_FOUND);
+			ClearVariable("TurretNumber");
+			ClearVariable("TurretsFound");
 			return ENodeResult.FAIL;
 		}
 		vector center;
@@ -83,16 +81,16 @@ class SCR_DCOAIFindTurrets: AITaskScripted
 			}
 		}
 		if (turretsFound)
-			SetVariableOut(PORT_TURRET_NUMBER, turretCount);
+			SetVariableOut("TurretNumber", turretCount);
 		else
-			ClearVariable(PORT_TURRET_NUMBER);
-		SetVariableOut(PORT_TURRET_FOUND, turretsFound);
+			ClearVariable("TurretNumber");
+		SetVariableOut("TurretsFound", turretsFound);
 		return ENodeResult.SUCCESS;
 	}
 
 	protected static ref TStringArray s_aVarsOut = {
-		PORT_TURRET_NUMBER,
-		PORT_TURRET_FOUND
+		"TurretNumber",
+		"TurretsFound"
 	};
 	override TStringArray GetVariablesOut()
 	{

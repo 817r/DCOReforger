@@ -1,6 +1,5 @@
 modded class SCR_TaskSystem
 {
-	protected static const string DCO_TASK_PREFIX = "DCO_";
 	protected static const ref array<string> DCO_COMPASS = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
 
 	override protected void OnInit()
@@ -55,7 +54,7 @@ modded class SCR_TaskSystem
 
 	protected bool DCO_IsCommanderTask(SCR_Task task)
 	{
-		return task && task.GetTaskID().StartsWith(DCO_TASK_PREFIX);
+		return task && task.GetTaskID().StartsWith("DCO_");
 	}
 
 	protected int DCO_GetLocalGroupID()

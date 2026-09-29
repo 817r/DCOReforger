@@ -1,6 +1,5 @@
 modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 {
-	protected static const float OBSERVE_DURATION_MIN_S = 1.0;
 
 	void ~SCR_AIObserveThreatSystemBehavior()
 	{
@@ -28,7 +27,7 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 	override protected void SwitchToHighPriorityState(float duration_s)
 	{
 		if (duration_s <= 0)
-			duration_s = OBSERVE_DURATION_MIN_S;
+			duration_s = 1.0;
 
 		if (DCO_IsObserveDebugOn())
 			DCO_ObserveDebug(string.Format("HIGH PRIORITY START duration=%1s counter=%2", duration_s, m_iCurrentSectorObserveCounter));
@@ -43,8 +42,8 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 		duration_s *= DCO_PersonalityCombatUtility.GetObserveDurationScale(m_Utility);
 		duration_s *= DCO_MoraleCombatUtility.GetObserveDurationScale(m_Utility.GetMoraleSystem());
 
-		if (duration_s < OBSERVE_DURATION_MIN_S)
-			duration_s = OBSERVE_DURATION_MIN_S;
+		if (duration_s < 1.0)
+			duration_s = 1.0;
 
 		return duration_s;
 	}

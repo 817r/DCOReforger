@@ -34,6 +34,9 @@ class DCO_CommanderRadialCommand : SCR_BaseGroupCommand
 	[Attribute("0", UIWidgets.ComboBox, "Jenis perintah", "", ParamEnumArray.FromEnum(DCO_ERadialCommandType))]
 	protected DCO_ERadialCommandType m_eType;
 
+	[Attribute("0", UIWidgets.EditBox, "Jumlah peluru yang diminta (fire support). 0 = default jenis peluru.")]
+	protected int m_iShellCount;
+
 	override bool Execute(IEntity cursorTarget, IEntity groupEnt, vector targetPosition, int playerID, bool isClient)
 	{
 		if (isClient)
@@ -56,9 +59,9 @@ class DCO_CommanderRadialCommand : SCR_BaseGroupCommand
 			case DCO_ERadialCommandType.ROLE_REQUEST_OTHER:			DCO_PlayerTasking.HandleRadial(playerID, 0, true); break;
 			case DCO_ERadialCommandType.ACCEPT_TRANSPORT:			DCO_PlayerTasking.HandleRadial(playerID, 0, false); break;
 			case DCO_ERadialCommandType.REQUEST_ARMOR:				DCO_PlayerRequests.Handle(playerID, DCO_EPlayerRequest.ARMOR, targetPosition); break;
-			case DCO_ERadialCommandType.FIRE_HE:					DCO_PlayerRequests.HandleFire(playerID, SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE, targetPosition); break;
-			case DCO_ERadialCommandType.FIRE_SMOKE:					DCO_PlayerRequests.HandleFire(playerID, SCR_EAIArtilleryAmmoType.SMOKE, targetPosition); break;
-			case DCO_ERadialCommandType.FIRE_ILLUM:					DCO_PlayerRequests.HandleFire(playerID, SCR_EAIArtilleryAmmoType.ILLUMINATION, targetPosition); break;
+			case DCO_ERadialCommandType.FIRE_HE:					DCO_PlayerRequests.HandleFire(playerID, SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE, targetPosition, m_iShellCount); break;
+			case DCO_ERadialCommandType.FIRE_SMOKE:					DCO_PlayerRequests.HandleFire(playerID, SCR_EAIArtilleryAmmoType.SMOKE, targetPosition, m_iShellCount); break;
+			case DCO_ERadialCommandType.FIRE_ILLUM:					DCO_PlayerRequests.HandleFire(playerID, SCR_EAIArtilleryAmmoType.ILLUMINATION, targetPosition, m_iShellCount); break;
 			case DCO_ERadialCommandType.CANCEL_SUPPORT:				DCO_PlayerRequests.HandleCancel(playerID, true, false, false); break;
 			case DCO_ERadialCommandType.CANCEL_FIRE:				DCO_PlayerRequests.HandleCancel(playerID, false, true, false); break;
 			case DCO_ERadialCommandType.CANCEL_TRANSPORT:			DCO_PlayerRequests.HandleCancel(playerID, false, false, true); break;
@@ -72,10 +75,10 @@ class DCO_CommanderRadialCommand : SCR_BaseGroupCommand
 	{
 		switch (m_eType)
 		{
-			case DCO_ERadialCommandType.ROLE_ASSAULT:	return DCO_PlayerTasking.ROLE_BIT_ASSAULT;
-			case DCO_ERadialCommandType.ROLE_FIX:		return DCO_PlayerTasking.ROLE_BIT_FIX;
-			case DCO_ERadialCommandType.ROLE_BLOCK:		return DCO_PlayerTasking.ROLE_BIT_BLOCK;
-			case DCO_ERadialCommandType.ROLE_RECON:		return DCO_PlayerTasking.ROLE_BIT_RECON;
+			case DCO_ERadialCommandType.ROLE_ASSAULT:	return 1;
+			case DCO_ERadialCommandType.ROLE_FIX:		return 2;
+			case DCO_ERadialCommandType.ROLE_BLOCK:		return 4;
+			case DCO_ERadialCommandType.ROLE_RECON:		return 8;
 		}
 		return 0;
 	}

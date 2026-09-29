@@ -28,11 +28,6 @@ class DCO_GarrisonVacancy
 
 class DCO_AIGarrisonActivity : SCR_AIActivityBase
 {
-	protected static const float UPDATE_INTERVAL_MS = 1000;
-	protected static const float WAIT_TIMEOUT_MS = 30000;
-	protected static const int MAX_CANDIDATES = 8;
-	protected static const int AUTO_MAX_BUILDINGS = 6;
-	protected static const float UNREACHABLE_MS = 20000;
 
 	protected DCO_GarrisonWaypoint m_Waypoint;
 	protected DCO_EGarrisonPhase m_ePhase = DCO_EGarrisonPhase.SCAN;
@@ -47,12 +42,6 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 	protected ref array<ref DCO_GarrisonAssignment> m_aAssigned = {};
 	protected ref array<ref DCO_GarrisonVacancy> m_aVacancies = {};
 
-	protected static const float FLANK_TIMEOUT_MS = 60000;
-	protected static const float VISIBLE_S = 3;
-	protected static const float FLANK_COOLDOWN_MS = 60000;
-	protected static const float THREAT_FRESH_S = 15;
-	protected static const float RETURN_CALM_MS = 60000;
-	protected static const int MIN_KEEP_IN_SLOTS = 2;
 
 	protected int m_iCasualties;
 	protected float m_fFlankUntil_ms;
@@ -135,7 +124,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		if (!IsRunning() || now_ms < m_fNextUpdate_ms)
 			return;
 
-		m_fNextUpdate_ms = now_ms + UPDATE_INTERVAL_MS;
+		m_fNextUpdate_ms = now_ms + 1000.0;
 
 		DCO_GarrisonRegistry registry = DCO_GarrisonRegistry.GetInstance();
 		if (!registry || !m_Waypoint)
@@ -176,7 +165,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		if (!m_Waypoint.GetReturnAfterRelease())
 			return;
 
-		if (now_ms - m_fReleasedAt_ms < RETURN_CALM_MS || now_ms - m_fLastThreat_ms < RETURN_CALM_MS)
+		if (now_ms - m_fReleasedAt_ms < 60000.0 || now_ms - m_fLastThreat_ms < 60000.0)
 			return;
 
 		SetPriority(PRIORITY_ACTIVITY_DEFEND);
@@ -268,7 +257,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		if (!threat || size <= 0 || now_ms < m_fFlankCooldown_ms || IsThreatVisibleInLeash())
 			return;
 
-		size = Math.Min(size, m_aAssigned.Count() - MIN_KEEP_IN_SLOTS);
+		size = Math.Min(size, m_aAssigned.Count() - 2);
 		if (size <= 0)
 			return;
 
@@ -307,7 +296,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 			utility.AddAction(new SCR_AIMoveIndividuallyBehavior(utility, this, flankPos, priorityLevel: m_fPriorityLevel.m_Value, radius: 8));
 		}
 
-		m_fFlankUntil_ms = now_ms + FLANK_TIMEOUT_MS;
+		m_fFlankUntil_ms = now_ms + 60000.0;
 		DCO_BenchmarkLoggerComponent.Event(string.Format("garrison_flank grp=%1 size=%2", m_Utility.m_Owner, team.Count()));
 	}
 
@@ -324,7 +313,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		}
 
 		m_fFlankUntil_ms = 0;
-		m_fFlankCooldown_ms = now_ms + FLANK_COOLDOWN_MS;
+		m_fFlankCooldown_ms = now_ms + 60000.0;
 	}
 
 	protected vector ComputeFlankPoint(vector center, vector threatPos, float leashR)
@@ -341,7 +330,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		if (Math.RandomFloat01() < 0.5)
 			side = side * -1;
 
-		vector p = threatPos + side * FLANK_SIDE_DIST - dir * FLANK_BACK_DIST;
+		vector p = threatPos + side * 40.0 - dir * 15.0;
 		vector off = p - center;
 		off[1] = 0;
 		if (off.Length() > leashR * 0.9)
@@ -351,8 +340,6 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		return p;
 	}
 
-	protected static const float FLANK_SIDE_DIST = 40;
-	protected static const float FLANK_BACK_DIST = 15;
 
 	protected bool HasFreshThreat()
 	{
@@ -374,7 +361,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		vector center = m_Waypoint.GetOrigin();
 		foreach (SCR_AIGroupTargetCluster c : perc.m_aTargetClusters)
 		{
-			if (!c.m_State || c.m_State.m_iCountAlive <= 0 || c.m_State.GetTimeSinceLastNewInformation() > THREAT_FRESH_S)
+			if (!c.m_State || c.m_State.m_iCountAlive <= 0 || c.m_State.GetTimeSinceLastNewInformation() > 15.0)
 				continue;
 
 			vector pos = c.m_State.GetCenterPosition();
@@ -399,7 +386,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		float leashR = m_Waypoint.GetCompletionRadius() + m_Waypoint.GetDefendLeashExtra();
 		foreach (SCR_AITargetInfo t : perc.m_aTargets)
 		{
-			if (!t || pmNow - t.m_fTimestamp > VISIBLE_S)
+			if (!t || pmNow - t.m_fTimestamp > 3.0)
 				continue;
 			if (t.m_eCategory != EAITargetInfoCategory.DETECTED && t.m_eCategory != EAITargetInfoCategory.IDENTIFIED)
 				continue;
@@ -467,7 +454,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		m_aCandidates.Clear();
 		foreach (IEntity e : ordered)
 		{
-			if (m_aCandidates.Count() >= MAX_CANDIDATES)
+			if (m_aCandidates.Count() >= 8)
 				break;
 
 			DCO_GarrisonBuilding b = registry.Request(e, 1);
@@ -512,7 +499,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 			}
 		}
 
-		if (!allReady && now_ms - m_fWaitStart_ms < WAIT_TIMEOUT_MS)
+		if (!allReady && now_ms - m_fWaitStart_ms < 30000.0)
 			return;
 
 		Allocate(registry, now_ms);
@@ -525,7 +512,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 
 		int maxBuildings = m_Waypoint.GetMaxBuildings();
 		if (maxBuildings <= 0)
-			maxBuildings = AUTO_MAX_BUILDINGS;
+			maxBuildings = 6;
 
 		int capacity = 0;
 		foreach (DCO_GarrisonBuilding b : m_aCandidates)
@@ -724,16 +711,16 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 				hold = DCO_GarrisonHoldBehavior.Cast(utility.GetCurrentAction());
 
 			float d = vector.Distance(ent.GetOrigin(), a.m_Building.m_aSlots[a.m_iSlot].m_vWorldPos);
-			if (!hold || d <= DCO_GarrisonHoldBehavior.RETURN_DIST || d < a.m_fBestDist - 1)
+			if (!hold || d <= 1.5 || d < a.m_fBestDist - 1)
 			{
 				a.m_fBestDist = Math.Min(a.m_fBestDist, d);
-				if (!hold || d <= DCO_GarrisonHoldBehavior.RETURN_DIST)
+				if (!hold || d <= 1.5)
 					a.m_fBestDist = d;
 				a.m_fProgress_ms = now_ms;
 				continue;
 			}
 
-			if (now_ms - a.m_fProgress_ms < UNREACHABLE_MS)
+			if (now_ms - a.m_fProgress_ms < 20000.0)
 				continue;
 
 			registry.MarkUnreachable(a.m_Building, a.m_iSlot);

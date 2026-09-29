@@ -57,26 +57,6 @@ class DCO_MergeJob
 class DCO_CommanderOps
 {
 	protected static const float TICK_S = 5;
-	protected static const float INTEL_HALF_LIFE_S = 300;
-	protected static const float PRIOR_DEFENDERS = 8;
-	protected static const float UNCERTAINTY_MARGIN = 0.5;
-	protected static const float RATIO_CONFIDENCE_MIN = 0.2;
-	protected static const int OPS_MAX_GROUPS = 6;
-	protected static const int PREP_SHELLS = 6;
-	protected static const float PREP_DURATION_S = 45;
-	protected static const float SMOKE_OPEN_DIST = 150;
-	protected static const float CONSOLIDATION_S = 120;
-	protected static const float EXPLOIT_STRENGTH = 0.6;
-	protected static const float PAUSE_S = 180;
-	protected static const float MERGE_DIST = 300;
-	protected static const float MERGE_JOIN_DIST = 25;
-	protected static const float MERGE_TIMEOUT_S = 180;
-	protected static const float AVOID_BEARING_DEG = 45;
-	protected static const int FAILS_BEFORE_COOLDOWN = 3;
-	protected static const float ATTEMPT_TIMEOUT_S = 900;
-	protected static const float SUPPORT_OBJ_DIST = 700;
-	protected static const float ARMOR_INFANTRY_RADIUS = 80;
-	protected static const float ARMOR_THREAT_RADIUS = 250;
 
 	protected ref map<CMD_AICommanderObjectiveComponent, ref DCO_ObjectiveIntel> m_mIntel = new map<CMD_AICommanderObjectiveComponent, ref DCO_ObjectiveIntel>();
 	protected ref map<CMD_AICommanderObjectiveComponent, ref DCO_ObjectiveMemory> m_mMemory = new map<CMD_AICommanderObjectiveComponent, ref DCO_ObjectiveMemory>();
@@ -152,7 +132,7 @@ class DCO_CommanderOps
 
 		float decay = 1;
 		if (m_fLastIntelDecay > 0)
-			decay = Math.Pow(0.5, (now - m_fLastIntelDecay) / INTEL_HALF_LIFE_S);
+			decay = Math.Pow(0.5, (now - m_fLastIntelDecay) / 300.0);
 		m_fLastIntelDecay = now;
 
 		FactionKey fk = cmd.GetCommanderFactionKey();
@@ -201,7 +181,7 @@ class DCO_CommanderOps
 	{
 		DCO_ObjectiveIntel i = GetIntel(obj);
 		if (!i.m_bEverSeen)
-			return PRIOR_DEFENDERS;
+			return 8.0;
 		return i.m_fDefenders;
 	}
 
@@ -219,20 +199,20 @@ class DCO_CommanderOps
 		int floor = obj.GetRequiredGroupCount();
 		DCO_ObjectiveIntel intel = GetIntel(obj);
 		float est = EstimateDefenders(obj);
-		float margin = UNCERTAINTY_MARGIN * (1 - intel.m_fConfidence) * (1 - 0.6 * cmd.GetRiskTaking());
+		float margin = 0.5 * (1 - intel.m_fConfidence) * (1 - 0.6 * cmd.GetRiskTaking());
 		int need = Math.Ceil(est * GetTargetRatio(cmd, obj) * (1 + margin) / Math.Max(avgGroupSize, 2));
 
 		DCO_ObjectiveMemory mem = m_mMemory.Get(obj);
 		if (mem)
 			need += mem.m_iFails;
 
-		return Math.ClampInt(need, floor, Math.Max(floor, OPS_MAX_GROUPS));
+		return Math.ClampInt(need, floor, Math.Max(floor, 6));
 	}
 
 	bool IsForceSufficient(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj)
 	{
 		DCO_ObjectiveIntel intel = GetIntel(obj);
-		if (intel.m_bEverSeen && intel.m_fConfidence >= RATIO_CONFIDENCE_MIN)
+		if (intel.m_bEverSeen && intel.m_fConfidence >= 0.2)
 		{
 			if (cmd.GetAttackStrength(obj) < GetTargetRatio(cmd, obj) * intel.m_fDefenders)
 				return false;
@@ -301,7 +281,7 @@ class DCO_CommanderOps
 			tier = "area";
 		}
 
-		CMD_FireMissionRequest req = new CMD_FireMissionRequest(target, SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE, now, PREP_SHELLS, lastSeen, quality);
+		CMD_FireMissionRequest req = new CMD_FireMissionRequest(target, SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE, now, 6, lastSeen, quality);
 		arty.ApplyTier(req, tier, bestUnc, "prep");
 		if (arty.HasFriendlyNearRequest(req, now))
 		{
@@ -309,14 +289,14 @@ class DCO_CommanderOps
 			return true;
 		}
 
-		arty.RequestShellImpact(req, now, PREP_SHELLS);
+		arty.RequestShellImpact(req, now, 6);
 		prep = new DCO_PrepFire();
 		prep.m_bFired = true;
-		prep.m_fUntil = now + PREP_DURATION_S;
+		prep.m_fUntil = now + 45.0;
 		prep.m_vImpact = target;
 		prep.m_fSafeRadius = req.m_fSafeRadius;
 		m_mPrep.Set(obj, prep);
-		Event(string.Format("ops_prep obj=%1 unc=%2 mandatory=%3 shells=%4 safe_r=%5", obj.GetOwner().GetName(), Math.Round(bestUnc), mandatory, PREP_SHELLS, Math.Round(req.m_fSafeRadius)));
+		Event(string.Format("ops_prep obj=%1 unc=%2 mandatory=%3 shells=%4 safe_r=%5", obj.GetOwner().GetName(), Math.Round(bestUnc), mandatory, 6, Math.Round(req.m_fSafeRadius)));
 		return false;
 	}
 
@@ -350,7 +330,7 @@ class DCO_CommanderOps
 
 		vector objPos = obj.GetOwner().GetOrigin();
 		float dist = vector.DistanceXZ(objPos, stagingPos);
-		if (dist < SMOKE_OPEN_DIST)
+		if (dist < 150.0)
 			return;
 
 		int open;
@@ -487,7 +467,7 @@ class DCO_CommanderOps
 			g2.CompleteAllWaypoints();
 			g2.SetGroupObjective(null);
 			g2.SetTask(DCO_EGroupTask.NONE);
-			g2.DCO_SetHold(now + CONSOLIDATION_S);
+			g2.DCO_SetHold(now + 120.0);
 			SCR_AIWaypoint wp = cmd.SpawnMoveWP(objPos);
 			if (wp)
 				g2.MoveTo(wp, now);
@@ -529,7 +509,7 @@ class DCO_CommanderOps
 				m_aConsolidations.Remove(i);
 				continue;
 			}
-			if (now - c.m_fStart < CONSOLIDATION_S)
+			if (now - c.m_fStart < 120.0)
 				continue;
 
 			float strength = 0;
@@ -544,7 +524,7 @@ class DCO_CommanderOps
 
 			float ratio = strength / Math.Max(c.m_fStrengthStart, 1);
 			string decision;
-			if (ratio >= EXPLOIT_STRENGTH && cmd.GetAggression() >= 0.5)
+			if (ratio >= 0.6 && cmd.GetAggression() >= 0.5)
 			{
 				m_ExploitHint = NextOnAxis(cmd, c.m_Obj);
 				m_Main = null;
@@ -552,7 +532,7 @@ class DCO_CommanderOps
 			}
 			else
 			{
-				m_fPauseUntil = now + PAUSE_S;
+				m_fPauseUntil = now + 180.0;
 				decision = "pause";
 			}
 
@@ -655,7 +635,7 @@ class DCO_CommanderOps
 		}
 
 		CMD_AICommanderObjectiveComponent support;
-		float bestD = SUPPORT_OBJ_DIST;
+		float bestD = 700.0;
 		foreach (CMD_AICommanderObjectiveComponent s : ranked)
 		{
 			if (!s || s == m_Main || onAxis.Contains(s))
@@ -780,7 +760,7 @@ class DCO_CommanderOps
 				continue;
 
 			bool exhausted = !HasOperationGroups(cmd, obj);
-			if (!exhausted && now - mem.m_Active.m_fStart < ATTEMPT_TIMEOUT_S)
+			if (!exhausted && now - mem.m_Active.m_fStart < 900.0)
 				continue;
 
 			float casualties = mem.m_Active.m_fStrength - cmd.GetAttackStrength(obj);
@@ -792,7 +772,7 @@ class DCO_CommanderOps
 			m_mPrep.Remove(obj);
 			m_mFeint.Remove(obj);
 
-			if (mem.m_iFails >= FAILS_BEFORE_COOLDOWN)
+			if (mem.m_iFails >= 3)
 			{
 				float minutes = Math.Lerp(5, 15, cmd.GetPatience());
 				cmd.SetObjectiveCooldown(obj, minutes * 60);
@@ -818,7 +798,7 @@ class DCO_CommanderOps
 			bool clear = true;
 			foreach (float fb : mem.m_aFailedBearings)
 			{
-				if (AngleDiff(approach, fb) < AVOID_BEARING_DEG)
+				if (AngleDiff(approach, fb) < 45.0)
 				{
 					clear = false;
 					break;
@@ -889,7 +869,7 @@ class DCO_CommanderOps
 			vector apos = s.m_Armor.GetOwner().GetOrigin();
 			vector objPos = s.m_Obj.GetOwner().GetOrigin();
 
-			CMD_ThreatEntry danger = NearestThreat(cmd, apos, ARMOR_THREAT_RADIUS, true);
+			CMD_ThreatEntry danger = NearestThreat(cmd, apos, 250.0, true);
 			if (danger && s.m_iState != 3 && s.m_iState != 0)
 			{
 				s.m_iState = 3;
@@ -910,7 +890,7 @@ class DCO_CommanderOps
 				continue;
 			}
 
-			CMD_ThreatEntry infThreat = NearestThreat(cmd, apos, ARMOR_THREAT_RADIUS, false);
+			CMD_ThreatEntry infThreat = NearestThreat(cmd, apos, 250.0, false);
 			if (infThreat && s.m_iState != 4)
 			{
 				s.m_iState = 4;
@@ -943,9 +923,9 @@ class DCO_CommanderOps
 				continue;
 			}
 
-			float stopDist = ARMOR_INFANTRY_RADIUS;
+			float stopDist = 80.0;
 			if (!atKnown)
-				stopDist = ARMOR_ASSAULT_LEASH;
+				stopDist = 150.0;
 			bool escorted = InfantryWithin(cmd, s.m_Obj, apos, stopDist);
 			if (s.m_iState == 1 && !escorted)
 			{
@@ -953,7 +933,7 @@ class DCO_CommanderOps
 				s.m_Armor.CompleteAllWaypoints();
 				Event(string.Format("ops_armor_wait obj=%1 armor=%2", s.m_Obj.GetOwner().GetName(), s.m_Armor.GetOwner().GetName()));
 			}
-			else if (s.m_iState == 2 && InfantryWithin(cmd, s.m_Obj, apos, ARMOR_INFANTRY_RADIUS))
+			else if (s.m_iState == 2 && InfantryWithin(cmd, s.m_Obj, apos, 80.0))
 			{
 				s.m_iState = 1;
 				MoveGroup(cmd, s.m_Armor, objPos, now);
@@ -961,9 +941,6 @@ class DCO_CommanderOps
 		}
 	}
 
-	protected static const float ARMOR_ASSAULT_LEASH = 150;
-	protected static const float ARMOR_ENGAGE_STANDOFF = 60;
-	protected static const float ARMOR_ENGAGE_LEASH = 150;
 
 	protected static vector ArmorEngagePos(vector apos, vector threatPos, vector objPos, float objRadius)
 	{
@@ -974,10 +951,10 @@ class DCO_CommanderOps
 		dir[1] = 0;
 		dir.Normalize();
 
-		vector pos = threatPos + dir * ARMOR_ENGAGE_STANDOFF;
+		vector pos = threatPos + dir * 60.0;
 		vector fromObj = pos - objPos;
 		fromObj[1] = 0;
-		float leash = objRadius + ARMOR_ENGAGE_LEASH;
+		float leash = objRadius + 150.0;
 		if (fromObj.Length() > leash)
 			pos = objPos + fromObj.Normalized() * leash;
 		pos[1] = GetGame().GetWorld().GetSurfaceY(pos[0], pos[2]);
@@ -1018,11 +995,11 @@ class DCO_CommanderOps
 		{
 			if (!t || vector.DistanceXZ(t.m_vBelievedPos, p) > r)
 				continue;
-			total += t.m_iEstimatedEnemyCount * DCO_Strength.W_MEMBER;
+			total += t.m_iEstimatedEnemyCount * 1.0;
 			if (t.m_bATSeen)
-				total += DCO_Strength.W_AT_VS_VEHICLES;
+				total += 2.0;
 			if (t.m_bArmorSeen)
-				total += DCO_Strength.W_TANK;
+				total += 8.0;
 		}
 		return total;
 	}
@@ -1105,7 +1082,7 @@ class DCO_CommanderOps
 		for (int i = m_aMerges.Count() - 1; i >= 0; i--)
 		{
 			DCO_MergeJob j = m_aMerges[i];
-			if (!j.m_From || !j.m_To || now - j.m_fStart > MERGE_TIMEOUT_S || j.m_From.HasState(DCO_EGroupState.IN_CONTACT) || j.m_To.HasState(DCO_EGroupState.IN_CONTACT))
+			if (!j.m_From || !j.m_To || now - j.m_fStart > 180.0 || j.m_From.HasState(DCO_EGroupState.IN_CONTACT) || j.m_To.HasState(DCO_EGroupState.IN_CONTACT))
 			{
 				if (j.m_From)
 					j.m_From.DCO_SetHold(0);
@@ -1115,7 +1092,7 @@ class DCO_CommanderOps
 				continue;
 			}
 
-			if (vector.DistanceXZ(j.m_From.GetOwner().GetOrigin(), j.m_To.GetOwner().GetOrigin()) > MERGE_JOIN_DIST)
+			if (vector.DistanceXZ(j.m_From.GetOwner().GetOrigin(), j.m_To.GetOwner().GetOrigin()) > 25.0)
 				continue;
 
 			ExecuteMerge(cmd, j);
@@ -1142,7 +1119,7 @@ class DCO_CommanderOps
 				DCO_GroupUtilityComponent gb = weak[b];
 				if (!ga || !gb || IsMerging(ga) || IsMerging(gb))
 					continue;
-				if (vector.DistanceXZ(ga.GetOwner().GetOrigin(), gb.GetOwner().GetOrigin()) > MERGE_DIST)
+				if (vector.DistanceXZ(ga.GetOwner().GetOrigin(), gb.GetOwner().GetOrigin()) > 300.0)
 					continue;
 
 				DCO_MergeJob j = new DCO_MergeJob();
@@ -1154,8 +1131,8 @@ class DCO_CommanderOps
 					j.m_From = ga;
 				}
 				j.m_fStart = now;
-				j.m_From.DCO_SetHold(now + MERGE_TIMEOUT_S);
-				j.m_To.DCO_SetHold(now + MERGE_TIMEOUT_S);
+				j.m_From.DCO_SetHold(now + 180.0);
+				j.m_To.DCO_SetHold(now + 180.0);
 				j.m_To.CompleteAllWaypoints();
 				MoveGroup(cmd, j.m_From, j.m_To.GetOwner().GetOrigin(), now);
 				m_aMerges.Insert(j);
@@ -1172,7 +1149,7 @@ class DCO_CommanderOps
 		j.m_From = from;
 		j.m_To = to;
 		j.m_fStart = now;
-		from.DCO_SetHold(now + MERGE_TIMEOUT_S);
+		from.DCO_SetHold(now + 180.0);
 		MoveGroup(cmd, from, to.GetOwner().GetOrigin(), now);
 		m_aMerges.Insert(j);
 		Event(string.Format("ops_merge_start from=%1 (%2) to=%3 (%4) reason=op_return", from.GetOwner().GetName(), from.GetUnitCount(), to.GetOwner().GetName(), to.GetUnitCount()));

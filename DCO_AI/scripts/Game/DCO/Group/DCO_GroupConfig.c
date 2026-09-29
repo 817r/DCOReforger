@@ -41,7 +41,6 @@ class DCO_GroupConfigComponent : ScriptComponent
 
 	void SetCoverPreference(int pref)	{ m_iCoverPreference = Math.ClampInt(pref, -1, 2); }
 
-	static const float ENGAGEMENT_DISTANCE_MAX = 2500;
 
 	protected AIGroup m_Group;
 
@@ -60,18 +59,18 @@ class DCO_GroupConfigComponent : ScriptComponent
 
 	float GetEngagementDistanceInfantry()
 	{
-		return Math.Clamp(m_fEngagementDistanceInfantry, 0, ENGAGEMENT_DISTANCE_MAX);
+		return Math.Clamp(m_fEngagementDistanceInfantry, 0, 2500.0);
 	}
 
 	float GetEngagementDistanceVehicle()
 	{
-		return Math.Clamp(m_fEngagementDistanceVehicle, 0, ENGAGEMENT_DISTANCE_MAX);
+		return Math.Clamp(m_fEngagementDistanceVehicle, 0, 2500.0);
 	}
 
 	void SetEngagementDistance(float infantry, float vehicle)
 	{
-		m_fEngagementDistanceInfantry = Math.Clamp(infantry, 0, ENGAGEMENT_DISTANCE_MAX);
-		m_fEngagementDistanceVehicle = Math.Clamp(vehicle, 0, ENGAGEMENT_DISTANCE_MAX);
+		m_fEngagementDistanceInfantry = Math.Clamp(infantry, 0, 2500.0);
+		m_fEngagementDistanceVehicle = Math.Clamp(vehicle, 0, 2500.0);
 	}
 
 	float GetInvestigateMaxDist()

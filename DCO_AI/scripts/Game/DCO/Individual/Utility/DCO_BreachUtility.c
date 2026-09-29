@@ -2,10 +2,6 @@ class DCO_BreachUtility
 {
 	protected static ref map<IEntity, float> s_mLastBreachThrowTime = new map<IEntity, float>();
 
-	static const float BREACH_COOLDOWN_MS      = 20000.0;
-	static const float BREACH_MAX_DIST         = 15.0;
-	static const float BREACH_MIN_DIST         = 4.0;
-	static const float BREACH_FRIENDLY_CHECK_RADIUS = 5.0;
 
 	static bool TryThrowBreachGrenade(SCR_AIUtilityComponent utility, vector entryPos)
 	{
@@ -23,7 +19,7 @@ class DCO_BreachUtility
 			return false;
 
 		float distToEntry = vector.Distance(myEntity.GetOrigin(), entryPos);
-		if (distToEntry < BREACH_MIN_DIST || distToEntry > BREACH_MAX_DIST)
+		if (distToEntry < 4.0 || distToEntry > 15.0)
 			return false;
 
 		if (HasFriendlyNear(myEntity, entryPos))
@@ -32,7 +28,7 @@ class DCO_BreachUtility
 		float worldTime_ms = GetGame().GetWorld().GetWorldTime();
 
 		float personalityCooldownScale = GetPersonalityCooldownScale(utility);
-		float effectiveCooldown = BREACH_COOLDOWN_MS * personalityCooldownScale;
+		float effectiveCooldown = 20000.0 * personalityCooldownScale;
 
 		float lastThrow;
 		if (s_mLastBreachThrowTime.Find(myEntity, lastThrow))
@@ -88,7 +84,7 @@ class DCO_BreachUtility
 		string myFactionKey = selfFac.GetAffiliatedFaction().GetFactionKey();
 
 		DCO_Perf.Count("q:DCO_BreachUtility");
-		GetGame().GetWorld().QueryEntitiesBySphere(pos, BREACH_FRIENDLY_CHECK_RADIUS, null, FriendlyQueryCallback, EQueryEntitiesFlags.DYNAMIC);
+		GetGame().GetWorld().QueryEntitiesBySphere(pos, 5.0, null, FriendlyQueryCallback, EQueryEntitiesFlags.DYNAMIC);
 
 		foreach (IEntity ent : s_aFriendlyCheckResult)
 		{

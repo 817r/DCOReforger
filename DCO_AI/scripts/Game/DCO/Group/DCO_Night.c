@@ -1,17 +1,6 @@
 class DCO_Night
 {
-	static const ResourceName FLARE_EFFECT = "{A090D9A11955DF54}Prefabs/Weapons/Ammo/FlareEffect_30mm_RSP30_White.et";
-	static const float FLARE_MIN_M = 100;
-	static const float FLARE_MAX_M = 400;
-	static const float FLARE_DARK = 0.2;
-	static const float FLARE_AREA_M = 150;
-	static const float FLARE_AREA_MS = 40000;
-	static const float FLARE_HEIGHT_M = 120;
-	static const float FLARE_BEYOND_M = 20;
-	static const float ILLUM_REQUEST_MS = 120000;
-	static const float HEADLIGHT_THREAT_M = 800;
 	static const float CONTACT_FRESH_S = 15;
-	protected static const float NIGHT_CACHE_MS = 10000;
 
 	protected static float s_fNightChecked_ms = -1;
 	protected static bool s_bNight;
@@ -26,7 +15,7 @@ class DCO_Night
 			return false;
 
 		float now = world.GetWorldTime();
-		if (s_fNightChecked_ms < 0 || now - s_fNightChecked_ms > NIGHT_CACHE_MS || now < s_fNightChecked_ms)
+		if (s_fNightChecked_ms < 0 || now - s_fNightChecked_ms > 10000.0 || now < s_fNightChecked_ms)
 		{
 			s_fNightChecked_ms = now;
 			s_bNight = CMD_ThreatResponseComponent.IsNight();
@@ -49,10 +38,10 @@ class DCO_Night
 
 	static bool FlareNear(vector pos, float now_ms)
 	{
-		float radiusSq = FLARE_AREA_M * FLARE_AREA_M;
+		float radiusSq = 150.0 * 150.0;
 		for (int i = s_aFlarePos.Count() - 1; i >= 0; i--)
 		{
-			if (now_ms - s_aFlareTime[i] > FLARE_AREA_MS || now_ms < s_aFlareTime[i])
+			if (now_ms - s_aFlareTime[i] > 40000.0 || now_ms < s_aFlareTime[i])
 			{
 				s_aFlarePos.Remove(i);
 				s_aFlareTime.Remove(i);
@@ -125,10 +114,10 @@ class DCO_Night
 		if (dist > 1)
 			dir = dir * (1.0 / dist);
 
-		vector burst = clusterPos + dir * FLARE_BEYOND_M;
-		burst[1] = GetGame().GetWorld().GetSurfaceY(burst[0], burst[2]) + FLARE_HEIGHT_M;
+		vector burst = clusterPos + dir * 20.0;
+		burst[1] = GetGame().GetWorld().GetSurfaceY(burst[0], burst[2]) + 120.0;
 
-		Resource res = Resource.Load(FLARE_EFFECT);
+		Resource res = Resource.Load("{A090D9A11955DF54}Prefabs/Weapons/Ammo/FlareEffect_30mm_RSP30_White.et");
 		if (!res || !res.IsValid())
 			return false;
 
@@ -162,7 +151,7 @@ class DCO_Night
 				continue;
 
 			PerceivableComponent perc = PerceivableComponent.Cast(t.m_Entity.FindComponent(PerceivableComponent));
-			if (perc && perc.GetIlluminationFactor() >= FLARE_DARK)
+			if (perc && perc.GetIlluminationFactor() >= 0.2)
 				return false;
 			n++;
 		}
@@ -218,7 +207,7 @@ class DCO_Night
 		if (!lights || (!lights.GetLightsState(ELightType.Head) && !lights.GetLightsState(ELightType.HiBeam)))
 			return;
 
-		float rangeSq = HEADLIGHT_THREAT_M * HEADLIGHT_THREAT_M;
+		float rangeSq = 800.0 * 800.0;
 		vector p = veh.GetOrigin();
 		bool threat = false;
 		foreach (SCR_AITargetInfo t : perc.m_aTargets)

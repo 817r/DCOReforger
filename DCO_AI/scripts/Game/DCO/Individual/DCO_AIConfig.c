@@ -369,7 +369,6 @@ class DCO_AIConfigComponent : ScriptComponent
 	protected vector  m_vLeashCenter;
 	protected float   m_fLeashRadius;
 
-	protected static const float LEASH_BUILDING_MARGIN = 1.0;
 
 	DCO_ELeashType GetLeashType()
 	{
@@ -424,7 +423,7 @@ class DCO_AIConfigComponent : ScriptComponent
 				vector local = m_LeashBuilding.CoordToLocal(pos);
 				for (int a = 0; a < 3; a++)
 				{
-					if (local[a] < mins[a] - LEASH_BUILDING_MARGIN || local[a] > maxs[a] + LEASH_BUILDING_MARGIN)
+					if (local[a] < mins[a] - 1.0 || local[a] > maxs[a] + 1.0)
 						return false;
 				}
 				return true;

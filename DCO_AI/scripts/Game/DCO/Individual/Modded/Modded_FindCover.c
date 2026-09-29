@@ -1,6 +1,5 @@
 modded class SCR_AIFindCover
 {
-	static const int DCO_SPACING_RETRIES = 3;
 
 	protected ref array<vector> m_aDCOMatePos = {};
 	protected ref array<int> m_aDCOBlocked = {};
@@ -35,7 +34,7 @@ modded class SCR_AIFindCover
 			return false;
 
 		DCO_SquadSpacing.CollectMatePositions(owner, m_aDCOMatePos);
-		if (DCO_SquadSpacing.NearestDistance(coverPos, m_aDCOMatePos) >= DCO_SquadSpacing.MIN_SPACING)
+		if (DCO_SquadSpacing.NearestDistance(coverPos, m_aDCOMatePos) >= 5.0)
 			return true;
 
 		vector firstPos = coverPos;
@@ -46,7 +45,7 @@ modded class SCR_AIFindCover
 
 		m_aDCOBlocked.Clear();
 		bool spaced = false;
-		for (int i = 0; i < DCO_SPACING_RETRIES; i++)
+		for (int i = 0; i < 3; i++)
 		{
 			m_CoverMgr.SetOccupiedCover(tilex, tiley, coverId, true);
 			m_aDCOBlocked.Insert(tilex);
@@ -56,7 +55,7 @@ modded class SCR_AIFindCover
 			if (!m_CoverMgr.GetBestCover("Soldiers", m_PathfindingComp, queryProps, coverPos, coverTallestPos, tilex, tiley, coverId))
 				break;
 
-			if (DCO_SquadSpacing.NearestDistance(coverPos, m_aDCOMatePos) >= DCO_SquadSpacing.MIN_SPACING)
+			if (DCO_SquadSpacing.NearestDistance(coverPos, m_aDCOMatePos) >= 5.0)
 			{
 				spaced = true;
 				break;

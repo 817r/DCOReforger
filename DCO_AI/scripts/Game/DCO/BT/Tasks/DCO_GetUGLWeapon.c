@@ -1,7 +1,6 @@
 class DCO_AIGetUGLWeapon : AITaskScripted
 {
 	protected static const string PORT_WEAPON_COMPONENT = "WeaponComponent";
-	protected static const string PORT_MUZZLE_ID        = "MuzzleId";
 
 	protected SCR_AIUtilityComponent m_Utility;
 
@@ -25,12 +24,12 @@ class DCO_AIGetUGLWeapon : AITaskScripted
 			return ENodeResult.FAIL;
 
 		SetVariableOut(PORT_WEAPON_COMPONENT, weap);
-		SetVariableOut(PORT_MUZZLE_ID, uglIdx);
+		SetVariableOut("MuzzleId", uglIdx);
 
 		return ENodeResult.SUCCESS;
 	}
 
-	protected static ref TStringArray s_aVarsOut = { PORT_WEAPON_COMPONENT, PORT_MUZZLE_ID };
+	protected static ref TStringArray s_aVarsOut = { PORT_WEAPON_COMPONENT, "MuzzleId" };
 	override TStringArray GetVariablesOut() { return s_aVarsOut; }
 
 	static override bool VisibleInPalette() { return true; }

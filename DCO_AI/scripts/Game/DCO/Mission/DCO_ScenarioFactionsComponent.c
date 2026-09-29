@@ -8,7 +8,6 @@ class DCO_ScenarioFactionsComponent : ScriptComponent
 	[Attribute("US", UIWidgets.Auto, "Faction key yang boleh dipilih pemain. Sisanya gak playable.")]
 	protected ref array<string> m_aPlayableFactions;
 
-	protected static const int APPLY_DELAY_MS = 1000;
 
 	override void OnPostInit(IEntity owner)
 	{
@@ -19,7 +18,7 @@ class DCO_ScenarioFactionsComponent : ScriptComponent
 	override void EOnInit(IEntity owner)
 	{
 		if (Replication.IsServer() && GetGame().InPlayMode())
-			GetGame().GetCallqueue().CallLater(Apply, APPLY_DELAY_MS, false);
+			GetGame().GetCallqueue().CallLater(Apply, 1000, false);
 	}
 
 	protected void Apply()

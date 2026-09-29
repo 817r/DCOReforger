@@ -12,10 +12,6 @@ class DCO_OrderBanner
 {
 	protected static const ResourceName LAYOUT = "{363FD3FC6E85FE60}UI/layouts/DCO/DCO_CommanderOrder.layout";
 	protected static const ResourceName ICONS = "{10C0A9A305E8B3A4}UI/Imagesets/Tasks/Task_Icons.imageset";
-	protected static const float SLIDE_PX = 40;
-	protected static const float LINE_W = 630;
-	protected static const int TYPE_MS = 30;
-	protected static const int HOLD_MS = 5500;
 	protected static const int FADE_MS = 400;
 
 	protected static ref DCO_OrderBanner s_Instance;
@@ -93,12 +89,12 @@ class DCO_OrderBanner
 		float x, y, slideY;
 		DCO_UISettings.Apply(banner, x, y, slideY);
 		float scale = DCO_UISettings.GetScale();
-		FrameSlot.SetPos(banner, x, y - SLIDE_PX * scale * slideY);
+		FrameSlot.SetPos(banner, x, y - 40.0 * scale * slideY);
 		float pos[2] = {x, y};
 		AnimateWidget.Position(banner, pos, 5);
 		AnimateWidget.Opacity(banner, 1, 5);
 		FrameSlot.SetSizeX(line, 0);
-		float size[2] = {LINE_W * scale, FrameSlot.GetSizeY(line)};
+		float size[2] = {630.0 * scale, FrameSlot.GetSizeY(line)};
 		AnimateWidget.Size(line, size, 2.5);
 
 		FitTitle(m_wTitle, sub, msg.m_sTitle, msg.m_sSub.IsEmpty(), scale);
@@ -106,12 +102,12 @@ class DCO_OrderBanner
 		m_sTitle = msg.m_sTitle;
 		m_iTyped = 0;
 		m_wTitle.SetText("");
-		GetGame().GetCallqueue().CallLater(TypeTick, TYPE_MS, true);
+		GetGame().GetCallqueue().CallLater(TypeTick, 30, true);
 
 		if (!msg.m_sSound.IsEmpty())
 			SCR_UISoundEntity.SoundEvent(msg.m_sSound);
 
-		GetGame().GetCallqueue().CallLater(FadeOut, HOLD_MS);
+		GetGame().GetCallqueue().CallLater(FadeOut, 5500);
 	}
 
 	protected static void FitTitle(RichTextWidget title, Widget sub, string text, bool subEmpty, float scale)

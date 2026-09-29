@@ -1,6 +1,5 @@
 class DCO_GroupTooltipDetail : SCR_EntityTooltipDetail
 {
-	protected static const ResourceName TEXT_LAYOUT = "{93AF6A0EA7571B84}UI/layouts/Editor/Tooltips/TooltipPrefabs/TooltipPrefab_Text.layout";
 
 	protected SCR_AIGroup m_Group;
 	protected TextWidget m_Text;
@@ -8,7 +7,7 @@ class DCO_GroupTooltipDetail : SCR_EntityTooltipDetail
 
 	void DCO_GroupTooltipDetail()
 	{
-		m_Layout = TEXT_LAYOUT;
+		m_Layout = "{93AF6A0EA7571B84}UI/layouts/Editor/Tooltips/TooltipPrefabs/TooltipPrefab_Text.layout";
 		m_bShowLabel = true;
 	}
 

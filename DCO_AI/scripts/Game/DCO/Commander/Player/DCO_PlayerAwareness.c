@@ -3,17 +3,6 @@ class DCO_PlayerAwareness
 	protected static const float TICK_S = 5;
 	protected static float s_fTimer;
 
-	static const int GROUP_STRIDE = 7;
-	static const int OBJ_STRIDE = 4;
-	static const int FLAG_HAS_DEST = 1;
-	static const int FLAG_CONTACT = 2;
-	static const int FLAG_ARMOR = 4;
-	static const int FLAG_MOUNTED = 8;
-	static const int REL_NEUTRAL = 0;
-	static const int REL_FRIENDLY = 1;
-	static const int REL_ENEMY = 2;
-	static const int REL_CONTESTED = 3;
-	static const int REL_STAGING = 4;
 
 	static void Tick(float timeSlice)
 	{
@@ -83,14 +72,14 @@ class DCO_PlayerAwareness
 				if (gobj)
 					dest = gobj.GetOwner().GetOrigin();
 				if (grp.IsMoving() || gobj)
-					flags |= FLAG_HAS_DEST;
+					flags |= 1;
 				int st = grp.GetState();
 				if (st & DCO_EGroupState.IN_CONTACT)
-					flags |= FLAG_CONTACT;
+					flags |= 2;
 				if (st & DCO_EGroupState.MOUNTED)
-					flags |= FLAG_MOUNTED;
+					flags |= 8;
 				if (grp.IsArmor())
-					flags |= FLAG_ARMOR;
+					flags |= 4;
 
 				groups.Insert(gpos[0]);
 				groups.Insert(gpos[2]);
@@ -112,7 +101,7 @@ class DCO_PlayerAwareness
 					objectives.Insert(sp[0]);
 					objectives.Insert(sp[2]);
 					objectives.Insert(15);
-					objectives.Insert(REL_STAGING);
+					objectives.Insert(4);
 				}
 			}
 		}
@@ -125,13 +114,13 @@ class DCO_PlayerAwareness
 			if (!all && vector.DistanceSqXZ(op, ppos) > radiusSq * 4 && !relevantObjs.Contains(o))
 				continue;
 
-			int rel = REL_NEUTRAL;
+			int rel = 0;
 			if (o.IsCapturedBy(fk))
-				rel = REL_FRIENDLY;
+				rel = 1;
 			else if (o.GetOwnerFaction() != "")
-				rel = REL_ENEMY;
+				rel = 2;
 			if (IsContested(o, mgr, fk))
-				rel = REL_CONTESTED;
+				rel = 3;
 
 			objectives.Insert(op[0]);
 			objectives.Insert(op[2]);
@@ -170,9 +159,6 @@ class DCO_PlayerAwareness
 			DCO_Radio.Group(id, "COMMANDER", key, DCO_ERadioKind.INFO, params);
 	}
 
-	protected static const float IDF_CELL_M = 200;
-	protected static const float IDF_COOLDOWN_S = 60;
-	protected static const float HELD_COOLDOWN_S = 60;
 	protected static ref map<string, float> s_mIdfCd = new map<string, float>();
 	protected static ref map<int, float> s_mHeldCd = new map<int, float>();
 
@@ -245,14 +231,14 @@ class DCO_PlayerAwareness
 		float now = GetGame().GetWorld().GetWorldTime() / 1000.0;
 		float tof = CMD_ArtillerySupport.TimeOfFlight(firePos, impact);
 		string grid = DCO_PlayerComms.Grid(impact);
-		string cell = string.Format("%1_%2", Math.Round(impact[0] / IDF_CELL_M), Math.Round(impact[2] / IDF_CELL_M));
+		string cell = string.Format("%1_%2", Math.Round(impact[0] / 200.0), Math.Round(impact[2] / 200.0));
 		foreach (int id : ids)
 		{
 			string memo = id.ToString() + "_" + cell;
 			float until;
 			if (s_mIdfCd.Find(memo, until) && now < until)
 				continue;
-			s_mIdfCd.Set(memo, now + IDF_COOLDOWN_S);
+			s_mIdfCd.Set(memo, now + 60.0);
 			float delay = tof + Math.RandomFloat(3, 8);
 			GetGame().GetCallqueue().CallLater(IncomingGroup, delay * 1000, false, id, grid);
 		}
@@ -281,7 +267,7 @@ class DCO_PlayerAwareness
 			float until;
 			if (s_mHeldCd.Find(id, until) && now < until)
 				continue;
-			s_mHeldCd.Set(id, now + HELD_COOLDOWN_S);
+			s_mHeldCd.Set(id, now + 60.0);
 			DCO_Radio.Group(id, "ARTILLERY", "fire_held", DCO_ERadioKind.INFO, DCO_Radio.P("grid", grid));
 		}
 	}

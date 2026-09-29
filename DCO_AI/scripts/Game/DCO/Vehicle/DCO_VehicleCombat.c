@@ -7,13 +7,6 @@ class DCO_VehicleATThreat
 
 class DCO_VehicleCombat
 {
-	static const float CHECK_INTERVAL_MS = 1000;
-	static const float BAIL_HEALTH       = 0.25;
-	static const float TURRET_BROKEN     = 0.9;
-	static const float AT_SCAN_RANGE     = 350;
-	static const float AT_SEEN_MAX_S     = 6;
-	static const float AT_MEMORY_MS      = 10000;
-	static const float AT_EVADE_DIST     = 250;
 
 	protected static ref map<IEntity, float> s_mNextCheck = new map<IEntity, float>();
 	protected static ref map<IEntity, ref DCO_VehicleATThreat> s_mATThreat = new map<IEntity, ref DCO_VehicleATThreat>();
@@ -57,7 +50,7 @@ class DCO_VehicleCombat
 		float next;
 		if (s_mNextCheck.Find(self, next) && now < next)
 			return;
-		s_mNextCheck.Set(self, now + CHECK_INTERVAL_MS);
+		s_mNextCheck.Set(self, now + 1000.0);
 
 		IEntity vehicle = GetVehicle(self);
 		if (!vehicle)
@@ -103,15 +96,15 @@ class DCO_VehicleCombat
 		string reason;
 		if (dmg.IsOnFire())
 			reason = "fire";
-		else if (dmg.GetHealthScaled() < BAIL_HEALTH)
+		else if (dmg.GetHealthScaled() < 0.25)
 			reason = "hp";
 		else if (!dmg.GetEngineFunctional())
 		{
-			if (gunner && IsArmored(vehicle) && dmg.GetAimingDamage() < TURRET_BROKEN)
+			if (gunner && IsArmored(vehicle) && dmg.GetAimingDamage() < 0.9)
 				return false;
 			reason = "immobile";
 		}
-		else if (gunner && !IsArmored(vehicle) && dmg.GetAimingDamage() >= TURRET_BROKEN)
+		else if (gunner && !IsArmored(vehicle) && dmg.GetAimingDamage() >= 0.9)
 			reason = "turret";
 
 		if (reason.IsEmpty())
@@ -133,11 +126,11 @@ class DCO_VehicleCombat
 		perception.GetTargetsList(s_aTargets, ETargetCategory.ENEMY);
 
 		vector vehPos = vehicle.GetOrigin();
-		float bestDist = AT_SCAN_RANGE;
+		float bestDist = 350.0;
 		BaseTarget best;
 		foreach (BaseTarget target : s_aTargets)
 		{
-			if (!target || !target.GetTargetEntity() || target.GetTimeSinceSeen() > AT_SEEN_MAX_S)
+			if (!target || !target.GetTargetEntity() || target.GetTimeSinceSeen() > 6.0)
 				continue;
 
 			float dist = vector.Distance(vehPos, target.GetLastSeenPosition());
@@ -152,8 +145,6 @@ class DCO_VehicleCombat
 			ReportATThreat(vehicle, best.GetTargetEntity(), best.GetLastSeenPosition());
 	}
 
-	static const float NO_AT_STANDOFF = 60;
-	static const float NO_AT_MIN_DIST = 25;
 
 	static bool IsATKnown(IEntity vehicle, SCR_AIUtilityComponent utility)
 	{
@@ -166,7 +157,7 @@ class DCO_VehicleCombat
 			return true;
 
 		vector vp = vehicle.GetOrigin();
-		float rangeSq = AT_SCAN_RANGE * AT_SCAN_RANGE;
+		float rangeSq = 350.0 * 350.0;
 		if (utility && utility.m_PerceptionComponent)
 		{
 			s_aTargets.Clear();
@@ -237,7 +228,7 @@ class DCO_VehicleCombat
 		if (!threat || !threat.m_Entity)
 			return false;
 
-		if (GetGame().GetWorld().GetWorldTime() - threat.m_fTime_ms > AT_MEMORY_MS)
+		if (GetGame().GetWorld().GetWorldTime() - threat.m_fTime_ms > 10000.0)
 			return false;
 
 		SCR_CharacterDamageManagerComponent dmg = SCR_CharacterDamageManagerComponent.Cast(threat.m_Entity.FindComponent(SCR_CharacterDamageManagerComponent));
@@ -260,7 +251,7 @@ class DCO_VehicleCombat
 		rq.m_vTargetPos = atPos;
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
-		rq.m_fMoveDuration_s = Math.Clamp((AT_EVADE_DIST - dist + 50) / SCR_AICombatMoveUtils.GROUND_VEHICLE_GENERIC_SPEED, 3, 12);
+		rq.m_fMoveDuration_s = Math.Clamp((250.0 - dist + 50) / SCR_AICombatMoveUtils.GROUND_VEHICLE_GENERIC_SPEED, 3, 12);
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 		return rq;

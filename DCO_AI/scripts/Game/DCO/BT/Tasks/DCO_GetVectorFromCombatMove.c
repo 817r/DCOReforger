@@ -1,7 +1,6 @@
 class SCR_AIGetVectorFromCombatMove : AITaskScripted
 {
 	protected static const string PORT_REQUEST = "Request";
-  	protected static const string PORT_TARGET_POS = "TargetPos";
 
 	protected static const string PORT_POS = "Pos";
 

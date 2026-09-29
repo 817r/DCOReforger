@@ -1,30 +1,15 @@
 modded class SCR_AIThreatSystem
 {
-	static const float EXPLOSION_MAX_DISTANCE = 120;
 
 	private static const float ENDANGERED_INCREMENT = 0.25;
 
-	static const float VIGILANT_THRESHOLD = 0.4;
-	static const float ALERTED_THRESHOLD = 1;
-	static const float THREATENED_THRESHOLD = 2.2;
 
-	private static const float BLEEDING_FIXED_INCREMENT = 0.7;
 
 	private static const float SUPPRESSION_BULLET_INCREMENT = 0.11;
-	private static const float ZERO_DISTANCE_SHOT_INCREMENT = 0.01;
-	private static const float DISTANT_SHOT_INCREMENT = 0.005;
-	private static const float EXPLOSION_MAX_INCREMENT = 0.35;
 
 	float m_fThreatFlyBy;
 
-	private static const float ENDANGERED_DIST_NEAR = 25.0;
-	private static const float ENDANGERED_DIST_FAR = 300.0;
-	private static const float ENDANGERED_DIST_NEAR_SCALE = 2.0;
-	private static const float ENDANGERED_DIST_FAR_SCALE = 0.4;
 
-	private static const float ENDANGERED_SEEN_FRESH_S = 2.0;
-	private static const float ENDANGERED_SEEN_STALE_S = 11.0;
-	private static const float ENDANGERED_SEEN_STALE_SCALE = 0.4;
 
 	override void ThreatBulletImpact(int count)
 	{
@@ -70,12 +55,12 @@ modded class SCR_AIThreatSystem
 			if (endangeredTarget)
 			{
 				float targetDist = endangeredTarget.GetDistance();
-				float distClamped = Math.Clamp(targetDist, ENDANGERED_DIST_NEAR, ENDANGERED_DIST_FAR);
-				float distScale = Math.Map(distClamped, ENDANGERED_DIST_NEAR, ENDANGERED_DIST_FAR, ENDANGERED_DIST_NEAR_SCALE, ENDANGERED_DIST_FAR_SCALE);
+				float distClamped = Math.Clamp(targetDist, 25.0, 300.0);
+				float distScale = Math.Map(distClamped, 25.0, 300.0, 2.0, 0.4);
 
 				float sinceSeen = endangeredTarget.GetTimeSinceSeen();
-				float seenClamped = Math.Clamp(sinceSeen, ENDANGERED_SEEN_FRESH_S, ENDANGERED_SEEN_STALE_S);
-				float seenScale = Math.Map(seenClamped, ENDANGERED_SEEN_FRESH_S, ENDANGERED_SEEN_STALE_S, 1.0, ENDANGERED_SEEN_STALE_SCALE);
+				float seenClamped = Math.Clamp(sinceSeen, 2.0, 11.0);
+				float seenScale = Math.Map(seenClamped, 2.0, 11.0, 1.0, 0.4);
 
 				float endangeredTargetValue = ENDANGERED_INCREMENT * distScale * seenScale;
 				float endangeredDecayed = Falloff(m_fThreatIsEndangered, THREAT_ENDANGERED_DROP_RATE, timeSlice);

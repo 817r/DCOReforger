@@ -15,28 +15,16 @@ modded enum SCR_EAICombatMoveRequestType
 modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 {
 	protected static const string PORT_BASE_TARGET = "BaseTarget";
-	protected static const string PORT_AVOID_STRAIGHT_PATH_DIR = "AvoidStraightPathDir";
 
 	protected BaseTarget m_Target;
 	protected vector m_vAvoidStraightPathDir;
 	protected DCO_AIMoraleSystem moraleSystem;
 
-	protected static const float CRITICAL_BID_COOLDOWN_MS   = 3000.0;
-	protected static const float CRITICAL_BUILDING_DIST_MAX = 60.0;
-	protected static const float CRITICAL_COVER_DIST_MAX    = 25.0;
 
-	protected static const float ENGAGED_BID_COOLDOWN_MS = 3000.0;
-	protected static const float ENGAGED_COVER_DIST_MAX  = 18.0;
 
-	protected static const float CRITICAL_RETURN_FIRE_BASE_S = 5.0;
 
-	protected static const float REPOSITION_LOCK_BASE_S = 5.0;
 
-	protected static const float OPEN_AREA_COVER_URGENCY      = 1.35;
-	protected static const float OPEN_AREA_BID_COOLDOWN_SCALE = 0.6;
 
-	protected static const float COHESION_DIST_FALLBACK  = 50.0;
-	protected static const float COHESION_REGROUP_RADIUS = 25.0;
 
 	protected static ref RandomGenerator s_CohesionRand = new RandomGenerator();
 
@@ -50,7 +38,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	protected override bool OnUpdate(AIAgent owner, float dt)
 	{
 		GetVariableIn(PORT_BASE_TARGET, m_Target);
-		GetVariableIn(PORT_AVOID_STRAIGHT_PATH_DIR, m_vAvoidStraightPathDir);
+		GetVariableIn("AvoidStraightPathDir", m_vAvoidStraightPathDir);
 
 		if (!m_Target || !m_Target.GetTargetEntity())
 			return false;
@@ -120,7 +108,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 
 	protected bool ShouldForceReturnFire(float now_ms)
 	{
-		float threshold_s = CRITICAL_RETURN_FIRE_BASE_S * DCO_PersonalityCombatUtility.GetReturnFireDelayScale(m_Utility);
+		float threshold_s = 5.0 * DCO_PersonalityCombatUtility.GetReturnFireDelayScale(m_Utility);
 
 		return GetCriticalElapsed_s(now_ms) > threshold_s;
 	}
@@ -143,7 +131,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 
 		outLeaderPos = leader.GetOrigin();
 
-		float maxDist = COHESION_DIST_FALLBACK;
+		float maxDist = 50.0;
 
 		DCO_GroupConfigComponent cfg = DCO_GroupConfigComponent.Cast(group.FindComponent(DCO_GroupConfigComponent));
 		if (cfg)
@@ -182,13 +170,13 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	    {
 	        rq.m_eType         = SCR_EAICombatMoveRequestType.MOVE;
 	        rq.m_bTryFindCover = true;
-	        searchDistMax      = CRITICAL_COVER_DIST_MAX;
+	        searchDistMax      = 25.0;
 	    }
 	    else
 	    {
 	        rq.m_eType         = SCR_EAICombatMoveRequestType.BUILDING;
 	        rq.m_bTryFindCover = false;
-	        searchDistMax      = CRITICAL_BUILDING_DIST_MAX;
+	        searchDistMax      = 60.0;
 	    }
 
 	    rq.m_fCoverSearchDistMin = 0;
@@ -198,7 +186,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	    rq.GetOnMovementStarted().Insert(OnMovementStarted);
 	    rq.GetOnCompleted().Insert(OnMovementCompleted);
 
-	    m_fNextCriticalBid_ms = GetGame().GetWorld().GetWorldTime() + CRITICAL_BID_COOLDOWN_MS;
+	    m_fNextCriticalBid_ms = GetGame().GetWorld().GetWorldTime() + 3000.0;
 	    m_State.ApplyNewRequest(rq);
 	}
 
@@ -321,16 +309,6 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		return super.MoveFromTargetCondition();
 	}
 
-	protected static const float OVERMATCH_FINAL_M = 30.0;
-	protected static const float OVERMATCH_WAIT_S = 2.5;
-	protected static const float OVERMATCH_SUPPRESSION_MAX = 0.85;
-	protected static const float OVERMATCH_BOUND_MIN_M = 15.0;
-	protected static const float OVERMATCH_BOUND_MAX_M = 30.0;
-	protected static const float OVERMATCH_STANDOFF_M = 15.0;
-	protected static const float OVERMATCH_FINAL_STANDOFF_M = 6.0;
-	protected static const float OVERMATCH_FLANK_MIN_DEG = 15.0;
-	protected static const float OVERMATCH_FLANK_MAX_DEG = 40.0;
-	protected static const float OVERMATCH_BUILDING_DIST_M = 40.0;
 
 	protected SCR_AIGroupUtilityComponent DCO_GetGroupUtility()
 	{
@@ -358,10 +336,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (m_State.IsExecutingRequest())
 			return false;
 
-		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > OVERMATCH_SUPPRESSION_MAX)
+		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.85)
 			return false;
 
-		if (m_fTargetDist > OVERMATCH_FINAL_M)
+		if (m_fTargetDist > 30.0)
 		{
 			SCR_AIGroupUtilityComponent groupUtil = DCO_GetGroupUtility();
 			if (groupUtil && groupUtil.m_FireteamMgr)
@@ -373,7 +351,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 		}
 
-		return m_State.m_fTimerStopped_s > OVERMATCH_WAIT_S * DCO_PersonalityCombatUtility.GetStoppedWaitTimeScale(m_Utility);
+		return m_State.m_fTimerStopped_s > 2.5 * DCO_PersonalityCombatUtility.GetStoppedWaitTimeScale(m_Utility);
 	}
 
 	protected bool DCO_OvermatchBoundPos(vector targetPos, out vector outPos)
@@ -382,23 +360,23 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		vector toTarget = targetPos - myPos;
 		toTarget[1] = 0;
 		float dist = toTarget.Length();
-		if (dist < OVERMATCH_FINAL_STANDOFF_M + 1)
+		if (dist < 6.0 + 1)
 			return false;
 
 		vector fwd = toTarget / dist;
 		vector dir = fwd;
 		float advance;
-		if (dist <= OVERMATCH_FINAL_M)
+		if (dist <= 30.0)
 		{
-			advance = Math.Min(dist - OVERMATCH_FINAL_STANDOFF_M, OVERMATCH_BOUND_MIN_M);
+			advance = Math.Min(dist - 6.0, 15.0);
 		}
 		else
 		{
-			advance = Math.Min(dist - OVERMATCH_STANDOFF_M, Math.RandomFloat(OVERMATCH_BOUND_MIN_M, OVERMATCH_BOUND_MAX_M));
+			advance = Math.Min(dist - 15.0, Math.RandomFloat(15.0, 30.0));
 			float side = 1.0;
 			if (Math.RandomIntInclusive(0, 1) == 1)
 				side = -1.0;
-			float angle = Math.RandomFloat(OVERMATCH_FLANK_MIN_DEG, OVERMATCH_FLANK_MAX_DEG) * Math.DEG2RAD;
+			float angle = Math.RandomFloat(15.0, 40.0) * Math.DEG2RAD;
 			vector right = Vector(fwd[2], 0, -fwd[0]);
 			dir = (fwd * Math.Cos(angle)) + (right * Math.Sin(angle) * side);
 		}
@@ -428,7 +406,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (IsCriticalCombatMoment() && !DCO_CanPushUnderFire())
 			return false;
 
-		float lockTime_s = REPOSITION_LOCK_BASE_S * DCO_PersonalityCombatUtility.GetRepositionLockScale(m_Utility)
+		float lockTime_s = 5.0 * DCO_PersonalityCombatUtility.GetRepositionLockScale(m_Utility)
 			* DCO_PostureCombatUtility.GetRepositionLockScale(DCO_PostureCombatUtility.GetPosture(m_Utility));
 
 		float optimalDist = Math.Max(ResolveOptimalDistance(m_fWeaponMinDist) * DCO_PersonalityCombatUtility.GetCloseInDistanceScale(m_Utility), m_fWeaponMinDist);
@@ -486,7 +464,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 
 			if (ShouldRegroupToLeader(leaderPos))
 			{
-				vector mp = s_CohesionRand.GenerateRandomPointInRadius(0, COHESION_REGROUP_RADIUS, leaderPos, false);
+				vector mp = s_CohesionRand.GenerateRandomPointInRadius(0, 25.0, leaderPos, false);
 				mp[1] = GetGame().GetWorld().GetSurfaceY(mp[0], mp[2]);
 				movePos = mp;
 				eDirection = SCR_EAICombatMoveDirection.FORWARD;
@@ -677,7 +655,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 
 		if (DCO_InOvermatch())
 		{
-			if (m_fTargetDist > OVERMATCH_BUILDING_DIST_M)
+			if (m_fTargetDist > 40.0)
 			{
 				rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 				rq.m_bTryFindCover = true;
@@ -1060,7 +1038,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				takeCoverChance *= DCO_PersonalityCombatUtility.GetTakeCoverChanceScale(m_Utility);
 
 				if (m_bInOpenAreaCached)
-					takeCoverChance *= OPEN_AREA_COVER_URGENCY;
+					takeCoverChance *= 1.35;
 
 				takeCoverChance = Math.Clamp(takeCoverChance, 0.0, 1.0);
 
@@ -1077,10 +1055,10 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 				}
 				else
 				{
-					float bidCooldown_ms = ENGAGED_BID_COOLDOWN_MS;
+					float bidCooldown_ms = 3000.0;
 
 					if (m_bInOpenAreaCached)
-						bidCooldown_ms *= OPEN_AREA_BID_COOLDOWN_SCALE;
+						bidCooldown_ms *= 0.6;
 
 					m_fNextEngagedBid_ms = currentTime_ms + bidCooldown_ms;
 				}
@@ -1131,13 +1109,13 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	    rq.m_bFailIfNoCover             = false;
 
 	    rq.m_fCoverSearchDistMin = 0;
-	    rq.m_fCoverSearchDistMax = ENGAGED_COVER_DIST_MAX;
-	    rq.m_fMoveDuration_s     = (ENGAGED_COVER_DIST_MAX / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN) * MoraleAmplifyMove();
+	    rq.m_fCoverSearchDistMax = 18.0;
+	    rq.m_fMoveDuration_s     = (18.0 / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN) * MoraleAmplifyMove();
 
 	    rq.GetOnMovementStarted().Insert(OnMovementStarted);
 	    rq.GetOnCompleted().Insert(OnMovementCompleted);
 
-	    m_fNextEngagedBid_ms = GetGame().GetWorld().GetWorldTime() + ENGAGED_BID_COOLDOWN_MS;
+	    m_fNextEngagedBid_ms = GetGame().GetWorld().GetWorldTime() + 3000.0;
 	    m_State.ApplyNewRequest(rq);
 	}
 
@@ -1354,7 +1332,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 
 	protected static ref TStringArray s_aVarsIn = {
 		PORT_BASE_TARGET,
-		PORT_AVOID_STRAIGHT_PATH_DIR
+		"AvoidStraightPathDir"
 	};
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 }

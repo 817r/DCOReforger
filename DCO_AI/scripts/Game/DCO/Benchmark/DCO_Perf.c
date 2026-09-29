@@ -12,8 +12,6 @@ class DCO_Perf
 {
 	static bool s_bOn;
 
-	protected static const float WINDOW_S = 30.0;
-	protected static const float SPIKE_S = 0.05;
 	protected static const string DIR = "$profile:DCO_Bench";
 
 	protected static ref map<string, ref DCO_PerfSection> s_mSections = new map<string, ref DCO_PerfSection>();
@@ -87,7 +85,7 @@ class DCO_Perf
 		if (!s_bOn)
 			return;
 
-		if (timeSlice > SPIKE_S)
+		if (timeSlice > 0.05)
 			LogSpike(timeSlice);
 
 		foreach (string name, DCO_PerfSection s : s_mSections)
@@ -99,7 +97,7 @@ class DCO_Perf
 		if (timeSlice > s_fMaxFrame)
 			s_fMaxFrame = timeSlice;
 
-		if (s_fWindow < WINDOW_S)
+		if (s_fWindow < 30.0)
 			return;
 
 		WriteWindow();

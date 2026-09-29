@@ -1,11 +1,5 @@
 class DCO_LongRange
 {
-	protected static const float SHOT_WINDOW_MS = 4500;
-	protected static const float PAUSE_MIN_MS = 2000;
-	protected static const float PAUSE_MAX_MS = 3500;
-	protected static const float GROUP_SLOT_MS = 700;
-	static const float RIFLE_FAR_FIRE_RATE = 0.3;
-	static const float MG_FAR_FIRE_RATE = 0.5;
 
 	protected static ref map<IEntity, float> s_mWindowEnd = new map<IEntity, float>();
 	protected static ref map<IEntity, float> s_mNextWindow = new map<IEntity, float>();
@@ -43,8 +37,8 @@ class DCO_LongRange
 		if (dist <= EffectiveRange(wt))
 			return fireRate;
 		if (wt == EWeaponType.WT_MACHINEGUN)
-			return Math.Min(fireRate, MG_FAR_FIRE_RATE);
-		return Math.Min(fireRate, RIFLE_FAR_FIRE_RATE);
+			return Math.Min(fireRate, 0.5);
+		return Math.Min(fireRate, 0.3);
 	}
 
 	static bool ShouldHold(SCR_AIUtilityComponent u)
@@ -88,14 +82,14 @@ class DCO_LongRange
 			}
 			float start = now;
 			if (next <= 0)
-				start = now + GroupOrder(shooter) * GROUP_SLOT_MS;
-			float end = start + SHOT_WINDOW_MS;
+				start = now + GroupOrder(shooter) * 700.0;
+			float end = start + 4500.0;
 			s_mWindowEnd.Set(shooter, end);
-			s_mNextWindow.Set(shooter, end + Math.RandomFloat(PAUSE_MIN_MS, PAUSE_MAX_MS));
+			s_mNextWindow.Set(shooter, end + Math.RandomFloat(2000.0, 3500.0));
 			return now >= start;
 		}
 		float windowEnd = s_mWindowEnd.Get(shooter);
-		return now < windowEnd && now >= windowEnd - SHOT_WINDOW_MS;
+		return now < windowEnd && now >= windowEnd - 4500.0;
 	}
 
 	protected static int GroupOrder(IEntity shooter)

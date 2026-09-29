@@ -1,12 +1,6 @@
 modded class SCR_PlacingEditorComponentClass
 {
-	protected static const ResourceName DCO_REGISTRY = "{5B8E2C71D0A94F36}Configs/Editor/PlaceableEntities/DCO/DCO_Commander.conf";
-	protected static const ResourceName DCO_SYSTEMS_SOURCE_DIR = "{DCF44154CA43E359}PrefabsEditable/System";
-	protected static const ResourceName DCO_COMMANDER_PREFAB = "{9D54B8D0C2D6CD12}PrefabsEditable/DCO/Commander/E_AICommander.et";
 
-	protected static const ResourceName DCO_WAYPOINT_REGISTRY = "{3F3CDF4FDF9A8ACB}Configs/Editor/PlaceableEntities/DCO/DCO_Waypoints.conf";
-	protected static const ResourceName DCO_VANILLA_DEFEND_WP = "{D9C14ECEC9772CC6}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Defend.et";
-	static const ResourceName DCO_GARRISON_WP = "{BAF7BBB50B01F551}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Garrison.et";
 
 	void SCR_PlacingEditorComponentClass(IEntityComponentSource componentSource, IEntitySource parentSource, IEntitySource prefabSource)
 	{
@@ -24,23 +18,23 @@ modded class SCR_PlacingEditorComponentClass
 
 			array<ResourceName> prefabs = registry.GetPrefabs();
 
-			if (prefabs.Contains(DCO_COMMANDER_PREFAB))
+			if (prefabs.Contains("{9D54B8D0C2D6CD12}PrefabsEditable/DCO/Commander/E_AICommander.et"))
 				hasCommander = true;
 
-			if (prefabs.Contains(DCO_GARRISON_WP))
+			if (prefabs.Contains("{BAF7BBB50B01F551}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Garrison.et"))
 				hasGarrison = true;
 
-			if (prefabs.Contains(DCO_VANILLA_DEFEND_WP))
+			if (prefabs.Contains("{D9C14ECEC9772CC6}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Defend.et"))
 				isCommandMode = true;
 
-			if (registry.GetSourceDirectory() == DCO_SYSTEMS_SOURCE_DIR)
+			if (registry.GetSourceDirectory() == "{DCF44154CA43E359}PrefabsEditable/System")
 				isEditMode = true;
 		}
 
-		if (isEditMode && !hasCommander && DCO_InjectRegistry(DCO_REGISTRY))
+		if (isEditMode && !hasCommander && DCO_InjectRegistry("{5B8E2C71D0A94F36}Configs/Editor/PlaceableEntities/DCO/DCO_Commander.conf"))
 			Print("[DCO] GM content browser: AI Commander prefabs registered");
 
-		if (isCommandMode && !hasGarrison && DCO_InjectRegistry(DCO_WAYPOINT_REGISTRY))
+		if (isCommandMode && !hasGarrison && DCO_InjectRegistry("{3F3CDF4FDF9A8ACB}Configs/Editor/PlaceableEntities/DCO/DCO_Waypoints.conf"))
 			Print("[DCO] GM commanding: Garrison waypoint registered");
 	}
 
@@ -63,7 +57,6 @@ modded class SCR_PlacingEditorComponentClass
 
 modded class SCR_BaseActionsEditorComponentClass
 {
-	protected static const ResourceName DCO_COMMAND_ACTIONS = "{D3412AC15F7620F6}Configs/Editor/ActionLists/Command/DCO_Command.conf";
 
 	protected ref SCR_EditorActionList m_DCOActions;
 
@@ -77,7 +70,7 @@ modded class SCR_BaseActionsEditorComponentClass
 				continue;
 
 			ResourceName prefab = cmd.GetCommandPrefab();
-			if (prefab == SCR_PlacingEditorComponentClass.DCO_GARRISON_WP)
+			if (prefab == "{BAF7BBB50B01F551}PrefabsEditable/Auto/AI/Waypoints/E_AIWaypoint_Garrison.et")
 				return;
 
 			if (prefab.Contains("E_AIWaypoint_Defend.et"))
@@ -87,7 +80,7 @@ modded class SCR_BaseActionsEditorComponentClass
 		if (defendIndex < 0)
 			return;
 
-		Resource res = BaseContainerTools.LoadContainer(DCO_COMMAND_ACTIONS);
+		Resource res = BaseContainerTools.LoadContainer("{D3412AC15F7620F6}Configs/Editor/ActionLists/Command/DCO_Command.conf");
 		if (!res || !res.IsValid())
 			return;
 

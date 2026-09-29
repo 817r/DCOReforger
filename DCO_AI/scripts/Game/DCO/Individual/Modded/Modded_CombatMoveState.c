@@ -1,6 +1,5 @@
 modded class SCR_AICombatMoveState
 {
-	protected static const float DCO_COVER_PROTECT_GRACE_S = 0.5;
 
 	protected SCR_AICombatMoveRequestBase m_DCOCoverRq;
 	protected float m_fDCOCoverAppliedAt_ms;
@@ -8,15 +7,7 @@ modded class SCR_AICombatMoveState
 	protected bool  m_bDCOApplyingCover;
 	protected int   m_iDCOBlockedCount;
 
-	protected static const float DCO_INDOOR_RELOCATE_RADIUS_DEFAULT   = 12.0;
-	protected static const float DCO_INDOOR_RELOCATE_MIN_MOVE_DEFAULT = 2.5;
-	protected static const float DCO_INDOOR_RELOCATE_DURATION_SCALE  = 1.5;
-	protected static const float DCO_INDOOR_RELOCATE_HOLD_MARGIN_S   = 1.0;
 
-	protected static const float DCO_INDOOR_TRIGGER_WINDOW_MS    = 3000.0;
-	protected static const float DCO_INDOOR_RELOCATE_COOLDOWN_MS = 6000.0;
-	protected static const float DCO_INDOOR_OVERRUN_CACHE_MS     = 1000.0;
-	protected static const int   DCO_OVERRUN_ENEMY_RATIO         = 2;
 
 	protected SCR_AIUtilityComponent m_DCOOwnerUtility;
 
@@ -61,7 +52,7 @@ modded class SCR_AICombatMoveState
 		m_iDCOBlockedCount         = 0;
 		m_DCOCoverRq               = rq;
 		m_fDCOCoverAppliedAt_ms    = now_ms;
-		m_fDCOCoverProtectUntil_ms = now_ms + Math.Max(protect_s, DCO_COVER_PROTECT_GRACE_S) * 1000.0;
+		m_fDCOCoverProtectUntil_ms = now_ms + Math.Max(protect_s, 0.5) * 1000.0;
 	}
 
 	bool DCO_IsCoverProtected()
@@ -77,7 +68,7 @@ modded class SCR_AICombatMoveState
 			return false;
 		}
 
-		if (now_ms - m_fDCOCoverAppliedAt_ms < DCO_COVER_PROTECT_GRACE_S * 1000.0)
+		if (now_ms - m_fDCOCoverAppliedAt_ms < 0.5 * 1000.0)
 			return true;
 
 		if (m_DCOCoverRq.m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)
@@ -112,10 +103,10 @@ modded class SCR_AICombatMoveState
 			return null;
 
 		if (searchRadius <= 0)
-			searchRadius = DCO_INDOOR_RELOCATE_RADIUS_DEFAULT;
+			searchRadius = 12.0;
 
 		if (minMoveDist <= 0)
-			minMoveDist = DCO_INDOOR_RELOCATE_MIN_MOVE_DEFAULT;
+			minMoveDist = 2.5;
 
 		DCO_AICombatMoveRequest_IndoorRelocate rq = new DCO_AICombatMoveRequest_IndoorRelocate();
 
@@ -145,10 +136,10 @@ modded class SCR_AICombatMoveState
 		rq.m_bAimAtTarget    = DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection);
 		rq.m_bAimAtTargetEnd = true;
 
-		rq.m_fMoveDuration_s = (searchRadius / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN) * DCO_INDOOR_RELOCATE_DURATION_SCALE;
+		rq.m_fMoveDuration_s = (searchRadius / SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN) * 1.5;
 
 		if (protect)
-			DCO_ApplyCoverRequest(rq, rq.m_fMoveDuration_s + DCO_INDOOR_RELOCATE_HOLD_MARGIN_S);
+			DCO_ApplyCoverRequest(rq, rq.m_fMoveDuration_s + 1.0);
 		else
 			ApplyNewRequest(rq);
 
@@ -321,8 +312,8 @@ modded class SCR_AICombatMoveState
 
 		float now_ms = GetGame().GetWorld().GetWorldTime();
 
-		bool triggered     = m_fDCOLastRelocateTrigger_ms >= 0 && (now_ms - m_fDCOLastRelocateTrigger_ms) < DCO_INDOOR_TRIGGER_WINDOW_MS;
-		bool cooldownReady = m_fDCOLastRelocate_ms < 0 || (now_ms - m_fDCOLastRelocate_ms) >= DCO_INDOOR_RELOCATE_COOLDOWN_MS;
+		bool triggered     = m_fDCOLastRelocateTrigger_ms >= 0 && (now_ms - m_fDCOLastRelocateTrigger_ms) < 3000.0;
+		bool cooldownReady = m_fDCOLastRelocate_ms < 0 || (now_ms - m_fDCOLastRelocate_ms) >= 6000.0;
 
 		if (triggered && cooldownReady)
 		{
@@ -342,7 +333,7 @@ modded class SCR_AICombatMoveState
 				if (nested)
 				{
 					m_DCOGateReplacement           = reloc;
-					m_fDCOGateReplacementProtect_s = reloc.m_fMoveDuration_s + DCO_INDOOR_RELOCATE_HOLD_MARGIN_S;
+					m_fDCOGateReplacementProtect_s = reloc.m_fMoveDuration_s + 1.0;
 				}
 
 				DCO_GateDebug(string.Format("RELOCATE menggantikan %1", request));
@@ -394,8 +385,8 @@ modded class SCR_AICombatMoveState
 
 		float now_ms = GetGame().GetWorld().GetWorldTime();
 		bool triggered = request.m_eReason == SCR_EAICombatMoveReason.MOVE_FROM_DANGER
-			|| (m_fDCOLastRelocateTrigger_ms >= 0 && (now_ms - m_fDCOLastRelocateTrigger_ms) < DCO_INDOOR_TRIGGER_WINDOW_MS);
-		bool cooldownReady = m_fDCOLastRelocate_ms < 0 || (now_ms - m_fDCOLastRelocate_ms) >= DCO_INDOOR_RELOCATE_COOLDOWN_MS;
+			|| (m_fDCOLastRelocateTrigger_ms >= 0 && (now_ms - m_fDCOLastRelocateTrigger_ms) < 3000.0);
+		bool cooldownReady = m_fDCOLastRelocate_ms < 0 || (now_ms - m_fDCOLastRelocate_ms) >= 6000.0;
 
 		if (triggered && cooldownReady)
 		{
@@ -413,7 +404,7 @@ modded class SCR_AICombatMoveState
 				if (nested)
 				{
 					m_DCOGateReplacement           = reloc;
-					m_fDCOGateReplacementProtect_s = reloc.m_fMoveDuration_s + DCO_INDOOR_RELOCATE_HOLD_MARGIN_S;
+					m_fDCOGateReplacementProtect_s = reloc.m_fMoveDuration_s + 1.0;
 				}
 
 				DCO_GateDebug(string.Format("LEASH RELOCATE menggantikan %1", request));
@@ -466,7 +457,7 @@ modded class SCR_AICombatMoveState
 			return true;
 
 		float now_ms = GetGame().GetWorld().GetWorldTime();
-		if (building == m_DCOOverrunBuilding && m_fDCOOverrunCheckedAt_ms >= 0 && (now_ms - m_fDCOOverrunCheckedAt_ms) < DCO_INDOOR_OVERRUN_CACHE_MS)
+		if (building == m_DCOOverrunBuilding && m_fDCOOverrunCheckedAt_ms >= 0 && (now_ms - m_fDCOOverrunCheckedAt_ms) < 1000.0)
 			return m_bDCOOverrunCached;
 
 		m_DCOOverrunBuilding      = building;
@@ -510,7 +501,7 @@ modded class SCR_AICombatMoveState
 
 		m_aDCOQueryChars.Clear();
 
-		return enemies > 0 && enemies >= DCO_OVERRUN_ENEMY_RATIO * friends;
+		return enemies > 0 && enemies >= 2 * friends;
 	}
 
 	bool DCO_OverrunQueryCallback(IEntity e)

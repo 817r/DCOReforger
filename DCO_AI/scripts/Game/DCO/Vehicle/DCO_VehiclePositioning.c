@@ -1,14 +1,6 @@
 class DCO_VehiclePositioning
 {
-	protected static const int   ANGLE_STEPS        = 8;
-	protected static const float MAX_SLOPE          = 0.35;
-	protected static const float MIN_TARGET_DIST    = 40;
-	protected static const float NAV_SNAP_DIST      = 5;
-	protected static const float BAD_POS_MEMORY_MS  = 60000;
 	protected static const float BAD_POS_RADIUS_SQ  = 15 * 15;
-	protected static const float HIDE_MIN_S         = 8;
-	protected static const float HIDE_MAX_S         = 14;
-	static const float DAMAGED_HP                   = 0.5;
 
 	protected static ref array<float> s_aRings = {25, 50, 85};
 
@@ -60,7 +52,7 @@ class DCO_VehiclePositioning
 			return true;
 
 		SCR_VehicleDamageManagerComponent dmg = SCR_VehicleDamageManagerComponent.Cast(vehicle.FindComponent(SCR_VehicleDamageManagerComponent));
-		return dmg && dmg.GetHealthScaled() < DAMAGED_HP;
+		return dmg && dmg.GetHealthScaled() < 0.5;
 	}
 
 	static bool IsHiding(IEntity vehicle)
@@ -71,7 +63,7 @@ class DCO_VehiclePositioning
 
 	static void MarkHiding(IEntity vehicle)
 	{
-		s_mHideUntil_ms.Set(vehicle, GetGame().GetWorld().GetWorldTime() + Math.RandomFloat(HIDE_MIN_S, HIDE_MAX_S) * 1000);
+		s_mHideUntil_ms.Set(vehicle, GetGame().GetWorld().GetWorldTime() + Math.RandomFloat(8.0, 14.0) * 1000);
 	}
 
 	static bool FindFirePosition(IEntity vehicle, vector targetPos, float desiredDist, float hullDownWeight,
@@ -104,14 +96,14 @@ class DCO_VehiclePositioning
 
 		foreach (float ring : s_aRings)
 		{
-			for (int i = 0; i < ANGLE_STEPS; i++)
+			for (int i = 0; i < 8; i++)
 			{
 				vector cand;
-				if (!MakeCandidate(vehicle, origin, ring, angle0 + i * Math.PI2 / ANGLE_STEPS, wpPos, wpRadius, cand))
+				if (!MakeCandidate(vehicle, origin, ring, angle0 + i * Math.PI2 / 8, wpPos, wpRadius, cand))
 					continue;
 
 				float dTgt = vector.DistanceXZ(cand, targetPos);
-				if (dTgt < MIN_TARGET_DIST)
+				if (dTgt < 40.0)
 					continue;
 
 				if (!IsClear(cand + Vector(0, turret, 0), targetEye, vehicle))
@@ -126,7 +118,7 @@ class DCO_VehiclePositioning
 
 				if (hasAT)
 				{
-					if (vector.DistanceXZ(cand, atPos) < DCO_VehicleCombat.AT_EVADE_DIST)
+					if (vector.DistanceXZ(cand, atPos) < 250.0)
 						score -= 0.3;
 					if (IsClear(atEye, cand + Vector(0, turret, 0), vehicle))
 						score -= 0.3;
@@ -160,14 +152,14 @@ class DCO_VehiclePositioning
 
 		foreach (float ring : s_aRings)
 		{
-			for (int i = 0; i < ANGLE_STEPS; i++)
+			for (int i = 0; i < 8; i++)
 			{
 				vector cand;
-				if (!MakeCandidate(vehicle, origin, ring, angle0 + i * Math.PI2 / ANGLE_STEPS, wpPos, wpRadius, cand))
+				if (!MakeCandidate(vehicle, origin, ring, angle0 + i * Math.PI2 / 8, wpPos, wpRadius, cand))
 					continue;
 
 				float dThreat = vector.DistanceXZ(cand, threatPos);
-				if (dThreat < MIN_TARGET_DIST)
+				if (dThreat < 40.0)
 					continue;
 
 				if (IsClear(threatEye, cand + Vector(0, turret, 0), vehicle))
@@ -248,7 +240,7 @@ class DCO_VehiclePositioning
 		const float d = 4;
 		float dy = Math.Max(Math.AbsFloat(world.GetSurfaceY(cand[0] + d, cand[2]) - world.GetSurfaceY(cand[0] - d, cand[2])),
 			Math.AbsFloat(world.GetSurfaceY(cand[0], cand[2] + d) - world.GetSurfaceY(cand[0], cand[2] - d)));
-		if (dy / (2 * d) > MAX_SLOPE)
+		if (dy / (2 * d) > 0.35)
 			return false;
 
 		cand[1] = y;
@@ -256,7 +248,7 @@ class DCO_VehiclePositioning
 		vector bad;
 		float badTime;
 		if (s_mBadPos.Find(vehicle, bad) && s_mBadPosTime.Find(vehicle, badTime)
-			&& world.GetWorldTime() - badTime < BAD_POS_MEMORY_MS && vector.DistanceSqXZ(bad, cand) < BAD_POS_RADIUS_SQ)
+			&& world.GetWorldTime() - badTime < 60000.0 && vector.DistanceSqXZ(bad, cand) < BAD_POS_RADIUS_SQ)
 			return false;
 
 		return true;
@@ -302,10 +294,10 @@ class DCO_VehiclePositioning
 			return true;
 
 		vector snapped;
-		if (!s_Navmesh.GetReachablePoint(pos, NAV_SNAP_DIST, snapped))
+		if (!s_Navmesh.GetReachablePoint(pos, 5.0, snapped))
 			return false;
 
-		if (vector.DistanceXZ(snapped, pos) > NAV_SNAP_DIST)
+		if (vector.DistanceXZ(snapped, pos) > 5.0)
 			return false;
 
 		pos = snapped;

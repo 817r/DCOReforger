@@ -15,8 +15,6 @@ class DCO_DebugDraw
 	static const int COLOR_ROLE_RECON   = 0xFFCC66FF;
 	static const int COLOR_ROLE_IDLE    = 0xFFBBBBBB;
 
-	static const float MARKER_BIG   = 2.0;
-	static const float MARKER_SMALL = 0.8;
 
 	static bool IsLocalPlayerInGM()
 	{

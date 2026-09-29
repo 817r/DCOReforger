@@ -1,10 +1,6 @@
 modded class SCR_AIThreatSector
 {
-	static const int SECTOR_STATE_IDLE		= 0;
-	static const int SECTOR_STATE_ACTIVE	= 1;
 
-	protected static const float ACCUMULATOR_DROP_RATE = 0.02;
-	protected static const float SECTOR_FORGET_S = 60.0;
 
 	override void MergeWith(notnull SCR_AIThreatSector other)
 	{

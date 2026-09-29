@@ -1,18 +1,8 @@
 class DCO_UGLUtility
 {
-	static const float GL_MIN_DIST          = 35.0;
-	static const float GL_MAX_DIST          = 300.0;
 
-	static const float GL_ROLL_INTERVAL_MS  = 3000.0;
-	static const float GL_COMMIT_MS         = 10000.0;
-	static const float GL_SHOT_TIMEOUT_MS   = 15000.0;
-	static const float GL_COOLDOWN_MS       = 12000.0;
 
-	static const float GL_FIRE_CHANCE       = 0.6;
 
-	static const float GL_FRIENDLY_RADIUS   = 15.0;
-	static const float GL_ORIGIN_HEIGHT     = 1.6;
-	static const float GL_TARGET_HEIGHT     = 0.5;
 
 	protected static ref array<BaseMuzzleComponent> s_aMuzzleBuffer = {};
 	protected static ref array<IEntity> s_aItemBuffer = {};
@@ -137,7 +127,7 @@ class DCO_UGLUtility
 			return false;
 
 		float dist = vector.DistanceXZ(self.GetOrigin(), targetPos);
-		if (dist < GL_MIN_DIST || dist > GL_MAX_DIST)
+		if (dist < 35.0 || dist > 300.0)
 			return false;
 
 		float now = GetGame().GetWorld().GetWorldTime();
@@ -145,7 +135,7 @@ class DCO_UGLUtility
 		float commitUntil;
 		if (s_mGLCommitUntil.Find(self, commitUntil) && now < commitUntil)
 		{
-			if (HasFriendlyNear(self, targetPos, GL_FRIENDLY_RADIUS))
+			if (HasFriendlyNear(self, targetPos, 15.0))
 			{
 				EndVolley(self);
 				return false;
@@ -158,27 +148,27 @@ class DCO_UGLUtility
 			return false;
 
 		float lastRoll;
-		if (s_mLastGLRollTime.Find(self, lastRoll) && (now - lastRoll) < GL_ROLL_INTERVAL_MS)
+		if (s_mLastGLRollTime.Find(self, lastRoll) && (now - lastRoll) < 3000.0)
 			return false;
 
 		s_mLastGLRollTime.Set(self, now);
 
-		float chance = Math.Clamp(GL_FIRE_CHANCE * usageScale, 0.0, 1.0);
+		float chance = Math.Clamp(0.6 * usageScale, 0.0, 1.0);
 		if (Math.RandomFloat01() > chance)
 			return false;
 
 		if (!HasUGLAmmo(self, weap, uglIdx))
 			return false;
 
-		if (HasFriendlyNear(self, targetPos, GL_FRIENDLY_RADIUS))
+		if (HasFriendlyNear(self, targetPos, 15.0))
 			return false;
 
 		if (!IsFirstImpactSafe(self, targetPos))
 			return false;
 
 		s_mGLShotsLeft.Set(self, GetVolleySize(utility));
-		s_mGLCommitUntil.Set(self, now + GL_COMMIT_MS);
-		s_mGLCooldownUntil.Set(self, now + GL_COMMIT_MS + GL_COOLDOWN_MS);
+		s_mGLCommitUntil.Set(self, now + 10000.0);
+		s_mGLCooldownUntil.Set(self, now + 10000.0 + 12000.0);
 
 		return true;
 	}
@@ -232,8 +222,8 @@ class DCO_UGLUtility
 		float now = GetGame().GetWorld().GetWorldTime();
 
 		s_mGLShotsLeft.Set(self, shotsLeft);
-		s_mGLCommitUntil.Set(self, now + GL_SHOT_TIMEOUT_MS);
-		s_mGLCooldownUntil.Set(self, now + GL_SHOT_TIMEOUT_MS + GL_COOLDOWN_MS);
+		s_mGLCommitUntil.Set(self, now + 15000.0);
+		s_mGLCooldownUntil.Set(self, now + 15000.0 + 12000.0);
 	}
 
 	static void EndVolley(IEntity self)
@@ -245,16 +235,16 @@ class DCO_UGLUtility
 
 		s_mGLShotsLeft.Remove(self);
 		s_mGLCommitUntil.Remove(self);
-		s_mGLCooldownUntil.Set(self, now + GL_COOLDOWN_MS);
+		s_mGLCooldownUntil.Set(self, now + 12000.0);
 	}
 
 	protected static bool IsFirstImpactSafe(IEntity self, vector targetPos)
 	{
 		vector start = self.GetOrigin();
-		start[1] = start[1] + GL_ORIGIN_HEIGHT;
+		start[1] = start[1] + 1.6;
 
 		vector end = targetPos;
-		end[1] = end[1] + GL_TARGET_HEIGHT;
+		end[1] = end[1] + 0.5;
 
 		TraceParam param = new TraceParam();
 		param.Start     = start;
@@ -269,7 +259,7 @@ class DCO_UGLUtility
 			return true;
 
 		float impactDist = vector.Distance(start, end) * frac;
-		return impactDist >= GL_MIN_DIST;
+		return impactDist >= 35.0;
 	}
 
 	protected static bool HasFriendlyNear(IEntity self, vector pos, float radius)

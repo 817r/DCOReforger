@@ -33,12 +33,7 @@ class DCO_RadioBankConfig
 
 class DCO_Radio
 {
-	static const ResourceName BANK = "{6921DC7753900C22}Configs/DCO/DCO_RadioBank.conf";
-	static const string OVERRIDE_PATH = "$profile:DCO/DCO_Radio.json";
 
-	static const int PERS_MEASURED = 0;
-	static const int PERS_AGGRESSIVE = 1;
-	static const int PERS_CAUTIOUS = 2;
 
 	protected static ref DCO_RadioBankConfig s_Bank;
 	protected static ref map<string, DCO_RadioPhrase> s_mBank;
@@ -132,12 +127,12 @@ class DCO_Radio
 	static int PersonalityOf(AICommander_BaseComponent cmd)
 	{
 		if (!cmd)
-			return PERS_MEASURED;
+			return 0;
 		if (cmd.GetAggression() >= 0.65)
-			return PERS_AGGRESSIVE;
+			return 1;
 		if (cmd.GetRiskTaking() <= 0.35 || cmd.GetPatience() >= 0.7)
-			return PERS_CAUTIOUS;
-		return PERS_MEASURED;
+			return 2;
+		return 0;
 	}
 
 	static string Resolve(string key, int idx, array<string> params)
@@ -296,10 +291,10 @@ class DCO_Radio
 	protected static void LoadBank()
 	{
 		s_mBank = new map<string, DCO_RadioPhrase>();
-		Resource res = BaseContainerTools.LoadContainer(BANK);
+		Resource res = BaseContainerTools.LoadContainer("{6921DC7753900C22}Configs/DCO/DCO_RadioBank.conf");
 		if (!res || !res.IsValid())
 		{
-			Print("[DCO_Radio] Bank radio gak ketemu: " + BANK, LogLevel.WARNING);
+			Print("[DCO_Radio] Bank radio gak ketemu: " + "{6921DC7753900C22}Configs/DCO/DCO_RadioBank.conf", LogLevel.WARNING);
 			return;
 		}
 
@@ -323,16 +318,16 @@ class DCO_Radio
 		if (!s_mBank)
 			LoadBank();
 
-		if (!FileIO.FileExists(OVERRIDE_PATH))
+		if (!FileIO.FileExists("$profile:DCO/DCO_Radio.json"))
 		{
 			WriteTemplate();
 			return;
 		}
 
 		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
-		if (!ctx.LoadFromFile(OVERRIDE_PATH))
+		if (!ctx.LoadFromFile("$profile:DCO/DCO_Radio.json"))
 		{
-			Print("[DCO_Radio] GAGAL parse " + OVERRIDE_PATH + " -- pakai bank default.", LogLevel.ERROR);
+			Print("[DCO_Radio] GAGAL parse " + "$profile:DCO/DCO_Radio.json" + " -- pakai bank default.", LogLevel.ERROR);
 			return;
 		}
 
@@ -355,7 +350,7 @@ class DCO_Radio
 			s_mOverride.Set(key, list);
 			keys++;
 		}
-		PrintFormat("[DCO_Radio] %1 key radio di-override dari %2", keys, OVERRIDE_PATH);
+		PrintFormat("[DCO_Radio] %1 key radio di-override dari %2", keys, "$profile:DCO/DCO_Radio.json");
 	}
 
 	protected static DCO_RadioVariant ParseVariant(string raw)
@@ -380,9 +375,9 @@ class DCO_Radio
 					tg.ToUpper();
 					switch (tg)
 					{
-						case "AGGRESSIVE":	v.m_iPersonality = PERS_AGGRESSIVE; break;
-						case "CAUTIOUS":	v.m_iPersonality = PERS_CAUTIOUS; break;
-						case "MEASURED":	v.m_iPersonality = PERS_MEASURED; break;
+						case "AGGRESSIVE":	v.m_iPersonality = 1; break;
+						case "CAUTIOUS":	v.m_iPersonality = 2; break;
+						case "MEASURED":	v.m_iPersonality = 0; break;
 						case "CRITICAL":	v.m_iUrgency = 1; break;
 						case "CALM":		v.m_iUrgency = 0; break;
 						default:			v.m_sFaction = tg; break;
@@ -412,7 +407,7 @@ class DCO_Radio
 			save.WriteValue(k, empty);
 		}
 
-		if (save.SaveToFile(OVERRIDE_PATH))
-			Print("[DCO_Radio] Template override ditulis ke " + OVERRIDE_PATH);
+		if (save.SaveToFile("$profile:DCO/DCO_Radio.json"))
+			Print("[DCO_Radio] Template override ditulis ke " + "$profile:DCO/DCO_Radio.json");
 	}
 }

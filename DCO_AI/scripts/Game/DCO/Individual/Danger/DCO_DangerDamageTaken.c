@@ -6,15 +6,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 
 	protected static const float LONG_RANGE_THRESHOLD       = 60.0;
 
-	protected static const float SUPPRESS_CHANCE            = 0.1;
-	protected static const float SUPPRESS_COOLDOWN_S        = 25.0;
-	protected static const float SUPPRESS_DURATION_S        = 4.0;
-	protected static const float SUPPRESS_PRIORITY          = 1.5;
-	protected static const float SUPPRESS_BOX_HEIGHT        = 3.0;
-	protected static const float SUPPRESS_RADIUS_MIN        = 1.5;
-	protected static const float SUPPRESS_RADIUS_MAX        = 8.0;
 
-	protected static const int   SUPPRESS_MAP_PRUNE_THRESHOLD = 128;
 
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 
@@ -164,22 +156,22 @@ modded class SCR_AIDangerReaction_DamageTaken
 		if (!CanSuppressNow(owner))
 			return;
 
-		if (Math.RandomFloat01() >= SUPPRESS_CHANCE)
+		if (Math.RandomFloat01() >= 0.1)
 			return;
 
 		vector shooterOrigin = shooterRoot.GetOrigin();
 		float  dist          = vector.Distance(shooterOrigin, utility.GetOrigin());
-		float  radius        = Math.Map(dist, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, SUPPRESS_RADIUS_MIN, SUPPRESS_RADIUS_MAX);
+		float  radius        = Math.Map(dist, 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 1.5, 8.0);
 
 		vector bbMin, bbMax;
-		SCR_AISuppressionVolumeBase.CreateSuppressionBox(shooterOrigin, radius, SUPPRESS_BOX_HEIGHT, bbMin, bbMax);
+		SCR_AISuppressionVolumeBase.CreateSuppressionBox(shooterOrigin, radius, 3.0, bbMin, bbMax);
 
 		SCR_AISuppressionObjectVolumeBox volume = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
 
 		if (!volume)
 			return;
 
-		SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, volume, SUPPRESS_DURATION_S, SUPPRESS_PRIORITY);
+		SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, volume, 4.0, 1.5);
 
 		if (!supp)
 			return;
@@ -198,7 +190,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 		if (!s_mLastSuppressTime.Find(entity, lastTime_ms))
 			return true;
 
-		return (GetGame().GetWorld().GetWorldTime() - lastTime_ms) > (SUPPRESS_COOLDOWN_S * 1000.0);
+		return (GetGame().GetWorld().GetWorldTime() - lastTime_ms) > (25.0 * 1000.0);
 	}
 
 	protected void MarkSuppressed(IEntity entity)
@@ -209,13 +201,13 @@ modded class SCR_AIDangerReaction_DamageTaken
 		float now_ms = GetGame().GetWorld().GetWorldTime();
 		s_mLastSuppressTime.Set(entity, now_ms);
 
-		if (s_mLastSuppressTime.Count() > SUPPRESS_MAP_PRUNE_THRESHOLD)
+		if (s_mLastSuppressTime.Count() > 128)
 			PruneSuppressMap(now_ms);
 	}
 
 	protected void PruneSuppressMap(float now_ms)
 	{
-		float staleAge_ms = SUPPRESS_COOLDOWN_S * 1000.0 * 2.0;
+		float staleAge_ms = 25.0 * 1000.0 * 2.0;
 
 		array<IEntity> toRemove = {};
 

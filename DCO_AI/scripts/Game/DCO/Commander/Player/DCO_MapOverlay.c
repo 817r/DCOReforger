@@ -1,14 +1,12 @@
 class DCO_MapOverlay
 {
 	protected static const ResourceName LAYOUT = "{6C7254EC4F560CAC}UI/layouts/DCO/DCO_MapOverlay.layout";
-	protected static const ResourceName LABEL_LAYOUT = "{0B50B84909DB2710}UI/layouts/DCO/DCO_MapLabel.layout";
-	protected static const float SYMBOL_PX = 9;
-	protected static const int CIRCLE_SEGMENTS = 28;
 
 	protected static ref DCO_MapOverlay s_Instance;
 
 	protected ref array<float> m_aGroups = {};
 	protected ref array<float> m_aObjectives = {};
+	protected ref array<float> m_aTransport = {};
 	protected Widget m_wRoot;
 	protected CanvasWidget m_wCanvas;
 	protected ref array<Widget> m_aLabels = {};
@@ -16,20 +14,62 @@ class DCO_MapOverlay
 	protected int m_iPalette;
 	protected int m_iOutline;
 
-	static void SetData(array<float> groups, array<float> objectives)
+	protected static DCO_MapOverlay Get()
 	{
-		if (System.IsConsoleApp())
-			return;
-
 		if (!s_Instance)
 		{
 			s_Instance = new DCO_MapOverlay();
 			SCR_MapEntity.GetOnMapOpen().Insert(s_Instance.OnMapOpen);
 			SCR_MapEntity.GetOnMapClose().Insert(s_Instance.OnMapClose);
 		}
+		return s_Instance;
+	}
 
-		s_Instance.m_aGroups.Copy(groups);
-		s_Instance.m_aObjectives.Copy(objectives);
+	static void SetData(array<float> groups, array<float> objectives)
+	{
+		if (System.IsConsoleApp())
+			return;
+
+		Get().m_aGroups.Copy(groups);
+		Get().m_aObjectives.Copy(objectives);
+	}
+
+	static void SetTransport(array<float> marks)
+	{
+		if (System.IsConsoleApp())
+			return;
+
+		Get().m_aTransport.Copy(marks);
+	}
+
+	protected int DrawTransport(SCR_MapEntity mapEnt, WorkspaceWidget ws, int label)
+	{
+		if (m_aTransport.Count() < 4)
+			return label;
+
+		int px, py, lx, ly;
+		mapEnt.WorldToScreen(m_aTransport[0], m_aTransport[1], px, py, true);
+		mapEnt.WorldToScreen(m_aTransport[2], m_aTransport[3], lx, ly, true);
+		int pzColor = 0xFF33CCFF;
+		int lzColor = 0xFF40E060;
+
+		if (m_aTransport.Count() >= 6)
+		{
+			int ax, ay;
+			mapEnt.WorldToScreen(m_aTransport[4], m_aTransport[5], ax, ay, true);
+			int altColor = 0x8840E060;
+			AddCircle(ax, ay, 9.0, altColor);
+			label = SetLabel(label, ws, ax + 11.0, ay - 9.0, DCO_Radio.Resolve("map_alt_lz", 0, null), altColor);
+		}
+
+		if (Math.AbsFloat(lx - px) + Math.AbsFloat(ly - py) > 30)
+			AddArrow(px, py, lx, ly, 0xAAFFFFFF);
+
+		AddCircle(px, py, 9.0, pzColor);
+		label = SetLabel(label, ws, px + 11.0, py - 9.0, DCO_Radio.Resolve("map_pz", 0, null), pzColor);
+		AddSymbol(Triangle(lx, ly, 11.0, -1), Triangle(lx, ly, 9.0, -1), lzColor);
+		label = SetLabel(label, ws, lx + 11.0, ly - 9.0, DCO_Radio.Resolve("map_lz", 0, null), lzColor);
+		return label;
 	}
 
 	protected void OnMapOpen(MapConfiguration config)
@@ -75,16 +115,16 @@ class DCO_MapOverlay
 		int label;
 		WorkspaceWidget ws = GetGame().GetWorkspace();
 
-		int stride = DCO_PlayerAwareness.OBJ_STRIDE;
+		int stride = 4;
 		for (int i = 0; i + stride <= m_aObjectives.Count(); i += stride)
 		{
 			int sx, sy;
 			mapEnt.WorldToScreen(m_aObjectives[i], m_aObjectives[i + 1], sx, sy, true);
 			int rel = m_aObjectives[i + 3];
-			if (rel == DCO_PlayerAwareness.REL_STAGING)
+			if (rel == 4)
 			{
-				AddSymbol(Triangle(sx, sy, SYMBOL_PX + 2, -1), Triangle(sx, sy, SYMBOL_PX, -1), StagingColor(m_iPalette));
-				label = SetLabel(label, ws, sx, sy + SYMBOL_PX, "STAGING", StagingColor(m_iPalette));
+				AddSymbol(Triangle(sx, sy, 9.0 + 2, -1), Triangle(sx, sy, 9.0, -1), StagingColor(m_iPalette));
+				label = SetLabel(label, ws, sx, sy + 9.0, "STAGING", StagingColor(m_iPalette));
 				continue;
 			}
 
@@ -92,7 +132,7 @@ class DCO_MapOverlay
 			AddCircle(sx, sy, Math.Max(r, 6), RelationColor(rel, m_iPalette));
 		}
 
-		stride = DCO_PlayerAwareness.GROUP_STRIDE;
+		stride = 7;
 		for (int i = 0; i + stride <= m_aGroups.Count(); i += stride)
 		{
 			int gx, gy;
@@ -101,27 +141,29 @@ class DCO_MapOverlay
 			int flags = m_aGroups[i + 6];
 			int color = TaskColor(task, m_iPalette);
 
-			if (flags & DCO_PlayerAwareness.FLAG_HAS_DEST)
+			if (flags & 1)
 			{
 				int dx, dy;
 				mapEnt.WorldToScreen(m_aGroups[i + 3], m_aGroups[i + 4], dx, dy, true);
-				if (Math.AbsFloat(dx - gx) + Math.AbsFloat(dy - gy) > SYMBOL_PX * 2)
+				if (Math.AbsFloat(dx - gx) + Math.AbsFloat(dy - gy) > 9.0 * 2)
 					AddArrow(gx, gy, dx, dy, (color & 0x00FFFFFF) | 0xAA000000);
 			}
 
-			if (flags & DCO_PlayerAwareness.FLAG_ARMOR)
-				AddSymbol(Square(gx, gy, SYMBOL_PX + 2), Square(gx, gy, SYMBOL_PX), color);
+			if (flags & 4)
+				AddSymbol(Square(gx, gy, 9.0 + 2), Square(gx, gy, 9.0), color);
 			else
-				AddSymbol(Diamond(gx, gy, SYMBOL_PX + 3), Diamond(gx, gy, SYMBOL_PX), color);
+				AddSymbol(Diamond(gx, gy, 9.0 + 3), Diamond(gx, gy, 9.0), color);
 
-			if (flags & DCO_PlayerAwareness.FLAG_CONTACT)
-				AddCircle(gx, gy, SYMBOL_PX * 1.8, ContactColor(m_iPalette));
+			if (flags & 2)
+				AddCircle(gx, gy, 9.0 * 1.8, ContactColor(m_iPalette));
 
 			string txt = string.Format("%1 x%2", TaskShort(task), m_aGroups[i + 5]);
-			if (flags & DCO_PlayerAwareness.FLAG_MOUNTED)
+			if (flags & 8)
 				txt += " (mnt)";
-			label = SetLabel(label, ws, gx + SYMBOL_PX + 2, gy - SYMBOL_PX, txt, color);
+			label = SetLabel(label, ws, gx + 9.0 + 2, gy - 9.0, txt, color);
 		}
+
+		label = DrawTransport(mapEnt, ws, label);
 
 		for (int i = label; i < m_aLabels.Count(); i++)
 			m_aLabels[i].SetVisible(false);
@@ -133,7 +175,7 @@ class DCO_MapOverlay
 	{
 		if (idx >= m_aLabels.Count())
 		{
-			Widget w = ws.CreateWidgets(LABEL_LAYOUT, m_wRoot);
+			Widget w = ws.CreateWidgets("{0B50B84909DB2710}UI/layouts/DCO/DCO_MapLabel.layout", m_wRoot);
 			if (!w)
 				return idx;
 			m_aLabels.Insert(w);
@@ -186,9 +228,9 @@ class DCO_MapOverlay
 	protected void AddCircle(float cx, float cy, float r, int color)
 	{
 		array<float> verts = {};
-		for (int i = 0; i < CIRCLE_SEGMENTS; i++)
+		for (int i = 0; i < 28; i++)
 		{
-			float a = i * Math.PI2 / CIRCLE_SEGMENTS;
+			float a = i * Math.PI2 / 28;
 			verts.Insert(cx + Math.Cos(a) * r);
 			verts.Insert(cy + Math.Sin(a) * r);
 		}
@@ -206,7 +248,7 @@ class DCO_MapOverlay
 			return;
 		dx /= len;
 		dy /= len;
-		float s = SYMBOL_PX;
+		float s = 9.0;
 		float o = s + 2;
 		AddSymbol({x1 + dx * 2, y1 + dy * 2, x1 - dx * o * 1.6 - dy * o * 0.7, y1 - dy * o * 1.6 + dx * o * 0.7, x1 - dx * o * 1.6 + dy * o * 0.7, y1 - dy * o * 1.6 - dx * o * 0.7},
 			{x1, y1, x1 - dx * s * 1.6 - dy * s * 0.7, y1 - dy * s * 1.6 + dx * s * 0.7, x1 - dx * s * 1.6 + dy * s * 0.7, y1 - dy * s * 1.6 - dx * s * 0.7}, color);
@@ -305,13 +347,13 @@ class DCO_MapOverlay
 		bool bright = palette == 1;
 		switch (rel)
 		{
-			case DCO_PlayerAwareness.REL_FRIENDLY:
+			case 1:
 				if (bright) return 0xDD5AAAF0;
 				return 0xEE1A56B0;
-			case DCO_PlayerAwareness.REL_ENEMY:
+			case 2:
 				if (bright) return 0xDDFF4A3C;
 				return 0xEEC0101A;
-			case DCO_PlayerAwareness.REL_CONTESTED:
+			case 3:
 				if (bright) return 0xDDF3B231;
 				return 0xEEB05A00;
 		}

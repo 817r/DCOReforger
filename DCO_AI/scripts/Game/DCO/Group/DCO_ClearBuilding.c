@@ -11,8 +11,6 @@ class DCO_BuildingClear
 {
 	static const int UNKNOWN = 0;
 	static const int CONTACT = 1;
-	static const int CLEARING = 2;
-	static const int CLEARED = 3;
 
 	protected static ref map<IEntity, ref map<string, ref DCO_BuildingClearEntry>> s_mState;
 	protected static BaseWorld s_World;
@@ -22,8 +20,8 @@ class DCO_BuildingClear
 		switch (s)
 		{
 			case CONTACT: return "contact";
-			case CLEARING: return "clearing";
-			case CLEARED: return "cleared";
+			case 2: return "clearing";
+			case 3: return "cleared";
 		}
 		return "unknown";
 	}
@@ -72,7 +70,7 @@ class DCO_BuildingClear
 			return;
 
 		e.m_fContact_ms = now_ms;
-		if (e.m_iState == CLEARING)
+		if (e.m_iState == 2)
 			return;
 		if (e.m_iState != CONTACT)
 			e.m_fChanged_ms = now_ms;
@@ -85,12 +83,12 @@ class DCO_BuildingClear
 		if (!e || !group)
 			return false;
 
-		if (e.m_iState == CLEARING && e.m_Owner && e.m_Owner != group && e.m_Owner.GetAgentsCount() > 0)
+		if (e.m_iState == 2 && e.m_Owner && e.m_Owner != group && e.m_Owner.GetAgentsCount() > 0)
 			return false;
 		if (now_ms < e.m_fRetryAt_ms)
 			return false;
 
-		e.m_iState = CLEARING;
+		e.m_iState = 2;
 		e.m_Owner = group;
 		e.m_fChanged_ms = now_ms;
 		return true;
@@ -106,7 +104,7 @@ class DCO_BuildingClear
 		e.m_fChanged_ms = now_ms;
 		if (cleared)
 		{
-			e.m_iState = CLEARED;
+			e.m_iState = 3;
 			return;
 		}
 		e.m_iState = CONTACT;
@@ -126,12 +124,12 @@ class DCO_BuildingClear
 				continue;
 
 			DCO_BuildingClearEntry e = perFaction.Get(faction);
-			if (!e || (e.m_iState != CONTACT && e.m_iState != CLEARING))
+			if (!e || (e.m_iState != CONTACT && e.m_iState != 2))
 				continue;
 
 			if (e.m_iState == CONTACT && timeout_ms > 0 && now_ms - e.m_fContact_ms > timeout_ms)
 			{
-				e.m_iState = CLEARED;
+				e.m_iState = 3;
 				e.m_fChanged_ms = now_ms;
 				DCO_BenchmarkLoggerComponent.Event(string.Format("cqb_contact_timeout building=%1", building));
 				continue;
@@ -146,22 +144,7 @@ class DCO_BuildingClear
 
 class DCO_CQBClear
 {
-	protected static const float SLOT_REACHED_M = 2.5;
-	protected static const float STACK_RADIUS_M = 4.0;
-	protected static const float STACK_OFFSET_M = 4.0;
-	protected static const float SMOKE_OPEN_M = 30.0;
-	protected static const float SUPPRESSED_ABORT_MS = 10000;
-	protected static const float SLOTS_WAIT_MS = 10000;
 	protected static const float RETRY_MS = 120000;
-	protected static const float MAX_DURATION_MS = 300000;
-	protected static const float CONTACT_FRESH_MS = 30000;
-	protected static const float RESEND_MS = 20000;
-	protected static const float MSG_DURATION_S = 40;
-	protected static const float WINDOW_AVOID_M = 10.0;
-	protected static const float SUPPORT_DIST_M = 45.0;
-	protected static const int PHASE_APPROACH = 0;
-	protected static const int PHASE_STACK = 1;
-	protected static const int PHASE_CLEAR = 2;
 
 	protected SCR_AIGroupUtilityComponent m_Util;
 	protected IEntity m_Building;
@@ -261,7 +244,7 @@ class DCO_CQBClear
 			if (away.Length() < 1)
 				away = Vector(1, 0, 0);
 			away.Normalize();
-			m_vSupport = m_Building.GetOrigin() + away * SUPPORT_DIST_M;
+			m_vSupport = m_Building.GetOrigin() + away * 45.0;
 			m_vSupport[1] = GetGame().GetWorld().GetSurfaceY(m_vSupport[0], m_vSupport[2]);
 		}
 	}
@@ -281,16 +264,16 @@ class DCO_CQBClear
 			return Finish(false, "losses", now_ms);
 		if (IsPinned(now_ms))
 			return Finish(false, "suppressed", now_ms);
-		if (now_ms - m_fStart_ms > MAX_DURATION_MS)
+		if (now_ms - m_fStart_ms > 300000.0)
 			return Finish(false, "timeout", now_ms);
 
 		ScanContact(now_ms);
 
 		switch (m_iPhase)
 		{
-			case PHASE_APPROACH: Approach(now_ms); break;
-			case PHASE_STACK: Stack(now_ms); break;
-			case PHASE_CLEAR: return Clear(now_ms);
+			case 0: Approach(now_ms); break;
+			case 1: Stack(now_ms); break;
+			case 2: return Clear(now_ms);
 		}
 		return true;
 	}
@@ -302,7 +285,7 @@ class DCO_CQBClear
 		if (reg)
 			gb = reg.Request(m_Building, 1);
 
-		if ((!gb || !gb.m_bReady) && now_ms - m_fStart_ms < SLOTS_WAIT_MS)
+		if ((!gb || !gb.m_bReady) && now_ms - m_fStart_ms < 10000.0)
 			return;
 
 		vector center;
@@ -326,7 +309,7 @@ class DCO_CQBClear
 					continue;
 
 				float score = vector.DistanceXZ(s.m_vWorldPos, center);
-				if (EnemyNear(s.m_vWorldPos, WINDOW_AVOID_M))
+				if (EnemyNear(s.m_vWorldPos, 10.0))
 					score += 50;
 				if (score < best)
 				{
@@ -341,18 +324,18 @@ class DCO_CQBClear
 		if (outward.Length() < 0.1)
 			outward = Vector(1, 0, 0);
 		outward.Normalize();
-		m_vStack = entry + outward * STACK_OFFSET_M;
+		m_vStack = entry + outward * 4.0;
 		m_vStack[1] = GetGame().GetWorld().GetSurfaceY(m_vStack[0], m_vStack[2]);
 
 		BuildSlots(interior, entry);
 
-		if (vector.DistanceXZ(center, m_vStack) > SMOKE_OPEN_M && !m_bSweep)
+		if (vector.DistanceXZ(center, m_vStack) > 30.0 && !m_bSweep)
 			ThrowSmoke((center + m_vStack) * 0.5);
 
 		foreach (AIAgent a : m_aEntry)
 			SendMove(a, m_vStack, 3.0);
 
-		m_iPhase = PHASE_STACK;
+		m_iPhase = 1;
 		m_fPhase_ms = now_ms;
 	}
 
@@ -387,7 +370,7 @@ class DCO_CQBClear
 		foreach (AIAgent a : m_aEntry)
 		{
 			IEntity ent = a.GetControlledEntity();
-			if (ent && vector.DistanceXZ(ent.GetOrigin(), m_vStack) <= STACK_RADIUS_M)
+			if (ent && vector.DistanceXZ(ent.GetOrigin(), m_vStack) <= 4.0)
 				near++;
 		}
 
@@ -404,7 +387,7 @@ class DCO_CQBClear
 
 		bool known = m_bContact;
 		DCO_BuildingClearEntry e = DCO_BuildingClear.Get(m_Building, m_sFaction, false);
-		if (e && e.m_fContact_ms >= 0 && now_ms - e.m_fContact_ms < CONTACT_FRESH_MS)
+		if (e && e.m_fContact_ms >= 0 && now_ms - e.m_fContact_ms < 30000.0)
 			known = true;
 		if (!known && LeaderPersonality() == DCO_EAIPersonality.CAUTIOUS && !m_bSweep)
 			known = e && e.m_fContact_ms >= 0;
@@ -425,7 +408,7 @@ class DCO_CQBClear
 			m_aPairSent_ms.Insert(0);
 		}
 
-		m_iPhase = PHASE_CLEAR;
+		m_iPhase = 2;
 		m_fPhase_ms = now_ms;
 	}
 
@@ -464,7 +447,7 @@ class DCO_CQBClear
 				m_aPairSent_ms[p] = 0;
 			}
 
-			if (now_ms - m_aPairSent_ms[p] >= RESEND_MS)
+			if (now_ms - m_aPairSent_ms[p] >= 20000.0)
 			{
 				m_aPairSent_ms[p] = now_ms;
 				SendPair(p, m_aSlots[slot]);
@@ -487,7 +470,7 @@ class DCO_CQBClear
 		for (int i = pair * 2; i < pair * 2 + 2 && i < m_aEntry.Count(); i++)
 		{
 			IEntity ent = m_aEntry[i].GetControlledEntity();
-			if (ent && vector.Distance(ent.GetOrigin(), pos) <= SLOT_REACHED_M)
+			if (ent && vector.Distance(ent.GetOrigin(), pos) <= 2.5)
 				return true;
 		}
 		return false;
@@ -516,7 +499,7 @@ class DCO_CQBClear
 
 			m_bContact = true;
 			DCO_BuildingClear.MarkContact(m_Building, m_sFaction, now_ms);
-			if (m_iPhase != PHASE_CLEAR)
+			if (m_iPhase != 2)
 				return;
 
 			foreach (AIAgent a : m_aEntry)
@@ -547,7 +530,7 @@ class DCO_CQBClear
 		}
 		if (m_fSuppressed_ms < 0)
 			m_fSuppressed_ms = now_ms;
-		return now_ms - m_fSuppressed_ms > SUPPRESSED_ABORT_MS;
+		return now_ms - m_fSuppressed_ms > 10000.0;
 	}
 
 	protected bool Finish(bool cleared, string reason, float now_ms)
@@ -673,7 +656,7 @@ class DCO_CQBClear
 		if (!comms)
 			return;
 
-		SCR_AIMessage_Investigate msg = SCR_AIMessage_Investigate.Create(null, pos, radius, true, duration: MSG_DURATION_S);
+		SCR_AIMessage_Investigate msg = SCR_AIMessage_Investigate.Create(null, pos, radius, true, duration: 40.0);
 		msg.m_fPriorityLevel = SCR_AIActionBase.PRIORITY_LEVEL_PLAYER;
 		msg.SetReceiver(agent);
 		comms.RequestBroadcast(msg, agent);

@@ -179,15 +179,12 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	protected int BucketCount(int n)
 	{
 		if (n >= m_iBucketPlatoonMin)
-			return BUCKET_PLATOON;
+			return 25;
 		if (n >= m_iBucketSquadMin)
-			return BUCKET_SQUAD;
-		return BUCKET_FEW;
+			return 8;
+		return 3;
 	}
 
-	static const int BUCKET_FEW     = 3;
-	static const int BUCKET_SQUAD   = 8;
-	static const int BUCKET_PLATOON = 25;
 
 	bool CanChangeRole()
 	{
@@ -213,7 +210,6 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		QueueRadio(p, worldTime);
 	}
 
-	protected static const float CALL_FOR_FIRE_MIN_DIST = 150.0;
 
 	protected void RequestArtillerySupport(vector contactPos, int enemyCount, float worldTime, float infoTime, float uncertainty, bool callForFire)
 	{
@@ -473,7 +469,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		p.m_Report = report;
 		p.m_bCallForFire = !lowPriority && !m_GroupUtil.IsPlayerGroup() && m_GroupUtil.HasState(DCO_EGroupState.IN_CONTACT)
 			&& (IsSuppressed() || c.m_bMG || c.m_bInBuilding)
-			&& vector.DistanceXZ(leaderPos, c.m_vTrue) > CALL_FOR_FIRE_MIN_DIST;
+			&& vector.DistanceXZ(leaderPos, c.m_vTrue) > 150.0;
 		p.m_bArtillery = !lowPriority && (c.m_iBucket >= effectiveArtyThreshold || p.m_bCallForFire);
 		QueueRadio(p, worldTime);
 	}
@@ -482,12 +478,6 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	protected const float MOVING_MIN_SPEED = 0.7;
 	protected ref map<IEntity, int> m_mTypeCache = new map<IEntity, int>();
 
-	static const int TYPE_INF = 0;
-	static const int TYPE_MG = 1;
-	static const int TYPE_AT = 2;
-	static const int TYPE_SNIPER = 3;
-	static const int TYPE_VEHICLE = 4;
-	static const int TYPE_ARMOR = 5;
 
 	protected int ClassifyTarget(IEntity ent, vector reporterPos)
 	{
@@ -495,22 +485,22 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		if (m_mTypeCache.Find(ent, cached))
 			return cached;
 
-		int type = TYPE_INF;
+		int type = 0;
 		IEntity veh = DCO_VehicleCombat.GetVehicle(ent);
 		if (!veh && Vehicle.Cast(ent))
 			veh = ent;
 		if (veh)
 		{
-			type = TYPE_VEHICLE;
+			type = 4;
 			if (DCO_VehicleCombat.IsArmored(veh) && vector.Distance(reporterPos, veh.GetOrigin()) <= m_fArmorIdentifyDist)
-				type = TYPE_ARMOR;
+				type = 5;
 		}
 		else if (DCO_Strength.HasWeaponInHands(ent, EWeaponType.WT_ROCKETLAUNCHER))
-			type = TYPE_AT;
+			type = 2;
 		else if (DCO_Strength.HasWeaponInHands(ent, EWeaponType.WT_MACHINEGUN))
-			type = TYPE_MG;
+			type = 1;
 		else if (DCO_Strength.HasWeaponInHands(ent, EWeaponType.WT_SNIPERRIFLE))
-			type = TYPE_SNIPER;
+			type = 3;
 
 		m_mTypeCache.Set(ent, type);
 		return type;
@@ -565,21 +555,21 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 
 			switch (ClassifyTarget(t.m_Entity, reporterPos))
 			{
-				case TYPE_AT:
+				case 2:
 					cluster.m_iAT++;
 					cluster.m_bAT = true;
 					break;
-				case TYPE_MG:
+				case 1:
 					cluster.m_iMG++;
 					cluster.m_bMG = true;
 					break;
-				case TYPE_SNIPER:
+				case 3:
 					cluster.m_iSniper++;
 					break;
-				case TYPE_VEHICLE:
+				case 4:
 					cluster.m_iVehicle++;
 					break;
-				case TYPE_ARMOR:
+				case 5:
 					cluster.m_iArmor++;
 					cluster.m_bArmor = true;
 					break;

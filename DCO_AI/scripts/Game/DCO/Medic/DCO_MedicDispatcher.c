@@ -12,8 +12,6 @@ class DCO_MedicDispatcher
 {
 	protected static const int RETRY_MS = 10000;
 	protected static const int MAX_RETRIES = 18;
-	protected static const float OWN_MEDIC_SEARCH_M = 150;
-	protected static const float SMOKE_OFFSET_M = 12;
 
 	protected static ref DCO_MedicDispatcher s_Instance;
 
@@ -355,7 +353,7 @@ class DCO_MedicDispatcher
 		vector dir = enemy - cpos;
 		dir[1] = 0;
 		dir.Normalize();
-		vector smokePos = cpos + dir * SMOKE_OFFSET_M;
+		vector smokePos = cpos + dir * 12.0;
 
 		array<AIAgent> agents = {};
 		grp.GetAgents(agents);
@@ -402,7 +400,7 @@ class DCO_MedicDispatcher
 			if (ca.m_InfoComponent.HasUnitState(EUnitState.UNCONSCIOUS) || !ca.m_InfoComponent.HasRole(EUnitRole.MEDIC))
 				continue;
 			IEntity e = ca.GetControlledEntity();
-			if (e && vector.Distance(e.GetOrigin(), casualty.GetOrigin()) <= OWN_MEDIC_SEARCH_M)
+			if (e && vector.Distance(e.GetOrigin(), casualty.GetOrigin()) <= 150.0)
 				return true;
 		}
 		return false;

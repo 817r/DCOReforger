@@ -1,6 +1,5 @@
 class DCO_IsWeaponDisposeable : AITaskScripted
 {
-	protected static const string PORT_DISPOSEABLE = "IsDisposeable";
 	protected static const string PORT_WEAPON_COMPONENT = "WeaponComponent";
 
 	protected SCR_AICombatComponent m_CombatComponent;
@@ -20,7 +19,7 @@ class DCO_IsWeaponDisposeable : AITaskScripted
 
 		bool isDisposeable = muzzleComp.IsDisposable();
 
-		SetVariableOut(PORT_DISPOSEABLE, isDisposeable);
+		SetVariableOut("IsDisposeable", isDisposeable);
 
 		return ENodeResult.SUCCESS;
 	}
@@ -31,7 +30,7 @@ class DCO_IsWeaponDisposeable : AITaskScripted
 	}
 
 	protected static ref TStringArray s_aVarsOut = {
-		PORT_DISPOSEABLE,
+		"IsDisposeable",
 	};
 
 	protected static ref TStringArray s_aVarsIn = {

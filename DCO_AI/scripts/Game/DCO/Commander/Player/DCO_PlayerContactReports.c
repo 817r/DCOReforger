@@ -1,15 +1,7 @@
 class DCO_PlayerContactReports
 {
 	protected static const float SCAN_S = 10;
-	protected static const float COOLDOWN_S = 20;
-	protected static const int MAX_ACTIVE = 3;
-	protected static const float ACTIVE_S = 180;
 	protected static const float NOISE_PER_100M = 12;
-	protected static const float RADIO_DELAY_MIN = 5;
-	protected static const float RADIO_DELAY_MAX = 15;
-	protected static const int COUNT_TEAM = 4;
-	protected static const int COUNT_SQUAD = 8;
-	protected static const int COUNT_PLATOON = 24;
 
 	protected static ref DCO_PlayerContactReports s_Instance;
 
@@ -78,7 +70,7 @@ class DCO_PlayerContactReports
 			bool armor = (flags & (EMilitarySymbolIcon.ARMOR | EMilitarySymbolIcon.TRACKED_TRANSPORT)) != 0;
 			int count = ParseCount(marker.GetCustomText());
 			if (!armor && (flags & (EMilitarySymbolIcon.MOTORIZED | EMilitarySymbolIcon.WHEELED_TRANSPORT)))
-				count = Math.Max(count, COUNT_TEAM);
+				count = Math.Max(count, 4);
 
 			Submit(pid, pos, count, armor, mid);
 		}
@@ -101,7 +93,7 @@ class DCO_PlayerContactReports
 	{
 		float now = GetGame().GetWorld().GetWorldTime() / 1000.0;
 		float last;
-		if (m_mLastReport.Find(pid, last) && now - last < COOLDOWN_S)
+		if (m_mLastReport.Find(pid, last) && now - last < 20.0)
 		{
 			DCO_Radio.Player(pid, "COMMANDER", "report_wait");
 			return;
@@ -115,10 +107,10 @@ class DCO_PlayerContactReports
 		}
 		for (int i = active.Count() - 1; i >= 0; i--)
 		{
-			if (now - active[i] > ACTIVE_S)
+			if (now - active[i] > 180.0)
 				active.Remove(i);
 		}
-		if (active.Count() >= MAX_ACTIVE)
+		if (active.Count() >= 3)
 		{
 			DCO_Radio.Player(pid, "COMMANDER", "report_too_many");
 			return;
@@ -148,15 +140,15 @@ class DCO_PlayerContactReports
 		rep.m_fUncertainty = noise * 1.5 + 10;
 		rep.m_vTruePos = pos;
 
-		float delay = Math.RandomFloat(RADIO_DELAY_MIN, RADIO_DELAY_MAX);
+		float delay = Math.RandomFloat(5.0, 15.0);
 		GetGame().GetCallqueue().CallLater(Deliver, delay * 1000, false, cmd, rep, markerID, pid);
 
 		string what = "@rep_squad";
 		if (armor)
 			what = "@rep_armor";
-		else if (count <= COUNT_TEAM)
+		else if (count <= 4)
 			what = "@rep_team";
-		else if (count >= COUNT_PLATOON)
+		else if (count >= 24)
 			what = "@rep_platoon";
 		DCO_Radio.Player(pid, "CONTACT REPORT", "report_sent", DCO_ERadioKind.INFO, DCO_Radio.P("what", what, "grid", DCO_PlayerComms.Grid(pos)));
 
@@ -190,14 +182,14 @@ class DCO_PlayerContactReports
 		string t = text;
 		t.ToLower();
 		if (t.Contains("platoon") || t.Contains("peleton"))
-			return COUNT_PLATOON;
+			return 24;
 		if (t.Contains("team") || t.Contains("tim"))
-			return COUNT_TEAM;
+			return 4;
 
 		int n = t.ToInt();
 		if (n > 0)
 			return n;
-		return COUNT_SQUAD;
+		return 8;
 	}
 
 	protected static bool IsHostileIdentity(EMilitarySymbolIdentity id, Faction reporter)

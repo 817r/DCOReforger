@@ -166,6 +166,42 @@ class CMD_ArtillerySupport : ScriptComponent
 		}
 	}
 
+	int CountUnitsInRange(vector target)
+	{
+		int n;
+		foreach (DCO_GroupUtilityComponent unit : m_aUnits)
+		{
+			if (!unit || !unit.GetOwner())
+				continue;
+			float d = vector.DistanceXZ(unit.GetOwner().GetOrigin(), target);
+			if (d >= m_fMinRange && d <= m_fMaxRange)
+				n++;
+		}
+		return n;
+	}
+
+	bool IsQueueBusy()
+	{
+		return m_iMaxQueueSize > 0 && m_aQueue.Count() * 2 > m_iMaxQueueSize;
+	}
+
+	bool IsRequesterDangerClose(CMD_FireMissionRequest req, SCR_AIGroup grp)
+	{
+		if (!grp)
+			return false;
+		float radius = Math.Max(req.m_fSafeRadius, m_fFriendlySafeRadius);
+		array<int> pids = grp.GetPlayerIDs();
+		if (!pids)
+			return false;
+		foreach (int pid : pids)
+		{
+			IEntity ent = GetGame().GetPlayerManager().GetPlayerControlledEntity(pid);
+			if (ent && vector.DistanceXZ(ent.GetOrigin(), req.m_vImpactPos) <= radius)
+				return true;
+		}
+		return false;
+	}
+
 	DCO_GroupUtilityComponent FindUnitInRange(vector target, bool idleOnly, out string denyReason)
 	{
 		denyReason = "no_unit";
@@ -318,7 +354,7 @@ class CMD_ArtillerySupport : ScriptComponent
 	        return false;
 	    }
 
-	    if (req.m_sTier == "area")
+	    if (req.m_sTier == "area" && req.m_iPlayerGroup < 0)
 	        shellCount = Math.Ceil(shellCount * 1.5);
 
 	    req.m_iShellCount    = shellCount;

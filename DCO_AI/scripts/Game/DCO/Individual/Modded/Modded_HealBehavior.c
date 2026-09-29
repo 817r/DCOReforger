@@ -14,7 +14,7 @@ modded class SCR_AIHealBehavior : SCR_AIBehaviorBase
 		if (m_AIInfo)
 			timeToUncon = m_AIInfo.GetBleedTimeToUnconscious();
 
-		bool calm = m_Utility.m_ThreatSystem.GetThreatMeasureWithoutInjuryFactor() < SCR_AIThreatSystem.VIGILANT_THRESHOLD;
+		bool calm = m_Utility.m_ThreatSystem.GetThreatMeasureWithoutInjuryFactor() < 0.4;
 
 		if (!calm && !DCO_IsSheltered())
 		{

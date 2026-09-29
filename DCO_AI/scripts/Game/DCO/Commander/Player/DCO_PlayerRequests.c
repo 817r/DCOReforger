@@ -27,20 +27,8 @@ class DCO_SquadWatch
 
 class DCO_PlayerRequests
 {
-	protected static const float REQUEST_COOLDOWN_S = 60;
-	protected static const float LINK_DURATION_S = 300;
-	protected static const float SQUAD_REPORT_COOLDOWN_S = 30;
-	protected static const float CONTACT_REPORT_COOLDOWN_S = 90;
 	protected static const float TICK_S = 5;
-	protected static const float SUPPRESS_STANDOFF_M = 200;
-	protected static const float SUPPORT_STANDOFF_M = 30;
-	protected static const float FLANK_OFFSET_M = 150;
-	protected static const float ARRIVED_M = 50;
-	protected static const float FIRE_COOLDOWN_S = 180;
 	protected static const float NOISE_PER_100M = 12;
-	protected static const float ARMOR_STANDOFF_M = 175;
-	protected static const float ARMOR_AT_STANDOFF_M = 350;
-	protected static const float ARMOR_AT_WARN_M = 300;
 
 	protected static ref DCO_PlayerRequests s_Instance;
 
@@ -63,10 +51,10 @@ class DCO_PlayerRequests
 			Get().DoHandle(pid, type, pos);
 	}
 
-	static void HandleFire(int pid, SCR_EAIArtilleryAmmoType ammo, vector pos)
+	static void HandleFire(int pid, SCR_EAIArtilleryAmmoType ammo, vector pos, int count = 0)
 	{
 		if (Replication.IsServer())
-			Get().DoHandleFire(pid, ammo, pos);
+			Get().DoHandleFire(pid, ammo, pos, count);
 	}
 
 	static void HandleCancel(int pid, bool support, bool fire, bool transport)
@@ -75,7 +63,7 @@ class DCO_PlayerRequests
 			Get().DoHandleCancel(pid, support, fire, transport);
 	}
 
-	protected void DoHandleFire(int pid, SCR_EAIArtilleryAmmoType ammo, vector pos)
+	protected void DoHandleFire(int pid, SCR_EAIArtilleryAmmoType ammo, vector pos, int count)
 	{
 		float now = Now();
 		SCR_GroupsManagerComponent groups = SCR_GroupsManagerComponent.GetInstance();
@@ -91,10 +79,10 @@ class DCO_PlayerRequests
 
 		int gid = pgrp.GetGroupID();
 		string typeName = typename.EnumToString(SCR_EAIArtilleryAmmoType, ammo);
-		float last;
-		if (m_mLastFire.Find(gid, last) && now - last < FIRE_COOLDOWN_S)
+		float nextAllowed;
+		if (m_mLastFire.Find(gid, nextAllowed) && now < nextAllowed)
 		{
-			FireDenied(gid, pid, typeName, "-", 0, "cooldown", FIRE_COOLDOWN_S - (now - last));
+			FireDenied(gid, pid, typeName, "-", 0, "cooldown", nextAllowed - now);
 			return;
 		}
 
@@ -125,13 +113,17 @@ class DCO_PlayerRequests
 			unc = arty.GetAreaUncertainty();
 		}
 
-		int shells = 4;
-		if (ammo == SCR_EAIArtilleryAmmoType.SMOKE)
-			shells = 3;
-		else if (ammo == SCR_EAIArtilleryAmmoType.ILLUMINATION)
-			shells = 1;
+		int requested = count;
+		if (requested <= 0)
+		{
+			requested = 4;
+			if (ammo == SCR_EAIArtilleryAmmoType.SMOKE)
+				requested = 3;
+			else if (ammo == SCR_EAIArtilleryAmmoType.ILLUMINATION)
+				requested = 1;
+		}
 
-		CMD_FireMissionRequest req = new CMD_FireMissionRequest(pos, ammo, now, shells);
+		CMD_FireMissionRequest req = new CMD_FireMissionRequest(pos, ammo, now, requested);
 		arty.ApplyTier(req, tier, unc, "player");
 		req.m_bDangerClose = true;
 		req.m_Requester = DCO_GroupUtilityComponent.Cast(pgrp.FindComponent(DCO_GroupUtilityComponent));
@@ -143,15 +135,52 @@ class DCO_PlayerRequests
 			return;
 		}
 
-		if (!arty.RequestShellImpact(req, now, shells))
+		string cut;
+		int approved = requested;
+		int tubes = arty.CountUnitsInRange(pos) * 4;
+		if (tubes > 0 && approved > tubes)
+		{
+			approved = tubes;
+			cut = "tubes";
+		}
+		if (arty.IsQueueBusy() && approved > Math.Ceil(requested / 2.0))
+		{
+			approved = Math.Ceil(requested / 2.0);
+			cut = "queue";
+		}
+		if (he && DCO_Radio.PersonalityOf(cmd) == 2 && approved > 5)
+		{
+			approved = 5;
+			cut = "commander";
+		}
+		if (he)
+		{
+			req.m_fSafeRadius = arty.ComputeSafeRadius(req, now);
+			if (approved > 3 && arty.IsRequesterDangerClose(req, pgrp))
+			{
+				approved = 3;
+				cut = "danger";
+			}
+		}
+		req.m_iShellCount = approved;
+
+		if (!arty.RequestShellImpact(req, now, approved))
 		{
 			FireDenied(gid, pid, typeName, tier, unc, req.m_sDeny);
 			return;
 		}
 
-		m_mLastFire.Set(gid, now);
-		DCO_Radio.Group(gid, "FIRE SUPPORT", "fire_received", DCO_ERadioKind.INFO, DCO_Radio.P("count", req.m_iShellCount.ToString(), "type", CMD_ArtillerySupport.ShellKey(ammo), "grid", DCO_PlayerComms.Grid(pos)));
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_fire_request player=%1 grp=%2 type=%3 tier=%4 unc=%5 result=accepted shells=%6", pid, gid, typeName, tier, Math.Round(unc), req.m_iShellCount));
+		float cooldown = 30 + 10 * req.m_iShellCount;
+		if (he)
+			cooldown = 60 + 20 * req.m_iShellCount;
+		m_mLastFire.Set(gid, now + cooldown);
+
+		string grid = DCO_PlayerComms.Grid(pos);
+		if (req.m_iShellCount < requested)
+			DCO_Radio.Group(gid, "FIRE SUPPORT", "fire_approved_cut", DCO_ERadioKind.INFO, DCO_Radio.P("count", req.m_iShellCount.ToString(), "req", requested.ToString(), "type", CMD_ArtillerySupport.ShellKey(ammo), "grid", grid, "reason", "@fcut_" + cut));
+		else
+			DCO_Radio.Group(gid, "FIRE SUPPORT", "fire_approved", DCO_ERadioKind.INFO, DCO_Radio.P("count", req.m_iShellCount.ToString(), "type", CMD_ArtillerySupport.ShellKey(ammo), "grid", grid));
+		DCO_BenchmarkLoggerComponent.Event(string.Format("player_fire_request player=%1 grp=%2 type=%3 tier=%4 unc=%5 result=accepted requested=%6 shells=%7 cut=%8 cooldown=%9", pid, gid, typeName, tier, Math.Round(unc), requested, req.m_iShellCount, cut, Math.Round(cooldown)));
 	}
 
 	protected void FireDenied(int gid, int pid, string typeName, string tier, float unc, string reason, float sec = 0)
@@ -242,7 +271,7 @@ class DCO_PlayerRequests
 		CMD_ThreatResponseComponent threat = cmd.GetThreatResponseComponent();
 		if (!threat)
 			return false;
-		float rSq = ARMOR_AT_WARN_M * ARMOR_AT_WARN_M;
+		float rSq = 300.0 * 300.0;
 		foreach (CMD_ThreatEntry t : threat.GetThreats())
 		{
 			if (t && t.m_bATSeen && vector.DistanceSqXZ(t.m_vPosition, pos) <= rSq)
@@ -279,9 +308,9 @@ class DCO_PlayerRequests
 
 		int gid = pgrp.GetGroupID();
 		float last;
-		if (m_mLastRequest.Find(gid, last) && now - last < REQUEST_COOLDOWN_S)
+		if (m_mLastRequest.Find(gid, last) && now - last < 60.0)
 		{
-			DCO_Radio.Player(pid, "COMMANDER", "request_wait", DCO_ERadioKind.WARNING, DCO_Radio.P("sec", DCO_Radio.N(REQUEST_COOLDOWN_S - (now - last))));
+			DCO_Radio.Player(pid, "COMMANDER", "request_wait", DCO_ERadioKind.WARNING, DCO_Radio.P("sec", DCO_Radio.N(60.0 - (now - last))));
 			return;
 		}
 
@@ -299,7 +328,7 @@ class DCO_PlayerRequests
 			case DCO_EPlayerRequest.SUPPRESS:
 			{
 				task = DCO_EGroupTask.SUPPORT_BY_FIRE;
-				movePos = Standoff(pos, ppos, SUPPRESS_STANDOFF_M);
+				movePos = Standoff(pos, ppos, 200.0);
 				suppressPos = pos;
 				okKey = "support_suppress_ok";
 				break;
@@ -307,10 +336,10 @@ class DCO_PlayerRequests
 			case DCO_EPlayerRequest.ARMOR:
 			{
 				task = DCO_EGroupTask.SUPPORT_BY_FIRE;
-				float standoff = ARMOR_STANDOFF_M;
+				float standoff = 175.0;
 				if (HasATNear(cmd, pos))
 				{
-					standoff = ARMOR_AT_STANDOFF_M;
+					standoff = 350.0;
 					DCO_Radio.Group(gid, "COMMANDER", "armor_at_warning", DCO_ERadioKind.WARNING, null, true);
 				}
 				movePos = Standoff(pos, ppos, standoff);
@@ -337,7 +366,7 @@ class DCO_PlayerRequests
 				vector side = Vector(-dir[2], 0, dir[0]);
 				if (type == DCO_EPlayerRequest.FLANK_RIGHT)
 					side = -side;
-				movePos = pos + side * FLANK_OFFSET_M;
+				movePos = pos + side * 150.0;
 				suppressPos = pos;
 				flankSide = DCO_Radio.Dir(pos, movePos);
 				break;
@@ -372,7 +401,7 @@ class DCO_PlayerRequests
 		link.m_iPlayerGroup = gid;
 		link.m_eType = type;
 		link.m_vTarget = movePos;
-		link.m_fExpire_s = now + LINK_DURATION_S;
+		link.m_fExpire_s = now + 300.0;
 		m_aLinks.Insert(link);
 
 		vector squadPos = squad.GetOwner().GetOrigin();
@@ -475,7 +504,7 @@ class DCO_PlayerRequests
 				msgParams = DCO_Radio.P("count", units.ToString());
 				critical = (st & DCO_EGroupState.IN_CONTACT) != 0;
 			}
-			else if ((st & DCO_EGroupState.IN_CONTACT) && now - w.m_fLastContact_s > CONTACT_REPORT_COOLDOWN_S)
+			else if ((st & DCO_EGroupState.IN_CONTACT) && now - w.m_fLastContact_s > 90.0)
 			{
 				w.m_fLastContact_s = now;
 				msg = "squad_contact";
@@ -486,7 +515,7 @@ class DCO_PlayerRequests
 				bool hasTgt = targets.Find(squad, tgt);
 				if (!hasTgt && squad.GetGroupObjective())
 					tgt = squad.GetGroupObjective().GetOwner().GetOrigin();
-				if (vector.DistanceXZ(squad.GetOwner().GetOrigin(), tgt) <= ARRIVED_M || (!hasTgt && squad.GetPhase() == DCO_ETaskPhase.HOLDING))
+				if (vector.DistanceXZ(squad.GetOwner().GetOrigin(), tgt) <= 50.0 || (!hasTgt && squad.GetPhase() == DCO_ETaskPhase.HOLDING))
 				{
 					w.m_bArrived = true;
 					msg = "squad_in_position";
@@ -494,7 +523,7 @@ class DCO_PlayerRequests
 			}
 			w.m_iLastUnits = units;
 
-			if (msg.IsEmpty() || now - w.m_fLastReport_s < SQUAD_REPORT_COOLDOWN_S)
+			if (msg.IsEmpty() || now - w.m_fLastReport_s < 30.0)
 				continue;
 
 			w.m_fLastReport_s = now;

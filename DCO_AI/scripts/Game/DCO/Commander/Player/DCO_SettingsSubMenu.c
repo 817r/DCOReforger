@@ -1,12 +1,8 @@
 class DCO_SettingsSubMenu : SCR_SettingsSubMenuBase
 {
-	protected static const int PREVIEW_DELAY_MS = 300;
-	protected static const string ACTION_TEST = "MenuAdvancedKeybind";
-	protected static const string ACTION_RESET = "MenuResetAllKeybind";
 
 	protected bool m_bPreviewContact;
 	protected static DCO_SettingsSubMenu s_Open;
-	protected static const string CONTACT_TITLE = "Squad Contact Notifications";
 
 	static void OnServerShareChanged()
 	{
@@ -29,9 +25,9 @@ class DCO_SettingsSubMenu : SCR_SettingsSubMenuBase
 		if (!title)
 			return;
 		if (on)
-			title.SetText(CONTACT_TITLE);
+			title.SetText("Squad Contact Notifications");
 		else
-			title.SetText(CONTACT_TITLE + " - Disabled by server");
+			title.SetText("Squad Contact Notifications" + " - Disabled by server");
 	}
 
 	override void OnTabCreate(Widget menuRoot, ResourceName buttonsLayout, int index)
@@ -54,10 +50,10 @@ class DCO_SettingsSubMenu : SCR_SettingsSubMenuBase
 		s_Open = this;
 		ApplyServerState();
 
-		SCR_InputButtonComponent test = CreateNavigationButton(ACTION_TEST, "Test notifications", true);
+		SCR_InputButtonComponent test = CreateNavigationButton("MenuAdvancedKeybind", "Test notifications", true);
 		if (test)
 			test.m_OnActivated.Insert(OnTest);
-		SCR_InputButtonComponent reset = CreateNavigationButton(ACTION_RESET, "Reset DCO", true);
+		SCR_InputButtonComponent reset = CreateNavigationButton("MenuResetAllKeybind", "Reset DCO", true);
 		if (reset)
 			reset.m_OnActivated.Insert(OnReset);
 	}
@@ -169,7 +165,7 @@ class DCO_SettingsSubMenu : SCR_SettingsSubMenuBase
 	{
 		m_bPreviewContact = contact;
 		GetGame().GetCallqueue().Remove(Preview);
-		GetGame().GetCallqueue().CallLater(Preview, PREVIEW_DELAY_MS);
+		GetGame().GetCallqueue().CallLater(Preview, 300);
 	}
 
 	protected void Preview()
@@ -201,13 +197,12 @@ class DCO_SettingsSubMenu : SCR_SettingsSubMenuBase
 
 modded class SCR_SettingsSuperMenu
 {
-	protected static const ResourceName DCO_SETTINGS_LAYOUT = "{83123D5F8F129490}UI/layouts/DCO/DCO_Settings.layout";
 
 	override void OnMenuOpen()
 	{
 		super.OnMenuOpen();
 
 		if (m_SuperMenuComponent && m_SuperMenuComponent.GetTabView())
-			m_SuperMenuComponent.GetTabView().AddTab(DCO_SETTINGS_LAYOUT, "DCO", identifier: "SettingsDCO");
+			m_SuperMenuComponent.GetTabView().AddTab("{83123D5F8F129490}UI/layouts/DCO/DCO_Settings.layout", "DCO", identifier: "SettingsDCO");
 	}
 }

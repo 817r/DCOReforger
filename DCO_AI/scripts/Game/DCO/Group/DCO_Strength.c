@@ -27,14 +27,6 @@ class DCO_StrengthInfo
 
 class DCO_Strength
 {
-	static const float W_MEMBER = 1.0;
-	static const float W_MG = 0.5;
-	static const float W_AT = 0.5;
-	static const float W_AT_VS_VEHICLES = 2.0;
-	static const float W_SOFT_ARMED = 2.0;
-	static const float W_APC = 5.0;
-	static const float W_TANK = 8.0;
-	static const float BUILDING_SCALE = 1.5;
 
 	protected static ref array<IEntity> s_aVehicles = {};
 	protected static ref array<AIAgent> s_aAgents = {};
@@ -49,13 +41,13 @@ class DCO_Strength
 		{
 			EAIUnitType type = perc.GetUnitType();
 			if (type == EAIUnitType.UnitType_VehicleHeavy)
-				return W_TANK;
+				return 8.0;
 			if (type == EAIUnitType.UnitType_VehicleMedium)
-				return W_APC;
+				return 5.0;
 		}
 
 		if (HasTurret(vehicle))
-			return W_SOFT_ARMED;
+			return 2.0;
 		return 0;
 	}
 
@@ -94,9 +86,9 @@ class DCO_Strength
 		s_aVehicles.Clear();
 		grp.GetAgents(s_aAgents);
 
-		float atWeight = W_AT;
+		float atWeight = 0.5;
 		if (enemyHasVehicles)
-			atWeight = W_AT_VS_VEHICLES;
+			atWeight = 2.0;
 
 		foreach (AIAgent a : s_aAgents)
 		{
@@ -109,9 +101,9 @@ class DCO_Strength
 				continue;
 
 			outInfo.m_iCount++;
-			outInfo.m_fStrength += W_MEMBER;
+			outInfo.m_fStrength += 1.0;
 			if (info && info.HasRole(EUnitRole.MACHINEGUNNER))
-				outInfo.m_fStrength += W_MG;
+				outInfo.m_fStrength += 0.5;
 			if (info && info.HasRole(EUnitRole.AT_SPECIALIST))
 			{
 				outInfo.m_fStrength += atWeight;
@@ -159,24 +151,24 @@ class DCO_Strength
 				continue;
 			}
 
-			float w = W_MEMBER;
+			float w = 1.0;
 			if (ent)
 			{
 				if (HasWeaponInHands(ent, EWeaponType.WT_ROCKETLAUNCHER))
 				{
-					w += W_AT;
+					w += 0.5;
 					outInfo.m_bHasAT = true;
 				}
 				else if (HasWeaponInHands(ent, EWeaponType.WT_MACHINEGUN))
 				{
-					w += W_MG;
+					w += 0.5;
 				}
 
 				IEntity veh = DCO_VehicleCombat.GetVehicle(ent);
 				if (veh)
 					AddVehicle(veh, outInfo);
 				else if (SCR_CoverManagerComponent.DCO_GetBuildingAt(ent))
-					w *= BUILDING_SCALE;
+					w *= 1.5;
 			}
 			outInfo.m_fStrength += w;
 		}

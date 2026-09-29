@@ -19,19 +19,7 @@ class DCO_TerrainPoint
 
 class DCO_TerrainCache
 {
-	protected static const int VERSION = 1;
-	protected static const float CELL_M = 50;
-	protected static const float MARGIN_M = 600;
-	protected static const int CELLS_PER_FRAME = 6;
 	protected static const float START_DELAY_S = 15;
-	protected static const float RING_M = 120;
-	protected static const float HILL_REL_M = 10;
-	protected static const float LOS_MIN_M = 150;
-	protected static const float LOS_MAX_M = 500;
-	protected static const float ROAD_NEAR_M = 25;
-	protected static const float FOREST_ROAD_M = 80;
-	protected static const float FLAT_MAX_SLOPE_M = 2.5;
-	protected static const float LZ_OBJ_MAX_M = 900;
 	protected static const string DIR = "$profile:DCO/TerrainCache";
 
 	protected static ref DCO_TerrainCache s_Instance;
@@ -149,7 +137,7 @@ class DCO_TerrainCache
 		}
 
 		string world = GetGame().GetWorldFile();
-		m_sKey = string.Format("v%1|%2|%3", VERSION, world, hash.Hash());
+		m_sKey = string.Format("v%1|%2|%3", 1, world, hash.Hash());
 		string safe = world;
 		array<string> bad = {"/", "{", "}", ".", ":", " "};
 		foreach (string ch : bad)
@@ -167,14 +155,14 @@ class DCO_TerrainCache
 		if (aiWorld)
 			m_Roads = aiWorld.GetRoadNetworkManager();
 
-		mins = mins - Vector(MARGIN_M, 0, MARGIN_M);
-		maxs = maxs + Vector(MARGIN_M, 0, MARGIN_M);
+		mins = mins - Vector(600.0, 0, 600.0);
+		maxs = maxs + Vector(600.0, 0, 600.0);
 		AnalyzeRoads(mins, maxs);
 
 		array<float> dists = {};
-		for (float x = mins[0]; x <= maxs[0]; x += CELL_M)
+		for (float x = mins[0]; x <= maxs[0]; x += 50.0)
 		{
-			for (float z = mins[2]; z <= maxs[2]; z += CELL_M)
+			for (float z = mins[2]; z <= maxs[2]; z += 50.0)
 			{
 				vector c = Vector(x, 0, z);
 				m_aPending.Insert(c);
@@ -182,12 +170,12 @@ class DCO_TerrainCache
 			}
 		}
 		SortByDistance(dists);
-		Print(string.Format("[DCO_Terrain] mulai hitung %1 sel (%2 objective), budget %3 sel/frame", m_aPending.Count(), m_aObjPos.Count(), CELLS_PER_FRAME));
+		Print(string.Format("[DCO_Terrain] mulai hitung %1 sel (%2 objective), budget %3 sel/frame", m_aPending.Count(), m_aObjPos.Count(), 6));
 	}
 
 	protected void Step()
 	{
-		int end = Math.Min(m_iPendingIdx + CELLS_PER_FRAME, m_aPending.Count());
+		int end = Math.Min(m_iPendingIdx + 6, m_aPending.Count());
 		for (; m_iPendingIdx < end; m_iPendingIdx++)
 			EvaluateCell(m_aPending[m_iPendingIdx]);
 
@@ -227,7 +215,7 @@ class DCO_TerrainCache
 		for (int i = 0; i < 8; i++)
 		{
 			float a = i * Math.PI2 / 8;
-			float h = world.GetSurfaceY(c[0] + Math.Cos(a) * RING_M, c[2] + Math.Sin(a) * RING_M);
+			float h = world.GetSurfaceY(c[0] + Math.Cos(a) * 120.0, c[2] + Math.Sin(a) * 120.0);
 			sum += h;
 		}
 		float rel = c[1] - sum / 8;
@@ -241,7 +229,7 @@ class DCO_TerrainCache
 		}
 
 		int flags;
-		if (rel > HILL_REL_M)
+		if (rel > 10.0)
 			flags |= DCO_ETerrainFlag.HILLTOP;
 
 		float roadDist = float.MAX;
@@ -249,29 +237,29 @@ class DCO_TerrainCache
 		{
 			BaseRoad road;
 			m_Roads.GetClosestRoad(c, road, roadDist);
-			if (road && roadDist <= ROAD_NEAR_M)
+			if (road && roadDist <= 25.0)
 				flags |= DCO_ETerrainFlag.ROAD;
 		}
 
 		float objDist = NearestObjDist(c);
 		m_iTreeCount = 0;
-		if (roadDist <= FOREST_ROAD_M || objDist <= LZ_OBJ_MAX_M)
+		if (roadDist <= 80.0 || objDist <= 900.0)
 		{
 			DCO_Perf.Count("q:DCO_TerrainCache");
 			world.QueryEntitiesBySphere(c, 20, CountTree, null, EQueryEntitiesFlags.STATIC);
 		}
 
-		if (roadDist <= FOREST_ROAD_M && m_iTreeCount >= 3 && m_iTreeCount <= 14)
+		if (roadDist <= 80.0 && m_iTreeCount >= 3 && m_iTreeCount <= 14)
 			flags |= DCO_ETerrainFlag.FOREST_EDGE;
 
-		if (objDist <= LZ_OBJ_MAX_M && m_iTreeCount == 0 && maxH - minH <= FLAT_MAX_SLOPE_M)
+		if (objDist <= 900.0 && m_iTreeCount == 0 && maxH - minH <= 2.5)
 			flags |= DCO_ETerrainFlag.FLAT_OPEN;
 
 		DCO_TerrainPoint p = new DCO_TerrainPoint();
 		foreach (int i, vector o : m_aObjPos)
 		{
 			float d = vector.DistanceXZ(c, o);
-			if (d < LOS_MIN_M || d > LOS_MAX_M)
+			if (d < 150.0 || d > 500.0)
 				continue;
 			if (HasLOS(c, o))
 				p.m_aLos.Insert(m_aObjNames[i]);

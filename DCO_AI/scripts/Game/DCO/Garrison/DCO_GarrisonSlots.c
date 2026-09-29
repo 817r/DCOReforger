@@ -57,26 +57,8 @@ class DCO_GarrisonPrefabSlots
 
 class DCO_GarrisonSlotGenerator
 {
-	protected static const float CELL_XZ = 2.0;
-	protected static const float CELL_Y = 2.8;
-	protected static const float DEDUPE = 0.8;
-	protected static const float MIN_HEADROOM = 1.6;
 	protected static const float HEADROOM_PROBE = 6.0;
-	protected static const float RAY_LEN = 15.0;
 	protected static const float EXIT_MARGIN = 0.5;
-	protected static const float WALL_NEAR = 1.2;
-	protected static const float H_CROUCH = 1.0;
-	protected static const float H_STAND = 1.45;
-	protected static const float H_DOOR = 0.3;
-	protected static const float DOOR_GUARD_MIN = 3.0;
-	protected static const float DOOR_GUARD_MAX = 8.0;
-	protected static const float DOOR_CLEAR = 1.5;
-	protected static const float DOOR_DEPTH = 1.0;
-	protected static const float DOOR_SIDE_PAD = 0.3;
-	protected static const float SAME_FLOOR_DY = 1.5;
-	protected static const int MAX_INTERIOR = 8;
-	protected static const int DIRS = 8;
-	protected static const float ROOF_MIN_NORMAL_Y = 0.96;
 
 	IEntity m_Building;
 	ResourceName m_sPrefab;
@@ -101,9 +83,9 @@ class DCO_GarrisonSlotGenerator
 		building.GetBounds(m_vMins, m_vMaxs);
 
 		vector size = m_vMaxs - m_vMins;
-		m_iNX = Math.Max(1, Math.Ceil(size[0] / CELL_XZ));
-		m_iNY = Math.Max(1, Math.Ceil(size[1] / CELL_Y));
-		m_iNZ = Math.Max(1, Math.Ceil(size[2] / CELL_XZ));
+		m_iNX = Math.Max(1, Math.Ceil(size[0] / 2.0));
+		m_iNY = Math.Max(1, Math.Ceil(size[1] / 2.8));
+		m_iNZ = Math.Max(1, Math.Ceil(size[2] / 2.0));
 
 		CollectDoors();
 	}
@@ -199,9 +181,9 @@ class DCO_GarrisonSlotGenerator
 		int iy = rest / m_iNZ;
 
 		vector local;
-		local[0] = m_vMins[0] + (ix + 0.5) * CELL_XZ;
-		local[1] = m_vMins[1] + iy * CELL_Y + 0.3;
-		local[2] = m_vMins[2] + (iz + 0.5) * CELL_XZ;
+		local[0] = m_vMins[0] + (ix + 0.5) * 2.0;
+		local[1] = m_vMins[1] + iy * 2.8 + 0.3;
+		local[2] = m_vMins[2] + (iz + 0.5) * 2.0;
 		vector world = m_Building.CoordToParent(local);
 
 		if (!m_Navmesh)
@@ -221,12 +203,12 @@ class DCO_GarrisonSlotGenerator
 			return 0;
 
 		vector snappedLocal = m_Building.CoordToLocal(snapped);
-		if (!InsideBounds(snappedLocal, 0.3) || Math.AbsFloat(snappedLocal[1] - local[1]) > SAME_FLOOR_DY)
+		if (!InsideBounds(snappedLocal, 0.3) || Math.AbsFloat(snappedLocal[1] - local[1]) > 1.5)
 			return 0;
 
 		foreach (vector e : m_aEvaluated)
 		{
-			if (vector.DistanceSq(e, snappedLocal) < DEDUPE * DEDUPE)
+			if (vector.DistanceSq(e, snappedLocal) < 0.8 * 0.8)
 				return 0;
 		}
 		m_aEvaluated.Insert(snappedLocal);
@@ -246,12 +228,12 @@ class DCO_GarrisonSlotGenerator
 			if (!IsBuilding(m_Trace.TraceEnt))
 				return 0;
 
-			if (m_Trace.TraceNorm[1] < ROOF_MIN_NORMAL_Y)
+			if (m_Trace.TraceNorm[1] < 0.96)
 				return 0;
 		}
 		else
 		{
-			if (headroom * HEADROOM_PROBE < MIN_HEADROOM)
+			if (headroom * HEADROOM_PROBE < 1.6)
 				return 0;
 
 			if (!IsBuilding(m_Trace.TraceEnt))
@@ -275,29 +257,29 @@ class DCO_GarrisonSlotGenerator
 		float longestInterior = 0;
 		float longestYaw = 0;
 
-		for (int i = 0; i < DIRS; i++)
+		for (int i = 0; i < 8; i++)
 		{
-			float yawLocal = i * 360.0 / DIRS;
+			float yawLocal = i * 360.0 / 8;
 			vector dir = m_Building.VectorToParent(DCO_GarrisonSlot.YawToDir(yawLocal));
 			dir[1] = 0;
 			dir.Normalize();
 
-			vector o = pos + H_CROUCH * vector.Up;
-			float hit = Trace(o, o + dir * RAY_LEN, true) * RAY_LEN;
+			vector o = pos + 1.0 * vector.Up;
+			float hit = Trace(o, o + dir * 15.0, true) * 15.0;
 			float exitDist = BoundsExitDistance(o, dir);
 			bool exits = hit >= exitDist + EXIT_MARGIN;
 
-			if (hit < WALL_NEAR)
+			if (hit < 1.2)
 				wallNear++;
 
 			if (exits)
 			{
-				vector oLow = pos + H_DOOR * vector.Up;
-				float hitLow = Trace(oLow, oLow + dir * RAY_LEN, true) * RAY_LEN;
+				vector oLow = pos + 0.3 * vector.Up;
+				float hitLow = Trace(oLow, oLow + dir * 15.0, true) * 15.0;
 				float exitLow = BoundsExitDistance(oLow, dir);
 				if (hitLow >= exitLow + EXIT_MARGIN)
 				{
-					if (exitLow < DOOR_CLEAR)
+					if (exitLow < 1.5)
 						return;
 					continue;
 				}
@@ -307,10 +289,10 @@ class DCO_GarrisonSlotGenerator
 				continue;
 			}
 
-			if (hit < WALL_NEAR)
+			if (hit < 1.2)
 			{
-				vector oHigh = pos + H_STAND * vector.Up;
-				float hitHigh = Trace(oHigh, oHigh + dir * RAY_LEN, true) * RAY_LEN;
+				vector oHigh = pos + 1.45 * vector.Up;
+				float hitHigh = Trace(oHigh, oHigh + dir * 15.0, true) * 15.0;
 				if (hitHigh >= BoundsExitDistance(oHigh, dir) + EXIT_MARGIN)
 				{
 					windowYaw.Insert(yawLocal);
@@ -352,15 +334,15 @@ class DCO_GarrisonSlotGenerator
 		foreach (DCO_GarrisonDoor gd : m_aDoors)
 		{
 			vector door = gd.m_vPos;
-			if (Math.AbsFloat(door[1] - posLocal[1]) > SAME_FLOOR_DY)
+			if (Math.AbsFloat(door[1] - posLocal[1]) > 1.5)
 				continue;
 
 			float d = vector.DistanceXZ(door, posLocal);
-			if (d < DOOR_GUARD_MIN || d > DOOR_GUARD_MAX)
+			if (d < 3.0 || d > 8.0)
 				continue;
 
-			vector eye = pos + H_CROUCH * vector.Up;
-			vector doorWorld = m_Building.CoordToParent(door) + H_CROUCH * vector.Up;
+			vector eye = pos + 1.0 * vector.Up;
+			vector doorWorld = m_Building.CoordToParent(door) + 1.0 * vector.Up;
 			if (Trace(eye, doorWorld, true) < 0.9)
 				continue;
 
@@ -400,7 +382,7 @@ class DCO_GarrisonSlotGenerator
 		{
 			if (s.m_eType == DCO_EGarrisonSlotType.INTERIOR)
 			{
-				if (interiorCount >= MAX_INTERIOR)
+				if (interiorCount >= 8)
 					continue;
 			}
 
@@ -465,10 +447,10 @@ class DCO_GarrisonSlotGenerator
 		foreach (DCO_GarrisonDoor d : m_aDoors)
 		{
 			vector rel = posLocal - d.m_vPos;
-			if (Math.AbsFloat(rel[1]) > SAME_FLOOR_DY)
+			if (Math.AbsFloat(rel[1]) > 1.5)
 				continue;
 
-			if (Math.AbsFloat(vector.Dot(rel, d.m_vNormal)) < DOOR_DEPTH && Math.AbsFloat(vector.Dot(rel, d.m_vSide)) < d.m_fHalfWidth + DOOR_SIDE_PAD)
+			if (Math.AbsFloat(vector.Dot(rel, d.m_vNormal)) < 1.0 && Math.AbsFloat(vector.Dot(rel, d.m_vSide)) < d.m_fHalfWidth + 0.3)
 				return d;
 		}
 		return null;
@@ -483,8 +465,8 @@ class DCO_GarrisonSlotGenerator
 		vector rel = posLocal - d.m_vPos;
 		float along = vector.Dot(rel, d.m_vNormal);
 		float lat = vector.Dot(rel, d.m_vSide);
-		float sideOut = d.m_fHalfWidth + DOOR_SIDE_PAD + 0.2;
-		float deepOut = DOOR_DEPTH + 0.2;
+		float sideOut = d.m_fHalfWidth + 0.3 + 0.2;
+		float deepOut = 1.0 + 0.2;
 		float alongSign = 1;
 		if (along < 0)
 			alongSign = -1;
@@ -507,7 +489,7 @@ class DCO_GarrisonSlotGenerator
 				continue;
 
 			vector reachedLocal = m_Building.CoordToLocal(reached);
-			if (!InsideBounds(reachedLocal, 0.3) || Math.AbsFloat(reachedLocal[1] - posLocal[1]) > SAME_FLOOR_DY)
+			if (!InsideBounds(reachedLocal, 0.3) || Math.AbsFloat(reachedLocal[1] - posLocal[1]) > 1.5)
 				continue;
 
 			if (DoorwayAt(reachedLocal))
@@ -521,7 +503,7 @@ class DCO_GarrisonSlotGenerator
 
 	protected bool HasHeadroom(vector pos)
 	{
-		return Trace(pos + 0.1 * vector.Up, pos + MIN_HEADROOM * vector.Up) >= 0.999;
+		return Trace(pos + 0.1 * vector.Up, pos + 1.6 * vector.Up) >= 0.999;
 	}
 
 	protected bool IsBuilding(IEntity e)

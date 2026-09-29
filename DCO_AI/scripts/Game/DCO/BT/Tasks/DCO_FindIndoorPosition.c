@@ -3,7 +3,6 @@ class DCO_FindIndoorPosition: AITaskScripted
 	static const string PORT_CENTER_OF_SEARCH	= "OriginIn";
 	static const string PORT_RADIUS				= "RadiusIn";
 	static const string PORT_VECTOR_BOOL		= "Is Position Found";
-	static const string PORT_VECTOR_POS			= "Position Found";
 
 	[Attribute("0", UIWidgets.EditBox)]
 	protected float m_fRadius;
@@ -80,22 +79,9 @@ class DCO_FindIndoorPosition: AITaskScripted
 	[Attribute("0.05", UIWidgets.Range, "Bonus skor buat posisi yang lagi di-booking AI ini. Nyegah AI pindah-pindah tiap TTL habis kalau posisi barunya cuma sedikit lebih bagus.", params: "0 0.3 0.01", category: "Scoring")]
 	protected float m_fStickinessBonus;
 
-	protected static const int   RAY_COUNT        = 8;
-	protected static const float RAY_COUNT_F      = 8.0;
-	protected static const float FIRE_LINE_IDEAL  = 3.0;
-	protected static const float RAY_MAX_DIST     = 15.0;
-	protected static const float WALL_NEAR_DIST   = 2.5;
-	protected static const float FIRE_LINE_DIST   = 8.0;
-	protected static const float CHEST_HEIGHT     = 1.0;
-	protected static const float EYE_POS          = 1.55;
 	protected static const float HEADROOM_PROBE   = 6.0;
-	protected static const float SPREAD_IDEAL_DIST = 8.0;
 	protected static const float MIN_BUILDING_HALF_WIDTH = 4.0;
 	protected static const float EXIT_MARGIN      = 0.5;
-	protected static const float ACQUIRE_RETRY_MS = 2000.0;
-	protected static const float BOUNDS_MARGIN    = 0.5;
-	protected static const float DOOR_SAME_FLOOR_DY = 1.5;
-	protected static const float DOOR_MIN_SCORE     = 0.01;
 
 	protected IEntity m_Building;
 	protected IEntity m_BuildingKey;
@@ -104,9 +90,6 @@ class DCO_FindIndoorPosition: AITaskScripted
 	protected int m_iCoverPref;
 	protected bool m_bOutdoorDecided;
 	protected bool m_bOutdoorWins;
-	protected static const float OUTDOOR_BASE_SCORE = 0.45;
-	protected static const float FORT_SCORE = 0.8;
-	protected static const float FORT_MAX_DIST = 60;
 	protected static ref array<string> s_aFortKeywords = {"sandbag", "trench", "bunker", "fortif", "hesco", "foxhole", "dugout", "revetment"};
 	protected ref array<IEntity> m_aFortQuery = {};
 	protected IEntity m_BestFort;
@@ -165,17 +148,17 @@ class DCO_FindIndoorPosition: AITaskScripted
 
 	protected float OutdoorScore(vector center, float radius)
 	{
-		float r = Math.Min(radius, FORT_MAX_DIST);
+		float r = Math.Min(radius, 60.0);
 		m_aFortQuery.Clear();
 		DCO_Perf.Count("q:DCO_FindIndoorPosition");
 		GetGame().GetWorld().QueryEntitiesBySphere(center, r, FortQueryCallback, null, EQueryEntitiesFlags.STATIC);
 
-		float best = OUTDOOR_BASE_SCORE;
+		float best = 0.45;
 		m_BestFort = null;
 		foreach (IEntity e : m_aFortQuery)
 		{
 			float d = vector.Distance(e.GetOrigin(), center);
-			float sc = FORT_SCORE + 0.1 * (1 - d / Math.Max(r, 1));
+			float sc = 0.8 + 0.1 * (1 - d / Math.Max(r, 1));
 			if (sc > best)
 			{
 				best = sc;
@@ -268,7 +251,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 
 		if (!m_Building && m_fAcquireFailTime_ms > 0
 			&& vector.DistanceSq(searchPos, m_vAcquireFailPos) <= 1.0
-			&& (now_ms - m_fAcquireFailTime_ms) < ACQUIRE_RETRY_MS)
+			&& (now_ms - m_fAcquireFailTime_ms) < 2000.0)
 		{
 			SetVariableOut(PORT_VECTOR_BOOL, false);
 			return ENodeResult.FAIL;
@@ -338,7 +321,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 			SCR_CoverManagerComponent fortCoverMgr = SCR_CoverManagerComponent.GetInstance();
 			if (fortCoverMgr)
 				fortCoverMgr.RegisterPosition(owner.GetControlledEntity(), fortPos);
-			SetVariableOut(PORT_VECTOR_POS, fortPos);
+			SetVariableOut("Position Found", fortPos);
 			SetVariableOut(PORT_VECTOR_BOOL, true);
 			return ENodeResult.SUCCESS;
 		}
@@ -347,7 +330,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 		if (coverMgr)
 			coverMgr.RegisterPosition(owner.GetControlledEntity(), m_vBestPos);
 
-		SetVariableOut(PORT_VECTOR_POS, m_vBestPos);
+		SetVariableOut("Position Found", m_vBestPos);
 		SetVariableOut(PORT_VECTOR_BOOL, true);
 		return ENodeResult.SUCCESS;
 	}
@@ -532,7 +515,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 		vector local = m_Building.CoordToLocal(worldPos);
 		for (int a = 0; a < 3; a++)
 		{
-			if (local[a] < m_vLocalMins[a] - BOUNDS_MARGIN || local[a] > m_vLocalMaxs[a] + BOUNDS_MARGIN)
+			if (local[a] < m_vLocalMins[a] - 0.5 || local[a] > m_vLocalMaxs[a] + 0.5)
 				return false;
 		}
 		return true;
@@ -717,7 +700,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 		if (IsPositionOccupied(outPos, nearestBooked))
 			return DCO_BuildingPosCreation.FAIL;
 
-		float floorFrac = TraceFraction(outPos + EYE_POS * vector.Up, outPos - 5 * vector.Up);
+		float floorFrac = TraceFraction(outPos + 1.55 * vector.Up, outPos - 5 * vector.Up);
 		if (floorFrac >= 0.9)
 			return DCO_BuildingPosCreation.FAIL;
 
@@ -798,7 +781,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 	{
 		float spreadScore = 1.0;
 		if (nearestBooked > 0)
-			spreadScore = Math.Clamp(nearestBooked / SPREAD_IDEAL_DIST, 0.0, 1.0);
+			spreadScore = Math.Clamp(nearestBooked / 8.0, 0.0, 1.0);
 
 		float proximityScore = 1.0;
 		if (searchRad > 0)
@@ -808,26 +791,26 @@ class DCO_FindIndoorPosition: AITaskScripted
 		float pruneAt     = GetPruneThreshold();
 		float cheapPart   = (m_fWeightSpread * spreadScore) + (m_fWeightProximity * proximityScore);
 
-		vector probeOrigin = pos + CHEST_HEIGHT * vector.Up;
+		vector probeOrigin = pos + 1.0 * vector.Up;
 
 		int   blockedDirections = 0;
 		float fireValue         = 0;
 
 		m_aRayHitDist.Clear();
 
-		for (int i = 0; i < RAY_COUNT; i++)
+		for (int i = 0; i < 8; i++)
 		{
-			float angleRad = (i * 360.0 / RAY_COUNT_F) * Math.DEG2RAD;
+			float angleRad = (i * 360.0 / 8.0) * Math.DEG2RAD;
 			vector dir = Vector(Math.Cos(angleRad), 0, Math.Sin(angleRad));
 
-			float hitDist = TraceFraction(probeOrigin, probeOrigin + dir * RAY_MAX_DIST) * RAY_MAX_DIST;
+			float hitDist = TraceFraction(probeOrigin, probeOrigin + dir * 15.0) * 15.0;
 			m_aRayHitDist.Insert(hitDist);
 
-			if (hitDist < WALL_NEAR_DIST)
+			if (hitDist < 2.5)
 			{
 				blockedDirections++;
 			}
-			else if (hitDist >= FIRE_LINE_DIST)
+			else if (hitDist >= 8.0)
 			{
 				float exitDist = GetBoundsExitDistance(probeOrigin, dir);
 				if (hitDist >= exitDist + EXIT_MARGIN)
@@ -838,9 +821,9 @@ class DCO_FindIndoorPosition: AITaskScripted
 
 			if (pruneAt >= 0 && totalWeight > 0)
 			{
-				int remaining = RAY_COUNT - i - 1;
-				float coverUB = (blockedDirections + remaining) / RAY_COUNT_F;
-				float fireUB  = Math.Min(fireValue + remaining, FIRE_LINE_IDEAL) / FIRE_LINE_IDEAL;
+				int remaining = 8 - i - 1;
+				float coverUB = (blockedDirections + remaining) / 8.0;
+				float fireUB  = Math.Min(fireValue + remaining, 3.0) / 3.0;
 				float upper   = ((m_fWeightCover * coverUB) + (m_fWeightFireLine * fireUB) + cheapPart) / totalWeight + bonus;
 
 				if (upper <= pruneAt)
@@ -848,7 +831,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 			}
 		}
 
-		if (blockedDirections >= RAY_COUNT)
+		if (blockedDirections >= 8)
 			return -1;
 
 		if (m_bRejectChokepoints && IsChokepoint())
@@ -857,8 +840,8 @@ class DCO_FindIndoorPosition: AITaskScripted
 		if (m_bRequireFireLine && fireValue <= 0)
 			return -1;
 
-		float coverScore = blockedDirections / RAY_COUNT_F;
-		float fireScore  = Math.Min(fireValue, FIRE_LINE_IDEAL) / FIRE_LINE_IDEAL;
+		float coverScore = blockedDirections / 8.0;
+		float fireScore  = Math.Min(fireValue, 3.0) / 3.0;
 
 		if (totalWeight <= 0)
 			return ApplyDoorPenalty(coverScore + bonus, pos);
@@ -897,7 +880,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 
 		foreach (vector p : m_aDoorPoints)
 		{
-			if (Math.AbsFloat(p[1] - pos[1]) > DOOR_SAME_FLOOR_DY)
+			if (Math.AbsFloat(p[1] - pos[1]) > 1.5)
 				continue;
 
 			float d = vector.DistanceXZ(p, pos);
@@ -918,13 +901,13 @@ class DCO_FindIndoorPosition: AITaskScripted
 			return score;
 
 		float t = 1.0 - (d / m_fDoorAvoidRadius);
-		return Math.Max(score - m_fDoorAvoidPenalty * t, DOOR_MIN_SCORE);
+		return Math.Max(score - m_fDoorAvoidPenalty * t, 0.01);
 	}
 
 	protected bool IsChokepoint()
 	{
-		int half = RAY_COUNT / 2;
-		if (m_aRayHitDist.Count() < RAY_COUNT)
+		int half = 8 / 2;
+		if (m_aRayHitDist.Count() < 8)
 			return false;
 
 		for (int i = 0; i < half; i++)
@@ -1021,7 +1004,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 	}
 
 	protected static ref TStringArray s_aVarsOut = {
-		PORT_VECTOR_POS,
+		"Position Found",
 		PORT_VECTOR_BOOL
 	};
 	override TStringArray GetVariablesOut()

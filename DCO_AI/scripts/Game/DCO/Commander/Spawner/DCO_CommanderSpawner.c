@@ -507,35 +507,29 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		DCO_PlayerComms.SendToGameMasters("DCO", "Spawner " + GetOwner().GetName() + ": every group budget is used up, spawner stopped.");
 	}
 
-	protected static const int NEED_AT = 1;
-	protected static const int NEED_ASSAULT = 2;
-	protected static const int NEED_RECON = 4;
-	protected static const int NEED_MOTOR = 8;
-	protected static const int NEED_CHEAP = 16;
-	protected static const float MOTOR_DIST = 1500;
 
 	protected static int NeedBit(DCO_ESpawnerRole role)
 	{
 		if (role == DCO_ESpawnerRole.AT)
-			return NEED_AT;
+			return 1;
 		if (role == DCO_ESpawnerRole.ASSAULT)
-			return NEED_ASSAULT;
+			return 2;
 		if (role == DCO_ESpawnerRole.FIRE_TEAM || role == DCO_ESpawnerRole.RECON)
-			return NEED_RECON;
+			return 4;
 		if (role == DCO_ESpawnerRole.MOTORIZED)
-			return NEED_MOTOR;
+			return 8;
 		return 0;
 	}
 
 	protected static string NeedName(int bit)
 	{
-		if (bit == NEED_AT)
+		if (bit == 1)
 			return "enemy_armor";
-		if (bit == NEED_ASSAULT)
+		if (bit == 2)
 			return "attack_objective";
-		if (bit == NEED_RECON)
+		if (bit == 4)
 			return "unclear_contacts";
-		if (bit == NEED_MOTOR)
+		if (bit == 8)
 			return "far_objective";
 		return "default";
 	}
@@ -565,9 +559,9 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 					antiArmor++;
 			}
 			if (armor > antiArmor)
-				needs |= NEED_AT;
+				needs |= 1;
 			if (unclear > 0)
-				needs |= NEED_RECON;
+				needs |= 4;
 		}
 
 		FactionKey fk = cmd.GetCommanderFactionKey();
@@ -582,12 +576,12 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			nearest = Math.Min(nearest, vector.DistanceXZ(o.GetOwner().GetOrigin(), origin));
 		}
 		if (enemyObj > 0)
-			needs |= NEED_ASSAULT;
-		if (enemyObj > 0 && nearest > MOTOR_DIST)
-			needs |= NEED_MOTOR;
+			needs |= 2;
+		if (enemyObj > 0 && nearest > 1500.0)
+			needs |= 8;
 
 		if (cmd.GetReserveFloor() > 0 && cmd.GetReserveManpower() < cmd.GetReserveFloor() * 0.5)
-			needs |= NEED_CHEAP;
+			needs |= 16;
 		return needs;
 	}
 
@@ -606,7 +600,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			if (role == DCO_ESpawnerRole.RECON)
 				score += 0.5;
 		}
-		if ((needs & NEED_CHEAP) != 0)
+		if ((needs & 16) != 0)
 		{
 			score += (12 - Math.Max(e.m_iSoldiers, 1)) * 0.25;
 			if (why == "default")

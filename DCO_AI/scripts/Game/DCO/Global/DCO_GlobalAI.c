@@ -323,10 +323,9 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 		SetEventMask(owner, EntityEvent.INIT);
 		if (Replication.IsServer())
-			GetGame().GetCallqueue().CallLater(PushShareToPlayers, SHARE_PUSH_MS, true);
+			GetGame().GetCallqueue().CallLater(PushShareToPlayers, 5000, true);
 	}
 
-	protected static const int SHARE_PUSH_MS = 5000;
 
 	protected void PushShareToPlayers()
 	{
@@ -343,10 +342,6 @@ class DCO_GlobalAIComponent: ScriptComponent
 		}
 	}
 
-	protected static const int CFG_LOAD = 0;
-	protected static const int CFG_WRITE = 1;
-	protected static const int CFG_DUMP = 2;
-	protected static const int CFG_DUMP_PER_LINE = 6;
 
 	protected int m_iCfgMode;
 	protected ref SCR_JsonLoadContext m_CfgLoad;
@@ -477,12 +472,12 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	protected float CfgF(string key, float cur, float min, float max)
 	{
-		if (m_iCfgMode == CFG_WRITE)
+		if (m_iCfgMode == 1)
 		{
 			m_CfgSave.WriteValue(key, cur);
 			return cur;
 		}
-		if (m_iCfgMode == CFG_DUMP)
+		if (m_iCfgMode == 2)
 		{
 			CfgDumpAdd(key, cur.ToString());
 			return cur;
@@ -500,12 +495,12 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	protected int CfgI(string key, int cur, int min, int max)
 	{
-		if (m_iCfgMode == CFG_WRITE)
+		if (m_iCfgMode == 1)
 		{
 			m_CfgSave.WriteValue(key, cur);
 			return cur;
 		}
-		if (m_iCfgMode == CFG_DUMP)
+		if (m_iCfgMode == 2)
 		{
 			CfgDumpAdd(key, cur.ToString());
 			return cur;
@@ -523,12 +518,12 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	protected bool CfgB(string key, bool cur)
 	{
-		if (m_iCfgMode == CFG_WRITE)
+		if (m_iCfgMode == 1)
 		{
 			m_CfgSave.WriteValue(key, cur);
 			return cur;
 		}
-		if (m_iCfgMode == CFG_DUMP)
+		if (m_iCfgMode == 2)
 		{
 			CfgDumpAdd(key, cur.ToString());
 			return cur;
@@ -546,7 +541,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	protected void CfgCat(string name)
 	{
-		if (m_iCfgMode != CFG_DUMP)
+		if (m_iCfgMode != 2)
 			return;
 		CfgFlush();
 		m_sCfgCat = name;
@@ -554,7 +549,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	protected void CfgDumpAdd(string key, string val)
 	{
-		if (m_iCfgLineKeys >= CFG_DUMP_PER_LINE)
+		if (m_iCfgLineKeys >= 6)
 			CfgFlush();
 		m_sCfgLine += " " + key + "=" + val;
 		m_iCfgLineKeys++;
@@ -562,7 +557,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	protected void CfgFlush()
 	{
-		if (m_iCfgMode == CFG_DUMP && m_iCfgLineKeys > 0)
+		if (m_iCfgMode == 2 && m_iCfgLineKeys > 0)
 			Print("[DCO][Config] " + m_sCfgCat + ":" + m_sCfgLine);
 		m_sCfgLine = string.Empty;
 		m_iCfgLineKeys = 0;
@@ -602,7 +597,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 			return;
 		}
 
-		m_iCfgMode = CFG_LOAD;
+		m_iCfgMode = 0;
 		m_CfgLoad = ctx;
 		m_aCfgMissing.Clear();
 		m_iCfgApplied = 0;
@@ -663,9 +658,9 @@ class DCO_GlobalAIComponent: ScriptComponent
 		m_CfgSave = new SCR_JsonSaveContext();
 		m_CfgSave.WriteValue("_comment", "DCO Global AI config. Nilai di file ini dipakai server. Key yang belum ada otomatis ditambah pakai nilai Workbench waktu server start (file lama disalin ke .bak). Mau key ikut nilai Workbench? Matikan Auto Generate lalu hapus barisnya.");
 
-		m_iCfgMode = CFG_WRITE;
+		m_iCfgMode = 1;
 		SyncConfig();
-		m_iCfgMode = CFG_LOAD;
+		m_iCfgMode = 0;
 
 		bool ok = m_CfgSave.SaveToFile(m_sServerConfigPath);
 		m_CfgSave = null;
@@ -697,9 +692,9 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	void DumpActiveConfig()
 	{
-		m_iCfgMode = CFG_DUMP;
+		m_iCfgMode = 2;
 		SyncConfig();
-		m_iCfgMode = CFG_LOAD;
+		m_iCfgMode = 0;
 	}
 
 	float GetDodgeChance()

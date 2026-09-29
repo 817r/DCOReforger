@@ -1,7 +1,6 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_NameEditorAttribute : SCR_BaseEditorAttribute
 {
-	static const int MAX_LENGTH = 32;
 
 	protected string m_sPendingName;
 
@@ -67,8 +66,8 @@ class DCO_NameEditorAttribute : SCR_BaseEditorAttribute
 			return;
 
 		newName = newName.Trim();
-		if (newName.Length() > MAX_LENGTH)
-			newName = newName.Substring(0, MAX_LENGTH);
+		if (newName.Length() > 32)
+			newName = newName.Substring(0, 32);
 
 		AICommander_BaseComponent cmd = AICommander_BaseComponent.Cast(owner.FindComponent(AICommander_BaseComponent));
 		if (cmd)

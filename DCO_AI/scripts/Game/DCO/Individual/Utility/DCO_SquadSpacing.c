@@ -1,6 +1,5 @@
 class DCO_SquadSpacing
 {
-	static const float MIN_SPACING = 5.0;
 
 	protected static ref array<AIAgent> s_aAgents = {};
 

@@ -98,7 +98,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			{
 				if (targetDistance > DCO_LongRange.EffectiveRange(weaponType))
 				{
-					fireRate = DCO_LongRange.MG_FAR_FIRE_RATE;
+					fireRate = 0.5;
 					return FIRE_TREE_SUPPRESSIVE;
 				}
 				return FIRE_TREE_BURST;

@@ -1,6 +1,5 @@
 class DCO_GarrisonHoldBehavior : SCR_AIBehaviorBase
 {
-	static const float RETURN_DIST = 1.5;
 
 	protected DCO_GarrisonBuilding m_Building;
 	protected int m_iSlot;
@@ -68,7 +67,6 @@ class DCO_GarrisonHoldBehavior : SCR_AIBehaviorBase
 class DCO_AIGarrisonGetSlot : SCR_AIActionTask
 {
 	static const string PORT_POS = "SlotPos";
-	static const string PORT_STANCE = "Stance";
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
@@ -81,11 +79,11 @@ class DCO_AIGarrisonGetSlot : SCR_AIActionTask
 			return ENodeResult.FAIL;
 
 		SetVariableOut(PORT_POS, slot.m_vWorldPos);
-		SetVariableOut(PORT_STANCE, slot.m_eStance);
+		SetVariableOut("Stance", slot.m_eStance);
 		return ENodeResult.SUCCESS;
 	}
 
-	protected static ref TStringArray s_aVarsOut = {PORT_POS, PORT_STANCE};
+	protected static ref TStringArray s_aVarsOut = {PORT_POS, "Stance"};
 	override TStringArray GetVariablesOut() { return s_aVarsOut; }
 
 	static override bool VisibleInPalette() { return true; }
@@ -94,9 +92,6 @@ class DCO_AIGarrisonGetSlot : SCR_AIActionTask
 
 class DCO_AIGarrisonHold : SCR_AIActionTask
 {
-	protected static const float LOOK_INTERVAL_MIN_MS = 3000;
-	protected static const float LOOK_INTERVAL_MAX_MS = 8000;
-	protected static const float LOOK_PRIORITY = 10;
 
 	protected int m_iVersion = -1;
 	protected float m_fNextLook_ms;
@@ -115,7 +110,7 @@ class DCO_AIGarrisonHold : SCR_AIActionTask
 		if (m_iVersion < 0)
 			m_iVersion = hold.GetSlotVersion();
 
-		if (m_iVersion != hold.GetSlotVersion() || vector.DistanceXZ(ent.GetOrigin(), slot.m_vWorldPos) > DCO_GarrisonHoldBehavior.RETURN_DIST)
+		if (m_iVersion != hold.GetSlotVersion() || vector.DistanceXZ(ent.GetOrigin(), slot.m_vWorldPos) > 1.5)
 		{
 			m_iVersion = -1;
 			return ENodeResult.SUCCESS;
@@ -124,14 +119,14 @@ class DCO_AIGarrisonHold : SCR_AIActionTask
 		float now = GetGame().GetWorld().GetWorldTime();
 		if (now >= m_fNextLook_ms)
 		{
-			m_fNextLook_ms = now + Math.RandomFloat(LOOK_INTERVAL_MIN_MS, LOOK_INTERVAL_MAX_MS);
+			m_fNextLook_ms = now + Math.RandomFloat(3000.0, 8000.0);
 
 			SCR_AIUtilityComponent utility = SCR_AIUtilityComponent.Cast(m_UtilityComp);
 			if (utility && utility.m_LookAction)
 			{
 				float yaw = slot.m_vWorldDir.ToYaw() + Math.RandomFloat(-0.5, 0.5) * slot.m_fArc;
 				vector lookPos = slot.m_vWorldPos + DCO_GarrisonSlot.YawToDir(yaw) * 30 + 1.5 * vector.Up;
-				utility.m_LookAction.LookAt(lookPos, LOOK_PRIORITY, 2.5);
+				utility.m_LookAction.LookAt(lookPos, 10.0, 2.5);
 			}
 		}
 

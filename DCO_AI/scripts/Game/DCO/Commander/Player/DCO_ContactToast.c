@@ -1,10 +1,7 @@
 class DCO_ContactToast
 {
 	protected static const ResourceName LAYOUT = "{6D3A1F0B9C27E451}UI/layouts/DCO/DCO_ContactToast.layout";
-	protected static const int MAX_SHOWN = 3;
-	protected static const float GAP = 4;
 	protected static const int FADE_MS = 300;
-	protected static const string LABEL_COLOR = "<color rgba=\"110,195,255,255\">";
 
 	protected static ref DCO_ContactToast s_Instance;
 
@@ -54,7 +51,7 @@ class DCO_ContactToast
 
 		RichTextWidget t = RichTextWidget.Cast(root.FindAnyWidget("Text"));
 		if (t)
-			t.SetText(LABEL_COLOR + label + "</color>  " + text);
+			t.SetText("<color rgba=\"110,195,255,255\">" + label + "</color>  " + text);
 
 		Widget toast = root.FindAnyWidget("Toast");
 		DCO_UISettings.ScaleChildren(toast, DCO_UISettings.GetContactScale(), 17);
@@ -62,7 +59,7 @@ class DCO_ContactToast
 		AnimateWidget.Opacity(toast, 1, 1000.0 / FADE_MS);
 
 		m_aRoots.InsertAt(root, 0);
-		while (m_aRoots.Count() > MAX_SHOWN)
+		while (m_aRoots.Count() > 3)
 		{
 			Widget old = m_aRoots[m_aRoots.Count() - 1];
 			m_aRoots.Remove(m_aRoots.Count() - 1);
@@ -88,7 +85,7 @@ class DCO_ContactToast
 
 			float x, y, dirY;
 			DCO_UISettings.Anchor(toast, pos, offX, offY, x, y, dirY);
-			float step = (FrameSlot.GetSizeY(toast) + GAP) * i;
+			float step = (FrameSlot.GetSizeY(toast) + 4.0) * i;
 			FrameSlot.SetPos(toast, x, y + step * dirY);
 		}
 	}

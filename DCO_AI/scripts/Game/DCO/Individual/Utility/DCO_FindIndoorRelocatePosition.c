@@ -14,27 +14,9 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 	[Attribute("2.5", UIWidgets.EditBox, "Jarak (m) titik sample ancaman ke kiri/kanan dari posisi ancaman. 0 = cuma satu titik.", category: "Relocate Scoring")]
 	protected float m_fThreatSampleSpread;
 
-	protected static const float HIDE_HEIGHT        = 0.7;
-	protected static const float PEEK_HEIGHT        = 1.2;
-	protected static const float THREAT_EYE_HEIGHT  = 1.5;
-	protected static const float LOS_CLEAR_FRACTION = 0.99;
 
-	protected static const float DEFEND_SCORE_FIRE    = 1.0;
-	protected static const float DEFEND_SCORE_HIDDEN  = 0.8;
-	protected static const float DEFEND_SCORE_EXPOSED = -1.0;
-	protected static const float DEFEND_MAX_EXPOSED   = 0.5;
 
-	protected static const float FIRE_SCORE_FIRE      = 1.0;
-	protected static const float FIRE_SCORE_EXPOSED   = 0.35;
-	protected static const float FIRE_MIN_CAN_SEE     = 0.5;
 
-	protected static const float DOOR_FUNNEL_DIST     = 2.0;
-	protected static const float DOOR_WATCH_MIN       = 3.0;
-	protected static const float DOOR_WATCH_MAX       = 8.0;
-	protected static const float DOOR_FUNNEL_PENALTY  = 0.3;
-	protected static const float DOOR_WATCH_BONUS     = 0.2;
-	protected static const int   DOOR_MAX_LOS_CHECKS  = 2;
-	protected static const float DOOR_LOS_STOP_SHORT  = 0.5;
 
 	protected DCO_AICombatMoveRequest_IndoorRelocate m_CurrentRq;
 	protected IEntity m_LockedBuilding;
@@ -201,12 +183,12 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 		int nHidden  = 0;
 		int nExposed = 0;
 
-		vector hidePoint = pos + HIDE_HEIGHT * vector.Up;
-		vector peekPoint = pos + PEEK_HEIGHT * vector.Up;
+		vector hidePoint = pos + 0.7 * vector.Up;
+		vector peekPoint = pos + 1.2 * vector.Up;
 
 		foreach (vector sample : m_aThreatSamples)
 		{
-			vector eye = sample + THREAT_EYE_HEIGHT * vector.Up;
+			vector eye = sample + 1.5 * vector.Up;
 
 			if (HasLOS(eye, hidePoint))
 			{
@@ -227,16 +209,16 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 
 		if (m_eIntent == DCO_EIndoorRelocateIntent.FIRE_POSITION)
 		{
-			if ((fFire + fExposed) < FIRE_MIN_CAN_SEE)
+			if ((fFire + fExposed) < 0.5)
 				return -1;
 
-			return Math.Clamp(fFire * FIRE_SCORE_FIRE + fExposed * FIRE_SCORE_EXPOSED, 0.0, 1.0);
+			return Math.Clamp(fFire * 1.0 + fExposed * 0.35, 0.0, 1.0);
 		}
 
-		if (fExposed >= DEFEND_MAX_EXPOSED)
+		if (fExposed >= 0.5)
 			return -1;
 
-		float score = fFire * DEFEND_SCORE_FIRE + fHidden * DEFEND_SCORE_HIDDEN + fExposed * DEFEND_SCORE_EXPOSED;
+		float score = fFire * 1.0 + fHidden * 0.8 + fExposed * (-1.0);
 		score += ScoreDoors(pos, peekPoint);
 
 		return Math.Clamp(score, 0.0, 1.0);
@@ -264,29 +246,29 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 
 			float d = vector.DistanceXZ(pos, doorPos);
 
-			if (d < DOOR_FUNNEL_DIST)
+			if (d < 2.0)
 			{
-				adjust -= DOOR_FUNNEL_PENALTY;
+				adjust -= 0.3;
 				continue;
 			}
 
-			if (watching || losChecks >= DOOR_MAX_LOS_CHECKS)
+			if (watching || losChecks >= 2)
 				continue;
 
-			if (d < DOOR_WATCH_MIN || d > DOOR_WATCH_MAX)
+			if (d < 3.0 || d > 8.0)
 				continue;
 
 			losChecks++;
 
-			vector doorPeek = doorPos + PEEK_HEIGHT * vector.Up;
+			vector doorPeek = doorPos + 1.2 * vector.Up;
 			vector toDoor   = doorPeek - peekPoint;
 			float  toDoorLen = toDoor.Length();
-			if (toDoorLen > DOOR_LOS_STOP_SHORT)
-				doorPeek = peekPoint + toDoor * ((toDoorLen - DOOR_LOS_STOP_SHORT) / toDoorLen);
+			if (toDoorLen > 0.5)
+				doorPeek = peekPoint + toDoor * ((toDoorLen - 0.5) / toDoorLen);
 
 			if (HasLOS(peekPoint, doorPeek))
 			{
-				adjust  += DOOR_WATCH_BONUS;
+				adjust  += 0.2;
 				watching = true;
 			}
 		}
@@ -307,7 +289,7 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 		m_LosTrace.TraceEnt  = null;
 
 		DCO_Perf.Count("t:DCO_FindIndoorRelocatePosition");
-		return GetGame().GetWorld().TraceMove(m_LosTrace, null) >= LOS_CLEAR_FRACTION;
+		return GetGame().GetWorld().TraceMove(m_LosTrace, null) >= 0.99;
 	}
 
 	protected static ref TStringArray s_aVarsInRelocate = {

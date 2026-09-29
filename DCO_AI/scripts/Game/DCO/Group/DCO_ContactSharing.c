@@ -45,18 +45,6 @@ class DCO_ShareTrack
 class DCO_ContactSharing
 {
 	protected static const int TICK_MS = 1000;
-	protected static const float FRESH_S = 10;
-	protected static const float CLUSTER_RADIUS = 75;
-	protected static const float TRACK_MATCH = 110;
-	protected static const float MIN_SHIFT = 50;
-	protected static const float REFRESH_S = 10;
-	protected static const float TRACK_FORGET_S = 60;
-	protected static const float ALREADY_KNOWN_S = 15;
-	protected static const float HOP_NOISE_MUL = 1.5;
-	protected static const int MAX_PENDING = 128;
-	protected static const int MAX_TARGETS = 6;
-	protected static const float PLAYER_AREA = 250;
-	protected static const float PLAYER_THROTTLE_S = 30;
 
 	protected static ref DCO_ContactSharing s_Instance;
 
@@ -142,7 +130,7 @@ class DCO_ContactSharing
 				continue;
 			if (t.m_eCategory != EAITargetInfoCategory.DETECTED && t.m_eCategory != EAITargetInfoCategory.IDENTIFIED)
 				continue;
-			if (pmNow - t.m_fTimestamp > FRESH_S)
+			if (pmNow - t.m_fTimestamp > 10.0)
 				continue;
 
 			float injected = 0;
@@ -152,7 +140,7 @@ class DCO_ContactSharing
 			int ci = -1;
 			foreach (int i, DCO_SharedContact c : clusters)
 			{
-				if (vector.DistanceXZ(c.m_vCenter, t.m_vWorldPos) <= CLUSTER_RADIUS)
+				if (vector.DistanceXZ(c.m_vCenter, t.m_vWorldPos) <= 75.0)
 				{
 					ci = i;
 					break;
@@ -171,7 +159,7 @@ class DCO_ContactSharing
 			Faction fac = t.m_Faction;
 			if (!fac)
 				fac = SCR_AIFactionHandling.GetEntityPerceivedFaction(t.m_Entity);
-			if (cl.m_aTargets.Count() < MAX_TARGETS)
+			if (cl.m_aTargets.Count() < 6)
 			{
 				cl.m_aTargets.Insert(t.m_Entity);
 				cl.m_aPositions.Insert(t.m_vWorldPos);
@@ -186,7 +174,7 @@ class DCO_ContactSharing
 
 		for (int i = u.m_aDCOShareTracks.Count() - 1; i >= 0; i--)
 		{
-			if (now - u.m_aDCOShareTracks[i].m_fLastMatched > TRACK_FORGET_S)
+			if (now - u.m_aDCOShareTracks[i].m_fLastMatched > 60.0)
 				u.m_aDCOShareTracks.Remove(i);
 		}
 
@@ -195,7 +183,7 @@ class DCO_ContactSharing
 			DCO_ShareTrack track = null;
 			foreach (DCO_ShareTrack tr : u.m_aDCOShareTracks)
 			{
-				if (vector.DistanceXZ(tr.m_vPos, c.m_vCenter) <= TRACK_MATCH)
+				if (vector.DistanceXZ(tr.m_vPos, c.m_vCenter) <= 110.0)
 				{
 					track = tr;
 					break;
@@ -203,8 +191,8 @@ class DCO_ContactSharing
 			}
 
 			bool isNew = !track
-				|| vector.DistanceXZ(track.m_vPos, c.m_vCenter) > MIN_SHIFT
-				|| (now - track.m_fSentAt >= REFRESH_S && newest[i] > track.m_fInfoTs + 0.5);
+				|| vector.DistanceXZ(track.m_vPos, c.m_vCenter) > 50.0
+				|| (now - track.m_fSentAt >= 10.0 && newest[i] > track.m_fInfoTs + 0.5);
 			if (track)
 				track.m_fLastMatched = now;
 			if (!isNew)
@@ -247,7 +235,7 @@ class DCO_ContactSharing
 		{
 			if (!r || r == senderUtil || !r.m_Owner || r.m_Owner == c.m_Origin || !r.m_Perception)
 				continue;
-			if (m_aPending.Count() >= MAX_PENDING)
+			if (m_aPending.Count() >= 128)
 				break;
 			if (IsPlayerGroup(r.m_Owner) || !IsAlive(r.m_Owner.GetLeaderEntity()))
 				continue;
@@ -306,9 +294,9 @@ class DCO_ContactSharing
 				useRadio = true;
 			}
 
-			string key = pid.ToString() + ":" + Math.Floor(c.m_vCenter[0] / PLAYER_AREA).ToString() + ":" + Math.Floor(c.m_vCenter[2] / PLAYER_AREA).ToString();
+			string key = pid.ToString() + ":" + Math.Floor(c.m_vCenter[0] / 250.0).ToString() + ":" + Math.Floor(c.m_vCenter[2] / 250.0).ToString();
 			float last = 0;
-			if (m_mPlayerLast.Find(key, last) && now - last < PLAYER_THROTTLE_S)
+			if (m_mPlayerLast.Find(key, last) && now - last < 30.0)
 				continue;
 			if (m_mPlayerLast.Count() > 1024)
 				m_mPlayerLast.Clear();
@@ -435,7 +423,7 @@ class DCO_ContactSharing
 		else
 			sigma = sigma * cfg.GetShareVoiceNoise();
 		for (int h = 1; h < hop; h++)
-			sigma = sigma * HOP_NOISE_MUL;
+			sigma = sigma * 1.5;
 		sigma = Math.Max(sigma, minSigma);
 
 		float angle = Math.RandomFloat(0, Math.PI2);
@@ -452,10 +440,10 @@ class DCO_ContactSharing
 			if (!ent)
 				continue;
 			float injected = 0;
-			if (r.m_mDCOInjected.Find(ent, injected) && pmNow - injected < ALREADY_KNOWN_S)
+			if (r.m_mDCOInjected.Find(ent, injected) && pmNow - injected < 15.0)
 				continue;
 			int idx = r.m_Perception.m_aTargetEntities.Find(ent);
-			if (idx >= 0 && pmNow - r.m_Perception.m_aTargets[idx].m_fTimestamp < ALREADY_KNOWN_S)
+			if (idx >= 0 && pmNow - r.m_Perception.m_aTargets[idx].m_fTimestamp < 15.0)
 				continue;
 			return false;
 		}
@@ -482,7 +470,7 @@ class DCO_ContactSharing
 			if (idx < 0)
 				return false;
 			float ts = r.m_Perception.m_aTargets[idx].m_fTimestamp;
-			if (pmNow - ts >= ALREADY_KNOWN_S)
+			if (pmNow - ts >= 15.0)
 				return false;
 			float injected = 0;
 			if (r.m_mDCOInjected.Find(ent, injected) && ts <= injected + 0.01)

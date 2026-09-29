@@ -3,9 +3,7 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 	protected static const float COVER_SEARCH_DIST_MAX = 20.0;
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 2;
 
-	protected static const string PORT_ENTITY_POS = "EntityPosition";
 
-	protected static const string PORT_COMPLETE_ACTION = "CompleteAction";
 
 	protected SCR_AICombatMoveState m_State;
 	protected SCR_AIUtilityComponent m_Utility;
@@ -40,7 +38,7 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 			return ENodeResult.FAIL;
 
 		vector threatPos;
-		GetVariableIn(PORT_ENTITY_POS, threatPos);
+		GetVariableIn("EntityPosition", threatPos);
 
 		if (threatPos == vector.Zero)
 			return ENodeResult.FAIL;
@@ -113,7 +111,7 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 		return false;
 	}
 
-	protected static ref TStringArray s_aVarsIn = { PORT_ENTITY_POS };
+	protected static ref TStringArray s_aVarsIn = { "EntityPosition" };
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 
 	override static bool VisibleInPalette() { return true; }

@@ -104,9 +104,6 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	protected int m_iStateCache;
 	protected float m_fStateCheck_ms = -1;
 
-	protected static const int CAPABILITY_CACHE_MS = 5000;
-	protected static const int STATE_CACHE_MS = 1000;
-	protected static const float COMBAT_INEFFECTIVE_RATIO = 0.4;
 
 	protected FactionKey fk;
 
@@ -472,15 +469,15 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	protected void RefreshCapability()
 	{
 		float now = GetGame().GetWorld().GetWorldTime();
-		if (m_fCapabilityCheck_ms >= 0 && now - m_fCapabilityCheck_ms < CAPABILITY_CACHE_MS)
+		if (m_fCapabilityCheck_ms >= 0 && now - m_fCapabilityCheck_ms < 5000)
 			return;
 		m_fCapabilityCheck_ms = now;
 
-		if (myCommander && m_eGroupRoleExternal == DCO_EGroupPreset.AUTO && !m_bAutoDetectDone && now - m_fMortarRetry_ms >= MORTAR_RETRY_MS)
+		if (myCommander && m_eGroupRoleExternal == DCO_EGroupPreset.AUTO && !m_bAutoDetectDone && now - m_fMortarRetry_ms >= 15000.0)
 		{
 			m_fMortarRetry_ms = now;
 			string stop;
-			if (now - m_fAssignedAt_ms > AUTO_DETECT_WINDOW_MS)
+			if (now - m_fAssignedAt_ms > 60000.0)
 				stop = "timeout";
 			else if (m_Task.m_eType != DCO_EGroupTask.NONE)
 				stop = "tasked";
@@ -578,7 +575,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	int GetState()
 	{
 		float now = GetGame().GetWorld().GetWorldTime();
-		if (m_fStateCheck_ms >= 0 && now - m_fStateCheck_ms < STATE_CACHE_MS)
+		if (m_fStateCheck_ms >= 0 && now - m_fStateCheck_ms < 1000)
 			return m_iStateCache;
 		m_fStateCheck_ms = now;
 
@@ -596,7 +593,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 
 		int units = GetUnitCount();
 		m_iPeakStrength = Math.Max(m_iPeakStrength, units);
-		if (m_iPeakStrength > 0 && units < m_iPeakStrength * COMBAT_INEFFECTIVE_RATIO)
+		if (m_iPeakStrength > 0 && units < m_iPeakStrength * 0.4)
 			s |= DCO_EGroupState.COMBAT_INEFFECTIVE;
 
 		m_iStateCache = s;
@@ -614,7 +611,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	float GetGroupMorale()
 	{
 		float now = GetGame().GetWorld().GetWorldTime();
-		if (m_fMoraleCheck_ms >= 0 && now - m_fMoraleCheck_ms < STATE_CACHE_MS * 3)
+		if (m_fMoraleCheck_ms >= 0 && now - m_fMoraleCheck_ms < 1000 * 3)
 			return m_fMorale;
 		m_fMoraleCheck_ms = now;
 
@@ -1120,9 +1117,6 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		return null;
 	}
 
-	protected static const float MORTAR_DETECT_RADIUS = 40;
-	protected static const int MORTAR_CREW_MAX = 4;
-	protected static const float MORTAR_RETRY_MS = 15000;
 	protected float m_fMortarRetry_ms = -15000;
 	protected static ref map<IEntity, DCO_GroupUtilityComponent> s_mMortarCrew = new map<IEntity, DCO_GroupUtilityComponent>();
 	protected SCR_AIVehicleUsageComponent m_FoundMortar;
@@ -1131,7 +1125,6 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	protected bool m_bAutoTransport;
 	protected bool m_bAutoDetectDone;
 	protected float m_fAssignedAt_ms;
-	protected static const float AUTO_DETECT_WINDOW_MS = 60000;
 
 	protected int AutoDetectSize()
 	{
@@ -1163,7 +1156,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			return;
 		if (m_eGroupRoleExternal != DCO_EGroupPreset.AUTO && m_eGroupRoleExternal != DCO_EGroupPreset.MORTAR)
 			return;
-		if (m_eGroupRoleExternal == DCO_EGroupPreset.AUTO && AutoDetectSize() > MORTAR_CREW_MAX)
+		if (m_eGroupRoleExternal == DCO_EGroupPreset.AUTO && AutoDetectSize() > 4)
 			return;
 
 		array<ref SCR_AIGroupVehicle> vehicles = {};
@@ -1197,7 +1190,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 
 		m_FoundMortar = null;
 		DCO_Perf.Count("q:DCO_GroupUtility");
-		GetGame().GetWorld().QueryEntitiesBySphere(m_Group.GetLeaderEntity().GetOrigin(), MORTAR_DETECT_RADIUS, MortarQueryCallback, null, EQueryEntitiesFlags.ALL);
+		GetGame().GetWorld().QueryEntitiesBySphere(m_Group.GetLeaderEntity().GetOrigin(), 40.0, MortarQueryCallback, null, EQueryEntitiesFlags.ALL);
 		if (!m_FoundMortar)
 			return;
 
@@ -1220,19 +1213,17 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		DCO_PlayerComms.SendToGameMasters("DCO", DCO_PlayerComms.GetCallsign(SCR_AIGroup.Cast(GetOwner())) + " is now a mortar team");
 	}
 
-	protected static const int TRANSPORT_CREW_MAX = 3;
-	protected static const int TRANSPORT_SEATS_MIN = 4;
 
 	protected void DetectTransport()
 	{
 		if (m_bIsDedicatedTransport || !m_Group || !myCommander || m_OwnedVehicle || IsPlayerGroup() || !IsAvailableReserve())
 			return;
-		if (m_eGroupRoleExternal != DCO_EGroupPreset.AUTO || AutoDetectSize() > TRANSPORT_CREW_MAX)
+		if (m_eGroupRoleExternal != DCO_EGroupPreset.AUTO || AutoDetectSize() > 3)
 			return;
 
 		DCO_TransportTeamComponent team = DCO_TransportTeamComponent.Cast(GetOwner().FindComponent(DCO_TransportTeamComponent));
 		IEntity veh = DCO_VehicleCombat.GetVehicle(m_Group.GetLeaderEntity());
-		if (!team || !veh || DCO_TransportTeamComponent.CountFreeCargo(veh) < TRANSPORT_SEATS_MIN)
+		if (!team || !veh || DCO_TransportTeamComponent.CountFreeCargo(veh) < 4)
 			return;
 
 		SCR_BaseCompartmentManagerComponent mgr = SCR_BaseCompartmentManagerComponent.Cast(veh.FindComponent(SCR_BaseCompartmentManagerComponent));

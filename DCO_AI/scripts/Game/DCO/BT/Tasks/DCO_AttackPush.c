@@ -4,29 +4,10 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	protected static const float COVER_SEARCH_DIST_MIN        = 10.0;
 	protected static const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.25 * Math.PI;
 
-	protected static const float COVER_SEARCH_DIST_MIN_BUILDING = 0.0;
-	protected static const float COVER_SEARCH_DIST_MAX_BUILDING = 5.0;
 
-	protected static const float BOUND_DIST_MAX      = 20.0;
-	protected static const float BOUND_DIST_MIN      = 3.0;
-	protected static const float STANDOFF_MIN        = 10.0;
-	protected static const float FLANK_ANGLE_MIN_DEG = 15.0;
-	protected static const float FLANK_ANGLE_MAX_DEG = 40.0;
-	protected static const float CQB_BOUND_SCALE     = 0.35;
-	protected static const float NAVMESH_SNAP_RADIUS = 2.0;
 
-	protected static const float SUPPRESSION_CUTOFF_DEFAULT = 0.6;
-	protected static const float SUPPRESSION_CUTOFF_CQB     = 0.85;
-	protected static const float STANCE_SUPPRESSION_CROUCH  = 0.8;
-	protected static const float WAIT_TIME_IN_COVER_S       = 8.0;
-	protected static const float WAIT_TIME_OPEN_S           = 5.0;
-	protected static const float WAIT_SCALE_CQB             = 1.2;
-	protected static const float WAIT_SCALE_THREATENED      = 2;
-	protected static const float MOVE_DURATION_MIN_S        = 1.5;
 
-	protected static const float FLANK_WP_BIAS_MIN_DOT = 0.25;
 
-	protected static const float CQC_CLOSE_DIST = 6.0;
 
 	protected static const string PORT_POSITION = "Position";
 
@@ -93,9 +74,9 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 
 	protected bool IsTooDangerousToAdvance(bool isCQB)
 	{
-		float cutoff = SUPPRESSION_CUTOFF_DEFAULT;
+		float cutoff = 0.6;
 		if (isCQB)
-			cutoff = SUPPRESSION_CUTOFF_CQB;
+			cutoff = 0.85;
 
 		cutoff *= DCO_PostureCombatUtility.GetAdvanceSuppressionCutoffScale(DCO_PostureCombatUtility.GetPosture(m_Utility));
 		cutoff *= DCO_PersonalityCombatUtility.GetAdvanceSuppressionCutoffScale(m_Utility);
@@ -110,11 +91,11 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		toThreat[1] = 0;
 
 		float dist2D = toThreat.Length();
-		if (dist2D < CQC_CLOSE_DIST)
+		if (dist2D < 6.0)
 			return false;
 
 		vector fwd     = toThreat / dist2D;
-		float  advance = Math.Min(dist2D - CQC_CLOSE_DIST, BOUND_DIST_MAX);
+		float  advance = Math.Min(dist2D - 6.0, 20.0);
 
 		vector candidate = myPos + (fwd * advance);
 		candidate[1] = myPos[1];
@@ -154,7 +135,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 				vector toWpDir = toWp / len;
 				float dot = vector.Dot(toWpDir, right);
 
-				if (Math.AbsFloat(dot) > FLANK_WP_BIAS_MIN_DOT)
+				if (Math.AbsFloat(dot) > 0.25)
 				{
 					if (dot > 0)
 						return 1.0;
@@ -242,8 +223,8 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 
 		if (assaultBuilding)
 		{
-			coverMin = COVER_SEARCH_DIST_MIN_BUILDING;
-			coverMax = COVER_SEARCH_DIST_MAX_BUILDING;
+			coverMin = 0.0;
+			coverMax = 5.0;
 			rq.m_bTryFindCover = false;
 		}
 		else if (isCQB)
@@ -270,7 +251,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			speed = SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
 
 		float advanceDist = Math.Min(vector.Distance(myEntity.GetOrigin(), movePos), COVER_SEARCH_DIST_MAX);
-		rq.m_fMoveDuration_s = Math.Max(advanceDist / speed, MOVE_DURATION_MIN_S);
+		rq.m_fMoveDuration_s = Math.Max(advanceDist / speed, 1.5);
 
 		rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
 			DCO_CombatMoveUtility.IsAimingAndMovementPossible(rq.m_eStanceMoving, rq.m_eMovementType, rq.m_eDirection),
@@ -297,10 +278,10 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 
 		float scale = 1.0;
 		if (isCQB)
-			scale = CQB_BOUND_SCALE;
+			scale = 0.35;
 
-		float advance = Math.Min(dist2D - STANDOFF_MIN, BOUND_DIST_MAX * scale);
-		if (advance < BOUND_DIST_MIN)
+		float advance = Math.Min(dist2D - 10.0, 20.0 * scale);
+		if (advance < 3.0)
 			return false;
 
 		vector fwd   = toThreat / dist2D;
@@ -310,7 +291,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		if (Math.RandomInt(0, 2) == 1)
 			side = -1.0;
 
-		float angleRad = Math.RandomFloat(FLANK_ANGLE_MIN_DEG, FLANK_ANGLE_MAX_DEG) * scale * Math.DEG2RAD;
+		float angleRad = Math.RandomFloat(15.0, 40.0) * scale * Math.DEG2RAD;
 
 		vector dirOff = (fwd * Math.Cos(angleRad)) + (right * Math.Sin(angleRad) * side);
 		vector candidate = myPos + (dirOff * advance);
@@ -330,7 +311,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		if (!m_pNavmesh.IsTileLoaded(pos))
 			return false;
 
-		return m_pNavmesh.GetReachablePoint(pos, NAVMESH_SNAP_RADIUS, outPos);
+		return m_pNavmesh.GetReachablePoint(pos, 2.0, outPos);
 	}
 
 	protected bool LastBuildingAttemptFailed()
@@ -354,7 +335,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	{
 		DCO_EAIPersonality personality = GetPersonality();
 
-		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > STANCE_SUPPRESSION_CROUCH)
+		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.8)
 		{
 			moving = ECharacterStance.CROUCH;
 		}
@@ -405,9 +386,9 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 
 	protected float ResolveStoppedWaitTime(bool inCover, bool isCQB, bool threatened)
 	{
-		float waitTime = WAIT_TIME_OPEN_S;
+		float waitTime = 5.0;
 		if (inCover)
-			waitTime = WAIT_TIME_IN_COVER_S;
+			waitTime = 8.0;
 
 		if (m_State && m_State.IsMovingToBuilding())
 			waitTime *= 2;
@@ -416,10 +397,10 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			waitTime *= 3;
 
 		if (isCQB)
-			waitTime *= WAIT_SCALE_CQB;
+			waitTime *= 1.2;
 
 		if (threatened)
-			waitTime *= WAIT_SCALE_THREATENED;
+			waitTime *= 2.0;
 
 		switch (GetPersonality())
 		{

@@ -4,16 +4,9 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 	protected static const float BULLET_IMPACT_DISTANCE_SQ_MAX = 3*3;
 	protected static const float COVER_QUERY_SECTOR_ANGLE_RAD  = 0.35 * Math.PI;
 	protected static const float IMPACT_DIST_VERY_CLOSE = 2.0;
-	protected static const float IMPACT_DIST_POINT_BLANK = 1.5;
-	protected static const float SHOOTER_DIST_CLOSE = 20.0;
-	protected static const float SHOOTER_DIST_FAR = 100.0;
-	protected static const int PRONE_ROLL_ATTEMPTS = 2;
 
-	protected static const float COVER_PROTECT_MARGIN_S = 1.0;
-	protected static const int   PINNED_MAP_PRUNE_THRESHOLD = 128;
 
 	protected static const float DODGE_CHANCE_FALLBACK = 0.6;
-	protected static const int   DODGE_ROLL_MAP_PRUNE_THRESHOLD = 128;
 
 	protected static ref map<IEntity, float> s_mLastDodgeRollTime = new map<IEntity, float>();
 
@@ -158,7 +151,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		int thrFleeEngaged  = ScaleThreshold(utility, m_iBulletsFleeEngaged);
 
 		bool veryClose  = distanceToDanger < IMPACT_DIST_VERY_CLOSE;
-		bool shooterNear = shooterDistance < SHOOTER_DIST_CLOSE;
+		bool shooterNear = shooterDistance < 20.0;
 
 		if (utility.m_CombatComponent.GetSelectedWeaponType() == EWeaponType.WT_MACHINEGUN
 			&& veryClose && isNullTarget)
@@ -196,10 +189,10 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		}
 
 		if (charCon.GetStance() == ECharacterStance.PRONE
-			&& distanceToDanger < IMPACT_DIST_POINT_BLANK
+			&& distanceToDanger < 1.5
 			&& bulletCount > thrRepoNoTarget)
 		{
-			int rollAttempt = PRONE_ROLL_ATTEMPTS * Math.RandomInt(1,3);
+			int rollAttempt = 2 * Math.RandomInt(1,3);
 			for (int i = 0; i < rollAttempt; i++)
 			{
 				if (Math.RandomIntInclusive(0, 1) == 0)
@@ -245,7 +238,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			return moved;
 		}
 
-		if (veryClose && shooterDistance > SHOOTER_DIST_FAR && bulletCount > ScaleThreshold(utility, m_iBulletsPinned))
+		if (veryClose && shooterDistance > 100.0 && bulletCount > ScaleThreshold(utility, m_iBulletsPinned))
 		{
 			MarkPinned(ownerEnt, m_fPinnedDuration_s);
 			KeepProne(charCon, allowProne);
@@ -266,7 +259,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			return true;
 		}
 
-		if (shooterDistance > SHOOTER_DIST_FAR)
+		if (shooterDistance > 100.0)
 		{
 			LowerStance(charCon, allowProne);
 			return true;
@@ -374,7 +367,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		DCO_CoverMoveBudget.MarkMove(utility.m_OwnerEntity);
 
 		if (m_bCoverVeryHighPriority)
-			state.DCO_ApplyCoverRequest(rq, rq.m_fMoveDuration_s + COVER_PROTECT_MARGIN_S);
+			state.DCO_ApplyCoverRequest(rq, rq.m_fMoveDuration_s + 1.0);
 		else
 			state.ApplyNewRequest(rq);
 
@@ -401,7 +394,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 
 		s_mLastDodgeRollTime.Set(ownerEnt, now_ms);
 
-		if (s_mLastDodgeRollTime.Count() > DODGE_ROLL_MAP_PRUNE_THRESHOLD)
+		if (s_mLastDodgeRollTime.Count() > 128)
 			PruneDodgeRollMap(now_ms);
 
 		float chance    = DODGE_CHANCE_FALLBACK;
@@ -519,7 +512,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		float now_ms = GetGame().GetWorld().GetWorldTime();
 		s_mPinnedUntil.Set(entity, now_ms + duration_s * 1000.0);
 
-		if (s_mPinnedUntil.Count() > PINNED_MAP_PRUNE_THRESHOLD)
+		if (s_mPinnedUntil.Count() > 128)
 			PrunePinnedMap(now_ms);
 	}
 

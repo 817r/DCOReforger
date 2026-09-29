@@ -24,11 +24,6 @@ class DCO_SectorGarrison
 
 class DCO_SectorMath
 {
-	static const float BAND_INNER        = 0.55;
-	static const float BAND_OUTER        = 0.90;
-	static const float ANGULAR_INSET     = 0.20;
-	static const float COMPLETION_FACTOR = 0.25;
-	static const int   SAMPLE_ATTEMPTS   = 12;
 
 	static int ComputeSectorCount(float radius, float arcPerSector, float personalityMod, int minSector, int maxSector)
 	{
@@ -57,7 +52,7 @@ class DCO_SectorMath
 
 	static float ComputeCompletionRadius(float radius, float maxCompletion)
 	{
-		float value = radius * COMPLETION_FACTOR;
+		float value = radius * 0.25;
 		if (value > maxCompletion)
 			value = maxCompletion;
 
@@ -81,14 +76,14 @@ class DCO_SectorMath
 			return false;
 
 		float step     = (2.0 * Math.PI) / sectorCount;
-		float angStart = sectorOffset + sectorIndex * step + ANGULAR_INSET * step;
-		float angEnd   = sectorOffset + (sectorIndex + 1) * step - ANGULAR_INSET * step;
+		float angStart = sectorOffset + sectorIndex * step + 0.20 * step;
+		float angEnd   = sectorOffset + (sectorIndex + 1) * step - 0.20 * step;
 		float minSepSq = minSep * minSep;
 
-		for (int attempt = 0; attempt < SAMPLE_ATTEMPTS; attempt++)
+		for (int attempt = 0; attempt < 12; attempt++)
 		{
 			float ang = Math.RandomFloat(angStart, angEnd);
-			float rad = Math.RandomFloat(radius * BAND_INNER, radius * BAND_OUTER);
+			float rad = Math.RandomFloat(radius * 0.55, radius * 0.90);
 
 			vector candidate = Vector(
 				center[0] + rad * Math.Cos(ang),
@@ -109,9 +104,9 @@ class DCO_SectorMath
 
 		float midAng = sectorOffset + (sectorIndex + 0.5) * step;
 		result = Vector(
-			center[0] + radius * BAND_OUTER * Math.Cos(midAng),
+			center[0] + radius * 0.90 * Math.Cos(midAng),
 			0.0,
-			center[2] + radius * BAND_OUTER * Math.Sin(midAng));
+			center[2] + radius * 0.90 * Math.Sin(midAng));
 		result[1] = GetGame().GetWorld().GetSurfaceY(result[0], result[2]);
 
 		return false;

@@ -1,43 +1,17 @@
 modded class SCR_AIGetAimErrorOffset
 {
-	static const float VERY_CLOSE_RANGE_THRESHOLD = 20.0;
-	static const float CLOSE_RANGE_THRESHOLD = 60.0;
 	static const float LONG_RANGE_THRESHOLD = 200.0;
-	static const float AIMING_ERROR_SCALE = 1.0;
 
-	static const float AIMING_ERROR_FACTOR_MAX = 1.4;
 
-	static const float MAXIMAL_TOLERANCE = 10.0;
-	static const float MINIMAL_TOLERANCE = 0.005;
 
-	static const float AIMING_ERROR_FACTOR_MIN = 0.12;
 
-	static const float AIMING_ERROR_VERY_CLOSE_RANGE_FACTOR_MIN = 0.03;
-	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.1;
 
-	static const float SCOPE_CLOSE_DIST     = 30.0;
-	static const float SCOPE_FAR_DIST       = 100.0;
-	static const float SCOPE_CLOSE_PENALTY  = 0.3;
-	static const float SCOPE_FAR_GAIN       = 0.25;
-	static const float SCOPE_TRACK_PENALTY  = 0.1;
-	static const float SCOPE_TRACK_MAX      = 5.0;
 
-	static const float TURRET_STABLE_FACTOR = 0.8;
-	static const float TURRET_STILL_SPEED   = 1.0;
-	static const float TURRET_MOVING_PER_MS = 0.1;
 
 	private SCR_AIInfoComponent m_InfoComponent;
 	private SCR_CharacterControllerComponent charCon;
 
-	static const float AIM_HOLD_MIN_S            = 1.5;
-	static const float AIM_HOLD_MAX_S            = 3.0;
-	static const float AIM_VIS_RECHECK_S         = 0.5;
-	static const float AIM_VIS_TRACE_MIN_FRAC    = 0.98;
-	static const float AIM_EYE_HEIGHT_FALLBACK   = 1.6;
 
-	static const float HEAD_AIM_FULL_DIST        = 100.0;
-	static const float HEAD_AIM_MIN_DIST         = 300.0;
-	static const float HEAD_AIM_FAR_SCALE        = 0.3;
 
 	protected IEntity         m_DCOAimTargetEnt;
 	protected EAimPointType   m_eDCOAimType;
@@ -49,19 +23,19 @@ modded class SCR_AIGetAimErrorOffset
 	override float GetDistanceFactor(float distance)
 	{
 		float errorFactor = 0;
-		float MinError = AIMING_ERROR_FACTOR_MIN / m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAccuracy();
-		if (distance < VERY_CLOSE_RANGE_THRESHOLD)
+		float MinError = 0.12 / m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAccuracy();
+		if (distance < 20.0)
 		{
-			errorFactor = Math.Map(distance, 0, VERY_CLOSE_RANGE_THRESHOLD, AIMING_ERROR_VERY_CLOSE_RANGE_FACTOR_MIN, AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN);
+			errorFactor = Math.Map(distance, 0, 20.0, 0.03, 0.1);
 			return errorFactor;
-		} else if (distance < CLOSE_RANGE_THRESHOLD)
+		} else if (distance < 60.0)
 		{
-			errorFactor = Math.Map(distance, VERY_CLOSE_RANGE_THRESHOLD, CLOSE_RANGE_THRESHOLD, AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN, MinError);
+			errorFactor = Math.Map(distance, 20.0, 60.0, 0.1, MinError);
 			return errorFactor;
 		}
 
-		float distanceCl = Math.Clamp((distance - CLOSE_RANGE_THRESHOLD) / LONG_RANGE_THRESHOLD, 0, 1.5);
-		return Math.Lerp(MinError, AIMING_ERROR_FACTOR_MAX, distanceCl);
+		float distanceCl = Math.Clamp((distance - 60.0) / LONG_RANGE_THRESHOLD, 0, 1.5);
+		return Math.Lerp(MinError, 1.4, distanceCl);
 	}
 
 	override float GetTolerance(IEntity observer, IEntity target, float angularSize, float distance, EWeaponType weaponType)
@@ -69,19 +43,19 @@ modded class SCR_AIGetAimErrorOffset
 		float tolerance;
 		bool setMaxTolerance;
 
-		if (distance < VERY_CLOSE_RANGE_THRESHOLD)
-			return Math.Map(distance, 0, VERY_CLOSE_RANGE_THRESHOLD, MAXIMAL_TOLERANCE, MAXIMAL_TOLERANCE / 10);
+		if (distance < 20.0)
+			return Math.Map(distance, 0, 20.0, 10.0, 10.0 / 10);
 
 		tolerance = angularSize / 2;
 		tolerance *= GetAngularSpeedFactor(observer, target, setMaxTolerance);
 
 		if (setMaxTolerance)
-			tolerance = MAXIMAL_TOLERANCE;
+			tolerance = 10.0;
 		else
 		{
 			tolerance *= GetWeaponTypeFactor(weaponType);
 		};
-		return Math.Clamp(tolerance, MINIMAL_TOLERANCE, MAXIMAL_TOLERANCE);
+		return Math.Clamp(tolerance, 0.005, 10.0);
 	}
 
 	override float GetAngularSpeedFactor(IEntity observer, IEntity enemy, out bool setBigTolerance)
@@ -283,13 +257,13 @@ modded class SCR_AIGetAimErrorOffset
 
 		IEntity vehicle = DCO_VehicleCombat.GetVehicle(observer);
 		if (!vehicle || !vehicle.GetPhysics())
-			return TURRET_STABLE_FACTOR;
+			return 0.8;
 
 		float speed = vehicle.GetPhysics().GetVelocity().Length();
-		if (speed < TURRET_STILL_SPEED)
-			return TURRET_STABLE_FACTOR;
+		if (speed < 1.0)
+			return 0.8;
 
-		return 1 + speed * TURRET_MOVING_PER_MS;
+		return 1 + speed * 0.1;
 	}
 
 	protected float GetScopeFactor(IEntity observer, IEntity target, float distance)
@@ -299,21 +273,21 @@ modded class SCR_AIGetAimErrorOffset
 			return 1;
 
 		float factor;
-		if (distance < SCOPE_CLOSE_DIST)
-			factor = 1 + extraMag * SCOPE_CLOSE_PENALTY * (1 - distance / SCOPE_CLOSE_DIST);
+		if (distance < 30.0)
+			factor = 1 + extraMag * 0.3 * (1 - distance / 30.0);
 		else
 		{
-			float farFactor = 1 / (1 + extraMag * SCOPE_FAR_GAIN);
-			float t = Math.Clamp((distance - SCOPE_CLOSE_DIST) / (SCOPE_FAR_DIST - SCOPE_CLOSE_DIST), 0, 1);
+			float farFactor = 1 / (1 + extraMag * 0.25);
+			float t = Math.Clamp((distance - 30.0) / (100.0 - 30.0), 0, 1);
 			factor = Math.Lerp(1, farFactor, t);
 		}
 
 		bool tooFast;
 		float angular = GetAngularSpeedFactor(observer, target, tooFast);
 		if (tooFast)
-			angular = SCOPE_TRACK_MAX;
+			angular = 5.0;
 
-		return factor * (1 + (angular - 1) * extraMag * SCOPE_TRACK_PENALTY);
+		return factor * (1 + (angular - 1) * extraMag * 0.1);
 	}
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
@@ -382,8 +356,8 @@ modded class SCR_AIGetAimErrorOffset
 		EAISkill currentSkill = m_CombatComponent.GetAISkill();
 		DCO_AISKILL dcoSkill = m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAISkill();
 		float scopeFactor = GetScopeFactor(entity, targetEntity, distance) * GetTurretFactor(entity);
-		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetSuppressionFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor() * scopeFactor;
-		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * AIMING_ERROR_SCALE * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetSuppressionFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor() * scopeFactor;
+		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * 1.0 * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetSuppressionFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor() * scopeFactor;
+		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * 1.0 * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetSuppressionFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor() * scopeFactor;
 
 		tolerance = GetTolerance(entity, targetEntity, angularSize, distance, weaponType);
 
@@ -478,7 +452,7 @@ modded class SCR_AIGetAimErrorOffset
 				if (now_ms < m_fDCOAimNextVisCheck_ms)
 					return held;
 
-				m_fDCOAimNextVisCheck_ms = now_ms + AIM_VIS_RECHECK_S * 1000.0;
+				m_fDCOAimNextVisCheck_ms = now_ms + 0.5 * 1000.0;
 
 				if (DCO_IsAimPointVisible(self, targetEnt, held))
 					return held;
@@ -536,7 +510,7 @@ modded class SCR_AIGetAimErrorOffset
 				if (!DCO_IsAimPointVisible(self, targetEnt, candidate))
 					continue;
 
-				DCO_StoreAimSelection(targetEnt, type, idx, now_ms, Math.RandomFloat(AIM_HOLD_MIN_S, AIM_HOLD_MAX_S));
+				DCO_StoreAimSelection(targetEnt, type, idx, now_ms, Math.RandomFloat(1.5, 3.0));
 				return candidate;
 			}
 		}
@@ -560,7 +534,7 @@ modded class SCR_AIGetAimErrorOffset
 		}
 
 		int fbIdx = Math.RandomInt(0, fbCount);
-		DCO_StoreAimSelection(targetEnt, fallbackType, fbIdx, now_ms, AIM_VIS_RECHECK_S);
+		DCO_StoreAimSelection(targetEnt, fallbackType, fbIdx, now_ms, 0.5);
 		return m_aDCOAimBuffer[fbIdx];
 	}
 
@@ -570,7 +544,7 @@ modded class SCR_AIGetAimErrorOffset
 		m_eDCOAimType            = type;
 		m_iDCOAimIndex           = idx;
 		m_fDCOAimHoldUntil_ms    = now_ms + hold_s * 1000.0;
-		m_fDCOAimNextVisCheck_ms = now_ms + AIM_VIS_RECHECK_S * 1000.0;
+		m_fDCOAimNextVisCheck_ms = now_ms + 0.5 * 1000.0;
 	}
 
 	protected AimPoint DCO_GetAimPointByIndex(PerceivableComponent perceivable, EAimPointType type, int idx)
@@ -594,7 +568,7 @@ modded class SCR_AIGetAimErrorOffset
 		if (selfChar)
 			eye = selfChar.EyePosition();
 		else
-			eye = self.GetOrigin() + vector.Up * AIM_EYE_HEIGHT_FALLBACK;
+			eye = self.GetOrigin() + vector.Up * 1.6;
 
 		TraceParam param = new TraceParam();
 		param.Start     = eye;
@@ -605,7 +579,7 @@ modded class SCR_AIGetAimErrorOffset
 
 		DCO_Perf.Count("t:Modded_AimErrorOffset");
 		float frac = GetGame().GetWorld().TraceMove(param, null);
-		if (frac >= AIM_VIS_TRACE_MIN_FRAC)
+		if (frac >= 0.98)
 			return true;
 
 		if (targetEnt && param.TraceEnt && param.TraceEnt.GetRootParent() == targetEnt.GetRootParent())
@@ -633,10 +607,10 @@ modded class SCR_AIGetAimErrorOffset
 		}
 
 		float distScale = 1.0;
-		if (distance > HEAD_AIM_FULL_DIST)
+		if (distance > 100.0)
 		{
-			float t = Math.Clamp((distance - HEAD_AIM_FULL_DIST) / (HEAD_AIM_MIN_DIST - HEAD_AIM_FULL_DIST), 0.0, 1.0);
-			distScale = Math.Lerp(1.0, HEAD_AIM_FAR_SCALE, t);
+			float t = Math.Clamp((distance - 100.0) / (300.0 - 100.0), 0.0, 1.0);
+			distScale = Math.Lerp(1.0, 0.3, t);
 		}
 
 		return chance * distScale;

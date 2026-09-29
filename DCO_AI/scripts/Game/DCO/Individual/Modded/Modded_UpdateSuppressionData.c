@@ -4,7 +4,6 @@ modded class SCR_AIUpdateTargetSuppressionData
 
 	protected static const string PORT_VISIBLE = "Visible";
 	protected static const string PORT_TIME_LAST_SEEN = "TimeLastSeen_ms";
-	protected static const string PORT_FIRE_TREE_ID = "FireTreeId";
 
 	protected const int FIRE_TREE_INVALID 		= -1;
 	protected const int FIRE_TREE_LOOK			= 0;
@@ -61,7 +60,7 @@ modded class SCR_AIUpdateTargetSuppressionData
 
 		SetVariableOut(PORT_VISIBLE, m_bTargetVisible);
 		SetVariableOut(PORT_TIME_LAST_SEEN, m_fTargetLastSeenTime_ms);
-		SetVariableOut(PORT_FIRE_TREE_ID, fireTreeid);
+		SetVariableOut("FireTreeId", fireTreeid);
 
 		return ENodeResult.SUCCESS;
 	}
@@ -109,7 +108,7 @@ modded class SCR_AIUpdateTargetSuppressionData
 	protected static ref TStringArray s_aVarsIn = { PORT_SUPPRESSION_VOLUME };
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 
-	protected static ref TStringArray s_aVarsOut = { PORT_VISIBLE, PORT_TIME_LAST_SEEN, PORT_FIRE_TREE_ID };
+	protected static ref TStringArray s_aVarsOut = { PORT_VISIBLE, PORT_TIME_LAST_SEEN, "FireTreeId" };
 	override TStringArray GetVariablesOut() { return s_aVarsOut; }
 
 	static override bool VisibleInPalette() { return true; }

@@ -1,18 +1,6 @@
 class DCO_SmokeUtility
 {
-	static const float SMOKE_COOLDOWN_MS         = 120000.0;
-	static const float SMOKE_GROUP_COOLDOWN_MS   = 60000.0;
-	static const float SMOKE_DECLINE_COOLDOWN_MS = 20000.0;
-	static const float SMOKE_AREA_COOLDOWN_RADIUS = 60.0;
-	static const float SMOKE_AREA_COOLDOWN_MS     = 45000.0;
 
-	static const float SMOKE_MIN_DANGER      = 1.8;
-	static const float SMOKE_MIN_SUPPRESSION = 0.35;
-	static const float SMOKE_THREAT_DIST_MIN = 25.0;
-	static const float SMOKE_THREAT_DIST_MAX = 350.0;
-	static const float SMOKE_THROW_DIST_MIN  = 8.0;
-	static const float SMOKE_THROW_DIST_MAX  = 15.0;
-	static const float SMOKE_OPEN_AREA_RADIUS = 15.0;
 
 	protected static ref map<IEntity, float> s_mLastSmokeThrowTime = new map<IEntity, float>();
 	protected static ref map<IEntity, float> s_mLastDeclineTime    = new map<IEntity, float>();
@@ -23,12 +11,12 @@ class DCO_SmokeUtility
 
 	protected static bool IsAreaRecentlySmoked(vector pos, float worldTime_ms)
 	{
-		float radiusSq = SMOKE_AREA_COOLDOWN_RADIUS * SMOKE_AREA_COOLDOWN_RADIUS;
+		float radiusSq = 60.0 * 60.0;
 		bool found = false;
 
 		for (int i = s_aRecentSmokePositions.Count() - 1; i >= 0; i--)
 		{
-			if (worldTime_ms - s_aRecentSmokeTimes[i] > SMOKE_AREA_COOLDOWN_MS)
+			if (worldTime_ms - s_aRecentSmokeTimes[i] > 45000.0)
 			{
 				s_aRecentSmokePositions.Remove(i);
 				s_aRecentSmokeTimes.Remove(i);
@@ -69,39 +57,39 @@ class DCO_SmokeUtility
 			return false;
 
 		float now_ms = GetGame().GetWorld().GetWorldTime();
-		if (IsOnCooldown(s_mLastSmokeThrowTime, me, now_ms, SMOKE_COOLDOWN_MS)
-			|| IsOnCooldown(s_mLastDeclineTime, me, now_ms, SMOKE_DECLINE_COOLDOWN_MS))
+		if (IsOnCooldown(s_mLastSmokeThrowTime, me, now_ms, 120000.0)
+			|| IsOnCooldown(s_mLastDeclineTime, me, now_ms, 20000.0))
 			return false;
 
 		AIGroup group;
 		if (utility.GetAIAgent())
 			group = utility.GetAIAgent().GetParentGroup();
 		float lastGroupThrow;
-		if (group && s_mLastGroupSmokeThrowTime.Find(group, lastGroupThrow) && now_ms - lastGroupThrow < SMOKE_GROUP_COOLDOWN_MS)
+		if (group && s_mLastGroupSmokeThrowTime.Find(group, lastGroupThrow) && now_ms - lastGroupThrow < 60000.0)
 			return false;
 
 		if (utility.m_CombatMoveState.IsInValidCover())
 			return false;
 
 		bool pressured = utility.m_ThreatSystem.GetState() == EAIThreatState.THREATENED
-			|| utility.m_ThreatSystem.GetSuppressionMeasure() >= SMOKE_MIN_SUPPRESSION;
-		if (dangerSeverity >= 0 && dangerSeverity < SMOKE_MIN_DANGER && !pressured)
+			|| utility.m_ThreatSystem.GetSuppressionMeasure() >= 0.35;
+		if (dangerSeverity >= 0 && dangerSeverity < 1.8 && !pressured)
 			return false;
 		if (dangerSeverity < 0 && !pressured)
 			return false;
 
 		float distToThreat = vector.Distance(me.GetOrigin(), threatPos);
-		if (distToThreat < SMOKE_THREAT_DIST_MIN || distToThreat > SMOKE_THREAT_DIST_MAX)
+		if (distToThreat < 25.0 || distToThreat > 350.0)
 			return false;
 
 		if (!utility.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_SMOKEGRENADE))
 			return false;
 
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(me) || !IsInOpenArea(me, SMOKE_OPEN_AREA_RADIUS))
+		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(me) || !IsInOpenArea(me, 15.0))
 			return false;
 
 		vector dirToThreat = vector.Direction(me.GetOrigin(), threatPos).Normalized();
-		float throwDist = Math.Clamp(distToThreat * 0.3, SMOKE_THROW_DIST_MIN, SMOKE_THROW_DIST_MAX);
+		float throwDist = Math.Clamp(distToThreat * 0.3, 8.0, 15.0);
 		vector smokePos = me.GetOrigin() + dirToThreat * throwDist;
 		smokePos[1] = GetGame().GetWorld().GetSurfaceY(smokePos[0], smokePos[2]);
 
