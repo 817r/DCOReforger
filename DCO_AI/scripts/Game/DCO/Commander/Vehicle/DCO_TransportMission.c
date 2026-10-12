@@ -13,15 +13,13 @@ class DCO_TransportMissionComponentClass : ScriptComponentClass {}
 
 class DCO_TransportMissionComponent : ScriptComponent
 {
-	[Attribute("0", UIWidgets.CheckBox, "Auto-assign vehicle ini ke commander waktu scenario mulai (tanpa GM). Dedicated Co kosong = commander random yang faction-nya sama.", category: "Commander")]
+	[Attribute("0", UIWidgets.CheckBox, "Auto-assign this vehicle to a commander when the scenario starts (no GM). Empty Dedicated Co = a random commander of the same faction.", category: "Commander")]
 	protected bool m_bAutoAssign;
 
-	[Attribute("", UIWidgets.Auto, "UID commander tujuan auto-assign. Kosong = random se-faction.", category: "Commander")]
+	[Attribute("", UIWidgets.Auto, "UID of the auto-assign target commander. Empty = random commander of the same faction.", category: "Commander")]
 	protected string m_sDedicatedCo;
 
 	protected int m_iAutoAssignTries;
-	protected const int AUTO_ASSIGN_MAX_TRIES = 12;
-	protected const int AUTO_ASSIGN_RETRY_MS = 5000;
 
 	protected DCO_ETransportState       m_eState            = DCO_ETransportState.IDLE;
 	protected DCO_GroupUtilityComponent m_PassengerGroup;
@@ -58,15 +56,15 @@ class DCO_TransportMissionComponent : ScriptComponent
 		return m_OwnerGroup;
 	}
 
-	static float BOARDING_TIMEOUT   = 40.0;
-	static float MOVING_TIMEOUT     = 300.0;
-	static float DISEMBARK_TIMEOUT  = 30.0;
-	static float BOARDING_DIST      = 25.0;
+	static float BOARDING_TIMEOUT() { return 40.0; }
+	static float MOVING_TIMEOUT() { return 300.0; }
+	static float DISEMBARK_TIMEOUT() { return 30.0; }
+	static float BOARDING_DIST() { return 25.0; }
 
 	protected float m_fBoardingTimeout = 40.0;
 
 	protected float m_fMovingTimeout = 300.0;
-	static float ARRIVAL_DIST       = 25.0;
+	static float ARRIVAL_DIST() { return 25.0; }
 
 	void StartMission(
 		DCO_GroupUtilityComponent   passengerGroup,
@@ -80,9 +78,9 @@ class DCO_TransportMissionComponent : ScriptComponent
 		m_Commander      = commander;
 
 		SetState(DCO_ETransportState.BOARDING, worldTime);
-		m_fBoardingTimeout = BOARDING_TIMEOUT + vector.Distance(passengerGroup.GetOwner().GetOrigin(), GetOwner().GetOrigin()) / 1.2;
+		m_fBoardingTimeout = BOARDING_TIMEOUT() + vector.Distance(passengerGroup.GetOwner().GetOrigin(), GetOwner().GetOrigin()) / 1.2;
 
-		Print(string.Format("[DCO_Transport] Mission started | group: %1 | dest: %2",
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdVeh(GetOwner()), string.Format("Mission started | group: %1 | dest: %2",
 			passengerGroup.GetOwner().GetName(), destination.ToString()));
 	}
 
@@ -129,17 +127,17 @@ class DCO_TransportMissionComponent : ScriptComponent
 			m_PassengerGroup.GetOwner().GetOrigin(),
 			GetOwner().GetOrigin());
 
-		if (dist <= BOARDING_DIST)
+		if (dist <= BOARDING_DIST())
 		{
 			BoardGroup();
 			SetState(DCO_ETransportState.MOVING, worldTime);
-			m_fMovingTimeout = Math.Max(MOVING_TIMEOUT, 60.0 + vector.Distance(GetOwner().GetOrigin(), m_vDestination) / 2.5);
+			m_fMovingTimeout = Math.Max(MOVING_TIMEOUT(), 60.0 + vector.Distance(GetOwner().GetOrigin(), m_vDestination) / 2.5);
 			return;
 		}
 
 		if ((worldTime - m_fStateStartTime) > m_fBoardingTimeout)
 		{
-			Print("[DCO_Transport] BOARDING timeout — aborting");
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdVeh(GetOwner()), "BOARDING timeout — aborting");
 			AbortMission(worldTime);
 		}
 	}
@@ -148,16 +146,16 @@ class DCO_TransportMissionComponent : ScriptComponent
 	{
 		float dist = vector.Distance(GetOwner().GetOrigin(), m_vDestination);
 
-		if (dist <= ARRIVAL_DIST)
+		if (dist <= ARRIVAL_DIST())
 		{
-			Print("[DCO_Transport] Vehicle arrived");
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdVeh(GetOwner()), "Vehicle arrived");
 			Arrive(worldTime);
 			return;
 		}
 
 		if ((worldTime - m_fStateStartTime) > m_fMovingTimeout)
 		{
-			Print("[DCO_Transport] MOVING timeout — force arrive");
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdVeh(GetOwner()), "MOVING timeout — force arrive");
 			Arrive(worldTime);
 		}
 	}
@@ -165,6 +163,16 @@ class DCO_TransportMissionComponent : ScriptComponent
 	protected void Arrive(float worldTime)
 	{
 		bool staysMounted = m_eVehType == EVehicleType.APC || (m_PassengerGroup && m_PassengerGroup.IsArmor());
+		if (!staysMounted && m_PassengerGroup && m_PassengerGroup.GetMyCommander() && !m_PassengerGroup.IsPlayerGroup())
+		{
+			ClaimOwnership(m_PassengerGroup);
+			m_PassengerGroup.SetOwnedVehicle(GetOwner());
+			m_PassengerGroup.EndTransport();
+			SetState(DCO_ETransportState.CLAIMED, worldTime);
+			DCO_Perf.Count("veh:pool_kept");
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, "-", string.Format("veh_pool_kept grp=%1 veh=%2", m_PassengerGroup.GetOwner(), GetOwner()));
+			return;
+		}
 		if (!staysMounted)
 		{
 			SetState(DCO_ETransportState.DISEMBARKING, worldTime);
@@ -181,7 +189,7 @@ class DCO_TransportMissionComponent : ScriptComponent
 
 	protected void TickDisembarking(float worldTime)
 	{
-		if ((worldTime - m_fStateStartTime) > DISEMBARK_TIMEOUT)
+		if ((worldTime - m_fStateStartTime) > DISEMBARK_TIMEOUT())
 		{
 			if (m_PassengerGroup)
 			{
@@ -189,7 +197,7 @@ class DCO_TransportMissionComponent : ScriptComponent
 			}
 
 			SetState(DCO_ETransportState.DONE, worldTime);
-			Print("[DCO_Transport] Mission complete");
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdVeh(GetOwner()), "Mission complete");
 		}
 	}
 
@@ -212,11 +220,10 @@ class DCO_TransportMissionComponent : ScriptComponent
 		board.SetEntity(GetOwner());
 		board.SetAllowance(true, true, true);
 		board.SetPriorityLevel(SCR_AIBehaviorBase.PRIORITY_LEVEL_PLAYER);
-		board.SetCompletionRadius(15);
 		board.SetCompletionType(EAIWaypointCompletionType.All);
 
 		grp.AddWaypoint(wpGetIn);
-		Print(string.Format("[DCO_Transport] GetIn %1 -> %2 | wp sekarang %3", grp.GetName(), GetOwner().GetName(), grp.GetCurrentWaypoint()));
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdVeh(GetOwner()), string.Format("GetIn %1 -> %2 | current wp %3", grp.GetName(), GetOwner().GetName(), grp.GetCurrentWaypoint()));
 
 		float surfY  = GetGame().GetWorld().GetSurfaceY(m_vDestination[0], m_vDestination[2]);
 		vector dest  = Vector(m_vDestination[0], surfY, m_vDestination[2]);
@@ -227,7 +234,7 @@ class DCO_TransportMissionComponent : ScriptComponent
 
 		m_PassengerGroup.SetPhase(DCO_ETaskPhase.MOVING);
 
-		Print(string.Format("[DCO_Transport] Group boarding vehicle → moving to %1", dest.ToString()));
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdVeh(GetOwner()), string.Format("Group boarding vehicle → moving to %1", dest.ToString()));
 	}
 
 	protected void DisembarkGroup()
@@ -257,7 +264,7 @@ class DCO_TransportMissionComponent : ScriptComponent
 		}
 
 		SetState(DCO_ETransportState.DONE, worldTime);
-		Print("[DCO_Transport] Mission aborted");
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdVeh(GetOwner()), "Mission aborted");
 	}
 
 	protected void SetState(DCO_ETransportState newState, float worldTime)
@@ -279,7 +286,7 @@ class DCO_TransportMissionComponent : ScriptComponent
 		if (!IsActiveVehicle())
 			return;
 
-		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float worldTime = DCO_Util.NowS();
 		Tick(worldTime);
 	}
 
@@ -295,7 +302,7 @@ class DCO_TransportMissionComponent : ScriptComponent
 		super.EOnInit(owner);
 
 		if (m_bAutoAssign && Replication.IsServer())
-			GetGame().GetCallqueue().CallLater(TryAutoAssign, AUTO_ASSIGN_RETRY_MS, false);
+			GetGame().GetCallqueue().CallLater(TryAutoAssign, 5000, false);
 
 		if (!AICommander_ManagerComponent.GetInstance())
 			return;
@@ -310,14 +317,9 @@ class DCO_TransportMissionComponent : ScriptComponent
 			return;
 
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
-		SCR_VehicleFactionAffiliationComponent fac = SCR_VehicleFactionAffiliationComponent.Cast(GetOwner().FindComponent(SCR_VehicleFactionAffiliationComponent));
-		if (mgr && fac)
+		FactionKey fk = DCO_Util.FactionKeyOf(GetOwner(), true);
+		if (mgr && !fk.IsEmpty())
 		{
-			FactionKey fk;
-			if (fac.GetAffiliatedFaction())
-				fk = fac.GetAffiliatedFactionKey();
-			else
-				fk = fac.GetDefaultFactionKey();
 
 			AICommander_BaseComponent cmd = mgr.PickCommanderForFaction(fk, m_sDedicatedCo);
 			if (cmd && cmd.AssignVehicle(GetOwner()))
@@ -325,10 +327,10 @@ class DCO_TransportMissionComponent : ScriptComponent
 		}
 
 		m_iAutoAssignTries++;
-		if (m_iAutoAssignTries < AUTO_ASSIGN_MAX_TRIES)
-			GetGame().GetCallqueue().CallLater(TryAutoAssign, AUTO_ASSIGN_RETRY_MS, false);
+		if (m_iAutoAssignTries < 12)
+			GetGame().GetCallqueue().CallLater(TryAutoAssign, 5000, false);
 		else
-			Print(string.Format("[DCO_Transport] Auto-assign %1 gagal: gak ada commander '%2'", GetOwner().GetName(), m_sDedicatedCo), LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.WARN, DCO_Log.IdVeh(GetOwner()), string.Format("Auto-assign %1 failed: no commander '%2'", GetOwner().GetName(), m_sDedicatedCo));
 	}
 
 	DCO_GroupUtilityComponent GetPassengerGroup()

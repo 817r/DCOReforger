@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{5DC0B7A1E3F24C68}AI/BehaviorTrees/Chimera/Soldier/DCO_Spec_MG.bt"
+ Configurations {
+  BehaviorTreeResourceClass PC {
+  }
+  BehaviorTreeResourceClass XBOX_ONE : PC {
+  }
+  BehaviorTreeResourceClass XBOX_SERIES : PC {
+  }
+  BehaviorTreeResourceClass PS4 : PC {
+  }
+  BehaviorTreeResourceClass PS5 : PC {
+  }
+  BehaviorTreeResourceClass HEADLESS : PC {
+  }
+ }
+}

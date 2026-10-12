@@ -3,7 +3,8 @@ enum DCO_EGarrisonSlotType
 	WINDOW,
 	ROOF,
 	DOOR_GUARD,
-	INTERIOR
+	INTERIOR,
+	COVER
 }
 
 class DCO_GarrisonSlot
@@ -15,8 +16,11 @@ class DCO_GarrisonSlot
 	DCO_EGarrisonSlotType m_eType;
 	int m_iFloor;
 	float m_fScore;
+	float m_fWinDist = -1;
 	int m_iFailCount;
 	bool m_bUnreachable;
+	float m_fCover;
+	float m_fFire;
 
 	vector m_vWorldPos;
 	vector m_vWorldDir;
@@ -31,6 +35,9 @@ class DCO_GarrisonSlot
 		s.m_eType = m_eType;
 		s.m_iFloor = m_iFloor;
 		s.m_fScore = m_fScore;
+		s.m_fWinDist = m_fWinDist;
+		s.m_fCover = m_fCover;
+		s.m_fFire = m_fFire;
 		return s;
 	}
 
@@ -53,12 +60,18 @@ class DCO_GarrisonPrefabSlots
 {
 	ref array<ref DCO_GarrisonSlot> m_aSlots = {};
 	int m_iTraces;
+	bool m_bGrid;
+	bool m_bComplete;
+	bool m_bDirty;
+	int m_iMisses;
+	vector m_vMins;
+	vector m_vMaxs;
+	ref array<vector> m_aGone = {};
+	ref array<int> m_aGoneSes = {};
 }
 
 class DCO_GarrisonSlotGenerator
 {
-	protected static const float HEADROOM_PROBE = 6.0;
-	protected static const float EXIT_MARGIN = 0.5;
 
 	IEntity m_Building;
 	ResourceName m_sPrefab;
@@ -182,7 +195,7 @@ class DCO_GarrisonSlotGenerator
 
 		vector local;
 		local[0] = m_vMins[0] + (ix + 0.5) * 2.0;
-		local[1] = m_vMins[1] + iy * 2.8 + 0.3;
+		local[1] = m_vMins[1] + 1.0 * iy * 2.8 + 0.3;
 		local[2] = m_vMins[2] + (iz + 0.5) * 2.0;
 		vector world = m_Building.CoordToParent(local);
 
@@ -217,7 +230,7 @@ class DCO_GarrisonSlotGenerator
 			return 0;
 		snapped = m_Building.CoordToParent(snappedLocal);
 
-		float headroom = Trace(snapped + 0.1 * vector.Up, snapped + HEADROOM_PROBE * vector.Up);
+		float headroom = Trace(snapped + 0.1 * vector.Up, snapped + 6.0 * vector.Up);
 		bool openSky = headroom >= 0.999;
 		if (openSky)
 		{
@@ -233,7 +246,7 @@ class DCO_GarrisonSlotGenerator
 		}
 		else
 		{
-			if (headroom * HEADROOM_PROBE < 1.6)
+			if (headroom * 6.0 < 1.6)
 				return 0;
 
 			if (!IsBuilding(m_Trace.TraceEnt))
@@ -256,6 +269,7 @@ class DCO_GarrisonSlotGenerator
 		int wallNear = 0;
 		float longestInterior = 0;
 		float longestYaw = 0;
+		float winDist = float.MAX;
 
 		for (int i = 0; i < 8; i++)
 		{
@@ -267,7 +281,7 @@ class DCO_GarrisonSlotGenerator
 			vector o = pos + 1.0 * vector.Up;
 			float hit = Trace(o, o + dir * 15.0, true) * 15.0;
 			float exitDist = BoundsExitDistance(o, dir);
-			bool exits = hit >= exitDist + EXIT_MARGIN;
+			bool exits = hit >= exitDist + 0.5;
 
 			if (hit < 1.2)
 				wallNear++;
@@ -277,7 +291,7 @@ class DCO_GarrisonSlotGenerator
 				vector oLow = pos + 0.3 * vector.Up;
 				float hitLow = Trace(oLow, oLow + dir * 15.0, true) * 15.0;
 				float exitLow = BoundsExitDistance(oLow, dir);
-				if (hitLow >= exitLow + EXIT_MARGIN)
+				if (hitLow >= exitLow + 0.5)
 				{
 					if (exitLow < 1.5)
 						return;
@@ -285,6 +299,7 @@ class DCO_GarrisonSlotGenerator
 				}
 
 				windowYaw.Insert(yawLocal);
+				winDist = Math.Min(winDist, exitDist);
 				anyCrouch = true;
 				continue;
 			}
@@ -293,9 +308,10 @@ class DCO_GarrisonSlotGenerator
 			{
 				vector oHigh = pos + 1.45 * vector.Up;
 				float hitHigh = Trace(oHigh, oHigh + dir * 15.0, true) * 15.0;
-				if (hitHigh >= BoundsExitDistance(oHigh, dir) + EXIT_MARGIN)
+				if (hitHigh >= BoundsExitDistance(oHigh, dir) + 0.5)
 				{
 					windowYaw.Insert(yawLocal);
+					winDist = Math.Min(winDist, hit);
 					continue;
 				}
 			}
@@ -310,7 +326,8 @@ class DCO_GarrisonSlotGenerator
 		DCO_GarrisonSlot slot = new DCO_GarrisonSlot();
 		slot.m_vLocalPos = posLocal;
 		slot.m_iFloor = floor;
-		float cover = wallNear / 8.0;
+		float cover = 1.0 * wallNear / 8.0;
+		slot.m_fCover = cover;
 
 		if (!windowYaw.IsEmpty())
 		{
@@ -324,6 +341,15 @@ class DCO_GarrisonSlotGenerator
 			if (anyCrouch)
 				slot.m_eStance = ECharacterStance.CROUCH;
 			slot.m_fScore = 0.5 + 0.05 * windowYaw.Count() + 0.3 * cover;
+			slot.m_fWinDist = winDist;
+			slot.m_fFire = Math.Min(windowYaw.Count(), 3) / 3.0;
+			if (slot.m_eType == DCO_EGarrisonSlotType.WINDOW && DCO_GlobalAIComponent.BehaviorOn(DCO_EBehavior.AWARENESS))
+			{
+				if (winDist < 1.0)
+					slot.m_fScore -= 0.15;
+				else if (winDist <= 2.5)
+					slot.m_fScore += 0.1;
+			}
 			m_aRaw.Insert(slot);
 			return;
 		}
@@ -352,6 +378,7 @@ class DCO_GarrisonSlotGenerator
 			slot.m_fArc = 60;
 			slot.m_eStance = ECharacterStance.CROUCH;
 			slot.m_fScore = 0.4 + 0.3 * cover;
+			slot.m_fFire = 0.17;
 			m_aRaw.Insert(slot);
 			return;
 		}
@@ -364,6 +391,8 @@ class DCO_GarrisonSlotGenerator
 		slot.m_fArc = 90;
 		slot.m_eStance = ECharacterStance.CROUCH;
 		slot.m_fScore = cover;
+		if (longestInterior >= 8.0)
+			slot.m_fFire = 0.17;
 		m_aRaw.Insert(slot);
 	}
 

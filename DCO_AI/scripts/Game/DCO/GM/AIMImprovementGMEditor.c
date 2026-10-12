@@ -3,7 +3,7 @@ class SCR_AIGlobalAIMAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -18,7 +18,7 @@ class SCR_AIGlobalAIMAttribute : SCR_BaseValueListEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 

@@ -44,7 +44,7 @@ FrameWidgetClass {
       SizeY 118
       OffsetBottom -118
      }
-     Color 0.953 0.698 0.192 1
+     Color 0.8964 0.4451 0.0307 1
     }
     ImageWidgetClass "{000000005DC00004}" {
      Name "Icon"
@@ -75,7 +75,7 @@ FrameWidgetClass {
       OffsetBottom -36
      }
      Clipping Ancestor
-     Color 0.953 0.698 0.192 1
+     Color 0.8964 0.4451 0.0307 1
      Text ""
      "Font Size" 20
      "Min Font Size" 20
@@ -99,7 +99,7 @@ FrameWidgetClass {
       SizeY 2
       OffsetBottom -40
      }
-     Color 0.953 0.698 0.192 0.7
+     Color 0.8964 0.4451 0.0307 0.7
     }
     RichTextWidgetClass "{000000005DC00008}" {
      Name "Title"
@@ -140,7 +140,7 @@ FrameWidgetClass {
       OffsetBottom -112
      }
      Clipping Ancestor
-     Color 0.8 0.8 0.8 1
+     Color 0.6038 0.6038 0.6038 1
      Text ""
      "Font Size" 19
      "Min Font Size" 19

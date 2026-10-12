@@ -58,6 +58,9 @@ modded class SCR_AICombatMoveLogic_Suppressive
 
 		waitTime *= DCO_PersonalityCombatUtility.GetStoppedWaitTimeScale(m_Utility);
 
+		if (m_bGoodVision && m_CharacterController && m_CharacterController.GetStance() == ECharacterStance.PRONE)
+			waitTime *= 2.5;
+
 		return waitTime;
 	}
 
@@ -191,20 +194,16 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		if (isExposed)
 			coverSearchDistMax *= 2;
 		rq.m_fCoverSearchDistMax = coverSearchDistMax;
-		rq.m_fMoveDuration_s = moveDurationMax * MoraleAmplifyMove();
+		float spMin = coverSearchDistMin;
+		float spMax = coverSearchDistMax;
+		int spTier = DCO_Stress.Shape(m_Utility, rq, m_bCloseRangeCombat, m_State.m_bInCover, false, spMin, spMax, "suppressive");
+		if (spTier <= 1)
+			rq.m_fMoveDuration_s = moveDurationMax;
 
 		rq.GetOnMovementStarted().Insert(OnMovementStarted);
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
 
 		m_State.ApplyNewRequest(rq);
-	}
-
-	float MoraleAmplifyMove()
-	{
-		if (!moraleSystem)
-			return 1.0;
-
-		return Math.Map(moraleSystem.GetMoraleMeasure(), 0, 4.5, 2, 1);
 	}
 
 	void MoraleAndThreatPushMove(out SCR_EAICombatMoveDirection moveDir)
@@ -222,7 +221,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 						moveDir = SCR_EAICombatMoveDirection.BACKWARD;
 						break;
 					}
-					case moraleState.MANIAC:
+					case moraleState.PANIC:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -230,7 +229,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 							moveDir = SCR_EAICombatMoveDirection.RIGHT;
 						break;
 					}
-					case moraleState.ANXIOUS:
+					case moraleState.SHAKEN:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -238,12 +237,12 @@ modded class SCR_AICombatMoveLogic_Suppressive
 							moveDir = SCR_EAICombatMoveDirection.RIGHT;
 						break;
 					}
-					case moraleState.NORMAL:
+					case moraleState.CALM:
 					{
 						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;
 					}
-					case moraleState.MOTIVATED:
+					case moraleState.TENSE:
 					{
 						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;
@@ -265,7 +264,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 						moveDir = SCR_EAICombatMoveDirection.BACKWARD;
 						break;
 					}
-					case moraleState.MANIAC:
+					case moraleState.PANIC:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -273,7 +272,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 							moveDir = SCR_EAICombatMoveDirection.RIGHT;
 						break;
 					}
-					case moraleState.ANXIOUS:
+					case moraleState.SHAKEN:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -281,7 +280,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 							moveDir = SCR_EAICombatMoveDirection.RIGHT;
 						break;
 					}
-					case moraleState.NORMAL:
+					case moraleState.CALM:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -289,7 +288,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 							moveDir = SCR_EAICombatMoveDirection.RIGHT;
 						break;
 					}
-					case moraleState.MOTIVATED:
+					case moraleState.TENSE:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -314,12 +313,12 @@ modded class SCR_AICombatMoveLogic_Suppressive
 						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;
 					}
-					case moraleState.MANIAC:
+					case moraleState.PANIC:
 					{
 						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;
 					}
-					case moraleState.ANXIOUS:
+					case moraleState.SHAKEN:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -327,7 +326,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 							moveDir = SCR_EAICombatMoveDirection.RIGHT;
 						break;
 					}
-					case moraleState.NORMAL:
+					case moraleState.CALM:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -335,7 +334,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 							moveDir = SCR_EAICombatMoveDirection.RIGHT;
 						break;
 					}
-					case moraleState.MOTIVATED:
+					case moraleState.TENSE:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -363,7 +362,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 							moveDir = SCR_EAICombatMoveDirection.RIGHT;
 						break;
 					}
-					case moraleState.MANIAC:
+					case moraleState.PANIC:
 					{
 						if (Math.RandomIntInclusive(0,1) == 1)
 							moveDir = SCR_EAICombatMoveDirection.LEFT;
@@ -371,17 +370,17 @@ modded class SCR_AICombatMoveLogic_Suppressive
 							moveDir = SCR_EAICombatMoveDirection.RIGHT;
 						break;
 					}
-					case moraleState.ANXIOUS:
+					case moraleState.SHAKEN:
 					{
 						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;
 					}
-					case moraleState.NORMAL:
+					case moraleState.CALM:
 					{
 						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;
 					}
-					case moraleState.MOTIVATED:
+					case moraleState.TENSE:
 					{
 						moveDir = SCR_EAICombatMoveDirection.ANYWHERE;
 						break;
@@ -413,8 +412,17 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		SCR_EAICombatMoveDirection eDirection;
 		float coverSearchSectorHalfAngleRad;
 		vector avoidStraightPathDir;
+		vector cohLeader;
+		float cohRadius;
 
-		if (!wp || SCR_EntityWaypoint.Cast(wp))
+		if (wp && !SCR_EntityWaypoint.Cast(wp) && DCO_Util.OutsideCombatCohesion(agent, m_MyEntity, cohLeader, cohRadius))
+		{
+			movePos = cohLeader;
+			eDirection = SCR_EAICombatMoveDirection.FORWARD;
+			coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+			avoidStraightPathDir = vector.Zero;
+		}
+		else if (!wp || SCR_EntityWaypoint.Cast(wp))
 		{
 			if (agent != group.GetLeaderAgent() && vector.Distance(group.GetLeaderEntity().GetOrigin(), m_MyEntity.GetOrigin()) > 50)
 			{
@@ -430,6 +438,13 @@ modded class SCR_AICombatMoveLogic_Suppressive
 				avoidStraightPathDir = GetAvoidStraightPathDir();
 				coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 			}
+		}
+		else if (SCR_SuppressWaypoint.Cast(wp))
+		{
+			movePos = m_MyEntity.GetOrigin();
+			eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+			avoidStraightPathDir = vector.Zero;
+			coverSearchSectorHalfAngleRad = -1.0;
 		}
 		else
 		{
@@ -490,6 +505,10 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			return false;
 		}
 
+		AIGroup myGroup = m_Utility.GetAIAgent().GetParentGroup();
+		if (m_bGoodVision && myGroup && SCR_SuppressWaypoint.Cast(myGroup.GetCurrentWaypoint()))
+			return false;
+
 		float stoppedWaitTime = ResolveStoppedWaitTime(m_State.m_bInCover, m_eThreatState, m_eWeaponType);
 
 		if (IsFirstExecution() && !m_State.m_bInCover)
@@ -498,9 +517,9 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		if (m_Utility.GetCharacterController().GetWeaponObstructedState() != EWeaponObstructedState.UNOBSTRUCTED)
 		{
 			if (m_CharacterController.GetStance() == ECharacterStance.CROUCH)
-				m_CharacterController.SetStanceChange(1);
+				DCO_Stance.Request(m_CharacterController, 1, "move_suppr");
 			else if (m_CharacterController.GetStance() == ECharacterStance.PRONE)
-				m_CharacterController.SetStanceChange(2);
+				DCO_Stance.Request(m_CharacterController, 2, "move_suppr");
 			else
 				return m_State.m_fTimerStopped_s > 2;
 		}
@@ -508,10 +527,12 @@ modded class SCR_AICombatMoveLogic_Suppressive
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
 	}
 
-	protected static ref TStringArray s_aVarsIn = {
-		PORT_SUPPRESSION_VOLUME,
-		PORT_VISIBLE,
-		PORT_TIME_LAST_SEEN
-	};
-	override TStringArray GetVariablesIn() { return s_aVarsIn; }
+	protected static ref TStringArray s_aVarsIn;
+	protected static TStringArray GetVarsIn()
+	{
+		if (!s_aVarsIn)
+			s_aVarsIn = { PORT_SUPPRESSION_VOLUME, PORT_VISIBLE, PORT_TIME_LAST_SEEN };
+		return s_aVarsIn;
+	}
+	override TStringArray GetVariablesIn() { return GetVarsIn(); }
 }

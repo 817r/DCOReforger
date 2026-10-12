@@ -9,14 +9,30 @@ modded class SCR_AISuppressGroupClusterBehavior
 	protected const int THREAT_MAX_PEAK_DURATION_MS = 150*1000;
 	protected const int THREAT_MAX_PEAK_REACTION_DURATION_MS = 30*1000;
 
+	override float CustomEvaluate()
+	{
+		if (DCO_FriendlyInFire())
+		{
+			DCO_Perf.Count("supp_friendly_cancel");
+			Complete();
+			return 0;
+		}
+		if (DCO_LaneBlocked())
+		{
+			DCO_OnLaneAbort();
+			Complete();
+			return 0;
+		}
+		return super.CustomEvaluate();
+	}
+
 	override protected float GetFireRate(float distance, float timeSinceLastInfoS, float soldierThreat, float groupThreat, float peakReactionFactor)
 	{
 		float midDist = SCR_AICombatComponent.CLOSE_RANGE_COMBAT_DISTANCE + SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE / 2;
 
 		float soldierThreatFactor = Math.Map(distance, 0, FIRE_RATE_SCALING_MAX_DISTANCE, 2, 0.3);
-		const float groupThreatFactor = 1.1;
 
-		float fireRate = 5 * (soldierThreat * soldierThreatFactor + groupThreat * groupThreatFactor);
+		float fireRate = 5 * (soldierThreat * soldierThreatFactor + groupThreat * 1.1);
 
 		if (peakReactionFactor > 0)
 		{

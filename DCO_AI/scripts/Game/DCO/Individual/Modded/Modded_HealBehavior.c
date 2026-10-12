@@ -1,9 +1,6 @@
 modded class SCR_AIHealBehavior : SCR_AIBehaviorBase
 {
 	protected const float MAX_TIME_TO_UNCON_HIGH_PRIORITY_S = 16;
-	protected const float DCO_HEAL_NOW_S = 8;
-	protected const float DCO_COVER_SEARCH_DIST = 20;
-	protected const float DCO_COVER_MOVE_COOLDOWN_S = 6;
 
 	override float CustomEvaluate()
 	{
@@ -16,9 +13,23 @@ modded class SCR_AIHealBehavior : SCR_AIBehaviorBase
 
 		bool calm = m_Utility.m_ThreatSystem.GetThreatMeasureWithoutInjuryFactor() < 0.4;
 
+		if (timeToUncon > 8.0 && DCO_Stress.T(m_Utility, "heal.unseen_gate", 1.0) > 0)
+		{
+			float unseenAt = m_Utility.m_ThreatSystem.DCO_UnseenCloseAt();
+			if (unseenAt >= 0 && GetGame().GetWorld().GetWorldTime() - unseenAt < DCO_Stress.T(m_Utility, "heal.unseen_s", 6.0) * 1000.0)
+			{
+				DCO_Perf.Count("heal:unseen_gate");
+				if (DCO_Log.On(DCO_ELogChannel.MEDIC, DCO_ELogLevel.DEBUG))
+					DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("heal_defer unit=%1 reason=unseen_shooter_close age_s=%2 bleed_to_uncon_s=%3",
+						DCO_Log.IdUnit(m_Utility.m_OwnerEntity), ((GetGame().GetWorld().GetWorldTime() - unseenAt) * 0.001).ToString(-1, 1), Math.Round(timeToUncon)));
+				DCO_RequestCover();
+				return 0;
+			}
+		}
+
 		if (!calm && !DCO_IsSheltered())
 		{
-			if (timeToUncon > DCO_HEAL_NOW_S)
+			if (timeToUncon > 8.0)
 			{
 				DCO_RequestCover();
 				return 0;
@@ -46,7 +57,7 @@ modded class SCR_AIHealBehavior : SCR_AIBehaviorBase
 	{
 		SCR_AICombatMoveState state = m_Utility.m_CombatMoveState;
 		IEntity owner = m_Utility.m_OwnerEntity;
-		if (!state || !owner || state.IsExecutingRequest() || !DCO_CoverMoveBudget.CanMove(owner, DCO_COVER_MOVE_COOLDOWN_S))
+		if (!state || !owner || state.IsExecutingRequest() || !DCO_CoverMoveBudget.CanMove(owner, 6.0))
 			return;
 
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
@@ -70,10 +81,10 @@ modded class SCR_AIHealBehavior : SCR_AIBehaviorBase
 		rq.m_bCheckCoverVisibility = false;
 		rq.m_bFailIfNoCover = false;
 		rq.m_fCoverSearchDistMin = 0;
-		rq.m_fCoverSearchDistMax = DCO_COVER_SEARCH_DIST;
+		rq.m_fCoverSearchDistMax = 20.0;
 		rq.m_eStanceMoving = ECharacterStance.CROUCH;
 		rq.m_eMovementType = EMovementType.SPRINT;
-		rq.m_fMoveDuration_s = DCO_COVER_SEARCH_DIST / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
+		rq.m_fMoveDuration_s = 20.0 / SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT;
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 		state.DCO_SetDodgeStance(rq);

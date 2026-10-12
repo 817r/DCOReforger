@@ -3,16 +3,16 @@ class GMC_RespawnerComponentClass : ScriptComponentClass {}
 
 class GMC_RespawnerComponent : ScriptComponent
 {
-	[Attribute("", UIWidgets.Auto, "Daftar konfigurasi group (dipilih random tiap spawn)")]
+	[Attribute("", UIWidgets.Auto, "List of group configs (one is picked at random each spawn).")]
 	protected ref array<ref GMC_RespawnGroupConfig> m_aGroupConfigs;
 
-	[Attribute("30.0", UIWidgets.EditBox, "Delay sebelum respawn (detik)")]
+	[Attribute("30.0", UIWidgets.EditBox, "Delay before respawn (s).")]
 	protected float m_fRespawnDelay;
 
-	[Attribute("5.0", UIWidgets.EditBox, "Radius spawn di sekitar entity ini (meter)")]
+	[Attribute("5.0", UIWidgets.EditBox, "Spawn radius around this entity (m).")]
 	protected float m_fSpawnRadius;
 
-	[Attribute("1", UIWidgets.CheckBox, "Auto-respawn setelah semua unit mati?")]
+	[Attribute("1", UIWidgets.CheckBox, "Auto-respawn after all units are dead?")]
 	protected bool m_bAutoRespawn;
 
 	[Attribute("0", UIWidgets.CheckBox, "Debug log?")]
@@ -35,7 +35,7 @@ class GMC_RespawnerComponent : ScriptComponent
 
 		if (!m_aGroupConfigs || m_aGroupConfigs.IsEmpty())
 		{
-			PrintFormat("[GMC_Respawner] WARNING: Tidak ada GroupConfig pada '%1'", owner.GetName());
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("No GroupConfig on '%1'", owner.GetName()));
 			return;
 		}
 
@@ -68,13 +68,13 @@ class GMC_RespawnerComponent : ScriptComponent
 				m_bGroupWasPopulated = false;
 
 				if (m_OnGroupWiped) m_OnGroupWiped.Invoke();
-				DebugLog("Semua unit mati.");
+				DebugLog("All units dead.");
 
 				if (m_bAutoRespawn)
 				{
 					m_fRespawnTimer   = m_fRespawnDelay;
 					m_bWaitingRespawn = true;
-					DebugLog(string.Format("Respawn dalam %.1f detik...", m_fRespawnDelay));
+					DebugLog(string.Format("Respawn in %.1f s...", m_fRespawnDelay));
 				}
 			}
 		}
@@ -108,7 +108,7 @@ class GMC_RespawnerComponent : ScriptComponent
 		GMC_RespawnGroupConfig cfg = m_aGroupConfigs[Math.RandomInt(0, m_aGroupConfigs.Count())];
 		if (!cfg || cfg.m_sGroupPrefab == string.Empty)
 		{
-			Print("[GMC_Respawner] ERROR: Config atau prefab kosong.");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.ERROR, "-", "Config or prefab is empty.");
 			return;
 		}
 
@@ -136,14 +136,14 @@ class GMC_RespawnerComponent : ScriptComponent
 		Resource res = Resource.Load(cfg.m_sGroupPrefab);
 		if (!res.IsValid())
 		{
-			PrintFormat("[GMC_Respawner] ERROR: Prefab tidak valid: %1", cfg.m_sGroupPrefab);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.ERROR, "-", string.Format("Invalid prefab: %1", cfg.m_sGroupPrefab));
 			return;
 		}
 
 		IEntity spawned = GetGame().SpawnEntityPrefab(res, null, p);
 		if (!spawned)
 		{
-			PrintFormat("[GMC_Respawner] ERROR: Spawn gagal: %1", cfg.m_sGroupPrefab);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.ERROR, "-", string.Format("Spawn failed: %1", cfg.m_sGroupPrefab));
 			return;
 		}
 
@@ -151,7 +151,7 @@ class GMC_RespawnerComponent : ScriptComponent
 		m_bGroupWasPopulated = false;
 
 		if (!m_ActiveGroup)
-			Print("[GMC_Respawner] WARNING: Prefab bukan SCR_AIGroup, wipe detection tidak aktif.");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", "Prefab is not an SCR_AIGroup, wipe detection is off.");
 
 		DebugLog("SpawnGroup OK: " + cfg.m_sGroupPrefab);
 		if (m_OnGroupSpawned) m_OnGroupSpawned.Invoke(0);
@@ -192,7 +192,7 @@ class GMC_RespawnerComponent : ScriptComponent
 
 	protected void OnBalanceChanged(int newCount, int playerCount)
 	{
-		DebugLog(string.Format("Balance berubah: count=%1 players=%2 → respawn ulang", newCount, playerCount));
+		DebugLog(string.Format("Balance changed: count=%1 players=%2 -> respawning", newCount, playerCount));
 		m_bWaitingRespawn    = false;
 		m_ActiveGroup        = null;
 		m_bGroupWasPopulated = false;
@@ -201,6 +201,6 @@ class GMC_RespawnerComponent : ScriptComponent
 
 	protected void DebugLog(string msg)
 	{
-		if (m_bDebugLog) PrintFormat("[GMC_Respawner] %1", msg);
+		if (m_bDebugLog) DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", msg);
 	}
 }

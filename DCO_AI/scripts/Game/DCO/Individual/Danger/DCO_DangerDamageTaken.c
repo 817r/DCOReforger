@@ -2,32 +2,46 @@
 modded class SCR_AIDangerReaction_DamageTaken
 {
 	protected static const float COVER_SEARCH_DIST_MAX      = 30.0;
-	protected static const float COVER_SEARCH_DIST_MIN      = 2.0;
 
-	protected static const float LONG_RANGE_THRESHOLD       = 60.0;
 
 
 
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;
 
-	protected static ref map<IEntity, float> s_mLastSuppressTime = new map<IEntity, float>();
+	protected static ref map<IEntity, float> s_mLastSuppressTime;
+	protected static map<IEntity, float> GetLastSuppressTime()
+	{
+		if (!s_mLastSuppressTime)
+			s_mLastSuppressTime = new map<IEntity, float>();
+		return s_mLastSuppressTime;
+	}
 
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
 		IEntity shooter = dangerEvent.GetObject();
 
-		if (!shooter)
+		if (!shooter || dangerEvent.GetVictim() != utility.m_OwnerEntity)
 			return super.PerformReaction(utility, threatSystem, dangerEvent, dangerEventCount);
+
+		utility.m_SectorThreatFilter.OnDamageTaken(shooter.GetOrigin());
 
 		SCR_ChimeraAIAgent agent = SCR_ChimeraAIAgent.Cast(utility.GetOwner());
 
 		if (!agent)
-			return false;
+			return true;
 
 		IEntity shooterRoot = shooter.GetRootParent();
+		DCO_DodgeAssist.NoteHit(utility, shooterRoot);
+		bool known;
+		if (shooterRoot && utility.m_CombatComponent)
+			known = utility.m_CombatComponent.IsEnemyKnown(shooterRoot);
+		DCO_Perf.Count("hit:sector_react");
+		if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG))
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(utility.m_OwnerEntity), string.Format("hit_react unit=%1 shooter_dist=%2 known=%3",
+				DCO_Log.IdUnit(utility.m_OwnerEntity), Math.Round(vector.Distance(utility.GetOrigin(), shooter.GetOrigin())), DCO_Util.B01(known)));
 
 		if (!shooterRoot || !agent.IsEnemy(shooterRoot))
-			return false;
+			return true;
 
 		SCR_AICombatMoveState state = utility.m_CombatMoveState;
 
@@ -41,12 +55,14 @@ modded class SCR_AIDangerReaction_DamageTaken
 		if (!combat)
 			return false;
 
+		combat.DCO_NoteNearMiss(shooterRoot.GetOrigin());
+
 		if (utility.m_AIInfo && utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
 			return false;
 
 		vector shooterPos    = shooter.GetOrigin();
 		float  distToShooter = vector.Distance(utility.GetOrigin(), shooterPos);
-		bool   isLongRange   = distToShooter > LONG_RANGE_THRESHOLD;
+		bool   isLongRange   = distToShooter > 60.0;
 
 		TrySuppressShooter(utility, combat, shooterRoot);
 
@@ -65,6 +81,9 @@ modded class SCR_AIDangerReaction_DamageTaken
 		DCO_AIConfigComponent cfg = utility.m_DCOConfig;
 
 		if (cfg && cfg.IsHoldPosition())
+			return true;
+
+		if (DCO_CoverPierced(utility, state, shooterPos))
 			return true;
 
 		if (state.IsExecutingRequest())
@@ -91,7 +110,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 		rq.m_eStanceEnd    = ECharacterStance.CROUCH;
 
 		rq.m_fCoverSearchDistMax            = COVER_SEARCH_DIST_MAX;
-		rq.m_fCoverSearchDistMin            = COVER_SEARCH_DIST_MIN;
+		rq.m_fCoverSearchDistMin            = 2.0;
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 
 		float speed;
@@ -187,7 +206,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 
 		float lastTime_ms;
 
-		if (!s_mLastSuppressTime.Find(entity, lastTime_ms))
+		if (!GetLastSuppressTime().Find(entity, lastTime_ms))
 			return true;
 
 		return (GetGame().GetWorld().GetWorldTime() - lastTime_ms) > (25.0 * 1000.0);
@@ -199,9 +218,9 @@ modded class SCR_AIDangerReaction_DamageTaken
 			return;
 
 		float now_ms = GetGame().GetWorld().GetWorldTime();
-		s_mLastSuppressTime.Set(entity, now_ms);
+		GetLastSuppressTime().Set(entity, now_ms);
 
-		if (s_mLastSuppressTime.Count() > 128)
+		if (GetLastSuppressTime().Count() > 128)
 			PruneSuppressMap(now_ms);
 	}
 
@@ -211,7 +230,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 
 		array<IEntity> toRemove = {};
 
-		foreach (IEntity ent, float lastTime_ms : s_mLastSuppressTime)
+		foreach (IEntity ent, float lastTime_ms : GetLastSuppressTime())
 		{
 			if (!ent || (now_ms - lastTime_ms) > staleAge_ms)
 				toRemove.Insert(ent);
@@ -219,7 +238,61 @@ modded class SCR_AIDangerReaction_DamageTaken
 
 		foreach (IEntity ent : toRemove)
 		{
-			s_mLastSuppressTime.Remove(ent);
+			GetLastSuppressTime().Remove(ent);
 		}
+	}
+
+	protected static ref map<IEntity, float> s_mDCOPierceNext;
+
+	protected bool DCO_CoverPierced(SCR_AIUtilityComponent utility, SCR_AICombatMoveState state, vector shooterPos)
+	{
+		IEntity me = utility.m_OwnerEntity;
+		float now = GetGame().GetWorld().GetWorldTime();
+		bool coverHidden = state.m_bInCover && !state.m_bExposedInCover;
+		bool fieldHidden = now < state.m_fDCOFieldHiddenUntil_ms;
+		if (!coverHidden && !fieldHidden)
+			return false;
+		if (!s_mDCOPierceNext)
+			s_mDCOPierceNext = new map<IEntity, float>();
+		if (now < s_mDCOPierceNext.Get(me))
+			return false;
+		s_mDCOPierceNext.Set(me, now + 8000.0);
+
+		IEntity building = SCR_CoverManagerComponent.DCO_GetBuildingAt(me);
+		string where = "outdoor";
+		if (building)
+		{
+			where = "indoor";
+			if (!state.DCO_ApplyIndoorRelocate(building, shooterPos, 12.0, 3.0, true, "cover_pierced"))
+				return false;
+		}
+		else
+		{
+			SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+			rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+			rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_DANGER;
+			rq.m_vTargetPos = shooterPos;
+			rq.m_vMovePos = shooterPos;
+			rq.m_eDirection = SCR_EAICombatMoveDirection.ANYWHERE;
+			rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+			rq.m_eStanceMoving = ECharacterStance.CROUCH;
+			rq.m_eStanceEnd = ECharacterStance.CROUCH;
+			rq.m_eMovementType = EMovementType.SPRINT;
+			rq.m_bAimAtTarget = false;
+			rq.m_bAimAtTargetEnd = true;
+			rq.m_bTryFindCover = true;
+			rq.m_bUseCoverSearchDirectivity = false;
+			rq.m_bCheckCoverVisibility = true;
+			rq.m_bFailIfNoCover = false;
+			rq.m_fCoverSearchDistMin = 5.0;
+			rq.m_fCoverSearchDistMax = 15.0;
+			rq.m_fMoveDuration_s = 4.0;
+			state.DCO_ApplyCoverRequest(rq, 2.0);
+		}
+		DCO_Perf.Count("cover:pierced_" + where);
+		if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO))
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("cover_pierced unit=%1 where=%2 shooter_dist=%3",
+				DCO_Log.IdUnit(me), where, Math.Round(vector.Distance(me.GetOrigin(), shooterPos))));
+		return true;
 	}
 };

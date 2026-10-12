@@ -6,7 +6,7 @@ class DCO_GlobalFloatAttribute : SCR_BaseValueListEditorAttribute
 
 	static DCO_GlobalAIComponent GetGlobal(Managed item)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 

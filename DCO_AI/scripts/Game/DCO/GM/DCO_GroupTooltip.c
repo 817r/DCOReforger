@@ -24,7 +24,7 @@ class DCO_GroupTooltipDetail : SCR_EntityTooltipDetail
 
 		m_Group = editableGroup.GetAIGroupComponent();
 		m_Text = TextWidget.Cast(widget);
-		if (!m_Group || !m_Text || m_Group.DCO_GetRole() < 0)
+		if (!m_Group || !m_Text)
 			return false;
 
 		m_sShown = string.Empty;
@@ -59,6 +59,8 @@ class DCO_GroupRoleTooltipDetail : DCO_GroupTooltipDetail
 
 	override protected string BuildText()
 	{
+		if (m_Group.DCO_GetRole() < 0)
+			return "No commander";
 		switch (m_Group.DCO_GetRole())
 		{
 			case DCO_EGroupCapability.MOTORIZED:	return "Motorized";
@@ -79,6 +81,8 @@ class DCO_GroupCapsTooltipDetail : DCO_GroupTooltipDetail
 
 	override protected string BuildText()
 	{
+		if (m_Group.DCO_GetRole() < 0)
+			return "-";
 		int caps = m_Group.DCO_GetCaps();
 		array<string> parts = {};
 		if (caps & 1)
@@ -95,6 +99,49 @@ class DCO_GroupCapsTooltipDetail : DCO_GroupTooltipDetail
 	}
 }
 
+class DCO_GroupLODTooltipDetail : DCO_GroupTooltipDetail
+{
+	void DCO_GroupLODTooltipDetail()
+	{
+		m_sDisplayName = "LOD";
+	}
+
+	override bool InitDetail(SCR_EditableEntityComponent entity, Widget widget)
+	{
+		SCR_EditableGroupComponent editableGroup = SCR_EditableGroupComponent.Cast(entity);
+		if (!editableGroup)
+			return false;
+
+		m_Group = editableGroup.GetAIGroupComponent();
+		m_Text = TextWidget.Cast(widget);
+		if (!m_Group || !m_Text || m_Group.DCO_GetLODInfo() < 0)
+			return false;
+
+		m_sShown = string.Empty;
+		return true;
+	}
+
+	override protected string BuildText()
+	{
+		int info = m_Group.DCO_GetLODInfo();
+		if (info < 0)
+			return string.Empty;
+
+		string mode = "Vanilla";
+		if (info % 4 == DCO_EAILODMode.PREVENT_MAX_LOD)
+			mode = "Prevent max";
+		else if (info % 4 == DCO_EAILODMode.FULL_DETAIL)
+			mode = "Full detail";
+
+		string source = "default";
+		if (info / 4 == 1)
+			source = "commander";
+		else if (info / 4 == 2)
+			source = "override";
+		return mode + " (" + source + ")";
+	}
+}
+
 [BaseContainerProps(), SCR_BaseContainerCustomTitleEnum(EEditableEntityType, "m_EntityType")]
 modded class SCR_EntityTooltipDetailType
 {
@@ -107,6 +154,16 @@ modded class SCR_EntityTooltipDetailType
 			m_bDCO_Added = true;
 			m_aDetails.Insert(new DCO_GroupRoleTooltipDetail());
 			m_aDetails.Insert(new DCO_GroupCapsTooltipDetail());
+			m_aDetails.Insert(new DCO_GroupTaskTooltipDetail(false));
+			m_aDetails.Insert(new DCO_GroupTaskTooltipDetail(true));
+			m_aDetails.Insert(new DCO_GroupLODTooltipDetail());
+			m_aDetails.Insert(new DCO_GroupThreatTooltipDetail());
+		}
+		if (!m_bDCO_Added && m_EntityType == EEditableEntityType.CHARACTER && m_aDetails)
+		{
+			m_bDCO_Added = true;
+			m_aDetails.Insert(new DCO_CharStatsTooltipDetail(false));
+			m_aDetails.Insert(new DCO_CharStatsTooltipDetail(true));
 		}
 		return super.CreateDetailType(type, parent, entity, showImage);
 	}

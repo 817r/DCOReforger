@@ -1,0 +1,15 @@
+BehaviorTree "{6A7AE9218657C561}AI/BehaviorTrees/Chimera/Soldier/DCO_Bound.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_Bound.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    DCO_AIBoundRush "DCO_AI Bound Rush" {
+     Name "DCO_AI Bound Rush"
+     EditorPos 0 -100
+    }
+   }
+  }
+ }
+}

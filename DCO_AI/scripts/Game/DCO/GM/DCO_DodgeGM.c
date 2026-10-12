@@ -21,7 +21,7 @@ class SCR_AIGlobalDodgeShotThresholdAttribute : SCR_BaseValueListEditorAttribute
 
 	protected DCO_GlobalAIComponent GetGlobal(Managed item)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -52,7 +52,7 @@ class SCR_AIGlobalDodgeShotWindowAttribute : SCR_BaseValueListEditorAttribute
 
 	protected DCO_GlobalAIComponent GetGlobal(Managed item)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 

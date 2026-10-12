@@ -3,7 +3,7 @@ class SCR_AIGlobalGrenadeUsageAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -16,7 +16,7 @@ class SCR_AIGlobalGrenadeUsageAttribute : SCR_BaseValueListEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 
@@ -33,7 +33,7 @@ class SCR_AIGlobalGLUsageAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -46,7 +46,7 @@ class SCR_AIGlobalGLUsageAttribute : SCR_BaseValueListEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 
@@ -153,7 +153,7 @@ class SCR_AIGlobalGLAccuracyAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -166,7 +166,7 @@ class SCR_AIGlobalGLAccuracyAttribute : SCR_BaseValueListEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 
@@ -205,7 +205,7 @@ class SCR_AIGlobalSmokeUsageAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -218,7 +218,7 @@ class SCR_AIGlobalSmokeUsageAttribute : SCR_BaseValueListEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 

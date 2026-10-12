@@ -1,6 +1,5 @@
 class DCO_MapOverlay
 {
-	protected static const ResourceName LAYOUT = "{6C7254EC4F560CAC}UI/layouts/DCO/DCO_MapOverlay.layout";
 
 	protected static ref DCO_MapOverlay s_Instance;
 
@@ -32,6 +31,12 @@ class DCO_MapOverlay
 
 		Get().m_aGroups.Copy(groups);
 		Get().m_aObjectives.Copy(objectives);
+	}
+
+	static void EnsureHooked()
+	{
+		if (!System.IsConsoleApp())
+			Get();
 	}
 
 	static void SetTransport(array<float> marks)
@@ -72,6 +77,173 @@ class DCO_MapOverlay
 		return label;
 	}
 
+	protected static array<float> Seg(float x0, float y0, float x1, float y1)
+	{
+		return {x0, y0, x1, y1};
+	}
+
+	protected int DrawBrief(SCR_MapEntity mapEnt, WorkspaceWidget ws, int label)
+	{
+		DCO_BriefUI b = DCO_BriefUI.MapSource();
+		if (!b)
+			return label;
+		array<float> pts = b.GetPts();
+		int mode = DCO_BriefUI.Eff(4);
+		bool tactical = DCO_BriefUI.Eff(8) == 1;
+		bool lift = (b.GetFlags() & DCO_EBriefFlag.LIFT) != 0;
+		bool fire = (b.GetFlags() & DCO_EBriefFlag.FIRE) != 0;
+		int ownCol = 0xFFF08C1E;
+		int friendCol = 0xFF1A3C8C;
+		int enemyCol = 0xFFD0101A;
+		int ctrlCol = 0xFF505050;
+		for (int i = 0; i + 6 <= pts.Count(); i += 6)
+		{
+			int type = pts[i];
+			bool mine = pts[i + 1] > 0.5;
+			bool shared = type == DCO_EBriefPt.OBJ || type == DCO_EBriefPt.RP || type == DCO_EBriefPt.THREAT || type == DCO_EBriefPt.WITHDRAW;
+			if (mode == 1 && !mine && !shared)
+				continue;
+			int ax = 0;
+			int ay = 0;
+			int bx = 0;
+			int by = 0;
+			mapEnt.WorldToScreen(pts[i + 2], pts[i + 3], ax, ay, true);
+			mapEnt.WorldToScreen(pts[i + 4], pts[i + 5], bx, by, true);
+			int col = friendCol;
+			if (mine)
+				col = ownCol;
+			switch (type)
+			{
+				case DCO_EBriefPt.OBJ:
+				{
+					float rad = pts[i + 4] * mapEnt.GetCurrentZoom();
+					AddCircle(ax, ay, Math.Max(rad, 8), ctrlCol);
+					if (tactical)
+						label = SetLabel(label, ws, ax + 10.0, ay - 12.0, "OBJ " + b.GetObjName(), ctrlCol);
+					if (b.HasHHour())
+						label = SetLabel(label, ws, ax + 10.0, ay + 4.0, "H-HOUR " + b.HHourText(), ctrlCol);
+					break;
+				}
+				case DCO_EBriefPt.THREAT:
+				{
+					AddArrow(ax, ay, bx, by, enemyCol);
+					break;
+				}
+				case DCO_EBriefPt.TRIGGER:
+				{
+					int tcol = ctrlCol;
+					if (fire)
+						tcol = enemyCol;
+					AddLine(Seg(ax, ay, bx, by), tcol, 3, false);
+					if (tactical)
+						label = SetLabel(label, ws, bx + 6.0, by - 9.0, "TRIGGER", tcol);
+					break;
+				}
+				case DCO_EBriefPt.TRP:
+				{
+					AddLine({ax - 7.0, ay - 7.0, ax + 7.0, ay + 7.0}, ctrlCol, 2, false);
+					AddLine({ax - 7.0, ay + 7.0, ax + 7.0, ay - 7.0}, ctrlCol, 2, false);
+					if (tactical)
+						label = SetLabel(label, ws, ax + 9.0, ay - 9.0, "TRP", ctrlCol);
+					break;
+				}
+				case DCO_EBriefPt.FRIEND:
+				{
+					AddSymbol(Diamond(ax, ay, 9.0), Diamond(ax, ay, 7.0), friendCol);
+					break;
+				}
+				case DCO_EBriefPt.RESERVE:
+				{
+					AddSymbol(Square(ax, ay, 9.0), Square(ax, ay, 7.0), friendCol);
+					if (tactical)
+						label = SetLabel(label, ws, ax + 10.0, ay - 9.0, "RES", friendCol);
+					break;
+				}
+				case DCO_EBriefPt.WITHDRAW:
+				{
+					AddArrow(ax, ay, bx, by, ctrlCol);
+					break;
+				}
+				case DCO_EBriefPt.RP:
+				{
+					AddSymbol(Triangle(ax, ay, 11.0, -1), Triangle(ax, ay, 9.0, -1), ctrlCol);
+					label = SetLabel(label, ws, ax + 11.0, ay - 9.0, "RP", ctrlCol);
+					break;
+				}
+				case DCO_EBriefPt.AXIS:
+				{
+					AddArrow(ax, ay, bx, by, friendCol);
+					break;
+				}
+				case DCO_EBriefPt.SBF:
+				{
+					int scol = col;
+					if (lift)
+						scol = ctrlCol;
+					float sdx = bx - ax;
+					float sdy = by - ay;
+					float slen = Math.Sqrt(sdx * sdx + sdy * sdy);
+					if (slen > 1)
+					{
+						sdx /= slen;
+						sdy /= slen;
+					}
+					if (tactical)
+						AddLine({ax - sdy * 10.0 - sdx * 5.0, ay + sdx * 10.0 - sdy * 5.0, ax - sdy * 10.0, ay + sdx * 10.0, ax + sdy * 10.0, ay - sdx * 10.0, ax + sdy * 10.0 - sdx * 5.0, ay - sdx * 10.0 - sdy * 5.0}, scol, 3, false);
+					else
+						AddCircle(ax, ay, 7.0, scol);
+					AddArrow(ax + sdx * 12.0, ay + sdy * 12.0, ax + (bx - ax) * 0.6, ay + (by - ay) * 0.6, scol);
+					if (tactical)
+						label = SetLabel(label, ws, ax + 11.0, ay + 4.0, "SBF", scol);
+					break;
+				}
+				case DCO_EBriefPt.ASSAULT:
+				{
+					AddArrow(ax, ay, bx, by, col);
+					break;
+				}
+				case DCO_EBriefPt.BLOCK:
+				{
+					AddSymbol(Square(ax, ay, 10.0), Square(ax, ay, 8.0), col);
+					if (tactical)
+						label = SetLabel(label, ws, ax + 11.0, ay - 9.0, "BLOCK", col);
+					break;
+				}
+				case DCO_EBriefPt.OWN:
+				{
+					AddCircle(ax, ay, 8.0, ownCol);
+					break;
+				}
+				case DCO_EBriefPt.SECTOR:
+				{
+					AddLine(Seg(ax, ay, bx, by), ownCol, 2, false);
+					break;
+				}
+				case DCO_EBriefPt.ROUTE:
+				{
+					if (Math.AbsFloat(bx - ax) + Math.AbsFloat(by - ay) > 20)
+						AddArrow(ax, ay, bx, by, ownCol);
+					break;
+				}
+			}
+		}
+		if (DCO_BriefUI.Eff(9) == 1)
+		{
+			vector objPos = b.GetObjPos();
+			int nx, ny;
+			mapEnt.WorldToScreen(objPos[0], objPos[2], nx, ny, true);
+			string note = b.GetTypeName() + " " + b.GetObjName();
+			foreach (string ln : b.GetLines())
+			{
+				string row = ln;
+				row.Replace("|", ": ");
+				note += "\n" + row;
+			}
+			label = SetLabel(label, ws, nx + 24.0, ny + 16.0, note, ctrlCol);
+		}
+		return label;
+	}
+
 	protected void OnMapOpen(MapConfiguration config)
 	{
 		SCR_MapEntity mapEnt = SCR_MapEntity.GetMapInstance();
@@ -79,7 +251,7 @@ class DCO_MapOverlay
 			return;
 
 		OnMapClose(config);
-		m_wRoot = GetGame().GetWorkspace().CreateWidgets(LAYOUT, mapEnt.GetMapMenuRoot());
+		m_wRoot = GetGame().GetWorkspace().CreateWidgets("{6C7254EC4F560CAC}UI/layouts/DCO/DCO_MapOverlay.layout", mapEnt.GetMapMenuRoot());
 		if (!m_wRoot)
 			return;
 
@@ -164,6 +336,22 @@ class DCO_MapOverlay
 		}
 
 		label = DrawTransport(mapEnt, ws, label);
+		label = DrawBrief(mapEnt, ws, label);
+
+		vector offer;
+		if (DCO_OfferCard.GetMarker(offer))
+		{
+			int ox, oy;
+			mapEnt.WorldToScreen(offer[0], offer[2], ox, oy, true);
+			int oc = 0xFFF3B231;
+			for (int s = 0; s < 12; s++)
+			{
+				float a0 = s * Math.PI2 / 12;
+				float a1 = a0 + Math.PI2 / 24;
+				AddLine({ox + Math.Cos(a0) * 12.0, oy + Math.Sin(a0) * 12.0, ox + Math.Cos((a0 + a1) * 0.5) * 12.0, oy + Math.Sin((a0 + a1) * 0.5) * 12.0, ox + Math.Cos(a1) * 12.0, oy + Math.Sin(a1) * 12.0}, oc, 2, false);
+			}
+			label = SetLabel(label, ws, ox + 14.0, oy - 9.0, DCO_Radio.Resolve("map_offer", 0, null), oc);
+		}
 
 		for (int i = label; i < m_aLabels.Count(); i++)
 			m_aLabels[i].SetVisible(false);
@@ -186,18 +374,23 @@ class DCO_MapOverlay
 		if (t)
 		{
 			t.SetText(text);
-			t.SetColorInt(color);
-			t.SetOutline(2, m_iOutline);
+			t.SetColorInt(Lin(color));
+			t.SetOutline(2, Lin(m_iOutline));
 		}
 		lw.SetVisible(true);
 		FrameSlot.SetPos(lw, ws.DPIUnscale(sx), ws.DPIUnscale(sy));
 		return idx + 1;
 	}
 
+	protected static int Lin(int srgb)
+	{
+		return Color.FromIntSRGB(srgb).PackToInt();
+	}
+
 	protected void AddPolygon(array<float> verts, int color)
 	{
 		PolygonDrawCommand p = new PolygonDrawCommand();
-		p.m_iColor = color;
+		p.m_iColor = Lin(color);
 		p.m_Vertices = verts;
 		m_aCommands.Insert(p);
 	}
@@ -211,14 +404,14 @@ class DCO_MapOverlay
 	protected void AddLine(array<float> verts, int color, float width, bool enclose)
 	{
 		LineDrawCommand o = new LineDrawCommand();
-		o.m_iColor = (m_iOutline & 0x00FFFFFF) | (color & 0xFF000000);
+		o.m_iColor = Lin((m_iOutline & 0x00FFFFFF) | (color & 0xFF000000));
 		o.m_fWidth = width + 2;
 		o.m_bShouldEnclose = enclose;
 		o.m_Vertices = verts;
 		m_aCommands.Insert(o);
 
 		LineDrawCommand l = new LineDrawCommand();
-		l.m_iColor = color;
+		l.m_iColor = Lin(color);
 		l.m_fWidth = width;
 		l.m_bShouldEnclose = enclose;
 		l.m_Vertices = verts;

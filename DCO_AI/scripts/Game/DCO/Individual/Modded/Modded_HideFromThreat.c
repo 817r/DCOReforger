@@ -3,10 +3,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 	protected const float DANGER_HIGH = 2.0;
 	protected const float DANGER_MEDIUM = 0.5;
 
-	protected const float COVER_DIST_MIN_BUILDING = 0.0;
-	protected const float COVER_DIST_MAX_BUILDING = 5.0;
 
-	protected const float MOVE_DURATION_SCALE_BUILDING = 1.5;
 
 	override void Update()
 	{
@@ -46,7 +43,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			SCR_EAIThreatSectorFlags sectorFlags = m_Utility.m_SectorThreatFilter.GetSectorFlags(m_iCurrentSector);
 			bool causedDamage = sectorFlags & SCR_EAIThreatSectorFlags.CAUSED_DAMAGE;
 
-			if (distToThreat < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST)
+			if (distToThreat < DCO_Ctx.HideCloseM(m_Utility))
 			{
 				if (m_State.IsInValidCover())
 				{
@@ -74,7 +71,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 					}
 				}
 			}
-			else if (distToThreat < SCR_AICombatMoveUtils.VERY_LONG_RANGE_COMBAT_DIST)
+			else if (distToThreat < DCO_Ctx.HideFarM(m_Utility))
 			{
 				if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
 				{
@@ -122,9 +119,9 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 
 		if (rq.m_eType == SCR_EAICombatMoveRequestType.BUILDING)
 		{
-			rq.m_fCoverSearchDistMin = COVER_DIST_MIN_BUILDING;
-			rq.m_fCoverSearchDistMax = COVER_DIST_MAX_BUILDING;
-			rq.m_fMoveDuration_s    *= MOVE_DURATION_SCALE_BUILDING;
+			rq.m_fCoverSearchDistMin = 0.0;
+			rq.m_fCoverSearchDistMax = 5.0;
+			rq.m_fMoveDuration_s    *= 1.5;
 			rq.m_bTryFindCover = false;
 		}
 		else
@@ -136,7 +133,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 	override protected void PushRequestMove(vector threatPos, float danger, SCR_EAIThreatSectorFlags sectorFlags)
 	{
 		float distance = vector.Distance(m_MyEntity.GetOrigin(), threatPos);
-		bool closeRange = distance < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST;
+		bool closeRange = distance < DCO_Ctx.HideCloseM(m_Utility);
 
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 
@@ -218,7 +215,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 	protected void PushRequestMoveDanger(vector threatPos, float danger, SCR_EAIThreatSectorFlags sectorFlags)
 	{
 		float distance = vector.Distance(m_MyEntity.GetOrigin(), threatPos);
-		bool closeRange = distance < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST;
+		bool closeRange = distance < DCO_Ctx.HideCloseM(m_Utility);
 
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 

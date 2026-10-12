@@ -1,13 +1,12 @@
 class DCO_PlayerAwareness
 {
-	protected static const float TICK_S = 5;
 	protected static float s_fTimer;
 
 
 	static void Tick(float timeSlice)
 	{
 		s_fTimer += timeSlice;
-		if (s_fTimer < TICK_S)
+		if (s_fTimer < 5.0)
 			return;
 		s_fTimer = 0;
 
@@ -157,10 +156,29 @@ class DCO_PlayerAwareness
 
 		foreach (int id : ids)
 			DCO_Radio.Group(id, "COMMANDER", key, DCO_ERadioKind.INFO, params);
+
+		if (key == "op_assault_soon" && params)
+		{
+			int si = params.Find("sec");
+			if (si >= 0 && si + 1 < params.Count())
+				DCO_Briefing.HHour(cmd, obj, params[si + 1].ToFloat());
+		}
 	}
 
-	protected static ref map<string, float> s_mIdfCd = new map<string, float>();
-	protected static ref map<int, float> s_mHeldCd = new map<int, float>();
+	protected static ref map<string, float> s_mIdfCd;
+	protected static map<string, float> GetIdfCd()
+	{
+		if (!s_mIdfCd)
+			s_mIdfCd = new map<string, float>();
+		return s_mIdfCd;
+	}
+	protected static ref map<int, float> s_mHeldCd;
+	protected static map<int, float> GetHeldCd()
+	{
+		if (!s_mHeldCd)
+			s_mHeldCd = new map<int, float>();
+		return s_mHeldCd;
+	}
 
 	protected static float WarnRadius()
 	{
@@ -228,7 +246,7 @@ class DCO_PlayerAwareness
 		if (ids.IsEmpty())
 			return;
 
-		float now = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float now = DCO_Util.NowS();
 		float tof = CMD_ArtillerySupport.TimeOfFlight(firePos, impact);
 		string grid = DCO_PlayerComms.Grid(impact);
 		string cell = string.Format("%1_%2", Math.Round(impact[0] / 200.0), Math.Round(impact[2] / 200.0));
@@ -236,9 +254,9 @@ class DCO_PlayerAwareness
 		{
 			string memo = id.ToString() + "_" + cell;
 			float until;
-			if (s_mIdfCd.Find(memo, until) && now < until)
+			if (GetIdfCd().Find(memo, until) && now < until)
 				continue;
-			s_mIdfCd.Set(memo, now + 60.0);
+			GetIdfCd().Set(memo, now + 60.0);
 			float delay = tof + Math.RandomFloat(3, 8);
 			GetGame().GetCallqueue().CallLater(IncomingGroup, delay * 1000, false, id, grid);
 		}
@@ -260,14 +278,14 @@ class DCO_PlayerAwareness
 		if (ids.IsEmpty())
 			return;
 
-		float now = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float now = DCO_Util.NowS();
 		string grid = DCO_PlayerComms.Grid(req.m_vImpactPos);
 		foreach (int id : ids)
 		{
 			float until;
-			if (s_mHeldCd.Find(id, until) && now < until)
+			if (GetHeldCd().Find(id, until) && now < until)
 				continue;
-			s_mHeldCd.Set(id, now + 60.0);
+			GetHeldCd().Set(id, now + 60.0);
 			DCO_Radio.Group(id, "ARTILLERY", "fire_held", DCO_ERadioKind.INFO, DCO_Radio.P("grid", grid));
 		}
 	}

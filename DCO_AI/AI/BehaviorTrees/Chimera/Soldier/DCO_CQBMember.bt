@@ -1,0 +1,15 @@
+BehaviorTree "{E15B8A3C7D294F60}AI/BehaviorTrees/Chimera/Soldier/DCO_CQBMember.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_CQBMember.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    DCO_AICQBMemberStep "DCO_AI CQB Member Step" {
+     Name "DCO_AI CQB Member Step"
+     EditorPos 0 -100
+    }
+   }
+  }
+ }
+}

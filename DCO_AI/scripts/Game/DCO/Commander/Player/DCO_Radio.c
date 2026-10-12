@@ -1,16 +1,16 @@
 [BaseContainerProps()]
 class DCO_RadioVariant
 {
-	[Attribute("", UIWidgets.EditBox, "Teks. Placeholder: {callsign} {grid} {dir} {dist} {eta} {obj} {count} {type} {reason} dll. Boleh ID stringtable (#...).")]
+	[Attribute("", UIWidgets.EditBox, "Text. Placeholders: {callsign} {grid} {dir} {dist} {eta} {obj} {count} {type} {reason} etc. A stringtable ID (#...) is allowed.")]
 	string m_sText;
 
-	[Attribute("", UIWidgets.EditBox, "Faction key (US / USSR / FIA). Kosong = semua.")]
+	[Attribute("", UIWidgets.EditBox, "Faction key (US / USSR / FIA). Empty = all.")]
 	string m_sFaction;
 
-	[Attribute("-1", UIWidgets.EditBox, "-1 semua, 0 Measured, 1 Aggressive, 2 Cautious")]
+	[Attribute("-1", UIWidgets.EditBox, "-1 all, 0 Measured, 1 Aggressive, 2 Cautious")]
 	int m_iPersonality;
 
-	[Attribute("-1", UIWidgets.EditBox, "-1 semua, 0 tenang, 1 kritis")]
+	[Attribute("-1", UIWidgets.EditBox, "-1 all, 0 calm, 1 critical")]
 	int m_iUrgency;
 }
 
@@ -38,7 +38,13 @@ class DCO_Radio
 	protected static ref DCO_RadioBankConfig s_Bank;
 	protected static ref map<string, DCO_RadioPhrase> s_mBank;
 	protected static ref map<string, ref array<ref DCO_RadioVariant>> s_mOverride;
-	protected static ref map<string, int> s_mLast = new map<string, int>();
+	protected static ref map<string, int> s_mLast;
+	protected static map<string, int> GetLast()
+	{
+		if (!s_mLast)
+			s_mLast = new map<string, int>();
+		return s_mLast;
+	}
 
 	static void Group(int groupID, string title, string key, DCO_ERadioKind kind = DCO_ERadioKind.INFO, array<string> params = null, bool critical = false)
 	{
@@ -76,6 +82,15 @@ class DCO_Radio
 		bool isOverride;
 		int idx = Pick(key, grp, critical, "p" + playerID, isOverride);
 		Deliver(playerID, title, key, idx, isOverride, params, kind);
+	}
+
+	static string Text(string key, SCR_AIGroup grp, array<string> params)
+	{
+		bool isOverride;
+		int idx = Pick(key, grp, false, "t", isOverride);
+		if (isOverride)
+			return Fill(s_mOverride.Get(key)[idx].m_sText, params);
+		return Resolve(key, idx, params);
 	}
 
 	static array<string> P(string k1, string v1, string k2 = "", string v2 = "", string k3 = "", string v3 = "", string k4 = "", string v4 = "", string k5 = "", string v5 = "")
@@ -128,7 +143,7 @@ class DCO_Radio
 	{
 		if (!cmd)
 			return 0;
-		if (cmd.GetAggression() >= 0.65)
+		if (cmd.DCO_EffAggression() >= 0.65)
 			return 1;
 		if (cmd.GetRiskTaking() <= 0.35 || cmd.GetPatience() >= 0.7)
 			return 2;
@@ -261,12 +276,12 @@ class DCO_Radio
 
 		string memo = lastKey + "|" + key;
 		int last = -1;
-		s_mLast.Find(memo, last);
+		GetLast().Find(memo, last);
 		if (pool.Count() > 1)
 			pool.RemoveItem(last);
 
 		int pick = pool.GetRandomElement();
-		s_mLast.Set(memo, pick);
+		GetLast().Set(memo, pick);
 		return pick;
 	}
 
@@ -294,7 +309,7 @@ class DCO_Radio
 		Resource res = BaseContainerTools.LoadContainer("{6921DC7753900C22}Configs/DCO/DCO_RadioBank.conf");
 		if (!res || !res.IsValid())
 		{
-			Print("[DCO_Radio] Bank radio gak ketemu: " + "{6921DC7753900C22}Configs/DCO/DCO_RadioBank.conf", LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.WARN, "-", "Radio bank not found: " + "{6921DC7753900C22}Configs/DCO/DCO_RadioBank.conf");
 			return;
 		}
 
@@ -327,7 +342,7 @@ class DCO_Radio
 		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
 		if (!ctx.LoadFromFile("$profile:DCO/DCO_Radio.json"))
 		{
-			Print("[DCO_Radio] GAGAL parse " + "$profile:DCO/DCO_Radio.json" + " -- pakai bank default.", LogLevel.ERROR);
+			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.ERROR, "-", "FAILED to parse " + "$profile:DCO/DCO_Radio.json" + " -- using the default bank.");
 			return;
 		}
 
@@ -350,7 +365,7 @@ class DCO_Radio
 			s_mOverride.Set(key, list);
 			keys++;
 		}
-		PrintFormat("[DCO_Radio] %1 key radio di-override dari %2", keys, "$profile:DCO/DCO_Radio.json");
+		DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", string.Format("%1 radio keys overridden from %2", keys, "$profile:DCO/DCO_Radio.json"));
 	}
 
 	protected static DCO_RadioVariant ParseVariant(string raw)
@@ -394,7 +409,7 @@ class DCO_Radio
 	{
 		FileIO.MakeDirectory("$profile:DCO");
 		SCR_JsonSaveContext save = new SCR_JsonSaveContext();
-		save.WriteValue("_comment", "DCO radio override. Isi array key dengan teks sendiri (menggantikan bank default untuk key itu). Tag opsional di depan: [US,AGGRESSIVE,CRITICAL] teks. Faction = key faction, personality = AGGRESSIVE/CAUTIOUS/MEASURED, urgency = CRITICAL/CALM. Placeholder sama dengan bank default, contoh {callsign} {grid}. Array kosong = pakai bank default.");
+		save.WriteValue("_comment", "DCO radio override. Fill a key array with your own lines (they replace the default bank for that key). Optional tags in front: [US,AGGRESSIVE,CRITICAL] text. Faction = faction key, personality = AGGRESSIVE/CAUTIOUS/MEASURED, urgency = CRITICAL/CALM. Placeholders are the same as in the default bank, for example {callsign} {grid}. Empty array = use the default bank.");
 
 		array<string> keys = {};
 		foreach (string key, DCO_RadioPhrase p : s_mBank)
@@ -408,6 +423,6 @@ class DCO_Radio
 		}
 
 		if (save.SaveToFile("$profile:DCO/DCO_Radio.json"))
-			Print("[DCO_Radio] Template override ditulis ke " + "$profile:DCO/DCO_Radio.json");
+			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", "Override template written to " + "$profile:DCO/DCO_Radio.json");
 	}
 }

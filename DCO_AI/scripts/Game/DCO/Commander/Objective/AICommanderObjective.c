@@ -12,100 +12,181 @@ class CMD_AICommanderObjectiveComponentClass : ScriptComponentClass
 
 class CMD_AICommanderObjectiveComponent : ScriptComponent
 {
-	[Attribute("", UIWidgets.ResourceNamePicker, desc: "Prefab entity yang punya AICommander_ManagerComponent. Di-spawn otomatis (server) kalau entity ini init sebelum ada manager di world. Kosong = gak auto-spawn.", "et", category: "Commander Manager")]
+	[Attribute("", UIWidgets.ResourceNamePicker, desc: "Entity prefab with AICommander_ManagerComponent. Spawned automatically (server) if this entity initialises before a manager exists in the world. Empty = no auto spawn.", "et", category: "Commander Manager")]
 	protected ResourceName m_sManagerPrefab;
 
-	[Attribute("50.0", UIWidgets.EditBox, "Base strategic value (0–100). Makin tinggi makin penting.", category: "Objective")]
+	[Attribute("50.0", UIWidgets.EditBox, "Base strategic value (0-100). Higher = more important.", category: "Objective")]
 	protected float m_fBaseValue;
 
-	[Attribute("", UIWidgets.EditBox, "Nama Objective", category: "Objective"), RplProp()]
+	[Attribute("", UIWidgets.EditBox, "Objective name.", category: "Objective"), RplProp()]
 	protected string m_sObjectiveName;
 
-	[Attribute("150.0", UIWidgets.EditBox, "Radius (meter) untuk deteksi musuh di sekitar objective ini.", category: "Objective")]
+	protected string m_sDCOFallbackName;
+
+	[Attribute("150.0", UIWidgets.EditBox, "Radius (m) for detecting enemies around this objective.", category: "Objective")]
 	protected float m_fThreatRadius;
 
-	[Attribute("200.0", UIWidgets.EditBox, "Radius (meter) untuk cek friendly presence.", category: "Objective")]
+	[Attribute("200.0", UIWidgets.EditBox, "Radius (m) for checking friendly presence.", category: "Objective")]
 	protected float m_fFriendlyRadius;
 
 	[Attribute("30.0", UIWidgets.Slider, "Radius of the Objective", "1.0 300.0 1.0"), RplProp(onRplName: "OnRadiusChanged")]
 	protected float m_fRadius;
 
-	[Attribute("400.0", UIWidgets.EditBox, "Radius (meter) intel coverage yang di-provide objective ini ke objective LAIN di sekitarnya. Cuma relevan kalau ObjectiveType == RECON.", category: "Intel")]
+	[Attribute("400.0", UIWidgets.EditBox, "Radius (m) of intel coverage this objective gives to OTHER nearby objectives. Only relevant if ObjectiveType == RECON.", category: "Intel")]
 	protected float m_fIntelCoverageRadius;
 
-	[Attribute("2500.0", UIWidgets.EditBox, "Jarak (meter) dari commander di mana proximity bonus abis (0 di jarak ini, penuh di jarak 0).", category: "Priority")]
+	[Attribute("2500.0", UIWidgets.EditBox, "Distance (m) from the commander at which the proximity bonus runs out (0 at this distance, full at distance 0).", category: "Priority")]
 	protected float m_fMaxRelevantDistance;
 
-	[Attribute("20.0", UIWidgets.EditBox, "Penalti maksimum buat objective di luar Max Relevant Distance. Makin besar makin ogah commander ngambil objective jauh. 0 = jarak jauh gak dibedain sama sekali.", category: "Priority")]
+	[Attribute("20.0", UIWidgets.EditBox, "Maximum penalty for objectives beyond Max Relevant Distance. Larger = commander less willing to take far objectives. 0 = distance makes no difference.", category: "Priority")]
 	protected float m_fDistantFalloffWeight;
 
-	[Attribute("100.0", UIWidgets.EditBox, "Poin maksimum dari kedekatan, didapat waktu jarak ke commander nol. Ini penentu utama urutan objective. Naikin kalau objective dekat masih kalah sama objective jauh yang base value-nya besar.", category: "Priority")]
+	[Attribute("100.0", UIWidgets.EditBox, "Maximum points from proximity, reached at zero distance to the commander. This mainly decides objective order. Raise if near objectives still lose to far ones with a large base value.", category: "Priority")]
 	protected float m_fProximityWeight;
 
-	[Attribute("40.0", UIWidgets.EditBox, "Poin per unit musuh, SEBELUM diskala jarak. Ancaman sifatnya pengubah -- kalau angkanya bikin objective bermusuh selalu menang tanpa peduli jarak, berarti kegedean.", category: "Priority")]
+	[Attribute("40.0", UIWidgets.EditBox, "Points per enemy unit, BEFORE distance scaling. Threat is a modifier; if it makes hostile objectives always win regardless of distance, it is too high.", category: "Priority")]
 	protected float m_fThreatWeight;
 
-	[Attribute("2.0", UIWidgets.EditBox, "Pangkat peluruhan ancaman terhadap kedekatan. 1 = ancaman luruh sama cepat dengan kedekatan. 2 = jauh lebih cepat (di setengah radius relevan, kedekatan 50% tapi ancaman 25%). Makin besar makin cuek sama musuh jauh.", category: "Priority")]
+	[Attribute("2.0", UIWidgets.EditBox, "Exponent of threat decay relative to proximity. 1 = threat decays as fast as proximity. 2 = much faster (at half the relevant radius, proximity 50% but threat 25%). Larger = cares less about far enemies.", category: "Priority")]
 	protected float m_fThreatFalloffPower;
 
-	[Attribute("0.05", UIWidgets.Range, "Lantai skala ancaman. Mencegah musuh di luar radius relevan dianggap nol sama sekali -- kalau nol, dua objective jauh yang setara jadi gak bisa dibedain walaupun satunya penuh musuh.", params: "0 1 0.01", category: "Priority")]
+	[Attribute("0.05", UIWidgets.Range, "Floor of the threat scale. Keeps enemies beyond the relevant radius from counting as zero; otherwise two equal far objectives could not be told apart even if one is full of enemies.", params: "0 1 0.01", category: "Priority")]
 	protected float m_fThreatFalloffFloor;
 
-	[Attribute("8", UIWidgets.EditBox, "Batas jumlah musuh yang dihitung buat skor. Tanpa batas, lantai peluruhan ancaman (yang niatnya cuma pemecah seri) dikali jumlah yang gak berhingga: objective bergarnisun 50 unit ngasih commander di seberang peta ~90 poin dari jarak tak terhingga, dan itu ngalahin objective dekat. Naikin kalau pertempuran besar jadi kurang diprioritaskan; turunin kalau commander masih ketarik ke garnisun jauh.", category: "Priority")]
+	[Attribute("8", UIWidgets.EditBox, "Cap on the enemy count used for scoring. Without it the threat decay floor (meant only as a tie breaker) is multiplied by an unlimited count, so a 50 unit garrison across the map can outscore a near objective. Raise if large battles get too little priority; lower if the commander is still pulled toward far garrisons.", category: "Priority")]
 	protected int m_iThreatCountCap;
 
-	[Attribute("0", UIWidgets.ComboBox, "Tipe objective ini", "", ParamEnumArray.FromEnum(CMD_EObjectiveType))]
+	[Attribute("0", UIWidgets.ComboBox, "Type of this objective.", "", ParamEnumArray.FromEnum(CMD_EObjectiveType))]
 	CMD_EObjectiveType m_eObjectiveType;
 
-	[Attribute("60.0", UIWidgets.EditBox, "Detik yang dibutuhkan untuk capture (groups harus di area)", category: "Objective")]
+	[Attribute("60.0", UIWidgets.EditBox, "Seconds needed to capture (groups must be in the area).", category: "Objective")]
 	protected float m_fCaptureHoldDuration;
 
-	[Attribute("20.0", UIWidgets.EditBox, "Detik radius harus bersih dari musuh sebelum objective dianggap uncontested. Commander pakai ini buat mutusin perlu staging atau langsung masuk.", category: "Objective")]
+	[Attribute("20.0", UIWidgets.EditBox, "Seconds the radius must be clear of enemies before the objective counts as uncontested. The commander uses this to decide between staging and moving straight in.", category: "Objective")]
 	protected float m_fUncontestedDwell;
 
-	[Attribute("5.0", UIWidgets.EditBox, "Interval (detik) objective nyensus isi radius-nya sendiri. Makin kecil makin responsif, makin sering juga spatial query-nya.", category: "Objective")]
+	[Attribute("5.0", UIWidgets.EditBox, "Interval (s) at which the objective counts the units in its own radius. Smaller = more responsive but more spatial queries.", category: "Objective")]
 	protected float m_fPresenceScanInterval;
 
-	[Attribute("8", UIWidgets.EditBox, "Berapa unit yang dibutuhkan buat laju geser kontrol PENUH. Di bawah ini lajunya proporsional -- 1 unit dari 8 berarti 1/8 laju. Naikin kalau mau objective besar butuh pasukan besar.", category: "Objective Control")]
+	[Attribute("8", UIWidgets.EditBox, "Units needed for the FULL control shift rate. Below this the rate is proportional: 1 unit of 8 gives 1/8 of the rate. Raise if large objectives should need large forces.", category: "Objective Control")]
 	protected int m_iFullSpeedUnits;
 
-	[Attribute("100.0", UIWidgets.Range, "Persen kontrol yang dibutuhkan buat jadi OWNER objective ini.", params: "0 100 1", category: "Objective Control")]
+	[Attribute("100.0", UIWidgets.Range, "Control percent needed to become OWNER of this objective.", params: "0 100 1", category: "Objective Control")]
 	protected float m_fOwnershipGainThreshold;
 
-	[Attribute("50.0", UIWidgets.Range, "Persen kontrol di mana status owner HILANG. Jarak ke Gain Threshold di atas adalah histeresisnya -- tanpa jarak itu status owner kedip-kedip tiap ada gangguan kecil.", params: "0 100 1", category: "Objective Control")]
+	[Attribute("0", UIWidgets.CheckBox, "Retain: hold this objective until overrun. Doctrine withdrawal rules (Delay, Fallback, Withdraw) are ignored.", category: "Objective")]
+	protected bool m_bRetain;
+
+	[Attribute("0", UIWidgets.CheckBox, "Operation primary: an anchor objective. When the commander picks one of its secondaries, the operation is planned around this primary.", category: "Operation")]
+	protected bool m_bDCOIsPrimary;
+
+	[Attribute("600", UIWidgets.EditBox, "Objectives within this radius (m) of this primary are its secondaries when Linked Secondaries is empty.", category: "Operation")]
+	protected float m_fDCOSecondaryRadius;
+
+	[Attribute(desc: "Entity names of objectives that are this primary's secondaries. When not empty this list is used instead of the radius.", category: "Operation")]
+	protected ref array<string> m_aDCOLinkedSecondaries;
+
+	bool DCO_IsPrimary()						{ return m_bDCOIsPrimary; }
+	void DCO_SetIsPrimary(bool v)				{ m_bDCOIsPrimary = v; }
+	float DCO_SecondaryRadius()					{ return m_fDCOSecondaryRadius; }
+	void DCO_SetSecondaryRadius(float v)		{ m_fDCOSecondaryRadius = Math.Max(0, v); }
+	array<string> DCO_LinkedSecondaries()		{ return m_aDCOLinkedSecondaries; }
+
+	[Attribute("1", UIWidgets.ComboBox, "Strategic value: 0 High (x1.67 base value), 1 Moderate (unchanged), 2 Low (x0.5), 3 No (not a goal on its own; only threats near it still count).", enums: { ParamEnum("High", "0"), ParamEnum("Moderate", "1"), ParamEnum("Low", "2"), ParamEnum("No", "3") }, category: "Objective")]
+	protected int m_iStrategicValue;
+
+	[Attribute("0", UIWidgets.ComboBox, "Category: what kind of place this objective is.", enums: { ParamEnum("Town", "0"), ParamEnum("Military installation", "1"), ParamEnum("Supply depot", "2"), ParamEnum("Terrain", "3") }, category: "Objective")]
+	protected int m_iCategory;
+
+	[Attribute("50.0", UIWidgets.Range, "Control percent at which owner status is LOST. The gap to the Gain Threshold above is the hysteresis; without it owner status flickers on every small disturbance.", params: "0 100 1", category: "Objective Control")]
 	protected float m_fOwnershipLossThreshold;
 
-	[Attribute("1.0", UIWidgets.EditBox, "Persen per detik kontrol bergeser balik ke pemilik terakhir waktu radius kosong. 0 = kontrol beku waktu gak ada siapa-siapa.", category: "Objective Control")]
+	[Attribute("1.0", UIWidgets.EditBox, "Percent per second that control drifts back to the last owner while the radius is empty. 0 = control freezes when nobody is there.", category: "Objective Control")]
 	protected float m_fEmptyDecayRate;
 
-	[Attribute("1", UIWidgets.CheckBox, "Semua faction di Faction Manager boleh contest objective ini.", category: "Objective Control")]
+	[Attribute("1", UIWidgets.CheckBox, "All factions in the Faction Manager may contest this objective.", category: "Objective Control")]
 	protected bool m_bAllowAllFactions;
 
-	[Attribute(desc: "Kalau Allow All Factions dimatiin: cuma faction key di daftar ini yang boleh contest. Faction lain dianggap GAK ADA -- unitnya gak ngeblok dan gak ikut ngitung.", category: "Objective Control")]
+	[Attribute(desc: "If Allow All Factions is off, only faction keys in this list may contest. Other factions are treated as ABSENT: their units do not block and are not counted.", category: "Objective Control")]
 	protected ref array<string> m_aAllowedFactions;
 
-	[Attribute("5.0", UIWidgets.EditBox, "Stalemate: kontrol berubah kurang dari sekian persen...", category: "Objective Control")]
+	[Attribute("5.0", UIWidgets.EditBox, "Stalemate: control changes by less than this percent...", category: "Objective Control")]
 	protected float m_fStalematePercentThreshold;
 
-	[Attribute("120.0", UIWidgets.EditBox, "...selama sekian detik, baru dianggap stalemate.", category: "Objective Control")]
+	[Attribute("120.0", UIWidgets.EditBox, "...for this many seconds before it counts as a stalemate.", category: "Objective Control")]
 	protected float m_fStalemateSeconds;
 
-	[Attribute(desc: "Commander UID yang megang objective ini di awal scenario. Kosongin buat Neutral. Cuma boleh SATU commander.", category: "Objective Control")]
+	[Attribute(desc: "Commander UID that holds this objective at scenario start. Leave empty for Neutral. Only ONE commander allowed.", category: "Objective Control")]
 	protected string m_sInitialOwnerCommanderUID;
 
-	[Attribute("2", UIWidgets.EditBox, "Berapa group yang di-assign untuk defend setelah captured", category: "Objective")]
+	[Attribute("2", UIWidgets.EditBox, "Number of groups assigned to defend after capture.", category: "Objective")]
 	protected int m_iDefendGroupCount;
 
-	[Attribute("4", UIWidgets.EditBox, "Berapa group yang di-assign untuk attack objective", category: "Objective")]
+	[Attribute("4", UIWidgets.EditBox, "Number of groups assigned to attack the objective.", category: "Objective")]
 	protected int m_iMaxGroupCount;
 
-	[Attribute("", UIWidgets.Auto, "Blacklisted Commander to not process this objective", category: "Objective")]
+	[Attribute("", UIWidgets.Auto, "Old list of commander UIDs that ignore this objective. Kept for old worlds; it behaves like DCO Assign Mode 2 with these UIDs. New worlds use DCO Assign Mode + DCO Assign List.", category: "Objective")]
 	protected ref array<string> m_sBlacklistedCo;
 
-	[Attribute("", UIWidgets.Auto, "Set Captured by Commander for this objective", category: "Objective")]
+	[Attribute("0", UIWidgets.EditBox, "Which AI commanders may plan this objective (attack, defend, patrol, recon, operation secondaries). 0 = all commanders, 1 = only the commanders in DCO Assign List, 2 = every commander except those in DCO Assign List.", category: "Objective", params: "0 2 1")]
+	protected int m_iDCOAssignMode;
+
+	[Attribute("", UIWidgets.Auto, "Commander UIDs used by DCO Assign Mode.", category: "Objective")]
+	protected ref array<string> m_aDCOAssignList;
+
+	[Attribute("", UIWidgets.Auto, "Commander UIDs that only ATTACK this objective (tune obj.role_on = 1). After the capture they hold it until a commander allowed to defend has squads on it, then they leave.", category: "Objective")]
+	protected ref array<string> m_aDCOAttackOnly;
+
+	[Attribute("", UIWidgets.Auto, "Commander UIDs that only DEFEND this objective (tune obj.role_on = 1). They defend and retake it after a loss, but never attack it while the enemy holds it from the start.", category: "Objective")]
+	protected ref array<string> m_aDCODefendOnly;
+
+	int DCO_RoleOf(string cuid)
+	{
+		bool atk = m_aDCOAttackOnly && m_aDCOAttackOnly.Contains(cuid);
+		bool def = m_aDCODefendOnly && m_aDCODefendOnly.Contains(cuid);
+		if (atk == def)
+			return 0;
+		if (atk)
+			return 1;
+		return 2;
+	}
+
+	void DCO_GetRoleList(int role, notnull array<string> outList)
+	{
+		outList.Clear();
+		if (role == 1 && m_aDCOAttackOnly)
+			outList.Copy(m_aDCOAttackOnly);
+		else if (role == 2 && m_aDCODefendOnly)
+			outList.Copy(m_aDCODefendOnly);
+	}
+
+	void DCO_SetRoleList(int role, notnull array<string> list, string by, int playerId)
+	{
+		if (role == 1)
+		{
+			if (!m_aDCOAttackOnly)
+				m_aDCOAttackOnly = {};
+			m_aDCOAttackOnly.Copy(list);
+		}
+		else if (role == 2)
+		{
+			if (!m_aDCODefendOnly)
+				m_aDCODefendOnly = {};
+			m_aDCODefendOnly.Copy(list);
+		}
+		else
+			return;
+		string roleName = "attack_only";
+		if (role == 2)
+			roleName = "defend_only";
+		DCO_Perf.Count("obj_role:set");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("obj_role_set obj=%1 role=%2 list=%3 by=%4 player=%5", GetLogName(), roleName, DCO_JoinList(list), by, playerId));
+	}
+
+	[Attribute("", UIWidgets.Auto, "Old field. Used as Initial Owner Commander UID (first entry) only when that field is empty. Use Initial Owner Commander UID instead.", category: "Objective")]
 	protected ref array<string> m_sCapturedCo;
 
-	[Attribute("0", UIWidgets.EditBox, "Debug Buat Objective ini", category: "Objective Debug")]
+	[Attribute("0", UIWidgets.EditBox, "Debug for this objective.", category: "Objective Debug")]
 	protected bool m_bDebugMode;
 
 	protected ref map<FactionKey, ref array<ref DCO_SectorGarrison>> m_mSectorGarrison = new map<FactionKey, ref array<ref DCO_SectorGarrison>>();
@@ -116,7 +197,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	protected ref array<ref DebugTextWorldSpace> m_aDebugTexts = new array<ref DebugTextWorldSpace>();
 
-	[Attribute("0.5", UIWidgets.EditBox, "Interval (detik) gambar ulang overlay debug objective ini.", category: "Objective Debug")]
+	[Attribute("0.5", UIWidgets.EditBox, "Interval (s) between debug overlay redraws for this objective.", category: "Objective Debug")]
 	protected float m_fDebugRefreshInterval;
 
 	protected float m_fDebugTimer = 0.0;
@@ -124,7 +205,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	protected float m_fLastProgressTime   = 0.0;
 	protected float m_fStaleStartTime     = 0.0;
 
-	[Attribute("300.0", UIWidgets.EditBox, "Detik tanpa progress sebelum dianggap stalemate", category: "Objective")]
+	[Attribute("300.0", UIWidgets.EditBox, "Seconds without progress before it counts as a stalemate.", category: "Objective")]
 	protected float m_fStalemateThreshold;
 
 	ref map<FactionKey, float> m_mCaptureStartTime = new map<FactionKey, float>();
@@ -156,7 +237,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	protected float m_fScanTimer      = 0.0;
 	protected bool  m_bHasScanned     = false;
 
-	[Attribute("60.0", UIWidgets.EditBox, "Detik objective tetap ACTIVE setelah terakhir diproses commander. Lewat dari ini objective IDLE: scan presence dan geser kontrol berhenti total. Harus lebih besar dari think interval commander terlama (default 30s x personality sampai 1.5 = 45s). 0 = gate mati, objective selalu active.", category: "Objective")]
+	[Attribute("60.0", UIWidgets.EditBox, "Seconds the objective stays ACTIVE after the commander last processed it. After that it is IDLE: presence scans and control shift stop completely. Must be longer than the slowest commander think interval (default 30 s x personality up to 1.5 = 45 s). 0 = gate off, objective always active.", category: "Objective")]
 	protected float m_fIdleTimeout;
 
 	protected ref array<FactionKey> m_aCensusFaction = {};
@@ -194,6 +275,48 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	float GetRadius()
 	{
 		return m_fRadius;
+	}
+
+	bool IsRetain()
+	{
+		return m_bRetain;
+	}
+
+	int GetStrategicValue()
+	{
+		return m_iStrategicValue;
+	}
+
+	void SetStrategicValue(int value)
+	{
+		m_iStrategicValue = Math.ClampInt(value, 0, 3);
+		m_mScoreCacheAge.Clear();
+	}
+
+	int GetCategory()
+	{
+		return m_iCategory;
+	}
+
+	void SetCategory(int value)
+	{
+		m_iCategory = Math.ClampInt(value, 0, 3);
+	}
+
+	float StrategicScale()
+	{
+		switch (m_iStrategicValue)
+		{
+			case 0: return 1.0 / 0.6;
+			case 2: return 0.3 / 0.6;
+			case 3: return 0;
+		}
+		return 1;
+	}
+
+	void SetRetain(bool retain)
+	{
+		m_bRetain = retain;
 	}
 
 	void SetRadius(float radius)
@@ -366,9 +489,121 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	bool IsCommanderBlackListed(string cuid)
 	{
-		if (m_sBlacklistedCo.Contains(cuid))
+		if (m_sBlacklistedCo && m_sBlacklistedCo.Contains(cuid))
 			return true;
-		return false;
+		return !DCO_CanProcess(cuid);
+	}
+
+	bool DCO_CanProcess(string cuid)
+	{
+		if (m_sBlacklistedCo && m_sBlacklistedCo.Contains(cuid))
+			return false;
+		if (m_iDCOAssignMode == 1)
+			return m_aDCOAssignList && m_aDCOAssignList.Contains(cuid);
+		if (m_iDCOAssignMode == 2)
+			return !m_aDCOAssignList || !m_aDCOAssignList.Contains(cuid);
+		return true;
+	}
+
+	int DCO_AssignModeEff()
+	{
+		if (m_iDCOAssignMode == 0 && m_sBlacklistedCo && !m_sBlacklistedCo.IsEmpty())
+			return 2;
+		return m_iDCOAssignMode;
+	}
+
+	void DCO_GetAssignListEff(notnull array<string> outList)
+	{
+		outList.Clear();
+		if (m_iDCOAssignMode == 0 && m_sBlacklistedCo && !m_sBlacklistedCo.IsEmpty())
+		{
+			outList.Copy(m_sBlacklistedCo);
+			return;
+		}
+		if (m_aDCOAssignList)
+			outList.Copy(m_aDCOAssignList);
+	}
+
+	bool DCO_AssignEmpty()
+	{
+		if (m_iDCOAssignMode == 1 && (!m_aDCOAssignList || m_aDCOAssignList.IsEmpty()))
+			return true;
+		int effMode = DCO_AssignModeEff();
+		if (effMode != 1 && effMode != 2)
+			return false;
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!mgr || mgr.m_aCommander.IsEmpty())
+			return false;
+		foreach (AICommander_BaseComponent c : mgr.m_aCommander)
+		{
+			if (c && DCO_CanProcess(c.GetCommanderUID()))
+				return false;
+		}
+		return true;
+	}
+
+	void DCO_SetAssign(int mode, notnull array<string> list, string by, int playerId)
+	{
+		string before = string.Format("%1:%2", DCO_AssignModeEff(), DCO_JoinList(m_aDCOAssignList));
+		m_iDCOAssignMode = Math.ClampInt(mode, 0, 2);
+		if (!m_aDCOAssignList)
+			m_aDCOAssignList = {};
+		m_aDCOAssignList.Copy(list);
+		if (m_sBlacklistedCo && !m_sBlacklistedCo.IsEmpty())
+		{
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("obj_assign_migrate obj=%1 old_blacklist=%2", GetLogName(), DCO_JoinList(m_sBlacklistedCo)));
+			m_sBlacklistedCo.Clear();
+		}
+		string modeName = "all";
+		if (m_iDCOAssignMode == 1)
+			modeName = "only";
+		else if (m_iDCOAssignMode == 2)
+			modeName = "except";
+		DCO_Perf.Count("obj_assign:set");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("obj_assign_set obj=%1 mode=%2 list=%3 by=%4 player=%5 before=%6", GetLogName(), modeName, DCO_JoinList(m_aDCOAssignList), by, playerId, before));
+		GetGame().GetCallqueue().Remove(DCO_CheckAssignEmpty);
+		GetGame().GetCallqueue().CallLater(DCO_CheckAssignEmpty, 200);
+	}
+
+	protected void DCO_CheckAssignEmpty()
+	{
+		if (!DCO_AssignEmpty())
+			return;
+		string modeName = "only";
+		if (m_iDCOAssignMode == 2)
+			modeName = "except";
+		DCO_Perf.Count("obj_assign:empty");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("obj_assign_empty obj=%1 mode=%2 -- nobody handles this objective until a commander is allowed", GetLogName(), modeName));
+		string nm = GetDisplayName();
+		if (nm.IsEmpty())
+			nm = GetLogName();
+		DCO_PlayerComms.SendToGameMasters("DCO", string.Format("Nobody handles %1. It is ignored until a commander is checked.", nm));
+	}
+
+	void DCO_CommanderGone(string cuid)
+	{
+		int effMode = DCO_AssignModeEff();
+		if (effMode != 1 && effMode != 2)
+			return;
+		DCO_Perf.Count("obj_assign:cmd_gone");
+		if (m_aDCOAssignList && m_aDCOAssignList.Contains(cuid))
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("obj_assign_cmd_gone cmd=%1 obj=%2 mode=%3 list=%4 -- listed commander deleted; list kept (a new commander with the same UID takes its place)", cuid, GetLogName(), m_iDCOAssignMode, DCO_JoinList(m_aDCOAssignList)));
+		GetGame().GetCallqueue().Remove(DCO_CheckAssignEmpty);
+		GetGame().GetCallqueue().CallLater(DCO_CheckAssignEmpty, 200);
+	}
+
+	static string DCO_JoinList(array<string> list)
+	{
+		if (!list || list.IsEmpty())
+			return "-";
+		string s;
+		foreach (string e : list)
+		{
+			if (!s.IsEmpty())
+				s += ",";
+			s += e;
+		}
+		return s;
 	}
 
 	void MarkCompleted(FactionKey fk) { SetObjectiveState(fk, CMD_EObjectiveState.COMPLETED); }
@@ -452,7 +687,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	    if (currentState == CMD_EObjectiveState.ASSIGNED)
 	        assignedPenalty = 15.0;
 
-	    float score = m_fBaseValue - friendlyPenalty - assignedPenalty;
+	    float score = m_fBaseValue * StrategicScale() - friendlyPenalty - assignedPenalty;
 
 	    float distToCommander = vector.Distance(commanderPos, GetOwner().GetOrigin());
 
@@ -487,11 +722,13 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	    if (m_iThreatCountCap > 0 && cappedEnemyCount > m_iThreatCountCap)
 	        cappedEnemyCount = m_iThreatCountCap;
 
-	    float threatTerm = cappedEnemyCount * m_fThreatWeight * threatFactor * focusMod;
+	    float threatTerm = 1.0 * cappedEnemyCount * m_fThreatWeight * threatFactor * focusMod;
 
 	    score += threatTerm;
 
 	    float finalScore = Math.Max(score, 0.0);
+	    if (m_iStrategicValue == 3)
+	        finalScore = Math.Max(threatTerm, 0.0);
 
 	    m_mCachedScore.Set(cacheKey, finalScore);
 	    m_mScoreCacheAge.Set(cacheKey, worldTime);
@@ -557,7 +794,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		float elapsed  = m_fScanTimer;
 		m_fScanTimer   = 0.0;
 
-		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float worldTime = DCO_Util.NowS();
 
 		bool active = IsProcessedActive(worldTime);
 
@@ -579,8 +816,13 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 		if (m_sInitialOwnerCommanderUID.IsEmpty())
 		{
-			m_bInitialOwnerResolved = true;
-			return;
+			if (!m_sCapturedCo || m_sCapturedCo.IsEmpty() || m_sCapturedCo[0].IsEmpty())
+			{
+				m_bInitialOwnerResolved = true;
+				return;
+			}
+			m_sInitialOwnerCommanderUID = m_sCapturedCo[0];
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("obj_owner_legacy obj=%1 uid=%2 field=m_sCapturedCo (old field read as Initial Owner Commander UID; set that field instead)", GetLogName(), m_sInitialOwnerCommanderUID));
 		}
 
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
@@ -612,6 +854,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	override void OnDelete(IEntity owner)
 	{
+		GetGame().GetCallqueue().Remove(DCO_CheckAssignEmpty);
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
 		if (mgr)
 			mgr.UnregisterObjective(this);
@@ -638,8 +881,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		if (!chr)
 			return true;
 
-		CharacterControllerComponent ctrl = chr.GetCharacterController();
-		if (ctrl && ctrl.GetLifeState() == ECharacterLifeState.DEAD)
+		if (!DCO_Util.IsNotDead(chr))
 			return true;
 
 		if (m_CollectSeen.Contains(e))
@@ -703,7 +945,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		friendlyCount = 0;
 		enemyCount    = 0;
 
-		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float worldTime = DCO_Util.NowS();
 		MarkProcessed(worldTime);
 
 		SCR_FactionManager factionManager = SCR_FactionManager.Cast(GetGame().GetFactionManager());
@@ -792,7 +1034,8 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		if (m_bDebugMode)
 		{
 			m_aDebugShapes.Clear();
-			Print(total.ToString() + " < Number of counted Entity Inside > " + m_sObjectiveName);
+			if (DCO_Log.On(DCO_ELogChannel.CMD, DCO_ELogLevel.DEBUG))
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.DEBUG, "-", total.ToString() + " < Number of counted Entity Inside > " + m_sObjectiveName);
 			int flags = ShapeFlags.TRANSP | ShapeFlags.WIREFRAME;
 			m_aDebugShapes.Insert(Shape.CreateSphere(Color.BLUE, flags, GetOwner().GetOrigin(), m_fRadius));
 		}
@@ -1126,23 +1369,20 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	protected void DrawDebugControlBar(vector origin, int flags)
 	{
-		const int   SLOTS   = 20;
-		const float SPACING = 1.3;
-		const float RADIUS  = 0.5;
 
 		array<int> slotColors = {};
-		for (int s = 0; s < SLOTS; s++)
+		for (int s = 0; s < 20; s++)
 			slotColors.Insert(DCO_DebugDraw.COLOR_NEUTRAL);
 
 		int cursor = 0;
 		foreach (FactionKey k, float v : m_mControl)
 		{
-			int take = Math.Round(v / 100.0 * SLOTS);
+			int take = Math.Round(v / 100.0 * 20);
 			int col  = DCO_DebugDraw.FactionColor(k);
 
 			for (int n = 0; n < take; n++)
 			{
-				if (cursor >= SLOTS)
+				if (cursor >= 20)
 					break;
 
 				slotColors.Set(cursor, col);
@@ -1150,12 +1390,12 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 			}
 		}
 
-		float startX = origin[0] - ((SLOTS - 1) * SPACING * 0.5);
+		float startX = origin[0] - ((20 - 1) * 1.3 * 0.5);
 
-		for (int i = 0; i < SLOTS; i++)
+		for (int i = 0; i < 20; i++)
 		{
-			vector p = Vector(startX + (i * SPACING), origin[1], origin[2]);
-			m_aDebugShapes.Insert(Shape.CreateSphere(slotColors.Get(i), flags, p, RADIUS));
+			vector p = Vector(startX + (1.0 * i * 1.3), origin[1], origin[2]);
+			m_aDebugShapes.Insert(Shape.CreateSphere(slotColors.Get(i), flags, p, 0.5));
 		}
 	}
 
@@ -1221,7 +1461,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		if (IsProcessedActive(worldTime))
 			body = body + "\nstate ACTIVE";
 		else
-			body = body + string.Format("\nstate IDLE (gak diproses > %1s)", DCO_DebugDraw.F1(m_fIdleTimeout));
+			body = body + string.Format("\nstate IDLE (not processed > %1s)", DCO_DebugDraw.F1(m_fIdleTimeout));
 
 		body = body + string.Format("\ncensus r %1   %2 entries",
 			DCO_DebugDraw.M(GetCensusRadius()),
@@ -1396,6 +1636,8 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	    {
 	        case CMD_EObjectiveType.CAPTURE:
 	        case CMD_EObjectiveType.DESTROY:
+	        case CMD_EObjectiveType.DEFEND:
+	        case CMD_EObjectiveType.HOLD_UNTIL:
 	            typeBonus = 1;
 	            break;
 	        default:
@@ -1410,13 +1652,93 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	CMD_EObjectiveType GetObjectiveType()    { return m_eObjectiveType; }
 	string GetObjectiveName()                { return m_sObjectiveName; }
 
+	string GetDisplayName()
+	{
+		if (!m_sObjectiveName.IsEmpty())
+			return m_sObjectiveName;
+		if (!m_sDCOFallbackName.IsEmpty())
+			return m_sDCOFallbackName;
+		return BuildFallbackName();
+	}
+
+	string GetLogName()
+	{
+		string n = GetDisplayName();
+		n.Replace(" ", "_");
+		return n;
+	}
+
+	protected string BuildFallbackName()
+	{
+		IEntity owner = GetOwner();
+		string n = owner.GetName();
+		if (!n.IsEmpty())
+		{
+			m_sDCOFallbackName = n;
+			DCO_Perf.Count("obj_name_fallback:entity");
+			return n;
+		}
+
+		vector pos = owner.GetOrigin();
+		SCR_EditableEntityCore core = SCR_EditableEntityCore.Cast(SCR_EditableEntityCore.GetInstance(SCR_EditableEntityCore));
+		if (!core)
+			return "Objective " + SCR_MapEntity.GetGridLabel(pos);
+
+		SCR_EditableEntityComponent loc = core.FindNearestEntity(pos, EEditableEntityType.COMMENT, EEditableEntityFlag.LOCAL);
+		vector locPos;
+		if (loc && loc.GetInfo() && loc.GetPos(locPos) && vector.DistanceXZ(locPos, pos) <= 600)
+			n = WidgetManager.Translate(loc.GetInfo().GetName());
+
+		if (!n.IsEmpty() && !n.StartsWith("#"))
+		{
+			DCO_Perf.Count("obj_name_fallback:location");
+		}
+		else
+		{
+			n = "Objective " + SCR_MapEntity.GetGridLabel(pos);
+			DCO_Perf.Count("obj_name_fallback:grid");
+		}
+		m_sDCOFallbackName = n;
+		return n;
+	}
+
 	void SetObjectiveName(string objectiveName)
 	{
 		if (!Replication.IsServer())
 			return;
 
+		string before = GetLogName();
 		m_sObjectiveName = objectiveName;
 		Replication.BumpMe();
+		DCO_Perf.Count("obj_rename:gm");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("obj_rename from=%1 to=%2", before, GetLogName()));
+		AICommander_ManagerComponent rmgr = AICommander_ManagerComponent.GetInstance();
+		if (rmgr)
+			rmgr.DCO_RebuildObjectiveRoster();
+	}
+
+	void DCO_ApplyPersisted(string objectiveName, float radius, string ownerUid)
+	{
+		if (!Replication.IsServer())
+			return;
+
+		m_sObjectiveName = objectiveName;
+		m_fRadius = Math.Clamp(radius, 1, 300);
+		Replication.BumpMe();
+		OnRadiusChanged();
+
+		DCO_SetController(null);
+		if (!ownerUid.IsEmpty())
+		{
+			m_sInitialOwnerCommanderUID = ownerUid;
+			m_bInitialOwnerResolved = false;
+			ResolveInitialOwner();
+		}
+		DCO_Perf.Count("obj_persist:load");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("obj_persist_load obj=%1 radius=%2 owner=%3", GetLogName(), Math.Round(m_fRadius), ownerUid));
+		AICommander_ManagerComponent pmgr = AICommander_ManagerComponent.GetInstance();
+		if (pmgr)
+			pmgr.DCO_RebuildObjectiveRoster();
 	}
 	int GetDefendGroupCount()                { return m_iDefendGroupCount; }
 
@@ -1476,7 +1798,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		if (!reconGrp || !reconGrp.GetOwner())
 			return false;
 
-		float toleranceDist = Math.Max(m_fRadius * 2.0, 60.0);
+		float toleranceDist = Math.Max(m_fRadius * 2.0, m_fRadius + 350.0);
 		return vector.DistanceSq(reconGrp.GetOwner().GetOrigin(), GetOwner().GetOrigin()) <= toleranceDist * toleranceDist;
 	}
 
@@ -1569,7 +1891,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 	bool CheckAndMarkIfLost(FactionKey fk)
 	{
-		MarkProcessed(GetGame().GetWorld().GetWorldTime() / 1000.0);
+		MarkProcessed(DCO_Util.NowS());
 
 		return CheckIsItLost(fk);
 	}
@@ -1599,7 +1921,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		{
 			m_sOwnerFaction = "";
 			m_sOwnerCommanderUID = string.Empty;
-			Print(string.Format("[DCO_Objective] %1 diset Neutral (GM)", GetOwner().GetName()));
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("%1 set to Neutral (GM)", GetOwner().GetName()));
 			return;
 		}
 
@@ -1611,7 +1933,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		m_mCommanderFaction.Set(cmd.GetCommanderUID(), fk);
 		m_sOwnerCommanderUID = cmd.GetCommanderUID();
 		ResetAssignedGroupCount(fk);
-		Print(string.Format("[DCO_Objective] %1 dipegang %2 (%3) -- GM", GetOwner().GetName(), m_sOwnerCommanderUID, fk));
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("%1 held by %2 (%3) -- GM", GetOwner().GetName(), m_sOwnerCommanderUID, fk));
 	}
 
 	void SetCapturedBy(FactionKey fk, bool val)

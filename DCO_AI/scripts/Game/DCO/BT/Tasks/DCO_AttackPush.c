@@ -1,15 +1,13 @@
 class SCR_AIDCO_AttackPush: AITaskScripted
 {
-	protected static const float COVER_SEARCH_DIST_MAX        = 20.0;
-	protected static const float COVER_SEARCH_DIST_MIN        = 10.0;
-	protected static const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.25 * Math.PI;
+	protected static float COVER_SEARCH_DIST_MAX() { return 20.0; }
+	protected static float COVER_QUERY_SECTOR_ANGLE_RAD() { return 0.25 * Math.PI; }
 
 
 
 
 
 
-	protected static const string PORT_POSITION = "Position";
 
 	protected SCR_AICombatMoveState  m_State;
 	protected SCR_AIUtilityComponent m_Utility;
@@ -17,16 +15,16 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 
 	protected float m_fNextUpdate_ms = -1;
 
-	[Attribute("500", UIWidgets.EditBox, "Interval re-evaluasi push (ms)", category: "Timing")]
+	[Attribute("500", UIWidgets.EditBox, "Push re-evaluation interval (ms)", category: "Timing")]
 	protected float m_fUpdateInterval_ms;
 
-	[Attribute("1", UIWidgets.CheckBox, "Izinin assault masuk building kalau target ada di dalem", category: "Building Assault")]
+	[Attribute("1", UIWidgets.CheckBox, "Allow the assault to enter a building when the target is inside.", category: "Building Assault")]
 	protected bool m_bAllowBuildingAssault;
 
-	[Attribute("40", UIWidgets.EditBox, "Jarak maksimum buat mulai coba masuk building (m)", category: "Building Assault")]
+	[Attribute("40", UIWidgets.EditBox, "Maximum distance to start trying to enter a building (m).", category: "Building Assault")]
 	protected float m_fBuildingAssaultDist;
 
-	[Attribute("0.35", UIWidgets.Slider, "Peluang bound pake flank (CUSTOM_POS) instead of FORWARD", "0 1 0.05", category: "Bounding")]
+	[Attribute("0.35", UIWidgets.Slider, "Chance that a bound uses a flank (CUSTOM_POS) instead of FORWARD.", "0 1 0.05", category: "Bounding")]
 	protected float m_fFlankChance;
 
 	override void OnInit(AIAgent owner)
@@ -59,12 +57,29 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		m_fNextUpdate_ms = currentTime_ms + m_fUpdateInterval_ms;
 
 		vector threatPos;
-		GetVariableIn(PORT_POSITION, threatPos);
+		GetVariableIn("Position", threatPos);
 		if (threatPos == vector.Zero)
 			return ENodeResult.FAIL;
 
 		float distToThreat = vector.Distance(myEntity.GetOrigin(), threatPos);
 		bool isCQB = distToThreat < SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST;
+		if (DCO_Ctx.On(m_Utility))
+		{
+			int ctxBand = DCO_Ctx.Band(distToThreat);
+			int ctxKind = DCO_Ctx.Kind(ctxBand, DCO_Ctx.EnvOf(myEntity), DCO_Ctx.EnvAtPos(threatPos), DCO_CQC.IsTargetInMyBuilding(m_Utility));
+			bool ctxCQB = DCO_Ctx.IsCQBKind(ctxKind);
+			if (ctxCQB != isCQB)
+			{
+				DCO_Perf.Count("ctx:push_cqb_" + DCO_Util.B01(ctxCQB));
+				if (DCO_Log.On(DCO_ELogChannel.CQB, DCO_ELogLevel.DEBUG))
+					DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(myEntity), string.Format("ctxpush unit=%1 legacy_cqb=%2 ctx_cqb=%3 kind=%4 dist=%5",
+						DCO_Log.IdUnit(myEntity), DCO_Util.B01(isCQB), DCO_Util.B01(ctxCQB), DCO_Ctx.KindName(ctxKind), Math.Round(distToThreat)));
+			}
+			isCQB = ctxCQB;
+		}
+
+		if (!isCQB && (DCO_Roles.Get(m_Utility) & 1) && DCO_GlobalAIComponent.BehaviorOnFor(myEntity, DCO_EBehavior.MG_GUNNER))
+			return ENodeResult.RUNNING;
 
 		if (MoveToNextPosCondition(isCQB))
 			CombatMoveLogic(owner, myEntity, threatPos, distToThreat, isCQB);
@@ -214,12 +229,12 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		rq.m_bTryFindCover              = true;
 		rq.m_bCheckCoverVisibility      = true;
 		rq.m_bFailIfNoCover             = false;
-		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD();
 
 		rq.m_bUseCoverSearchDirectivity = !DCO_ConcealmentUtility.IsPositionExposed(myEntity.GetOrigin(), myEntity);
 
-		float coverMin = COVER_SEARCH_DIST_MIN;
-		float coverMax = COVER_SEARCH_DIST_MAX;
+		float coverMin = 10.0;
+		float coverMax = COVER_SEARCH_DIST_MAX();
 
 		if (assaultBuilding)
 		{
@@ -250,7 +265,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		if (rq.m_eStanceMoving == ECharacterStance.CROUCH)
 			speed = SCR_AICombatMoveUtils.CHARACTER_SPEED_CROUCH_RUN;
 
-		float advanceDist = Math.Min(vector.Distance(myEntity.GetOrigin(), movePos), COVER_SEARCH_DIST_MAX);
+		float advanceDist = Math.Min(vector.Distance(myEntity.GetOrigin(), movePos), COVER_SEARCH_DIST_MAX());
 		rq.m_fMoveDuration_s = Math.Max(advanceDist / speed, 1.5);
 
 		rq.m_bAimAtTarget = DCO_MoraleCombatUtility.CanAimWhileMoving(
@@ -262,7 +277,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 
 		m_State.ApplyNewRequest(rq);
 
-		if (assaultBuilding)
+		if (assaultBuilding && m_Utility.m_CombatComponent && m_Utility.m_CombatComponent.GetCurrentTarget() && m_Utility.m_CombatComponent.GetCurrentTarget().GetTimeSinceSeen() > 2.0)
 			DCO_BreachUtility.TryThrowBreachGrenade(m_Utility, threatPos);
 	}
 
@@ -309,7 +324,16 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 			return false;
 
 		if (!m_pNavmesh.IsTileLoaded(pos))
+		{
+			if (!m_pNavmesh.IsTileRequested(pos))
+			{
+				m_pNavmesh.LoadTileIn(pos);
+				DCO_Perf.Count("attack_push:nav_tile_request");
+			}
+			else
+				DCO_Perf.Count("attack_push:nav_tile_wait");
 			return false;
+		}
 
 		return m_pNavmesh.GetReachablePoint(pos, 2.0, outPos);
 	}
@@ -325,10 +349,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 
 	protected DCO_EAIPersonality GetPersonality()
 	{
-		if (!m_Utility || !m_Utility.m_DCOConfig)
-			return DCO_EAIPersonality.STANDARD;
-
-		return m_Utility.m_DCOConfig.GetPersonality();
+		return DCO_AIConfigComponent.PersonalityOf(m_Utility);
 	}
 
 	protected void ResolveMoveandStopStance(float dist, bool isCQB, bool assaultBuilding, out ECharacterStance moving, out ECharacterStance end)
@@ -411,6 +432,13 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 
 		waitTime *= DCO_PostureCombatUtility.GetStoppedWaitTimeScale(DCO_PostureCombatUtility.GetPosture(m_Utility));
 
+		float pa = DCO_Stress.AggrRel(m_Utility);
+		if (pa != 1.0)
+		{
+			waitTime = Math.Max(waitTime * Math.Pow(pa, -0.5), Math.Min(waitTime, 2.0));
+			DCO_Perf.Count("agg:p7_wait");
+		}
+
 		return Math.RandomFloat(0.8, 1.2) * waitTime;
 	}
 
@@ -435,8 +463,14 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		return m_State.m_fTimerStopped_s > stoppedWaitTime;
 	}
 
-	protected static ref TStringArray s_aVarsIn = { PORT_POSITION };
-	override TStringArray GetVariablesIn() { return s_aVarsIn; }
+	protected static ref TStringArray s_aVarsIn;
+	protected static TStringArray GetVarsIn()
+	{
+		if (!s_aVarsIn)
+			s_aVarsIn = { "Position" };
+		return s_aVarsIn;
+	}
+	override TStringArray GetVariablesIn() { return GetVarsIn(); }
 
 	override static bool VisibleInPalette() { return true; }
 }

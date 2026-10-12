@@ -1,0 +1,27 @@
+BehaviorTree "{F1C804B42C71729A}AI/BehaviorTrees/Waypoints/DCO_WP_SetupMove.bt" {
+ Name "AI/BehaviorTrees/Waypoints/DCO_WP_SetupMove.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 0 -150
+     Nodes {
+      DCO_AIWaitWaypointSetup "DCO_AI Wait Waypoint Setup" {
+       Name "DCO_AI Wait Waypoint Setup"
+       EditorPos -200 50
+      }
+      RunBT RunBT {
+       Name "RunBT"
+       EditorPos 100 50
+       BehaviorTree "{A3755C1F88DED8D6}AI/BehaviorTrees/Waypoints/WP_Move.bt"
+       InBehaviorTree -1
+      }
+     }
+    }
+   }
+  }
+ }
+}

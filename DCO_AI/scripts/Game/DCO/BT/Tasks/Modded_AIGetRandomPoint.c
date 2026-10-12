@@ -10,7 +10,7 @@ modded class SCR_AIGetRandomPointWithExclude
 			if (!s_bDCOReportedZeroRadius)
 			{
 				s_bDCOReportedZeroRadius = true;
-				Print(string.Format("[DCO] SCR_AIGetRandomPointWithExclude radius %1 dijepit ke %2 di %3. Laporan sekali per sesi.", randomSphereRadius, minRadius, randomSphereOrigin), LogLevel.WARNING);
+				DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.WARN, "-", string.Format("SCR_AIGetRandomPointWithExclude radius %1 clamped to %2 at %3. Reported once per session.", randomSphereRadius, minRadius, randomSphereOrigin));
 			}
 			randomSphereRadius = minRadius;
 		}
@@ -65,7 +65,7 @@ modded class SCR_AIGetRandomPoint
 				string who = "?";
 				if (owner && owner.GetParentGroup())
 					who = owner.GetParentGroup().GetName();
-				Print(string.Format("[DCO] SCR_AIGetRandomPoint radius %1 dijepit ke %2 (group %3, waypoint %4). Laporan sekali per sesi.", m_Radius, minRadius, who, waypointEnt), LogLevel.WARNING);
+				DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.WARN, "-", string.Format("SCR_AIGetRandomPoint radius %1 clamped to %2 (group %3, waypoint %4). Reported once per session.", m_Radius, minRadius, who, waypointEnt));
 			}
 			m_Radius = minRadius;
 		}

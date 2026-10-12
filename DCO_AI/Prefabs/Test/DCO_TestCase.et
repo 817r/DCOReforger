@@ -1,0 +1,12 @@
+GenericEntity {
+ ID "7A3E1C5D9B2F4061"
+ components {
+  DCO_BenchmarkLoggerComponent "{7A3E1C5D9B2F4062}" {
+   m_sRunLabel "itest"
+   m_fTickInterval 10
+   m_fGroupInterval 10
+  }
+  DCO_TestCaseComponent "{7A3E1C5D9B2F4063}" {
+  }
+ }
+}

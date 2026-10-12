@@ -1,0 +1,65 @@
+FrameWidgetClass {
+ Name "DCO_ChooserRoot"
+ {
+  ImageWidgetClass "{0AFFB910B8ADF6F5}" {
+   Name "Shade"
+   Slot FrameWidgetSlot "{5E8B39D9FDF349E2}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 0
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 0
+    SizeY 0
+    OffsetBottom 0
+   }
+   Color 0 0 0 0.35
+  }
+  FrameWidgetClass "{B96EE3714B4BD2D7}" {
+   Name "Window"
+   Slot FrameWidgetSlot "{226122247FE685BD}" {
+    Anchor 0.5 0.5 0.5 0.5
+    PositionX -280
+    OffsetLeft -280
+    PositionY -150
+    OffsetTop -150
+    SizeX 560
+    OffsetRight -280
+    SizeY 300
+    OffsetBottom -150
+   }
+   {
+    ImageWidgetClass "{8D03A185A6FF3925}" {
+     Name "WinBg"
+     Slot FrameWidgetSlot "{58977920813BA396}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 0
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 0
+    SizeY 0
+    OffsetBottom 0
+   }
+     Color 0.0194 0.0243 0.0283 0.96
+    }
+    FrameWidgetClass "{8F27474C88054B7C}" {
+     Name "Dyn"
+     Slot FrameWidgetSlot "{7F76B9EFCBDB8D3C}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 0
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 0
+    SizeY 0
+    OffsetBottom 0
+   }
+    }
+   }
+  }
+ }
+}

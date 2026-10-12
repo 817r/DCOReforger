@@ -1,7 +1,5 @@
 class DCO_ContactToast
 {
-	protected static const ResourceName LAYOUT = "{6D3A1F0B9C27E451}UI/layouts/DCO/DCO_ContactToast.layout";
-	protected static const int FADE_MS = 300;
 
 	protected static ref DCO_ContactToast s_Instance;
 
@@ -39,7 +37,7 @@ class DCO_ContactToast
 
 	protected void Add(string callsign, string text, bool radio)
 	{
-		Widget root = GetGame().GetWorkspace().CreateWidgets(LAYOUT);
+		Widget root = GetGame().GetWorkspace().CreateWidgets("{6D3A1F0B9C27E451}UI/layouts/DCO/DCO_ContactToast.layout");
 		if (!root)
 			return;
 		root.SetZOrder(1000);
@@ -54,9 +52,14 @@ class DCO_ContactToast
 			t.SetText("<color rgba=\"110,195,255,255\">" + label + "</color>  " + text);
 
 		Widget toast = root.FindAnyWidget("Toast");
+		if (!toast)
+		{
+			root.RemoveFromHierarchy();
+			return;
+		}
 		DCO_UISettings.ScaleChildren(toast, DCO_UISettings.GetContactScale(), 17);
 		toast.SetOpacity(0);
-		AnimateWidget.Opacity(toast, 1, 1000.0 / FADE_MS);
+		AnimateWidget.Opacity(toast, 1, 1000.0 / 300);
 
 		m_aRoots.InsertAt(root, 0);
 		while (m_aRoots.Count() > 3)
@@ -77,6 +80,12 @@ class DCO_ContactToast
 		float offX = DCO_UISettings.GetContactOffX();
 		float offY = DCO_UISettings.GetContactOffY();
 
+		for (int j = m_aRoots.Count() - 1; j >= 0; j--)
+		{
+			if (!m_aRoots[j])
+				m_aRoots.Remove(j);
+		}
+
 		foreach (int i, Widget root : m_aRoots)
 		{
 			Widget toast = root.FindAnyWidget("Toast");
@@ -96,8 +105,8 @@ class DCO_ContactToast
 			return;
 		Widget toast = root.FindAnyWidget("Toast");
 		if (toast)
-			AnimateWidget.Opacity(toast, 0, 1000.0 / FADE_MS);
-		GetGame().GetCallqueue().CallLater(RemoveRoot, FADE_MS, false, root);
+			AnimateWidget.Opacity(toast, 0, 1000.0 / 300);
+		GetGame().GetCallqueue().CallLater(RemoveRoot, 300, false, root);
 	}
 
 	protected void RemoveRoot(Widget root)

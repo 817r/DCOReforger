@@ -1,0 +1,10 @@
+DCO_DoCQBWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et" {
+ ID "663CBEF736DEBDE0"
+ Type "SearchAndDestroy"
+ Title "Do CQB waypoint"
+ AIBehaviorTree "{4530CC0331FF9DB6}AI/BehaviorTrees/Waypoints/DCO_WP_DoCQB.bt"
+ AIBehaviorTreeMoveTo "{A3755C1F88DED8D6}AI/BehaviorTrees/Waypoints/WP_Move.bt"
+ CompletionRadius 60
+ Autocomplete 0
+ CompletionType Any
+}

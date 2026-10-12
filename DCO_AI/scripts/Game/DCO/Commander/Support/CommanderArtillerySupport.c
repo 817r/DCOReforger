@@ -1,47 +1,47 @@
-[ComponentEditorProps(category: "GameScripted/Commander", description: "Koordinasi fire mission artillery untuk AI Commander")]
+[ComponentEditorProps(category: "GameScripted/Commander", description: "Coordinates artillery fire missions for the AI Commander.")]
 class CMD_ArtillerySupportClass : ScriptComponentClass
 {
 }
 
 class CMD_ArtillerySupport : ScriptComponent
 {
-	[Attribute("0.4", UIWidgets.EditBox, "Interval (detik) dispatch tiap shell dari queue", category: "Firing")]
+	[Attribute("0.4", UIWidgets.EditBox, "Interval (s) between dispatching shells from the queue.", category: "Firing")]
 	protected float m_fDispatchInterval;
 
-	[Attribute("90.0", UIWidgets.EditBox, "Detik sebelum request di queue dianggap kadaluarsa", category: "Firing")]
+	[Attribute("90.0", UIWidgets.EditBox, "Seconds before a queued request expires.", category: "Firing")]
 	protected float m_fQueueExpiry;
 
-	[Attribute("25.0", UIWidgets.EditBox, "Radius cek friendly (meter) sebelum fire mission diizinkan", category: "Safety")]
+	[Attribute("25.0", UIWidgets.EditBox, "Friendly check radius (m) before a fire mission is allowed.", category: "Safety")]
 	protected float m_fFriendlySafeRadius;
 
-	[Attribute("0.1", UIWidgets.Range, "Chance request ditolak secara random (0 = tidak pernah, 1 = selalu)", params: "0 1 0.01", category: "Firing")]
+	[Attribute("0.1", UIWidgets.Range, "Chance a request is randomly rejected (0 = never, 1 = always).", params: "0 1 0.01", category: "Firing")]
 	protected float m_fBaseRejectionChance;
 
-	[Attribute("50", UIWidgets.EditBox, "Ketidakpastian posisi (m) sampai segini = HE titik (sheaf rapat)", category: "Mission Tiers")]
+	[Attribute("50", UIWidgets.EditBox, "Position uncertainty (m) up to this = point HE (tight sheaf).", category: "Mission Tiers")]
 	protected float m_fPointUncertainty;
 
-	[Attribute("150", UIWidgets.EditBox, "Ketidakpastian posisi (m) sampai segini = HE area (sheaf selebar ketidakpastian, peluru +50%). Di atasnya gak ada HE: recon (siang) / ILLUMINATION (malam)", category: "Mission Tiers")]
+	[Attribute("150", UIWidgets.EditBox, "Position uncertainty (m) up to this = area HE (sheaf as wide as the uncertainty, +50% rounds). Above it no HE: recon (day) or ILLUMINATION (night).", category: "Mission Tiers")]
 	protected float m_fAreaUncertainty;
 
-	[Attribute("35", UIWidgets.EditBox, "Radius mematikan peluru (m), ditambah ke sebaran nyata buat radius aman kawan", category: "Safety")]
+	[Attribute("35", UIWidgets.EditBox, "Lethal radius of a round (m), added to the real spread for the friendly safety radius.", category: "Safety")]
 	protected float m_fLethalRadius;
 
-	[Attribute("100", UIWidgets.EditBox, "Danger close: squad peminta yang lagi ditekan boleh sedekat ini (m) dari titik tembak; kawan lain tetap butuh radius aman penuh", category: "Safety")]
+	[Attribute("100", UIWidgets.EditBox, "Danger close: a requesting squad under suppression may be this close (m) to the impact point; other friendlies still need the full safety radius.", category: "Safety")]
 	protected float m_fDangerCloseRadius;
 
-	[Attribute("80", UIWidgets.EditBox, "Jarak tembak minimum unit mortir (m)", category: "Range")]
+	[Attribute("80", UIWidgets.EditBox, "Minimum firing range of mortar units (m).", category: "Range")]
 	protected float m_fMinRange;
 
-	[Attribute("3500", UIWidgets.EditBox, "Jarak tembak maksimum unit mortir (m)", category: "Range")]
+	[Attribute("3500", UIWidgets.EditBox, "Maximum firing range of mortar units (m).", category: "Range")]
 	protected float m_fMaxRange;
 
-	[Attribute("15.0", UIWidgets.EditBox, "Cooldown base (detik) per shell yang ditembak", category: "Firing")]
+	[Attribute("15.0", UIWidgets.EditBox, "Base cooldown (s) per shell fired.", category: "Firing")]
 	protected float m_fCooldownPerShell;
 
-	[Attribute("30.0", UIWidgets.EditBox, "Minimum cooldown global artillery (detik)", category: "Firing")]
+	[Attribute("30.0", UIWidgets.EditBox, "Minimum global artillery cooldown (s).", category: "Firing")]
 	protected float m_fMinGlobalCooldown;
 
-	[Attribute("300.0", UIWidgets.EditBox, "Maximum cooldown global artillery (detik)", category: "Firing")]
+	[Attribute("300.0", UIWidgets.EditBox, "Maximum global artillery cooldown (s).", category: "Firing")]
 	protected float m_fMaxGlobalCooldown;
 
 	[Attribute("30.0", UIWidgets.EditBox, "Minimum dispersion radius (meter)", category: "Artillery Accuracy")]
@@ -50,42 +50,42 @@ class CMD_ArtillerySupport : ScriptComponent
 	[Attribute("250.0", UIWidgets.EditBox, "Maximum dispersion radius (meter)", category: "Artillery Accuracy")]
 	protected float m_fMaxDispersion;
 
-	[Attribute("0.06", UIWidgets.Range, "Dispersion scale per meter jarak unit->target (range * scale = base dispersion)", params: "0.01 0.5 0.01", category: "Artillery Accuracy")]
+	[Attribute("0.06", UIWidgets.Range, "Dispersion scale per meter of unit-to-target distance (range x scale = base dispersion).", params: "0.01 0.5 0.01", category: "Artillery Accuracy")]
 	protected float m_fDispersionRangeScale;
 
-	[Attribute("0.5", UIWidgets.Range, "Base accuracy sebelum modifier", params: "0.0 1.0 0.01", category: "Artillery Accuracy")]
+	[Attribute("0.5", UIWidgets.Range, "Base accuracy before modifiers.", params: "0.0 1.0 0.01", category: "Artillery Accuracy")]
 	protected float m_fBaseAccuracy;
 
-	[Attribute("1.5", UIWidgets.Range, "Global dispersion multiplier — naikan buat lebih spray, turunin buat lebih presisi", params: "0.1 3.0 0.1", category: "Artillery Accuracy")]
+	[Attribute("1.5", UIWidgets.Range, "Global dispersion multiplier. Raise for more spread, lower for more precision.", params: "0.1 3.0 0.1", category: "Artillery Accuracy")]
 	protected float m_fDispersionMultiplier;
 
-	[Attribute("0.1", UIWidgets.Range, "Cluster ratio — 0 = flat random, 1 = sangat clustering di center", params: "0.0 1.0 0.01", category: "Artillery Accuracy")]
+	[Attribute("0.1", UIWidgets.Range, "Cluster ratio. 0 = flat random, 1 = strongly clustered at the center.", params: "0.0 1.0 0.01", category: "Artillery Accuracy")]
 	protected float m_fClusterRatio;
 
-	[Attribute("50.0", UIWidgets.EditBox, "Radius (meter) buat nganggep fire mission baru itu 'nembak tempat yang sama' kayak sebelumnya", category: "Artillery Accuracy")]
+	[Attribute("50.0", UIWidgets.EditBox, "Radius (m) within which a new fire mission counts as firing at the same place as before.", category: "Artillery Accuracy")]
 	protected float m_fCorrectionRadius;
 
-	[Attribute("300.0", UIWidgets.EditBox, "Detik -- kalau gak ada fire mission baru ke area itu dalem waktu ini, tracking koreksi di-reset (dianggap situasi baru)", category: "Artillery Accuracy")]
+	[Attribute("300.0", UIWidgets.EditBox, "Seconds. If no new fire mission hits that area within this time, correction tracking resets (treated as a new situation).", category: "Artillery Accuracy")]
 	protected float m_fCorrectionExpiry;
 
-	[Attribute("3", UIWidgets.EditBox, "Maximum jumlah koreksi berturut-turut sebelum bonus akurasi plateau (gak nambah lagi)", category: "Artillery Accuracy")]
+	[Attribute("3", UIWidgets.EditBox, "Maximum consecutive corrections before the accuracy bonus stops growing.", category: "Artillery Accuracy")]
 	protected int m_iMaxCorrections;
 
-	[Attribute("0.08", UIWidgets.Range, "Bonus akurasi PER TINGKAT koreksi (tingkat 1 = panggilan pertama, gak dapet bonus)", params: "0.0 0.2 0.01", category: "Artillery Accuracy")]
+	[Attribute("0.08", UIWidgets.Range, "Accuracy bonus PER correction step (step 1 = first call, no bonus).", params: "0.0 0.2 0.01", category: "Artillery Accuracy")]
 	protected float m_fCorrectionBonusPerStep;
 
 	protected ref array<ref CMD_ArtilleryCorrectionTrack> m_aCorrectionTracks = new array<ref CMD_ArtilleryCorrectionTrack>();
 
-	[Attribute("5", UIWidgets.EditBox, "Maximum request di queue sebelum kena penalty cooldown", category: "Cooldown")]
+	[Attribute("5", UIWidgets.EditBox, "Maximum queued requests before the cooldown penalty applies.", category: "Cooldown")]
 	protected int m_iMaxQueueSize;
 
-	[Attribute("10.0", UIWidgets.EditBox, "Penalty cooldown tambahan per request saat queue penuh (detik)", category: "Cooldown")]
+	[Attribute("10.0", UIWidgets.EditBox, "Extra cooldown penalty per request while the queue is full (s).", category: "Cooldown")]
 	protected float m_fQueueOverloadPenalty;
 
-	[Attribute("60.0", UIWidgets.EditBox, "Cooldown global artillery setelah fire mission selesai (detik)", category: "Cooldown")]
+	[Attribute("60.0", UIWidgets.EditBox, "Global artillery cooldown after a fire mission ends (s).", category: "Cooldown")]
 	protected float m_fGlobalCooldown;
 
-	[Attribute("5.0", UIWidgets.EditBox, "Waktu proses per request di queue (detik) sebelum request berikutnya bisa di-process", category: "Cooldown")]
+	[Attribute("5.0", UIWidgets.EditBox, "Processing time per queued request (s) before the next request can be processed.", category: "Cooldown")]
 	protected float m_fQueueProcessTime;
 
 	protected float m_fGlobalCooldownUntil  = 0.0;
@@ -156,8 +156,7 @@ class CMD_ArtillerySupport : ScriptComponent
 			pos = req.m_vImpactPos;
 		}
 		string line = string.Format("arty_denied reason=%1 src=%2 tier=%3 pos=%4,%5", reason, src, tier, Math.Round(pos[0]), Math.Round(pos[2]));
-		Print("[CMD_ArtillerySupport] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
+		DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", line);
 		if (req)
 		{
 			req.m_sDeny = reason;
@@ -178,6 +177,11 @@ class CMD_ArtillerySupport : ScriptComponent
 				n++;
 		}
 		return n;
+	}
+
+	int GetQueueCount()
+	{
+		return m_aQueue.Count();
 	}
 
 	bool IsQueueBusy()
@@ -288,6 +292,21 @@ class CMD_ArtillerySupport : ScriptComponent
 		return !m_aUnits.IsEmpty();
 	}
 
+	bool DCO_HasUnit(DCO_GroupUtilityComponent grp)
+	{
+		return grp && m_aUnits.Contains(grp);
+	}
+
+	int DCO_UnitCount()
+	{
+		return m_aUnits.Count();
+	}
+
+	string DCO_RangeText()
+	{
+		return Math.Round(m_fMinRange).ToString() + "-" + Math.Round(m_fMaxRange).ToString();
+	}
+
 	int LiftFiresNear(vector pos, float radius)
 	{
 		int n;
@@ -323,9 +342,35 @@ class CMD_ArtillerySupport : ScriptComponent
 		return n;
 	}
 
+	bool DCO_CQBSmokeBlocked(CMD_FireMissionRequest req)
+	{
+		if (!req || req.m_eShellType != SCR_EAIArtilleryAmmoType.SMOKE)
+			return false;
+		IEntity bld;
+		float d = DCO_BuildingClear.NearestBooked(req.m_vImpactPos, 100.0, bld);
+		if (d < 0)
+			return false;
+		if (req.m_iPlayerGroup >= 0)
+		{
+			if (!req.m_bDCOCqbWarned)
+			{
+				req.m_bDCOCqbWarned = true;
+				DCO_Perf.Count("arty:warn_player_cqb_smoke");
+				DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_warn req=player@%1 reason=near_cqb bld_dist=%2 bld=%3 player_group=%4 action=fire", DCO_Util.XZ(req.m_vImpactPos), Math.Round(d), DCO_Util.XZ(bld.GetOrigin()), req.m_iPlayerGroup));
+			}
+			return false;
+		}
+		DCO_Perf.Count("arty:reject_cqb_smoke");
+		DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_reject req=%1@%2 reason=cqb_no_smoke bld_dist=%3 bld=%4", req.m_sSource, DCO_Util.XZ(req.m_vImpactPos), Math.Round(d), DCO_Util.XZ(bld.GetOrigin())));
+		return true;
+	}
+
 	bool RequestShellImpact(notnull CMD_FireMissionRequest req, float worldTime, int shellCount)
 	{
 	    if (!Replication.IsServer())
+	        return false;
+
+	    if (DCO_CQBSmokeBlocked(req))
 	        return false;
 
 	    string deny;
@@ -355,7 +400,7 @@ class CMD_ArtillerySupport : ScriptComponent
 	    }
 
 	    if (req.m_sTier == "area" && req.m_iPlayerGroup < 0)
-	        shellCount = Math.Ceil(shellCount * 1.5);
+	        shellCount = Math.Ceil(1.0 * shellCount * 1.5);
 
 	    req.m_iShellCount    = shellCount;
 	    req.m_fRequestedTime = worldTime;
@@ -375,8 +420,8 @@ class CMD_ArtillerySupport : ScriptComponent
 	        req.m_sSource, req.m_sTier, Math.Round(req.m_fUncertainty), shellCount,
 	        typename.EnumToString(SCR_EAIArtilleryAmmoType, req.m_eShellType), Math.Round(req.m_fSafeRadius),
 	        Math.Round(req.m_vImpactPos[0]), Math.Round(req.m_vImpactPos[2]));
-	    Print("[CMD_ArtillerySupport] " + line);
-	    DCO_BenchmarkLoggerComponent.Event(line);
+	    DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", line);
+	    DCO_Events.FireMission(line);
 	    return true;
 	}
 
@@ -405,7 +450,7 @@ class CMD_ArtillerySupport : ScriptComponent
 		float tof = TimeOfFlight(unit.GetOwner().GetOrigin(), req.m_vImpactPos);
 		DCO_Radio.Group(req.m_iPlayerGroup, "FIRE SUPPORT", "fire_shot", DCO_ERadioKind.INFO, DCO_Radio.P("count", req.m_iShellCount.ToString(), "type", ShellKey(req.m_eShellType), "sec", DCO_Radio.N(tof)));
 		GetGame().GetCallqueue().CallLater(AnnounceSplash, tof * 1000, false, req.m_iPlayerGroup);
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_fire_shot grp=%1 type=%2 shells=%3 tof=%4", req.m_iPlayerGroup, typename.EnumToString(SCR_EAIArtilleryAmmoType, req.m_eShellType), req.m_iShellCount, Math.Round(tof)));
+		DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("player_fire_shot grp=%1 type=%2 shells=%3 tof=%4", req.m_iPlayerGroup, typename.EnumToString(SCR_EAIArtilleryAmmoType, req.m_eShellType), req.m_iShellCount, Math.Round(tof)));
 	}
 
 	protected void AnnounceSplash(int groupID)
@@ -568,10 +613,22 @@ class CMD_ArtillerySupport : ScriptComponent
 		    	continue;
 	    	}
 
+		    if (DCO_CQBSmokeBlocked(req))
+		    {
+		        m_aQueue.Remove(qi);
+		        continue;
+		    }
+
 		    string deny;
 		    DCO_GroupUtilityComponent unit = FindUnitInRange(req.m_vImpactPos, true, deny);
 		    if (!unit)
 		    {
+		        if (!req.m_bDCORejectLogged)
+		        {
+		            req.m_bDCORejectLogged = true;
+		            DCO_Perf.Count("arty_reject:" + deny);
+		            DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_reject req=%1@%2 reason=%3 units=%4 queue=%5", req.m_sSource, DCO_Util.XZ(req.m_vImpactPos), deny, m_aUnits.Count(), m_aQueue.Count()));
+		        }
 		        qi++;
 		        continue;
 		    }
@@ -580,11 +637,15 @@ class CMD_ArtillerySupport : ScriptComponent
 		    if (IsLethal(req) && HasFriendlyNearFire(req))
 		    {
 		        LogDenied(req, "friendly");
+		        DCO_Perf.Count("arty_reject:friendly");
+		        DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_reject req=%1@%2 reason=friendly safe_r=%3", req.m_sSource, DCO_Util.XZ(req.m_vImpactPos), Math.Round(req.m_fSafeRadius)));
 		        m_aQueue.Remove(qi);
 		        continue;
 		    }
 
 		    DCO_PlayerAwareness.WarnArtillery(m_Commander, req, TimeOfFlight(unit.GetOwner().GetOrigin(), req.m_vImpactPos));
+		    DCO_Perf.Count("arty_assign");
+		    DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_assign req=%1@%2 mortar=%3 eta=%4 shells=%5 type=%6", req.m_sSource, DCO_Util.XZ(req.m_vImpactPos), unit.GetOwner().GetName(), TimeOfFlight(unit.GetOwner().GetOrigin(), req.m_vImpactPos).ToString(-1, 1), req.m_iShellCount, typename.EnumToString(SCR_EAIArtilleryAmmoType, req.m_eShellType)));
 
 		    array<vector> artyPoint = GenerateArtilleryImpactPoints(req, unit.GetOwner().GetOrigin(), worldTime, req.m_iShellCount);
 
@@ -601,6 +662,10 @@ class CMD_ArtillerySupport : ScriptComponent
 		            continue;
 		        }
 		        wps.SetAmmoType(req.m_eShellType);
+		        if (req.m_eShellType == SCR_EAIArtilleryAmmoType.ILLUMINATION)
+		            DCO_Perf.Count("sp:illum");
+		        else if (req.m_eShellType == SCR_EAIArtilleryAmmoType.SMOKE)
+		            DCO_Perf.Count("sp:smoke_arty");
 		        wps.SetTargetShotCount(1);
 		        wps.SetActive(true);
 
@@ -623,7 +688,7 @@ class CMD_ArtillerySupport : ScriptComponent
 	    m_fNextProcessTime = worldTime + m_fQueueProcessTime;
 
 	    float shellCooldown = Math.Clamp(
-	        m_fGlobalCooldown + (shellsFired * m_fCooldownPerShell),
+	        m_fGlobalCooldown + (1.0 * shellsFired * m_fCooldownPerShell),
 	        m_fMinGlobalCooldown,
 	        m_fMaxGlobalCooldown
 	    );
@@ -842,7 +907,7 @@ class CMD_ArtillerySupport : ScriptComponent
 			return;
 
 		m_fDispatchTimer = 0.0;
-		float worldTime  = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float worldTime  = DCO_Util.NowS();
 		ProcessQueue(worldTime);
 	}
 
@@ -863,12 +928,12 @@ class CMD_ArtillerySupport : ScriptComponent
 
 		if (!m_Commander)
 		{
-			Print("[CMD_ArtillerySupport] PERINGATAN — AICommander_BaseComponent tidak ditemukan. " +
-				"Friendly safety check dan ProcessQueue tidak akan berfungsi (di-guard, gak crash, tapi artillery gak akan pernah nembak).");
+			DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.WARN, "-", "WARNING - AICommander_BaseComponent not found. " +
+				"Friendly safety check and ProcessQueue will not work (guarded, no crash, but artillery will never fire).");
 		}
 		else
 		{
-			Print("[CMD_ArtillerySupport] Initialized, menunggu unit artillery daftar.");
+			DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", "Initialized, waiting for artillery units to register.");
 		}
 	}
 }

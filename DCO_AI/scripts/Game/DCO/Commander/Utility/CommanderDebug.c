@@ -1,19 +1,19 @@
 class DCO_DebugDraw
 {
-	static const int COLOR_OWNED     = 0xFF33CC66;
-	static const int COLOR_TARGET    = 0xFFFF5522;
-	static const int COLOR_QUEUED    = 0xFFAAAAAA;
-	static const int COLOR_STAGING   = 0xFFFFCC00;
+	static int COLOR_OWNED() { return 0xFF33CC66; }
+	static int COLOR_TARGET() { return 0xFFFF5522; }
+	static int COLOR_QUEUED() { return 0xFFAAAAAA; }
+	static int COLOR_STAGING() { return 0xFFFFCC00; }
 	static const int COLOR_COMMANDER = 0xFF33AAFF;
 	static const int COLOR_MANAGER   = 0xFFFFFFFF;
-	static const int COLOR_FRONTLINE = 0xFF6688FF;
+	static int COLOR_FRONTLINE() { return 0xFF6688FF; }
 	static const int COLOR_NEUTRAL   = 0xFF666666;
-	static const int COLOR_TEXT_BG   = 0x80000000;
+	static int COLOR_TEXT_BG() { return 0x80000000; }
 
-	static const int COLOR_ROLE_ASSAULT = 0xFFFF6644;
-	static const int COLOR_ROLE_DEFEND  = 0xFF44DD88;
-	static const int COLOR_ROLE_RECON   = 0xFFCC66FF;
-	static const int COLOR_ROLE_IDLE    = 0xFFBBBBBB;
+	static int COLOR_ROLE_ASSAULT() { return 0xFFFF6644; }
+	static int COLOR_ROLE_DEFEND() { return 0xFF44DD88; }
+	static int COLOR_ROLE_RECON() { return 0xFFCC66FF; }
+	static int COLOR_ROLE_IDLE() { return 0xFFBBBBBB; }
 
 
 	static bool IsLocalPlayerInGM()
@@ -38,7 +38,7 @@ class DCO_DebugDraw
 			pos[0], pos[1], pos[2],
 			size,
 			color,
-			COLOR_TEXT_BG);
+			COLOR_TEXT_BG());
 	}
 
 	static int Flags()
@@ -128,6 +128,8 @@ class DCO_DebugDraw
 			case CMD_EObjectiveType.CAPTURE: return "CAPTURE";
 			case CMD_EObjectiveType.DESTROY: return "DESTROY";
 			case CMD_EObjectiveType.RECON:   return "RECON";
+			case CMD_EObjectiveType.DEFEND:  return "DEFEND";
+			case CMD_EObjectiveType.HOLD_UNTIL: return "HOLD_UNTIL";
 		}
 		return "UNKNOWN";
 	}
@@ -187,15 +189,15 @@ class DCO_DebugDraw
 			case DCO_EGroupTask.ATTACK:
 			case DCO_EGroupTask.FLANK:
 			case DCO_EGroupTask.SUPPORT_BY_FIRE:
-				return COLOR_ROLE_ASSAULT;
+				return COLOR_ROLE_ASSAULT();
 
 			case DCO_EGroupTask.DEFEND:
 			case DCO_EGroupTask.GARRISON:
-				return COLOR_ROLE_DEFEND;
+				return COLOR_ROLE_DEFEND();
 
 			case DCO_EGroupTask.RECON:
-				return COLOR_ROLE_RECON;
+				return COLOR_ROLE_RECON();
 		}
-		return COLOR_ROLE_IDLE;
+		return COLOR_ROLE_IDLE();
 	}
 }

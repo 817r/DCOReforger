@@ -1,0 +1,221 @@
+FrameWidgetClass {
+ Name "rootFrame"
+ {
+  FrameWidgetClass "{000000005DC10001}" {
+   Name "Card"
+   Slot FrameWidgetSlot "{50F4C51DF92631E2}" {
+    Anchor 1 0 1 0
+    PositionX -40
+    OffsetLeft -40
+    PositionY 120
+    OffsetTop 120
+    SizeX 480
+    OffsetRight -520
+    SizeY 176
+    OffsetBottom -296
+   }
+   Opacity 0
+   {
+    ImageWidgetClass "{000000005DC10002}" {
+     Name "Bg"
+     Slot FrameWidgetSlot "{50F4C51DF92631E3}" {
+      Anchor 0 0 1 1
+      PositionX 0
+      OffsetLeft 0
+      PositionY 0
+      OffsetTop 0
+      SizeX 0
+      OffsetRight 0
+      SizeY 0
+      OffsetBottom 0
+     }
+     Color 0 0 0 0.68
+    }
+    ImageWidgetClass "{000000005DC10003}" {
+     Name "Accent"
+     Slot FrameWidgetSlot "{50F4C51DF92631E2}" {
+      Anchor 0 0 0 0
+      PositionX 0
+      OffsetLeft 0
+      PositionY 0
+      OffsetTop 0
+      SizeX 6
+      OffsetRight -6
+      SizeY 176
+      OffsetBottom -176
+     }
+     Color 0.8964 0.4451 0.0307 1
+    }
+    RichTextWidgetClass "{000000005DC10004}" {
+     Name "Header"
+     Slot FrameWidgetSlot "{50F4C51DF92631E2}" {
+      Anchor 0 0 0 0
+      PositionX 20
+      OffsetLeft 20
+      PositionY 8
+      OffsetTop 8
+      SizeX 448
+      OffsetRight -468
+      SizeY 22
+      OffsetBottom -30
+     }
+     Clipping Ancestor
+     Color 0.8964 0.4451 0.0307 1
+     Text ""
+     "Font Size" 18
+     "Min Font Size" 12
+     "Vertical Alignment" Center
+     FontProperties FontProperties "{000000005DC10005}" {
+      Font "{EABA4FE9D014CCEF}UI/Fonts/RobotoCondensed/RobotoCondensed_Bold.fnt"
+      ShadowSize 2
+      ShadowOffset 2 2
+     }
+    }
+    ImageWidgetClass "{000000005DC10006}" {
+     Name "HeaderLine"
+     Slot FrameWidgetSlot "{50F4C51DF92631E2}" {
+      Anchor 0 0 0 0
+      PositionX 20
+      OffsetLeft 20
+      PositionY 32
+      OffsetTop 32
+      SizeX 448
+      OffsetRight -468
+      SizeY 2
+      OffsetBottom -34
+     }
+     Color 0.8964 0.4451 0.0307 0.7
+    }
+    RichTextWidgetClass "{000000005DC10007}" {
+     Name "Title"
+     Slot FrameWidgetSlot "{50F4C51DF92631E2}" {
+      Anchor 0 0 0 0
+      PositionX 20
+      OffsetLeft 20
+      PositionY 38
+      OffsetTop 38
+      SizeX 448
+      OffsetRight -468
+      SizeY 30
+      OffsetBottom -68
+     }
+     Clipping Ancestor
+     Color 1 1 1 1
+     Text ""
+     "Font Size" 26
+     "Min Font Size" 14
+     "Vertical Alignment" Center
+     FontProperties FontProperties "{000000005DC10008}" {
+      Font "{EABA4FE9D014CCEF}UI/Fonts/RobotoCondensed/RobotoCondensed_Bold.fnt"
+      ShadowSize 3
+      ShadowOffset 2 2
+     }
+    }
+    RichTextWidgetClass "{000000005DC10009}" {
+     Name "Sub"
+     Slot FrameWidgetSlot "{50F4C51DF92631E2}" {
+      Anchor 0 0 0 0
+      PositionX 20
+      OffsetLeft 20
+      PositionY 70
+      OffsetTop 70
+      SizeX 448
+      OffsetRight -468
+      SizeY 22
+      OffsetBottom -92
+     }
+     Clipping Ancestor
+     Color 0.6921 0.6921 0.6921 1
+     Text ""
+     "Font Size" 17
+     "Min Font Size" 11
+     "Vertical Alignment" Center
+     FontProperties FontProperties "{000000005DC1000A}" {
+      Font "{3E7733BAC8C831F6}UI/Fonts/RobotoCondensed/RobotoCondensed_Regular.fnt"
+      ShadowSize 2
+      ShadowOffset 2 2
+     }
+    }
+    RichTextWidgetClass "{000000005DC1000B}" {
+     Name "Desc"
+     Slot FrameWidgetSlot "{50F4C51DF92631E2}" {
+      Anchor 0 0 0 0
+      PositionX 20
+      OffsetLeft 20
+      PositionY 94
+      OffsetTop 94
+      SizeX 448
+      OffsetRight -468
+      SizeY 38
+      OffsetBottom -132
+     }
+     Clipping Ancestor
+     Color 0.5225 0.5225 0.5225 1
+     Text ""
+     "Font Size" 15
+     "Min Font Size" 10
+     FontProperties FontProperties "{000000005DC1000C}" {
+      Font "{3E7733BAC8C831F6}UI/Fonts/RobotoCondensed/RobotoCondensed_Regular.fnt"
+      ShadowSize 2
+      ShadowOffset 2 2
+     }
+    }
+    ImageWidgetClass "{000000005DC1000D}" {
+     Name "BarBg"
+     Slot FrameWidgetSlot "{50F4C51DF92631E2}" {
+      Anchor 0 0 0 0
+      PositionX 20
+      OffsetLeft 20
+      PositionY 138
+      OffsetTop 138
+      SizeX 448
+      OffsetRight -468
+      SizeY 5
+      OffsetBottom -143
+     }
+     Color 1 1 1 0.15
+    }
+    ImageWidgetClass "{000000005DC1000E}" {
+     Name "Bar"
+     Slot FrameWidgetSlot "{50F4C51DF92631E2}" {
+      Anchor 0 0 0 0
+      PositionX 20
+      OffsetLeft 20
+      PositionY 138
+      OffsetTop 138
+      SizeX 448
+      OffsetRight -468
+      SizeY 5
+      OffsetBottom -143
+     }
+     Color 0.8964 0.4451 0.0307 1
+    }
+    RichTextWidgetClass "{000000005DC1000F}" {
+     Name "Keys"
+     Slot FrameWidgetSlot "{50F4C51DF92631E2}" {
+      Anchor 0 0 0 0
+      PositionX 20
+      OffsetLeft 20
+      PositionY 148
+      OffsetTop 148
+      SizeX 448
+      OffsetRight -468
+      SizeY 24
+      OffsetBottom -172
+     }
+     Clipping Ancestor
+     Color 1 1 1 1
+     Text ""
+     "Font Size" 17
+     "Min Font Size" 11
+     "Vertical Alignment" Center
+     FontProperties FontProperties "{000000005DC10010}" {
+      Font "{EABA4FE9D014CCEF}UI/Fonts/RobotoCondensed/RobotoCondensed_Bold.fnt"
+      ShadowSize 2
+      ShadowOffset 2 2
+     }
+    }
+   }
+  }
+ }
+}

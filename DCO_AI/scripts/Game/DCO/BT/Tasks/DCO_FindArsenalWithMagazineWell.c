@@ -1,9 +1,9 @@
 class SCR_AIFindArsenalWithMagazineWell : AITaskScripted
 {
-	protected static const string PORT_POS = "Pos";
-	protected static const string PORT_PREFAB_RESOURCE_NAME = "MagazineWellTypename";
+	protected static string PORT_POS() { return "Pos"; }
+	protected static string PORT_PREFAB_RESOURCE_NAME() { return "MagazineWellTypename"; }
 
-	protected static const string PORT_ARSENAL_ENTITY = "ArsenalEntity";
+	protected static string PORT_ARSENAL_ENTITY() { return "ArsenalEntity"; }
 
 	[Attribute("0", UIWidgets.EditBox)]
 	protected float m_fSearchRadius;
@@ -24,8 +24,8 @@ class SCR_AIFindArsenalWithMagazineWell : AITaskScripted
 		vector searchPos;
 		typename prefabResourceName;
 
-		GetVariableIn(PORT_POS, searchPos);
-		GetVariableIn(PORT_PREFAB_RESOURCE_NAME, prefabResourceName);
+		GetVariableIn(PORT_POS(), searchPos);
+		GetVariableIn(PORT_PREFAB_RESOURCE_NAME(), prefabResourceName);
 
 		if (searchPos == vector.Zero)
 			return ENodeResult.FAIL;
@@ -56,7 +56,7 @@ class SCR_AIFindArsenalWithMagazineWell : AITaskScripted
 		if (!nearestEntity)
 			return ENodeResult.FAIL;
 
-		SetVariableOut(PORT_ARSENAL_ENTITY, nearestEntity);
+		SetVariableOut(PORT_ARSENAL_ENTITY(), nearestEntity);
 		return ENodeResult.SUCCESS;
 	}
 
@@ -77,9 +77,21 @@ class SCR_AIFindArsenalWithMagazineWell : AITaskScripted
 
 	override static string GetOnHoverDescription() { return "Finds nearest arsenal which has a given prefab in it."; }
 
-	protected static ref TStringArray s_aVarsIn = { PORT_POS, PORT_PREFAB_RESOURCE_NAME };
-	override TStringArray GetVariablesIn() { return s_aVarsIn; }
+	protected static ref TStringArray s_aVarsIn;
+	protected static TStringArray GetVarsIn()
+	{
+		if (!s_aVarsIn)
+			s_aVarsIn = { PORT_POS(), PORT_PREFAB_RESOURCE_NAME() };
+		return s_aVarsIn;
+	}
+	override TStringArray GetVariablesIn() { return GetVarsIn(); }
 
-	protected static ref TStringArray s_aVarsOut = { PORT_ARSENAL_ENTITY };
-	override TStringArray GetVariablesOut() { return s_aVarsOut; }
+	protected static ref TStringArray s_aVarsOut;
+	protected static TStringArray GetVarsOut()
+	{
+		if (!s_aVarsOut)
+			s_aVarsOut = { PORT_ARSENAL_ENTITY() };
+		return s_aVarsOut;
+	}
+	override TStringArray GetVariablesOut() { return GetVarsOut(); }
 }

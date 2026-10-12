@@ -3,7 +3,7 @@ DCO_GarrisonWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.e
  Type "Defend"
  Title "Garrison waypoint"
  AIBehaviorTree "{1A217EA4A311F3BC}AI/BehaviorTrees/Waypoints/DCO_WP_Garrison.bt"
- AIBehaviorTreeMoveTo "{A3755C1F88DED8D6}AI/BehaviorTrees/Waypoints/WP_Move.bt"
+ AIBehaviorTreeMoveTo "{F1C804B42C71729A}AI/BehaviorTrees/Waypoints/DCO_WP_SetupMove.bt"
  CompletionRadius 40
  Autocomplete 0
  m_TimedWaypointParameters SCR_AITimedWaypointParameters "{6A276E89F01A4673}" {

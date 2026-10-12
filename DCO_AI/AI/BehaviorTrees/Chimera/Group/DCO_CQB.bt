@@ -1,0 +1,33 @@
+BehaviorTree "{7C2E91A4D53F8B06}AI/BehaviorTrees/Chimera/Group/DCO_CQB.bt" {
+ Name "AI/BehaviorTrees/Chimera/Group/DCO_CQB.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    Sequence "PLAN > STACK > ROOMS (pairs, random) > CONSOLIDATE" {
+     Name "PLAN > STACK > ROOMS (pairs, random) > CONSOLIDATE"
+     EditorPos 0 -150
+     Nodes {
+      DCO_CQB_Plan "DCO_CQB Plan" {
+       Name "DCO_CQB Plan"
+       EditorPos -450 0
+      }
+      DCO_CQB_Stack "DCO_CQB Stack" {
+       Name "DCO_CQB Stack"
+       EditorPos -150 0
+      }
+      DCO_CQB_Rooms "DCO_CQB Rooms" {
+       Name "DCO_CQB Rooms"
+       EditorPos 150 0
+      }
+      DCO_CQB_Consolidate "DCO_CQB Consolidate" {
+       Name "DCO_CQB Consolidate"
+       EditorPos 450 0
+      }
+     }
+    }
+   }
+  }
+ }
+}

@@ -30,22 +30,41 @@ class DCO_PlayerComms
 		}
 	}
 
+	static void SendSpawnerCard(int spawnerId, int cmdId, int kind, string title, string text)
+	{
+		if (!Replication.IsServer())
+			return;
+		SCR_EditorManagerCore core = SCR_EditorManagerCore.Cast(SCR_EditorManagerCore.GetInstance(SCR_EditorManagerCore));
+		if (!core)
+			return;
+		array<SCR_EditorManagerEntity> editors = {};
+		core.GetEditorEntities(editors);
+		foreach (SCR_EditorManagerEntity editor : editors)
+		{
+			if (!editor || editor.IsLimited())
+				continue;
+			SCR_PlayerControllerGroupComponent comp = SCR_PlayerControllerGroupComponent.GetPlayerControllerComponent(editor.GetPlayerID());
+			if (comp)
+				comp.DCO_SendSpawnerCard(spawnerId, cmdId, kind, title, text);
+		}
+	}
+
 	static void ShowRadio(string title, string text, DCO_ERadioKind kind)
 	{
-		Color c = Color.FromRGBA(243, 178, 49, 255);
+		Color c = Color.FromSRGBA(243, 178, 49, 255);
 		string sound = SCR_SoundEvent.HINT;
 		switch (kind)
 		{
 			case DCO_ERadioKind.GO:
-				c = Color.FromRGBA(110, 214, 96, 255);
+				c = Color.FromSRGBA(110, 214, 96, 255);
 				sound = SCR_SoundEvent.TASK_ACCEPT;
 				break;
 			case DCO_ERadioKind.WARNING:
-				c = Color.FromRGBA(222, 72, 60, 255);
+				c = Color.FromSRGBA(222, 72, 60, 255);
 				sound = SCR_SoundEvent.ACTION_FAILED;
 				break;
 			case DCO_ERadioKind.REPORT:
-				c = Color.FromRGBA(90, 170, 240, 255);
+				c = Color.FromSRGBA(90, 170, 240, 255);
 				sound = SCR_SoundEvent.TASK_CREATED;
 				break;
 		}

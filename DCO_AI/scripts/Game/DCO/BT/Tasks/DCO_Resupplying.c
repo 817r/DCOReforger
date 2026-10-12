@@ -1,6 +1,6 @@
 class SCR_AIDCO_Ressuplying: AITaskScripted
 {
-	protected static const float COVER_SEARCH_DIST_MAX = 20.0;
+	protected static float COVER_SEARCH_DIST_MAX() { return 20.0; }
 	protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 2;
 
 
@@ -111,8 +111,14 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 		return false;
 	}
 
-	protected static ref TStringArray s_aVarsIn = { "EntityPosition" };
-	override TStringArray GetVariablesIn() { return s_aVarsIn; }
+	protected static ref TStringArray s_aVarsIn;
+	protected static TStringArray GetVarsIn()
+	{
+		if (!s_aVarsIn)
+			s_aVarsIn = { "EntityPosition" };
+		return s_aVarsIn;
+	}
+	override TStringArray GetVariablesIn() { return GetVarsIn(); }
 
 	override static bool VisibleInPalette() { return true; }
 }

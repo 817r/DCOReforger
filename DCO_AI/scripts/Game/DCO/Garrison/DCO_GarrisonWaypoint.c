@@ -17,57 +17,76 @@ class DCO_GarrisonWaypointClass : SCR_DefendWaypointClass
 
 class DCO_GarrisonWaypoint : SCR_DefendWaypoint
 {
-	[Attribute("1", UIWidgets.ComboBox, "Hold: gak pernah keluar gedung. Defend: tim flank kecil boleh keluar. Release: garrison sampai trigger lalu bebas.", category: "Garrison", enums: ParamEnumArray.FromEnum(DCO_EGarrisonMode))]
+	[Attribute("1", UIWidgets.ComboBox, "Hold: never leaves the building. Defend: a small flank team may go out. Release: garrison until a trigger, then free.", category: "Garrison", enums: ParamEnumArray.FromEnum(DCO_EGarrisonMode))]
 	protected DCO_EGarrisonMode m_eMode;
 
-	[Attribute("1", UIWidgets.Slider, "Porsi slot tiap gedung yang diisi. Kecil = grup nyebar ke lebih banyak gedung.", category: "Garrison", params: "0.25 1 0.05")]
+	[Attribute("1", UIWidgets.Slider, "Share of slots filled in each building. Smaller = the group spreads over more buildings.", category: "Garrison", params: "0.25 1 0.05")]
 	protected float m_fFillRatio;
 
-	[Attribute("0", UIWidgets.Slider, "Maksimum gedung per grup. 0 = otomatis dari jumlah anggota.", category: "Garrison", params: "0 10 1")]
+	[Attribute("0", UIWidgets.Slider, "Maximum buildings per group. 0 = automatic from member count.", category: "Garrison", params: "0 10 1")]
 	protected int m_iMaxBuildings;
 
-	[Attribute("0", UIWidgets.ComboBox, "Urutan isi kalau pakai lebih dari satu gedung.", category: "Garrison", enums: ParamEnumArray.FromEnum(DCO_EGarrisonFillOrder))]
+	[Attribute("0", UIWidgets.ComboBox, "Fill order when more than one building is used.", category: "Garrison", enums: ParamEnumArray.FromEnum(DCO_EGarrisonFillOrder))]
 	protected DCO_EGarrisonFillOrder m_eFillOrder;
 
-	[Attribute("0.7", UIWidgets.Slider, "Bobot arah tembak: 1 = semua jendela menghadap ancaman, 0 = rata 360.", category: "Garrison", params: "0 1 0.05")]
+	[Attribute("0.7", UIWidgets.Slider, "Fire direction weight: 1 = all windows face the threat, 0 = even 360.", category: "Garrison", params: "0 1 0.05")]
 	protected float m_fThreatWeight;
 
-	[Attribute("1", UIWidgets.CheckBox, "Boleh pakai slot atap/balkon.", category: "Garrison")]
+	[Attribute("0.5", UIWidgets.Slider, "Spread members over different floors. 0 = ignore floors, 1 = spread strongly.", category: "Garrison", params: "0 1 0.05")]
+	protected float m_fFloorSpread;
+
+	[Attribute("30", UIWidgets.Slider, "Move to another window (other floor first) if no enemy is seen for this long (s) while the group is in contact. 0 = off.", category: "Garrison", params: "0 120 5")]
+	protected float m_fRotateIdleTime;
+
+	[Attribute("1", UIWidgets.CheckBox, "Move to another window or floor when under constant fire for 8 s.", category: "Garrison")]
+	protected bool m_bRotateWhenSuppressed;
+
+	[Attribute("1", UIWidgets.CheckBox, "Allow roof and balcony slots.", category: "Garrison")]
 	protected bool m_bAllowRoof;
 
-	[Attribute("5", UIWidgets.Slider, "Delay minimum (detik) sebelum slot kosong (anggota mati) diisi ulang.", category: "Garrison", params: "0 60 1")]
+	[Attribute("5", UIWidgets.Slider, "Minimum delay (s) before an empty slot (member killed) is refilled.", category: "Garrison", params: "0 60 1")]
 	protected float m_fRefillDelayMin;
 
-	[Attribute("15", UIWidgets.Slider, "Delay maksimum (detik) sebelum slot kosong diisi ulang.", category: "Garrison", params: "0 60 1")]
+	[Attribute("15", UIWidgets.Slider, "Maximum delay (s) before an empty slot is refilled.", category: "Garrison", params: "0 60 1")]
 	protected float m_fRefillDelayMax;
 
-	[Attribute("1", UIWidgets.CheckBox, "Kalau di satu gedung tinggal satu orang, tarik dia ke gedung utama grup.", category: "Garrison")]
+	[Attribute("1", UIWidgets.CheckBox, "If only one soldier is left in a building, pull them to the group's main building.", category: "Garrison")]
 	protected bool m_bPullLoneToMain;
 
-	[Attribute("0", UIWidgets.CheckBox, "Gambar slot gedung yang dipakai (merah jendela, oranye atap, biru pintu, abu interior).", category: "Garrison")]
+	[Attribute("0", UIWidgets.CheckBox, "Draw the building slots in use (red window, orange roof, blue door, grey interior).", category: "Garrison")]
 	protected bool m_bDebugDraw;
 
-	[Attribute("50", UIWidgets.Slider, "Defend: tim flank boleh keluar sampai radius waypoint + ini (meter).", category: "Garrison", params: "0 300 5")]
+	[Attribute("50", UIWidgets.Slider, "Defend: the flank team may go out to the waypoint radius + this (m).", category: "Garrison", params: "0 300 5")]
 	protected float m_fDefendLeashExtra;
 
-	[Attribute("4", UIWidgets.Slider, "Defend: jumlah orang tim flank (1 fireteam). 0 = gak ada tim flank.", category: "Garrison", params: "0 8 1")]
+	[Attribute("4", UIWidgets.Slider, "Defend: flank team size (1 fireteam). 0 = no flank team.", category: "Garrison", params: "0 8 1")]
 	protected int m_iFlankTeamSize;
 
-	[Attribute("30", UIWidgets.Slider, "Release: musuh sedekat ini (meter) dari anggota garrison -> leash dilepas.", category: "Garrison", params: "0 200 5")]
+	[Attribute("30", UIWidgets.Slider, "Release: an enemy this close (m) to a garrison member -> leash released.", category: "Garrison", params: "0 200 5")]
 	protected float m_fReleaseEnemyDist;
 
-	[Attribute("50", UIWidgets.Slider, "Release: korban (persen dari anggota garrison) sebanyak ini -> leash dilepas. 0 = trigger korban mati.", category: "Garrison", params: "0 100 5")]
+	[Attribute("50", UIWidgets.Slider, "Release: casualties (percent of garrison members) reach this -> leash released. 0 = casualty trigger off.", category: "Garrison", params: "0 100 5")]
 	protected float m_fReleaseCasualtyPct;
 
-	[Attribute("20", UIWidgets.Slider, "Release: mayoritas anggota ditekan (THREATENED) terus selama ini (detik) -> leash dilepas. 0 = mati.", category: "Garrison", params: "0 120 1")]
+	[Attribute("20", UIWidgets.Slider, "Release: most members stay suppressed (THREATENED) for this long (s) -> leash released. 0 = off.", category: "Garrison", params: "0 120 1")]
 	protected float m_fReleaseSuppressedTime;
 
-	[Attribute("0", UIWidgets.CheckBox, "Release: kembali garrison setelah aman lagi.", category: "Garrison")]
+	[Attribute("1", UIWidgets.CheckBox, "If there is no building: pick field fighting positions (cover, view toward the threat, off the skyline, in pairs). Off = vanilla Defend.", category: "Garrison")]
+	protected bool m_bFieldPositions;
+
+	[Attribute("0", UIWidgets.CheckBox, "Release: return to garrison once it is safe again.", category: "Garrison")]
 	protected bool m_bReturnAfterRelease;
 
 	override SCR_AIWaypointState CreateWaypointState(SCR_AIGroupUtilityComponent groupUtilityComp)
 	{
 		return new DCO_GarrisonWaypointState(groupUtilityComp, this);
+	}
+
+	override bool DCO_WantsSetupDialog() { return true; }
+
+	override string DCO_SetupInfo()
+	{
+		return string.Format("type=garrison mode=%1 fill=%2 maxb=%3 floor_spread=%4 rotate_idle=%5 rotate_supp=%6", m_eMode, m_fFillRatio, m_iMaxBuildings, m_fFloorSpread, m_fRotateIdleTime, m_bRotateWhenSuppressed);
 	}
 
 	vector GetThreatDirection()
@@ -88,11 +107,17 @@ class DCO_GarrisonWaypoint : SCR_DefendWaypoint
 	void SetFillOrder(DCO_EGarrisonFillOrder v) { m_eFillOrder = v; }
 	float GetThreatWeight() { return m_fThreatWeight; }
 	void SetThreatWeight(float v) { m_fThreatWeight = Math.Clamp(v, 0, 1); }
+	float GetFloorSpread() { return m_fFloorSpread; }
+	void SetFloorSpread(float v) { m_fFloorSpread = Math.Clamp(v, 0, 1); }
+	float GetRotateIdleTime() { return m_fRotateIdleTime; }
+	void SetRotateIdleTime(float v) { m_fRotateIdleTime = Math.Clamp(v, 0, 120); }
+	bool GetRotateWhenSuppressed() { return m_bRotateWhenSuppressed; }
+	void SetRotateWhenSuppressed(bool v) { m_bRotateWhenSuppressed = v; }
 	bool GetAllowRoof() { return m_bAllowRoof; }
 	void SetAllowRoof(bool v) { m_bAllowRoof = v; }
 	bool GetPullLoneToMain() { return m_bPullLoneToMain; }
 	void SetPullLoneToMain(bool v) { m_bPullLoneToMain = v; }
-	bool GetDebugDraw() { return m_bDebugDraw; }
+	bool GetDebugDraw() { return m_bDebugDraw && DCO_TestCaseComponent.RunOn(); }
 	void SetDebugDraw(bool v) { m_bDebugDraw = v; }
 	float GetDefendLeashExtra() { return m_fDefendLeashExtra; }
 	void SetDefendLeashExtra(float v) { m_fDefendLeashExtra = Math.Clamp(v, 0, 300); }
@@ -104,6 +129,8 @@ class DCO_GarrisonWaypoint : SCR_DefendWaypoint
 	void SetReleaseCasualtyPct(float v) { m_fReleaseCasualtyPct = Math.Clamp(v, 0, 100); }
 	float GetReleaseSuppressedTime() { return m_fReleaseSuppressedTime; }
 	void SetReleaseSuppressedTime(float v) { m_fReleaseSuppressedTime = Math.Clamp(v, 0, 120); }
+	bool GetFieldPositions() { return m_bFieldPositions; }
+	void SetFieldPositions(bool v) { m_bFieldPositions = v; }
 	bool GetReturnAfterRelease() { return m_bReturnAfterRelease; }
 	void SetReturnAfterRelease(bool v) { m_bReturnAfterRelease = v; }
 
@@ -156,11 +183,18 @@ class DCO_AIStartGarrison : AITaskScripted
 		if (!state)
 			return ENodeResult.FAIL;
 
+		DCO_GarrisonWaypoint wp = DCO_GarrisonWaypoint.Cast(state.GetWaypoint());
+		if (wp && wp.DCO_SetupPending())
+		{
+			DCO_Perf.Count("garrison:start_wait_setup");
+			return ENodeResult.RUNNING;
+		}
+
 		state.StartGarrison();
 		return ENodeResult.SUCCESS;
 	}
 
 	static override bool VisibleInPalette() { return true; }
 
-	static override string GetOnHoverDescription() { return "DCO: mulai activity garrison untuk waypoint garrison aktif grup."; }
+	static override string GetOnHoverDescription() { return "DCO: start the garrison activity for the group's active garrison waypoint."; }
 }

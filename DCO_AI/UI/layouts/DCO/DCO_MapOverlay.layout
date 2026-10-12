@@ -10,7 +10,7 @@ FrameWidgetClass {
     OffsetRight 0
     OffsetBottom 0
    }
-   IgnoreCursor 1
+   "Ignore Cursor" 1
   }
  }
 }

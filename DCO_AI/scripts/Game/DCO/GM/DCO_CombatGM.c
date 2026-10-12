@@ -149,3 +149,35 @@ class DCO_ContactReportScanIntervalAttribute : DCO_GlobalFloatAttribute
 	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.GetContactReportScanInterval(); }
 	override protected void Set(DCO_GlobalAIComponent cfg, float value) { cfg.SetContactReportScanInterval(value); }
 }
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_CQBBreachModeAttribute : SCR_BaseFloatValueHolderEditorAttribute
+{
+	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
+	{
+		DCO_GlobalAIComponent cfg = DCO_GlobalFloatAttribute.GetGlobal(item);
+		if (!cfg)
+			return null;
+		return SCR_BaseEditorAttributeVar.CreateInt(Math.Min(cfg.GetCQBBreachMode(), 2));
+	}
+
+	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
+	{
+		DCO_GlobalAIComponent cfg = DCO_GlobalFloatAttribute.GetGlobal(item);
+		if (!cfg || !var)
+			return;
+		cfg.SetCQBBreachMode(var.GetInt());
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("gm_set_cqb_breach mode=%1 player=%2", cfg.GetCQBBreachMode(), playerID));
+	}
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_CQBRoomTimeoutAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.GetCQBRoomTimeout(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value)
+	{
+		cfg.SetCQBRoomTimeout(value);
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "gm_set_cqb_room_timeout s=" + cfg.GetCQBRoomTimeout().ToString());
+	}
+}

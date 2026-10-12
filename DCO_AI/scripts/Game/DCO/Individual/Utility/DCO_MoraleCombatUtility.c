@@ -11,13 +11,13 @@ class DCO_MoraleCombatUtility
 				case moraleState.BREAK:
 					moraleScale = 0.4;
 					break;
-				case moraleState.MANIAC:
+				case moraleState.PANIC:
 					moraleScale = 0.6;
 					break;
-				case moraleState.ANXIOUS:
+				case moraleState.SHAKEN:
 					moraleScale = 0.8;
 					break;
-				case moraleState.MOTIVATED:
+				case moraleState.TENSE:
 					moraleScale = 1.2;
 					break;
 				default:
@@ -59,9 +59,6 @@ class DCO_MoraleCombatUtility
 		if (state == moraleState.BREAK)
 			return ECharacterStance.PRONE;
 
-		if (state == moraleState.MANIAC && baseStance == ECharacterStance.PRONE)
-			return ECharacterStance.CROUCH;
-
 		return baseStance;
 	}
 
@@ -83,11 +80,11 @@ class DCO_MoraleCombatUtility
 
 		switch (moraleSystem.GetState())
 		{
-			case moraleState.MOTIVATED:
+			case moraleState.TENSE:
 				return 0.85;
-			case moraleState.ANXIOUS:
+			case moraleState.SHAKEN:
 				return 1.3;
-			case moraleState.MANIAC:
+			case moraleState.PANIC:
 				return 0.6;
 			case moraleState.BREAK:
 				return 1.5;

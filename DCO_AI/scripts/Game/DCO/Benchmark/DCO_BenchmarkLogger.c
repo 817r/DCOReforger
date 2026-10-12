@@ -1,29 +1,26 @@
-[ComponentEditorProps(category: "GameScripted/DCO", description: "Benchmark logger -- nulis state commander/objective/grup + event ke file sendiri di $profile.")]
+[ComponentEditorProps(category: "GameScripted/DCO", description: "Benchmark logger. Writes commander, objective and group state plus events to DCO_Log (dco.log in the session folder $profile:DCO/Logs).")]
 class DCO_BenchmarkLoggerComponentClass : ScriptComponentClass
 {
 }
 
 class DCO_BenchmarkLoggerComponent : ScriptComponent
 {
-	[Attribute("DCO_Bench", UIWidgets.EditBox, "Folder di dalam $profile.", category: "Benchmark")]
-	protected string m_sFolder;
-
-	[Attribute("run", UIWidgets.EditBox, "Prefix nama file log (nama skenario/varian test).", category: "Benchmark")]
+	[Attribute("run", UIWidgets.EditBox, "Run label (scenario or test variant name), written on the START line.", category: "Benchmark")]
 	protected string m_sRunLabel;
 
-	[Attribute("10", UIWidgets.EditBox, "Interval (detik) baris TICK: FPS, AI hidup per faction, commander, objective.", category: "Benchmark")]
+	[Attribute("10", UIWidgets.EditBox, "Interval (s) of TICK lines: FPS, live AI per faction, commanders, objectives.", category: "Benchmark")]
 	protected float m_fTickInterval;
 
-	[Attribute("30", UIWidgets.EditBox, "Interval (detik) dump detail per grup. 0 = matiin.", category: "Benchmark")]
+	[Attribute("30", UIWidgets.EditBox, "Interval (s) of the per-group detail dump. 0 = off.", category: "Benchmark")]
 	protected float m_fGroupInterval;
 
-	[Attribute("1", UIWidgets.CheckBox, "Ikut dump baris UNIT per anggota grup (posisi, stance, action, dll) tiap Group Interval.", category: "Benchmark")]
+	[Attribute("1", UIWidgets.CheckBox, "Also dump a UNIT line for each group member (position, stance, action, etc.) every Group Interval.", category: "Benchmark")]
 	protected bool m_bLogUnits;
 
-	[Attribute("1", UIWidgets.CheckBox, "Dump baris VEH per kendaraan yang pernah dinaikin AI (damage, crew, speed) tiap Group Interval.", category: "Benchmark")]
+	[Attribute("1", UIWidgets.CheckBox, "Dump a VEH line for each vehicle AI has boarded (damage, crew, speed) every Group Interval.", category: "Benchmark")]
 	protected bool m_bLogVehicles;
 
-	[Attribute("", UIWidgets.EditBox, "TES: nama grup (pisah koma) yang di-Hold Position terus, kayak GM nahan grup itu.", category: "Benchmark")]
+	[Attribute("", UIWidgets.EditBox, "TEST: group names (comma separated) that are kept on Hold Position, as if a GM is holding them.", category: "Benchmark")]
 	protected string m_sTestHoldGroups;
 
 	protected static DCO_BenchmarkLoggerComponent s_Instance;
@@ -32,7 +29,6 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 	protected ref array<IEntity> m_aVehicles = {};
 	protected ref map<IEntity, vector> m_mLastVehPos = new map<IEntity, vector>();
 	protected ref map<IEntity, string> m_mVehState = new map<IEntity, string>();
-	protected string m_sFilePath;
 	protected float m_fStartTime;
 	protected float m_fNextGroupDump;
 	protected bool m_bSummaryWritten;
@@ -43,7 +39,6 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 	protected ref map<FactionKey, int> m_mPeakAlive = new map<FactionKey, int>();
 	protected ref map<CMD_AICommanderObjectiveComponent, FactionKey> m_mObjOwner = new map<CMD_AICommanderObjectiveComponent, FactionKey>();
 	protected ref map<AICommander_BaseComponent, int> m_mShellsFired = new map<AICommander_BaseComponent, int>();
-	protected ref array<string> m_aBuffer = {};
 
 	protected float m_fFpsSum;
 	protected float m_fFpsMin = 9999;
@@ -62,21 +57,20 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 		if (!Replication.IsServer() || !GetGame().InPlayMode())
 			return;
 
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
+		if (!DCO_TestCaseComponent.RunOn() && (!cfg || !cfg.GetPerfProfiling()))
+			return;
+
 		int y, mo, d, h, mi, s;
 		System.GetYearMonthDay(y, mo, d);
 		System.GetHourMinuteSecond(h, mi, s);
 
-		string folder = "$profile:" + m_sFolder;
-		FileIO.MakeDirectory(folder);
-		m_sFilePath = string.Format("%1/%2_%3%4%5_%6%7%8.log", folder, m_sRunLabel,
-			y, Pad(mo), Pad(d), Pad(h), Pad(mi), Pad(s));
-
-		m_fStartTime = Now();
+		m_fStartTime = DCO_Util.NowS();
 		m_fNextGroupDump = m_fGroupInterval;
 		s_Instance = this;
 
-		Line(string.Format("START label=%1 date=%2-%3-%4 %5:%6:%7", m_sRunLabel, y, Pad(mo), Pad(d), Pad(h), Pad(mi), Pad(s)));
-		Flush();
+		Line(DCO_ELogChannel.SYS, string.Format("START label=%1 date=%2-%3-%4 %5:%6:%7", m_sRunLabel, y, Pad(mo), Pad(d), Pad(h), Pad(mi), Pad(s)));
+		DCO_Log.Flush();
 
 		SCR_BaseGameMode gm = SCR_BaseGameMode.Cast(GetGame().GetGameMode());
 		if (gm)
@@ -88,25 +82,71 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 	override void OnDelete(IEntity owner)
 	{
 		GetGame().GetCallqueue().Remove(Tick);
-		if (s_Instance == this)
+		bool active = s_Instance == this;
+		if (active)
 			s_Instance = null;
 
 		SCR_BaseGameMode gm = SCR_BaseGameMode.Cast(GetGame().GetGameMode());
 		if (gm)
 			gm.GetOnControllableDestroyed().Remove(OnControllableDestroyed);
 
-		if (!m_sFilePath.IsEmpty())
+		if (active)
 		{
 			WriteSummary("world_end");
-			Flush();
+			DCO_Log.Flush();
 		}
 
 		super.OnDelete(owner);
 	}
 
+	protected bool m_bDCOConfigLogged;
+	protected ref array<string> m_aFieldName = {"hp", "supp", "morale", "threat_v", "aim", "ads", "mag", "hold", "lean", "shots"};
+	protected ref array<float> m_aFieldMin = {};
+	protected ref array<float> m_aFieldMax = {};
+	protected ref array<int> m_aFieldCount = {};
+
+	protected void LogConfig()
+	{
+		m_bDCOConfigLogged = true;
+		Line(DCO_ELogChannel.SYS, "CONFIG " + DCO_Log.ConfigStamp());
+		DCO_Log.Flush();
+	}
+
+	protected void TrackField(int idx, float v)
+	{
+		if (m_aFieldCount.IsEmpty())
+		{
+			foreach (string n : m_aFieldName)
+			{
+				m_aFieldMin.Insert(0);
+				m_aFieldMax.Insert(0);
+				m_aFieldCount.Insert(0);
+			}
+		}
+		if (m_aFieldCount[idx] == 0 || v < m_aFieldMin[idx])
+			m_aFieldMin[idx] = v;
+		if (m_aFieldCount[idx] == 0 || v > m_aFieldMax[idx])
+			m_aFieldMax[idx] = v;
+		m_aFieldCount[idx] = m_aFieldCount[idx] + 1;
+	}
+
+	protected static ref array<AIGroup> s_aTestGroups;
+
+	static void AddTestGroup(AIGroup g)
+	{
+		if (!g)
+			return;
+		if (!s_aTestGroups)
+			s_aTestGroups = {};
+		if (!s_aTestGroups.Contains(g))
+			s_aTestGroups.Insert(g);
+	}
+
 	protected void Tick()
 	{
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!m_bDCOConfigLogged)
+			LogConfig();
 
 		float fps = System.GetFPS();
 		m_fFpsSum += fps;
@@ -136,20 +176,33 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 				m_mPeakAlive.Set(fk, n);
 		}
 
-		Line(string.Format("TICK fps=%1 alive%2", fps.ToString(1, 1), aliveStr));
+		Line(DCO_ELogChannel.PERF, string.Format("TICK fps=%1 alive%2", fps.ToString(1, 1), aliveStr));
 
+		float t = DCO_Util.NowS() - m_fStartTime;
+		bool groupDue = m_fGroupInterval > 0 && t >= m_fNextGroupDump;
+		if (groupDue)
+			m_fNextGroupDump = t + m_fGroupInterval;
 		if (mgr)
 		{
 			LogCommanders(mgr);
 			LogObjectives(mgr);
-
-			float t = Now() - m_fStartTime;
-			if (m_fGroupInterval > 0 && t >= m_fNextGroupDump)
-			{
-				m_fNextGroupDump = t + m_fGroupInterval;
+			if (groupDue)
 				LogGroups(mgr);
+		}
+		if (groupDue && m_bLogUnits && s_aTestGroups)
+		{
+			foreach (AIGroup tg : s_aTestGroups)
+			{
+				if (!tg)
+					continue;
+				DCO_GroupUtilityComponent tgu = DCO_GroupUtilityComponent.Cast(tg.FindComponent(DCO_GroupUtilityComponent));
+				if (mgr && tgu && tgu.GetMyCommander())
+					continue;
+				LogUnits(tg);
 			}
 		}
+		if (groupDue && m_bLogVehicles && !mgr)
+			LogVehicles();
 
 		if (!m_bSummaryWritten)
 		{
@@ -157,14 +210,14 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 			{
 				if (peak > 0 && Get(alive, fk) == 0)
 				{
-					Line(string.Format("EVENT faction_eliminated faction=%1", fk));
+					Line(DCO_ELogChannel.CMD, string.Format("faction_eliminated faction=%1", fk));
 					WriteSummary("eliminated_" + fk);
 					break;
 				}
 			}
 		}
 
-		Flush();
+		DCO_Log.Flush();
 	}
 
 	protected void LogCommanders(AICommander_ManagerComponent mgr)
@@ -182,11 +235,11 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 				int prev;
 				m_mShellsFired.Find(cmd, prev);
 				if (shells > prev)
-					Line(string.Format("EVENT artillery cmd=%1 shells=%2 total=%3", cmd.GetCommanderUID(), shells - prev, shells));
+					Line(DCO_ELogChannel.ARTY, string.Format("artillery cmd=%1 shells=%2 total=%3", cmd.GetCommanderUID(), shells - prev, shells));
 				m_mShellsFired.Set(cmd, shells);
 			}
 
-			Line(string.Format("CMD uid=%1 faction=%2 mode=%3 groups=%4 manpower=%5 reserve=%6 vehicles=%7 shells=%8",
+			Line(DCO_ELogChannel.CMD, string.Format("CMD uid=%1 faction=%2 mode=%3 groups=%4 manpower=%5 reserve=%6 vehicles=%7 shells=%8",
 				cmd.GetCommanderUID(), cmd.GetCommanderFactionKey(),
 				typename.EnumToString(CMD_ECommanderMode, cmd.GetCommanderMode()),
 				cmd.GetOwnedGroupCount(), cmd.GetTotalManpower(), cmd.GetReserveManpower(),
@@ -208,7 +261,7 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 			FactionKey prevOwner;
 			bool known = m_mObjOwner.Find(obj, prevOwner);
 			if (known && prevOwner != owner)
-				Line(string.Format("EVENT objective_owner obj=%1 from=%2 to=%3", ObjName(obj), NoneIfEmpty(prevOwner), NoneIfEmpty(owner)));
+				Line(DCO_ELogChannel.CMD, string.Format("objective_owner obj=%1 from=%2 to=%3", ObjName(obj), NoneIfEmpty(prevOwner), NoneIfEmpty(owner)));
 			m_mObjOwner.Set(obj, owner);
 
 			string control;
@@ -216,7 +269,7 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 			for (int i = 0; i < keys.Count(); i++)
 				control += string.Format(" %1:%2", keys[i], values[i].ToString(1, 0));
 
-			Line(string.Format("OBJ name=%1 owner=%2 control=[%3 ]", ObjName(obj), NoneIfEmpty(owner), control));
+			Line(DCO_ELogChannel.CMD, string.Format("OBJ name=%1 owner=%2 control=[%3 ]", ObjName(obj), NoneIfEmpty(owner), control));
 		}
 	}
 
@@ -258,7 +311,7 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 				}
 
 				vector p = grp.GetOwner().GetOrigin();
-				Line(string.Format("GRP cmd=%1 name=%2 role=%3 status=%4 units=%5 posture=%6 action=%7 obj=%8 pos=%9",
+				Line(DCO_ELogChannel.SQUAD, string.Format("GRP cmd=%1 name=%2 role=%3 status=%4 units=%5 posture=%6 action=%7 obj=%8 pos=%9",
 					cmd.GetCommanderUID(), grp.GetOwner().GetName(),
 					typename.EnumToString(DCO_EGroupTask, grp.GetTask()),
 					typename.EnumToString(DCO_ETaskPhase, grp.GetPhase()),
@@ -295,8 +348,8 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 
 	static void Event(string text)
 	{
-		if (s_Instance)
-			s_Instance.Line("EVENT " + text);
+		DCO_TestCaseComponent.OnEvent(text);
+		DCO_Log.Legacy(text);
 	}
 
 	protected void TrackVehicle(IEntity vehicle)
@@ -348,15 +401,17 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 
 			string prevState;
 			if (m_mVehState.Find(veh, prevState) && prevState != state)
-				Line(string.Format("EVENT veh_state veh=%1 from=%2 to=%3", name, prevState, state));
+				Line(DCO_ELogChannel.VEH, string.Format("veh_state veh=%1 from=%2 to=%3", name, prevState, state));
 			m_mVehState.Set(veh, state);
 
+			vector upAxis = veh.GetTransformAxis(1);
+			float upY = upAxis[1];
 			string armor = "light";
 			if (DCO_VehicleCombat.IsArmored(veh))
 				armor = "armored";
 
-			Line(string.Format("VEH veh=%1 pos=%2,%3 moved=%4 speed=%5 hp=%6 state=%7 %8 crew=%9",
-				name, Math.Round(p[0]), Math.Round(p[2]), moved, Math.Round(speed), hp, state, dmgInfo, VehCrew(veh)) + " armor=" + armor);
+			Line(DCO_ELogChannel.VEH, string.Format("VEH veh=%1 pos=%2,%3 moved=%4 speed=%5 hp=%6 state=%7 %8 crew=%9",
+				name, Math.Round(p[0]), Math.Round(p[2]), moved, Math.Round(speed), hp, state, dmgInfo, VehCrew(veh)) + " armor=" + armor + " up=" + upY.ToString(1, 2));
 		}
 	}
 
@@ -433,6 +488,11 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 		if (leader)
 			leaderEnt = leader.GetControlledEntity();
 
+		string gposture = "-";
+		SCR_AIGroup sgrp = SCR_AIGroup.Cast(aiGroup);
+		if (sgrp && sgrp.GetGroupUtilityComponent())
+			gposture = typename.EnumToString(DCO_GroupTactics, sgrp.GetGroupUtilityComponent().DCO_GetPosture());
+
 		bool testHold = !m_sTestHoldGroups.IsEmpty() && ("," + m_sTestHoldGroups + ",").Contains("," + aiGroup.GetName() + ",");
 
 		foreach (int i, AIAgent agent : agents)
@@ -466,8 +526,13 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 				if (ctrl)
 				{
 					stance = typename.EnumToString(ECharacterStance, ctrl.GetStance());
+					float adsV = 0;
 					if (ctrl.IsWeaponADS())
+					{
 						ads = "1";
+						adsV = 1;
+					}
+					TrackField(5, adsV);
 				}
 				if (ch.IsInVehicle())
 				{
@@ -478,7 +543,10 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 				}
 				SCR_CharacterDamageManagerComponent dmg = SCR_CharacterDamageManagerComponent.Cast(ch.GetDamageManager());
 				if (dmg)
+				{
 					hp = dmg.GetHealthScaled().ToString(1, 2);
+					TrackField(0, dmg.GetHealthScaled());
+				}
 			}
 
 			string threat = "-";
@@ -489,6 +557,13 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 			string aim = "-";
 			string mag = "-";
 			string lean = "-";
+			string threatV = "-";
+			string mstate = "-";
+			string stam = DCO_AIMoraleSystem.Stamina(ent).ToString(1, 2);
+			string exert = "-";
+			string fat = "-";
+			int spirited;
+			int pinned;
 			SCR_AIUtilityComponent util = SCR_AIUtilityComponent.Cast(agent.FindComponent(SCR_AIUtilityComponent));
 			if (util)
 			{
@@ -496,10 +571,23 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 				{
 					threat = typename.EnumToString(EAIThreatState, util.m_ThreatSystem.GetState());
 					supp = util.m_ThreatSystem.GetSuppressionMeasure().ToString(1, 2);
+					threatV = util.m_ThreatSystem.GetThreatMeasure().ToString(1, 2);
+					TrackField(1, util.m_ThreatSystem.GetSuppressionMeasure());
+					TrackField(3, util.m_ThreatSystem.GetThreatMeasure());
 				}
 				DCO_AIMoraleSystem ms = util.GetMoraleSystem();
 				if (ms)
+				{
 					morale = ms.GetMoraleMeasure().ToString(1, 1);
+					TrackField(2, ms.GetMoraleMeasure());
+					mstate = typename.EnumToString(moraleState, ms.GetState());
+					if (ms.IsSpirited())
+						spirited = 1;
+					exert = ms.GetExertion().ToString(1, 1);
+					fat = Math.Round(ms.GetFatigueSeconds()).ToString();
+				}
+				if (util.m_CombatComponent && util.m_CombatComponent.DCO_IsPinned())
+					pinned = 1;
 				AIActionBase act = util.GetCurrentAction();
 				if (act)
 					action = act.ClassName();
@@ -508,6 +596,11 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 					aim = util.m_CombatComponent.GetCurrentAimImprovement().ToString(1, 3);
 					mag = DCO_AimUtility.GetSightMagnification(util.m_CombatComponent).ToString(1, 1);
 					lean = util.m_CombatComponent.DCO_GetLean().ToString();
+					TrackField(4, util.m_CombatComponent.GetCurrentAimImprovement());
+					TrackField(6, DCO_AimUtility.GetSightMagnification(util.m_CombatComponent));
+					TrackField(8, util.m_CombatComponent.DCO_GetLean());
+					if (ch && ch.GetCharacterController())
+						lean += "/" + ch.GetCharacterController().GetCurrentLeanAmount().ToString(1, 2);
 					BaseTarget target = util.m_CombatComponent.GetCurrentTarget();
 					if (target && target.GetTargetEntity())
 					{
@@ -522,11 +615,34 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 			if (ent == leaderEnt)
 				role = "L";
 
-			Line(string.Format("UNIT grp=%1 i=%2 %3 pos=%4,%5 moved=%6 stance=%7 veh=%8 hp=%9",
+			bool hold = util && util.m_DCOConfig && util.m_DCOConfig.IsHoldPosition();
+			int shots = DCO_ShotCounter.Since(ent);
+			if (ch && ch.IsInVehicle() && ch.GetCompartmentAccessComponent())
+			{
+				BaseCompartmentSlot seat = ch.GetCompartmentAccessComponent().GetCompartment();
+				if (seat && seat.GetType() == ECompartmentType.TURRET && seat.GetOwner())
+				{
+					IEntity turretEnt = seat.GetOwner();
+					int turretShots = DCO_ShotCounter.Since(turretEnt);
+					if (turretEnt.GetRootParent() != turretEnt)
+						turretShots += DCO_ShotCounter.Since(turretEnt.GetRootParent());
+					shots += turretShots;
+					DCO_Perf.CountN("veh:turret_round", turretShots);
+				}
+			}
+			float holdV = 0;
+			if (hold)
+				holdV = 1;
+			TrackField(7, holdV);
+			TrackField(9, shots);
+
+			Line(DCO_ELogChannel.UNIT, string.Format("UNIT grp=%1 i=%2 %3 pos=%4,%5 moved=%6 stance=%7 veh=%8 hp=%9",
 				aiGroup.GetName(), i, role, Math.Round(p[0]), Math.Round(p[2]), moved, stance, veh, hp)
 				+ string.Format(" threat=%1 supp=%2 morale=%3 action=%4 tgt=%5 aim=%6 ads=%7 mag=%8", threat, supp, morale, action, tgt, aim, ads, mag)
-				+ string.Format(" hold=%1 lean=%2 pers=%3", util && util.m_DCOConfig && util.m_DCOConfig.IsHoldPosition(), lean,
-					typename.EnumToString(DCO_EAIPersonality, DCO_PersonalityCombatUtility.GetPersonalitySafe(util))));
+				+ string.Format(" hold=%1 lean=%2 pers=%3", hold, lean,
+					typename.EnumToString(DCO_EAIPersonality, DCO_PersonalityCombatUtility.GetPersonalitySafe(util)))
+				+ string.Format(" threat_v=%1 mstate=%2 spirited=%3 pinned=%4 gposture=%5 shots=%6", threatV, mstate, spirited, pinned, gposture, shots)
+				+ string.Format(" stam=%1 exert=%2 fat=%3", stam, exert, fat));
 		}
 	}
 
@@ -554,8 +670,83 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 			m_mKills.Set(killerFk, Get(m_mKills, killerFk) + 1);
 
 		vector p = victim.GetOrigin();
-		Line(string.Format("EVENT killed kind=%1 victim=%2 killer=%3 pos=%4,%5",
-			kind, NoneIfEmpty(victimFk), NoneIfEmpty(killerFk), Math.Round(p[0]), Math.Round(p[2])));
+		IEntity killer = data.GetKillerEntity();
+		string dist = "-";
+		string weapon = "-";
+		if (killer == victim)
+		{
+			killer = null;
+			killerFk = "self_or_env";
+			DCO_Perf.Count("battle:killed_no_attacker");
+		}
+		if (killer)
+		{
+			dist = Math.Round(vector.Distance(killer.GetOrigin(), p)).ToString();
+			BaseWeaponManagerComponent wm = BaseWeaponManagerComponent.Cast(killer.FindComponent(BaseWeaponManagerComponent));
+			if (wm && wm.GetCurrentWeapon() && wm.GetCurrentWeapon().GetOwner() && wm.GetCurrentWeapon().GetOwner().GetPrefabData())
+				weapon = FilePath.StripExtension(FilePath.StripPath(wm.GetCurrentWeapon().GetOwner().GetPrefabData().GetPrefabName()));
+		}
+
+		string vstate = "-";
+		string vthreat = "-";
+		string vmorale = "-";
+		ChimeraCharacter vch = ChimeraCharacter.Cast(victim);
+		if (vch)
+		{
+			array<string> flags = {};
+			if (vch.GetCharacterController())
+				flags.Insert(typename.EnumToString(ECharacterStance, vch.GetCharacterController().GetStance()));
+			SCR_AIUtilityComponent vu = UtilityOf(vch);
+			if (vu && vu.m_CombatMoveState && vu.m_CombatMoveState.IsInValidCover())
+				flags.Insert("cover");
+			if (vch.GetPhysics() && vch.GetPhysics().GetVelocity().Length() > 0.5)
+				flags.Insert("moving");
+			if (vu && vu.m_CombatComponent && vu.m_CombatComponent.DCO_IsPinned())
+				flags.Insert("pinned");
+			if (vch.IsInVehicle())
+				flags.Insert("veh");
+			vstate = "";
+			foreach (int fi, string fl : flags)
+			{
+				if (fi > 0)
+					vstate += "|";
+				vstate += fl;
+			}
+			if (vu && vu.m_ThreatSystem)
+				vthreat = typename.EnumToString(EAIThreatState, vu.m_ThreatSystem.GetState());
+			if (vu && vu.GetMoraleSystem())
+				vmorale = typename.EnumToString(moraleState, vu.GetMoraleSystem().GetState());
+		}
+
+		string ammo = "-";
+		SCR_CharacterDamageManagerComponent vdm = SCR_CharacterDamageManagerComponent.Cast(victim.FindComponent(SCR_CharacterDamageManagerComponent));
+		if (vdm)
+			ammo = vdm.DCO_LastAmmo();
+		Line(DCO_ELogChannel.COMBAT, string.Format("killed kind=%1 victim=%2 killer=%3 pos=%4,%5",
+			kind, NoneIfEmpty(victimFk), NoneIfEmpty(killerFk), Math.Round(p[0]), Math.Round(p[2]))
+			+ string.Format(" dist=%1 weapon=%2 kgrp=%3 vgrp=%4 vstate=%5 vthreat=%6 vmorale=%7 ammo=%8", dist, weapon, GroupNameOf(killer), GroupNameOf(victim), NoneIfEmpty(vstate), vthreat, vmorale, ammo));
+		if (vch)
+			DCO_Battle.DeathCtx(victim, killer);
+	}
+
+	protected string GroupNameOf(IEntity ent)
+	{
+		if (!ent)
+			return "-";
+		ChimeraCharacter ch = ChimeraCharacter.Cast(ent);
+		if (!ch)
+		{
+			Vehicle v = Vehicle.Cast(ent.GetRootParent());
+			if (v)
+				return "vehicle";
+			return "-";
+		}
+		SCR_AIUtilityComponent u = UtilityOf(ch);
+		if (u && u.GetAIAgent() && u.GetAIAgent().GetParentGroup())
+			return NoneIfEmpty(u.GetAIAgent().GetParentGroup().GetName());
+		if (GetGame().GetPlayerManager() && GetGame().GetPlayerManager().GetPlayerIdFromControlledEntity(ent) > 0)
+			return "player";
+		return "-";
 	}
 
 	protected void WriteSummary(string reason)
@@ -568,46 +759,36 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 		if (m_iFpsSamples > 0)
 			avgFps = m_fFpsSum / m_iFpsSamples;
 
-		Line(string.Format("SUMMARY reason=%1 duration=%2s fps_avg=%3 fps_min=%4",
-			reason, Math.Round(Now() - m_fStartTime), avgFps.ToString(1, 1), m_fFpsMin.ToString(1, 1)));
+		Line(DCO_ELogChannel.SYS, string.Format("SUMMARY reason=%1 duration=%2s fps_avg=%3 fps_min=%4",
+			reason, Math.Round(DCO_Util.NowS() - m_fStartTime), avgFps.ToString(1, 1), m_fFpsMin.ToString(1, 1)));
 
 		foreach (FactionKey fk, int peak : m_mPeakAlive)
 		{
-			Line(string.Format("SUMMARY faction=%1 peak_alive=%2 infantry_lost=%3 vehicles_lost=%4 kills=%5",
+			Line(DCO_ELogChannel.SYS, string.Format("SUMMARY faction=%1 peak_alive=%2 infantry_lost=%3 vehicles_lost=%4 kills=%5",
 				fk, peak, Get(m_mInfantryLost, fk), Get(m_mVehiclesLost, fk), Get(m_mKills, fk)));
 		}
 
 		foreach (CMD_AICommanderObjectiveComponent obj, FactionKey owner : m_mObjOwner)
 		{
 			if (obj)
-				Line(string.Format("SUMMARY objective=%1 owner=%2", ObjName(obj), NoneIfEmpty(owner)));
+				Line(DCO_ELogChannel.SYS, string.Format("SUMMARY objective=%1 owner=%2", ObjName(obj), NoneIfEmpty(owner)));
+		}
+
+		for (int i = 0; i < m_aFieldCount.Count(); i++)
+		{
+			if (m_aFieldCount[i] >= 100 && m_aFieldMin[i] == m_aFieldMax[i])
+				DCO_Log.Write(DCO_ELogChannel.PERF, DCO_ELogLevel.WARN, "-", string.Format("SUMMARY WARN const_field field=%1 value=%2 samples=%3", m_aFieldName[i], m_aFieldMin[i], m_aFieldCount[i]));
 		}
 	}
 
 	protected FactionKey EntityFaction(IEntity ent)
 	{
-		if (!ent)
-			return string.Empty;
-
-		FactionAffiliationComponent fac = FactionAffiliationComponent.Cast(ent.FindComponent(FactionAffiliationComponent));
-		if (!fac)
-			return string.Empty;
-
-		Faction f = fac.GetAffiliatedFaction();
-		if (!f)
-			f = fac.GetDefaultAffiliatedFaction();
-		if (!f)
-			return string.Empty;
-
-		return f.GetFactionKey();
+		return DCO_Util.FactionKeyOf(ent, true);
 	}
 
 	protected string ObjName(CMD_AICommanderObjectiveComponent obj)
 	{
-		string n = obj.GetObjectiveName();
-		if (n.IsEmpty())
-			n = obj.GetOwner().GetName();
-		return n;
+		return obj.GetLogName();
 	}
 
 	protected string NoneIfEmpty(string s)
@@ -631,31 +812,202 @@ class DCO_BenchmarkLoggerComponent : ScriptComponent
 		return v.ToString();
 	}
 
-	protected float Now()
+
+	protected void Line(DCO_ELogChannel ch, string s)
 	{
-		return GetGame().GetWorld().GetWorldTime() / 1000.0;
+		DCO_Log.Write(ch, DCO_ELogLevel.INFO, "-", s);
+	}
+}
+
+class DCO_ShotCounter : Managed
+{
+	protected static ref map<IEntity, ref DCO_ShotCounter> s_mAll;
+
+	protected IEntity m_Owner;
+	protected int m_iShots;
+	protected int m_iLast;
+	protected BaseMagazineComponent m_LastMag;
+	protected int m_iLastAmmo;
+	protected float m_fLastShot_ms = -100000.0;
+
+	static int Total(IEntity ent)
+	{
+		DCO_ShotCounter c = Track(ent);
+		if (!c)
+			return 0;
+		return c.m_iShots;
 	}
 
-	protected void Line(string s)
+	static float LastShotAt(IEntity ent)
 	{
-		float t = Now() - m_fStartTime;
-		m_aBuffer.Insert(string.Format("[T+%1] %2", t.ToString(7, 1), s));
+		DCO_ShotCounter c = Track(ent);
+		if (!c)
+			return -100000.0;
+		return c.m_fLastShot_ms;
 	}
 
-	protected void Flush()
+	static DCO_ShotCounter Track(IEntity ent)
 	{
-		if (m_aBuffer.IsEmpty() || m_sFilePath.IsEmpty())
-			return;
+		if (!ent)
+			return null;
+		if (!s_mAll)
+			s_mAll = new map<IEntity, ref DCO_ShotCounter>();
+		DCO_ShotCounter c = s_mAll.Get(ent);
+		if (c)
+			return c;
+		if (s_mAll.Count() > 2000)
+		{
+			map<IEntity, ref DCO_ShotCounter> fresh = new map<IEntity, ref DCO_ShotCounter>();
+			foreach (IEntity k, DCO_ShotCounter v : s_mAll)
+			{
+				if (k)
+					fresh.Set(k, v);
+			}
+			s_mAll = fresh;
+		}
+		c = new DCO_ShotCounter();
+		c.m_Owner = ent;
+		s_mAll.Set(ent, c);
+		EventHandlerManagerComponent ev = EventHandlerManagerComponent.Cast(ent.FindComponent(EventHandlerManagerComponent));
+		if (ev)
+			ev.RegisterScriptHandler("OnAmmoCountChanged", c, c.OnAmmoCountChanged);
+		return c;
+	}
 
-		FileHandle f = FileIO.OpenFile(m_sFilePath, FileMode.APPEND);
-		if (!f)
-			f = FileIO.OpenFile(m_sFilePath, FileMode.WRITE);
-		if (!f)
-			return;
+	static int Since(IEntity ent)
+	{
+		DCO_ShotCounter c = Track(ent);
+		if (!c)
+			return 0;
+		int n = c.m_iShots - c.m_iLast;
+		c.m_iLast = c.m_iShots;
+		return n;
+	}
 
-		foreach (string s : m_aBuffer)
-			f.WriteLine(s);
-		f.Close();
-		m_aBuffer.Clear();
+	void OnAmmoCountChanged(BaseWeaponComponent weapon, BaseMuzzleComponent muzzle, BaseMagazineComponent magazine, int ammoCount, bool isBarrelChambered)
+	{
+		if (magazine && magazine == m_LastMag && ammoCount < m_iLastAmmo)
+		{
+			int n = m_iLastAmmo - ammoCount;
+			m_iShots += n;
+			m_fLastShot_ms = GetGame().GetWorld().GetWorldTime();
+			DCO_Perf.CountN("ev:round", n);
+		}
+		m_LastMag = magazine;
+		m_iLastAmmo = ammoCount;
+	}
+}
+
+modded class SCR_CharacterDamageManagerComponent
+{
+	protected int m_iDCOLastDmg = -1;
+	protected string m_sDCOLastSrc = "-";
+	protected int m_iDCOFatalDmg = -1;
+	protected string m_sDCOFatalSrc = "-";
+	protected float m_fDCOFatalAt = -1;
+	protected bool m_bDCOLastBleed;
+	protected float m_fDCOHpLast = 1.0;
+	protected float m_fDCOHpBefore = 1.0;
+	protected string m_sDCOHitZone = "-";
+	protected ref array<float> m_aDCOHitAt;
+	protected bool m_bDCOWasUncon;
+	protected bool m_bDCOWasBleeding;
+
+	override protected void OnDamage(notnull BaseDamageContext damageContext)
+	{
+		super.OnDamage(damageContext);
+		m_iDCOLastDmg = damageContext.damageType;
+		m_sDCOLastSrc = "-";
+		IEntity src = damageContext.damageSource;
+		if (src && src.GetPrefabData())
+			m_sDCOLastSrc = FilePath.StripExtension(FilePath.StripPath(src.GetPrefabData().GetPrefabName()));
+		if (!Replication.IsServer())
+			return;
+		float now = DCO_Util.NowS();
+		bool finisher = damageContext.damageType == EDamageType.TRUE && !damageContext.damageSource && m_iDCOFatalDmg >= 0;
+		if (finisher)
+		{
+			m_bDCOLastBleed = m_bDCOLastBleed || m_bDCOWasBleeding || m_bDCOWasUncon;
+			DCO_Perf.Count("death:finisher_true");
+		}
+		else
+			m_bDCOLastBleed = damageContext.damageType == EDamageType.BLEEDING;
+		IEntity attacker = null;
+		if (damageContext.instigator)
+			attacker = damageContext.instigator.GetInstigatorEntity();
+		if (!m_bDCOLastBleed && !finisher)
+		{
+			m_iDCOFatalDmg = damageContext.damageType;
+			m_sDCOFatalSrc = m_sDCOLastSrc;
+			m_fDCOFatalAt = now;
+			m_fDCOHpBefore = m_fDCOHpLast;
+			if (damageContext.struckHitZone)
+				m_sDCOHitZone = damageContext.struckHitZone.GetName();
+			if (!m_aDCOHitAt)
+				m_aDCOHitAt = {};
+			m_aDCOHitAt.Insert(now);
+			if (m_aDCOHitAt.Count() > 20)
+				m_aDCOHitAt.RemoveOrdered(0);
+			DCO_Battle.OnHit(GetOwner(), attacker);
+			DCO_IndLearn.OnDamage(GetOwner(), attacker);
+			DCO_PlyLearn.OnDamage(GetOwner(), attacker);
+		}
+		m_fDCOHpLast = GetHealthScaled();
+		DCO_WoundCheck(attacker, damageContext.damageType);
+	}
+
+	protected void DCO_WoundCheck(IEntity attacker, int dmgType)
+	{
+		ChimeraCharacter ch = ChimeraCharacter.Cast(GetOwner());
+		if (!ch)
+			return;
+		bool uncon = ch.GetCharacterController() && ch.GetCharacterController().GetLifeState() == ECharacterLifeState.INCAPACITATED;
+		bool bleeding = IsBleeding();
+		string state = "";
+		if (uncon && !m_bDCOWasUncon)
+			state = "incapacitated";
+		else if (bleeding && !m_bDCOWasBleeding)
+			state = "bleeding";
+		m_bDCOWasUncon = uncon;
+		m_bDCOWasBleeding = bleeding;
+		if (state.IsEmpty())
+			return;
+		DCO_Battle.Wounded(ch, attacker, state, typename.EnumToString(EDamageType, dmgType), m_sDCOLastSrc);
+	}
+
+	string DCO_LastAmmo()
+	{
+		if (m_iDCOFatalDmg >= 0)
+			return typename.EnumToString(EDamageType, m_iDCOFatalDmg) + ":" + m_sDCOFatalSrc;
+		if (m_iDCOLastDmg < 0)
+			return "-";
+		return typename.EnumToString(EDamageType, m_iDCOLastDmg) + ":" + m_sDCOLastSrc;
+	}
+
+	float DCO_HpBefore()		{ return m_fDCOHpBefore; }
+	string DCO_LastHitZone()	{ return m_sDCOHitZone; }
+	string DCO_FatalSrc()		{ return m_sDCOFatalSrc; }
+	float DCO_FatalAt()			{ return m_fDCOFatalAt; }
+	bool DCO_LastWasBleed()		{ return m_bDCOLastBleed; }
+
+	string DCO_FatalType()
+	{
+		if (m_iDCOFatalDmg < 0)
+			return "-";
+		return typename.EnumToString(EDamageType, m_iDCOFatalDmg);
+	}
+
+	int DCO_HitsWithin(float sec)
+	{
+		if (!m_aDCOHitAt)
+			return 0;
+		float cut = DCO_Util.NowS() - sec;
+		int n = 0;
+		foreach (float t : m_aDCOHitAt)
+		{
+			if (t >= cut)
+				n++;
+		}
+		return n;
 	}
 }

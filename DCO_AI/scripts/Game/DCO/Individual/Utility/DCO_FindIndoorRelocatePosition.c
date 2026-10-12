@@ -1,17 +1,16 @@
 class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 {
-	static const string PORT_REQUEST = "Request";
 
-	[Attribute("1.0", UIWidgets.EditBox, "(DEFEND) Toleransi (m): kandidat yang lebih deket ke ancaman dari posisi awal lebih dari segini ditolak.", category: "Relocate")]
+	[Attribute("1.0", UIWidgets.EditBox, "(DEFEND) Tolerance (m): candidates closer to the threat than the start position by more than this are rejected.", category: "Relocate")]
 	protected float m_fTowardThreatTolerance;
 
-	[Attribute("0.6", UIWidgets.Range, "(DEFEND) Bobot skor ancaman vs skor induk (cover/fire line umum, spread, proximity).", params: "0 1 0.05", category: "Relocate Scoring")]
+	[Attribute("0.6", UIWidgets.Range, "(DEFEND) Weight of the threat score vs the parent score (general cover/fire line, spread, proximity).", params: "0 1 0.05", category: "Relocate Scoring")]
 	protected float m_fThreatWeightDefend;
 
-	[Attribute("0.7", UIWidgets.Range, "(FIRE_POSITION) Bobot skor ancaman vs skor induk.", params: "0 1 0.05", category: "Relocate Scoring")]
+	[Attribute("0.7", UIWidgets.Range, "(FIRE_POSITION) Weight of the threat score vs the parent score.", params: "0 1 0.05", category: "Relocate Scoring")]
 	protected float m_fThreatWeightFire;
 
-	[Attribute("2.5", UIWidgets.EditBox, "Jarak (m) titik sample ancaman ke kiri/kanan dari posisi ancaman. 0 = cuma satu titik.", category: "Relocate Scoring")]
+	[Attribute("2.5", UIWidgets.EditBox, "Distance (m) of the threat sample points to the left and right of the threat position. 0 = a single point.", category: "Relocate Scoring")]
 	protected float m_fThreatSampleSpread;
 
 
@@ -27,7 +26,6 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 	protected float   m_fAttrRadius = -1;
 
 	protected ref array<vector> m_aThreatSamples = {};
-	protected ref TraceParam    m_LosTrace;
 	protected bool              m_bSuppressBasePrune;
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
@@ -36,7 +34,7 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 			return ENodeResult.FAIL;
 
 		SCR_AICombatMoveRequestBase rqBase;
-		GetVariableIn(PORT_REQUEST, rqBase);
+		GetVariableIn("Request", rqBase);
 		DCO_AICombatMoveRequest_IndoorRelocate rq = DCO_AICombatMoveRequest_IndoorRelocate.Cast(rqBase);
 		if (!rq || !rq.m_Building)
 		{
@@ -50,7 +48,19 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 		if (rq != m_CurrentRq)
 			BeginRequest(owner, rq);
 
-		return super.EOnTaskSimulate(owner, dt);
+		ENodeResult r = super.EOnTaskSimulate(owner, dt);
+		if (r == ENodeResult.SUCCESS)
+			rq.m_vDCOGoal = m_vBestPos;
+		if (r == ENodeResult.SUCCESS && DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG))
+		{
+			IEntity me = owner.GetControlledEntity();
+			vector fromPos = rq.m_vStartPos;
+			if (me)
+				fromPos = me.GetOrigin();
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(me), string.Format("reloc_pos who=%1 from=%2,%3 to=%4,%5 dist=%6 score=%7",
+				DCO_Log.IdUnit(me), Math.Round(fromPos[0]), Math.Round(fromPos[2]), Math.Round(m_vBestPos[0]), Math.Round(m_vBestPos[2]), Math.Round(vector.DistanceXZ(fromPos, m_vBestPos)), m_fBestScore));
+		}
+		return r;
 	}
 
 	protected void BeginRequest(AIAgent owner, DCO_AICombatMoveRequest_IndoorRelocate rq)
@@ -128,6 +138,12 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 		if (m_fRelocateMinMove > 0 && vector.DistanceXZ(outPos, m_vRelocateStart) < m_fRelocateMinMove)
 			return DCO_BuildingPosCreation.FAIL;
 
+		if (Math.AbsFloat(outPos[1] - m_vRelocateStart[1]) > 2.0)
+		{
+			DCO_Perf.Count("reloc:reject_floor");
+			return DCO_BuildingPosCreation.FAIL;
+		}
+
 		if (m_eIntent == DCO_EIndoorRelocateIntent.RELOCATE_DEFEND && m_vRelocateThreat != vector.Zero)
 		{
 			float startToThreat = vector.DistanceXZ(m_vRelocateStart, m_vRelocateThreat);
@@ -138,6 +154,11 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 		}
 
 		return result;
+	}
+
+	override protected bool DCO_UseSlotCache()
+	{
+		return false;
 	}
 
 	override protected float GetPruneThreshold()
@@ -203,9 +224,9 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 		}
 
 		float count    = m_aThreatSamples.Count();
-		float fFire    = nFire / count;
-		float fHidden  = nHidden / count;
-		float fExposed = nExposed / count;
+		float fFire    = 1.0 * nFire / count;
+		float fHidden  = 1.0 * nHidden / count;
+		float fExposed = 1.0 * nExposed / count;
 
 		if (m_eIntent == DCO_EIndoorRelocateIntent.FIRE_POSITION)
 		{
@@ -278,34 +299,25 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 
 	protected bool HasLOS(vector from, vector to)
 	{
-		if (!m_LosTrace)
-			m_LosTrace = new TraceParam();
-
-		m_LosTrace.Flags     = TraceFlags.WORLD | TraceFlags.ENTS;
-		m_LosTrace.LayerMask = EPhysicsLayerDefs.Projectile;
-		m_LosTrace.Start     = from;
-		m_LosTrace.End       = to;
-		m_LosTrace.Exclude   = m_OwnerEntity;
-		m_LosTrace.TraceEnt  = null;
-
-		DCO_Perf.Count("t:DCO_FindIndoorRelocatePosition");
-		return GetGame().GetWorld().TraceMove(m_LosTrace, null) >= 0.99;
+		return DCO_Util.TraceClear(from, to, m_OwnerEntity, 0.99, TraceFlags.WORLD | TraceFlags.ENTS, EPhysicsLayerDefs.Projectile, null, "t:DCO_FindIndoorRelocatePosition");
 	}
 
-	protected static ref TStringArray s_aVarsInRelocate = {
-		PORT_CENTER_OF_SEARCH,
-		PORT_RADIUS,
-		PORT_REQUEST
-	};
+	protected static ref TStringArray s_aVarsInRelocate;
+	protected static TStringArray GetVarsInRelocate()
+	{
+		if (!s_aVarsInRelocate)
+			s_aVarsInRelocate = { PORT_CENTER_OF_SEARCH, PORT_RADIUS, "Request" };
+		return s_aVarsInRelocate;
+	}
 	override TStringArray GetVariablesIn()
 	{
-		return s_aVarsInRelocate;
+		return GetVarsInRelocate();
 	}
 
 	static override bool VisibleInPalette() { return true; }
 
 	static override string GetOnHoverDescription()
 	{
-		return "Find Indoor Relocate Position: gedung dikunci dari request INDOOR_RELOCATE. Scoring berbasis arah ancaman (LOS dua ketinggian: hide/peek), intent DEFEND atau FIRE_POSITION, penjagaan pintu sisi ancaman.";
+		return "Find Indoor Relocate Position: the building is locked from the INDOOR_RELOCATE request. Scoring is based on threat direction (LOS at two heights: hide/peek), DEFEND or FIRE_POSITION intent, and guarding doors on the threat side.";
 	}
 }

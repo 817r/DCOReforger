@@ -1,10 +1,66 @@
+class DCO_IdleTurretRules
+{
+	static string BlockReason(SCR_AIGroup group)
+	{
+		if (!group)
+			return "no_group";
+		SCR_AIGroupUtilityComponent gu = group.GetGroupUtilityComponent();
+		if (!gu || !gu.DCO_IsIdle())
+			return "not_idle";
+		if (gu.m_Perception)
+		{
+			foreach (SCR_AIGroupTargetCluster c : gu.m_Perception.m_aTargetClusters)
+			{
+				if (c && c.m_State && c.m_State.m_iCountAlive > 0 && c.m_State.GetTimeSinceLastNewInformation() < 60.0)
+					return "contact";
+			}
+		}
+		return "";
+	}
+
+	static int Cap(SCR_AIGroup group)
+	{
+		int alive = group.GetAgentsCount();
+		if (alive <= 1)
+			return 0;
+		if (alive <= 3)
+			return 1;
+		return alive / 2;
+	}
+
+	static bool OwnedByGroup(IEntity occupant, SCR_AIGroup group)
+	{
+		if (!occupant || !group)
+			return false;
+		AIControlComponent ctrl = AIControlComponent.Cast(occupant.FindComponent(AIControlComponent));
+		if (!ctrl || !ctrl.GetControlAIAgent())
+			return false;
+		return ctrl.GetControlAIAgent().GetParentGroup() == group;
+	}
+
+	static string Kind(SCR_AIVehicleUsageComponent usage, SCR_AIGroup group)
+	{
+		if (!usage)
+			return "";
+		if (usage.GetVehicleType() == EAIVehicleType.STATIC_WEAPON)
+		{
+			if (usage.m_DCOOwnerGroup && usage.m_DCOOwnerGroup != group && usage.DCO_OwnerAlive())
+				return "";
+			return "static";
+		}
+		if (usage.GetVehicleType() == EAIVehicleType.GROUND_VEHICLE_TRACKED || usage.GetVehicleType() == EAIVehicleType.GROUND_VEHICLE_WHEELED)
+		{
+			if (usage.m_DCOOwnerGroup == group && usage.DCO_OwnerAlive())
+				return "own_vehicle";
+		}
+		return "";
+	}
+}
+
 class SCR_DCOAIFindTurrets: AITaskScripted
 {
 	[Attribute("0", UIWidgets.EditBox)]
 	protected float m_fRadius;
-
-	static const string PORT_CENTER_OF_SEARCH		= "OriginIn";
-	static const string PORT_RADIUS					= "RadiusIn";
 
 	protected TagSystem m_tagSystem;
 	protected SCR_AIGroup m_groupOwner;
@@ -30,84 +86,126 @@ class SCR_DCOAIFindTurrets: AITaskScripted
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
-		if (!m_tagSystem)
+		ClearVariable("TurretNumber");
+		SetVariableOut("TurretsFound", false);
+		if (!m_tagSystem || !m_groupOwner)
+			return ENodeResult.SUCCESS;
+
+		string block = DCO_IdleTurretRules.BlockReason(m_groupOwner);
+		if (!block.IsEmpty())
 		{
-			ClearVariable("TurretNumber");
-			ClearVariable("TurretsFound");
-			return ENodeResult.FAIL;
+			SkipLog(block);
+			return ENodeResult.SUCCESS;
 		}
+
 		vector center;
 		float radius;
-		int agentsCount = m_groupOwner.GetAgentsCount();
-		int turretCount;
-		bool turretsFound;
-
-		GetVariableIn(PORT_CENTER_OF_SEARCH, center);
-		if(!GetVariableIn(PORT_RADIUS, radius))
+		GetVariableIn("OriginIn", center);
+		if (!GetVariableIn("RadiusIn", radius))
 			radius = m_fRadius;
+
+		int cap = DCO_IdleTurretRules.Cap(m_groupOwner);
+		int used;
+		int turretCount;
+		int otherOwner;
+		bool capped;
 
 		array<IEntity> entities = {};
 		m_tagSystem.GetTagsInRange(entities, center, radius, ETagCategory.StaticTurret);
-
+		array<BaseCompartmentSlot> compartmentSlots = {};
 		foreach (IEntity ent : entities)
 		{
 			BaseCompartmentManagerComponent compComp = BaseCompartmentManagerComponent.Cast(ent.FindComponent(BaseCompartmentManagerComponent));
 			if (!compComp)
 				continue;
-
 			SCR_AIVehicleUsageComponent vehicleUsageComp = SCR_AIVehicleUsageComponent.Cast(ent.FindComponent(SCR_AIVehicleUsageComponent));
 			if (!vehicleUsageComp)
 				continue;
-
-			if (vehicleUsageComp.GetVehicleType() == EAIVehicleType.STATIC_WEAPON || vehicleUsageComp.GetVehicleType() == EAIVehicleType.GROUND_VEHICLE_TRACKED || vehicleUsageComp.GetVehicleType() == EAIVehicleType.GROUND_VEHICLE_WHEELED)
+			if (DCO_IdleTurretRules.Kind(vehicleUsageComp, m_groupOwner).IsEmpty())
 			{
-				array<BaseCompartmentSlot> compartmentSlots = {};
-				compComp.GetCompartments(compartmentSlots);
-				foreach (BaseCompartmentSlot slot : compartmentSlots)
+				otherOwner++;
+				continue;
+			}
+			compartmentSlots.Clear();
+			compComp.GetCompartments(compartmentSlots);
+			foreach (BaseCompartmentSlot slot : compartmentSlots)
+			{
+				TurretCompartmentSlot turretComp = TurretCompartmentSlot.Cast(slot);
+				if (!turretComp)
+					continue;
+				IEntity occ = turretComp.GetOccupant();
+				if (occ && DCO_IdleTurretRules.OwnedByGroup(occ, m_groupOwner))
 				{
-					TurretCompartmentSlot turretComp = TurretCompartmentSlot.Cast(slot);
-					if (turretComp)
+					used++;
+					break;
+				}
+				if (!turretComp.AttachedOccupant() && turretComp.IsCompartmentAccessible() && !turretComp.IsReserved())
+				{
+					if (used + turretCount >= cap)
 					{
-						if (!turretComp.AttachedOccupant() && turretComp.IsCompartmentAccessible() && !turretComp.IsReserved())
-						{
-							turretCount += 1;
-							turretsFound = true;
-							if (turretCount <= agentsCount)
-								m_groupOwner.AllocateCompartment(turretComp);
-							break;
-						}
+						capped = true;
+						break;
 					}
+					turretCount++;
+					array<BaseCompartmentSlot> alloc = {};
+					m_groupOwner.GetAllocatedCompartments(alloc);
+					if (alloc.Contains(turretComp))
+						DCO_Perf.Count("turret:already_allocated");
+					else
+						m_groupOwner.AllocateCompartment(turretComp);
+					break;
 				}
 			}
 		}
-		if (turretsFound)
+
+		if (otherOwner > 0)
+			SkipLog("other_owner");
+		if (capped)
+			SkipLog("cap_reached");
+
+		if (turretCount > 0)
 			SetVariableOut("TurretNumber", turretCount);
-		else
-			ClearVariable("TurretNumber");
-		SetVariableOut("TurretsFound", turretsFound);
+		SetVariableOut("TurretsFound", turretCount > 0);
 		return ENodeResult.SUCCESS;
 	}
 
-	protected static ref TStringArray s_aVarsOut = {
+	protected void SkipLog(string reason)
+	{
+		DCO_Perf.Count("idle_turret:skip_" + reason);
+		if (DCO_Log.On(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG))
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG, DCO_Log.IdGroup(m_groupOwner), string.Format("idle_turret_skip grp=%1 reason=%2", DCO_Log.IdGroup(m_groupOwner), reason));
+	}
+
+	protected ref TStringArray m_aDCOVarsOut = {
 		"TurretNumber",
 		"TurretsFound"
 	};
 	override TStringArray GetVariablesOut()
 	{
-		return s_aVarsOut;
+		return m_aDCOVarsOut;
 	}
 
-	protected static ref TStringArray s_aVarsIn = {
-		PORT_CENTER_OF_SEARCH,
-		PORT_RADIUS
+	protected ref TStringArray m_aDCOVarsIn = {
+		"OriginIn",
+		"RadiusIn"
 	};
 	override TStringArray GetVariablesIn()
 	{
-		return s_aVarsIn;
+		return m_aDCOVarsIn;
 	}
 
 	static override string GetOnHoverDescription()
 	{
-		return "SCR_AIFindTurrets: finds all static turrets within center and radius. All results are allocated (reserved) for this group.";
+		return "DCO idle: allocates free turrets (static weapons, or turrets of the group's own vehicles) near the leader, max half the group, only while the group is idle and not in contact.";
 	}
 };
+
+modded class SCR_AIVehicleUsageComponent
+{
+	SCR_AIGroup m_DCOOwnerGroup;
+
+	bool DCO_OwnerAlive()
+	{
+		return m_DCOOwnerGroup && m_DCOOwnerGroup.GetAgentsCount() > 0;
+	}
+}

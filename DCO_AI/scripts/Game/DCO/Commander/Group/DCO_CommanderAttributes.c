@@ -266,3 +266,27 @@ class DCO_CommanderAllowedTacticsAttribute : SCR_BaseMultiSelectPresetsEditorAtt
 			cmd.SetAllowedTactics(var.GetInt());
 	}
 }
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_CommanderAllowedDefenseTacticsAttribute : SCR_BaseMultiSelectPresetsEditorAttribute
+{
+	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
+	{
+		AICommander_BaseComponent cmd = DCO_CommanderBaseAttribute.GetCommander(item);
+		if (!cmd)
+			return null;
+		return SCR_BaseEditorAttributeVar.CreateInt(cmd.GetAllowedDefenseTactics());
+	}
+
+	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
+	{
+		if (!var)
+			return;
+		AICommander_BaseComponent cmd = DCO_CommanderBaseAttribute.GetCommander(item);
+		if (cmd)
+		{
+			cmd.SetAllowedDefenseTactics(var.GetInt());
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "gm_set_allowed_defense cmd=" + cmd.GetCommanderUID() + " mask=" + var.GetInt().ToString());
+		}
+	}
+}

@@ -27,8 +27,6 @@ class DCO_SquadWatch
 
 class DCO_PlayerRequests
 {
-	protected static const float TICK_S = 5;
-	protected static const float NOISE_PER_100M = 12;
 
 	protected static ref DCO_PlayerRequests s_Instance;
 
@@ -65,7 +63,7 @@ class DCO_PlayerRequests
 
 	protected void DoHandleFire(int pid, SCR_EAIArtilleryAmmoType ammo, vector pos, int count)
 	{
-		float now = Now();
+		float now = DCO_Util.NowS();
 		SCR_GroupsManagerComponent groups = SCR_GroupsManagerComponent.GetInstance();
 		SCR_AIGroup pgrp;
 		if (groups)
@@ -98,7 +96,7 @@ class DCO_PlayerRequests
 		if (player)
 			ppos = player.GetOrigin();
 
-		float noise = vector.DistanceXZ(ppos, pos) / 100 * NOISE_PER_100M;
+		float noise = vector.DistanceXZ(ppos, pos) / 100 * 12.0;
 		float unc = noise * 1.5 + 10;
 		string tier = arty.ResolveTier(unc);
 		bool he = ammo == SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE;
@@ -143,9 +141,9 @@ class DCO_PlayerRequests
 			approved = tubes;
 			cut = "tubes";
 		}
-		if (arty.IsQueueBusy() && approved > Math.Ceil(requested / 2.0))
+		if (arty.IsQueueBusy() && approved > Math.Ceil(1.0 * requested / 2.0))
 		{
-			approved = Math.Ceil(requested / 2.0);
+			approved = Math.Ceil(1.0 * requested / 2.0);
 			cut = "queue";
 		}
 		if (he && DCO_Radio.PersonalityOf(cmd) == 2 && approved > 5)
@@ -180,7 +178,7 @@ class DCO_PlayerRequests
 			DCO_Radio.Group(gid, "FIRE SUPPORT", "fire_approved_cut", DCO_ERadioKind.INFO, DCO_Radio.P("count", req.m_iShellCount.ToString(), "req", requested.ToString(), "type", CMD_ArtillerySupport.ShellKey(ammo), "grid", grid, "reason", "@fcut_" + cut));
 		else
 			DCO_Radio.Group(gid, "FIRE SUPPORT", "fire_approved", DCO_ERadioKind.INFO, DCO_Radio.P("count", req.m_iShellCount.ToString(), "type", CMD_ArtillerySupport.ShellKey(ammo), "grid", grid));
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_fire_request player=%1 grp=%2 type=%3 tier=%4 unc=%5 result=accepted requested=%6 shells=%7 cut=%8 cooldown=%9", pid, gid, typeName, tier, Math.Round(unc), requested, req.m_iShellCount, cut, Math.Round(cooldown)));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_fire_request player=%1 grp=%2 type=%3 tier=%4 unc=%5 result=accepted requested=%6 shells=%7 cut=%8 cooldown=%9", pid, gid, typeName, tier, Math.Round(unc), requested, req.m_iShellCount, cut, Math.Round(cooldown)));
 	}
 
 	protected void FireDenied(int gid, int pid, string typeName, string tier, float unc, string reason, float sec = 0)
@@ -189,7 +187,7 @@ class DCO_PlayerRequests
 			DCO_Radio.Group(gid, "FIRE SUPPORT", "fire_deny_cooldown", DCO_ERadioKind.WARNING, DCO_Radio.P("sec", DCO_Radio.N(sec)));
 		else
 			DCO_Radio.Group(gid, "FIRE SUPPORT", "fire_deny", DCO_ERadioKind.WARNING, DCO_Radio.P("reason", CMD_ArtillerySupport.DenyKey(reason)));
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_fire_request player=%1 grp=%2 type=%3 tier=%4 unc=%5 result=denied reason=\"%6\"", pid, gid, typeName, tier, Math.Round(unc), reason));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_fire_request player=%1 grp=%2 type=%3 tier=%4 unc=%5 result=denied reason=\"%6\"", pid, gid, typeName, tier, Math.Round(unc), reason));
 	}
 
 	protected void DoHandleCancel(int pid, bool support, bool fire, bool transport)
@@ -263,7 +261,7 @@ class DCO_PlayerRequests
 		}
 		if (!sent)
 			DCO_Radio.Group(gid, "COMMANDER", "cancel_nothing");
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_cancel player=%1 grp=%2 support=%3 fire=%4 transport=%5 links=%6 missions=%7 job=%8", pid, gid, support, fire, transport, links, missions, job));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_cancel player=%1 grp=%2 support=%3 fire=%4 transport=%5 links=%6 missions=%7 job=%8", pid, gid, support, fire, transport, links, missions, job));
 	}
 
 	protected bool HasATNear(AICommander_BaseComponent cmd, vector pos)
@@ -284,7 +282,7 @@ class DCO_PlayerRequests
 	{
 		DCO_PlayerRequests r = Get();
 		r.m_fTimer += timeSlice;
-		if (r.m_fTimer < TICK_S)
+		if (r.m_fTimer < 5.0)
 			return;
 		r.m_fTimer = 0;
 		r.UpdateLinks();
@@ -293,7 +291,7 @@ class DCO_PlayerRequests
 
 	protected void DoHandle(int pid, DCO_EPlayerRequest type, vector pos)
 	{
-		float now = Now();
+		float now = DCO_Util.NowS();
 		SCR_GroupsManagerComponent groups = SCR_GroupsManagerComponent.GetInstance();
 		if (!groups)
 			return;
@@ -343,7 +341,7 @@ class DCO_PlayerRequests
 					DCO_Radio.Group(gid, "COMMANDER", "armor_at_warning", DCO_ERadioKind.WARNING, null, true);
 				}
 				movePos = Standoff(pos, ppos, standoff);
-				vector cover = DCO_TerrainCache.QueryBest(DCO_ETerrainFlag.HILLTOP | DCO_ETerrainFlag.OVERWATCH | DCO_ETerrainFlag.FOREST_EDGE, movePos, 75, string.Empty, movePos);
+				vector cover = DCO_TerrainCache.QueryBest(DCO_ETerrainFlag.HILLTOP | DCO_ETerrainFlag.OVERWATCH | DCO_ETerrainFlag.FOREST_EDGE, movePos, 75, string.Empty, movePos, pos);
 				if (cover != vector.Zero)
 					movePos = cover;
 				suppressPos = pos;
@@ -372,7 +370,7 @@ class DCO_PlayerRequests
 				break;
 			}
 		}
-		movePos[1] = GetGame().GetWorld().GetSurfaceY(movePos[0], movePos[2]);
+		movePos = DCO_Util.Surface(movePos);
 
 		bool armor = type == DCO_EPlayerRequest.ARMOR;
 		DCO_GroupUtilityComponent squad = cmd.FindBestIdleGroupForTask_Public(task, movePos, -1, armor, 2);
@@ -419,7 +417,7 @@ class DCO_PlayerRequests
 
 	protected void UpdateLinks()
 	{
-		float now = Now();
+		float now = DCO_Util.NowS();
 		for (int i = m_aLinks.Count() - 1; i >= 0; i--)
 		{
 			DCO_SupportLink l = m_aLinks[i];
@@ -470,7 +468,7 @@ class DCO_PlayerRequests
 			}
 		}
 
-		float now = Now();
+		float now = DCO_Util.NowS();
 		foreach (DCO_GroupUtilityComponent squad, array<int> ids : listeners)
 		{
 			if (!squad)
@@ -571,12 +569,7 @@ class DCO_PlayerRequests
 		if (squad)
 			name = squad.GetOwner().GetName();
 		string line = string.Format("player_request player=%1 type=%2 pos=%3 squad=%4 accepted=%5", pid, typename.EnumToString(DCO_EPlayerRequest, type), pos, name, accepted);
-		Print("[DCO_PlayerRequest] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", line);
 	}
 
-	protected static float Now()
-	{
-		return GetGame().GetWorld().GetWorldTime() / 1000.0;
-	}
 }

@@ -1,0 +1,48 @@
+ButtonWidgetClass {
+ Name "DCO_CategoryEntry"
+ Slot LayoutSlot "{8C2E5A7D1B4F9051}" {
+  HorizontalAlign 3
+  VerticalAlign 1
+  Padding 0 1 0 1
+ }
+ style blank
+ {
+  OverlayWidgetClass "{8C2E5A7D1B4F9052}" {
+   Name "DCO_CategoryEntry_Overlay"
+   Slot ButtonWidgetSlot "{8C2E5A7D1B4F9053}" {
+   }
+   {
+    ImageWidgetClass "{8C2E5A7D1B4F9054}" {
+     Name "Bg"
+     Slot OverlayWidgetSlot "{8C2E5A7D1B4F9055}" {
+      HorizontalAlign 3
+      VerticalAlign 3
+     }
+     "Ignore Cursor" 1
+     Opacity 0.8
+     Color 0 0 0 1
+     Texture "{02D2F9B394AAA7B0}UI/Textures/Editor/Effects/Effect_Rounded_64x64.edds"
+     Size 64 64
+    }
+    TextWidgetClass "{8C2E5A7D1B4F9056}" {
+     Name "Text"
+     Slot OverlayWidgetSlot "{8C2E5A7D1B4F9057}" {
+      HorizontalAlign 1
+      VerticalAlign 1
+      Padding 8 4 8 4
+     }
+     "Ignore Cursor" 1
+     Color 1 1 1 0.9
+     Text "Vanilla WP"
+     "Font Size" 12
+     "Min Font Size" 10
+     FontProperties FontProperties "{8C2E5A7D1B4F9058}" {
+      Font "{EABA4FE9D014CCEF}UI/Fonts/RobotoCondensed/RobotoCondensed_Bold.fnt"
+      ShadowSize 2
+      ShadowOffset 1 1
+     }
+    }
+   }
+  }
+ }
+}

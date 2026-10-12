@@ -140,6 +140,27 @@ class DCO_GarrisonRefillDelayAttribute : DCO_GarrisonFloatAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_GarrisonFloorSpreadAttribute : DCO_GarrisonFloatAttribute
+{
+	override protected float Get(DCO_GarrisonWaypoint wp) { return wp.GetFloorSpread(); }
+	override protected void Set(DCO_GarrisonWaypoint wp, float value) { wp.SetFloorSpread(value); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_GarrisonRotateIdleAttribute : DCO_GarrisonFloatAttribute
+{
+	override protected float Get(DCO_GarrisonWaypoint wp) { return wp.GetRotateIdleTime(); }
+	override protected void Set(DCO_GarrisonWaypoint wp, float value) { wp.SetRotateIdleTime(value); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_GarrisonRotateSuppressedAttribute : DCO_GarrisonBoolAttribute
+{
+	override protected bool Get(DCO_GarrisonWaypoint wp) { return wp.GetRotateWhenSuppressed(); }
+	override protected void Set(DCO_GarrisonWaypoint wp, bool value) { wp.SetRotateWhenSuppressed(value); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_GarrisonAllowRoofAttribute : DCO_GarrisonBoolAttribute
 {
 	override protected bool Get(DCO_GarrisonWaypoint wp) { return wp.GetAllowRoof(); }
@@ -156,6 +177,13 @@ class DCO_GarrisonPullLoneAttribute : DCO_GarrisonBoolAttribute
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_GarrisonDebugDrawAttribute : DCO_GarrisonBoolAttribute
 {
+	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
+	{
+		if (!DCO_TestCaseComponent.RunOn())
+			return null;
+		return super.ReadVariable(item, manager);
+	}
+
 	override protected bool Get(DCO_GarrisonWaypoint wp) { return wp.GetDebugDraw(); }
 	override protected void Set(DCO_GarrisonWaypoint wp, bool value) { wp.SetDebugDraw(value); }
 }
@@ -200,4 +228,11 @@ class DCO_GarrisonReturnAfterReleaseAttribute : DCO_GarrisonBoolAttribute
 {
 	override protected bool Get(DCO_GarrisonWaypoint wp) { return wp.GetReturnAfterRelease(); }
 	override protected void Set(DCO_GarrisonWaypoint wp, bool value) { wp.SetReturnAfterRelease(value); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_GarrisonFieldPosAttribute : DCO_GarrisonBoolAttribute
+{
+	override protected bool Get(DCO_GarrisonWaypoint wp) { return wp.GetFieldPositions(); }
+	override protected void Set(DCO_GarrisonWaypoint wp, bool value) { wp.SetFieldPositions(value); }
 }

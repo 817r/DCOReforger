@@ -12,6 +12,9 @@ class DCO_AICombatMoveRequest_IndoorRelocate : SCR_AICombatMoveRequest_Move
 
 	vector m_vStartPos;
 
+	float m_fDCOStart_ms;
+	vector m_vDCOGoal;
+
 	DCO_EIndoorRelocateIntent m_eIntent = DCO_EIndoorRelocateIntent.RELOCATE_DEFEND;
 
 	void DCO_AICombatMoveRequest_IndoorRelocate()

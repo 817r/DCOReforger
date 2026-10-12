@@ -1,0 +1,1074 @@
+{
+ "created": "2026-10-10T14:55:43.505Z",
+ "note": "Static initializer census. Every static/const with an initializer runs in one generated init function per script module (Enfusion limit, 'Too many instructions per function'). weight = 1 + elements of an array/map literal.",
+ "budget": 150,
+ "totals": {
+  "DCO_AI": {
+   "files": 371,
+   "decls": 102,
+   "weight": 110,
+   "cost": 10,
+   "kinds": {
+    "static": 7,
+    "static_const": 65,
+    "const": 38
+   },
+   "server": true
+  },
+  "TestAI": {
+   "files": 21,
+   "decls": 1,
+   "weight": 1,
+   "cost": 0,
+   "kinds": {
+    "static": 1
+   },
+   "server": false
+  }
+ },
+ "entries": [
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Benchmark/DCO_Battle.c",
+   "line": 54,
+   "kind": "static",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Benchmark/DCO_Battle.c|protected static float s_fStart = -1",
+   "text": "protected static float s_fStart = -1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/BT/Tasks/DCO_FindIndoorPosition.c",
+   "line": 3,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/BT/Tasks/DCO_FindIndoorPosition.c|static const string PORT_CENTER_OF_SEARCH = \"xxxxxxxx\"",
+   "text": "static const string PORT_CENTER_OF_SEARCH = \"OriginIn\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/BT/Tasks/DCO_FindIndoorPosition.c",
+   "line": 4,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/BT/Tasks/DCO_FindIndoorPosition.c|static const string PORT_RADIUS = \"xxxxxxxx\"",
+   "text": "static const string PORT_RADIUS = \"RadiusIn\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/BT/Tasks/DCO_FindIndoorPosition.c",
+   "line": 5,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/BT/Tasks/DCO_FindIndoorPosition.c|static const string PORT_VECTOR_BOOL = \"xxxxxxxxxxxxxxxxx\"",
+   "text": "static const string PORT_VECTOR_BOOL = \"Is Position Found\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/BT/Tasks/DCO_Resupplying.c",
+   "line": 4,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/BT/Tasks/DCO_Resupplying.c|protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 2",
+   "text": "protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 2;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Commander/AICommanderBase.c",
+   "line": 845,
+   "kind": "static",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Commander/AICommanderBase.c|static float DEFENSIVE_COOLDOWN = 180.0",
+   "text": "static float DEFENSIVE_COOLDOWN = 180.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Commander/Group/DCO_GroupUtility.c",
+   "line": 1960,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Commander/Group/DCO_GroupUtility.c|protected const float CONTACT_FRESH_S = 15.0",
+   "text": "protected const float CONTACT_FRESH_S = 15.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Commander/Operations/DCO_CommanderTactics.c",
+   "line": 126,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Commander/Operations/DCO_CommanderTactics.c|static const int ROLE_FIX = 0",
+   "text": "static const int ROLE_FIX = 0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Commander/Operations/DCO_CommanderTactics.c",
+   "line": 127,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Commander/Operations/DCO_CommanderTactics.c|static const int ROLE_BLOCK = 2",
+   "text": "static const int ROLE_BLOCK = 2;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Commander/Operations/DCO_CommanderTactics.c",
+   "line": 128,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Commander/Operations/DCO_CommanderTactics.c|static const int ROLE_ASSAULT = 3",
+   "text": "static const int ROLE_ASSAULT = 3;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Commander/Player/Modded_TaskSystem.c",
+   "line": 3,
+   "kind": "static_const",
+   "weight": 9,
+   "cost": 5,
+   "sig": "DCO_AI:Game/DCO/Commander/Player/Modded_TaskSystem.c|protected static const ref array<string> DCO_COMPASS = {\"x\", \"xx\", \"x\", \"xx\", \"x\", \"xx\", \"x\", \"xx\"}",
+   "text": "protected static const ref array<string> DCO_COMPASS = {\"N\", \"NE\", \"E\", \"SE\", \"S\", \"SW\", \"W\", \"NW\"};"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Commander/Utility/CommanderDebug.c",
+   "line": 7,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0.5,
+   "sig": "DCO_AI:Game/DCO/Commander/Utility/CommanderDebug.c|static const int COLOR_COMMANDER = 0xFF33AAFF",
+   "text": "static const int COLOR_COMMANDER = 0xFF33AAFF;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Commander/Utility/CommanderDebug.c",
+   "line": 8,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0.5,
+   "sig": "DCO_AI:Game/DCO/Commander/Utility/CommanderDebug.c|static const int COLOR_MANAGER = 0xFFFFFFFF",
+   "text": "static const int COLOR_MANAGER = 0xFFFFFFFF;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Commander/Utility/CommanderDebug.c",
+   "line": 10,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0.5,
+   "sig": "DCO_AI:Game/DCO/Commander/Utility/CommanderDebug.c|static const int COLOR_NEUTRAL = 0xFF666666",
+   "text": "static const int COLOR_NEUTRAL = 0xFF666666;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Global/DCO_Util.c",
+   "line": 850,
+   "kind": "static",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Global/DCO_Util.c|protected static float s_fNightChecked_ms = -1",
+   "text": "protected static float s_fNightChecked_ms = -1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/DCO_Hearing.c",
+   "line": 12,
+   "kind": "static",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/DCO_Hearing.c|protected static float s_fSnapTime_ms = -1",
+   "text": "protected static float s_fSnapTime_ms = -1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/DCO_Hearing.c",
+   "line": 13,
+   "kind": "static",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/DCO_Hearing.c|protected static float s_fBudgetFrame_ms = -1",
+   "text": "protected static float s_fBudgetFrame_ms = -1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/DCO_Hearing.c",
+   "line": 20,
+   "kind": "static",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/DCO_Hearing.c|protected static float s_fEnvAt_ms = -1",
+   "text": "protected static float s_fEnvAt_ms = -1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/DCO_Hearing.c",
+   "line": 21,
+   "kind": "static",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/DCO_Hearing.c|protected static float s_fEnv = 1",
+   "text": "protected static float s_fEnv = 1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_GroupUtilityComponent.c",
+   "line": 6,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_GroupUtilityComponent.c|const float SUPPRESS_MAX_CLUSTER_INFO_AGE_S = 120",
+   "text": "const float SUPPRESS_MAX_CLUSTER_INFO_AGE_S = 120;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_GroupUtilityComponent.c",
+   "line": 7,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_GroupUtilityComponent.c|const float SUPPRESS_OLD_CLUSTER_INFO_AGE_S = 20",
+   "text": "const float SUPPRESS_OLD_CLUSTER_INFO_AGE_S = 20;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_GroupUtilityComponent.c",
+   "line": 8,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_GroupUtilityComponent.c|const float SUPPRESS_MAX_DESTROYED_CLUSTER_INFO_AGE_S = 10",
+   "text": "const float SUPPRESS_MAX_DESTROYED_CLUSTER_INFO_AGE_S = 10;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_GroupUtilityComponent.c",
+   "line": 9,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_GroupUtilityComponent.c|const float SUPPRESS_MIN_DIST_TO_CLUSTER_M = 20",
+   "text": "const float SUPPRESS_MIN_DIST_TO_CLUSTER_M = 20;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_GroupUtilityComponent.c",
+   "line": 10,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_GroupUtilityComponent.c|const float SUPPRESS_MAX_DIST_TO_CLUSTER_M = 1500",
+   "text": "const float SUPPRESS_MAX_DIST_TO_CLUSTER_M = 1500;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c",
+   "line": 3,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0.5,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c|protected const int VOLUME_UPDATE_INTERVAL_MS = 1*500",
+   "text": "protected const int VOLUME_UPDATE_INTERVAL_MS = 1*500;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c",
+   "line": 4,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c|protected const float FIRE_RATE_SCALING_MAX_DISTANCE = 1200",
+   "text": "protected const float FIRE_RATE_SCALING_MAX_DISTANCE = 1200;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c",
+   "line": 6,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c|protected const float THREAT_MAX_INCREASE = 0.25",
+   "text": "protected const float THREAT_MAX_INCREASE = 0.25;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c",
+   "line": 7,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c|protected const float THREAT_MAX_DECREASE = 0.15",
+   "text": "protected const float THREAT_MAX_DECREASE = 0.15;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c",
+   "line": 8,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c|protected const float THREAT_POTENTIAL_DECAY = 0.2",
+   "text": "protected const float THREAT_POTENTIAL_DECAY = 0.2;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c",
+   "line": 9,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0.5,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c|protected const int THREAT_MAX_PEAK_DURATION_MS = 150*1000",
+   "text": "protected const int THREAT_MAX_PEAK_DURATION_MS = 150*1000;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c",
+   "line": 10,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0.5,
+   "sig": "DCO_AI:Game/DCO/Group/Modded_SuppressGroupClusterBehavior.c|protected const int THREAT_MAX_PEAK_REACTION_DURATION_MS = 30*1000",
+   "text": "protected const int THREAT_MAX_PEAK_REACTION_DURATION_MS = 30*1000;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Danger/DCO_DangerDamageTaken.c",
+   "line": 4,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Danger/DCO_DangerDamageTaken.c|protected static const float COVER_SEARCH_DIST_MAX = 30.0",
+   "text": "protected static const float COVER_SEARCH_DIST_MAX = 30.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Danger/DCO_DangerDamageTaken.c",
+   "line": 9,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0.5,
+   "sig": "DCO_AI:Game/DCO/Individual/Danger/DCO_DangerDamageTaken.c|protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI",
+   "text": "protected const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Danger/DCO_DangerProjectileHit.c",
+   "line": 4,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0.5,
+   "sig": "DCO_AI:Game/DCO/Individual/Danger/DCO_DangerProjectileHit.c|protected static const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI",
+   "text": "protected static const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.35 * Math.PI;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Danger/DCO_DangerWeaponFired.c",
+   "line": 115,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Danger/DCO_DangerWeaponFired.c|protected static const float coverSearchDistMax = 20",
+   "text": "protected static const float coverSearchDistMax = 20;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Danger/DCO_DangerWeaponFired.c",
+   "line": 117,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0.5,
+   "sig": "DCO_AI:Game/DCO/Individual/Danger/DCO_DangerWeaponFired.c|protected static const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.51 * Math.PI",
+   "text": "protected static const float COVER_QUERY_SECTOR_ANGLE_RAD = 0.51 * Math.PI;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_AimErrorOffset.c",
+   "line": 3,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_AimErrorOffset.c|static const float CLOSE_RANGE_THRESHOLD = 60.0",
+   "text": "static const float CLOSE_RANGE_THRESHOLD = 60.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_AimErrorOffset.c",
+   "line": 4,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_AimErrorOffset.c|static const float AIMING_ERROR_SCALE = 1.0",
+   "text": "static const float AIMING_ERROR_SCALE = 1.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_AimErrorOffset.c",
+   "line": 5,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_AimErrorOffset.c|static const float AIMING_ERROR_FACTOR_MAX = 1.4",
+   "text": "static const float AIMING_ERROR_FACTOR_MAX = 1.4;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_AimErrorOffset.c",
+   "line": 6,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_AimErrorOffset.c|static const float MAXIMAL_TOLERANCE = 10.0",
+   "text": "static const float MAXIMAL_TOLERANCE = 10.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_AimErrorOffset.c",
+   "line": 7,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_AimErrorOffset.c|static const float MINIMAL_TOLERANCE = 0.005",
+   "text": "static const float MINIMAL_TOLERANCE = 0.005;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_AimErrorOffset.c",
+   "line": 8,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_AimErrorOffset.c|static const float AIMING_ERROR_FACTOR_MIN = 0.12",
+   "text": "static const float AIMING_ERROR_FACTOR_MIN = 0.12;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_AimErrorOffset.c",
+   "line": 9,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_AimErrorOffset.c|static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.1",
+   "text": "static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_AimErrorOffset.c",
+   "line": 10,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_AimErrorOffset.c|static const float LONG_RANGE_THRESHOLD = 200.0",
+   "text": "static const float LONG_RANGE_THRESHOLD = 200.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatComponent.c",
+   "line": 3,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatComponent.c|static const int TARGET_ENDANGERED_TIMEOUT_S = 12",
+   "text": "static const int TARGET_ENDANGERED_TIMEOUT_S = 12;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatComponent.c",
+   "line": 4,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatComponent.c|protected const float FRAG_GRENADE_MAX_THREAT = 2.0",
+   "text": "protected const float FRAG_GRENADE_MAX_THREAT = 2.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatComponent.c",
+   "line": 5,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatComponent.c|static const float ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.1",
+   "text": "static const float ENDANGERING_TARGET_SCORE_MULTIPLIER = 1.1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatComponent.c",
+   "line": 6,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatComponent.c|static const float TARGET_MAX_LAST_SEEN = 11.0",
+   "text": "static const float TARGET_MAX_LAST_SEEN = 11.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatComponent.c",
+   "line": 7,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatComponent.c|protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.5",
+   "text": "protected static const float TARGET_MIN_INDIRECT_TRACE_FRACTION_MIN = 0.5;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatComponent.c",
+   "line": 8,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatComponent.c|protected static const float TARGET_MAX_DISTANCE_VEHICLE = 800.0",
+   "text": "protected static const float TARGET_MAX_DISTANCE_VEHICLE = 800.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatComponent.c",
+   "line": 9,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatComponent.c|protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.2",
+   "text": "protected static const float TARGET_MAX_DISTANCE_DISARMED = 0.2;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatComponent.c",
+   "line": 10,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatComponent.c|protected static const float TARGET_MAX_TIME_SINCE_ENDANGERED = 5.0",
+   "text": "protected static const float TARGET_MAX_TIME_SINCE_ENDANGERED = 5.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatComponent.c",
+   "line": 11,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatComponent.c|protected static const float TARGET_SCORE_RETREAT = 75.0",
+   "text": "protected static const float TARGET_SCORE_RETREAT = 75.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatComponent.c",
+   "line": 12,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatComponent.c|static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 98.5",
+   "text": "static const float TARGET_SCORE_HIGH_PRIORITY_ATTACK = 98.5;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatMoveLogic_Attack.c",
+   "line": 17,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatMoveLogic_Attack.c|protected static const string PORT_AVOID_STRAIGHT_PATH_DIR = \"xxxxxxxxxxxxxxxxxxxx\"",
+   "text": "protected static const string PORT_AVOID_STRAIGHT_PATH_DIR = \"AvoidStraightPathDir\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_CombatMoveLogic_Attack.c",
+   "line": 18,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_CombatMoveLogic_Attack.c|protected static const string PORT_BASE_TARGET = \"xxxxxxxxxx\"",
+   "text": "protected static const string PORT_BASE_TARGET = \"BaseTarget\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_HealBehavior.c",
+   "line": 3,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_HealBehavior.c|protected const float MAX_TIME_TO_UNCON_HIGH_PRIORITY_S = 16",
+   "text": "protected const float MAX_TIME_TO_UNCON_HIGH_PRIORITY_S = 16;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_HideFromThreat.c",
+   "line": 3,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_HideFromThreat.c|protected const float DANGER_HIGH = 2.0",
+   "text": "protected const float DANGER_HIGH = 2.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_HideFromThreat.c",
+   "line": 4,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_HideFromThreat.c|protected const float DANGER_MEDIUM = 0.5",
+   "text": "protected const float DANGER_MEDIUM = 0.5;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_MedicHealBehavior.c",
+   "line": 3,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_MedicHealBehavior.c|protected const float MAX_THREAT_THRESHOLD = 0.05",
+   "text": "protected const float MAX_THREAT_THRESHOLD = 0.05;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_SuppressionVolume.c",
+   "line": 3,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_SuppressionVolume.c|protected static const float MAX_X_ANGLE_DEG = 14",
+   "text": "protected static const float MAX_X_ANGLE_DEG = 14;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_SuppressionVolume.c",
+   "line": 4,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_SuppressionVolume.c|protected static const float MIN_X_ANGLE_DEG = 2.2",
+   "text": "protected static const float MIN_X_ANGLE_DEG = 2.2;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_SuppressionVolume.c",
+   "line": 5,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_SuppressionVolume.c|protected static const float MAX_Y_ANGLE_DEG = 3",
+   "text": "protected static const float MAX_Y_ANGLE_DEG = 3;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_SuppressionVolume.c",
+   "line": 6,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_SuppressionVolume.c|protected static const float MIN_Y_ANGLE_DEG = 0.5",
+   "text": "protected static const float MIN_Y_ANGLE_DEG = 0.5;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_SuppressionVolume.c",
+   "line": 7,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_SuppressionVolume.c|protected static const float MIN_SURFACE_Y = 0.2",
+   "text": "protected static const float MIN_SURFACE_Y = 0.2;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_SuppressionVolume.c",
+   "line": 8,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_SuppressionVolume.c|protected static const float CHANCE_FOR_OPPOSITE_DIR = 0.18",
+   "text": "protected static const float CHANCE_FOR_OPPOSITE_DIR = 0.18;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_ThreatSector.c",
+   "line": 3,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_ThreatSector.c|static const int SECTOR_STATE_IDLE = 0",
+   "text": "static const int SECTOR_STATE_IDLE = 0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_ThreatSector.c",
+   "line": 4,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_ThreatSector.c|static const int SECTOR_STATE_ACTIVE = 1",
+   "text": "static const int SECTOR_STATE_ACTIVE = 1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_ThreatSector.c",
+   "line": 5,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_ThreatSector.c|protected static const float ACCUMULATOR_DROP_RATE = 0.02",
+   "text": "protected static const float ACCUMULATOR_DROP_RATE = 0.02;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_ThreatSector.c",
+   "line": 6,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_ThreatSector.c|protected static const float SECTOR_FORGET_S = 60.0",
+   "text": "protected static const float SECTOR_FORGET_S = 60.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_ThreatSystem.c",
+   "line": 3,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_ThreatSystem.c|static const float EXPLOSION_MAX_DISTANCE = 120",
+   "text": "static const float EXPLOSION_MAX_DISTANCE = 120;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_ThreatSystem.c",
+   "line": 4,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_ThreatSystem.c|static const float VIGILANT_THRESHOLD = 0.4",
+   "text": "static const float VIGILANT_THRESHOLD = 0.4;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_ThreatSystem.c",
+   "line": 5,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_ThreatSystem.c|static const float ALERTED_THRESHOLD = 1",
+   "text": "static const float ALERTED_THRESHOLD = 1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_ThreatSystem.c",
+   "line": 6,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_ThreatSystem.c|static const float THREATENED_THRESHOLD = 2.2",
+   "text": "static const float THREATENED_THRESHOLD = 2.2;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_ThreatSystem.c",
+   "line": 8,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_ThreatSystem.c|private static const float ENDANGERED_INCREMENT = 0.25",
+   "text": "private static const float ENDANGERED_INCREMENT = 0.25;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_ThreatSystem.c",
+   "line": 12,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_ThreatSystem.c|private static const float SUPPRESSION_BULLET_INCREMENT = 0.11",
+   "text": "private static const float SUPPRESSION_BULLET_INCREMENT = 0.11;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateAttackData.c",
+   "line": 3,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateAttackData.c|protected const int FIRE_TREE_INVALID = -1",
+   "text": "protected const int FIRE_TREE_INVALID = -1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateAttackData.c",
+   "line": 4,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateAttackData.c|protected const int FIRE_TREE_LOOK = 0",
+   "text": "protected const int FIRE_TREE_LOOK = 0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateAttackData.c",
+   "line": 5,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateAttackData.c|protected const int FIRE_TREE_BURST = 1",
+   "text": "protected const int FIRE_TREE_BURST = 1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateAttackData.c",
+   "line": 6,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateAttackData.c|protected const int FIRE_TREE_SINGLE = 2",
+   "text": "protected const int FIRE_TREE_SINGLE = 2;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateAttackData.c",
+   "line": 7,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateAttackData.c|protected const int FIRE_TREE_SUPPRESSIVE = 3",
+   "text": "protected const int FIRE_TREE_SUPPRESSIVE = 3;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateAttackData.c",
+   "line": 8,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateAttackData.c|protected const int FIRE_TREE_MELEE = 4",
+   "text": "protected const int FIRE_TREE_MELEE = 4;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateAttackData.c",
+   "line": 9,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateAttackData.c|protected const int FIRE_TREE_LOOK_THREATS = 5",
+   "text": "protected const int FIRE_TREE_LOOK_THREATS = 5;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateAttackData.c",
+   "line": 11,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateAttackData.c|protected const float BURST_FIRE_MAX_DISTANCE = 70.0",
+   "text": "protected const float BURST_FIRE_MAX_DISTANCE = 70.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c",
+   "line": 3,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c|protected static const string PORT_FIRE_TREE_ID = \"xxxxxxxxxx\"",
+   "text": "protected static const string PORT_FIRE_TREE_ID = \"FireTreeId\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c",
+   "line": 4,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c|protected static const string PORT_SUPPRESSION_VOLUME = \"xxxxxxxxxxxxxxxxx\"",
+   "text": "protected static const string PORT_SUPPRESSION_VOLUME = \"SuppressionVolume\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c",
+   "line": 6,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c|protected static const string PORT_VISIBLE = \"xxxxxxx\"",
+   "text": "protected static const string PORT_VISIBLE = \"Visible\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c",
+   "line": 7,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c|protected static const string PORT_TIME_LAST_SEEN = \"xxxxxxxxxxxxxxx\"",
+   "text": "protected static const string PORT_TIME_LAST_SEEN = \"TimeLastSeen_ms\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c",
+   "line": 9,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c|protected const int FIRE_TREE_INVALID = -1",
+   "text": "protected const int FIRE_TREE_INVALID = -1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c",
+   "line": 10,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c|protected const int FIRE_TREE_LOOK = 0",
+   "text": "protected const int FIRE_TREE_LOOK = 0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c",
+   "line": 11,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c|protected const int FIRE_TREE_SUPPRESSIVE = 1",
+   "text": "protected const int FIRE_TREE_SUPPRESSIVE = 1;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c",
+   "line": 18,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c|protected const float VISIBILITY_CHECK_INTERVAL_S = 0.75",
+   "text": "protected const float VISIBILITY_CHECK_INTERVAL_S = 0.75;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c",
+   "line": 19,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Individual/Modded/Modded_UpdateSuppressionData.c|protected const float VISIBILITY_CHECK_TRACE_RESULT_THRESHOLD = 0.5",
+   "text": "protected const float VISIBILITY_CHECK_TRACE_RESULT_THRESHOLD = 0.5;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c",
+   "line": 3,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c|protected static const string PORT_BASE_TARGET = \"xxxxxxxxxx\"",
+   "text": "protected static const string PORT_BASE_TARGET = \"BaseTarget\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c",
+   "line": 7,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c|protected const float WEAPON_MIN_DIST = 2.0",
+   "text": "protected const float WEAPON_MIN_DIST = 2.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c",
+   "line": 9,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0.5,
+   "sig": "DCO_AI:Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c|protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 80.0 * 80.0",
+   "text": "protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 80.0 * 80.0;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c",
+   "line": 10,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c|protected const float MAX_MOVE_DURATION_TO_TARGET_S = 9",
+   "text": "protected const float MAX_MOVE_DURATION_TO_TARGET_S = 9;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c",
+   "line": 11,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c|protected const float MAX_MOVE_DURATION_TO_TARGET_THREATENED_S = 7",
+   "text": "protected const float MAX_MOVE_DURATION_TO_TARGET_THREATENED_S = 7;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c",
+   "line": 12,
+   "kind": "const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c|protected const float REVERSE_MOVE_DURATION_S = 3",
+   "text": "protected const float REVERSE_MOVE_DURATION_S = 3;"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c",
+   "line": 491,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c|protected static const string PORT_VISIBLE = \"xxxxxxx\"",
+   "text": "protected static const string PORT_VISIBLE = \"Visible\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c",
+   "line": 492,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c|protected static const string PORT_TIME_LAST_SEEN = \"xxxxxxxxxxxxxxx\"",
+   "text": "protected static const string PORT_TIME_LAST_SEEN = \"TimeLastSeen_ms\";"
+  },
+  {
+   "root": "DCO_AI",
+   "file": "Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c",
+   "line": 497,
+   "kind": "static_const",
+   "weight": 1,
+   "cost": 0,
+   "sig": "DCO_AI:Game/DCO/Vehicle/Modded_CombatMoveVehicleGunner.c|protected static const float TIME_SINCE_GOOD_VISIBILITY_MIN_MS = 15000.0",
+   "text": "protected static const float TIME_SINCE_GOOD_VISIBILITY_MIN_MS = 15000.0;"
+  },
+  {
+   "root": "TestAI",
+   "file": "Game/TAI/TAI_DevCmd.c",
+   "line": 4,
+   "kind": "static",
+   "weight": 1,
+   "cost": 0,
+   "sig": "TestAI:Game/TAI/TAI_DevCmd.c|protected static string s_sDir = \"xxxxxxxxxxxxxxxx\"",
+   "text": "protected static string s_sDir = \"$profile:DCO/cmd\";"
+  }
+ ],
+ "calibration": {
+  "game": "1.8.0.13",
+  "date": "2026-10-10",
+  "unit": "one static ref map<string,int> = new map<string,int>()",
+  "headroom_vanilla_units": 542,
+  "costs": {
+   "literal": 0,
+   "new": 1,
+   "array_literal": "1.0 + 0.5 per element (int or string)",
+   "expression_e_g_0_25_mul_PI": 0.5
+  },
+  "probe": "isolated scratchpad addon, bisection of N declarations until 'Too many instructions per function'"
+ }
+}

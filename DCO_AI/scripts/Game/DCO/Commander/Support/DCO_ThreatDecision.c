@@ -53,6 +53,9 @@ class CMD_ThreatAssessment
 	bool m_bAT;
 	bool m_bFiringAtUs;
 	bool m_bSniper;
+	bool m_bNeedAT;
+	bool m_bForceArty;
+	int m_iDossier = -1;
 
 	ref array<float> m_aScores = {};
 
@@ -87,6 +90,7 @@ class CMD_ThreatMission
 	bool m_bSeen;
 	bool m_bExecuted;
 	bool m_bTimedOut;
+	int m_iDossier = -1;
 	CMD_AICommanderObjectiveComponent m_HoldObj;
 	ref array<DCO_GroupUtilityComponent> m_aGroups = {};
 	ref CMD_ThreatAssessment m_Last;

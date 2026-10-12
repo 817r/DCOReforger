@@ -6,59 +6,111 @@ class DCO_PerfSection
 	int m_iFrame;
 	int m_iAllTotal;
 	int m_iAllCalls;
+	int m_iCensusTotal;
+	int m_iCensusCalls;
+	int m_iAllMax;
 }
 
 class DCO_Perf
 {
 	static bool s_bOn;
+	static bool s_bCensus;
+	protected static bool s_bActive;
 
-	protected static const string DIR = "$profile:DCO_Bench";
 
-	protected static ref map<string, ref DCO_PerfSection> s_mSections = new map<string, ref DCO_PerfSection>();
-	protected static ref map<string, int> s_mCounts = new map<string, int>();
-	protected static ref map<string, int> s_mCountsAll = new map<string, int>();
+	protected static ref map<string, ref DCO_PerfSection> s_mSections;
+	protected static map<string, ref DCO_PerfSection> GetSectionsStore()
+	{
+		if (!s_mSections)
+			s_mSections = new map<string, ref DCO_PerfSection>();
+		return s_mSections;
+	}
+	protected static ref map<string, int> s_mCounts;
+	protected static map<string, int> GetCounts()
+	{
+		if (!s_mCounts)
+			s_mCounts = new map<string, int>();
+		return s_mCounts;
+	}
+	protected static ref map<string, int> s_mCountsAll;
+	protected static map<string, int> GetCountsAll()
+	{
+		if (!s_mCountsAll)
+			s_mCountsAll = new map<string, int>();
+		return s_mCountsAll;
+	}
+	protected static ref map<string, int> s_mCensusCounts;
 
 	protected static float s_fWindow;
 	protected static int s_iFrames;
 	protected static float s_fMaxFrame;
 	protected static float s_fElapsed;
-	protected static string s_sFile;
+
+	protected static int s_iFrameShots;
+	protected static int s_iFrameCallLater;
+	protected static int s_iFrameQueries;
+	protected static int s_iFrameTraces;
 
 	static int Begin()
 	{
-		if (!s_bOn)
+		if (!s_bActive)
 			return 0;
 		return System.GetTickCount();
 	}
 
 	static void End(string section, int start)
 	{
-		if (!s_bOn)
+		if (!s_bActive)
 			return;
 
 		int dt = System.GetTickCount() - start;
-		DCO_PerfSection s = s_mSections.Get(section);
+		DCO_PerfSection s = GetSectionsStore().Get(section);
 		if (!s)
 		{
 			s = new DCO_PerfSection();
-			s_mSections.Set(section, s);
+			GetSectionsStore().Set(section, s);
 		}
 		s.m_iCalls++;
 		s.m_iTotal += dt;
 		s.m_iFrame += dt;
 		s.m_iAllTotal += dt;
 		s.m_iAllCalls++;
+		if (dt > s.m_iAllMax)
+			s.m_iAllMax = dt;
+		s.m_iCensusTotal += dt;
+		s.m_iCensusCalls++;
 		if (dt > s.m_iMax)
 			s.m_iMax = dt;
 	}
 
 	static void Count(string source)
 	{
-		if (!s_bOn)
+		CountN(source, 1);
+	}
+
+	static void CountN(string source, int n)
+	{
+		if (!s_bActive)
 			return;
 
-		s_mCounts.Set(source, s_mCounts.Get(source) + 1);
-		s_mCountsAll.Set(source, s_mCountsAll.Get(source) + 1);
+		if (s_bOn)
+		{
+			GetCounts().Set(source, GetCounts().Get(source) + n);
+			GetCountsAll().Set(source, GetCountsAll().Get(source) + n);
+		}
+
+		if (!s_bCensus)
+			return;
+
+		s_mCensusCounts.Set(source, s_mCensusCounts.Get(source) + n);
+		if (source == "ev:shot")
+			s_iFrameShots += n;
+		else if (source == "cl:shot")
+			s_iFrameCallLater += n;
+		else if (source.StartsWith("q:"))
+			s_iFrameQueries += n;
+		else if (source.StartsWith("t:"))
+			s_iFrameTraces += n;
 	}
 
 	static void SetEnabled(bool on)
@@ -70,26 +122,109 @@ class DCO_Perf
 			WriteSummary("off");
 
 		s_bOn = on;
-		s_mSections.Clear();
-		s_mCounts.Clear();
-		s_mCountsAll.Clear();
+		GetCounts().Clear();
+		GetCountsAll().Clear();
 		s_fWindow = 0;
 		s_iFrames = 0;
 		s_fMaxFrame = 0;
 		s_fElapsed = 0;
-		s_sFile = string.Empty;
+		foreach (string name, DCO_PerfSection s : GetSectionsStore())
+		{
+			s.m_iCalls = 0;
+			s.m_iTotal = 0;
+			s.m_iMax = 0;
+			s.m_iAllTotal = 0;
+			s.m_iAllCalls = 0;
+			s.m_iAllMax = 0;
+		}
+		s_bActive = s_bOn || s_bCensus;
+	}
+
+	static void SetCensus(bool on)
+	{
+		s_bCensus = on;
+		if (on && !s_mCensusCounts)
+			s_mCensusCounts = new map<string, int>();
+		ResetCensus();
+		s_bActive = s_bOn || s_bCensus;
+	}
+
+	static void ResetCensus()
+	{
+		if (s_mCensusCounts)
+			s_mCensusCounts.Clear();
+		foreach (string name, DCO_PerfSection s : GetSectionsStore())
+		{
+			s.m_iCensusTotal = 0;
+			s.m_iCensusCalls = 0;
+		}
+	}
+
+	static map<string, ref DCO_PerfSection> GetSections()
+	{
+		return GetSectionsStore();
+	}
+
+	static int TotalCount(string source)
+	{
+		return GetCountsAll().Get(source);
+	}
+
+	static int SectionMaxMs(string section)
+	{
+		DCO_PerfSection s = GetSectionsStore().Get(section);
+		if (!s)
+			return 0;
+		return s.m_iAllMax;
+	}
+
+	static int CensusCount(string source)
+	{
+		if (!s_mCensusCounts)
+			return 0;
+		return s_mCensusCounts.Get(source);
+	}
+
+	protected static string TopFrameSection()
+	{
+		string best = "-";
+		int bestMs = 0;
+		foreach (string name, DCO_PerfSection s : GetSectionsStore())
+		{
+			if (s.m_iFrame > bestMs)
+			{
+				bestMs = s.m_iFrame;
+				best = name;
+			}
+		}
+		return best;
 	}
 
 	static void Tick(float timeSlice)
 	{
-		if (!s_bOn)
+		if (!s_bActive)
 			return;
 
 		if (timeSlice > 0.05)
-			LogSpike(timeSlice);
+		{
+			if (s_bOn)
+				LogSpike(timeSlice);
+			if (s_bCensus)
+				DCO_Census.Spike(timeSlice, TopFrameSection(), s_iFrameShots, s_iFrameCallLater, s_iFrameQueries, s_iFrameTraces);
+		}
 
-		foreach (string name, DCO_PerfSection s : s_mSections)
+		foreach (string name, DCO_PerfSection s : GetSectionsStore())
 			s.m_iFrame = 0;
+		s_iFrameShots = 0;
+		s_iFrameCallLater = 0;
+		s_iFrameQueries = 0;
+		s_iFrameTraces = 0;
+
+		if (s_bCensus)
+			DCO_Census.Tick(timeSlice);
+
+		if (!s_bOn)
+			return;
 
 		s_iFrames++;
 		s_fWindow += timeSlice;
@@ -104,19 +239,19 @@ class DCO_Perf
 		s_fWindow = 0;
 		s_iFrames = 0;
 		s_fMaxFrame = 0;
-		foreach (string name, DCO_PerfSection s : s_mSections)
+		foreach (string name, DCO_PerfSection s : GetSectionsStore())
 		{
 			s.m_iCalls = 0;
 			s.m_iTotal = 0;
 			s.m_iMax = 0;
 		}
-		s_mCounts.Clear();
+		GetCounts().Clear();
 	}
 
 	protected static void LogSpike(float timeSlice)
 	{
 		string parts;
-		foreach (string name, DCO_PerfSection s : s_mSections)
+		foreach (string name, DCO_PerfSection s : GetSectionsStore())
 		{
 			if (s.m_iFrame > 0)
 				parts += string.Format(" %1=%2", name, s.m_iFrame);
@@ -128,12 +263,14 @@ class DCO_Perf
 	{
 		float fpsAvg = 0;
 		if (s_fWindow > 0)
-			fpsAvg = s_iFrames / s_fWindow;
+			fpsAvg = 1.0 * s_iFrames / s_fWindow;
 		float fpsMin = 0;
 		if (s_fMaxFrame > 0)
 			fpsMin = 1.0 / s_fMaxFrame;
 
 		int lod0, lodMid, lodMax;
+		int aiTotal = 0;
+		int aiLocked = 0;
 		int maxLod = AIAgent.GetMaxLOD();
 		AIWorld aiWorld = GetGame().GetAIWorld();
 		if (aiWorld)
@@ -144,6 +281,10 @@ class DCO_Perf
 			{
 				if (!SCR_ChimeraAIAgent.Cast(a))
 					continue;
+				aiTotal++;
+				SCR_AIUtilityComponent lodUtil = SCR_AIUtilityComponent.Cast(a.FindComponent(SCR_AIUtilityComponent));
+				if (lodUtil && lodUtil.m_iDCO_LOD > 0)
+					aiLocked++;
 				int lod = a.GetLOD();
 				if (lod <= 0)
 					lod0++;
@@ -166,20 +307,44 @@ class DCO_Perf
 		}
 
 		string sections;
-		foreach (string name, DCO_PerfSection s : s_mSections)
+		int dcoMs = 0;
+		array<string> topNames = {};
+		array<int> topTotals = {};
+		foreach (string name, DCO_PerfSection s : GetSectionsStore())
 		{
 			if (s.m_iCalls > 0)
-				sections += string.Format(" %1=%2/%3/%4", name, s.m_iCalls, s.m_iTotal, s.m_iMax);
+				sections += string.Format(" %1=%2/%3/%4/%5", name, s.m_iCalls, s.m_iTotal, s.m_iMax, Math.Round(s.m_iTotal * 1000.0 / s.m_iCalls));
+			if (s.m_iTotal <= 0)
+				continue;
+			if (DCO_Census.IsTopLevel(name))
+				dcoMs += s.m_iTotal;
+			if (name != "agent_eval")
+				InsertSorted(topNames, topTotals, name, s.m_iTotal);
 		}
+		string top;
+		for (int ti = 0; ti < topNames.Count() && ti < 3 && dcoMs > 0; ti++)
+		{
+			if (!top.IsEmpty())
+				top += ", ";
+			top += DCO_Report.Nice(topNames[ti]) + " " + (topTotals[ti] * 100.0 / dcoMs).ToString(-1, 0) + "%";
+		}
+		float dcoPerFrame = 0;
+		if (s_iFrames > 0)
+			dcoPerFrame = dcoMs * 1.0 / s_iFrames;
 
 		string queries;
-		foreach (string src, int n : s_mCounts)
-			queries += string.Format(" %1=%2", src, (n / s_fWindow).ToString(-1, 1));
+		foreach (string src, int n : GetCounts())
+			queries += string.Format(" %1=%2", src, (1.0 * n / s_fWindow).ToString(-1, 1));
 
-		Write(string.Format("PERF fps_avg=%1 fps_min=%2 frame_max_ms=%3 ai_lod0=%4 ai_lodmid=%5 ai_lodmax=%6 groups:%7",
-			fpsAvg.ToString(-1, 1), fpsMin.ToString(-1, 1), Math.Round(s_fMaxFrame * 1000), lod0, lodMid, lodMax, groups));
-		Write("PERF sections(calls/ms_total/ms_max):" + sections);
+		int players = 0;
+		if (GetGame().GetPlayerManager())
+			players = GetGame().GetPlayerManager().GetPlayerCount();
+		Write(string.Format("PERF fps_avg=%1 fps_min=%2 frame_max_ms=%3 ai_total=%4 ai_dco_locked=%5 players=%6 ai_lod0=%7 ai_lodmid=%8 ai_lodmax=%9",
+			fpsAvg.ToString(-1, 1), fpsMin.ToString(-1, 1), Math.Round(s_fMaxFrame * 1000), aiTotal, aiLocked, players, lod0, lodMid, lodMax));
+		Write("PERF groups:" + groups);
+		Write("PERF sections(calls/ms_total/ms_max/us_per_call):" + sections);
 		Write("PERF queries_per_s:" + queries);
+		DCO_Report.Perf(fpsAvg, fpsMin, Math.Round(s_fMaxFrame * 1000), aiTotal, players, lod0, lodMid + lodMax, dcoPerFrame, top);
 	}
 
 	static void WriteSummary(string reason)
@@ -189,7 +354,7 @@ class DCO_Perf
 
 		array<string> names = {};
 		array<int> totals = {};
-		foreach (string name, DCO_PerfSection s : s_mSections)
+		foreach (string name, DCO_PerfSection s : GetSectionsStore())
 			InsertSorted(names, totals, name, s.m_iAllTotal);
 
 		string top;
@@ -199,7 +364,7 @@ class DCO_Perf
 
 		names.Clear();
 		totals.Clear();
-		foreach (string src, int n : s_mCountsAll)
+		foreach (string src, int n : GetCountsAll())
 			InsertSorted(names, totals, src, n);
 
 		top = string.Empty;
@@ -219,22 +384,6 @@ class DCO_Perf
 
 	protected static void Write(string line)
 	{
-		Print("[DCO_Perf] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
-
-		if (s_sFile.IsEmpty())
-		{
-			FileIO.MakeDirectory(DIR);
-			int y, mo, d, h, mi, s;
-			System.GetYearMonthDay(y, mo, d);
-			System.GetHourMinuteSecond(h, mi, s);
-			s_sFile = string.Format("%1/perf_%2%3%4_%5%6%7.log", DIR, y, mo.ToString(2), d.ToString(2), h.ToString(2), mi.ToString(2), s.ToString(2));
-		}
-
-		FileHandle f = FileIO.OpenFile(s_sFile, FileMode.APPEND);
-		if (!f)
-			return;
-		f.WriteLine(string.Format("[T+%1] %2", s_fElapsed.ToString(7, 1), line));
-		f.Close();
+		DCO_Log.Perf(line, string.Format("[T+%1] %2", s_fElapsed.ToString(7, 1), line));
 	}
 }

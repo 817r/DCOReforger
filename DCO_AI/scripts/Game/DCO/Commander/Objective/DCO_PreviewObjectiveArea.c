@@ -12,11 +12,18 @@ class Comamnder_AreaBaseMeshComponent : SCR_BaseAreaMeshComponent
 		return m_MilitaryBaseComponent.GetRadius();
 	}
 
+	override void GenerateAreaMesh()
+	{
+		if (GetGame().InPlayMode())
+			return;
+		super.GenerateAreaMesh();
+	}
+
 	override void EOnInit(IEntity owner)
 	{
 		m_MilitaryBaseComponent = CMD_AICommanderObjectiveComponent.Cast(GetOwner().FindComponent(CMD_AICommanderObjectiveComponent));
 
-		if (GetGame().InPlayMode() && !owner.FindComponent(SCR_EditableEntityComponent))
+		if (GetGame().InPlayMode())
 			return;
 
 		if (!m_MilitaryBaseComponent)

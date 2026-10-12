@@ -66,7 +66,6 @@ class DCO_GarrisonHoldBehavior : SCR_AIBehaviorBase
 
 class DCO_AIGarrisonGetSlot : SCR_AIActionTask
 {
-	static const string PORT_POS = "SlotPos";
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
@@ -78,16 +77,22 @@ class DCO_AIGarrisonGetSlot : SCR_AIActionTask
 		if (!slot)
 			return ENodeResult.FAIL;
 
-		SetVariableOut(PORT_POS, slot.m_vWorldPos);
+		SetVariableOut("SlotPos", slot.m_vWorldPos);
 		SetVariableOut("Stance", slot.m_eStance);
 		return ENodeResult.SUCCESS;
 	}
 
-	protected static ref TStringArray s_aVarsOut = {PORT_POS, "Stance"};
-	override TStringArray GetVariablesOut() { return s_aVarsOut; }
+	protected static ref TStringArray s_aVarsOut;
+	protected static TStringArray GetVarsOut()
+	{
+		if (!s_aVarsOut)
+			s_aVarsOut = {"SlotPos", "Stance"};
+		return s_aVarsOut;
+	}
+	override TStringArray GetVariablesOut() { return GetVarsOut(); }
 
 	static override bool VisibleInPalette() { return true; }
-	static override string GetOnHoverDescription() { return "DCO: posisi + stance slot garrison."; }
+	static override string GetOnHoverDescription() { return "DCO: garrison slot position + stance."; }
 }
 
 class DCO_AIGarrisonHold : SCR_AIActionTask
@@ -139,5 +144,5 @@ class DCO_AIGarrisonHold : SCR_AIActionTask
 	}
 
 	static override bool VisibleInPalette() { return true; }
-	static override string GetOnHoverDescription() { return "DCO: tahan di slot garrison, lirik busur slot; selesai kalau melenceng / slot ganti."; }
+	static override string GetOnHoverDescription() { return "DCO: hold at the garrison slot and scan the slot arc; ends if the AI drifts off or the slot changes."; }
 }

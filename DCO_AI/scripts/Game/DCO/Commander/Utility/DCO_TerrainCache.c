@@ -19,8 +19,6 @@ class DCO_TerrainPoint
 
 class DCO_TerrainCache
 {
-	protected static const float START_DELAY_S = 15;
-	protected static const string DIR = "$profile:DCO/TerrainCache";
 
 	protected static ref DCO_TerrainCache s_Instance;
 
@@ -61,7 +59,7 @@ class DCO_TerrainCache
 		c.m_fElapsed += timeSlice;
 		if (!c.m_bStarted)
 		{
-			if (c.m_fElapsed >= START_DELAY_S)
+			if (c.m_fElapsed >= 15.0)
 				c.Start();
 			return;
 		}
@@ -86,7 +84,7 @@ class DCO_TerrainCache
 		return outPts.Count();
 	}
 
-	static vector QueryBest(int mask, vector center, float radius, string losObj = "", vector prefer = "0 0 0")
+	static vector QueryBest(int mask, vector center, float radius, string losObj = "", vector prefer = "0 0 0", vector threat = "0 0 0")
 	{
 		array<DCO_TerrainPoint> pts = {};
 		if (Query(mask, center, radius, pts, losObj) == 0)
@@ -95,12 +93,15 @@ class DCO_TerrainCache
 		vector anchor = center;
 		if (prefer != vector.Zero)
 			anchor = prefer;
+		bool sky = threat != vector.Zero && DCO_GlobalAIComponent.BehaviorOn(DCO_EBehavior.AWARENESS);
 
 		float best = -float.MAX;
 		vector bestPos;
 		foreach (DCO_TerrainPoint p : pts)
 		{
 			float s = p.m_fRelElev - vector.DistanceXZ(p.m_vPos, anchor) / 50;
+			if (sky && s > best && DCO_ConcealmentUtility.IsSkylined(p.m_vPos, threat))
+				s -= 1000;
 			if (s > best)
 			{
 				best = s;
@@ -142,12 +143,12 @@ class DCO_TerrainCache
 		array<string> bad = {"/", "{", "}", ".", ":", " "};
 		foreach (string ch : bad)
 			safe.Replace(ch, "_");
-		m_sFile = DIR + "/" + safe + ".json";
+		m_sFile = "$profile:DCO/TerrainCache" + "/" + safe + ".json";
 
 		if (Load())
 		{
 			m_bReady = true;
-			Print(string.Format("[DCO_Terrain] cache hit %1 (%2 titik)", m_sFile, m_aPoints.Count()));
+			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", string.Format("cache hit %1 (%2 points)", m_sFile, m_aPoints.Count()));
 			return;
 		}
 
@@ -170,7 +171,7 @@ class DCO_TerrainCache
 			}
 		}
 		SortByDistance(dists);
-		Print(string.Format("[DCO_Terrain] mulai hitung %1 sel (%2 objective), budget %3 sel/frame", m_aPending.Count(), m_aObjPos.Count(), 6));
+		DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", string.Format("start computing %1 cells (%2 objectives), budget %3 cells/frame", m_aPending.Count(), m_aObjPos.Count(), 6));
 	}
 
 	protected void Step()
@@ -197,14 +198,13 @@ class DCO_TerrainCache
 		}
 		string line = string.Format("terrain_cache built points=%1 time=%2s hill=%3 junction=%4 bridge=%5 forest=%6 overwatch=%7 lz=%8",
 			m_aPoints.Count(), ((System.GetTickCount() - m_fStartTick_ms) / 1000).ToString(-1, 1), counts[0], counts[1], counts[2], counts[3], counts[4], counts[5]);
-		Print("[DCO_Terrain] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
+		DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", line);
 	}
 
 	protected void EvaluateCell(vector c)
 	{
 		BaseWorld world = GetGame().GetWorld();
-		c[1] = world.GetSurfaceY(c[0], c[2]);
+		c = DCO_Util.Surface(c);
 
 		EWaterSurfaceType waterType;
 		float lakeArea;
@@ -285,12 +285,8 @@ class DCO_TerrainCache
 
 	protected static bool HasLOS(vector from, vector to)
 	{
-		TraceParam trace = new TraceParam();
-		trace.Start = Vector(from[0], from[1] + 1.8, from[2]);
-		trace.End = Vector(to[0], GetGame().GetWorld().GetSurfaceY(to[0], to[2]) + 1.5, to[2]);
-		trace.Flags = TraceFlags.ANY_CONTACT | TraceFlags.WORLD | TraceFlags.ENTS;
-		DCO_Perf.Count("t:DCO_TerrainCache");
-		return GetGame().GetWorld().TraceMove(trace, null) >= 0.97;
+		return DCO_Util.TraceClear(Vector(from[0], from[1] + 1.8, from[2]), Vector(to[0], GetGame().GetWorld().GetSurfaceY(to[0], to[2]) + 1.5, to[2]), null, 0.97,
+			TraceFlags.ANY_CONTACT | TraceFlags.WORLD | TraceFlags.ENTS, -1, null, "t:DCO_TerrainCache");
 	}
 
 	protected void AnalyzeRoads(vector mins, vector maxs)
@@ -394,7 +390,7 @@ class DCO_TerrainCache
 	protected void Save()
 	{
 		FileIO.MakeDirectory("$profile:DCO");
-		FileIO.MakeDirectory(DIR);
+		FileIO.MakeDirectory("$profile:DCO/TerrainCache");
 
 		array<float> xs = {}, ys = {}, zs = {}, els = {};
 		array<int> fl = {};
@@ -425,7 +421,7 @@ class DCO_TerrainCache
 		ctx.WriteValue("f", fl);
 		ctx.WriteValue("los", los);
 		if (!ctx.SaveToFile(m_sFile))
-			Print("[DCO_Terrain] gagal nyimpen " + m_sFile, LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.WARN, "-", "failed to save " + m_sFile);
 	}
 
 	protected bool Load()

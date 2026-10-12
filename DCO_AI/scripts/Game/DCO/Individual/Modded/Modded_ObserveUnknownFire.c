@@ -187,6 +187,6 @@ modded class SCR_AIObserveThreatSystemBehavior : SCR_AIBehaviorBase
 		if (m_Utility && m_Utility.m_OwnerEntity)
 			entName = m_Utility.m_OwnerEntity.ToString();
 
-		Print(string.Format("[DCO_Cover] t=%1 %2 | %3", GetGame().GetWorld().GetWorldTime(), entName, msg), LogLevel.NORMAL);
+		DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, "-", string.Format("t=%1 %2 | %3", GetGame().GetWorld().GetWorldTime(), entName, msg));
 	}
 };

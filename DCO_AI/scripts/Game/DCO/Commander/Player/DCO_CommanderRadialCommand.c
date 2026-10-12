@@ -25,20 +25,27 @@ enum DCO_ERadialCommandType
 	CANCEL_SUPPORT,
 	CANCEL_FIRE,
 	CANCEL_TRANSPORT,
-	CANCEL_ALL
+	CANCEL_ALL,
+	SHOW_ORDERS
 }
 
 [BaseContainerProps(), SCR_BaseGroupCommandTitleField("m_sCommandName")]
 class DCO_CommanderRadialCommand : SCR_BaseGroupCommand
 {
-	[Attribute("0", UIWidgets.ComboBox, "Jenis perintah", "", ParamEnumArray.FromEnum(DCO_ERadialCommandType))]
+	[Attribute("0", UIWidgets.ComboBox, "Command type.", "", ParamEnumArray.FromEnum(DCO_ERadialCommandType))]
 	protected DCO_ERadialCommandType m_eType;
 
-	[Attribute("0", UIWidgets.EditBox, "Jumlah peluru yang diminta (fire support). 0 = default jenis peluru.")]
+	[Attribute("0", UIWidgets.EditBox, "Rounds requested (fire support). 0 = default for the round type.")]
 	protected int m_iShellCount;
 
 	override bool Execute(IEntity cursorTarget, IEntity groupEnt, vector targetPosition, int playerID, bool isClient)
 	{
+		if (m_eType == DCO_ERadialCommandType.SHOW_ORDERS)
+		{
+			if (!System.IsConsoleApp())
+				DCO_BriefUI.Toggle();
+			return true;
+		}
 		if (isClient)
 			return true;
 
@@ -102,6 +109,8 @@ class DCO_CommanderRadialCommand : SCR_BaseGroupCommand
 
 	override bool CanBeShown()
 	{
+		if (m_eType == DCO_ERadialCommandType.SHOW_ORDERS)
+			return DCO_BriefUI.HasOrders() && CanBeShownInCurrentLifeState();
 		return CanRoleShow() && CanBeShownInCurrentLifeState();
 	}
 }

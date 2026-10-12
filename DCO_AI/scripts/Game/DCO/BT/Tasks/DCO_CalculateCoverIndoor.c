@@ -1,8 +1,7 @@
 class DCO_AICalculateCoverQueryProps_Indoor : AITaskScripted
 {
-	protected const static string PORT_COMBAT_MOVE_REQUEST = "CombatMoveRequest";
 
-	protected const static string PORT_COVER_QUERY_PROPERTIES = "CoverQueryProps";
+	protected static string PORT_COVER_QUERY_PROPERTIES() { return "CoverQueryProps"; }
 
 	protected ref CoverQueryProperties m_CoverQueryProps = new CoverQueryProperties();
 
@@ -36,7 +35,7 @@ class DCO_AICalculateCoverQueryProps_Indoor : AITaskScripted
 			return ENodeResult.FAIL;
 
 		SCR_AICombatMoveRequestBase rqBase;
-		GetVariableIn(PORT_COMBAT_MOVE_REQUEST, rqBase);
+		GetVariableIn("CombatMoveRequest", rqBase);
 		SCR_AICombatMoveRequest_Move rq = SCR_AICombatMoveRequest_Move.Cast(rqBase);
 
 		if (!rq)
@@ -83,7 +82,7 @@ class DCO_AICalculateCoverQueryProps_Indoor : AITaskScripted
 		query.m_bCheckVisibility = rq.m_bCheckCoverVisibility;
 		query.m_bSelectHighestScore = true;
 
-		SetVariableOut(PORT_COVER_QUERY_PROPERTIES, query);
+		SetVariableOut(PORT_COVER_QUERY_PROPERTIES(), query);
 
 		return ENodeResult.SUCCESS;
 	}
@@ -97,13 +96,21 @@ class DCO_AICalculateCoverQueryProps_Indoor : AITaskScripted
 
 	static override bool VisibleInPalette() { return true; }
 
-	protected static ref TStringArray s_aVarsIn = {
-		PORT_COMBAT_MOVE_REQUEST
-	};
-	override TStringArray GetVariablesIn() { return s_aVarsIn; }
+	protected static ref TStringArray s_aVarsIn;
+	protected static TStringArray GetVarsIn()
+	{
+		if (!s_aVarsIn)
+			s_aVarsIn = { "CombatMoveRequest" };
+		return s_aVarsIn;
+	}
+	override TStringArray GetVariablesIn() { return GetVarsIn(); }
 
-	protected static ref TStringArray s_aVarsOut = {
-		PORT_COVER_QUERY_PROPERTIES
-	};
-	override TStringArray GetVariablesOut() { return s_aVarsOut; }
+	protected static ref TStringArray s_aVarsOut;
+	protected static TStringArray GetVarsOut()
+	{
+		if (!s_aVarsOut)
+			s_aVarsOut = { PORT_COVER_QUERY_PROPERTIES() };
+		return s_aVarsOut;
+	}
+	override TStringArray GetVariablesOut() { return GetVarsOut(); }
 }

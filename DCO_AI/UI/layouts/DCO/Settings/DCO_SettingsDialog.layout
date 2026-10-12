@@ -1,0 +1,93 @@
+FrameWidgetClass {
+ Name "DCO_SettingsRoot"
+ {
+  ImageWidgetClass "{251D2C33339B036D}" {
+   Name "Shade"
+   Slot FrameWidgetSlot "{9EE75700E9696D2B}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 0
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 0
+    SizeY 0
+    OffsetBottom 0
+   }
+   Color 0 0 0 0.25
+  }
+  FrameWidgetClass "{FC7CBA10055A9FCE}" {
+   Name "Window"
+   Slot FrameWidgetSlot "{4CEC0E83F1468D5E}" {
+  Anchor 0.5 0.5 0.5 0.5
+  PositionX -600
+  OffsetLeft -600
+  PositionY -400
+  OffsetTop -400
+  SizeX 1200
+  OffsetRight -600
+  SizeY 800
+  OffsetBottom -400
+ }
+   {
+    ImageWidgetClass "{CB884D7CDBFF4966}" {
+     Name "WinBg"
+     Slot FrameWidgetSlot "{8BE006915835F1E3}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 0
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 0
+    SizeY 0
+    OffsetBottom 0
+   }
+     Color 0.0176 0.0222 0.0261 0.95
+    }
+    FrameWidgetClass "{44CB863F89E181E8}" {
+     Name "Dyn"
+     Slot FrameWidgetSlot "{4EB37D2EC1D1E6BC}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 0
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 0
+    SizeY 0
+    OffsetBottom 0
+   }
+    }
+    FrameWidgetClass "{080C4A88A6C2F339}" {
+     Name "Fixed"
+     Slot FrameWidgetSlot "{D9E2F5813BB2A9DE}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 0
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 0
+    SizeY 0
+    OffsetBottom 0
+   }
+    }
+   }
+  }
+  FrameWidgetClass "{011521F50C680CFB}" {
+   Name "Top"
+   Slot FrameWidgetSlot "{96B5A5E55D106BDA}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 0
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 0
+    SizeY 0
+    OffsetBottom 0
+   }
+  }
+ }
+}

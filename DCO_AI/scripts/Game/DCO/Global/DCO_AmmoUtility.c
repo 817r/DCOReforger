@@ -47,10 +47,7 @@ class DCO_AmmoUtility
 
 	protected static bool IsMagicMag(SCR_AIUtilityComponent utility)
 	{
-		if (!utility || !utility.m_DCOConfig)
-			return false;
-
-		return utility.m_DCOConfig.GetMagicMag();
+		return DCO_AIConfigComponent.MagicMagOf(utility);
 	}
 
 	protected static float GetPersonalityAmmoBias(SCR_AIUtilityComponent utility)

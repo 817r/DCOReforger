@@ -56,10 +56,7 @@ class DCO_PersonalityCombatUtility
 
 	static DCO_EAIPersonality GetPersonalitySafe(SCR_AIUtilityComponent utility)
 	{
-		if (!utility || !utility.m_DCOConfig)
-			return DCO_EAIPersonality.STANDARD;
-
-		return utility.m_DCOConfig.GetPersonality();
+		return DCO_AIConfigComponent.PersonalityOf(utility);
 	}
 
 	static float GetGrenadeThrowChance(SCR_AIUtilityComponent utility)
@@ -87,15 +84,15 @@ class DCO_PersonalityCombatUtility
 		switch (p)
 		{
 			case DCO_EAIPersonality.CAUTIOUS:
-				return 2;
-			case DCO_EAIPersonality.AGGRESSIVE:
 				return 1.2;
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 0.8;
 			case DCO_EAIPersonality.RECKLESS:
-				return 1;
+				return 0.6;
 			default:
-				return 1.7;
+				return 1.0;
 		}
-		return 1.7;
+		return 1.0;
 	}
 
 	static float GetTakeCoverChanceScale(SCR_AIUtilityComponent utility)
@@ -136,10 +133,7 @@ class DCO_PersonalityCombatUtility
 
 	protected static DCO_AISKILL GetSkillSafe(SCR_AIUtilityComponent utility)
 	{
-		if (!utility || !utility.m_DCOConfig)
-			return DCO_AISKILL.REGULAR;
-
-		return utility.m_DCOConfig.GetAISkill();
+		return DCO_AIConfigComponent.SkillOf(utility);
 	}
 
 	static float GetDisciplineBreakChanceScale(SCR_AIUtilityComponent utility)

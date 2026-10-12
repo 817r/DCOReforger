@@ -10,8 +10,6 @@ class DCO_MedicBooking
 
 class DCO_MedicDispatcher
 {
-	protected static const int RETRY_MS = 10000;
-	protected static const int MAX_RETRIES = 18;
 
 	protected static ref DCO_MedicDispatcher s_Instance;
 
@@ -20,6 +18,7 @@ class DCO_MedicDispatcher
 	protected ref map<SCR_AIGroup, int> m_mLent = new map<SCR_AIGroup, int>();
 
 	protected ref array<IEntity> m_aQuery = {};
+	protected ref map<SCR_AIGroup, bool> m_mWoundedGrp = new map<SCR_AIGroup, bool>();
 
 	static DCO_MedicDispatcher Get()
 	{
@@ -33,7 +32,7 @@ class DCO_MedicDispatcher
 		if (!casualty || !Replication.IsServer())
 			return;
 
-		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetFor(casualty);
 		if (!cfg || !cfg.GetMedicCrossGroup())
 			return;
 
@@ -41,6 +40,19 @@ class DCO_MedicDispatcher
 			return;
 
 		Get().OnWounded(casualty, unconscious, false);
+	}
+
+	static string StatusFor(IEntity casualty)
+	{
+		if (!s_Instance || !casualty)
+			return "none";
+		DCO_MedicBooking b = s_Instance.m_mBookings.Get(casualty);
+		if (!b || !b.m_Medic)
+			return "none";
+		float d = vector.Distance(b.m_Medic.GetOrigin(), casualty.GetOrigin());
+		if (d <= 3.0)
+			return "treating";
+		return "en_route";
 	}
 
 	static bool IsBooked(IEntity casualty)
@@ -57,7 +69,7 @@ class DCO_MedicDispatcher
 		if (!b || b.m_Medic != medic)
 			return;
 
-		s_Instance.Release(b, success, "selesai");
+		s_Instance.Release(b, success, "done");
 		if (!success)
 		{
 			s_Instance.Redispatch(casualty, b);
@@ -123,7 +135,7 @@ class DCO_MedicDispatcher
 
 	protected void DoTryDispatch(IEntity casualty, bool unconscious, SCR_AIGroup ownGroup, array<IEntity> exclude)
 	{
-		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetFor(casualty);
 		if (!cfg)
 			return;
 
@@ -144,8 +156,11 @@ class DCO_MedicDispatcher
 		}
 
 		m_aQuery.Clear();
+		m_mWoundedGrp.Clear();
 		DCO_Perf.Count("q:DCO_MedicDispatcher");
+		int qt = DCO_Perf.Begin();
 		GetGame().GetWorld().QueryEntitiesBySphere(pos, radius, QueryCallback, null, EQueryEntitiesFlags.DYNAMIC);
+		DCO_Perf.End("medic_query", qt);
 
 		SCR_ChimeraAIAgent best;
 		float bestDistSq = float.MAX;
@@ -154,7 +169,7 @@ class DCO_MedicDispatcher
 			if (ent == casualty || (exclude && exclude.Contains(ent)))
 				continue;
 
-			SCR_ChimeraAIAgent agent = GetAvailableMedic(ent, casFaction, ownGroup, pos);
+			SCR_ChimeraAIAgent agent = GetAvailableMedic(ent, casFaction, ownGroup, pos, false);
 			if (!agent)
 				continue;
 
@@ -164,6 +179,40 @@ class DCO_MedicDispatcher
 				bestDistSq = d;
 				best = agent;
 			}
+		}
+
+		if (!best)
+		{
+			SCR_ChimeraAIAgent bestOwn;
+			float bestOwnSq = float.MAX;
+			foreach (IEntity buddyEnt : m_aQuery)
+			{
+				if (buddyEnt == casualty || (exclude && exclude.Contains(buddyEnt)))
+					continue;
+
+				SCR_ChimeraAIAgent buddyAgent = GetAvailableMedic(buddyEnt, casFaction, ownGroup, pos, true);
+				if (!buddyAgent)
+					continue;
+
+				float bd = vector.DistanceSq(pos, buddyEnt.GetOrigin());
+				if (buddyAgent.GetParentGroup() == ownGroup)
+				{
+					if (bd < bestOwnSq)
+					{
+						bestOwnSq = bd;
+						bestOwn = buddyAgent;
+					}
+				}
+				else if (bd < bestDistSq)
+				{
+					bestDistSq = bd;
+					best = buddyAgent;
+				}
+			}
+			if (bestOwn)
+				best = bestOwn;
+			if (best)
+				DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", string.Format("medic_buddy_aid casualty=%1 helper=%2 own=%3", DCO_Log.IdUnit(casualty), DCO_Log.IdUnit(best.GetControlledEntity()), bestOwn != null));
 		}
 		m_aQuery.Clear();
 
@@ -180,14 +229,14 @@ class DCO_MedicDispatcher
 	protected void ScheduleRetry(IEntity casualty)
 	{
 		int n = m_mRetries.Get(casualty);
-		if (n >= MAX_RETRIES)
+		if (n >= 18)
 		{
 			m_mRetries.Remove(casualty);
 			return;
 		}
 
 		m_mRetries.Set(casualty, n + 1);
-		GetGame().GetCallqueue().CallLater(Retry, RETRY_MS, false, casualty);
+		GetGame().GetCallqueue().CallLater(Retry, 10000, false, casualty);
 	}
 
 	protected bool QueryCallback(IEntity e)
@@ -197,7 +246,7 @@ class DCO_MedicDispatcher
 		return true;
 	}
 
-	protected SCR_ChimeraAIAgent GetAvailableMedic(IEntity ent, Faction casFaction, SCR_AIGroup ownGroup, vector casualtyPos)
+	protected SCR_ChimeraAIAgent GetAvailableMedic(IEntity ent, Faction casFaction, SCR_AIGroup ownGroup, vector casualtyPos, bool buddy)
 	{
 		ChimeraCharacter ch = ChimeraCharacter.Cast(ent);
 		if (!ch || ch.IsInVehicle() || SCR_CharacterHelper.IsPlayer(ent) || !SCR_AIDamageHandling.IsAlive(ent))
@@ -222,25 +271,62 @@ class DCO_MedicDispatcher
 			return null;
 
 		SCR_AIInfoComponent info = agent.m_InfoComponent;
-		if (info.HasUnitState(EUnitState.UNCONSCIOUS) || !info.HasRole(EUnitRole.MEDIC) || info.GetAIState() != EUnitAIState.AVAILABLE)
+		if (info.HasUnitState(EUnitState.UNCONSCIOUS) || info.GetAIState() != EUnitAIState.AVAILABLE)
 			return null;
+		if (DCO_Util.IsBleeding(ent))
+		{
+			DCO_Perf.Count("medic:skip_bleeding_helper");
+			return null;
+		}
+		if (!buddy && !info.HasRole(EUnitRole.MEDIC))
+			return null;
+
+		SCR_AIUtilityComponent util = agent.m_UtilityComponent;
+		if (util.m_ThreatSystem && util.m_ThreatSystem.GetState() == EAIThreatState.THREATENED)
+		{
+			DCO_Perf.Count("medic:skip_threatened");
+			return null;
+		}
 
 		SCR_AIGroup grp = SCR_AIGroup.Cast(agent.GetParentGroup());
-		if (!grp || grp == ownGroup)
+		if (!grp || (grp == ownGroup && !buddy))
 			return null;
 
-		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
-		if (m_mLent.Get(grp) >= cfg.GetMedicMaxLentPerGroup())
-			return null;
+		if (grp != ownGroup)
+		{
+			DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetForFactionObj(casFaction);
+			if (m_mLent.Get(grp) >= cfg.GetMedicMaxLentPerGroup())
+				return null;
 
-		if (GroupHasWounded(grp))
+			DCO_GroupUtilityComponent lenderUtil = DCO_GroupUtilityComponent.Cast(grp.FindComponent(DCO_GroupUtilityComponent));
+			if (lenderUtil && lenderUtil.IsMoving())
+				return null;
+
+			IEntity lenderLeader = grp.GetLeaderEntity();
+			if (lenderLeader && vector.Distance(lenderLeader.GetOrigin(), casualtyPos) > 60.0)
+			{
+				DCO_Perf.Count("medic:skip_far_group");
+				return null;
+			}
+		}
+
+		if (buddy)
+		{
+			if (!DCO_Util.HasBandage(ent))
+				return null;
+		}
+		else if (!DCO_Util.IsRealMedic(ent))
+		{
+			return null;
+		}
+
+		if (grp != ownGroup && GroupHasWoundedCached(grp))
 			return null;
 
 		if (!DCO_Leash.Allows(agent.m_UtilityComponent, casualtyPos))
 			return null;
 
-		SCR_AIUtilityComponent util = agent.m_UtilityComponent;
-		if (util.m_ThreatSystem && util.m_ThreatSystem.GetState() == EAIThreatState.THREATENED)
+		if (!DCO_CtrlLock.AllowMedic(agent, casualtyPos))
 			return null;
 
 		return agent;
@@ -287,9 +373,11 @@ class DCO_MedicDispatcher
 		GetGame().GetCallqueue().CallLater(OnTimeout, GetTimeoutMs(), false, casualty, medic);
 
 		string line = string.Format("medic_dispatch casualty=%1 medic=%2 grp=%3 dist=%4 unconscious=%5 underFire=%6 player=%7",
-			casualty, medic, medicGroup, vector.Distance(casualty.GetOrigin(), medic.GetOrigin()).ToString(-1, 0), unconscious, underFire, SCR_CharacterHelper.IsPlayer(casualty));
-		Print("[DCO_Medic] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
+			DCO_Log.IdUnit(casualty), DCO_Log.IdUnit(medic), DCO_Log.IdGroup(medicGroup), vector.Distance(casualty.GetOrigin(), medic.GetOrigin()).ToString(-1, 0), unconscious, underFire, SCR_CharacterHelper.IsPlayer(casualty));
+		DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", line);
+		SCR_AIGroup casGroup = GetOwnGroup(casualty);
+		DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", string.Format("medic_job patient=%1 medic=%2 medic_grp=%3 cross_group=%4 result=assigned dist=%5 ms=0",
+			DCO_Log.IdUnit(casualty), DCO_Log.IdUnit(medic), DCO_Log.IdGroup(medicGroup), DCO_Util.B01(casGroup != medicGroup), Math.Round(vector.Distance(casualty.GetOrigin(), medic.GetOrigin()))));
 	}
 
 	protected void OnTimeout(IEntity casualty, IEntity medic)
@@ -315,10 +403,20 @@ class DCO_MedicDispatcher
 		m_mBookings.Remove(b.m_Casualty);
 
 		float secs = (GetGame().GetWorld().GetWorldTime() - b.m_fStart_ms) / 1000;
-		string line = string.Format("medic_done casualty=%1 medic=%2 success=%3 why=%4 time=%5s", b.m_Casualty, b.m_Medic, success, why, secs.ToString(-1, 0));
-		Print("[DCO_Medic] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
-
+		string line = string.Format("medic_done casualty=%1 medic=%2 success=%3 why=%4 time=%5s", DCO_Log.IdUnit(b.m_Casualty), DCO_Log.IdUnit(b.m_Medic), success, why, secs.ToString(-1, 0));
+		DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", line);
+		string jobResult = "abandoned";
+		if (success)
+			jobResult = "healed";
+		else if (!b.m_Casualty || !DCO_Util.IsAlive(b.m_Casualty))
+			jobResult = "patient_died";
+		float jobDist = -1;
+		if (b.m_Casualty && b.m_Medic)
+			jobDist = vector.Distance(b.m_Casualty.GetOrigin(), b.m_Medic.GetOrigin());
+		DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", string.Format("medic_job patient=%1 medic=%2 medic_grp=%3 cross_group=%4 result=%5 dist=%6 ms=%7 why=%8",
+			DCO_Log.IdUnit(b.m_Casualty), DCO_Log.IdUnit(b.m_Medic), DCO_Log.IdGroup(b.m_MedicGroup), DCO_Util.B01(GetOwnGroup(b.m_Casualty) != b.m_MedicGroup), jobResult, Math.Round(jobDist), Math.Round(secs * 1000.0), why));
+		if (success)
+			DCO_Battle.OnHealed(b.m_Casualty);
 		if (b.m_Casualty)
 			DCO_Logistics.NotifyStabilized(b.m_Casualty);
 	}
@@ -397,13 +495,26 @@ class DCO_MedicDispatcher
 			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
 			if (!ca || !ca.m_InfoComponent || ca.GetControlledEntity() == casualty)
 				continue;
-			if (ca.m_InfoComponent.HasUnitState(EUnitState.UNCONSCIOUS) || !ca.m_InfoComponent.HasRole(EUnitRole.MEDIC))
+			if (ca.m_InfoComponent.HasUnitState(EUnitState.UNCONSCIOUS) || !ca.m_InfoComponent.HasRole(EUnitRole.MEDIC) || !DCO_Util.IsRealMedic(ca.GetControlledEntity()))
 				continue;
 			IEntity e = ca.GetControlledEntity();
 			if (e && vector.Distance(e.GetOrigin(), casualty.GetOrigin()) <= 150.0)
 				return true;
 		}
 		return false;
+	}
+
+	protected bool GroupHasWoundedCached(SCR_AIGroup grp)
+	{
+		bool w;
+		if (m_mWoundedGrp.Find(grp, w))
+		{
+			DCO_Perf.Count("medic:grp_wounded_cache");
+			return w;
+		}
+		w = GroupHasWounded(grp);
+		m_mWoundedGrp.Set(grp, w);
+		return w;
 	}
 
 	protected bool GroupHasWounded(SCR_AIGroup grp)

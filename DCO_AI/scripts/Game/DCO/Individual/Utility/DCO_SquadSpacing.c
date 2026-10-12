@@ -1,7 +1,13 @@
 class DCO_SquadSpacing
 {
 
-	protected static ref array<AIAgent> s_aAgents = {};
+	protected static ref array<AIAgent> s_aAgents;
+	protected static array<AIAgent> GetAgentsStore()
+	{
+		if (!s_aAgents)
+			s_aAgents = {};
+		return s_aAgents;
+	}
 
 	static void CollectMatePositions(AIAgent owner, notnull array<vector> outPositions)
 	{
@@ -10,9 +16,10 @@ class DCO_SquadSpacing
 		if (!group)
 			return;
 
-		s_aAgents.Clear();
+		GetAgentsStore().Clear();
+		GetAgentsStore();
 		group.GetAgents(s_aAgents);
-		foreach (AIAgent mate : s_aAgents)
+		foreach (AIAgent mate : GetAgentsStore())
 		{
 			if (!mate || mate == owner)
 				continue;

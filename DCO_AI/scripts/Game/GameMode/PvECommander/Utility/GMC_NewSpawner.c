@@ -5,28 +5,28 @@ class SCR_PlayerScaledGroupSpawnerClass : ScriptComponentClass
 
 class SCR_PlayerScaledGroupSpawner : ScriptComponent
 {
-    [Attribute("", UIWidgets.ResourceAssignArray, desc: "Daftar Config/Prefab Group yang mau di-spawn", params: "et")]
+    [Attribute("", UIWidgets.ResourceAssignArray, desc: "List of group configs/prefabs to spawn.", params: "et")]
     ref array<ResourceName> m_aGroupPrefabs;
 
-    [Attribute("10", UIWidgets.EditBox, desc: "Jeda waktu ngecek & spawn (dalam detik)")]
+    [Attribute("10", UIWidgets.EditBox, desc: "Check and spawn interval (s).")]
     float m_fSpawnInterval;
 
-    [Attribute("2", UIWidgets.EditBox, desc: "Minimal Group (Batas Bawah)")]
+    [Attribute("2", UIWidgets.EditBox, desc: "Minimum groups (lower limit).")]
     int m_iMinGroups;
 
-    [Attribute("15", UIWidgets.EditBox, desc: "Maksimal Group (Batas Atas)")]
+    [Attribute("15", UIWidgets.EditBox, desc: "Maximum groups (upper limit).")]
     int m_iMaxGroups;
 
-    [Attribute("1.0", UIWidgets.EditBox, desc: "Multiplier: Pengali jumlah grup per 1 player")]
+    [Attribute("1.0", UIWidgets.EditBox, desc: "Multiplier: groups per player.")]
     float m_fGroupsPerPlayer;
 
-    [Attribute("5.0", UIWidgets.EditBox, desc: "Radius Spawn di dekat point")]
+    [Attribute("5.0", UIWidgets.EditBox, desc: "Spawn radius around the point.")]
     float m_fSpawnRadius;
 
-    [Attribute("300.0", UIWidgets.EditBox, desc: "Safe Radius: Jarak minimal player agar tidak terjadi spawn (meter)")]
+    [Attribute("300.0", UIWidgets.EditBox, desc: "Safe radius: minimum player distance (m) that prevents spawning.")]
     float m_fSafeRadius;
 
-    [Attribute("false", UIWidgets.CheckBox, desc: "Invert Scaling? (Centang = Makin banyak player, makin dikit grup AI)")]
+    [Attribute("false", UIWidgets.CheckBox, desc: "Invert scaling? (Checked = more players, fewer AI groups.)")]
     bool m_bInvertScaling;
 
     protected ref array<IEntity> m_aSpawnedGroups = {};

@@ -14,7 +14,7 @@ modded class SCR_AIWeaponHandling
 		if (!ownerEntity)
 			return;
 
-		DCO_AIConfigComponent conf;
+		bool magic;
 		SCR_InventoryStorageManagerComponent inv;
 
 		SCR_AICombatComponent comb = SCR_AICombatComponent.Cast(ownerEntity.FindComponent(SCR_AICombatComponent));
@@ -23,14 +23,14 @@ modded class SCR_AIWeaponHandling
 			SCR_AIUtilityComponent utils = comb.GetUtilityComponent();
 			if (utils)
 			{
-				conf = utils.m_DCOConfig;
+				magic = DCO_AIConfigComponent.MagicMagOf(utils);
 
 				if (utils.m_AIInfo)
 					inv = utils.m_AIInfo.GetInventoryStorageManager();
 			}
 		}
 
-		if (!conf || !conf.GetMagicMag() || !inv)
+		if (!magic || !inv)
 			return;
 
 		IEntity magEntity = newMagazineComp.GetOwner();

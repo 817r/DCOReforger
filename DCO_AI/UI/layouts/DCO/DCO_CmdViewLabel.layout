@@ -1,0 +1,11 @@
+RichTextWidgetClass {
+ Name "Label"
+ "Ignore Cursor" 1
+ Color 1 1 1 1
+ Text ""
+ "Font Size" 18
+ "Min Font Size" 18
+ FontProperties FontProperties "{9C41E7A25B0D3F68}" {
+  Font "{3E7733BAC8C831F6}UI/Fonts/RobotoCondensed/RobotoCondensed_Regular.fnt"
+ }
+}

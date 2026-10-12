@@ -19,15 +19,30 @@ class DCO_AimUtility
 	{
 		switch (skill)
 		{
-			case DCO_AISKILL.NOOB:        return 3;
-			case DCO_AISKILL.ROOKIE:      return 2.2;
-			case DCO_AISKILL.REGULAR:     return 1.7;
-			case DCO_AISKILL.VETERAN:     return 1.3;
-			case DCO_AISKILL.EXPERT:      return 0.65;
-			case DCO_AISKILL.SPECIAL_OPS: return 0.2;
-			case DCO_AISKILL.TERMINATOR:  return 0;
+			case DCO_AISKILL.NOOB:        return 2.2;
+			case DCO_AISKILL.ROOKIE:      return 1.5;
+			case DCO_AISKILL.REGULAR:     return 1.0;
+			case DCO_AISKILL.VETERAN:     return 0.85;
+			case DCO_AISKILL.EXPERT:      return 0.7;
+			case DCO_AISKILL.SPECIAL_OPS: return 0.6;
+			case DCO_AISKILL.TERMINATOR:  return 0.5;
 		}
-		return 1.7;
+		return 1.0;
+	}
+
+	static float SettleMul(DCO_AISKILL skill)
+	{
+		switch (skill)
+		{
+			case DCO_AISKILL.NOOB:        return 1.5;
+			case DCO_AISKILL.ROOKIE:      return 1.25;
+			case DCO_AISKILL.REGULAR:     return 1.0;
+			case DCO_AISKILL.VETERAN:     return 0.9;
+			case DCO_AISKILL.EXPERT:      return 0.8;
+			case DCO_AISKILL.SPECIAL_OPS: return 0.75;
+			case DCO_AISKILL.TERMINATOR:  return 0.7;
+		}
+		return 1.0;
 	}
 
 	static float GetSightMagnification(SCR_AICombatComponent combat)
@@ -46,17 +61,17 @@ class DCO_AimUtility
 		return Math.Max(1, zoom.GetCurrentZoom());
 	}
 
-	static vector ScatterExplosive(SCR_AIUtilityComponent utility, vector targetPos, bool grenadeLauncher)
+	static vector ScatterExplosive(SCR_AIUtilityComponent utility, vector targetPos, bool grenadeLauncher, float extraMul = 1.0, float minSigma = 0)
 	{
-		if (!utility || !utility.m_OwnerEntity || !utility.m_DCOConfig)
+		if (!utility || !utility.m_OwnerEntity)
 			return targetPos;
 
 		float ratio = 0.08;
-		float accuracy = utility.m_DCOConfig.GetAccuracy();
+		float accuracy = DCO_AIConfigComponent.AccuracyOf(utility) * 3.6;
 		if (grenadeLauncher)
 		{
 			ratio = 0.035;
-			accuracy = utility.m_DCOConfig.GetGLAccuracy();
+			accuracy = DCO_AIConfigComponent.GLAccuracyOf(utility);
 		}
 
 		if (accuracy <= 0)
@@ -64,13 +79,13 @@ class DCO_AimUtility
 
 		IEntity self = utility.m_OwnerEntity;
 		float sigma = vector.DistanceXZ(self.GetOrigin(), targetPos) * ratio
-			* SkillSigma(utility.m_DCOConfig.GetAISkill()) / (1.7 * accuracy);
+			* SkillSigma(DCO_AIConfigComponent.SkillOf(utility)) / accuracy;
 
 		if (utility.m_ThreatSystem)
-			sigma *= Math.Lerp(1.0, 1.85, Math.Clamp(utility.m_ThreatSystem.GetSuppressionMeasure(), 0, 1));
+			sigma *= Math.Lerp(1.0, 2.3, Math.Clamp(utility.m_ThreatSystem.GetSuppressionMeasure(), 0, 1));
 
 		if (utility.m_CombatComponent)
-			sigma *= Math.Clamp(utility.m_CombatComponent.GetCurrentAimImprovement(), 0.5, 1.0);
+			sigma *= Math.Clamp(utility.m_CombatComponent.GetCurrentAimImprovement() / 2.5, 0.5, 1.0);
 
 		ChimeraCharacter character = ChimeraCharacter.Cast(self);
 		if (character && character.GetCharacterController())
@@ -82,6 +97,7 @@ class DCO_AimUtility
 				sigma *= 0.85;
 		}
 
+		sigma = Math.Max(sigma * extraMul, minSigma);
 		if (sigma <= 0)
 			return targetPos;
 

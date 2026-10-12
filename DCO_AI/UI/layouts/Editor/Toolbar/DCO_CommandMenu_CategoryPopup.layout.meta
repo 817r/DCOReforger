@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{8C2E5A7D1B4F9040}UI/layouts/Editor/Toolbar/DCO_CommandMenu_CategoryPopup.layout"
+ Configurations {
+  LayoutResourceClass PC {
+  }
+  LayoutResourceClass XBOX_ONE : PC {
+  }
+  LayoutResourceClass XBOX_SERIES : PC {
+  }
+  LayoutResourceClass PS4 : PC {
+  }
+  LayoutResourceClass PS5 : PC {
+  }
+  LayoutResourceClass HEADLESS : PC {
+  }
+ }
+}

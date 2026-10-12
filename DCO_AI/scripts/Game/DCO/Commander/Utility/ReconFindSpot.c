@@ -1,11 +1,11 @@
 class CMD_ReconSpotFinder
 {
-	static float EYE_HEIGHT               = 1.6;
-	static float WEIGHT_LOS               = 0.55;
-	static float WEIGHT_ELEVATION         = 0.30;
-	static float WEIGHT_NEAR_SIDE         = 0.15;
-	static float OPTIMAL_HEIGHT_ADVANTAGE = 15.0;
-	static float ARC_HALF_DEG             = 75.0;
+	static float EYE_HEIGHT() { return 1.6; }
+	static float WEIGHT_LOS() { return 0.55; }
+	static float WEIGHT_ELEVATION() { return 0.30; }
+	static float WEIGHT_NEAR_SIDE() { return 0.15; }
+	static float OPTIMAL_HEIGHT_ADVANTAGE() { return 15.0; }
+	static float ARC_HALF_DEG() { return 75.0; }
 
 	static vector FindBestReconSpot(
 		vector observerBase,
@@ -32,7 +32,7 @@ class CMD_ReconSpotFinder
 
 		vector bestPos   = vector.Zero;
 		float  bestScore = -1.0;
-		float  arcHalf   = ARC_HALF_DEG * Math.DEG2RAD;
+		float  arcHalf   = ARC_HALF_DEG() * Math.DEG2RAD;
 
 		for (int i = 0; i < candidateCount; i++)
 		{
@@ -53,9 +53,9 @@ class CMD_ReconSpotFinder
 
 			float nearSide = 1.0 - Math.AbsFloat(ang - baseAngle) / arcHalf;
 
-			float score = (ScoreLOS(candidate, targetPos) * WEIGHT_LOS)
-				+ (ScoreElevation(candidate, targetPos) * WEIGHT_ELEVATION)
-				+ (Math.Clamp(nearSide, 0, 1) * WEIGHT_NEAR_SIDE);
+			float score = (ScoreLOS(candidate, targetPos) * WEIGHT_LOS())
+				+ (ScoreElevation(candidate, targetPos) * WEIGHT_ELEVATION())
+				+ (Math.Clamp(nearSide, 0, 1) * WEIGHT_NEAR_SIDE());
 
 			if (score > bestScore)
 			{
@@ -73,18 +73,13 @@ class CMD_ReconSpotFinder
 		if (heightDiff <= 0.0)
 			return 0.0;
 
-		return Math.Clamp(heightDiff / OPTIMAL_HEIGHT_ADVANTAGE, 0.0, 1.0);
+		return Math.Clamp(heightDiff / OPTIMAL_HEIGHT_ADVANTAGE(), 0.0, 1.0);
 	}
 
 	protected static float ScoreLOS(vector candidatePos, vector targetPos)
 	{
-		TraceParam trace = new TraceParam();
-		trace.Start = Vector(candidatePos[0], candidatePos[1] + EYE_HEIGHT, candidatePos[2]);
-		trace.End   = Vector(targetPos[0], targetPos[1] + 1.5, targetPos[2]);
-		trace.Flags = TraceFlags.WORLD | TraceFlags.ENTS;
-
-		DCO_Perf.Count("t:ReconFindSpot");
-		float hitFraction = GetGame().GetWorld().TraceMove(trace, null);
+		float hitFraction = DCO_Util.TraceFrac(Vector(candidatePos[0], candidatePos[1] + EYE_HEIGHT(), candidatePos[2]), Vector(targetPos[0], targetPos[1] + 1.5, targetPos[2]),
+			null, TraceFlags.WORLD | TraceFlags.ENTS, -1, "t:ReconFindSpot");
 
 		return Math.Clamp((hitFraction - 0.5) / 0.4, 0.0, 1.0);
 	}

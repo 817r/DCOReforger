@@ -14,26 +14,26 @@ class DCO_GroupConfigComponent : ScriptComponent
 	[Attribute("1", UIWidgets.Auto, "What is the Multiplier of Cohession Distance", category: "Group Cohession", params: "0.01 5 0.01")]
 	protected float m_fCohessionDistanceMult;
 
-	[Attribute("2500", UIWidgets.Slider, "Jarak maksimum (meter) squad nembak target infanteri.", category: "Engagement", params: "0 2500 10")]
+	[Attribute("2500", UIWidgets.Slider, "Maximum distance (m) at which the squad fires at infantry targets.", category: "Engagement", params: "0 2500 10")]
 	protected float m_fEngagementDistanceInfantry;
 
-	[Attribute("800", UIWidgets.Slider, "Jarak maksimum (meter) squad nembak target kendaraan.", category: "Engagement", params: "0 2500 10")]
+	[Attribute("800", UIWidgets.Slider, "Maximum distance (m) at which the squad fires at vehicle targets.", category: "Engagement", params: "0 2500 10")]
 	protected float m_fEngagementDistanceVehicle;
 
-	[Attribute("-1", UIWidgets.Slider, "Jarak maksimum (meter) squad investigasi kontak gak jelas. -1 = ikut global.", category: "Investigate", params: "-1 1500 10")]
+	[Attribute("-1", UIWidgets.Slider, "Maximum distance (m) at which the squad investigates unclear contacts. -1 = use global.", category: "Investigate", params: "-1 1500 10")]
 	protected float m_fInvestigateMaxDist;
 
-	[Attribute("-1", UIWidgets.Slider, "Peluang squad investigasi kontak gak jelas (di-roll sekali per kontak). -1 = ikut global.", category: "Investigate", params: "-1 1 0.05")]
+	[Attribute("-1", UIWidgets.Slider, "Chance the squad investigates an unclear contact (rolled once per contact). -1 = use global.", category: "Investigate", params: "-1 1 0.05")]
 	protected float m_fInvestigateChance;
 
-	[Attribute("-1", UIWidgets.ComboBox, "Preferensi posisi defend / idle squad ini. Ikut global = setting DCO Global Combat.", category: "Cover", enums: { ParamEnum("Follow global", "-1"), ParamEnum("Balanced", "0"), ParamEnum("Indoor", "1"), ParamEnum("Outdoor", "2") })]
+	[Attribute("-1", UIWidgets.ComboBox, "Defend and idle position preference for this squad. Follow global = DCO Global Combat setting.", category: "Cover", enums: { ParamEnum("Follow global", "-1"), ParamEnum("Balanced", "0"), ParamEnum("Indoor", "1"), ParamEnum("Outdoor", "2") })]
 	protected int m_iCoverPreference;
 
 	int GetCoverPreference()
 	{
 		if (m_iCoverPreference >= 0)
 			return m_iCoverPreference;
-		DCO_GlobalAIComponent global = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent global = DCO_GlobalAIComponent.GetFor(GetOwner());
 		if (global)
 			return global.GetCoverPreference();
 		return 0;
@@ -57,6 +57,11 @@ class DCO_GroupConfigComponent : ScriptComponent
 		return m_fCohessionDistance * m_fCohessionDistanceMult;
 	}
 
+	float GetCohesionMult()
+	{
+		return m_fCohessionDistanceMult;
+	}
+
 	float GetEngagementDistanceInfantry()
 	{
 		return Math.Clamp(m_fEngagementDistanceInfantry, 0, 2500.0);
@@ -78,7 +83,7 @@ class DCO_GroupConfigComponent : ScriptComponent
 		if (m_fInvestigateMaxDist >= 0)
 			return m_fInvestigateMaxDist;
 
-		DCO_GlobalAIComponent global = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent global = DCO_GlobalAIComponent.GetFor(GetOwner());
 		if (global)
 			return global.GetInvestigateMaxDist();
 
@@ -90,7 +95,7 @@ class DCO_GroupConfigComponent : ScriptComponent
 		if (m_fInvestigateChance >= 0)
 			return m_fInvestigateChance;
 
-		DCO_GlobalAIComponent global = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent global = DCO_GlobalAIComponent.GetFor(GetOwner());
 		if (global)
 			return global.GetInvestigateChance();
 

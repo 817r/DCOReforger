@@ -1,0 +1,15 @@
+BehaviorTree "{73A7ACE4A65F595D}AI/BehaviorTrees/Chimera/Soldier/DCO_Relocate.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_Relocate.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    DCO_AIRelocateStep "DCO_AI Relocate Step" {
+     Name "DCO_AI Relocate Step"
+     EditorPos 0 -100
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,150 @@
+ButtonWidgetClass {
+ Name "Cell"
+ Slot FrameWidgetSlot "{32421CCAEAC5994D}" {
+  Anchor 0 0 0 0
+  PositionX 0
+  OffsetLeft 0
+  PositionY 0
+  OffsetTop 0
+  SizeX 100
+  OffsetRight -100
+  SizeY 26
+  OffsetBottom -26
+ }
+ style blank
+ {
+  FrameWidgetClass "{C889DE718C9F2766}" {
+   Name "Inner"
+   Slot ButtonWidgetSlot "{6918791CFE1C4C14}" {
+    HorizontalAlign 3
+    VerticalAlign 3
+   }
+   {
+   ImageWidgetClass "{99E41FE839321C4A}" {
+    Name "Bg"
+    Slot FrameWidgetSlot "{705DD490F9517D8B}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 0
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 0
+    SizeY 0
+    OffsetBottom 0
+   }
+    Color 0.0168 0.0194 0.0222 1
+   }
+   ImageWidgetClass "{592CC93D84A21D3F}" {
+    Name "Icon"
+    Slot FrameWidgetSlot "{9F1CC710BA6B4293}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 3
+    PositionY 0
+    OffsetTop 3
+    SizeX 0
+    OffsetRight 3
+    SizeY 0
+    OffsetBottom 3
+   }
+    Color 1 1 1 1
+   }
+   RichTextWidgetClass "{A8A8D9137BE22DD7}" {
+    Name "Text"
+    Slot FrameWidgetSlot "{9B3E9915DD8B989A}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 6
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 6
+    SizeY 0
+    OffsetBottom 0
+   }
+    Clipping Ancestor
+    Color 0.7106 0.7106 0.7106 1
+    Text ""
+    "Font Size" 16
+    "Min Font Size" 9
+    "Vertical Alignment" Center
+    FontProperties FontProperties "{3675FA47A07762CB}" {
+     Font "{3E7733BAC8C831F6}UI/Fonts/RobotoCondensed/RobotoCondensed_Regular.fnt"
+    }
+   }
+   RichTextWidgetClass "{EC31D318D46F5088}" {
+    Name "TextB"
+    Slot FrameWidgetSlot "{F1549FBE916F150C}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 6
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 6
+    SizeY 0
+    OffsetBottom 0
+   }
+    Clipping Ancestor
+    Color 0.7106 0.7106 0.7106 1
+    Text ""
+    "Font Size" 16
+    "Min Font Size" 9
+    "Vertical Alignment" Center
+    FontProperties FontProperties "{853C70F9E74017A1}" {
+     Font "{EABA4FE9D014CCEF}UI/Fonts/RobotoCondensed/RobotoCondensed_Bold.fnt"
+    }
+   }
+   RichTextWidgetClass "{AD8D8B83D70A932D}" {
+    Name "TextC"
+    Slot FrameWidgetSlot "{EF3BA3D60282D134}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 3
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 3
+    SizeY 0
+    OffsetBottom 0
+   }
+    Clipping Ancestor
+    Color 0.7106 0.7106 0.7106 1
+    Text ""
+    "Font Size" 16
+    "Min Font Size" 9
+    "Horizontal Alignment" Center
+    "Vertical Alignment" Center
+    FontProperties FontProperties "{E2D2F645DA45E9F0}" {
+     Font "{3E7733BAC8C831F6}UI/Fonts/RobotoCondensed/RobotoCondensed_Regular.fnt"
+    }
+   }
+   RichTextWidgetClass "{B0E5543FE9A1A231}" {
+    Name "TextCB"
+    Slot FrameWidgetSlot "{5E7D6530EED27BB4}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 3
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 3
+    SizeY 0
+    OffsetBottom 0
+   }
+    Clipping Ancestor
+    Color 0.7106 0.7106 0.7106 1
+    Text ""
+    "Font Size" 16
+    "Min Font Size" 9
+    "Horizontal Alignment" Center
+    "Vertical Alignment" Center
+    FontProperties FontProperties "{8FE21C2B65A176AC}" {
+     Font "{EABA4FE9D014CCEF}UI/Fonts/RobotoCondensed/RobotoCondensed_Bold.fnt"
+    }
+   }
+   }
+  }
+ }
+}

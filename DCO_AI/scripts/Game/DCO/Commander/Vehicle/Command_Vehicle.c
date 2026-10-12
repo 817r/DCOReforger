@@ -32,6 +32,40 @@ class CMD_VehicleFinder
 		return bestVehicle;
 	}
 
+	static string BlockReason(IEntity vehicle, DCO_GroupUtilityComponent requestingGroup)
+	{
+		if (!vehicle || !requestingGroup)
+			return "";
+		SCR_AIGroup grp = SCR_AIGroup.Cast(requestingGroup.GetOwner());
+		Faction mine;
+		if (grp)
+			mine = grp.GetFaction();
+		if (!mine)
+			return "";
+		SCR_Faction scrMine = SCR_Faction.Cast(mine);
+		FactionAffiliationComponent vfac = FactionAffiliationComponent.Cast(vehicle.FindComponent(FactionAffiliationComponent));
+		if (vfac)
+		{
+			Faction vf = vfac.GetAffiliatedFaction();
+			if (vf && vf != mine && (!scrMine || !scrMine.IsFactionFriendly(vf)))
+				return "hostile";
+		}
+		SCR_BaseCompartmentManagerComponent compMgr = SCR_BaseCompartmentManagerComponent.Cast(vehicle.FindComponent(SCR_BaseCompartmentManagerComponent));
+		if (!compMgr)
+			return "";
+		array<BaseCompartmentSlot> slots = {};
+		compMgr.GetCompartments(slots);
+		foreach (BaseCompartmentSlot slot : slots)
+		{
+			if (!slot || !slot.GetOccupant())
+				continue;
+			FactionAffiliationComponent ofac = FactionAffiliationComponent.Cast(slot.GetOccupant().FindComponent(FactionAffiliationComponent));
+			if (ofac && ofac.GetAffiliatedFaction() && ofac.GetAffiliatedFaction() != mine)
+				return "occupied";
+		}
+		return "";
+	}
+
 	static bool IsVehicleOwnedByOther(IEntity vehicle, DCO_GroupUtilityComponent requestingGroup)
 	{
 		DCO_TransportMissionComponent mission =

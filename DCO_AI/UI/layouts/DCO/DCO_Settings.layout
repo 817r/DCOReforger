@@ -209,6 +209,333 @@ HorizontalLayoutWidgetClass {
         }
        }
       }
+      VerticalLayoutWidgetClass "{829970E2A15C1036}" : "{FEEEB639F2735BA1}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsTitle.layout" {
+       Name "TitleOffer"
+       Slot LayoutSlot "{CA287D152AA94E2E}" {
+       }
+       components {
+        SCR_LabelComponent "{58B30C1A8E56F0FF}" {
+         m_sLabel "Commander Offer Card"
+        }
+       }
+      }
+      ButtonWidgetClass "{864A023EF117C318}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "OfferSize"
+       Slot LayoutSlot "{F95DCD6722B53AD2}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Size"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1%"
+         m_bRoundValue 1
+        }
+       }
+      }
+      ButtonWidgetClass "{D9BF61ADB3A89730}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "OfferPos"
+       Slot LayoutSlot "{5CC4F9A252A15AB1}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Position"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Top left" "Top" "Top right" "Left" "Center" "Right" "Bottom left" "Bottom" "Bottom right"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{8391FC1D8A9C53CF}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "OfferOffX"
+       Slot LayoutSlot "{AB6CD4F42DA376E3}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Distance from side edge"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1 px"
+         m_bRoundValue 1
+        }
+       }
+      }
+      ButtonWidgetClass "{0B199E4D13C83DD4}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "OfferOffY"
+       Slot LayoutSlot "{809563E15A1972C8}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Distance from top / bottom edge"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1 px"
+         m_bRoundValue 1
+        }
+       }
+      }
+      ButtonWidgetClass "{2BB9CFDD64F26776}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "OfferSound"
+       Slot LayoutSlot "{1773039E9026DB76}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Sound"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "No" "Yes"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{3AF9C4224E2A1770}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "OfferMarker"
+       Slot LayoutSlot "{157A5689E684DD27}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Map marker"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "No" "Yes"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      VerticalLayoutWidgetClass "{218D3A90749125BD}" : "{FEEEB639F2735BA1}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsTitle.layout" {
+       Name "TitleBrief"
+       Slot LayoutSlot "{D94189DAF01AEC62}" {
+       }
+       components {
+        SCR_LabelComponent "{58B30C1A8E56F0FF}" {
+         m_sLabel "Commander Briefings"
+        }
+       }
+      }
+      ButtonWidgetClass "{7E59C383CB8E6784}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefLevel"
+       Slot LayoutSlot "{498618BEC9696039}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Level"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Hardcore" "Standard" "Assisted" "Custom"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{05A041DACD6E827C}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefShow"
+       Slot LayoutSlot "{77CD07F3D93EC937}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Show orders as"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Off" "Radio subtitles" "Contextual tab" "Orders card"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{4B3512FA3038003C}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefDetail"
+       Slot LayoutSlot "{251FC343B7554A9A}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Detail"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Auto (by role)" "One line" "Full"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{158BCD6F9CCB0144}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefMarkers"
+       Slot LayoutSlot "{04E36E5EA8EC60C4}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Markers in the world"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Off" "Your destination" "All control measures"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{3E2FAE73446EAA04}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefMap"
+       Slot LayoutSlot "{D6211A67D9BDB059}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Draw on the map"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Off" "Your group" "All groups"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{3C6FF2B7B0BA0548}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefMore"
+       Slot LayoutSlot "{52C228271801FB64}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "More options"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Hidden" "Shown"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{F90C22659B4EF882}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefAuto"
+       Slot LayoutSlot "{04887D25A4598DA5}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Open orders automatically"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Never" "New orders" "New orders, FRAGO, withdraw"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{9F09462C95DA3859}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefFight"
+       Slot LayoutSlot "{66D7DDBC5BECFCBD}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "During firefights"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Hide" "Dim" "Keep"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{A9456B13236762C5}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefSize"
+       Slot LayoutSlot "{ED0F9EEA60B42FA7}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Marker size"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Small" "Medium"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{2B25E79F67A05EA8}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefStyle"
+       Slot LayoutSlot "{F5D07F8A32643763}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Map style"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Plain arrows" "Tactical graphics"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{9FC084046904403A}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefNote"
+       Slot LayoutSlot "{543CD07E14257518}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Orders note on the map"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Off" "On"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      ButtonWidgetClass "{AC4B8992EAC6E1EC}" : "{C9DF0E6590F6C388}UI/layouts/WidgetLibrary/SpinBox/WLib_SpinBox.layout" {
+       Name "BriefSound"
+       Slot LayoutSlot "{3B7D6A25A4F5F6FE}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SpinBoxComponent "{5472C6CBC0640458}" {
+         m_sLabel "Radio sound on new orders"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_aElementNames {
+          "Off" "On"
+         }
+         m_bUseLightArrows 1
+         m_bCycleMode 1
+        }
+       }
+      }
+      VerticalLayoutWidgetClass "{EB53B5BA5939A294}" : "{FEEEB639F2735BA1}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsTitle.layout" {
+       Name "TitleBriefNote"
+       Slot LayoutSlot "{1DD233E9B996222A}" {
+       }
+       components {
+        SCR_LabelComponent "{58B30C1A8E56F0FF}" {
+         m_sLabel "Withdraw and abort always show, even when During firefights is Hide"
+        }
+       }
+      }
       VerticalLayoutWidgetClass "{422B1E8EBA78B609}" : "{FEEEB639F2735BA1}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsTitle.layout" {
        Name "TitleMap"
        Slot LayoutSlot "{C9CD5F72528FE96A}" {

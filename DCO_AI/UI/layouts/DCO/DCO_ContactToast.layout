@@ -43,7 +43,7 @@ FrameWidgetClass {
       SizeY 34
       OffsetBottom -34
      }
-     Color 0.353 0.667 0.941 1
+     Color 0.1023 0.4024 0.871 1
     }
     RichTextWidgetClass "{6D3A1F0B9C27E458}" {
      Name "Text"

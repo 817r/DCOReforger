@@ -15,7 +15,10 @@ enum DCO_GroupTactics
 	DEFENSIVE,
 	BALANCE,
 	AGGRESIVE,
-	EVASIVE
+	EVASIVE,
+	DELAY,
+	AMBUSH,
+	SNEAK
 }
 
 modded enum EAIDangerEventType

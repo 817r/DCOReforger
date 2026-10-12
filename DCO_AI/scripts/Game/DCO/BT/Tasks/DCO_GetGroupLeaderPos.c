@@ -4,13 +4,16 @@ class SCR_AIGetPositionAndRotationLeader: AITaskScripted
 
     static override bool VisibleInPalette() {return true;}
 
-	protected static ref TStringArray s_aVarsOut = {
-		"Position",
-		"Rotation"
-	};
+	protected static ref TStringArray s_aVarsOut;
+	protected static TStringArray GetVarsOut()
+	{
+		if (!s_aVarsOut)
+			s_aVarsOut = { "Position", "Rotation" };
+		return s_aVarsOut;
+	}
     override array<string> GetVariablesOut()
     {
-        return s_aVarsOut;
+        return GetVarsOut();
     }
 
 	override void OnInit(AIAgent owner)

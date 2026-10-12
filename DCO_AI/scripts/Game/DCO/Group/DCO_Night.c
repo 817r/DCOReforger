@@ -1,32 +1,32 @@
 class DCO_Night
 {
-	static const float CONTACT_FRESH_S = 15;
 
-	protected static float s_fNightChecked_ms = -1;
-	protected static bool s_bNight;
-	protected static ref array<vector> s_aFlarePos = {};
-	protected static ref array<float> s_aFlareTime = {};
-	protected static ref array<IEntity> s_aItems = {};
-
-	static bool IsNight()
+	protected static ref array<vector> s_aFlarePos;
+	protected static array<vector> GetFlarePos()
 	{
-		BaseWorld world = GetGame().GetWorld();
-		if (!world)
-			return false;
-
-		float now = world.GetWorldTime();
-		if (s_fNightChecked_ms < 0 || now - s_fNightChecked_ms > 10000.0 || now < s_fNightChecked_ms)
-		{
-			s_fNightChecked_ms = now;
-			s_bNight = CMD_ThreatResponseComponent.IsNight();
-		}
-		return s_bNight;
+		if (!s_aFlarePos)
+			s_aFlarePos = {};
+		return s_aFlarePos;
+	}
+	protected static ref array<float> s_aFlareTime;
+	protected static array<float> GetFlareTime()
+	{
+		if (!s_aFlareTime)
+			s_aFlareTime = {};
+		return s_aFlareTime;
+	}
+	protected static ref array<IEntity> s_aItems;
+	protected static array<IEntity> GetItemsStore()
+	{
+		if (!s_aItems)
+			s_aItems = {};
+		return s_aItems;
 	}
 
 	static bool IsActive()
 	{
 		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
-		return cfg && cfg.GetNightEnabled() && IsNight();
+		return cfg && cfg.GetNightEnabled() && DCO_Util.IsNight();
 	}
 
 	static float EngageMultiplier()
@@ -36,18 +36,18 @@ class DCO_Night
 		return DCO_GlobalAIComponent.GetInstance().GetNightEngageMul();
 	}
 
-	static bool FlareNear(vector pos, float now_ms)
+	static bool FlareNear(vector pos, float now_ms, float radius = 150.0)
 	{
-		float radiusSq = 150.0 * 150.0;
-		for (int i = s_aFlarePos.Count() - 1; i >= 0; i--)
+		float radiusSq = radius * radius;
+		for (int i = GetFlarePos().Count() - 1; i >= 0; i--)
 		{
-			if (now_ms - s_aFlareTime[i] > 40000.0 || now_ms < s_aFlareTime[i])
+			if (now_ms - GetFlareTime()[i] > 40000.0 || now_ms < GetFlareTime()[i])
 			{
-				s_aFlarePos.Remove(i);
-				s_aFlareTime.Remove(i);
+				GetFlarePos().Remove(i);
+				GetFlareTime().Remove(i);
 				continue;
 			}
-			if (vector.DistanceSqXZ(s_aFlarePos[i], pos) <= radiusSq)
+			if (vector.DistanceSqXZ(GetFlarePos()[i], pos) <= radiusSq)
 				return true;
 		}
 		return false;
@@ -73,28 +73,28 @@ class DCO_Night
 			ChimeraCharacter ch = ChimeraCharacter.Cast(a.GetControlledEntity());
 			if (!ch || ch.IsInVehicle())
 				continue;
-			CharacterControllerComponent ctrl = ch.GetCharacterController();
-			if (!ctrl || ctrl.GetLifeState() != ECharacterLifeState.ALIVE)
+			if (!DCO_Util.IsAlive(ch))
 				continue;
 
 			SCR_InventoryStorageManagerComponent inv = SCR_InventoryStorageManagerComponent.Cast(ch.FindComponent(SCR_InventoryStorageManagerComponent));
 			if (!inv)
 				continue;
 
-			s_aItems.Clear();
+			GetItemsStore().Clear();
+			GetItemsStore();
 			inv.GetItems(s_aItems);
-			foreach (IEntity item : s_aItems)
+			foreach (IEntity item : GetItemsStore())
 			{
 				if (IsFlareItem(item))
 				{
 					outAgent = a;
 					outItem = item;
-					s_aItems.Clear();
+					GetItemsStore().Clear();
 					return true;
 				}
 			}
 		}
-		s_aItems.Clear();
+		GetItemsStore().Clear();
 		return false;
 	}
 
@@ -130,12 +130,13 @@ class DCO_Night
 		params.TransformMode = ETransformMode.WORLD;
 		Math3D.MatrixIdentity4(params.Transform);
 		params.Transform[3] = burst;
+		DCO_Perf.Count("sp:flare");
 		GetGame().SpawnEntityPrefab(res, GetGame().GetWorld(), params);
 
-		s_aFlarePos.Insert(clusterPos);
-		s_aFlareTime.Insert(now_ms);
+		GetFlarePos().Insert(clusterPos);
+		GetFlareTime().Insert(now_ms);
 
-		DCO_BenchmarkLoggerComponent.Event(string.Format("night_flare grp=%1 shooter=%2 type=%3 dist=%4",
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("night_flare grp=%1 shooter=%2 type=%3 dist=%4",
 			shooter.GetParentGroup(), ent, type, Math.Round(dist)));
 		return true;
 	}
@@ -160,7 +161,7 @@ class DCO_Night
 
 	static void ApplyLights(notnull SCR_AIGroup grp, bool stealth, DCO_CQBClear cqb)
 	{
-		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetFor(grp);
 		if (!cfg || !cfg.GetNightLightDiscipline())
 			return;
 
@@ -190,12 +191,18 @@ class DCO_Night
 				string state = "off";
 				if (want)
 					state = "on";
-				DCO_BenchmarkLoggerComponent.Event(string.Format("light_%1 grp=%2 unit=%3 cqb=1", state, grp, ent));
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("light_%1 grp=%2 unit=%3 cqb=1", state, grp, ent));
 			}
 		}
 	}
 
-	protected static ref map<IEntity, float> s_mHeadlightsOff = new map<IEntity, float>();
+	protected static ref map<IEntity, float> s_mHeadlightsOff;
+	protected static map<IEntity, float> GetHeadlightsOff()
+	{
+		if (!s_mHeadlightsOff)
+			s_mHeadlightsOff = new map<IEntity, float>();
+		return s_mHeadlightsOff;
+	}
 
 	static void ApplyHeadlights(notnull SCR_AIGroup grp, SCR_AIGroupPerception perc)
 	{
@@ -226,10 +233,10 @@ class DCO_Night
 		lights.SetLightsState(ELightType.HiBeam, false);
 
 		float now = GetGame().GetWorld().GetWorldTime();
-		if (now - s_mHeadlightsOff.Get(veh) > 60000)
+		if (now - GetHeadlightsOff().Get(veh) > 60000)
 		{
-			s_mHeadlightsOff.Set(veh, now);
-			DCO_BenchmarkLoggerComponent.Event(string.Format("headlights_off veh=%1 grp=%2", veh, grp));
+			GetHeadlightsOff().Set(veh, now);
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("headlights_off veh=%1 grp=%2", veh, grp));
 		}
 	}
 }

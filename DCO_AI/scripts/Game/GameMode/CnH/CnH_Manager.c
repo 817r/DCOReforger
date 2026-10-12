@@ -1,12 +1,12 @@
-[EntityEditorProps(category: "GameScripted/Capture", description: "Manager Pusat Untuk Skor Area Capture (Multi-Faction)")]
+[EntityEditorProps(category: "GameScripted/Capture", description: "Central manager for area capture scores (multi-faction).")]
 class CNH_CaptureManagerClass : ScriptComponentClass {}
 
 class CNH_CaptureManager : ScriptComponent
 {
-    [Attribute("1000", UIWidgets.EditBox, desc: "Skor maksimal untuk menang")]
+    [Attribute("1000", UIWidgets.EditBox, desc: "Maximum score needed to win.")]
     int m_iMaxScore;
 
-    [Attribute("3", UIWidgets.EditBox, desc: "Jumlah Base dicapture untuk menang")]
+    [Attribute("3", UIWidgets.EditBox, desc: "Number of bases captured needed to win.")]
     int m_iMaxBaseToCapture;
 
 	ref map<string, int> m_mFactionBaseTaken= new map<string, int>();

@@ -1,16 +1,46 @@
 class DCO_VehiclePositioning
 {
-	protected static const float BAD_POS_RADIUS_SQ  = 15 * 15;
 
-	protected static ref array<float> s_aRings = {25, 50, 85};
+	protected static ref array<float> s_aRings;
+	protected static array<float> GetRings()
+	{
+		if (!s_aRings)
+			s_aRings = {25, 50, 85};
+		return s_aRings;
+	}
+	protected static ref array<float> s_aOuterRings;
+	protected static array<float> GetOuterRings()
+	{
+		if (!s_aOuterRings)
+			s_aOuterRings = {130, 180};
+		return s_aOuterRings;
+	}
+	protected static int s_iChecks;
 
-	protected static ref map<IEntity, float>  s_mHideUntil_ms = new map<IEntity, float>();
-	protected static ref map<IEntity, vector> s_mBadPos       = new map<IEntity, vector>();
-	protected static ref map<IEntity, float>  s_mBadPosTime   = new map<IEntity, float>();
+	protected static ref map<IEntity, float> s_mHideUntil_ms;
+	protected static map<IEntity, float> GetHideUntil_ms()
+	{
+		if (!s_mHideUntil_ms)
+			s_mHideUntil_ms = new map<IEntity, float>();
+		return s_mHideUntil_ms;
+	}
+	protected static ref map<IEntity, vector> s_mBadPos;
+	protected static map<IEntity, vector> GetBadPos()
+	{
+		if (!s_mBadPos)
+			s_mBadPos = new map<IEntity, vector>();
+		return s_mBadPos;
+	}
+	protected static ref map<IEntity, float> s_mBadPosTime;
+	protected static map<IEntity, float> GetBadPosTime()
+	{
+		if (!s_mBadPosTime)
+			s_mBadPosTime = new map<IEntity, float>();
+		return s_mBadPosTime;
+	}
 
 	protected static NavmeshWorldComponent s_Navmesh;
 	protected static bool s_bNavmeshResolved;
-	protected static ref TraceParam s_Trace = new TraceParam();
 
 	static DCO_GroupTactics GetPosture(SCR_AIUtilityComponent utility)
 	{
@@ -46,44 +76,80 @@ class DCO_VehiclePositioning
 		return 0.25;
 	}
 
+	static bool Aggr(SCR_AIUtilityComponent utility)
+	{
+		DCO_GroupTactics p = GetPosture(utility);
+		if (p == DCO_GroupTactics.AGGRESIVE)
+			return true;
+		return (p == DCO_GroupTactics.BALANCE || p == DCO_GroupTactics.AUTOMATIC) && DCO_Stress.Aggr(utility) >= 1.0;
+	}
+
 	static bool PrefersHiding(DCO_GroupTactics posture, IEntity vehicle)
 	{
 		if (posture == DCO_GroupTactics.EVASIVE || posture == DCO_GroupTactics.DEFENSIVE)
 			return true;
 
 		SCR_VehicleDamageManagerComponent dmg = SCR_VehicleDamageManagerComponent.Cast(vehicle.FindComponent(SCR_VehicleDamageManagerComponent));
-		return dmg && dmg.GetHealthScaled() < 0.5;
+		if (!dmg)
+			return false;
+		if (dmg.GetHealthScaled() < 0.5)
+			DCO_Perf.Count("veh:aggr_no_hide_hp");
+		return false;
 	}
 
 	static bool IsHiding(IEntity vehicle)
 	{
 		float until;
-		return s_mHideUntil_ms.Find(vehicle, until) && GetGame().GetWorld().GetWorldTime() < until;
+		return GetHideUntil_ms().Find(vehicle, until) && GetGame().GetWorld().GetWorldTime() < until;
 	}
 
-	static void MarkHiding(IEntity vehicle)
+	static void MarkHiding(IEntity vehicle, float seconds = -1)
 	{
-		s_mHideUntil_ms.Set(vehicle, GetGame().GetWorld().GetWorldTime() + Math.RandomFloat(8.0, 14.0) * 1000);
+		if (seconds <= 0)
+			seconds = Math.RandomFloat(8.0, 14.0);
+		GetHideUntil_ms().Set(vehicle, GetGame().GetWorld().GetWorldTime() + seconds * 1000);
 	}
 
 	static bool FindFirePosition(IEntity vehicle, vector targetPos, float desiredDist, float hullDownWeight,
-		vector wpPos, float wpRadius, out vector outPos)
+		vector wpPos, float wpRadius, out vector outPos, bool frontal = false)
 	{
 		int pt = DCO_Perf.Begin();
-		bool found = DoFindFirePosition(vehicle, targetPos, desiredDist, hullDownWeight, wpPos, wpRadius, outPos);
+		s_iChecks = 0;
+		bool found = DoFindFirePosition(vehicle, targetPos, desiredDist, hullDownWeight, wpPos, wpRadius, outPos, frontal, GetRings(), vector.Zero);
+		DCO_Perf.End("veh_fire_position", pt);
+		return found;
+	}
+
+	protected static vector s_vFriend;
+
+	static bool FindFirePositionEx(IEntity vehicle, vector targetPos, float desiredDist, float hullDownWeight,
+		vector wpPos, float wpRadius, vector prevPos, bool outer, out vector outPos, out int checks, vector friendPos = "0 0 0")
+	{
+		int pt = DCO_Perf.Begin();
+		s_iChecks = 0;
+		s_vFriend = friendPos;
+		bool found = DoFindFirePosition(vehicle, targetPos, desiredDist, hullDownWeight, wpPos, wpRadius, outPos, false, GetRings(), prevPos);
+		if (!found && outer)
+		{
+			found = DoFindFirePosition(vehicle, targetPos, desiredDist, hullDownWeight, wpPos, wpRadius, outPos, false, GetOuterRings(), prevPos);
+			if (found)
+				DCO_Perf.Count("veh:firepos_outer");
+		}
+		checks = s_iChecks;
+		s_vFriend = vector.Zero;
 		DCO_Perf.End("veh_fire_position", pt);
 		return found;
 	}
 
 	protected static bool DoFindFirePosition(IEntity vehicle, vector targetPos, float desiredDist, float hullDownWeight,
-		vector wpPos, float wpRadius, out vector outPos)
+		vector wpPos, float wpRadius, out vector outPos, bool frontal, array<float> rings, vector prevPos)
 	{
 		float hull, turret;
 		GetSightHeights(vehicle, hull, turret);
 
 		vector origin = vehicle.GetOrigin();
 		vector targetEye = targetPos + Vector(0, 1.0, 0);
-		float maxRing = s_aRings[s_aRings.Count() - 1];
+		float maxRing = rings[rings.Count() - 1];
 
 		IEntity atShooter;
 		vector atPos;
@@ -94,7 +160,7 @@ class DCO_VehiclePositioning
 		bool found;
 		float angle0 = Math.RandomFloat(0, Math.PI2);
 
-		foreach (float ring : s_aRings)
+		foreach (float ring : rings)
 		{
 			for (int i = 0; i < 8; i++)
 			{
@@ -106,18 +172,36 @@ class DCO_VehiclePositioning
 				if (dTgt < 40.0)
 					continue;
 
+				if (frontal)
+				{
+					vector toCand = cand - origin;
+					vector toTgt = targetPos - origin;
+					toCand[1] = 0;
+					toTgt[1] = 0;
+					if (vector.Dot(toCand.Normalized(), toTgt.Normalized()) < -0.3)
+						continue;
+				}
+
+				s_iChecks++;
 				if (!IsClear(cand + Vector(0, turret, 0), targetEye, vehicle))
 					continue;
 
 				float score = 0.4 * (1 - Math.Clamp(Math.AbsFloat(dTgt - desiredDist) / desiredDist, 0, 1))
 					+ 0.15 * (1 - ring / maxRing)
 					+ 0.1 * Math.Clamp((cand[1] - targetPos[1]) / 10, 0, 1);
+				if (prevPos != vector.Zero && vector.DistanceXZ(cand, prevPos) >= 30.0)
+					score += 0.2;
 
 				if (!IsClear(cand + Vector(0, hull, 0), targetEye, vehicle))
 					score += hullDownWeight;
 
 				if (hasAT)
 				{
+					if (s_vFriend != vector.Zero && vector.DistanceXZ(cand, targetPos) < vector.DistanceXZ(s_vFriend, targetPos) - 100.0)
+					{
+						score -= 0.4;
+						DCO_Perf.Count("veh:firepos_ahead_pen");
+					}
 					if (vector.DistanceXZ(cand, atPos) < 250.0)
 						score -= 0.3;
 					if (IsClear(atEye, cand + Vector(0, turret, 0), vehicle))
@@ -144,13 +228,13 @@ class DCO_VehiclePositioning
 		vector origin = vehicle.GetOrigin();
 		vector threatEye = threatPos + Vector(0, 1.6, 0);
 		float myThreatDist = vector.DistanceXZ(origin, threatPos);
-		float maxRing = s_aRings[s_aRings.Count() - 1];
+		float maxRing = GetRings()[GetRings().Count() - 1];
 
 		float bestScore = -float.MAX;
 		bool found;
 		float angle0 = Math.RandomFloat(0, Math.PI2);
 
-		foreach (float ring : s_aRings)
+		foreach (float ring : GetRings())
 		{
 			for (int i = 0; i < 8; i++)
 			{
@@ -180,13 +264,13 @@ class DCO_VehiclePositioning
 		return found;
 	}
 
-	static SCR_AICombatMoveRequest_Move CreateATEvadeRequest(IEntity vehicle, vector atPos)
+	static SCR_AICombatMoveRequest_Move CreateATEvadeRequest(IEntity vehicle, vector atPos, float hide_s = -1)
 	{
 		vector hidePos;
 		if (FindHidePosition(vehicle, atPos, vector.Zero, 0, hidePos))
 		{
-			MarkHiding(vehicle);
-			DCO_BenchmarkLoggerComponent.Event(string.Format("veh_hide_at veh=%1 move=%2", vehicle, Math.Round(vector.Distance(vehicle.GetOrigin(), hidePos))));
+			MarkHiding(vehicle, hide_s);
+			DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_hide_at veh=%1 move=%2", DCO_Log.IdVeh(vehicle), Math.Round(vector.Distance(vehicle.GetOrigin(), hidePos))));
 			return CreateMoveRequest(vehicle.GetOrigin(), hidePos, atPos, SCR_EAICombatMoveReason.MOVE_FROM_TARGET);
 		}
 
@@ -221,8 +305,8 @@ class DCO_VehiclePositioning
 		if (!vehicle)
 			return;
 
-		s_mBadPos.Set(vehicle, rq.m_vMovePos);
-		s_mBadPosTime.Set(vehicle, GetGame().GetWorld().GetWorldTime());
+		GetBadPos().Set(vehicle, rq.m_vMovePos);
+		GetBadPosTime().Set(vehicle, GetGame().GetWorld().GetWorldTime());
 	}
 
 	protected static bool MakeCandidate(IEntity vehicle, vector origin, float ring, float angle, vector wpPos, float wpRadius, out vector cand)
@@ -237,18 +321,17 @@ class DCO_VehiclePositioning
 		if (world.IsOcean() && y < world.GetOceanBaseHeight() + 0.5)
 			return false;
 
-		const float d = 4;
-		float dy = Math.Max(Math.AbsFloat(world.GetSurfaceY(cand[0] + d, cand[2]) - world.GetSurfaceY(cand[0] - d, cand[2])),
-			Math.AbsFloat(world.GetSurfaceY(cand[0], cand[2] + d) - world.GetSurfaceY(cand[0], cand[2] - d)));
-		if (dy / (2 * d) > 0.35)
+		float dy = Math.Max(Math.AbsFloat(world.GetSurfaceY(cand[0] + 4.0, cand[2]) - world.GetSurfaceY(cand[0] - 4.0, cand[2])),
+			Math.AbsFloat(world.GetSurfaceY(cand[0], cand[2] + 4.0) - world.GetSurfaceY(cand[0], cand[2] - 4.0)));
+		if (dy / (2 * 4.0) > 0.35)
 			return false;
 
 		cand[1] = y;
 
 		vector bad;
 		float badTime;
-		if (s_mBadPos.Find(vehicle, bad) && s_mBadPosTime.Find(vehicle, badTime)
-			&& world.GetWorldTime() - badTime < 60000.0 && vector.DistanceSqXZ(bad, cand) < BAD_POS_RADIUS_SQ)
+		if (GetBadPos().Find(vehicle, bad) && GetBadPosTime().Find(vehicle, badTime)
+			&& world.GetWorldTime() - badTime < 60000.0 && vector.DistanceSqXZ(bad, cand) < 225.0)
 			return false;
 
 		return true;
@@ -271,13 +354,7 @@ class DCO_VehiclePositioning
 			return true;
 
 		dir = dir * (1 / len);
-		s_Trace.Start = from + dir;
-		s_Trace.End = to - dir * 2;
-		s_Trace.Exclude = exclude;
-		s_Trace.Flags = TraceFlags.WORLD | TraceFlags.ENTS;
-		s_Trace.LayerMask = EPhysicsLayerDefs.Projectile;
-		DCO_Perf.Count("t:DCO_VehiclePositioning");
-		return GetGame().GetWorld().TraceMove(s_Trace, null) >= 1;
+		return DCO_Util.TraceClear(from + dir, to - dir * 2, exclude, 1.0, TraceFlags.WORLD | TraceFlags.ENTS, EPhysicsLayerDefs.Projectile, null, "t:DCO_VehiclePositioning");
 	}
 
 	protected static bool SnapToNavmesh(inout vector pos)

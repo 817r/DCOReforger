@@ -1,23 +1,147 @@
 class DCO_UISettings
 {
-	static const ref array<string> POSITIONS = {"topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright"};
-	static const ref array<string> POSITION_NAMES = {"Top left", "Top", "Top right", "Left", "Center", "Right", "Bottom left", "Bottom", "Bottom right"};
+	protected static string s_sStretchLogged;
+
+	static array<string> Positions()
+	{
+		return {"topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright"};
+	}
 
 
 	protected static bool s_bLoaded;
-	protected static float s_fScale = 0.8;
-	protected static string s_sPos = "bottomleft";
-	protected static float s_fOffX = 60.0;
-	protected static float s_fOffY = 25.0;
+	protected static float s_fScale;
+	protected static string s_sPos;
+	protected static float s_fOffX;
+	protected static float s_fOffY;
 
-	protected static bool s_bContactShow = true;
-	protected static float s_fContactScale = 0.8;
-	protected static string s_sContactPos = "right";
-	protected static float s_fContactOffX = 40.0;
-	protected static float s_fContactOffY = 0.0;
-	protected static float s_fContactHold = 5.0;
-	protected static bool s_bContactSound = true;
-	protected static int s_iMapPalette = 0;
+	protected static bool s_bContactShow;
+	protected static float s_fContactScale;
+	protected static string s_sContactPos;
+	protected static float s_fContactOffX;
+	protected static float s_fContactOffY;
+	protected static float s_fContactHold;
+	protected static bool s_bContactSound;
+	protected static int s_iMapPalette;
+	protected static float s_fOfferScale;
+	protected static string s_sOfferPos;
+	protected static float s_fOfferOffX;
+	protected static float s_fOfferOffY;
+	protected static bool s_bOfferSound;
+	protected static bool s_bOfferMarker;
+	protected static int s_iBriefLevel;
+	protected static string s_sBriefCustom;
+
+	static float GetOfferScale()		{ Load(); return s_fOfferScale; }
+	static string GetOfferPos()			{ Load(); return s_sOfferPos; }
+	static float GetOfferOffX()			{ Load(); return s_fOfferOffX; }
+	static float GetOfferOffY()			{ Load(); return s_fOfferOffY; }
+	static bool GetOfferSound()			{ Load(); return s_bOfferSound; }
+	static bool GetOfferMarker()		{ Load(); return s_bOfferMarker; }
+	static void SetOfferScale(float v)		{ Load(); s_fOfferScale = Math.Clamp(v, 0.5, 1.5); Save(); }
+	static void SetOfferPos(string p)		{ Load(); if (Positions().Contains(p)) s_sOfferPos = p; Save(); }
+	static void SetOfferOffset(float x, float y) { Load(); s_fOfferOffX = Math.Clamp(x, -2000, 2000); s_fOfferOffY = Math.Clamp(y, -2000, 2000); Save(); }
+	static void SetOfferSound(bool b)		{ Load(); s_bOfferSound = b; Save(); }
+	static void SetOfferMarker(bool b)		{ Load(); s_bOfferMarker = b; Save(); }
+
+	static string BriefPresetStr(int level)
+	{
+		switch (level)
+		{
+			case 0: return "1201021111";
+			case 2: return "3022211001";
+		}
+		return "2002200001";
+	}
+
+	static int BriefRowMax(int row)
+	{
+		if (row < 1 || row > 10)
+			return 0;
+		string m = "3222221111";
+		return m.Get(row - 1).ToInt();
+	}
+
+	static string BriefLevelName(int level)
+	{
+		switch (level)
+		{
+			case 0: return "hardcore";
+			case 2: return "assisted";
+			case 3: return "custom";
+		}
+		return "standard";
+	}
+
+	protected static bool ValidBrief(string s)
+	{
+		if (s.Length() != 10)
+			return false;
+		for (int r = 1; r <= 10; r++)
+		{
+			int v = s.Get(r - 1).ToInt();
+			if (v < 0 || v > BriefRowMax(r))
+				return false;
+		}
+		return true;
+	}
+
+	static int GetBriefLevel()				{ Load(); return s_iBriefLevel; }
+
+	static int BriefPresetRow(int level, int row)
+	{
+		if (row < 1 || row > 10)
+			return 0;
+		string src = BriefPresetStr(level);
+		return src.Get(row - 1).ToInt();
+	}
+
+	static int GetBriefRow(int row)
+	{
+		Load();
+		if (row < 1 || row > 10)
+			return 0;
+		string src = BriefPresetStr(s_iBriefLevel);
+		if (s_iBriefLevel == 3)
+			src = s_sBriefCustom;
+		return src.Get(row - 1).ToInt();
+	}
+
+	static int BriefChangedRows(int from, int to)
+	{
+		Load();
+		int level = s_iBriefLevel;
+		int baseLevel = level;
+		if (level == 3)
+			baseLevel = 1;
+		int n = 0;
+		for (int r = from; r <= to; r++)
+		{
+			if (GetBriefRow(r) != BriefPresetRow(baseLevel, r))
+				n++;
+		}
+		return n;
+	}
+
+	static void SetBriefLevel(int level)
+	{
+		Load();
+		s_iBriefLevel = Math.ClampInt(level, 0, 3);
+		Save();
+	}
+
+	static void SetBriefRow(int row, int value)
+	{
+		Load();
+		if (row < 1 || row > 10)
+			return;
+		string src = BriefPresetStr(s_iBriefLevel);
+		if (s_iBriefLevel == 3)
+			src = s_sBriefCustom;
+		int v = Math.ClampInt(value, 0, BriefRowMax(row));
+		s_sBriefCustom = src.Substring(0, row - 1) + v.ToString() + src.Substring(row, 10 - row);
+		s_iBriefLevel = 3;
+		Save();
+	}
 
 	static float GetScale()				{ Load(); return s_fScale; }
 	static string GetPos()				{ Load(); return s_sPos; }
@@ -33,11 +157,11 @@ class DCO_UISettings
 	static int GetMapPalette()			{ Load(); return s_iMapPalette; }
 
 	static void SetScale(float v)			{ Load(); s_fScale = Math.Clamp(v, 0.5, 1.5); Save(); }
-	static void SetPos(string p)			{ Load(); if (POSITIONS.Contains(p)) s_sPos = p; Save(); }
+	static void SetPos(string p)			{ Load(); if (Positions().Contains(p)) s_sPos = p; Save(); }
 	static void SetOffset(float x, float y)	{ Load(); s_fOffX = Math.Clamp(x, -2000, 2000); s_fOffY = Math.Clamp(y, -2000, 2000); Save(); }
 	static void SetContactShow(bool b)		{ Load(); s_bContactShow = b; Save(); }
 	static void SetContactScale(float v)	{ Load(); s_fContactScale = Math.Clamp(v, 0.5, 1.5); Save(); }
-	static void SetContactPos(string p)		{ Load(); if (POSITIONS.Contains(p)) s_sContactPos = p; Save(); }
+	static void SetContactPos(string p)		{ Load(); if (Positions().Contains(p)) s_sContactPos = p; Save(); }
 	static void SetContactOffset(float x, float y) { Load(); s_fContactOffX = Math.Clamp(x, -2000, 2000); s_fContactOffY = Math.Clamp(y, -2000, 2000); Save(); }
 	static void SetContactHold(float v)		{ Load(); s_fContactHold = Math.Clamp(v, 2, 15); Save(); }
 	static void SetContactSound(bool b)		{ Load(); s_bContactSound = b; Save(); }
@@ -46,6 +170,12 @@ class DCO_UISettings
 	static void ResetAll()
 	{
 		Load();
+		Defaults();
+		Save();
+	}
+
+	protected static void Defaults()
+	{
 		s_fScale = 0.8;
 		s_sPos = "bottomleft";
 		s_fOffX = 60.0;
@@ -58,7 +188,14 @@ class DCO_UISettings
 		s_fContactHold = 5.0;
 		s_bContactSound = true;
 		s_iMapPalette = 0;
-		Save();
+		s_fOfferScale = 0.9;
+		s_sOfferPos = "topright";
+		s_fOfferOffX = 40.0;
+		s_fOfferOffY = 120.0;
+		s_bOfferSound = true;
+		s_bOfferMarker = true;
+		s_iBriefLevel = 1;
+		s_sBriefCustom = "2002200001";
 	}
 
 	static void Anchor(notnull Widget w, string pos, float offX, float offY, out float x, out float y, out float dirY)
@@ -87,20 +224,37 @@ class DCO_UISettings
 		y = offY * dirY;
 	}
 
+	static void LogStretchSkip(Widget parent, Widget child)
+	{
+		DCO_Perf.Count("ui:scale_skip_stretched");
+		string key = parent.GetName() + "/" + child.GetName();
+		if (key == s_sStretchLogged)
+			return;
+		s_sStretchLogged = key;
+		DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", string.Format("ui_scale_skip_stretched parent=%1 child=%2", parent.GetName(), child.GetName()));
+	}
+
 	static void ScaleChildren(notnull Widget w, float scale, float baseFont)
 	{
 		FrameSlot.SetSize(w, FrameSlot.GetSizeX(w) * scale, FrameSlot.GetSizeY(w) * scale);
 		Widget c = w.GetChildren();
 		while (c)
 		{
-			FrameSlot.SetPos(c, FrameSlot.GetPosX(c) * scale, FrameSlot.GetPosY(c) * scale);
-			FrameSlot.SetSize(c, FrameSlot.GetSizeX(c) * scale, FrameSlot.GetSizeY(c) * scale);
+			if (FrameSlot.GetAnchorMin(c) == FrameSlot.GetAnchorMax(c))
+			{
+				FrameSlot.SetPos(c, FrameSlot.GetPosX(c) * scale, FrameSlot.GetPosY(c) * scale);
+				FrameSlot.SetSize(c, FrameSlot.GetSizeX(c) * scale, FrameSlot.GetSizeY(c) * scale);
+			}
+			else
+			{
+				LogStretchSkip(w, c);
+			}
 			RichTextWidget text = RichTextWidget.Cast(c);
 			if (text)
 			{
 				int size = Math.Max(10, Math.Round(BannerFontSize(c.GetName(), baseFont) * scale));
 				text.SetDesiredFontSize(size);
-				int minSize = Math.Max(8, Math.Round(size * 0.6));
+				int minSize = Math.Max(8, Math.Round(1.0 * size * 0.6));
 				text.SetMinFontSize(minSize);
 			}
 			c = c.GetSibling();
@@ -128,7 +282,13 @@ class DCO_UISettings
 	static void ShowSample()
 	{
 		DCO_OrderBanner.Reset();
-		DCO_OrderBanner.Show("NEW ORDERS", "SAMPLE ORDER", "420 m  ·  NE", string.Empty, Color.FromRGBA(243, 178, 49, 255), string.Empty);
+		Color accent = Color.FromSRGBA(243, 178, 49, 255);
+		DCO_OrderBanner.Show("NEW ORDERS", "SAMPLE ORDER", "420 m  ·  NE", string.Empty, accent, string.Empty);
+	}
+
+	static void ShowOfferSample()
+	{
+		DCO_OfferCard.ShowSample();
 	}
 
 	static void ShowContactSample()
@@ -142,6 +302,7 @@ class DCO_UISettings
 		if (s_bLoaded)
 			return;
 		s_bLoaded = true;
+		Defaults();
 		if (!FileIO.FileExists("$profile:DCO_UI.json"))
 			return;
 
@@ -155,7 +316,7 @@ class DCO_UISettings
 		int i;
 		if (ctx.ReadValue("scale", f))
 			s_fScale = Math.Clamp(f, 0.5, 1.5);
-		if (ctx.ReadValue("position", s) && POSITIONS.Contains(s))
+		if (ctx.ReadValue("position", s) && Positions().Contains(s))
 			s_sPos = s;
 		if (ctx.ReadValue("offsetX", f))
 			s_fOffX = f;
@@ -165,7 +326,7 @@ class DCO_UISettings
 			s_bContactShow = b;
 		if (ctx.ReadValue("contactScale", f))
 			s_fContactScale = Math.Clamp(f, 0.5, 1.5);
-		if (ctx.ReadValue("contactPosition", s) && POSITIONS.Contains(s))
+		if (ctx.ReadValue("contactPosition", s) && Positions().Contains(s))
 			s_sContactPos = s;
 		if (ctx.ReadValue("contactOffsetX", f))
 			s_fContactOffX = f;
@@ -177,6 +338,22 @@ class DCO_UISettings
 			s_bContactSound = b;
 		if (ctx.ReadValue("mapPalette", i))
 			s_iMapPalette = Math.ClampInt(i, 0, 2);
+		if (ctx.ReadValue("offerScale", f))
+			s_fOfferScale = Math.Clamp(f, 0.5, 1.5);
+		if (ctx.ReadValue("offerPosition", s) && Positions().Contains(s))
+			s_sOfferPos = s;
+		if (ctx.ReadValue("offerOffsetX", f))
+			s_fOfferOffX = f;
+		if (ctx.ReadValue("offerOffsetY", f))
+			s_fOfferOffY = f;
+		if (ctx.ReadValue("offerSound", b))
+			s_bOfferSound = b;
+		if (ctx.ReadValue("offerMarker", b))
+			s_bOfferMarker = b;
+		if (ctx.ReadValue("briefLevel", i))
+			s_iBriefLevel = Math.ClampInt(i, 0, 3);
+		if (ctx.ReadValue("briefCustom", s) && ValidBrief(s))
+			s_sBriefCustom = s;
 	}
 
 	protected static void Save()
@@ -194,6 +371,14 @@ class DCO_UISettings
 		ctx.WriteValue("contactHold", s_fContactHold);
 		ctx.WriteValue("contactSound", s_bContactSound);
 		ctx.WriteValue("mapPalette", s_iMapPalette);
+		ctx.WriteValue("offerScale", s_fOfferScale);
+		ctx.WriteValue("offerPosition", s_sOfferPos);
+		ctx.WriteValue("offerOffsetX", s_fOfferOffX);
+		ctx.WriteValue("offerOffsetY", s_fOfferOffY);
+		ctx.WriteValue("offerSound", s_bOfferSound);
+		ctx.WriteValue("offerMarker", s_bOfferMarker);
+		ctx.WriteValue("briefLevel", s_iBriefLevel);
+		ctx.WriteValue("briefCustom", s_sBriefCustom);
 		ctx.SaveToFile("$profile:DCO_UI.json");
 	}
 }

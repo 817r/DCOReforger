@@ -9,6 +9,11 @@ class DCO_NameEditorAttribute : SCR_BaseEditorAttribute
 		return false;
 	}
 
+	protected int NameKind()
+	{
+		return 0;
+	}
+
 	protected static IEntity GetOwnerEntity(Managed item)
 	{
 		SCR_EditableEntityComponent editable = SCR_EditableEntityComponent.Cast(item);
@@ -30,7 +35,7 @@ class DCO_NameEditorAttribute : SCR_BaseEditorAttribute
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
 		if (var && var.GetInt() != 0 && manager)
-			manager.DCO_RequestSetName(item, m_sPendingName);
+			manager.DCO_RequestSetName(item, m_sPendingName, NameKind());
 	}
 
 	override bool IsSerializable()
@@ -60,10 +65,18 @@ class DCO_NameEditorAttribute : SCR_BaseEditorAttribute
 		m_sPendingName = pendingName;
 	}
 
-	static void ApplyName(IEntity owner, string newName)
+	static void ApplyName(IEntity owner, string newName, int kind = 0)
 	{
 		if (!owner || !Replication.IsServer())
 			return;
+
+		if (kind == 1)
+		{
+			AICommander_BaseComponent presetCmd = AICommander_BaseComponent.Cast(owner.FindComponent(AICommander_BaseComponent));
+			if (presetCmd)
+				presetCmd.DCO_SavePresetFromGM(newName);
+			return;
+		}
 
 		newName = newName.Trim();
 		if (newName.Length() > 32)
@@ -193,18 +206,45 @@ class DCO_TextEditorAttributeUIComponent : SCR_BaseEditorAttributeUIComponent
 
 modded class SCR_AttributesManagerEditorComponent
 {
-	void DCO_RequestSetName(Managed item, string newName)
+	void DCO_RequestSetName(Managed item, string newName, int kind = 0)
 	{
 		int itemId = Replication.FindItemId(item);
 		if (itemId != -1)
-			Rpc(DCO_RpcSetName, itemId, newName);
+			Rpc(DCO_RpcSetName, itemId, newName, kind);
 	}
 
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
-	protected void DCO_RpcSetName(int itemId, string newName)
+	protected void DCO_RpcSetName(int itemId, string newName, int kind)
 	{
 		SCR_EditableEntityComponent editable = SCR_EditableEntityComponent.Cast(Replication.FindItem(itemId));
 		if (editable)
-			DCO_NameEditorAttribute.ApplyName(editable.GetOwner(), newName);
+			DCO_NameEditorAttribute.ApplyName(editable.GetOwner(), newName, kind);
+	}
+
+	void DCO_RequestSpawnerAction(Managed item, int action, int a, int b, string s)
+	{
+		int itemId = Replication.FindItemId(item);
+		if (itemId != -1)
+		{
+			int pid = -1;
+			if (GetGame().GetPlayerController())
+				pid = GetGame().GetPlayerController().GetPlayerId();
+			Rpc(DCO_RpcSpawnerAction, itemId, action, a, b, s, pid);
+		}
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void DCO_RpcSpawnerAction(int itemId, int action, int a, int b, string s, int playerID)
+	{
+		SCR_EditableEntityComponent editable = SCR_EditableEntityComponent.Cast(Replication.FindItem(itemId));
+		if (!editable || !editable.GetOwner())
+			return;
+		DCO_CommanderSpawnerComponent spawner = DCO_CommanderSpawnerComponent.Cast(editable.GetOwner().FindComponent(DCO_CommanderSpawnerComponent));
+		if (!spawner)
+			return;
+		int pid = DCO_GroupPresets.VerifiedGM(GetManager(), playerID, "spawner_action_" + action.ToString());
+		if (pid < 0)
+			return;
+		spawner.GMAction(action, a, b, s, pid);
 	}
 }

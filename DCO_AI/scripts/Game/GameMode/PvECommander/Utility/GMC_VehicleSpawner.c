@@ -3,25 +3,25 @@ class GMC_VehicleFactionSpawnerClass : ScriptComponentClass {}
 
 class GMC_VehicleFactionSpawner : ScriptComponent
 {
-    [Attribute("", UIWidgets.ResourceAssignArray, desc: "Daftar Config/Prefab Kendaraan yang mau di-spawn", params: "et")]
+    [Attribute("", UIWidgets.ResourceAssignArray, desc: "List of vehicle configs/prefabs to spawn.", params: "et")]
     ref array<ResourceName> m_aVehiclePrefabs;
 
-    [Attribute("3", UIWidgets.EditBox, desc: "Maksimal kendaraan aktif di map")]
+    [Attribute("3", UIWidgets.EditBox, desc: "Maximum active vehicles on the map.")]
     int m_iMaxVehicles;
 
-    [Attribute("60", UIWidgets.EditBox, desc: "Jeda waktu ngecek & spawn (dalam detik)")]
+    [Attribute("60", UIWidgets.EditBox, desc: "Check and spawn interval (s).")]
     float m_fSpawnInterval;
 
     [Attribute("15", UIWidgets.EditBox, desc: "Radius Spawn (meter)")]
     float m_fSpawnRadius;
 
-    [Attribute("", UIWidgets.EditBox, desc: "Faction Key Override (Misal: US, USSR, FIA). Kosongkan jika ingin default bawaan prefab.")]
+    [Attribute("", UIWidgets.EditBox, desc: "Faction key override (for example US, USSR, FIA). Leave empty to use the prefab default.")]
     string m_sFactionKey;
 
-    [Attribute("300", UIWidgets.EditBox, desc: "Waktu (detik) sebelum kendaraan yang tidak ada player di dekatnya dihapus (0 = fitur nonaktif)")]
+    [Attribute("300", UIWidgets.EditBox, desc: "Time (s) before a vehicle with no player nearby is deleted (0 = off).")]
     float m_fAbandonedTimeout;
 
-    [Attribute("150", UIWidgets.EditBox, desc: "Jarak minimum player ke kendaraan agar tidak dianggap stranded (meter)")]
+    [Attribute("150", UIWidgets.EditBox, desc: "Minimum player distance to a vehicle for it not to count as stranded (m).")]
     float m_fMinPlayerDistance;
 
     protected ref array<IEntity> m_aSpawnedVehicles = {};

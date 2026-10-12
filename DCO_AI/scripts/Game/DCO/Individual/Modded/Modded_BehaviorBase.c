@@ -5,5 +5,4 @@ modded class SCR_AIBehaviorBase : SCR_AIActionBase
 
 modded class SCR_AIActionBase
 {
-	const static float PRIORITY_LEVEL_COMMANDER				= 1500;
 }

@@ -36,11 +36,7 @@ class SCR_AIRemoveItemItemFromInventory_InventoryCallback : ScriptedInventoryOpe
 
 class SCR_AITakeItemFromInventory : AITaskScripted
 {
-	protected static const string PORT_PREFAB_RESOURCE_NAME = "PrefabResourceName";
-	protected static const string PORT_ARSENAL_ENTITY = "ArsenalEntity";
 
-	protected static const string PORT_ITEM_ENTITY = "ItemEntity";
-	protected static const string PORT_COUNT_ITEMS_TAKEN = "CountItemsTaken";
 
 	[Attribute("1", UIWidgets.EditBox, desc: "Max amount of items we will try to take")]
 	protected int m_iMaxItemsToTake;
@@ -52,8 +48,8 @@ class SCR_AITakeItemFromInventory : AITaskScripted
 	{
 		IEntity arsenalEntity;
 
-		GetVariableIn(PORT_PREFAB_RESOURCE_NAME, prefabResourceName);
-		GetVariableIn(PORT_ARSENAL_ENTITY, arsenalEntity);
+		GetVariableIn("PrefabResourceName", prefabResourceName);
+		GetVariableIn("ArsenalEntity", arsenalEntity);
 
 		if (prefabResourceName.IsEmpty() || !arsenalEntity)
 			return ENodeResult.FAIL;
@@ -92,7 +88,8 @@ class SCR_AITakeItemFromInventory : AITaskScripted
 				break;
 
 			nItemsTaken++;
-			Print("Magazine Taken : " + nItemsTaken.ToString());
+			if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG))
+				DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG, "-", "Magazine Taken : " + nItemsTaken.ToString());
 			lastTakenItem = itemEntity;
 
 			if (m_iMaxItemsToTake != -1 && nItemsTaken == m_iMaxItemsToTake)
@@ -102,8 +99,8 @@ class SCR_AITakeItemFromInventory : AITaskScripted
 		if (nItemsTaken == 0)
 			return ENodeResult.FAIL;
 
-		SetVariableOut(PORT_ITEM_ENTITY, lastTakenItem);
-		SetVariableOut(PORT_COUNT_ITEMS_TAKEN, nItemsTaken);
+		SetVariableOut("ItemEntity", lastTakenItem);
+		SetVariableOut("CountItemsTaken", nItemsTaken);
 
 		return ENodeResult.SUCCESS;
 	}
@@ -133,10 +130,10 @@ class SCR_AITakeItemFromInventory : AITaskScripted
 		return true;
 	}
 
-	protected ref TStringArray s_aVarsIn = { PORT_ARSENAL_ENTITY, PORT_PREFAB_RESOURCE_NAME };
+	protected ref TStringArray s_aVarsIn = { "ArsenalEntity", "PrefabResourceName" };
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 
-	protected ref TStringArray s_aVarsOut = { PORT_ITEM_ENTITY, PORT_COUNT_ITEMS_TAKEN };
+	protected ref TStringArray s_aVarsOut = { "ItemEntity", "CountItemsTaken" };
 	override TStringArray GetVariablesOut() { return s_aVarsOut; }
 
 	override static bool VisibleInPalette() { return true; }

@@ -6,13 +6,11 @@ class DCO_OrderBannerMsg
 	string m_sIcon;
 	ref Color m_Accent;
 	string m_sSound;
+	int m_iAt;
 }
 
 class DCO_OrderBanner
 {
-	protected static const ResourceName LAYOUT = "{363FD3FC6E85FE60}UI/layouts/DCO/DCO_CommanderOrder.layout";
-	protected static const ResourceName ICONS = "{10C0A9A305E8B3A4}UI/Imagesets/Tasks/Task_Icons.imageset";
-	protected static const int FADE_MS = 400;
 
 	protected static ref DCO_OrderBanner s_Instance;
 
@@ -20,16 +18,15 @@ class DCO_OrderBanner
 	protected Widget m_wRoot;
 	protected RichTextWidget m_wTitle;
 	protected string m_sTitle;
+	protected string m_sShowKey;
 	protected int m_iTyped;
 
-	static void Show(string header, string title, string sub, string icon, Color accent, string sound)
+	protected static DCO_OrderBannerMsg Make(string header, string title, string sub, string icon, Color accent, string sound)
 	{
 		if (System.IsConsoleApp())
-			return;
-
+			return null;
 		if (!s_Instance)
 			s_Instance = new DCO_OrderBanner();
-
 		DCO_OrderBannerMsg msg = new DCO_OrderBannerMsg();
 		msg.m_sHeader = header;
 		msg.m_sTitle = title;
@@ -37,10 +34,68 @@ class DCO_OrderBanner
 		msg.m_sIcon = icon;
 		msg.m_Accent = accent;
 		msg.m_sSound = sound;
+		msg.m_iAt = System.GetTickCount();
+		if (!s_Instance.Admit(msg))
+			return null;
+		return msg;
+	}
+
+	protected bool Admit(DCO_OrderBannerMsg msg)
+	{
+		string key = msg.m_sTitle + "|" + msg.m_sSub;
+		if (m_wRoot && m_sShowKey == key)
+		{
+			Drop("dup", msg);
+			return false;
+		}
+		foreach (DCO_OrderBannerMsg q : m_aQueue)
+		{
+			if (q.m_sTitle + "|" + q.m_sSub == key)
+			{
+				Drop("dup", msg);
+				return false;
+			}
+		}
+		return true;
+	}
+
+	protected static void Drop(string reason, DCO_OrderBannerMsg msg)
+	{
+		DCO_Perf.Count("banner:drop_" + reason);
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("banner_drop reason=%1 key=%2 age_ms=%3", reason, msg.m_sTitle, System.GetTickCount() - msg.m_iAt));
+	}
+
+	static void Show(string header, string title, string sub, string icon, Color accent, string sound)
+	{
+		DCO_OrderBannerMsg msg = Make(header, title, sub, icon, accent, sound);
+		if (!msg)
+			return;
+		if (s_Instance.m_aQueue.Count() >= 3)
+		{
+			Drop("cap", s_Instance.m_aQueue[0]);
+			s_Instance.m_aQueue.RemoveOrdered(0);
+		}
 		s_Instance.m_aQueue.Insert(msg);
 
 		if (!s_Instance.m_wRoot)
 			s_Instance.ShowNext();
+	}
+
+	static void ShowUrgent(string header, string title, string sub, string icon, Color accent, string sound)
+	{
+		DCO_OrderBannerMsg msg = Make(header, title, sub, icon, accent, sound);
+		if (!msg)
+			return;
+		s_Instance.m_aQueue.InsertAt(msg, 0);
+
+		if (!s_Instance.m_wRoot)
+		{
+			s_Instance.ShowNext();
+			return;
+		}
+		GetGame().GetCallqueue().Remove(s_Instance.FadeOut);
+		GetGame().GetCallqueue().Remove(s_Instance.Finish);
+		s_Instance.Finish();
 	}
 
 	static void Reset()
@@ -58,13 +113,19 @@ class DCO_OrderBanner
 
 	protected void ShowNext()
 	{
+		while (!m_aQueue.IsEmpty() && System.GetTickCount() - m_aQueue[0].m_iAt > 15000)
+		{
+			Drop("stale", m_aQueue[0]);
+			m_aQueue.RemoveOrdered(0);
+		}
 		if (m_aQueue.IsEmpty())
 			return;
 
 		DCO_OrderBannerMsg msg = m_aQueue[0];
 		m_aQueue.RemoveOrdered(0);
+		m_sShowKey = msg.m_sTitle + "|" + msg.m_sSub;
 
-		m_wRoot = GetGame().GetWorkspace().CreateWidgets(LAYOUT);
+		m_wRoot = GetGame().GetWorkspace().CreateWidgets("{363FD3FC6E85FE60}UI/layouts/DCO/DCO_CommanderOrder.layout");
 		if (!m_wRoot)
 			return;
 		m_wRoot.SetZOrder(1000);
@@ -84,7 +145,7 @@ class DCO_OrderBanner
 		if (msg.m_sIcon.IsEmpty())
 			icon.SetVisible(false);
 		else
-			icon.LoadImageFromSet(0, ICONS, msg.m_sIcon);
+			icon.LoadImageFromSet(0, "{10C0A9A305E8B3A4}UI/Imagesets/Tasks/Task_Icons.imageset", msg.m_sIcon);
 
 		float x, y, slideY;
 		DCO_UISettings.Apply(banner, x, y, slideY);
@@ -172,8 +233,8 @@ class DCO_OrderBanner
 	protected void FadeOut()
 	{
 		if (m_wRoot)
-			AnimateWidget.Opacity(m_wRoot.FindAnyWidget("Banner"), 0, 1000.0 / FADE_MS);
-		GetGame().GetCallqueue().CallLater(Finish, FADE_MS);
+			AnimateWidget.Opacity(m_wRoot.FindAnyWidget("Banner"), 0, 1000.0 / 400);
+		GetGame().GetCallqueue().CallLater(Finish, 400);
 	}
 
 	protected void Finish()

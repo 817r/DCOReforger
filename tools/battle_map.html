@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DCO Battle Map</title>
+<style>
+:root { --bg:#f6f5f2; --panel:#ffffff; --ink:#1d1d1b; --muted:#6b6a66; --line:#d9d6cf; --grid:#e9e6df; --us:#2f6fd6; --ussr:#c8402f; --other:#7a5bd1; --obj:#1d1d1b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#16171a; --panel:#1f2125; --ink:#e9e7e2; --muted:#a3a19b; --line:#34363b; --grid:#25272b; --us:#6fa2ff; --ussr:#ff7a68; --other:#b39cff; --obj:#e9e7e2; } }
+:root[data-theme="dark"] { --bg:#16171a; --panel:#1f2125; --ink:#e9e7e2; --muted:#a3a19b; --line:#34363b; --grid:#25272b; --us:#6fa2ff; --ussr:#ff7a68; --other:#b39cff; --obj:#e9e7e2; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui, sans-serif; }
+header { padding:12px 16px; border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; }
+h1 { font-size:17px; margin:0; }
+main { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:12px; padding:12px 16px; }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+#mapwrap { background:var(--panel); border:1px solid var(--line); border-radius:8px; position:relative; min-height:420px; }
+svg { width:100%; height:72vh; display:block; touch-action:none; }
+aside { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px; overflow:auto; max-height:80vh; }
+aside h2 { font-size:14px; margin:10px 0 6px; }
+.row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+label { color:var(--muted); font-size:13px; }
+input[type=range] { width:220px; }
+#tip { position:absolute; pointer-events:none; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12px; max-width:340px; display:none; white-space:pre-wrap; box-shadow:0 2px 8px #0003; }
+.drop { border:2px dashed var(--line); border-radius:8px; padding:24px; text-align:center; color:var(--muted); position:absolute; inset:24px; display:flex; align-items:center; justify-content:center; }
+table { border-collapse:collapse; width:100%; font-size:13px; }
+td { padding:2px 4px; border-bottom:1px solid var(--line); }
+.sw { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:4px; vertical-align:middle; }
+button { font:inherit; padding:4px 10px; border:1px solid var(--line); background:var(--panel); color:var(--ink); border-radius:6px; cursor:pointer; }
+</style>
+</head>
+<body>
+<header>
+  <h1>DCO Battle Map</h1>
+  <input type="file" id="file" accept=".json" aria-label="Pilih battle.json">
+  <div class="row"><label for="t">Waktu</label><input type="range" id="t" min="0" max="0" value="0"><span id="tv">0 s</span><button id="play" type="button">Putar</button></div>
+  <div class="row" id="layers"></div>
+</header>
+<main>
+  <div id="mapwrap">
+    <svg id="map" role="img" aria-label="Peta pertempuran"></svg>
+    <div class="drop" id="drop">Tarik battle.json ke sini (folder sesi log DCO: profile/DCO/Logs/&lt;tanggal&gt;/&lt;blok&gt;/session_*/battle.json)</div>
+    <div id="tip"></div>
+  </div>
+  <aside id="side"><p>Belum ada data.</p></aside>
+</main>
+<script>
+const CAUSE_COLORS = { fratricide:"#e0218a", vehicle_collision:"#455a64", idf:"#8a5a00", grenade:"#e08a00", vehicle_fire:"#6b4f2a", cqb:"#00897b", bleed_no_medic:"#b00020", unseen_shooter:"#5e35b1", moving_open:"#d84315", exposed_window:"#0277bd", static_open:"#f9a825", in_cover_outgunned:"#2e7d32", in_cover:"#66bb6a" };
+const ORDER_SHAPE = { garrison:"sq", defend:"sq", attack:"tri", flank:"tri", suppress:"dia", recon:"dia", transport:"dia", withdraw:"x", move:"dot", tactic_role:"tri", detour:"dot", rally:"x" };
+const LAYERS = [["orders","Order"],["def","Penempatan bertahan"],["intel","Intel"],["deaths","Kematian"],["kill","Garis pembunuh"]];
+const state = { data:null, t:0, on:{orders:true, def:true, intel:false, deaths:true, kill:false}, view:null };
+const svg = document.getElementById("map"), tip = document.getElementById("tip");
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function P(s) { if (!s || typeof s !== "string") return null; const a = s.split(",").map(Number); return a.length >= 2 && isFinite(a[0]) && isFinite(a[1]) ? [a[0], a[1]] : null; }
+function facColor(f) { return f === "US" ? css("--us") : f === "USSR" ? css("--ussr") : css("--other"); }
+function cmdFac(d, cmd) { const c = (d.commanders || []).find(x => x.uid === cmd); return c ? c.faction : "?"; }
+document.getElementById("layers").innerHTML = LAYERS.map(([k, l]) => `<label><input type="checkbox" data-l="${k}" ${state.on[k] ? "checked" : ""}> ${l}</label>`).join("");
+document.getElementById("layers").addEventListener("change", e => { const k = e.target.dataset.l; if (k) { state.on[k] = e.target.checked; draw(); } });
+function load(text) {
+  let d; try { d = JSON.parse(text); } catch (e) { alert("File bukan JSON yang valid: " + e.message); return; }
+  state.data = d; document.getElementById("drop").style.display = "none";
+  const tr = document.getElementById("t"); tr.max = Math.ceil(d.duration_s || 0); tr.value = tr.max; state.t = +tr.value;
+  fit(); draw(); side();
+}
+document.getElementById("file").addEventListener("change", e => { const f = e.target.files[0]; if (f) f.text().then(load); });
+const wrap = document.getElementById("mapwrap");
+wrap.addEventListener("dragover", e => e.preventDefault());
+wrap.addEventListener("drop", e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) f.text().then(load); });
+document.getElementById("t").addEventListener("input", e => { state.t = +e.target.value; draw(); });
+let timer = null;
+document.getElementById("play").addEventListener("click", () => {
+  const tr = document.getElementById("t"), btn = document.getElementById("play");
+  if (timer) { clearInterval(timer); timer = null; btn.textContent = "Putar"; return; }
+  if (+tr.value >= +tr.max) tr.value = 0;
+  btn.textContent = "Jeda";
+  timer = setInterval(() => { tr.value = Math.min(+tr.max, +tr.value + Math.max(1, +tr.max / 200)); state.t = +tr.value; draw(); if (+tr.value >= +tr.max) { clearInterval(timer); timer = null; btn.textContent = "Putar"; } }, 60);
+});
+function pts(d) {
+  const out = [];
+  for (const o of d.objectives || []) { out.push([o.x - o.radius, o.z - o.radius]); out.push([o.x + o.radius, o.z + o.radius]); }
+  for (const k of ["cmd_order", "def_place", "cmd_intel"]) for (const r of d[k] || []) { const p = P(r.pos); if (p) out.push(p); }
+  for (const r of d.death_ctx || []) { const p = P(r.pos); if (p) out.push(p); }
+  return out;
+}
+function fit() {
+  const p = pts(state.data); if (!p.length) { state.view = [0, 0, 1000, 1000]; state.flip = 1000; return; }
+  let x0 = Math.min(...p.map(a => a[0])), x1 = Math.max(...p.map(a => a[0])), z0 = Math.min(...p.map(a => a[1])), z1 = Math.max(...p.map(a => a[1]));
+  const pad = Math.max(40, 0.06 * Math.max(x1 - x0, z1 - z0)); x0 -= pad; x1 += pad; z0 -= pad; z1 += pad;
+  state.view = [x0, z0, Math.max(x1 - x0, 1), Math.max(z1 - z0, 1)]; state.flip = 2 * z0 + state.view[3];
+}
+function sy(z) { return state.flip - z; }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function shape(kind, x, y, r, color, info) {
+  const a = `fill="${color}" stroke="${css("--panel")}" stroke-width="${r * 0.25}" data-i="${esc(info)}"`;
+  if (kind === "sq") return `<rect x="${x - r}" y="${y - r}" width="${2 * r}" height="${2 * r}" ${a}/>`;
+  if (kind === "tri") return `<polygon points="${x},${y - r * 1.2} ${x + r},${y + r} ${x - r},${y + r}" ${a}/>`;
+  if (kind === "dia") return `<polygon points="${x},${y - r * 1.2} ${x + r * 1.2},${y} ${x},${y + r * 1.2} ${x - r * 1.2},${y}" ${a}/>`;
+  if (kind === "x") return `<path d="M${x - r} ${y - r}L${x + r} ${y + r}M${x + r} ${y - r}L${x - r} ${y + r}" stroke="${color}" stroke-width="${r * 0.5}" data-i="${esc(info)}"/>`;
+  return `<circle cx="${x}" cy="${y}" r="${r}" ${a}/>`;
+}
+function info(r, skip) { return Object.entries(r).filter(([k]) => !skip.includes(k)).map(([k, v]) => k + ": " + v).join("\n"); }
+function draw() {
+  const d = state.data; if (!d) return;
+  const v = state.view, s = v[2] / 900, t = state.t;
+  document.getElementById("tv").textContent = Math.round(t) + " s";
+  const gname = {}; for (const g of d.grp_summary || []) gname[g.grp] = g.name;
+  let h = "";
+  const step = Math.pow(10, Math.floor(Math.log10(v[2] / 4)));
+  for (let x = Math.ceil(v[0] / step) * step; x < v[0] + v[2]; x += step) h += `<line x1="${x}" x2="${x}" y1="${v[1]}" y2="${v[1] + v[3]}" stroke="${css("--grid")}" stroke-width="${s}"/><text x="${x + 2 * s}" y="${v[1] + v[3] - 4 * s}" font-size="${10 * s}" fill="${css("--muted")}">${x}</text>`;
+  for (let z = Math.ceil((state.flip - v[1] - v[3]) / step) * step; z < state.flip - v[1]; z += step) h += `<line y1="${sy(z)}" y2="${sy(z)}" x1="${v[0]}" x2="${v[0] + v[2]}" stroke="${css("--grid")}" stroke-width="${s}"/><text x="${v[0] + 2 * s}" y="${sy(z) - 2 * s}" font-size="${10 * s}" fill="${css("--muted")}">${z}</text>`;
+  for (const o of d.objectives || []) h += `<circle cx="${o.x}" cy="${sy(o.z)}" r="${o.radius}" fill="none" stroke="${css("--obj")}" stroke-width="${2 * s}" stroke-dasharray="${6 * s} ${4 * s}"/><text x="${o.x}" y="${sy(o.z) - o.radius - 6 * s}" text-anchor="middle" font-size="${13 * s}" fill="${css("--obj")}">${esc(o.name)} (${esc(o.owner_start)} → ${esc(o.owner_end)})</text>`;
+  if (state.on.intel) for (const r of d.cmd_intel || []) { if (r.t > t) continue; const p = P(r.pos); if (!p) continue; const c = facColor(cmdFac(d, r.cmd)); h += `<circle cx="${p[0]}" cy="${sy(p[1])}" r="${(4 + 2 * (r.size || 1)) * s}" fill="none" stroke="${c}" stroke-width="${1.2 * s}" opacity="0.6" data-i="${esc("INTEL\n" + info(r, ["event"]))}"/>`; }
+  if (state.on.orders) for (const r of d.cmd_order || []) { if (r.t > t) continue; const p = P(r.pos); if (!p) continue; h += shape(ORDER_SHAPE[r.order] || "dot", p[0], sy(p[1]), 4 * s, facColor(cmdFac(d, r.cmd)), "ORDER " + (gname[r.grp] || r.grp) + "\n" + info(r, ["event"])); }
+  if (state.on.def) for (const r of d.def_place || []) { if (r.t > t) continue; const p = P(r.pos); if (!p) continue; const c = facColor(cmdFac(d, r.cmd)); const x = p[0], y = sy(p[1]); h += `<rect x="${x - 6 * s}" y="${y - 6 * s}" width="${12 * s}" height="${12 * s}" fill="none" stroke="${c}" stroke-width="${2 * s}" data-i="${esc("DEF " + (gname[r.grp] || r.grp) + "\n" + info(r, ["event"]))}"/>`; if (typeof r.facing === "number") { const a = (90 - r.facing) * Math.PI / 180; h += `<line x1="${x}" y1="${y}" x2="${x + Math.cos(a) * 18 * s}" y2="${y - Math.sin(a) * 18 * s}" stroke="${c}" stroke-width="${1.5 * s}"/>`; } }
+  if (state.on.deaths) for (const r of d.death_ctx || []) { if (r.t > t) continue; const p = P(r.pos); if (!p) continue; const k = P(r.kpos); if (state.on.kill && k) h += `<line x1="${k[0]}" y1="${sy(k[1])}" x2="${p[0]}" y2="${sy(p[1])}" stroke="${CAUSE_COLORS[r.cause] || css("--muted")}" stroke-width="${s}" opacity="0.7"/>`; const x = p[0], y = sy(p[1]), rr = 5 * s; h += `<path d="M${x - rr} ${y - rr}L${x + rr} ${y + rr}M${x + rr} ${y - rr}L${x - rr} ${y + rr}" stroke="${CAUSE_COLORS[r.cause] || css("--muted")}" stroke-width="${2.4 * s}" data-i="${esc("MATI " + r.victim + " (" + r.vfac + ")\n" + info(r, ["event"]))}"/>`; }
+  svg.setAttribute("viewBox", `${v[0]} ${v[1]} ${v[2]} ${v[3]}`);
+  svg.innerHTML = h;
+}
+svg.addEventListener("mousemove", e => { const i = e.target.getAttribute && e.target.getAttribute("data-i"); if (!i) { tip.style.display = "none"; return; } const r = wrap.getBoundingClientRect(); tip.textContent = i; tip.style.display = "block"; tip.style.left = Math.min(e.clientX - r.left + 12, r.width - 350) + "px"; tip.style.top = (e.clientY - r.top + 12) + "px"; });
+svg.addEventListener("mouseleave", () => tip.style.display = "none");
+svg.addEventListener("wheel", e => { if (!state.view) return; e.preventDefault(); const v = state.view, r = svg.getBoundingClientRect(); const f = e.deltaY > 0 ? 1.15 : 1 / 1.15; const mx = v[0] + v[2] * (e.clientX - r.left) / r.width, my = v[1] + v[3] * (e.clientY - r.top) / r.height; state.view = [mx - (mx - v[0]) * f, my - (my - v[1]) * f, v[2] * f, v[3] * f]; draw(); }, { passive: false });
+let drag = null;
+svg.addEventListener("pointerdown", e => { drag = [e.clientX, e.clientY, state.view.slice()]; svg.setPointerCapture(e.pointerId); });
+svg.addEventListener("pointermove", e => { if (!drag || !state.view) return; const r = svg.getBoundingClientRect(), v = drag[2]; state.view = [v[0] - (e.clientX - drag[0]) * v[2] / r.width, v[1] - (e.clientY - drag[1]) * v[3] / r.height, v[2], v[3]]; draw(); });
+svg.addEventListener("pointerup", () => drag = null);
+function side() {
+  const d = state.data; const el = document.getElementById("side");
+  const causes = {}; for (const r of d.death_ctx || []) causes[r.cause] = (causes[r.cause] || 0) + 1;
+  const deadBy = {}; for (const r of d.death_ctx || []) deadBy[r.vfac] = (deadBy[r.vfac] || 0) + 1;
+  let h = `<h2>${esc((d.world || "").split("/").pop())}</h2><p>${Math.round(d.duration_s || 0)} s · selesai: ${esc(d.why || "-")}</p>`;
+  h += `<h2>Commander</h2><table>${(d.commanders || []).map(c => `<tr><td><span class="sw" style="background:${facColor(c.faction)}"></span>${esc(c.uid)}</td><td>${esc(c.mode)}</td><td>agresi ${esc(c.aggression)}</td></tr>`).join("")}</table>`;
+  h += `<h2>Ringkasan commander</h2><table>${(d.cmd_summary || []).map(c => `<tr><td>${esc(c.cmd)}</td><td>hilang ${esc(c.losses)}</td><td>bunuh ${esc(c.kills)}</td><td>${esc(c.tactics)}</td></tr>`).join("")}</table>`;
+  h += `<h2>Hasil taktik</h2><table>${(d.tactic_result || []).map(r => `<tr><td>${Math.round(r.t)} s</td><td>${esc(r.tactic)}</td><td>${esc(r.result)}</td><td>${esc(r.reason)}</td></tr>`).join("") || "<tr><td>-</td></tr>"}</table>`;
+  h += `<h2>Kematian per faksi</h2><table>${Object.entries(deadBy).map(([f, n]) => `<tr><td><span class="sw" style="background:${facColor(f)}"></span>${esc(f)}</td><td>${n}</td></tr>`).join("")}</table>`;
+  h += `<h2>Penyebab mati</h2><table>${Object.entries(causes).sort((a, b) => b[1] - a[1]).map(([c, n]) => `<tr><td><span class="sw" style="background:${CAUSE_COLORS[c] || "#999"}"></span>${esc(c)}</td><td>${n}</td></tr>`).join("")}</table>`;
+  h += `<h2>Legenda order</h2><p>▲ attack/flank · ■ defend/garrison · ◆ suppress/recon/transport · ✕ withdraw/rally · ● move. Kotak kosong + garis = penempatan bertahan dan arah hadap. Lingkaran tipis = intel commander.</p>`;
+  el.innerHTML = h;
+}
+</script>
+</body>
+</html>

@@ -19,8 +19,7 @@ class SCR_AIIndividualPersonalityAttribute : SCR_BaseFloatValueHolderEditorAttri
 			return null;
 
 		SCR_AIUtilityComponent util = aiComponents.GetUtilityComponent();
-		DCO_AIConfigComponent conf = util.m_DCOConfig;
-		DCO_EAIPersonality p = conf.GetPersonality();
+		DCO_EAIPersonality p = DCO_AIConfigComponent.PersonalityOf(util);
 
 		return SCR_BaseEditorAttributeVar.CreateInt(p);
 	}
@@ -39,7 +38,9 @@ class SCR_AIIndividualPersonalityAttribute : SCR_BaseFloatValueHolderEditorAttri
 			return;
 
 		SCR_AIUtilityComponent util = aiComponents.GetUtilityComponent();
-		DCO_AIConfigComponent conf = util.m_DCOConfig;
+		DCO_AIConfigComponent conf = DCO_AIConfigComponent.Of(util);
+		if (!conf)
+			return;
 
 		conf.SetPersonality(var.GetInt());
 	}

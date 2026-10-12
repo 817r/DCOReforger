@@ -255,7 +255,7 @@ BehaviorTree {
   }
   VariableReference shootPosScattered {
    VariableType 6
-   EditorPos 96 1296
+   EditorPos 16 1296
   }
   VariableReference shootPosScattered {
    VariableType 6

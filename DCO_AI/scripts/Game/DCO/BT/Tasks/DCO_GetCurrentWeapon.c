@@ -1,7 +1,5 @@
 class SCR_AIGetCurrentWeaponComponent : AITaskScripted
 {
-	protected static const string PORT_PREFAB_RESOURCE_NAME = "PrefabResourceName";
-	protected static const string PORT_WEAPON_COMPONENT = "WeaponComponent";
 
 	protected ResourceName m_sQueryResourceName;
 
@@ -36,7 +34,7 @@ class SCR_AIGetCurrentWeaponComponent : AITaskScripted
 
 		if (!selectedWeaponComp) return ENodeResult.FAIL;
 
-		SetVariableOut(PORT_WEAPON_COMPONENT, selectedWeaponComp);
+		SetVariableOut("WeaponComponent", selectedWeaponComp);
 		return ENodeResult.SUCCESS;
 	}
 
@@ -51,6 +49,12 @@ class SCR_AIGetCurrentWeaponComponent : AITaskScripted
 
 	override static bool VisibleInPalette() { return true; }
 
-	protected static ref TStringArray s_aVarsOut = { PORT_WEAPON_COMPONENT };
-	override TStringArray GetVariablesOut() { return s_aVarsOut; }
+	protected static ref TStringArray s_aVarsOut;
+	protected static TStringArray GetVarsOut()
+	{
+		if (!s_aVarsOut)
+			s_aVarsOut = { "WeaponComponent" };
+		return s_aVarsOut;
+	}
+	override TStringArray GetVariablesOut() { return GetVarsOut(); }
 }

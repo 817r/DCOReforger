@@ -1,9 +1,6 @@
 class SCR_AIFindPositionWithPrefab : AITaskScripted
 {
-	protected static const string PORT_POS = "Pos";
-	protected static const string PORT_PREFAB_RESOURCE_NAME = "PrefabResourceName";
 
-	protected static const string PORT_ARSENAL_ENTITY = "ArsenalEntity";
 
 	[Attribute("0", UIWidgets.EditBox)]
 	protected float m_fSearchRadius;
@@ -16,8 +13,8 @@ class SCR_AIFindPositionWithPrefab : AITaskScripted
 		vector searchPos;
 		ResourceName prefabResourceName;
 
-		GetVariableIn(PORT_POS, searchPos);
-		GetVariableIn(PORT_PREFAB_RESOURCE_NAME, prefabResourceName);
+		GetVariableIn("Pos", searchPos);
+		GetVariableIn("PrefabResourceName", prefabResourceName);
 
 		if (searchPos == vector.Zero || prefabResourceName.IsEmpty())
 			return ENodeResult.FAIL;
@@ -43,7 +40,7 @@ class SCR_AIFindPositionWithPrefab : AITaskScripted
 		if (!nearestEntity)
 			return ENodeResult.FAIL;
 
-		SetVariableOut(PORT_ARSENAL_ENTITY, nearestEntity);
+		SetVariableOut("ArsenalEntity", nearestEntity);
 		return ENodeResult.SUCCESS;
 	}
 
@@ -61,9 +58,21 @@ class SCR_AIFindPositionWithPrefab : AITaskScripted
 
 	override static string GetOnHoverDescription() { return "Finds nearest Entity which has a given prefab in it."; }
 
-	protected static ref TStringArray s_aVarsIn = { PORT_POS, PORT_PREFAB_RESOURCE_NAME };
-	override TStringArray GetVariablesIn() { return s_aVarsIn; }
+	protected static ref TStringArray s_aVarsIn;
+	protected static TStringArray GetVarsIn()
+	{
+		if (!s_aVarsIn)
+			s_aVarsIn = { "Pos", "PrefabResourceName" };
+		return s_aVarsIn;
+	}
+	override TStringArray GetVariablesIn() { return GetVarsIn(); }
 
-	protected static ref TStringArray s_aVarsOut = { PORT_ARSENAL_ENTITY };
-	override TStringArray GetVariablesOut() { return s_aVarsOut; }
+	protected static ref TStringArray s_aVarsOut;
+	protected static TStringArray GetVarsOut()
+	{
+		if (!s_aVarsOut)
+			s_aVarsOut = { "ArsenalEntity" };
+		return s_aVarsOut;
+	}
+	override TStringArray GetVariablesOut() { return GetVarsOut(); }
 }

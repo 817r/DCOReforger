@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{9D41C7E2A83B5F13}Configs/Editor/AttributeCategories/GlobalDoctrineSupport.conf"
+ Configurations {
+  CONFResourceClass PC {
+  }
+  CONFResourceClass XBOX_ONE : PC {
+  }
+  CONFResourceClass XBOX_SERIES : PC {
+  }
+  CONFResourceClass PS4 : PC {
+  }
+  CONFResourceClass PS5 : PC {
+  }
+  CONFResourceClass HEADLESS : PC {
+  }
+ }
+}

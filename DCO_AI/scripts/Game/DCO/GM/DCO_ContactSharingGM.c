@@ -71,6 +71,13 @@ class DCO_ShareToPlayersAttribute : DCO_GlobalBoolAttribute
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_ShareDebugAttribute : DCO_GlobalBoolAttribute
 {
+	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
+	{
+		if (!DCO_TestCaseComponent.RunOn())
+			return null;
+		return super.ReadVariable(item, manager);
+	}
+
 	override protected bool Get(DCO_GlobalAIComponent cfg) { return cfg.GetShareDebug(); }
 	override protected void Set(DCO_GlobalAIComponent cfg, bool value) { cfg.SetShareDebug(value); }
 }

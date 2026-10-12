@@ -27,7 +27,9 @@ enum CMD_EObjectiveType
 {
 	CAPTURE,
 	DESTROY,
-	RECON
+	RECON,
+	DEFEND,
+	HOLD_UNTIL
 }
 
 enum CMD_EThreatLevel
@@ -120,11 +122,12 @@ class CMD_ThreatEntry
 	bool   m_bMoving;
 	float  m_fHeading;
 	bool   m_bFiringAtUs;
+	string m_sHvt;
 	bool   m_bLowPriority;
 
 	bool IsPriorityTarget()
 	{
-		return m_iMG > 0 || m_iAT > 0 || m_bFiringAtUs;
+		return m_iMG > 0 || m_iAT > 0 || m_bFiringAtUs || m_iArmor > 0 || m_bArmorSeen;
 	}
 
 	void MergeReport(CMD_ContactReport r)
@@ -161,6 +164,8 @@ class CMD_ThreatEntry
 
 class CMD_FireMissionRequest
 {
+	bool m_bDCORejectLogged;
+	bool m_bDCOCqbWarned;
 	vector         m_vImpactPos;
 	SCR_EAIArtilleryAmmoType m_eShellType;
 	float          m_fRequestedTime;

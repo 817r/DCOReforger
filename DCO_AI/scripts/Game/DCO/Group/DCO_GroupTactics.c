@@ -77,7 +77,17 @@ class DCO_PostureCombatUtility
 
 	static void ApplyMovePace(DCO_GroupTactics posture, EAIThreatState threat, SCR_AICombatMoveRequest_Move rq, bool allowStand)
 	{
-		if (posture != DCO_GroupTactics.AGGRESIVE || !rq)
+		if (!rq)
+			return;
+
+		if (posture == DCO_GroupTactics.SNEAK)
+		{
+			rq.m_eMovementType = EMovementType.WALK;
+			rq.m_eStanceMoving = ECharacterStance.CROUCH;
+			return;
+		}
+
+		if (posture != DCO_GroupTactics.AGGRESIVE)
 			return;
 
 		if (rq.m_eMovementType == EMovementType.WALK)
@@ -102,6 +112,8 @@ class DCO_PostureCombatUtility
 	{
 		if (morale == moraleState.BREAK)
 			return;
+		if (morale >= moraleState.SHAKEN && threat >= EAIThreatState.ALERTED)
+			return;
 
 		switch (posture)
 		{
@@ -111,9 +123,15 @@ class DCO_PostureCombatUtility
 				break;
 			}
 			case DCO_GroupTactics.DEFENSIVE:
+			case DCO_GroupTactics.DELAY:
 			{
-				if (threat == EAIThreatState.THREATENED)
-					dir = SCR_EAICombatMoveDirection.BACKWARD;
+				dir = Lateral();
+				break;
+			}
+			case DCO_GroupTactics.SNEAK:
+			case DCO_GroupTactics.AMBUSH:
+			{
+				dir = SCR_EAICombatMoveDirection.ANYWHERE;
 				break;
 			}
 			case DCO_GroupTactics.EVASIVE:
@@ -122,5 +140,46 @@ class DCO_PostureCombatUtility
 				break;
 			}
 		}
+	}
+
+	static void ApplyAreaDirection(DCO_GroupTactics posture, inout SCR_EAICombatMoveDirection dir)
+	{
+		switch (posture)
+		{
+			case DCO_GroupTactics.DEFENSIVE:
+			case DCO_GroupTactics.DELAY:
+			{
+				dir = Lateral();
+				break;
+			}
+			case DCO_GroupTactics.SNEAK:
+			case DCO_GroupTactics.AMBUSH:
+			case DCO_GroupTactics.EVASIVE:
+			{
+				dir = SCR_EAICombatMoveDirection.ANYWHERE;
+				break;
+			}
+		}
+	}
+
+	static SCR_EAICombatMoveDirection Lateral()
+	{
+		if (Math.RandomIntInclusive(0, 1) == 1)
+			return SCR_EAICombatMoveDirection.LEFT;
+		return SCR_EAICombatMoveDirection.RIGHT;
+	}
+
+	static bool IsHoldPosture(DCO_GroupTactics posture)
+	{
+		return posture == DCO_GroupTactics.SNEAK || posture == DCO_GroupTactics.AMBUSH || posture == DCO_GroupTactics.DELAY || posture == DCO_GroupTactics.EVASIVE;
+	}
+
+	static float BoundPeriod_ms(DCO_GroupTactics posture)
+	{
+		if (posture == DCO_GroupTactics.AGGRESIVE)
+			return 6000.0;
+		if (posture == DCO_GroupTactics.BALANCE)
+			return 12000.0;
+		return 0;
 	}
 }

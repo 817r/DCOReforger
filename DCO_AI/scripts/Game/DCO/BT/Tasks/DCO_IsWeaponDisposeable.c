@@ -1,6 +1,5 @@
 class DCO_IsWeaponDisposeable : AITaskScripted
 {
-	protected static const string PORT_WEAPON_COMPONENT = "WeaponComponent";
 
 	protected SCR_AICombatComponent m_CombatComponent;
 
@@ -11,7 +10,7 @@ class DCO_IsWeaponDisposeable : AITaskScripted
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
 		BaseWeaponComponent weaponComp;
-		GetVariableIn(PORT_WEAPON_COMPONENT, weaponComp);
+		GetVariableIn("WeaponComponent", weaponComp);
 
 		if (!weaponComp) ENodeResult.FAIL;
 
@@ -29,21 +28,29 @@ class DCO_IsWeaponDisposeable : AITaskScripted
 		return true;
 	}
 
-	protected static ref TStringArray s_aVarsOut = {
-		"IsDisposeable",
-	};
+	protected static ref TStringArray s_aVarsOut;
+	protected static TStringArray GetVarsOut()
+	{
+		if (!s_aVarsOut)
+			s_aVarsOut = { "IsDisposeable", };
+		return s_aVarsOut;
+	}
 
-	protected static ref TStringArray s_aVarsIn = {
-		PORT_WEAPON_COMPONENT,
-	};
+	protected static ref TStringArray s_aVarsIn;
+	protected static TStringArray GetVarsIn()
+	{
+		if (!s_aVarsIn)
+			s_aVarsIn = { "WeaponComponent", };
+		return s_aVarsIn;
+	}
 
 	override TStringArray GetVariablesOut()
 	{
-		return s_aVarsOut;
+		return GetVarsOut();
 	}
 
 	override TStringArray GetVariablesIn()
 	{
-		return s_aVarsIn;
+		return GetVarsIn();
 	}
 }

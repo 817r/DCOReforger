@@ -1,8 +1,20 @@
 class DCO_LongRange
 {
 
-	protected static ref map<IEntity, float> s_mWindowEnd = new map<IEntity, float>();
-	protected static ref map<IEntity, float> s_mNextWindow = new map<IEntity, float>();
+	protected static ref map<IEntity, float> s_mWindowEnd;
+	protected static map<IEntity, float> GetWindowEnd()
+	{
+		if (!s_mWindowEnd)
+			s_mWindowEnd = new map<IEntity, float>();
+		return s_mWindowEnd;
+	}
+	protected static ref map<IEntity, float> s_mNextWindow;
+	protected static map<IEntity, float> GetNextWindow()
+	{
+		if (!s_mNextWindow)
+			s_mNextWindow = new map<IEntity, float>();
+		return s_mNextWindow;
+	}
 
 	static float EffectiveRange(EWeaponType wt)
 	{
@@ -51,7 +63,7 @@ class DCO_LongRange
 
 	protected static bool DoShouldHold(SCR_AIUtilityComponent u)
 	{
-		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetForUtility(u);
 		if (!cfg || !cfg.GetLongRangeHold() || !u || !u.m_CombatComponent || !u.m_ThreatSystem)
 			return false;
 
@@ -65,6 +77,12 @@ class DCO_LongRange
 		if (!t)
 			return false;
 
+		if (DCO_Air.IsAirTarget(t))
+		{
+			DCO_Perf.Count("air:long_skip");
+			return false;
+		}
+
 		return t.GetDistance() > EffectiveRange(u.m_CombatComponent.GetSelectedWeaponType());
 	}
 
@@ -72,23 +90,23 @@ class DCO_LongRange
 	{
 		float now = GetGame().GetWorld().GetWorldTime();
 		float next;
-		s_mNextWindow.Find(shooter, next);
+		GetNextWindow().Find(shooter, next);
 		if (now >= next)
 		{
-			if (s_mNextWindow.Count() > 512)
+			if (GetNextWindow().Count() > 512)
 			{
-				s_mNextWindow.Clear();
-				s_mWindowEnd.Clear();
+				GetNextWindow().Clear();
+				GetWindowEnd().Clear();
 			}
 			float start = now;
 			if (next <= 0)
 				start = now + GroupOrder(shooter) * 700.0;
 			float end = start + 4500.0;
-			s_mWindowEnd.Set(shooter, end);
-			s_mNextWindow.Set(shooter, end + Math.RandomFloat(2000.0, 3500.0));
+			GetWindowEnd().Set(shooter, end);
+			GetNextWindow().Set(shooter, end + Math.RandomFloat(2000.0, 3500.0));
 			return now >= start;
 		}
-		float windowEnd = s_mWindowEnd.Get(shooter);
+		float windowEnd = GetWindowEnd().Get(shooter);
 		return now < windowEnd && now >= windowEnd - 4500.0;
 	}
 
@@ -117,16 +135,16 @@ class DCO_LongRange
 			return;
 
 		ECharacterStance want = ECharacterStance.CROUCH;
-		if (visible && HasProneLOS(u))
+		if (visible && HasProneLOS(u) && DCO_CQC.ProneRoll(u.m_OwnerEntity))
 			want = ECharacterStance.PRONE;
 
-		if (ctrl.GetStance() == want)
+		if (ctrl.GetStance() == want || DCO_Nav.Busy(ctrl, "longrange_stance"))
 			return;
 
 		if (want == ECharacterStance.PRONE)
-			ctrl.SetStanceChange(ECharacterStanceChange.STANCECHANGE_TOPRONE);
+			DCO_Stance.Request(ctrl, ECharacterStanceChange.STANCECHANGE_TOPRONE, "longrange");
 		else
-			ctrl.SetStanceChange(ECharacterStanceChange.STANCECHANGE_TOCROUCH);
+			DCO_Stance.Request(ctrl, ECharacterStanceChange.STANCECHANGE_TOCROUCH, "longrange");
 	}
 
 	protected static bool HasProneLOS(SCR_AIUtilityComponent u)
@@ -136,14 +154,7 @@ class DCO_LongRange
 		if (!t || !me || !t.GetTargetEntity())
 			return false;
 
-		TraceParam tp = new TraceParam();
-		tp.Start = me.GetOrigin() + "0 0.4 0";
-		tp.End = t.GetTargetEntity().GetOrigin() + "0 1 0";
-		tp.Flags = TraceFlags.WORLD | TraceFlags.ENTS;
-		tp.Exclude = me;
-		tp.LayerMask = EPhysicsLayerPresets.Projectile;
-		DCO_Perf.Count("t:DCO_LongRange");
-		float frac = GetGame().GetWorld().TraceMove(tp, null);
-		return frac >= 0.98 || tp.TraceEnt == t.GetTargetEntity();
+		float frac = DCO_Util.TraceFrac(me.GetOrigin() + "0 0.4 0", t.GetTargetEntity().GetOrigin() + "0 1 0", me, TraceFlags.WORLD | TraceFlags.ENTS, EPhysicsLayerPresets.Projectile, "t:DCO_LongRange");
+		return frac >= 0.98 || DCO_Util.LastTraceEnt() == t.GetTargetEntity();
 	}
 }

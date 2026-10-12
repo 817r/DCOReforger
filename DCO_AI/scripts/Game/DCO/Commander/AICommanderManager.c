@@ -10,17 +10,17 @@ class CMD_ObjectiveContextCache
 
 class AICommander_ManagerComponent : ScriptComponent
 {
-	[Attribute("0", UIWidgets.CheckBox, desc: "Gambar overlay manager (tally faction, commander, objective) di posisi entity ini.", category: "Manager Debug")]
+	[Attribute("0", UIWidgets.CheckBox, desc: "Draw the manager overlay (faction tally, commanders, objectives) at this entity's position.", category: "Manager Debug")]
 	protected bool m_bDebugMode;
 
-	[Attribute("1.0", UIWidgets.EditBox, "Interval (detik) gambar ulang overlay manager.", category: "Manager Debug")]
+	[Attribute("1.0", UIWidgets.EditBox, "Interval (s) between manager overlay redraws.", category: "Manager Debug")]
 	protected float m_fDebugRefreshInterval;
 
 	protected ref array<ref Shape> m_aDebugShapes = new array<ref Shape>();
 	protected ref array<ref DebugTextWorldSpace> m_aDebugTexts = new array<ref DebugTextWorldSpace>();
 	protected float m_fDebugTimer = 0.0;
 
-	[Attribute("0", UIWidgets.CheckBox, "DEPRECATED, gak dipake lagi. LOD AI sekarang diatur Global AI (DCO_GlobalAIComponent > LOD Mode / atribut GM global).", category: "Simulation")]
+	[Attribute("0", UIWidgets.CheckBox, "DEPRECATED, no longer used. AI LOD is now set in Global AI (DCO_GlobalAIComponent > LOD Mode / global GM attribute).", category: "Simulation")]
 	protected bool m_bPreventUseLOD;
 
 	ref array<FactionKey> m_aAvailableFactions = {};
@@ -34,8 +34,6 @@ class AICommander_ManagerComponent : ScriptComponent
 	[RplProp()]
 	protected string m_sCommanderRoster;
 
-	protected const string ROSTER_ENTRY_SEP = ";";
-	protected const string ROSTER_FIELD_SEP = "|";
 
 	protected ref array<string> m_aRosterUIDs = {};
 	protected ref array<FactionKey> m_aRosterFactions = {};
@@ -61,6 +59,11 @@ class AICommander_ManagerComponent : ScriptComponent
 	{
 		if (!m_aObjective.Contains(obj))
 			m_aObjective.Insert(obj);
+		if (Replication.IsServer())
+		{
+			GetGame().GetCallqueue().Remove(DCO_RebuildObjectiveRoster);
+			GetGame().GetCallqueue().CallLater(DCO_RebuildObjectiveRoster, 500);
+		}
 
 		return true;
 	}
@@ -84,14 +87,97 @@ class AICommander_ManagerComponent : ScriptComponent
 		if (!m_aCommander.IsEmpty() || !m_aObjective.IsEmpty())
 			return;
 
-		Print("[CMD_Manager] Commander & objective habis -- manager auto-spawn dihapus");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", "No commanders or objectives left -- auto-spawned manager removed");
 		SCR_EntityHelper.DeleteEntityAndChildren(GetOwner());
 	}
 
 	void UnregisterObjective(CMD_AICommanderObjectiveComponent obj)
 	{
 		m_aObjective.RemoveItem(obj);
+		if (Replication.IsServer())
+			DCO_RebuildObjectiveRoster();
 		DespawnIfUnused();
+	}
+
+	[RplProp()]
+	protected string m_sObjectiveRoster;
+	protected ref array<CMD_AICommanderObjectiveComponent> m_aObjRosterObjs;
+	protected string m_sObjRosterParsed;
+	protected ref array<string> m_aObjRosterNames;
+
+	void DCO_RebuildObjectiveRoster()
+	{
+		if (!Replication.IsServer())
+			return;
+		array<string> names = {};
+		array<CMD_AICommanderObjectiveComponent> objs = {};
+		foreach (CMD_AICommanderObjectiveComponent o : m_aObjective)
+		{
+			if (!o || !o.GetOwner())
+				continue;
+			o.DCO_PhaseFirstOwner();
+			string n = o.GetLogName();
+			n.Replace(";", ",");
+			int at = 0;
+			while (at < names.Count() && names[at] <= n)
+				at++;
+			names.InsertAt(n, at);
+			objs.InsertAt(o, at);
+		}
+		for (int i = 1; i < names.Count(); i++)
+		{
+			int dup = 1;
+			for (int j = 0; j < i; j++)
+			{
+				if (names[j] == names[i] || names[j].StartsWith(names[i] + "#"))
+					dup++;
+			}
+			if (dup > 1)
+				names[i] = names[i] + "#" + dup.ToString();
+		}
+		if (!m_aObjRosterObjs)
+			m_aObjRosterObjs = {};
+		m_aObjRosterObjs.Copy(objs);
+		string roster;
+		foreach (int k, string nm : names)
+		{
+			if (k > 0)
+				roster += ";";
+			roster += nm;
+		}
+		if (roster == m_sObjectiveRoster)
+			return;
+		m_sObjectiveRoster = roster;
+		Replication.BumpMe();
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("obj_roster count=%1 list=%2", names.Count(), roster));
+	}
+
+	void DCO_GetObjectiveRoster(notnull array<string> outNames)
+	{
+		if (!m_aObjRosterNames)
+			m_aObjRosterNames = {};
+		if (m_sObjRosterParsed != m_sObjectiveRoster)
+		{
+			m_sObjRosterParsed = m_sObjectiveRoster;
+			m_aObjRosterNames.Clear();
+			if (!m_sObjectiveRoster.IsEmpty())
+				m_sObjectiveRoster.Split(";", m_aObjRosterNames, true);
+		}
+		outNames.Copy(m_aObjRosterNames);
+	}
+
+	CMD_AICommanderObjectiveComponent DCO_ObjectiveAt(int rosterIndex)
+	{
+		if (!m_aObjRosterObjs || !m_aObjRosterObjs.IsIndexValid(rosterIndex))
+			return null;
+		return m_aObjRosterObjs[rosterIndex];
+	}
+
+	int DCO_ObjectiveIndex(CMD_AICommanderObjectiveComponent obj)
+	{
+		if (!m_aObjRosterObjs || !obj)
+			return -1;
+		return m_aObjRosterObjs.Find(obj);
 	}
 
 	bool RegisterCommander(AICommander_BaseComponent cmd)
@@ -105,7 +191,7 @@ class AICommander_ManagerComponent : ScriptComponent
 		if (!m_aCommander.Contains(cmd))
 			m_aCommander.Insert(cmd);
 
-		Print("REGISTERING : " + cmd.GetCommanderUID() + " FACTION : " + cmd.GetCommanderFactionKey());
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", "REGISTERING : " + cmd.GetCommanderUID() + " FACTION : " + cmd.GetCommanderFactionKey());
 
 		if (Replication.IsServer())
 			RebuildCommanderRoster();
@@ -121,10 +207,20 @@ class AICommander_ManagerComponent : ScriptComponent
 		if (m_aCommander.Contains(cmd))
 			m_aCommander.RemoveItem(cmd);
 
-		Print("UNREGISTERING : " + cmd.GetCommanderUID() + " FACTION : " + cmd.GetCommanderFactionKey());
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", "UNREGISTERING : " + cmd.GetCommanderUID() + " FACTION : " + cmd.GetCommanderFactionKey());
 
 		if (Replication.IsServer())
+		{
 			RebuildCommanderRoster();
+			if (!DCO_Util.Teardown("unregister_commander"))
+			{
+				foreach (CMD_AICommanderObjectiveComponent o : m_aObjective)
+				{
+					if (o)
+						o.DCO_CommanderGone(cmd.GetCommanderUID());
+				}
+			}
+		}
 
 		DespawnIfUnused();
 
@@ -135,7 +231,7 @@ class AICommander_ManagerComponent : ScriptComponent
 	{
 		string uid = cmd.GetCommanderUID();
 
-		bool invalid = uid.IsEmpty() || uid.Contains(ROSTER_ENTRY_SEP) || uid.Contains(ROSTER_FIELD_SEP);
+		bool invalid = uid.IsEmpty() || uid.Contains(";") || uid.Contains("|");
 		if (!invalid && !IsCommanderUIDTaken(uid, cmd))
 			return;
 
@@ -152,7 +248,7 @@ class AICommander_ManagerComponent : ScriptComponent
 				break;
 		}
 
-		Print(string.Format("[CMD_Manager] Commander UID '%1' invalid/duplicate -> '%2'", uid, newUid), LogLevel.WARNING);
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("Commander UID '%1' invalid/duplicate -> '%2'", uid, newUid));
 		cmd.SetCommanderUID(newUid);
 	}
 
@@ -178,7 +274,7 @@ class AICommander_ManagerComponent : ScriptComponent
 			if (!cmd)
 				continue;
 
-			entries.Insert(cmd.GetCommanderUID() + ROSTER_FIELD_SEP + cmd.GetCommanderFactionKey());
+			entries.Insert(cmd.GetCommanderUID() + "|" + cmd.GetCommanderFactionKey());
 		}
 
 		entries.Sort();
@@ -187,7 +283,7 @@ class AICommander_ManagerComponent : ScriptComponent
 		for (int i = 0; i < entries.Count(); i++)
 		{
 			if (i > 0)
-				roster = roster + ROSTER_ENTRY_SEP;
+				roster = roster + ";";
 			roster = roster + entries[i];
 		}
 
@@ -211,12 +307,12 @@ class AICommander_ManagerComponent : ScriptComponent
 			return;
 
 		array<string> entries = {};
-		m_sCommanderRoster.Split(ROSTER_ENTRY_SEP, entries, true);
+		m_sCommanderRoster.Split(";", entries, true);
 
 		foreach (string entry : entries)
 		{
 			array<string> fields = {};
-			entry.Split(ROSTER_FIELD_SEP, fields, false);
+			entry.Split("|", fields, false);
 			if (fields.IsEmpty() || fields[0].IsEmpty())
 				continue;
 
@@ -256,9 +352,9 @@ class AICommander_ManagerComponent : ScriptComponent
 		if (!Replication.IsServer() || !cmd)
 			return false;
 
-		if (newUID.IsEmpty() || newUID.Contains(ROSTER_ENTRY_SEP) || newUID.Contains(ROSTER_FIELD_SEP))
+		if (newUID.IsEmpty() || newUID.Contains(";") || newUID.Contains("|"))
 		{
-			Print(string.Format("[CMD_Manager] Nama commander '%1' gak valid (kosong atau pake ';' / '|')", newUID), LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("Commander name '%1' is invalid (empty or uses ';' / '|')", newUID));
 			return false;
 		}
 
@@ -267,7 +363,7 @@ class AICommander_ManagerComponent : ScriptComponent
 
 		if (IsCommanderUIDTaken(newUID, cmd))
 		{
-			Print(string.Format("[CMD_Manager] Nama commander '%1' udah dipake commander lain", newUID), LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("Commander name '%1' is already used by another commander", newUID));
 			return false;
 		}
 
@@ -321,7 +417,7 @@ class AICommander_ManagerComponent : ScriptComponent
 
 		if (!GetGame().GetFactionManager())
 		{
-			Print("[CMD_Manager] FactionManager belum ada -- daftar faction kosong", LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", "FactionManager not present yet -- faction list is empty");
 			return;
 		}
 
@@ -404,7 +500,7 @@ class AICommander_ManagerComponent : ScriptComponent
 			return;
 
 		FactionKey fk  = forCommander.GetCommanderFactionKey();
-		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float worldTime = DCO_Util.NowS();
 
 		array<float> scores = {};
 		array<CMD_AICommanderObjectiveComponent> sorted = {};
@@ -415,6 +511,9 @@ class AICommander_ManagerComponent : ScriptComponent
 				continue;
 
 			if (obj.IsCommanderBlackListed(forCommander.GetCommanderUID()))
+				continue;
+
+			if (forCommander.DCO_PhaseSkip(obj, "rank"))
 				continue;
 
 			if (forCommander.IsObjectiveOnCooldown(obj))
@@ -498,7 +597,7 @@ class AICommander_ManagerComponent : ScriptComponent
 
 		chosen.RegisterGroup(grp);
 		grp.RegisterCommanderToGroup(chosen);
-		Print(string.Format("[CMD_Manager] Group '%1' → Commander '%2'",
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("Group '%1' → Commander '%2'",
 			grp.GetOwner().GetName(), chosen.GetCommanderUID()));
 	}
 
@@ -506,16 +605,10 @@ class AICommander_ManagerComponent : ScriptComponent
 	{
 		if (!grp)
 			return;
- 		SCR_VehicleFactionAffiliationComponent fac = SCR_VehicleFactionAffiliationComponent.Cast(grp.FindComponent(SCR_VehicleFactionAffiliationComponent));
 		DCO_TransportMissionComponent comp = DCO_TransportMissionComponent.Cast(grp.FindComponent(DCO_TransportMissionComponent));
-		if (!fac || !comp)
+		FactionKey grpFk = DCO_Util.FactionKeyOf(grp, true);
+		if (grpFk.IsEmpty() || !comp)
 			return;
-
-		FactionKey grpFk;
-		if (fac.GetAffiliatedFaction())
-			grpFk = fac.GetAffiliatedFactionKey();
-		else
-			grpFk = fac.GetDefaultFactionKey();
 
 		array<AICommander_BaseComponent> availCommanders = {};
 		foreach (AICommander_BaseComponent cmd : m_aCommander)
@@ -575,14 +668,14 @@ class AICommander_ManagerComponent : ScriptComponent
 
 		if (managerPrefab.IsEmpty())
 		{
-			Print(string.Format("[CMD_Manager] %1 init tanpa manager dan Manager Prefab kosong -- gak di-spawn", context.GetName()), LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("%1 started without a manager and Manager Prefab is empty -- not spawned", context.GetName()));
 			return null;
 		}
 
 		Resource res = Resource.Load(managerPrefab);
 		if (!res || !res.IsValid())
 		{
-			Print(string.Format("[CMD_Manager] Manager Prefab gak valid: %1", managerPrefab), LogLevel.ERROR);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.ERROR, "-", string.Format("Manager Prefab is invalid: %1", managerPrefab));
 			return null;
 		}
 
@@ -593,20 +686,20 @@ class AICommander_ManagerComponent : ScriptComponent
 		IEntity ent = GetGame().SpawnEntityPrefab(res, context.GetWorld(), params);
 		if (!ent)
 		{
-			Print(string.Format("[CMD_Manager] Gagal spawn manager: %1", managerPrefab), LogLevel.ERROR);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.ERROR, "-", string.Format("Failed to spawn manager: %1", managerPrefab));
 			return null;
 		}
 
 		if (!s_Instance)
 		{
-			Print(string.Format("[CMD_Manager] Prefab %1 gak punya AICommander_ManagerComponent", managerPrefab), LogLevel.ERROR);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.ERROR, "-", string.Format("Prefab %1 has no AICommander_ManagerComponent", managerPrefab));
 			return null;
 		}
 
 		s_Instance.InitializeCommanderManager();
 		s_Instance.m_bDCOAutoSpawned = true;
 
-		Print(string.Format("[CMD_Manager] Manager di-spawn otomatis oleh %1", context.GetName()));
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("Manager spawned automatically by %1", context.GetName()));
 		return s_Instance;
 	}
 

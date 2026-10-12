@@ -1,0 +1,28 @@
+FrameWidgetClass {
+ Name "DCO_CmdViewRoot"
+ "Ignore Cursor" 1
+ {
+  CanvasWidgetClass "{3B9D51E07A2C4F18}" {
+   Name "Canvas"
+   Slot FrameWidgetSlot "{8E14C27A5D3B6F90}" {
+    Anchor 0 0 1 1
+    OffsetLeft 0
+    OffsetTop 0
+    OffsetRight 0
+    OffsetBottom 0
+   }
+   "Ignore Cursor" 1
+  }
+  CanvasWidgetClass "{6F2A8D41C09E3B75}" {
+   Name "PanelCanvas"
+   Slot FrameWidgetSlot "{D25E7B3091A4C86F}" {
+    Anchor 0 0 1 1
+    OffsetLeft 0
+    OffsetTop 0
+    OffsetRight 0
+    OffsetBottom 0
+   }
+   "Ignore Cursor" 1
+  }
+ }
+}

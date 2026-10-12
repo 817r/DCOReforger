@@ -1,0 +1,78 @@
+BehaviorTree "{408144C418B8A358}AI/BehaviorTrees/Chimera/Soldier/DCO_Rearm.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_Rearm.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 0 -150
+     Nodes {
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos -400 50
+       Period 0.8
+      }
+      Selector Selector {
+       Name "Selector"
+       EditorPos 100 50
+       Nodes {
+        Sequence Sequence {
+         Name "Take"
+         EditorPos -200 250
+         Nodes {
+          SCR_AIPlayItemGesture "SCR_AI Play Item Gesture" {
+           Name "SCR_AI Play Item Gesture"
+           EditorPos -600 450
+           m_eGesture EItemGesturePickUp
+          }
+          DCO_AIRearmTake "DCO_AI Rearm Take" {
+           Name "DCO_AI Rearm Take"
+           EditorPos -350 450
+          }
+          Decorator Decorator {
+           Name "Decorator"
+           EditorPos -100 450
+           Nodes {
+            AITaskReload Reload {
+             Name "Reload"
+             EditorPos -100 650
+            }
+           }
+           ForceNodeResult Success
+          }
+          SCR_AICompleteAction "SCR_AI Complete Action" {
+           Name "SCR_AI Complete Action"
+           EditorPos 150 450
+          }
+          AITaskReturnState "Return State" {
+           Name "Return State"
+           EditorPos 400 450
+           Result RUNNING
+          }
+         }
+        }
+        Sequence Sequence {
+         Name "Fail"
+         EditorPos 500 250
+         Nodes {
+          SCR_AIFailAction "SCR_AI Fail Action" {
+           Name "SCR_AI Fail Action"
+           EditorPos 450 450
+          }
+          AITaskReturnState "Return State" {
+           Name "Return State"
+           EditorPos 700 450
+           Result RUNNING
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

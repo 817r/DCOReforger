@@ -1,0 +1,14 @@
+VerticalLayoutWidgetClass {
+ Name "DCO_CategoryPopup"
+ Slot FrameWidgetSlot "{8C2E5A7D1B4F9041}" {
+  Anchor 0 0 0 0
+  PositionX 0
+  OffsetLeft 0
+  PositionY 0
+  OffsetTop 0
+  SizeX 120
+  OffsetRight -120
+  SizeY 0
+  OffsetBottom 0
+ }
+}

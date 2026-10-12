@@ -22,5 +22,5 @@ class DCO_AIGLShotDone : AITaskScripted
 
 	static override bool VisibleInPalette() { return true; }
 
-	static override string GetOnHoverDescription() { return "DCO: satu butir GL selesai. Kurangi jatah volley, lanjut atau tutup volley."; }
+	static override string GetOnHoverDescription() { return "DCO: one GL round done. Reduce the volley count, then continue or close the volley."; }
 }

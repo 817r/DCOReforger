@@ -14,6 +14,13 @@ class DCO_SharedContact
 	SCR_AIGroupUtilityComponent m_Receiver;
 	int m_iPlayerID;
 	float m_fDeliverAt;
+	int m_iDeferTicks;
+	int m_iMG;
+	int m_iAT;
+	int m_iSniper;
+	bool m_bArmor;
+	vector m_vVelocity;
+	bool m_bAmbush;
 
 	DCO_SharedContact CopyFor(float deliverAt, bool radio, vector offset)
 	{
@@ -24,6 +31,12 @@ class DCO_SharedContact
 		c.m_vCenter = m_vCenter;
 		c.m_iCount = m_iCount;
 		c.m_bVehicle = m_bVehicle;
+		c.m_iMG = m_iMG;
+		c.m_iAT = m_iAT;
+		c.m_iSniper = m_iSniper;
+		c.m_bArmor = m_bArmor;
+		c.m_vVelocity = m_vVelocity;
+		c.m_bAmbush = m_bAmbush;
 		c.m_iHop = m_iHop;
 		c.m_Origin = m_Origin;
 		c.m_Sender = m_Sender;
@@ -32,6 +45,19 @@ class DCO_SharedContact
 		c.m_vOffset = offset;
 		return c;
 	}
+}
+
+class DCO_SharedEst
+{
+	SCR_AIGroup m_Receiver;
+	SCR_AIGroup m_Sender;
+	vector m_vPos;
+	float m_fRadius;
+	int m_iCount;
+	int m_iHop;
+	bool m_bRadio;
+	float m_fDeliverAt;
+	bool m_bHeard;
 }
 
 class DCO_ShareTrack
@@ -44,14 +70,22 @@ class DCO_ShareTrack
 
 class DCO_ContactSharing
 {
-	protected static const int TICK_MS = 1000;
 
 	protected static ref DCO_ContactSharing s_Instance;
 
 	protected ref array<SCR_AIGroupUtilityComponent> m_aGroups = {};
 	protected ref array<ref DCO_SharedContact> m_aPending = {};
-	protected ref map<string, float> m_mPlayerLast = new map<string, float>();
+	protected ref array<ref DCO_SharedContact> m_aDeferred = {};
+	protected ref array<ref DCO_SharedEst> m_aEstPending = {};
+	protected ref map<int, float> m_mPlayerLast = new map<int, float>();
 	protected int m_iScanIdx;
+
+	static int PendingCount()
+	{
+		if (!s_Instance)
+			return 0;
+		return s_Instance.m_aPending.Count() + s_Instance.m_aDeferred.Count();
+	}
 
 	static void Register(SCR_AIGroupUtilityComponent group)
 	{
@@ -61,7 +95,7 @@ class DCO_ContactSharing
 		if (!s_Instance)
 		{
 			s_Instance = new DCO_ContactSharing();
-			GetGame().GetCallqueue().CallLater(s_Instance.Tick, TICK_MS, true);
+			GetGame().GetCallqueue().CallLater(s_Instance.Tick, 1000, true);
 		}
 
 		if (!s_Instance.m_aGroups.Contains(group))
@@ -81,6 +115,7 @@ class DCO_ContactSharing
 		if (!cfg || !cfg.GetShareEnabled() || !GetGame().GetWorld())
 		{
 			m_aPending.Clear();
+			m_aDeferred.Clear();
 			return;
 		}
 
@@ -88,11 +123,13 @@ class DCO_ContactSharing
 		if (!pm)
 			return;
 
-		float now = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float now = DCO_Util.NowS();
+		PromoteDeferred(now);
 		Deliver(cfg, pm, now);
+		DeliverEst(now);
 
 		int n = m_aGroups.Count();
-		int budget = Math.Max(4, Math.Ceil(n / 3.0));
+		int budget = Math.Max(4, Math.Ceil(1.0 * n / 3.0));
 		while (budget > 0 && !m_aGroups.IsEmpty())
 		{
 			if (m_iScanIdx >= m_aGroups.Count())
@@ -114,13 +151,13 @@ class DCO_ContactSharing
 	protected void ScanSender(DCO_GlobalAIComponent cfg, PerceptionManager pm, SCR_AIGroupUtilityComponent u, float now)
 	{
 		SCR_AIGroup grp = u.m_Owner;
-		if (!grp || !u.m_Perception || !IsAlive(grp.GetLeaderEntity()) || IsPlayerGroup(grp))
+		if (!grp || !u.m_Perception || !DCO_Util.IsAlive(grp.GetLeaderEntity()) || DCO_Util.IsPlayerGroup(grp))
 			return;
 
-		if (u.m_mDCOInjected.Count() > 128)
-			u.m_mDCOInjected.Clear();
-
+		DCO_GroupUtilityComponent dg = DCO_GroupUtilityComponent.Cast(grp.FindComponent(DCO_GroupUtilityComponent));
 		float pmNow = pm.GetTime();
+		if (u.m_mDCOInjected.Count() > 32)
+			PruneInjected(u, pmNow);
 		array<ref DCO_SharedContact> clusters = {};
 		array<float> newest = {};
 
@@ -169,6 +206,8 @@ class DCO_ContactSharing
 			cl.m_vCenter = cl.m_vCenter + (t.m_vWorldPos - cl.m_vCenter) * (1.0 / cl.m_iCount);
 			if (Vehicle.Cast(t.m_Entity))
 				cl.m_bVehicle = true;
+			if (t.m_eCategory == EAITargetInfoCategory.IDENTIFIED)
+				Classify(cl, t.m_Entity);
 			newest[ci] = Math.Max(newest[ci], t.m_fTimestamp);
 		}
 
@@ -203,6 +242,13 @@ class DCO_ContactSharing
 				track = new DCO_ShareTrack();
 				u.m_aDCOShareTracks.Insert(track);
 			}
+			else if (newest[i] > track.m_fInfoTs + 1.0)
+			{
+				vector vel = (c.m_vCenter - track.m_vPos) * (1.0 / (newest[i] - track.m_fInfoTs));
+				vel[1] = 0;
+				if (vel.Length() >= 0.7)
+					c.m_vVelocity = vel;
+			}
 			track.m_vPos = c.m_vCenter;
 			track.m_fSentAt = now;
 			track.m_fInfoTs = newest[i];
@@ -210,6 +256,7 @@ class DCO_ContactSharing
 
 			c.m_iHop = 1;
 			c.m_Origin = grp;
+			c.m_bAmbush = dg && dg.m_fDCOAmbushAt >= 0 && now - dg.m_fDCOAmbushAt < 60.0;
 			Share(cfg, u, c, now);
 		}
 	}
@@ -231,13 +278,13 @@ class DCO_ContactSharing
 		float spotDist = vector.Distance(senderPos, c.m_vCenter);
 		float pmNow = GetGame().GetPerceptionManager().GetTime();
 
+		array<SCR_AIGroupUtilityComponent> recv = {};
+		array<float> dists = {};
 		foreach (SCR_AIGroupUtilityComponent r : m_aGroups)
 		{
 			if (!r || r == senderUtil || !r.m_Owner || r.m_Owner == c.m_Origin || !r.m_Perception)
 				continue;
-			if (m_aPending.Count() >= 128)
-				break;
-			if (IsPlayerGroup(r.m_Owner) || !IsAlive(r.m_Owner.GetLeaderEntity()))
+			if (DCO_Util.IsPlayerGroup(r.m_Owner) || !DCO_Util.IsAlive(r.m_Owner.GetLeaderEntity()))
 				continue;
 
 			Faction rf = r.m_Owner.GetFaction();
@@ -245,29 +292,127 @@ class DCO_ContactSharing
 				continue;
 
 			float d = vector.Distance(senderPos, r.m_Owner.GetLeaderEntity().GetOrigin());
+			if (d > radio && d > voice)
+				continue;
+
+			int at = 0;
+			while (at < dists.Count() && dists[at] <= d)
+				at++;
+			recv.InsertAt(r, at);
+			dists.InsertAt(d, at);
+		}
+
+		foreach (int ri, SCR_AIGroupUtilityComponent rr : recv)
+		{
 			bool useRadio = false;
-			if (d > voice)
+			if (dists[ri] > voice)
 			{
-				if (d > radio || !senderRadio || (needRadio && !GroupHasRadio(r.m_Owner)))
+				if (!senderRadio || (needRadio && !GroupHasRadio(rr.m_Owner)))
 					continue;
 				useRadio = true;
 			}
 
-			if (AlreadyKnows(r, c))
+			if (AlreadyKnows(rr, c))
 				continue;
 
 			DCO_SharedContact k = c.CopyFor(now + Delay(useRadio), useRadio, Noise(cfg, spotDist, useRadio, c.m_iHop));
-			k.m_Receiver = r;
-			m_aPending.Insert(k);
-			Reserve(r, c, pmNow);
+			k.m_Receiver = rr;
+			if (!Enqueue(k))
+				break;
+			Reserve(rr, c, pmNow);
 		}
 
 		if (cfg.GetShareToPlayers())
 			SharePlayers(cfg, c, sender, senderFaction, senderPos, spotDist, senderRadio, now);
 	}
 
+	static void ShareEstimate(SCR_AIGroup sender, vector pos, float radius, int count, int hop, bool heard = false)
+	{
+		if (!s_Instance || !sender)
+			return;
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
+		if (!cfg || !cfg.GetShareEnabled())
+			return;
+		if (hop + 1 > cfg.GetShareHops())
+		{
+			DCO_Perf.Count("fire_est:share_hop_limit");
+			return;
+		}
+		Faction sf = sender.GetFaction();
+		IEntity sl = sender.GetLeaderEntity();
+		if (!sf || !DCO_Util.IsAlive(sl))
+			return;
+		vector sp = sl.GetOrigin();
+		float voice = cfg.GetShareVoiceRange();
+		float radioR = cfg.GetShareRadioRange();
+		bool needRadio = cfg.GetShareRequireRadio();
+		bool senderRadio = !needRadio || GroupHasRadio(sender);
+		float spotDist = vector.Distance(sp, pos);
+		float now = DCO_Util.NowS();
+		int sent;
+		foreach (SCR_AIGroupUtilityComponent r : s_Instance.m_aGroups)
+		{
+			if (!r || !r.m_Owner || r.m_Owner == sender || DCO_Util.IsPlayerGroup(r.m_Owner) || !DCO_Util.IsAlive(r.m_Owner.GetLeaderEntity()))
+				continue;
+			Faction rf = r.m_Owner.GetFaction();
+			if (!rf || !sf.IsFactionFriendly(rf))
+				continue;
+			float d = vector.Distance(sp, r.m_Owner.GetLeaderEntity().GetOrigin());
+			bool useRadio = false;
+			if (d > voice)
+			{
+				if (d > radioR || !senderRadio || (needRadio && !GroupHasRadio(r.m_Owner)))
+					continue;
+				useRadio = true;
+			}
+			if (s_Instance.m_aEstPending.Count() >= 64)
+			{
+				DCO_Perf.Count("fire_est:share_queue_full");
+				break;
+			}
+			vector off = Noise(cfg, spotDist, useRadio, hop + 1);
+			DCO_SharedEst k = new DCO_SharedEst();
+			k.m_Receiver = r.m_Owner;
+			k.m_Sender = sender;
+			k.m_vPos = DCO_Util.Surface(pos + off);
+			k.m_fRadius = radius + off.Length();
+			k.m_iCount = count;
+			k.m_iHop = hop + 1;
+			k.m_bRadio = useRadio;
+			k.m_fDeliverAt = now + Delay(useRadio);
+			k.m_bHeard = heard;
+			s_Instance.m_aEstPending.Insert(k);
+			sent++;
+		}
+		DCO_Perf.Count("fire_est:share");
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdGroup(sender), string.Format("fire_est_share grp=%1 est=%2 radius=%3 reports=%4 hop=%5 receivers=%6 sender_radio=%7 heard=%8", DCO_Log.IdGroup(sender), DCO_Log.Pos(pos), Math.Round(radius), count, hop + 1, sent, DCO_Util.B01(senderRadio), DCO_Util.B01(heard)));
+	}
+
+	protected void DeliverEst(float now)
+	{
+		if (m_aEstPending.IsEmpty())
+			return;
+		float nowMs = GetGame().GetWorld().GetWorldTime();
+		for (int i = m_aEstPending.Count() - 1; i >= 0; i--)
+		{
+			DCO_SharedEst k = m_aEstPending[i];
+			if (now < k.m_fDeliverAt)
+				continue;
+			m_aEstPending.Remove(i);
+			if (!k.m_Receiver || !DCO_Util.IsAlive(k.m_Receiver.GetLeaderEntity()))
+				continue;
+			if (k.m_bHeard)
+				DCO_HeardEst.Receive(k.m_Receiver, k.m_vPos, k.m_fRadius, k.m_iHop, k.m_Sender, k.m_bRadio, nowMs);
+			else
+				DCO_FireEstimate.Receive(k.m_Receiver, k.m_vPos, k.m_fRadius, k.m_iCount, k.m_iHop, k.m_Sender, k.m_bRadio, nowMs);
+		}
+	}
+
 	protected void SharePlayers(DCO_GlobalAIComponent cfg, DCO_SharedContact c, SCR_AIGroup sender, Faction senderFaction, vector senderPos, float spotDist, bool senderRadio, float now)
 	{
+		if (m_mPlayerLast.Count() > 64)
+			PrunePlayerLast(now);
+
 		array<int> players = {};
 		GetGame().GetPlayerManager().GetPlayers(players);
 		array<int> senderPlayers = sender.GetPlayerIDs();
@@ -278,7 +423,7 @@ class DCO_ContactSharing
 				continue;
 
 			IEntity ent = GetGame().GetPlayerManager().GetPlayerControlledEntity(pid);
-			if (!IsAlive(ent))
+			if (!DCO_Util.IsAlive(ent))
 				continue;
 
 			Faction pf = SCR_FactionManager.SGetPlayerFaction(pid);
@@ -294,17 +439,18 @@ class DCO_ContactSharing
 				useRadio = true;
 			}
 
-			string key = pid.ToString() + ":" + Math.Floor(c.m_vCenter[0] / 250.0).ToString() + ":" + Math.Floor(c.m_vCenter[2] / 250.0).ToString();
+			int cx = Math.Floor(c.m_vCenter[0] / 250.0);
+			int cz = Math.Floor(c.m_vCenter[2] / 250.0);
+			int key = pid * 4096 + (cx & 63) * 64 + (cz & 63);
 			float last = 0;
 			if (m_mPlayerLast.Find(key, last) && now - last < 30.0)
 				continue;
-			if (m_mPlayerLast.Count() > 1024)
-				m_mPlayerLast.Clear();
 			m_mPlayerLast.Set(key, now);
 
 			DCO_SharedContact k = c.CopyFor(now + Delay(useRadio), useRadio, Noise(cfg, spotDist, useRadio, c.m_iHop));
 			k.m_iPlayerID = pid;
-			m_aPending.Insert(k);
+			if (!Enqueue(k))
+				break;
 		}
 	}
 
@@ -334,7 +480,7 @@ class DCO_ContactSharing
 				if (!ent)
 					continue;
 				vector pos = c.m_aPositions[t] + c.m_vOffset;
-				pos[1] = GetGame().GetWorld().GetSurfaceY(pos[0], pos[2]);
+				pos = DCO_Util.Surface(pos);
 				r.m_Perception.AddOrUpdateGunshot(ent, pos, c.m_aFactions[t], pmNow, false);
 				r.m_mDCOInjected.Set(ent, pmNow);
 
@@ -342,9 +488,25 @@ class DCO_ContactSharing
 					MarkOnMap(r, ent);
 			}
 
+			int comp = 0;
+			if (c.m_iMG > 0)
+				comp |= 1;
+			if (c.m_iAT > 0)
+				comp |= 2;
+			if (c.m_iSniper > 0)
+				comp |= 4;
+			if (c.m_bVehicle)
+				comp |= 8;
+			if (c.m_bArmor)
+				comp |= 16;
+			r.m_iDCOSharedComp = comp;
+			r.m_vDCOSharedPos = c.m_vCenter + c.m_vOffset;
+			r.m_vDCOSharedVel = c.m_vVelocity;
+			r.m_fDCOSharedAt = now;
+
 			if (cfg.GetShareDebug())
-				Print(string.Format("[DCO_Share] %1 -> %2 hop %3 %4 (%5 musuh, noise %6 m)", DCO_PlayerComms.GetCallsign(c.m_Sender),
-					DCO_PlayerComms.GetCallsign(r.m_Owner), c.m_iHop, Channel(c.m_bRadio), c.m_iCount, Math.Round(c.m_vOffset.Length())));
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("%1 -> %2 hop %3 %4 (%5 enemies, comp %6, speed %7, noise %8 m)", DCO_PlayerComms.GetCallsign(c.m_Sender),
+					DCO_PlayerComms.GetCallsign(r.m_Owner), c.m_iHop, Channel(c.m_bRadio), c.m_iCount, comp, Math.Round(c.m_vVelocity.Length()), Math.Round(c.m_vOffset.Length())));
 
 			if (c.m_iHop < cfg.GetShareHops())
 			{
@@ -359,17 +521,27 @@ class DCO_ContactSharing
 	{
 		IEntity ent = GetGame().GetPlayerManager().GetPlayerControlledEntity(c.m_iPlayerID);
 		SCR_PlayerControllerGroupComponent comp = SCR_PlayerControllerGroupComponent.GetPlayerControllerComponent(c.m_iPlayerID);
-		if (!IsAlive(ent) || !comp)
+		if (!DCO_Util.IsAlive(ent) || !comp)
 			return;
 
 		vector pos = c.m_vCenter + c.m_vOffset;
-		string text = What(c);
+		SCR_AIGroup grp = c.m_Sender;
+		string extra;
+		string list = CompList(c);
+		if (!list.IsEmpty())
+			extra = " " + DCO_Radio.Text("share_comp", grp, DCO_Radio.P("comp", list));
+		if (c.m_bAmbush)
+			extra += " " + DCO_Radio.Text("share_ambush", grp, null);
+		if (c.m_vVelocity != vector.Zero)
+			extra += " " + DCO_Radio.Text("share_moving", grp, DCO_Radio.P("dir", DCO_Radio.Dir(pos, pos + c.m_vVelocity * 100)));
+
+		string text;
 		if (c.m_bRadio)
-			text = text + ", grid " + DCO_PlayerComms.Grid(pos);
+			text = DCO_Radio.Text("share_radio", grp, DCO_Radio.P("what", What(c), "grid", DCO_PlayerComms.Grid(pos), "extra", extra));
 		else
 		{
 			int dist = Math.Max(50, Math.Round(vector.DistanceXZ(ent.GetOrigin(), pos) / 50) * 50);
-			text = string.Format("%1, %2 m %3", text, dist, ShortBearing(ent.GetOrigin(), pos));
+			text = DCO_Radio.Text("share_voice", grp, DCO_Radio.P("what", What(c), "dist", dist.ToString(), "dir", DCO_Radio.Dir(ent.GetOrigin(), pos), "extra", extra));
 		}
 
 		comp.DCO_SendContact(DCO_PlayerComms.GetCallsign(c.m_Sender), text, c.m_bRadio);
@@ -377,24 +549,105 @@ class DCO_ContactSharing
 
 	protected static string What(DCO_SharedContact c)
 	{
+		if (c.m_bArmor)
+			return "@share_what_armor";
 		if (c.m_bVehicle)
-			return "enemy vehicle";
+			return "@share_what_vehicle";
 		if (c.m_iCount <= 3)
-			return "enemy team";
+			return "@share_what_team";
 		if (c.m_iCount <= 9)
-			return "enemy squad";
-		return "enemy platoon";
+			return "@share_what_squad";
+		return "@share_what_platoon";
 	}
 
-	protected static string ShortBearing(vector from, vector to)
+	protected static string CompList(DCO_SharedContact c)
 	{
-		vector d = to - from;
-		float yaw = Math.Atan2(d[0], d[2]) * Math.RAD2DEG;
-		if (yaw < 0)
-			yaw += 360;
-		int sector = Math.Round(yaw / 45);
-		array<string> names = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
-		return names[sector % 8];
+		string list;
+		if (c.m_iMG > 0)
+			list = "@comp_mg";
+		if (c.m_iAT > 0)
+			list = DCO_Radio.Join(list, "@comp_at");
+		if (c.m_iSniper > 0)
+			list = DCO_Radio.Join(list, "@comp_sniper");
+		return list;
+	}
+
+	protected static void Classify(DCO_SharedContact cl, IEntity ent)
+	{
+		IEntity veh = DCO_VehicleCombat.GetVehicle(ent);
+		if (!veh && Vehicle.Cast(ent))
+			veh = ent;
+		if (veh)
+		{
+			cl.m_bVehicle = true;
+			if (DCO_VehicleCombat.IsArmored(veh))
+				cl.m_bArmor = true;
+		}
+		else if (DCO_Strength.HasWeaponInHands(ent, EWeaponType.WT_ROCKETLAUNCHER))
+			cl.m_iAT++;
+		else if (DCO_Strength.HasWeaponInHands(ent, EWeaponType.WT_MACHINEGUN))
+			cl.m_iMG++;
+		else if (DCO_Strength.HasWeaponInHands(ent, EWeaponType.WT_SNIPERRIFLE))
+			cl.m_iSniper++;
+	}
+
+	protected bool Enqueue(DCO_SharedContact k)
+	{
+		if (m_aPending.Count() < 128)
+		{
+			m_aPending.Insert(k);
+			return true;
+		}
+		if (m_aDeferred.Count() >= 64)
+			return false;
+		m_aDeferred.Insert(k);
+		return true;
+	}
+
+	protected void PromoteDeferred(float now)
+	{
+		for (int i = 0; i < m_aDeferred.Count(); i++)
+		{
+			DCO_SharedContact k = m_aDeferred[i];
+			if (m_aPending.Count() < 128)
+			{
+				k.m_fDeliverAt = Math.Max(k.m_fDeliverAt, now);
+				m_aPending.Insert(k);
+				m_aDeferred.Remove(i);
+				i--;
+				continue;
+			}
+			k.m_iDeferTicks++;
+			if (k.m_iDeferTicks > 3)
+			{
+				m_aDeferred.Remove(i);
+				i--;
+			}
+		}
+	}
+
+	protected static void PruneInjected(SCR_AIGroupUtilityComponent u, float pmNow)
+	{
+		array<IEntity> old = {};
+		foreach (IEntity e, float ts : u.m_mDCOInjected)
+		{
+			if (!e || pmNow - ts > 60.0)
+				old.Insert(e);
+		}
+		foreach (IEntity oe : old)
+			u.m_mDCOInjected.Remove(oe);
+	}
+
+	protected void PrunePlayerLast(float now)
+	{
+		array<int> old = {};
+		foreach (int key, float ts : m_mPlayerLast)
+		{
+			if (now - ts >= 30.0)
+				old.Insert(key);
+		}
+		foreach (int ok : old)
+			m_mPlayerLast.Remove(ok);
 	}
 
 	protected static string Channel(bool radio)
@@ -491,21 +744,6 @@ class DCO_ContactSharing
 			marking.MarkTarget(info, r.m_Owner);
 	}
 
-	protected static bool IsPlayerGroup(SCR_AIGroup grp)
-	{
-		array<int> ids = grp.GetPlayerIDs();
-		return ids && !ids.IsEmpty();
-	}
-
-	protected static bool IsAlive(IEntity ent)
-	{
-		ChimeraCharacter ch = ChimeraCharacter.Cast(ent);
-		if (!ch)
-			return false;
-		CharacterControllerComponent ctrl = ch.GetCharacterController();
-		return ctrl && ctrl.GetLifeState() == ECharacterLifeState.ALIVE;
-	}
-
 	static bool HasRadio(IEntity ent)
 	{
 		if (!ent)
@@ -520,7 +758,7 @@ class DCO_ContactSharing
 		grp.GetAgents(agents);
 		foreach (AIAgent a : agents)
 		{
-			if (a && HasRadio(a.GetControlledEntity()))
+			if (a && DCO_Util.HasManpackRadio(a.GetControlledEntity()))
 				return true;
 		}
 		return false;

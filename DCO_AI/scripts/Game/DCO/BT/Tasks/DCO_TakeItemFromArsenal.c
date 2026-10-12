@@ -1,10 +1,10 @@
 class SCR_AITakeItemFromArsenalMagWell : AITaskScripted
 {
-	protected static const string PORT_PREFAB_RESOURCE_NAME = "PrefabResourceName";
-	protected static const string PORT_ARSENAL_ENTITY = "ArsenalEntity";
+	protected static string PORT_PREFAB_RESOURCE_NAME() { return "PrefabResourceName"; }
+	protected static string PORT_ARSENAL_ENTITY() { return "ArsenalEntity"; }
 
-	protected static const string PORT_ITEM_ENTITY = "ItemEntity";
-	protected static const string PORT_COUNT_ITEMS_TAKEN = "CountItemsTaken";
+	protected static string PORT_ITEM_ENTITY() { return "ItemEntity"; }
+	protected static string PORT_COUNT_ITEMS_TAKEN() { return "CountItemsTaken"; }
 
 	[Attribute("1", UIWidgets.EditBox, desc: "Max amount of items we will try to take")]
 	protected int m_iMaxItemsToTake;
@@ -32,8 +32,8 @@ class SCR_AITakeItemFromArsenalMagWell : AITaskScripted
 		typename prefabResourceName;
 		IEntity arsenalEntity;
 
-		GetVariableIn(PORT_PREFAB_RESOURCE_NAME, prefabResourceName);
-		GetVariableIn(PORT_ARSENAL_ENTITY, arsenalEntity);
+		GetVariableIn(PORT_PREFAB_RESOURCE_NAME(), prefabResourceName);
+		GetVariableIn(PORT_ARSENAL_ENTITY(), arsenalEntity);
 
 		if (!arsenalEntity)
 			return ENodeResult.FAIL;
@@ -66,15 +66,15 @@ class SCR_AITakeItemFromArsenalMagWell : AITaskScripted
 		if (nItemsTaken == 0)
 			return ENodeResult.FAIL;
 
-		SetVariableOut(PORT_COUNT_ITEMS_TAKEN, nItemsTaken);
+		SetVariableOut(PORT_COUNT_ITEMS_TAKEN(), nItemsTaken);
 
 		return ENodeResult.SUCCESS;
 	}
 
-	protected ref TStringArray s_aVarsIn = { PORT_ARSENAL_ENTITY, PORT_PREFAB_RESOURCE_NAME };
+	protected ref TStringArray s_aVarsIn = { PORT_ARSENAL_ENTITY(), PORT_PREFAB_RESOURCE_NAME() };
 	override TStringArray GetVariablesIn() { return s_aVarsIn; }
 
-	protected ref TStringArray s_aVarsOut = { PORT_ITEM_ENTITY, PORT_COUNT_ITEMS_TAKEN };
+	protected ref TStringArray s_aVarsOut = { PORT_ITEM_ENTITY(), PORT_COUNT_ITEMS_TAKEN() };
 	override TStringArray GetVariablesOut() { return s_aVarsOut; }
 
 	override static bool VisibleInPalette() { return true; }

@@ -4,14 +4,17 @@ enum DCO_EGroupCapability
 	MOTORIZED,
 	ARMOR,
 	MORTAR,
-	TRANSPORT
+	TRANSPORT,
+	MECHANIZED
 }
 
 enum DCO_EGroupPreset
 {
 	AUTO = 0,
 	ARMOR = 9,
-	MORTAR = 10
+	MORTAR = 10,
+	MOTORIZED = 11,
+	MECHANIZED = 12
 }
 
 enum DCO_EGroupTask
@@ -68,16 +71,16 @@ enum DCO_EROEMode
 [BaseContainerProps()]
 class DCO_ROEEntry
 {
-	[Attribute("0", UIWidgets.ComboBox, "Tugas", "", ParamEnumArray.FromEnum(DCO_EGroupTask))]
+	[Attribute("0", UIWidgets.ComboBox, "Task", "", ParamEnumArray.FromEnum(DCO_EGroupTask))]
 	DCO_EGroupTask m_eTask;
 
 	[Attribute("1", UIWidgets.ComboBox, "Mode", "", ParamEnumArray.FromEnum(DCO_EROEMode))]
 	DCO_EROEMode m_eMode;
 
-	[Attribute("150", UIWidgets.EditBox, "Jarak engage (m) waktu gak lagi jalan")]
+	[Attribute("150", UIWidgets.EditBox, "Engage distance (m) when not moving.")]
 	float m_fEngageDist;
 
-	[Attribute("150", UIWidgets.EditBox, "Jarak engage (m) waktu lagi jalan ke tujuan (EN_ROUTE)")]
+	[Attribute("150", UIWidgets.EditBox, "Engage distance (m) while moving to a destination (EN_ROUTE).")]
 	float m_fEngageDistEnRoute;
 
 	static DCO_ROEEntry Create(DCO_EGroupTask task, DCO_EROEMode mode, float dist, float distEnRoute)

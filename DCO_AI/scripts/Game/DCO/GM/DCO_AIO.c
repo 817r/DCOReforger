@@ -3,7 +3,7 @@ class SCR_AIGlobalDodgeChanceAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -18,7 +18,7 @@ class SCR_AIGlobalDodgeChanceAttribute : SCR_BaseValueListEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 
@@ -33,11 +33,54 @@ class SCR_AIGlobalDodgeChanceAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_GlobalProneChanceAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.GetProneChance(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value) { cfg.SetProneChance(value); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_GlobalCQBProneChanceAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.GetCQBProneChance(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value)
+	{
+		cfg.SetCQBProneChance(value);
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("gm_set_cqb_prone_chance value=%1", cfg.GetCQBProneChance()));
+	}
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_GlobalCombatCohesionOpenAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.GetCombatCohesionOpen(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value) { cfg.SetCombatCohesionOpen(value); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_GlobalCombatCohesionUrbanAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.GetCombatCohesionUrban(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value) { cfg.SetCombatCohesionUrban(value); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_GlobalArmorFearScaleAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.GetArmorFearScale(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value)
+	{
+		cfg.SetArmorFearScale(value);
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "gm_set armor_fear_scale=" + value.ToString(-1, 2));
+	}
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class SCR_AIGlobalDodgeCooldownAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -52,7 +95,7 @@ class SCR_AIGlobalDodgeCooldownAttribute : SCR_BaseValueListEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 
@@ -71,7 +114,7 @@ class SCR_AIGlobalDodgeMaxDistAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -86,7 +129,7 @@ class SCR_AIGlobalDodgeMaxDistAttribute : SCR_BaseValueListEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 
@@ -105,7 +148,7 @@ class SCR_AIGlobalDodgeSearchDistAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -120,7 +163,7 @@ class SCR_AIGlobalDodgeSearchDistAttribute : SCR_BaseValueListEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 
@@ -139,7 +182,7 @@ class SCR_AIGlobalTakeCoverChanceAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -154,7 +197,7 @@ class SCR_AIGlobalTakeCoverChanceAttribute : SCR_BaseValueListEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 
@@ -173,7 +216,7 @@ class SCR_AIGlobalDodgeScaleByPersonalityAttribute : SCR_BaseEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return null;
 
@@ -188,7 +231,7 @@ class SCR_AIGlobalDodgeScaleByPersonalityAttribute : SCR_BaseEditorAttribute
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{
-		BaseGameMode gamemode = BaseGameMode.Cast(item);
+		IEntity gamemode = IEntity.Cast(item);
 		if (!gamemode)
 			return;
 

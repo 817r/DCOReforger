@@ -11,11 +11,6 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 	protected const float MAX_MOVE_DURATION_TO_TARGET_THREATENED_S = 7;
 	protected const float REVERSE_MOVE_DURATION_S = 3;
 
-	protected const float STANDOFF_MG = 150;
-	protected const float STANDOFF_AUTOCANNON = 250;
-	protected const float THREATENED_MAX_STOP_S = 6;
-	protected const float RELOCATE_MIN_S = 3;
-	protected const float RELOCATE_MAX_S = 5;
 
 	protected EAIThreatState m_eThreatState;
 	protected float m_fTargetDist;
@@ -31,16 +26,14 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		m_eThreatState = m_Utility.m_ThreatSystem.GetState();
 		m_fWeaponMinDist = 2.0;
 
-		IEntity atShooter;
-		vector atPos;
-		if (DCO_VehicleCombat.GetATThreat(m_MyVehicle, atShooter, atPos)
-			&& vector.Distance(atPos, m_MyVehicle.GetOrigin()) < 250.0)
+		SCR_AICombatMoveRequest_Move atRq;
+		if (DCO_VehicleCombat.ATReact(m_MyVehicle, m_Utility, m_DriverState, atRq))
 		{
-			if (DCO_VehicleCombat.CanPushEvade(m_DriverState))
-			{
-				ApplyNewRequest(DCO_VehiclePositioning.CreateATEvadeRequest(m_MyVehicle, atPos));
-				DCO_BenchmarkLoggerComponent.Event(string.Format("at_evade veh=%1 dist=%2", m_MyVehicle, Math.Round(vector.Distance(atPos, m_MyVehicle.GetOrigin()))));
-			}
+			if (atRq)
+				ApplyNewRequest(atRq);
+		}
+		else if (DCO_UpdateDuel())
+		{
 		}
 		else if (MoveFromTargetCondition())
 		{
@@ -82,8 +75,12 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 			fireRq.GetOnMovementStarted().Insert(OnMovementStarted);
 			fireRq.GetOnCompleted().Insert(OnMovementCompleted);
 			ApplyNewRequest(fireRq);
-			DCO_BenchmarkLoggerComponent.Event(string.Format("veh_firepos veh=%1 move=%2 tgt=%3", m_MyVehicle,
-				Math.Round(vector.Distance(m_MyVehicle.GetOrigin(), firePos)), Math.Round(vector.Distance(firePos, m_Target.GetLastSeenPosition()))));
+			DCO_VehicleActive.NoteFirePos(m_MyVehicle, firePos);
+			bool aggr = DCO_VehiclePositioning.Aggr(m_Utility);
+			if (aggr)
+				DCO_Perf.Count("veh:aggr_firepos");
+			DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_firepos veh=%1 move=%2 tgt=%3 aggr=%4 standoff=%5 bound_r=%6 at=%7", DCO_Log.IdVeh(m_MyVehicle),
+				Math.Round(vector.Distance(m_MyVehicle.GetOrigin(), firePos)), Math.Round(vector.Distance(firePos, m_Target.GetLastSeenPosition())), aggr, Math.Round(ResolveStandoffDistance()), Math.Round(wpRadius), DCO_IsATKnown()));
 			return;
 		}
 
@@ -146,7 +143,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		else
 		{
 			vector wpPos = wp.GetOrigin();
-			float wpRadius = wp.GetCompletionRadius();
+			float wpRadius = wp.GetCompletionRadius() + DCO_ChaseExtra();
 			bool tgtInWaypoint = vector.DistanceXZ(wpPos, targetPos) < wpRadius;
 			float myDistToWp = vector.DistanceXZ(wpPos, m_MyEntity.GetOrigin());
 
@@ -183,18 +180,42 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 	{
 		return m_eThreatState == EAIThreatState.THREATENED
 			&& !m_DriverState.IsExecutingRequest()
-			&& m_DriverState.m_fTimerStopped_s > THREATENED_MAX_STOP_S;
+			&& m_DriverState.m_fTimerStopped_s > 6.0;
+	}
+
+	protected float DCO_ChaseExtra()
+	{
+		if (DCO_VehiclePositioning.Aggr(m_Utility))
+			return 150.0;
+		return 0;
 	}
 
 	protected bool DCO_GetMoveBounds(out vector wpPos, out float wpRadius)
 	{
 		wpRadius = 0;
 		AIGroup group = m_DriverUtility.GetAIAgent().GetParentGroup();
-		if (!group || !group.GetCurrentWaypoint())
+		if (!group)
+			return true;
+
+		float extra = DCO_ChaseExtra();
+		DCO_GroupUtilityComponent dg = DCO_GroupUtilityComponent.Cast(group.FindComponent(DCO_GroupUtilityComponent));
+		if (dg && dg.GetGroupObjective() && dg.GetGroupObjective().GetOwner())
+		{
+			vector objPos = dg.GetGroupObjective().GetOwner().GetOrigin();
+			float objR = dg.GetGroupObjective().GetRadius();
+			if (vector.DistanceXZ(objPos, m_MyVehicle.GetOrigin()) <= objR + 150.0 + extra)
+			{
+				wpPos = objPos;
+				wpRadius = Math.Max(objR + 50.0, 60.0) + extra;
+				return vector.DistanceXZ(wpPos, m_MyVehicle.GetOrigin()) <= wpRadius;
+			}
+		}
+
+		if (!group.GetCurrentWaypoint())
 			return true;
 
 		wpPos = group.GetCurrentWaypoint().GetOrigin();
-		wpRadius = Math.Max(group.GetCurrentWaypoint().GetCompletionRadius(), 60);
+		wpRadius = Math.Max(group.GetCurrentWaypoint().GetCompletionRadius(), 60) + extra;
 		return vector.DistanceXZ(wpPos, m_MyVehicle.GetOrigin()) <= wpRadius;
 	}
 
@@ -211,7 +232,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 			{
 				ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), pos, threatPos, SCR_EAICombatMoveReason.MOVE_FROM_TARGET));
 				DCO_VehiclePositioning.MarkHiding(m_MyVehicle);
-				DCO_BenchmarkLoggerComponent.Event(string.Format("veh_hide veh=%1 posture=%2", m_MyVehicle, typename.EnumToString(DCO_GroupTactics, posture)));
+				DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_hide veh=%1 posture=%2", DCO_Log.IdVeh(m_MyVehicle), typename.EnumToString(DCO_GroupTactics, posture)));
 				return;
 			}
 
@@ -237,11 +258,167 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 			rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
 		else
 			rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
-		rq.m_fMoveDuration_s = Math.RandomFloat(RELOCATE_MIN_S, RELOCATE_MAX_S);
+		rq.m_fMoveDuration_s = Math.RandomFloat(3.0, 5.0);
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 
 		ApplyNewRequest(rq);
+	}
+
+	protected int m_iDCODuelAmmo = -1;
+	protected int m_iDCODuelShots;
+	protected float m_fDCODuelAt_ms;
+	protected float m_fDCOOutgunAt_ms = -100000;
+
+	protected bool DCO_UpdateDuel()
+	{
+		IEntity tv = DCO_VehicleCombat.TargetVehicle(m_Target.GetTargetEntity());
+		if (!tv || tv == m_MyVehicle || !DCO_VehicleCombat.IsArmored(tv))
+		{
+			m_iDCODuelAmmo = -1;
+			return false;
+		}
+		if (m_DriverState.IsExecutingRequest())
+			return true;
+
+		float now = GetGame().GetWorld().GetWorldTime();
+		vector tpos = m_Target.GetLastSeenPosition();
+		if (DCO_Outgunned(tv))
+		{
+			if (now - m_fDCOOutgunAt_ms > 30000.0)
+			{
+				m_fDCOOutgunAt_ms = now;
+				DCO_DuelOutgunned(tpos, tv);
+			}
+			return true;
+		}
+
+		int ammo = DCO_CurrentAmmo();
+		if (m_iDCODuelAmmo < 0)
+		{
+			vector wpPos, firePos;
+			float wpRadius;
+			DCO_GetMoveBounds(wpPos, wpRadius);
+			float desired = Math.Clamp(m_fTargetDist, 150.0, 600.0);
+			if (DCO_VehiclePositioning.FindFirePosition(m_MyVehicle, tpos, desired, 0.8, wpPos, wpRadius, firePos, true)
+				&& vector.DistanceXZ(firePos, m_MyVehicle.GetOrigin()) > 8.0)
+				ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), firePos, tpos, SCR_EAICombatMoveReason.STANDARD));
+			m_iDCODuelAmmo = Math.Max(ammo, 0);
+			m_iDCODuelShots = Math.RandomIntInclusive(1, 2);
+			if (DCO_VehiclePositioning.Aggr(m_Utility))
+				m_iDCODuelShots = Math.RandomIntInclusive(2, 4);
+			m_fDCODuelAt_ms = now;
+			DCO_Perf.Count("veh:duel_hulldown");
+			return true;
+		}
+
+		int fired = m_iDCODuelAmmo - ammo;
+		if (ammo > m_iDCODuelAmmo)
+			fired = m_iDCODuelShots;
+		if (ammo < 0)
+			fired = 0;
+		bool idle = now - m_fDCODuelAt_ms > 25000.0;
+		if (fired < m_iDCODuelShots && !idle)
+			return true;
+
+		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
+		rq.m_eReason = SCR_EAICombatMoveReason.MOVE_FROM_TARGET;
+		rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
+		rq.m_vMovePos = tpos;
+		rq.m_vTargetPos = tpos;
+		rq.m_eMovementType = EMovementType.RUN;
+		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
+		rq.m_fMoveDuration_s = Math.RandomFloat(20.0, 40.0) / SCR_AICombatMoveUtils.GROUND_VEHICLE_GENERIC_SPEED;
+		string scootDir = "back";
+		if (DCO_VehiclePositioning.Aggr(m_Utility))
+		{
+			rq.m_eReason = SCR_EAICombatMoveReason.STANDARD;
+			if (Math.RandomInt(0, 2) == 0)
+				rq.m_eDirection = SCR_EAICombatMoveDirection.LEFT;
+			else
+				rq.m_eDirection = SCR_EAICombatMoveDirection.RIGHT;
+			rq.m_fMoveDuration_s = Math.RandomFloat(15.0, 25.0) / SCR_AICombatMoveUtils.GROUND_VEHICLE_GENERIC_SPEED;
+			scootDir = "lateral";
+		}
+		rq.m_bAimAtTarget = false;
+		rq.m_bAimAtTargetEnd = false;
+		ApplyNewRequest(rq);
+		m_iDCODuelAmmo = -1;
+		DCO_Perf.Count("veh:duel_scoot_" + scootDir);
+		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_duel_scoot veh=%1 fired=%2 idle=%3 dir=%4", DCO_Log.IdVeh(m_MyVehicle), fired, idle, scootDir));
+		return true;
+	}
+
+	protected int DCO_CurrentAmmo()
+	{
+		if (!m_WeaponManagerComponent || !m_WeaponManagerComponent.GetCurrentWeapon())
+			return -1;
+		BaseMagazineComponent mag = m_WeaponManagerComponent.GetCurrentWeapon().GetCurrentMagazine();
+		if (!mag)
+			return -1;
+		return mag.GetAmmoCount();
+	}
+
+	protected bool DCO_Outgunned(IEntity tv)
+	{
+		if (m_CombatComp.GetCurrentWeaponType() == EWeaponType.WT_MACHINEGUN)
+			return true;
+		PerceivableComponent mine = PerceivableComponent.Cast(m_MyVehicle.FindComponent(PerceivableComponent));
+		PerceivableComponent theirs = PerceivableComponent.Cast(tv.FindComponent(PerceivableComponent));
+		return mine && theirs && theirs.GetUnitType() == EAIUnitType.UnitType_VehicleHeavy && mine.GetUnitType() != EAIUnitType.UnitType_VehicleHeavy;
+	}
+
+	protected void DCO_DuelOutgunned(vector tpos, IEntity tv)
+	{
+		bool mgVsHeavy = false;
+		PerceivableComponent tvPerc = PerceivableComponent.Cast(tv.FindComponent(PerceivableComponent));
+		if (m_CombatComp.GetCurrentWeaponType() == EWeaponType.WT_MACHINEGUN && tvPerc && tvPerc.GetUnitType() == EAIUnitType.UnitType_VehicleHeavy)
+			mgVsHeavy = true;
+		AIGroup group = m_DriverUtility.GetAIAgent().GetParentGroup();
+		DCO_GroupUtilityComponent dg;
+		if (group)
+			dg = DCO_GroupUtilityComponent.Cast(group.FindComponent(DCO_GroupUtilityComponent));
+		if (dg && dg.GetMyCommander() && dg.GetMyCommander().GetThreatResponseComponent())
+		{
+			CMD_ContactReport report = new CMD_ContactReport(tpos, 1, DCO_Util.NowS(), "ARMOR:" + dg.GetOwner().GetName());
+			report.m_bArmorSeen = true;
+			report.m_iArmor = 1;
+			report.m_bFiringAtUs = true;
+			dg.GetMyCommander().GetThreatResponseComponent().ReceiveContactReport(report, dg);
+			DCO_Perf.Count("veh:duel_request");
+		}
+
+		vector pos;
+		DCO_GroupTactics posture = DCO_VehiclePositioning.GetPosture(m_Utility);
+		if (DCO_VehiclePositioning.Aggr(m_Utility) && !mgVsHeavy)
+		{
+			vector away = m_MyVehicle.GetOrigin() - tpos;
+			away[1] = 0;
+			float d = away.Length();
+			if (d > 1)
+			{
+				away = away * (1.0 / d);
+				vector side = Vector(away[2], 0, -away[0]);
+				if (Math.RandomFloat01() < 0.5)
+					side = side * -1.0;
+				vector flank = tpos + side * Math.Clamp(d, 150.0, 400.0);
+				if (DCO_VehiclePositioning.FindFirePosition(m_MyVehicle, tpos, Math.Clamp(d, 150.0, 400.0), 0.8, flank, 120.0, pos))
+				{
+					ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), pos, tpos, SCR_EAICombatMoveReason.STANDARD));
+					DCO_Perf.Count("veh:duel_flank");
+					DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_duel_flank veh=%1 posture=%2", DCO_Log.IdVeh(m_MyVehicle), typename.EnumToString(DCO_GroupTactics, posture)));
+					return;
+				}
+			}
+		}
+
+		if (DCO_VehiclePositioning.FindHidePosition(m_MyVehicle, tpos, vector.Zero, 0, pos))
+		{
+			ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), pos, tpos, SCR_EAICombatMoveReason.MOVE_FROM_TARGET));
+			DCO_VehiclePositioning.MarkHiding(m_MyVehicle);
+		}
+		DCO_Perf.Count("veh:duel_withdraw");
+		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_duel_withdraw veh=%1 posture=%2 mg_vs_heavy=%3", DCO_Log.IdVeh(m_MyVehicle), typename.EnumToString(DCO_GroupTactics, posture), mgVsHeavy));
 	}
 
 	protected float m_fDCOATCheck_ms = -1;
@@ -271,16 +448,20 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		if (!DCO_IsATKnown())
 		{
 			dist = 60.0;
+			if (DCO_VehiclePositioning.Aggr(m_Utility))
+				dist = 50.0;
 		}
 		else
 		{
 			switch (m_CombatComp.GetCurrentWeaponType())
 			{
-				case EWeaponType.WT_MACHINEGUN:	dist = Math.Max(dist, STANDOFF_MG); break;
-				case EWeaponType.WT_AUTOCANNON:	dist = Math.Max(dist, STANDOFF_AUTOCANNON); break;
+				case EWeaponType.WT_MACHINEGUN:	dist = Math.Max(dist, 150.0); break;
+				case EWeaponType.WT_AUTOCANNON:	dist = Math.Max(dist, 250.0); break;
 			}
+			if (DCO_VehicleActive.VehClass(m_MyVehicle) == 3)
+				dist = Math.Max(dist, 300.0);
 		}
-		return dist * DCO_VehiclePositioning.GetStandoffScale(DCO_VehiclePositioning.GetPosture(m_Utility));
+		return dist * Math.Min(DCO_VehiclePositioning.GetStandoffScale(DCO_VehiclePositioning.GetPosture(m_Utility)), 1.2);
 	}
 
 	override protected bool MoveToNextPosCondition()
@@ -315,9 +496,7 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 	protected float m_fTargetLastSeenTime_ms = 0;
 	protected static const float TIME_SINCE_GOOD_VISIBILITY_MIN_MS = 15000.0;
 
-	protected const float MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ = 40.0 * 40.0;
 
-	protected const float REVERSE_MOVE_DURATION_S = 3;
 
 	override bool UpdateCombatMoveLogic()
 	{
@@ -331,16 +510,11 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		float timeSinceLastSeen_ms = GetGame().GetWorld().GetWorldTime() - m_fTargetLastSeenTime_ms;
 		m_bGoodVision = m_bTargetVisible || (timeSinceLastSeen_ms < TIME_SINCE_GOOD_VISIBILITY_MIN_MS);
 
-		IEntity atShooter;
-		vector atPos;
-		if (DCO_VehicleCombat.GetATThreat(m_MyVehicle, atShooter, atPos)
-			&& vector.Distance(atPos, m_MyVehicle.GetOrigin()) < 250.0)
+		SCR_AICombatMoveRequest_Move atRq;
+		if (DCO_VehicleCombat.ATReact(m_MyVehicle, m_Utility, m_DriverState, atRq))
 		{
-			if (DCO_VehicleCombat.CanPushEvade(m_DriverState))
-			{
-				m_DriverState.ApplyNewRequest(DCO_VehiclePositioning.CreateATEvadeRequest(m_MyVehicle, atPos));
-				DCO_BenchmarkLoggerComponent.Event(string.Format("at_evade veh=%1 dist=%2", m_MyVehicle, Math.Round(vector.Distance(atPos, m_MyVehicle.GetOrigin()))));
-			}
+			if (atRq)
+				m_DriverState.ApplyNewRequest(atRq);
 		}
 		else if (MoveFromTargetCondition())
 		{
@@ -367,7 +541,10 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		vector targetPos = m_SuppressionVolume.GetCenterPosition();
 		vector targetDir = (targetPos - muzzlePos).Normalized();
 
-		if (vector.DistanceSq(targetPos, muzzlePos) < MIN_ENGAGEMENT_DISTANCE_TO_TARGET_SQ)
+		float tooCloseSq = 1600.0;
+		if (DCO_VehiclePositioning.Aggr(m_Utility))
+			tooCloseSq = 400.0;
+		if (vector.DistanceSq(targetPos, muzzlePos) < tooCloseSq)
 			return true;
 
 		return false;
@@ -394,11 +571,16 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		rq.m_vMovePos = m_SuppressionVolume.GetCenterPosition();
 		rq.m_eMovementType = EMovementType.RUN;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.BACKWARD;
-		rq.m_fMoveDuration_s = 80 * Math.RandomFloat(1, 1.5) / SCR_AICombatMoveUtils.GROUND_VEHICLE_GENERIC_SPEED;
+		float backDist = 80;
+		if (DCO_VehiclePositioning.Aggr(m_Utility))
+			backDist = 40;
+		rq.m_fMoveDuration_s = backDist * Math.RandomFloat(1, 1.5) / SCR_AICombatMoveUtils.GROUND_VEHICLE_GENERIC_SPEED;
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 
 		m_DriverState.ApplyNewRequest(rq);
+		DCO_Perf.Count("veh:supp_backoff");
+		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_supp_backoff veh=%1 dist=%2 back=%3", DCO_Log.IdVeh(m_MyVehicle), Math.Round(vector.Distance(m_MyVehicle.GetOrigin(), rq.m_vMovePos)), backDist));
 	}
 
 	protected bool TimeToMove()
@@ -425,9 +607,13 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		DCO_GroupTactics posture = DCO_VehiclePositioning.GetPosture(m_Utility);
 		float standoff = 150;
 		if (!DCO_VehicleCombat.IsATKnown(m_MyVehicle, m_Utility))
+		{
 			standoff = 60.0;
+			if (DCO_VehiclePositioning.Aggr(m_Utility))
+				standoff = 50.0;
+		}
 		vector firePos;
-		if (DCO_VehiclePositioning.FindFirePosition(m_MyVehicle, center, standoff * DCO_VehiclePositioning.GetStandoffScale(posture),
+		if (DCO_VehiclePositioning.FindFirePosition(m_MyVehicle, center, standoff * Math.Min(DCO_VehiclePositioning.GetStandoffScale(posture), 1.2),
 			DCO_VehiclePositioning.GetHullDownWeight(posture), vector.Zero, 0, firePos))
 		{
 			ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), firePos, center, SCR_EAICombatMoveReason.STANDARD));
@@ -458,10 +644,12 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		ApplyNewRequest(rq);
 	}
 
-	protected static ref TStringArray s_aVarisIn = {
-		PORT_SUPPRESSION_VOLUME,
-		PORT_VISIBLE,
-		PORT_TIME_LAST_SEEN
-	};
-	override TStringArray GetVariablesIn() { return s_aVarisIn; }
+	protected static ref TStringArray s_aVarisIn;
+	protected static TStringArray GetVarisIn()
+	{
+		if (!s_aVarisIn)
+			s_aVarisIn = { PORT_SUPPRESSION_VOLUME, PORT_VISIBLE, PORT_TIME_LAST_SEEN };
+		return s_aVarisIn;
+	}
+	override TStringArray GetVariablesIn() { return GetVarisIn(); }
 }

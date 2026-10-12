@@ -1,6 +1,6 @@
 class DCO_IsAIDistanceMoreThan : DecoratorScripted
 {
-	static private string THRESHOLD_PORT = "ThresholdIn";
+	static private string THRESHOLD_PORT() { return "ThresholdIn"; }
 
 	SCR_AIInfoComponent m_InfoComponent;
 
@@ -23,7 +23,7 @@ class DCO_IsAIDistanceMoreThan : DecoratorScripted
 		};
 
 		vector dist;
-		if (!GetVariableIn(THRESHOLD_PORT,dist))
+		if (!GetVariableIn(THRESHOLD_PORT(),dist))
 			return false;
 
 		return m_distanceThreshold < vector.Distance(dist, m_InfoComponent.GetUtilityComp().m_OwnerEntity.GetOrigin());
@@ -39,11 +39,15 @@ class DCO_IsAIDistanceMoreThan : DecoratorScripted
 		return "Threshold: " + m_distanceThreshold.ToString();
 	}
 
-	protected static ref TStringArray s_aVarsIn = {
-		THRESHOLD_PORT
-	};
+	protected static ref TStringArray s_aVarsIn;
+	protected static TStringArray GetVarsIn()
+	{
+		if (!s_aVarsIn)
+			s_aVarsIn = { THRESHOLD_PORT() };
+		return s_aVarsIn;
+	}
 	protected override TStringArray GetVariablesIn()
 	{
-		return s_aVarsIn;
+		return GetVarsIn();
 	}
 };

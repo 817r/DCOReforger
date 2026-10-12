@@ -3,25 +3,31 @@ class DCO_LogisticsHubComponentClass : ScriptComponentClass {}
 
 class DCO_LogisticsHubComponent : ScriptComponent
 {
-	[Attribute("", UIWidgets.EditBox, "Faction pemilik hub. Kosong = dipakai Commander terdekat (faction apa pun).")]
+	[Attribute("", UIWidgets.EditBox, "Faction that owns the hub. Empty = used by the nearest Commander (any faction).")]
 	protected FactionKey m_sFactionKey;
 
-	protected static ref array<DCO_LogisticsHubComponent> s_aHubs = {};
+	protected static ref array<DCO_LogisticsHubComponent> s_aHubs;
+	protected static array<DCO_LogisticsHubComponent> GetHubsStore()
+	{
+		if (!s_aHubs)
+			s_aHubs = {};
+		return s_aHubs;
+	}
 
-	static array<DCO_LogisticsHubComponent> GetHubs()	{ return s_aHubs; }
+	static array<DCO_LogisticsHubComponent> GetHubs()	{ return GetHubsStore(); }
 	FactionKey GetFactionKey()							{ return m_sFactionKey; }
 	void SetFactionKey(FactionKey fk)					{ m_sFactionKey = fk; }
 
 	override protected void OnPostInit(IEntity owner)
 	{
 		super.OnPostInit(owner);
-		if (!s_aHubs.Contains(this))
-			s_aHubs.Insert(this);
+		if (!GetHubsStore().Contains(this))
+			GetHubsStore().Insert(this);
 	}
 
 	override void OnDelete(IEntity owner)
 	{
-		s_aHubs.RemoveItem(this);
+		GetHubsStore().RemoveItem(this);
 		super.OnDelete(owner);
 	}
 }

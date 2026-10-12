@@ -1,0 +1,9 @@
+{
+  "_comment": "DCO AI - Forgiving preset. Rename to DCO_GlobalConfig.json and place it where your server keeps DCO_GlobalConfig.json (back up the old one first). Only these settings change; every other setting is filled in with the Recommended default when the server starts. To go back to Recommended, delete DCO_GlobalConfig.json.",
+  "aiSkillDefault": 1,
+  "aimAccuracy": 0.8,
+  "aimSpeed": 0.8,
+  "perception_identify_mul": 0.8,
+  "suppressionEffect": 1.3,
+  "aiAggression": 0.7
+}

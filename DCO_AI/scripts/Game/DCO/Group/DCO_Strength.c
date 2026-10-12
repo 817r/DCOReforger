@@ -28,8 +28,20 @@ class DCO_StrengthInfo
 class DCO_Strength
 {
 
-	protected static ref array<IEntity> s_aVehicles = {};
-	protected static ref array<AIAgent> s_aAgents = {};
+	protected static ref array<IEntity> s_aVehicles;
+	protected static array<IEntity> GetVehicles()
+	{
+		if (!s_aVehicles)
+			s_aVehicles = {};
+		return s_aVehicles;
+	}
+	protected static ref array<AIAgent> s_aAgents;
+	protected static array<AIAgent> GetAgentsStore()
+	{
+		if (!s_aAgents)
+			s_aAgents = {};
+		return s_aAgents;
+	}
 
 	static float VehicleWeight(IEntity vehicle)
 	{
@@ -82,15 +94,16 @@ class DCO_Strength
 		if (!grp)
 			return;
 
-		s_aAgents.Clear();
-		s_aVehicles.Clear();
+		GetAgentsStore().Clear();
+		GetVehicles().Clear();
+		GetAgentsStore();
 		grp.GetAgents(s_aAgents);
 
 		float atWeight = 0.5;
 		if (enemyHasVehicles)
 			atWeight = 2.0;
 
-		foreach (AIAgent a : s_aAgents)
+		foreach (AIAgent a : GetAgentsStore())
 		{
 			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
 			if (!ca)
@@ -111,9 +124,9 @@ class DCO_Strength
 			}
 
 			IEntity veh = DCO_VehicleCombat.GetVehicle(a.GetControlledEntity());
-			if (veh && !s_aVehicles.Contains(veh))
+			if (veh && !GetVehicles().Contains(veh))
 			{
-				s_aVehicles.Insert(veh);
+				GetVehicles().Insert(veh);
 				float w = VehicleWeight(veh);
 				outInfo.m_fStrength += w;
 				if (w > 0)
@@ -123,8 +136,8 @@ class DCO_Strength
 			}
 		}
 
-		s_aAgents.Clear();
-		s_aVehicles.Clear();
+		GetAgentsStore().Clear();
+		GetVehicles().Clear();
 	}
 
 	static void OfCluster(SCR_AIGroupTargetCluster c, notnull DCO_StrengthInfo outInfo)
@@ -133,7 +146,7 @@ class DCO_Strength
 		if (!c)
 			return;
 
-		s_aVehicles.Clear();
+		GetVehicles().Clear();
 		foreach (SCR_AITargetInfo t : c.m_aTargets)
 		{
 			if (!t)
@@ -172,15 +185,15 @@ class DCO_Strength
 			}
 			outInfo.m_fStrength += w;
 		}
-		s_aVehicles.Clear();
+		GetVehicles().Clear();
 	}
 
 	protected static void AddVehicle(IEntity veh, DCO_StrengthInfo outInfo)
 	{
-		if (s_aVehicles.Contains(veh))
+		if (GetVehicles().Contains(veh))
 			return;
 
-		s_aVehicles.Insert(veh);
+		GetVehicles().Insert(veh);
 		float w = VehicleWeight(veh);
 		outInfo.m_fStrength += w;
 		if (w > 0)

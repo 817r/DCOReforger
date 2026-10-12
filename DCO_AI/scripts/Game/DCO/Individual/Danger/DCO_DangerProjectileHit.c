@@ -1,112 +1,215 @@
 [BaseContainerProps()]
 modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 {
-	protected static const float BULLET_IMPACT_DISTANCE_SQ_MAX = 3*3;
 	protected static const float COVER_QUERY_SECTOR_ANGLE_RAD  = 0.35 * Math.PI;
-	protected static const float IMPACT_DIST_VERY_CLOSE = 2.0;
 
 
-	protected static const float DODGE_CHANCE_FALLBACK = 0.6;
 
-	protected static ref map<IEntity, float> s_mLastDodgeRollTime = new map<IEntity, float>();
-
-	protected static ref map<IEntity, float> s_mPinnedUntil = new map<IEntity, float>();
+	protected static ref map<IEntity, float> s_mLastDodgeRollTime;
+	protected static map<IEntity, float> GetLastDodgeRollTime()
+	{
+		if (!s_mLastDodgeRollTime)
+			s_mLastDodgeRollTime = new map<IEntity, float>();
+		return s_mLastDodgeRollTime;
+	}
 
 	protected float m_fLastCoverMoveDuration_s;
 
-	[Attribute("2", UIWidgets.EditBox, "Jumlah peluru minimum buat reposisi dari cover pas belum punya target.")]
+	[Attribute("2", UIWidgets.EditBox, "Minimum rounds to reposition from cover when there is no target yet.")]
 	protected int m_iBulletsRepositionNoTarget;
 
-	[Attribute("4", UIWidgets.EditBox, "Jumlah peluru minimum buat reposisi cepat walau udah punya target dan penembaknya jauh.")]
+	[Attribute("4", UIWidgets.EditBox, "Minimum rounds to reposition quickly even with a target and a distant shooter.")]
 	protected int m_iBulletsRepositionHeavy;
 
-	[Attribute("1", UIWidgets.EditBox, "Jumlah peluru minimum buat kabur pas GAK di cover dan belum punya target.")]
+	[Attribute("1", UIWidgets.EditBox, "Minimum rounds to flee when NOT in cover and there is no target yet.")]
 	protected int m_iBulletsFleeNoCover;
 
-	[Attribute("3", UIWidgets.EditBox, "Jumlah peluru minimum buat kabur pas GAK di cover walau udah punya target.")]
+	[Attribute("3", UIWidgets.EditBox, "Minimum rounds to flee when NOT in cover even with a target.")]
 	protected int m_iBulletsFleeEngaged;
 
-	[Attribute("1", UIWidgets.CheckBox, "Skala threshold di atas pake personality AI (CAUTIOUS bereaksi lebih cepat, RECKLESS lebih lambat).")]
+	[Attribute("1", UIWidgets.CheckBox, "Scale the thresholds above by AI personality (CAUTIOUS reacts sooner, RECKLESS later).")]
 	protected bool m_bScaleThresholdsByPersonality;
 
-	[Attribute("1", UIWidgets.CheckBox, "Lempar smoke pas retreat dari posisi tanpa cover (butuh smoke grenade di inventory).")]
+	[Attribute("1", UIWidgets.CheckBox, "Throw smoke when retreating from a position without cover (needs a smoke grenade in the inventory).")]
 	protected bool m_bDeploySmokeOnFlee;
 
-	[Attribute("0", UIWidgets.CheckBox, "Coba cari BANGUNAN dulu sebelum cover biasa. Matikan supaya AI langsung cari cover biasa saja.")]
+	[Attribute("0", UIWidgets.CheckBox, "Try to find a BUILDING before regular cover. Turn off so AI go straight for regular cover.")]
 	protected bool m_bCoverPreferBuilding;
 
-	[Attribute("1", UIWidgets.CheckBox, "Peluru mendarat = prioritas tertinggi: tetap bereaksi walau ada combat move lain yang sedang jalan, dan request ini dilindungi dari sistem lain.")]
+	[Attribute("1", UIWidgets.CheckBox, "Impacts = highest priority: react even while another combat move is running, and this request is protected from other systems.")]
 	protected bool m_bCoverVeryHighPriority;
 
-	[Attribute("3", UIWidgets.EditBox, "Jumlah peluru minimum buat PINNED (nempel tanah, tidak bergerak) pas ditembakin akurat dari penembak jauh.")]
+	[Attribute("3", UIWidgets.EditBox, "No longer used. Pinned now comes from weighted near misses (Pinned toggle in GM).")]
 	protected int m_iBulletsPinned;
 
-	[Attribute("4.0", UIWidgets.EditBox, "Durasi (detik) AI tetap tertekan / pinned setelah tembakan akurat dari jauh.")]
+	[Attribute("4.0", UIWidgets.EditBox, "No longer used. Pinned lasts while near misses keep coming + 3 s.")]
 	protected float m_fPinnedDuration_s;
 
-	[Attribute("1", UIWidgets.CheckBox, "Hormati gerakan yang sedang jalan: kalau AI lagi menuju cover, jangan diganggu. Cuma ancaman dari ARAH BARU yang boleh menyelak.")]
+	[Attribute("1", UIWidgets.CheckBox, "Respect a move in progress: if the AI is already heading to cover, do not interrupt. Only a threat from a NEW DIRECTION may interrupt.")]
 	protected bool m_bRespectOngoingMove;
 
-	[Attribute("60.0", UIWidgets.EditBox, "Selisih sudut (derajat) antara penembak baru dan arah ancaman yang sedang dihindari, sebelum gerakan yang jalan boleh diselak.")]
+	[Attribute("60.0", UIWidgets.EditBox, "Angle difference (degrees) between a new shooter and the threat being avoided before a running move may be interrupted.")]
 	protected float m_fNewThreatAngleDeg;
 
-	[Attribute("1", UIWidgets.CheckBox, "Jangan kirim cover move baru selama cover move dari reaksi ini masih jalan. Nyegah AI mundur terus tiap kena peluru.")]
+	[Attribute("1", UIWidgets.CheckBox, "Do not send a new cover move while a cover move from this reaction is still running. Stops AI retreating every time a round lands.")]
 	protected bool m_bSkipWhileCoverActive;
 
-	[Attribute("5.0", UIWidgets.EditBox, "Jarak waktu minimum (detik) dari gerakan cover terakhir AI ini, termasuk yang dari reaksi tembakan terdengar. Lebih kecil dari punya WeaponFired karena peluru mendarat lebih genting.")]
+	[Attribute("5.0", UIWidgets.EditBox, "Minimum time (s) since this AI's last cover move, including those from heard gunfire reactions. Shorter than the WeaponFired value because impacts are more urgent.")]
 	protected float m_fCoverMoveCooldown_s;
 
-	[Attribute("6.0", UIWidgets.EditBox, "Jarak maksimum (m) pencarian cover pas REPOSISI (AI sudah di cover, cuma pindah posisi).")]
+	[Attribute("6.0", UIWidgets.EditBox, "Maximum cover search distance (m) when REPOSITIONING (AI already in cover, only moving).")]
 	protected float m_fRepositionSearchDist;
 
-	[Attribute("10.0", UIWidgets.EditBox, "Jarak maksimum (m) pencarian cover pas KABUR dari posisi tanpa cover.")]
+	[Attribute("10.0", UIWidgets.EditBox, "Maximum cover search distance (m) when FLEEING from a position without cover.")]
 	protected float m_fFleeSearchDist;
 
-	[Attribute("1", UIWidgets.CheckBox, "Paksa stance BERDIRI selama bergerak ke cover, apa pun stance yang diminta rule-nya. Jongkok terlalu lambat.")]
+	[Attribute("1", UIWidgets.CheckBox, "Force STANDING stance while moving to cover, whatever stance the rule requests. Crouching is too slow.")]
 	protected bool m_bForceStandWhileMoving;
 
-	[Attribute("0", UIWidgets.CheckBox, "Biarkan AI nembak (suppress) SELAMA bergerak ke cover. Matikan supaya suppress baru jalan setelah AI sampai.")]
+	[Attribute("0", UIWidgets.CheckBox, "Let AI fire (suppress) WHILE moving to cover. Turn off so suppression starts only after the AI arrives.")]
 	protected bool m_bSuppressWhileMoving;
 
-	[Attribute("0", UIWidgets.CheckBox, "Biarkan AI tetap membidik penembak selama BERGERAK ke cover. Matikan supaya AI tidak jalan mundur sambil nembak (bidik tetap dipasang di akhir gerakan).")]
+	[Attribute("0", UIWidgets.CheckBox, "Let AI keep aiming at the shooter WHILE MOVING to cover. Turn off so AI do not walk backward while firing (aim is still set at the end of the move).")]
 	protected bool m_bAimWhileMovingToCover;
 
-	[Attribute("1", UIWidgets.CheckBox, "Reaksi untuk impact di jarak menengah (antara IMPACT_DIST_VERY_CLOSE dan batas 3 m).")]
+	[Attribute("1", UIWidgets.CheckBox, "Reaction to impacts at medium range (between IMPACT_DIST_VERY_CLOSE and the 3 m limit).")]
 	protected bool m_bReactToNearMiss;
 
-	[Attribute("1", UIWidgets.CheckBox, "Roll peluang lari ke cover pakai DodgeChance dari DCO config (+ skala personality kalau aktif). Roll ditandai sebelum dilempar, jadi gagal roll = gak roll ulang sampai Cover Move Cooldown habis, kecuali ancaman dari arah baru.")]
+	[Attribute("1", UIWidgets.CheckBox, "Roll the chance to run for cover using DodgeChance from the DCO config (+ personality scale if on). The roll is marked before it is made, so a failed roll is not re-rolled until Cover Move Cooldown ends, unless the threat comes from a new direction.")]
 	protected bool m_bUseDodgeChance;
 
-	[Attribute("1", UIWidgets.CheckBox, "Arah lari ke cover diacak pakai bobot di bawah (mundur / kiri / kanan / bebas). Matikan supaya balik ke perilaku lama.")]
+	[Attribute("1", UIWidgets.CheckBox, "Randomise the direction to cover using the weights below (back / left / right / any). Turn off for the previous behavior.")]
 	protected bool m_bRandomizeCoverDirection;
 
-	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah MUNDUR (menjauhi ancaman).")]
+	[Attribute("1.0", UIWidgets.EditBox, "Weight for the BACK direction (away from the threat).")]
 	protected float m_fCoverDirWeightBackward;
 
-	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah KIRI (menyamping relatif ke ancaman).")]
+	[Attribute("1.0", UIWidgets.EditBox, "Weight for the LEFT direction (sideways relative to the threat).")]
 	protected float m_fCoverDirWeightLeft;
 
-	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah KANAN (menyamping relatif ke ancaman).")]
+	[Attribute("1.0", UIWidgets.EditBox, "Weight for the RIGHT direction (sideways relative to the threat).")]
 	protected float m_fCoverDirWeightRight;
 
-	[Attribute("1.0", UIWidgets.EditBox, "Bobot arah BEBAS (ANYWHERE, cover terdekat dari arah mana pun).")]
+	[Attribute("1.0", UIWidgets.EditBox, "Weight for the ANY direction (ANYWHERE, nearest cover in any direction).")]
 	protected float m_fCoverDirWeightAnywhere;
 
-	[Attribute("1", UIWidgets.CheckBox, "Bobot arah di atas dikali skala personality (CAUTIOUS lebih sering mundur, AGGRESSIVE/RECKLESS lebih sering menyamping). Peluru mendarat = tidak pernah maju. Cuma berlaku kalau Randomize Cover Direction nyala.")]
+	[Attribute("1", UIWidgets.CheckBox, "The direction weights above are multiplied by a personality scale (CAUTIOUS retreats more often, AGGRESSIVE/RECKLESS move sideways more often). Impacts never cause a forward move. Only applies when Randomize Cover Direction is on.")]
 	protected bool m_bScaleCoverDirByPersonality;
 
-	[Attribute("1", UIWidgets.CheckBox, "Kalau grup punya waypoint posisi, lari ke cover diarahkan ke waypoint. Di luar radius WP -> lari ke WP. Di dalam radius -> arah biasa, kecuali bakal keluar radius -> dibelokin ke WP.")]
+	[Attribute("1", UIWidgets.CheckBox, "If the group has a position waypoint, running to cover is steered toward it. Outside the WP radius -> run to the WP. Inside the radius -> normal direction, unless it would leave the radius -> turned toward the WP.")]
 	protected bool m_bDodgeTowardWaypoint;
 
+	protected static int s_iDCOMissSample;
+	protected static ref array<int> s_aDCOMissBand;
+
+	protected void DCO_MissCalib(SCR_AIUtilityComponent utility, AIDangerEvent dangerEvent)
+	{
+		IEntity src = dangerEvent.GetObject();
+		if (!src || !utility.m_OwnerEntity)
+			return;
+		ChimeraCharacter shooter = ChimeraCharacter.Cast(src);
+		if (!shooter)
+			shooter = ChimeraCharacter.Cast(src.GetRootParent());
+		if (!shooter)
+			return;
+		AIControlComponent ctrl = AIControlComponent.Cast(shooter.FindComponent(AIControlComponent));
+		if (!ctrl || !ctrl.GetAIAgent())
+			return;
+		SCR_AIUtilityComponent su = SCR_AIUtilityComponent.Cast(ctrl.GetAIAgent().FindComponent(SCR_AIUtilityComponent));
+		if (!su || !su.m_CombatComponent)
+			return;
+		BaseTarget t = su.m_CombatComponent.GetCurrentTarget();
+		if (!t || t.GetTargetEntity() != utility.m_OwnerEntity)
+			return;
+		vector from = shooter.GetOrigin();
+		vector dir = DCO_Specialist.Flat(utility.m_OwnerEntity.GetOrigin() - from);
+		float dist = vector.DistanceXZ(utility.m_OwnerEntity.GetOrigin(), from);
+		if (dist > 400.0)
+			return;
+		s_iDCOMissSample++;
+		if (!DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO))
+			return;
+		int band = 300;
+		if (dist < 150.0)
+			band = 100;
+		else if (dist < 250.0)
+			band = 200;
+		if (!s_aDCOMissBand)
+		{
+			s_aDCOMissBand = {};
+			s_aDCOMissBand.Insert(0);
+			s_aDCOMissBand.Insert(0);
+			s_aDCOMissBand.Insert(0);
+		}
+		int bi = band / 100 - 1;
+		string pick = "1in20";
+		if (s_aDCOMissBand[bi] < 30)
+		{
+			s_aDCOMissBand[bi] = s_aDCOMissBand[bi] + 1;
+			pick = "band_quota";
+		}
+		else if (s_iDCOMissSample % 20 != 0)
+		{
+			if (!DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
+				return;
+			pick = "debug";
+		}
+		vector rel = dangerEvent.GetPosition() - from;
+		float lat = Math.AbsFloat(dir[0] * rel[2] - dir[2] * rel[0]);
+		float impactToTarget = vector.DistanceXZ(dangerEvent.GetPosition(), utility.m_OwnerEntity.GetOrigin());
+		string weapon = "rifle";
+		EWeaponType wt = su.m_CombatComponent.GetCurrentWeaponType();
+		if (DCO_Util.IsMGShooter(shooter) || wt == EWeaponType.WT_MACHINEGUN)
+			weapon = "mg";
+		else if (wt == EWeaponType.WT_SNIPERRIFLE)
+			weapon = "dmr";
+		else if (wt == EWeaponType.WT_HANDGUN)
+			weapon = "pistol";
+		SCR_AICombatComponent sc = su.m_CombatComponent;
+		string posture = "stand";
+		if (sc.m_iDCOAimPosture == 0)
+			posture = "prone";
+		else if (sc.m_iDCOAimPosture == 1)
+			posture = "crouch";
+		string head = string.Format("miss_calib skill=%1 weapon=%2 band=%3 lat_m=%4 dist=%5 sigma_mrad=%6 posture=%7 supported=%8 stress=%9",
+			typename.EnumToString(DCO_AISKILL, DCO_AIConfigComponent.SkillOf(su)), weapon, band, lat.ToString(-1, 2), Math.Round(dist), sc.m_fDCOAimSigma.ToString(-1, 2), posture, sc.m_bDCOAimSupported, sc.m_fDCOAimStress.ToString(-1, 2));
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(shooter), head + string.Format(" ramp=%1 light=%2 optic=%3 moving=%4 target=%5 src=impact pick=%6 impact_to_target_m=%7 band_n=%8",
+			sc.m_fDCOAimRamp.ToString(-1, 2), sc.m_fDCOAimLight, sc.m_fDCOAimOptic.ToString(-1, 2), sc.m_bDCOAimMoving, DCO_Log.IdUnit(utility.m_OwnerEntity), pick, impactToTarget.ToString(-1, 1), s_aDCOMissBand[bi]));
+	}
+
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
+	{
+		DCO_Perf.Count("ev:hit");
+		if (dangerEvent)
+			DCO_MissCalib(utility, dangerEvent);
+		if (dangerEvent && utility.m_OwnerEntity && utility.m_CombatComponent && vector.Distance(dangerEvent.GetPosition(), utility.m_OwnerEntity.GetOrigin()) < 2.0)
+			utility.m_CombatComponent.DCO_OnNearImpact();
+		int perfStart = DCO_Perf.Begin();
+		bool reacted = DCO_PerformHitReaction(utility, threatSystem, dangerEvent, dangerEventCount);
+		DCO_Perf.End("danger_hit", perfStart);
+		return reacted;
+	}
+
+	protected bool DCO_PerformHitReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
 		vector impactPos = dangerEvent.GetPosition();
 		float distanceToDangerSq = vector.DistanceSq(utility.GetOrigin(), impactPos);
 
-		if (distanceToDangerSq > BULLET_IMPACT_DISTANCE_SQ_MAX)
+		if (distanceToDangerSq > 9.0)
 			return false;
 
-		threatSystem.ThreatBulletImpact(dangerEventCount);
+		IEntity hitShooter = dangerEvent.GetObject();
+		vector hitFrom;
+		if (hitShooter && hitShooter.GetRootParent())
+			hitFrom = hitShooter.GetRootParent().GetOrigin();
+
+		if (utility.m_CombatComponent)
+		{
+			utility.m_CombatComponent.DCO_TryStartle(impactPos);
+			utility.m_CombatComponent.DCO_NoteNearMiss(hitFrom);
+		}
+
+		threatSystem.DCO_ThreatImpact(dangerEventCount, SCR_AIThreatSystem.DCO_MissWeight(Math.Sqrt(distanceToDangerSq)), hitFrom, hitShooter);
 
 		IEntity shooter = dangerEvent.GetObject();
 		if (!shooter)
@@ -139,7 +242,13 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		IEntity ownerEnt = utility.m_OwnerEntity;
 		bool allowProne = DCO_CQC.IsProneAllowed(ownerEnt, shooterDistance);
 
-		if (IsPinned(ownerEnt))
+		if (DCO_AssaultLock.CheckBlock(utility, "take_cover"))
+		{
+			LowerStance(charCon, false);
+			return true;
+		}
+
+		if (utility.m_CombatComponent.DCO_IsPinned())
 		{
 			KeepProne(charCon, allowProne);
 			return true;
@@ -150,7 +259,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		int thrFleeNoCover  = ScaleThreshold(utility, m_iBulletsFleeNoCover);
 		int thrFleeEngaged  = ScaleThreshold(utility, m_iBulletsFleeEngaged);
 
-		bool veryClose  = distanceToDanger < IMPACT_DIST_VERY_CLOSE;
+		bool veryClose  = distanceToDanger < 2.0;
 		bool shooterNear = shooterDistance < 20.0;
 
 		if (utility.m_CombatComponent.GetSelectedWeaponType() == EWeaponType.WT_MACHINEGUN
@@ -238,12 +347,6 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			return moved;
 		}
 
-		if (veryClose && shooterDistance > 100.0 && bulletCount > ScaleThreshold(utility, m_iBulletsPinned))
-		{
-			MarkPinned(ownerEnt, m_fPinnedDuration_s);
-			KeepProne(charCon, allowProne);
-			return true;
-		}
 
 		if (m_bReactToNearMiss && !veryClose)
 		{
@@ -385,19 +488,19 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		if (!threatFromNewDirection)
 		{
 			float lastRoll_ms;
-			if (s_mLastDodgeRollTime.Find(ownerEnt, lastRoll_ms))
+			if (GetLastDodgeRollTime().Find(ownerEnt, lastRoll_ms))
 			{
 				if ((now_ms - lastRoll_ms) < (m_fCoverMoveCooldown_s * 1000.0))
 					return false;
 			}
 		}
 
-		s_mLastDodgeRollTime.Set(ownerEnt, now_ms);
+		GetLastDodgeRollTime().Set(ownerEnt, now_ms);
 
-		if (s_mLastDodgeRollTime.Count() > 128)
+		if (GetLastDodgeRollTime().Count() > 128)
 			PruneDodgeRollMap(now_ms);
 
-		float chance    = DODGE_CHANCE_FALLBACK;
+		float chance    = 0.6;
 		bool  scalePers = true;
 
 		DCO_AIConfigComponent cfg = utility.m_DCOConfig;
@@ -419,7 +522,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 
 		array<IEntity> toRemove = {};
 
-		foreach (IEntity ent, float lastTime_ms : s_mLastDodgeRollTime)
+		foreach (IEntity ent, float lastTime_ms : GetLastDodgeRollTime())
 		{
 			if (!ent || (now_ms - lastTime_ms) > staleAge_ms)
 				toRemove.Insert(ent);
@@ -427,7 +530,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 
 		foreach (IEntity entRemove : toRemove)
 		{
-			s_mLastDodgeRollTime.Remove(entRemove);
+			GetLastDodgeRollTime().Remove(entRemove);
 		}
 	}
 
@@ -461,108 +564,35 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 
 	protected void KeepProne(SCR_CharacterControllerComponent charCon, bool allowProne)
 	{
-		if (!charCon)
+		if (!charCon || DCO_Nav.Busy(charCon, "hit_stance"))
 			return;
 
 		if (!allowProne)
 		{
 			if (charCon.GetStance() == ECharacterStance.STAND)
-				charCon.SetStanceChange(2);
+				DCO_Stance.Request(charCon, 2, "hit");
 			return;
 		}
 
 		if (charCon.GetStance() != ECharacterStance.PRONE)
-			charCon.SetStanceChange(3);
+			DCO_Stance.Request(charCon, 3, "hit");
 	}
 
 	protected void LowerStance(SCR_CharacterControllerComponent charCon, bool allowProne)
 	{
-		if (!charCon)
+		if (!charCon || DCO_Nav.Busy(charCon, "hit_stance"))
 			return;
 
 		if (charCon.GetStance() == ECharacterStance.STAND)
-			charCon.SetStanceChange(2);
+			DCO_Stance.Request(charCon, 2, "hit");
 		else if (allowProne && charCon.GetStance() == ECharacterStance.CROUCH)
-			charCon.SetStanceChange(3);
-	}
-
-	protected bool IsPinned(IEntity entity)
-	{
-		if (!entity)
-			return false;
-
-		float until_ms;
-		if (!s_mPinnedUntil.Find(entity, until_ms))
-			return false;
-
-		if (GetGame().GetWorld().GetWorldTime() > until_ms)
-		{
-			s_mPinnedUntil.Remove(entity);
-			return false;
-		}
-
-		return true;
-	}
-
-	protected void MarkPinned(IEntity entity, float duration_s)
-	{
-		if (!entity)
-			return;
-
-		float now_ms = GetGame().GetWorld().GetWorldTime();
-		s_mPinnedUntil.Set(entity, now_ms + duration_s * 1000.0);
-
-		if (s_mPinnedUntil.Count() > 128)
-			PrunePinnedMap(now_ms);
-	}
-
-	protected void PrunePinnedMap(float now_ms)
-	{
-		array<IEntity> toRemove = {};
-
-		foreach (IEntity ent, float until_ms : s_mPinnedUntil)
-		{
-			if (!ent || now_ms > until_ms)
-				toRemove.Insert(ent);
-		}
-
-		foreach (IEntity entRemove : toRemove)
-		{
-			s_mPinnedUntil.Remove(entRemove);
-		}
-	}
-
-	protected SCR_EAICombatMoveDirection PickCoverDirection()
-	{
-		float wBack     = Math.Max(0.0, m_fCoverDirWeightBackward);
-		float wLeft     = Math.Max(0.0, m_fCoverDirWeightLeft);
-		float wRight    = Math.Max(0.0, m_fCoverDirWeightRight);
-		float wAnywhere = Math.Max(0.0, m_fCoverDirWeightAnywhere);
-
-		float total = wBack + wLeft + wRight + wAnywhere;
-		if (total <= 0)
-			return SCR_EAICombatMoveDirection.BACKWARD;
-
-		float r = Math.RandomFloat(0, total);
-
-		if (r < wBack)
-			return SCR_EAICombatMoveDirection.BACKWARD;
-		r -= wBack;
-
-		if (r < wLeft)
-			return SCR_EAICombatMoveDirection.LEFT;
-		r -= wLeft;
-
-		if (r < wRight)
-			return SCR_EAICombatMoveDirection.RIGHT;
-
-		return SCR_EAICombatMoveDirection.ANYWHERE;
+			DCO_Stance.Request(charCon, 3, "hit");
 	}
 
 	protected SCR_EAICombatMoveDirection ResolveDirection(bool randomDirection)
 	{
 		if (m_bRandomizeCoverDirection)
-			return PickCoverDirection();
+			return DCO_Util.PickCoverDirection(m_fCoverDirWeightBackward, m_fCoverDirWeightLeft, m_fCoverDirWeightRight, m_fCoverDirWeightAnywhere);
 
 		if (!randomDirection)
 			return SCR_EAICombatMoveDirection.BACKWARD;
@@ -579,11 +609,11 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 	protected SCR_EAICombatMoveDirection ResolveDirectionForUnit(SCR_AIUtilityComponent utility, bool randomDirection)
 	{
 		if (!m_bRandomizeCoverDirection || !m_bScaleCoverDirByPersonality || !utility)
-			return ResolveDirection(randomDirection);
+			return DCO_Osc.KeepDir(utility, ResolveDirection(randomDirection), false, "proj_hit");
 
-		return DCO_PersonalityCombatUtility.PickCoverDirectionForPersonality(utility,
+		return DCO_Osc.KeepDir(utility, DCO_PersonalityCombatUtility.PickCoverDirectionForPersonality(utility,
 			m_fCoverDirWeightBackward, m_fCoverDirWeightLeft, m_fCoverDirWeightRight, m_fCoverDirWeightAnywhere,
-			0.0, false);
+			0.0, false), false, "proj_hit");
 	}
 
 	protected void SuppressAfterMove(notnull SCR_AIUtilityComponent utility, IEntity shooterRoot, float shooterDistance, float duration, float interval)
@@ -634,6 +664,6 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			default:                            scale = 1.0; break;
 		}
 
-		return Math.Max(1, Math.Round(baseThreshold * scale));
+		return Math.Max(1, Math.Round(1.0 * baseThreshold * scale));
 	}
 };

@@ -33,6 +33,7 @@ class DCO_LogiJob : Managed
 	int m_iLeft;
 	float m_fPickupShift;
 	bool m_bMarked;
+	string m_sWait = "none";
 
 	bool IsTransportKind()
 	{
@@ -83,9 +84,6 @@ class DCO_HubCasualty
 
 class DCO_Logistics
 {
-	protected static const float TICK_S = 2;
-	protected static const float SCAN_S = 10;
-	protected static const float WALK_MPS = 1.4;
 
 	protected ref array<ref DCO_LogiJob> m_aJobs = {};
 	protected ref array<ref DCO_HubCasualty> m_aHubCasualties = {};
@@ -95,24 +93,23 @@ class DCO_Logistics
 	protected float m_fTimer;
 	protected float m_fScanTimer;
 	protected static int s_iNextId;
+	protected static ref map<string, int> s_mMaxMags;
+	protected static ref map<SCR_AIGroup, float> s_mLowLogAt;
+	protected static ref map<SCR_AIGroup, float> s_mExtractLogAt;
 
-	static float Now()
-	{
-		return GetGame().GetWorld().GetWorldTime() / 1000.0;
-	}
 
 	vector GetHub()				{ return m_vHub; }
-	void ForceScan()			{ m_fScanTimer = SCAN_S; }
+	void ForceScan()			{ m_fScanTimer = 10.0; }
 	array<ref DCO_LogiJob> GetJobs()	{ return m_aJobs; }
 
 	void Update(AICommander_BaseComponent cmd, float timeSlice)
 	{
 		m_fTimer += timeSlice;
-		if (m_fTimer < TICK_S)
+		if (m_fTimer < 2.0)
 			return;
 		m_fTimer = 0;
 
-		float now = Now();
+		float now = DCO_Util.NowS();
 		m_vHub = cmd.GetHubFor(cmd.GetOwner().GetOrigin(), m_sHubSource);
 		foreach (DCO_TransportTeamComponent team : cmd.GetTransportTeams())
 		{
@@ -120,8 +117,8 @@ class DCO_Logistics
 				team.SetRallyPoint(m_vHub);
 		}
 
-		m_fScanTimer += TICK_S;
-		if (m_fScanTimer >= SCAN_S)
+		m_fScanTimer += 2.0;
+		if (m_fScanTimer >= 10.0)
 		{
 			m_fScanTimer = 0;
 			ScanNeeds(cmd, now);
@@ -250,7 +247,7 @@ class DCO_Logistics
 		if (!team)
 			return false;
 
-		float walk = vector.Distance(from, dest) / WALK_MPS;
+		float walk = vector.Distance(from, dest) / 1.4;
 		if (eta > walk * (1 - cmd.GetLogiEtaMargin()))
 			return false;
 
@@ -279,7 +276,7 @@ class DCO_Logistics
 		int seats = job.SeatsNeeded();
 		foreach (DCO_TransportTeamComponent t : cmd.GetTransportTeams())
 		{
-			if (!t || !t.IsAvailable() || !t.AllowsJob(job.m_eKind))
+			if (!t || !t.IsAvailable() || !t.AllowsJob(job.m_eKind) || !DCO_GroupJobs.TeamOk(t))
 				continue;
 
 			IEntity veh = t.ResolveVehicle();
@@ -432,14 +429,14 @@ class DCO_Logistics
 					}
 				}
 				if (bestSq <= 10000)
-					return Surface(best);
+					return DCO_Util.Surface(best);
 			}
 		}
 
 		vector open;
 		if (SCR_WorldTools.FindEmptyTerrainPosition(open, p, 100, 4, 3))
-			return Surface(open);
-		return Surface(p);
+			return DCO_Util.Surface(open);
+		return DCO_Util.Surface(p);
 	}
 
 	protected static bool IsValidDest(vector from, vector p)
@@ -447,6 +444,16 @@ class DCO_Logistics
 		if (p == vector.Zero || vector.DistanceXZ(from, p) > 8000)
 			return false;
 		return p[1] - GetGame().GetWorld().GetSurfaceY(p[0], p[2]) < 50;
+	}
+
+	protected bool GroupsInContact(DCO_LogiJob job)
+	{
+		foreach (DCO_GroupUtilityComponent g : job.m_aGroups)
+		{
+			if (g && (g.IsInContact() || g.IsBreakingContact()))
+				return true;
+		}
+		return false;
 	}
 
 	protected void Dispatch(AICommander_BaseComponent cmd, float now)
@@ -470,10 +477,18 @@ class DCO_Logistics
 			if (!pick)
 				return;
 
+			if (pick.IsTransportKind() && GroupsInContact(pick))
+			{
+				pick.m_sWait = "in_contact";
+				unserved.Insert(pick);
+				continue;
+			}
+
 			float eta;
 			DCO_TransportTeamComponent team = BestTeamFor(cmd, pick, eta);
 			if (!team)
 			{
+				pick.m_sWait = "no_team";
 				unserved.Insert(pick);
 				continue;
 			}
@@ -507,7 +522,16 @@ class DCO_Logistics
 				}
 				if (j.m_iRequester > 0 && !j.IsEmpty())
 					DCO_Radio.Player(j.m_iRequester, "LOGISTICS", "logi_none_cancelled", DCO_ERadioKind.WARNING);
-				Log(j, "done", "result=0 why=queue_timeout");
+				if (j.IsEmpty())
+				{
+					DCO_Perf.Count("logi:done_empty");
+					Log(j, "done", "result=0 why=empty age_s=" + Math.Round(now - j.m_fCreated).ToString());
+				}
+				else
+				{
+					DCO_Perf.Count("logi:timeout_" + j.m_sWait);
+					Log(j, "done", "result=0 why=queue_timeout wait=" + j.m_sWait);
+				}
 				m_aJobs.Remove(i);
 			}
 		}
@@ -515,9 +539,13 @@ class DCO_Logistics
 
 	void OnJobFinished(AICommander_BaseComponent cmd, DCO_LogiJob job, bool success, string why)
 	{
-		float now = Now();
+		float now = DCO_Util.NowS();
 		ReleaseEscort(job);
 		SendMarks(job, true);
+		if (success)
+			DCO_Perf.Count("logi:done_" + typename.EnumToString(DCO_ELogiJob, job.m_eKind) + "_ok");
+		else
+			DCO_Perf.Count("logi:done_" + typename.EnumToString(DCO_ELogiJob, job.m_eKind) + "_fail");
 		Log(job, "done", string.Format("result=%1 why=%2 eta=%3s actual=%4s boarded=%5 left=%6", success, why,
 			Math.Round(job.m_fEta), Math.Round(now - job.m_fAssigned), job.m_iBoarded, job.m_iLeft));
 
@@ -555,8 +583,11 @@ class DCO_Logistics
 
 	protected void ScanNeeds(AICommander_BaseComponent cmd, float now)
 	{
-		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetForCommander(cmd);
 		bool resupply = cmd.IsLogiResupply() && !(cfg && cfg.GetUnitMagicMagazine());
+		DCO_DoctrineSupport doctrineSupport;
+		if (cmd.GetDoctrine() && cmd.GetDoctrineRuntime())
+			doctrineSupport = cmd.GetDoctrineRuntime().GetSupport();
 
 		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
 		{
@@ -567,11 +598,14 @@ class DCO_Logistics
 			if (!grp)
 				continue;
 
-			if (cmd.IsLogiMedevac())
+			if (cmd.IsLogiMedevac() && (!doctrineSupport || doctrineSupport.MedevacAllowed(cmd, g, now)))
 				ScanCasualties(cmd, grp, now);
 
 			vector pos = g.GetOwner().GetOrigin();
-			if (cmd.IsLogiExtract() && g.CanBeTransported() && (g.HasState(DCO_EGroupState.COMBAT_INEFFECTIVE) || g.HasState(DCO_EGroupState.RETREATING)))
+			bool ineff = g.HasState(DCO_EGroupState.COMBAT_INEFFECTIVE);
+			if (!ineff && g.HasState(DCO_EGroupState.RETREATING) && cmd.IsLogiExtract() && DCO_Ctx.TuneForCmd(cmd, "logi.extract_ineff", 1.0) > 0)
+				ExtractSkipLog(g, grp, now);
+			else if (cmd.IsLogiExtract() && g.CanBeTransported() && (ineff || g.HasState(DCO_EGroupState.RETREATING)) && !cmd.DCO_PlanGuard(g, "logi_extract"))
 			{
 				vector hub = cmd.GetHubFor(pos, m_sHubSource);
 				if (vector.DistanceXZ(pos, hub) > cmd.GetLogiExtractMinDist())
@@ -581,7 +615,12 @@ class DCO_Logistics
 				}
 			}
 
-			if (resupply && IsLowAmmo(grp, cmd.GetLogiLowAmmoMags()))
+			bool wantSupply = false;
+			if (resupply && doctrineSupport)
+				wantSupply = doctrineSupport.WantsSupplies(cmd, g, m_sHubSource, now);
+			else if (resupply)
+				wantSupply = IsLowAmmo(grp, cmd.GetLogiLowAmmoMags());
+			if (wantSupply)
 			{
 				DCO_LogiJob job = NewJob(DCO_ELogiJob.RESUPPLY, pos, pos, now);
 				job.m_aGroups.Insert(g);
@@ -597,6 +636,23 @@ class DCO_Logistics
 		}
 		foreach (IEntity ent : stale)
 			m_mDownSince.Remove(ent);
+	}
+
+	protected void ExtractSkipLog(DCO_GroupUtilityComponent g, SCR_AIGroup grp, float now)
+	{
+		DCO_Perf.Count("logi:extract_skip_not_ineff");
+		if (!s_mExtractLogAt)
+			s_mExtractLogAt = new map<SCR_AIGroup, float>();
+		if (s_mExtractLogAt.Count() > 200)
+			s_mExtractLogAt.Clear();
+		float last;
+		if (s_mExtractLogAt.Find(grp, last) && now - last < 120.0)
+			return;
+		s_mExtractLogAt.Set(grp, now);
+		string obj = "-";
+		if (g.GetGroupObjective())
+			obj = g.GetGroupObjective().GetLogName();
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("logi_extract_skip grp=%1 reason=retreating_not_ineffective units=%2 state=%3 obj=%4", DCO_Log.IdGroup(grp), g.GetUnitCount(), g.GetState(), obj));
 	}
 
 	protected void QueueExtract(AICommander_BaseComponent cmd, DCO_GroupUtilityComponent g, vector hub, float now)
@@ -694,7 +750,8 @@ class DCO_Logistics
 	{
 		array<AIAgent> agents = {};
 		grp.GetAgents(agents);
-		int low, total;
+		int low, total, lowAbs;
+		bool rel = DCO_Ctx.TuneG("logi.low_rel", 1.0) > 0;
 		foreach (AIAgent a : agents)
 		{
 			IEntity ent = a.GetControlledEntity();
@@ -712,10 +769,51 @@ class DCO_Logistics
 				continue;
 
 			total++;
-			if (combat.GetMagazineCount(muzzles[0].GetMagazineWell().Type(), false) < minMags)
+			int have = combat.GetMagazineCount(muzzles[0].GetMagazineWell().Type(), false);
+			if (!rel)
+			{
+				if (have < minMags)
+				{
+					low++;
+					lowAbs++;
+				}
+				continue;
+			}
+			if (!s_mMaxMags)
+				s_mMaxMags = new map<string, int>();
+			if (s_mMaxMags.Count() > 2000)
+				s_mMaxMags.Clear();
+			string key = ent.ToString() + "|" + muzzles[0].GetMagazineWell().Type().ToString();
+			int best;
+			s_mMaxMags.Find(key, best);
+			if (have > best)
+				s_mMaxMags.Set(key, have);
+			int init = combat.DCO_RearmInit(muzzles[0].GetMagazineWell().Type());
+			if (init > best)
+				best = init;
+			if (have >= minMags)
+				continue;
+			lowAbs++;
+			if (have < best)
 				low++;
 		}
-		return total > 0 && low * 2 >= total;
+		bool result = total > 0 && low * 2 >= total;
+		if (rel && total > 0 && lowAbs * 2 >= total && !result)
+		{
+			DCO_Perf.Count("logi:lowammo_loadout_skip");
+			if (!s_mLowLogAt)
+				s_mLowLogAt = new map<SCR_AIGroup, float>();
+			if (s_mLowLogAt.Count() > 200)
+				s_mLowLogAt.Clear();
+			float now = DCO_Util.NowS();
+			float last;
+			if (!s_mLowLogAt.Find(grp, last) || now - last >= 300.0)
+			{
+				s_mLowLogAt.Set(grp, now);
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("logi_lowammo_loadout grp=%1 total=%2 below_min=%3 below_loadout=%4 min=%5 result=not_low", DCO_Log.IdGroup(grp), total, lowAbs, low, minMags));
+			}
+		}
+		return result;
 	}
 
 	static bool HasResupplyStation(IEntity ent)
@@ -750,7 +848,7 @@ class DCO_Logistics
 		{
 			DCO_HubCasualty h = m_aHubCasualties[i];
 			ChimeraCharacter c = ChimeraCharacter.Cast(h.m_Ent);
-			if (!c || !c.GetCharacterController() || c.GetCharacterController().GetLifeState() == ECharacterLifeState.DEAD)
+			if (!DCO_Util.IsNotDead(c))
 			{
 				m_aHubCasualties.Remove(i);
 				continue;
@@ -800,35 +898,51 @@ class DCO_Logistics
 				grp.AddAgent(a);
 				missing--;
 			}
-			Print(string.Format("[DCO_Logistics] recovered soldiers refill %1 (now %2)", grp.GetName(), g.GetUnitCount()));
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, "-", string.Format("recovered soldiers refill %1 (now %2)", grp.GetName(), g.GetUnitCount()));
 		}
 		if (recovered.IsEmpty())
 			return;
 
 		SCR_AIGroup newGrp = SplitIntoNewGroup(template, recovered, cmd);
 		string line = string.Format("logi_recovered count=%1 group=%2 manpower=%3", recovered.Count(), newGrp, cmd.GetTotalManpower());
-		Print("[DCO_Logistics] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, "-", line);
 	}
 
 	static SCR_AIGroup SplitIntoNewGroup(SCR_AIGroup template, array<AIAgent> agents, AICommander_BaseComponent cmd)
 	{
 		if (!template || agents.IsEmpty() || !agents[0].GetControlledEntity())
+		{
+			SplitFailLog(template, agents, "no_template_or_agent", "");
 			return null;
+		}
+
+		ResourceName prefab = SCR_ResourceNameUtils.GetPrefabName(template);
+		if (prefab.IsEmpty())
+		{
+			SplitFailLog(template, agents, "no_prefab", "");
+			return null;
+		}
 
 		EntitySpawnParams params = new EntitySpawnParams();
 		params.TransformMode = ETransformMode.WORLD;
 		params.Transform[3] = agents[0].GetControlledEntity().GetOrigin();
 
+		Resource res = Resource.Load(prefab);
+		if (!res || !res.IsValid())
+		{
+			SplitFailLog(template, agents, "load_fail", prefab);
+			return null;
+		}
+
 		SCR_AIGroup.IgnoreSpawning(true);
-		Resource res = Resource.Load(template.GetPrefabData().GetPrefabName());
-		SCR_AIGroup newGrp;
-		if (res.IsValid())
-			newGrp = SCR_AIGroup.Cast(GetGame().SpawnEntityPrefab(res, GetGame().GetWorld(), params));
+		SCR_AIGroup newGrp = SCR_AIGroup.Cast(GetGame().SpawnEntityPrefab(res, GetGame().GetWorld(), params));
 		SCR_AIGroup.IgnoreSpawning(false);
 
 		if (!newGrp)
+		{
+			SplitFailLog(template, agents, "spawn_fail", prefab);
 			return null;
+		}
 
 		newGrp.SetFaction(template.GetFaction());
 		foreach (AIAgent a : agents)
@@ -843,6 +957,55 @@ class DCO_Logistics
 		if (util && cmd)
 			cmd.AssignGroup(util);
 		return newGrp;
+	}
+
+	protected static string Who(array<AIAgent> agents)
+	{
+		string who = "";
+		if (!agents)
+			return "-";
+		foreach (AIAgent a : agents)
+		{
+			if (!a)
+				continue;
+			if (!who.IsEmpty())
+				who += "|";
+			who += DCO_Log.IdUnit(a.GetControlledEntity());
+		}
+		if (who.IsEmpty())
+			return "-";
+		return who;
+	}
+
+	protected static void SplitFailLog(SCR_AIGroup template, array<AIAgent> agents, string reason, ResourceName prefab)
+	{
+		DCO_Perf.Count("logi:split_failed");
+		string prefabName = "-";
+		if (!prefab.IsEmpty())
+			prefabName = FilePath.StripPath(prefab);
+		int n = 0;
+		if (agents)
+			n = agents.Count();
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.WARN, DCO_Log.IdGroup(template), string.Format("split_failed grp=%1 who=%2 reason=%3 n=%4 prefab=%5", DCO_Log.IdGroup(template), Who(agents), reason, n, prefabName));
+	}
+
+	static int MoveLeftBehind(SCR_AIGroup grp, array<AIAgent> agents, vector dest, string why)
+	{
+		int moved = 0;
+		if (dest != vector.Zero)
+		{
+			foreach (AIAgent a : agents)
+			{
+				SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
+				if (!ca || !ca.m_UtilityComponent || !DCO_Util.IsNotDead(ca.GetControlledEntity()))
+					continue;
+				ca.m_UtilityComponent.AddAction(new SCR_AIMoveIndividuallyBehavior(ca.m_UtilityComponent, null, dest, SCR_AIActionBase.PRIORITY_BEHAVIOR_ATTACK_SELECTED + 1, radius: 15));
+				moved++;
+			}
+		}
+		DCO_Perf.CountN("logi:split_fallback_move", moved);
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.WARN, DCO_Log.IdGroup(grp), string.Format("split_fallback_move grp=%1 who=%2 moved=%3 dest=%4 why=%5", DCO_Log.IdGroup(grp), Who(agents), moved, DCO_Util.XZ(dest), why));
+		return moved;
 	}
 
 	protected void PlanLZ(AICommander_BaseComponent cmd, DCO_LogiJob job)
@@ -879,6 +1042,60 @@ class DCO_Logistics
 				break;
 			}
 		}
+		if (!job.IsTransportKind())
+			return;
+		job.m_vLZ = SnapLZ(job, job.m_vLZ, "main");
+		job.m_vAltLZ = SnapLZ(job, job.m_vAltLZ, "alt");
+	}
+
+	protected vector SnapLZ(DCO_LogiJob job, vector p, string which)
+	{
+		SCR_AIWorld aiWorld = SCR_AIWorld.Cast(GetGame().GetAIWorld());
+		if (!aiWorld)
+			return p;
+		NavmeshWorldComponent nav = aiWorld.GetNavmeshWorldComponent("BTRlike");
+		vector reach;
+		string how = "none";
+		vector res = p;
+		if (nav && nav.GetReachablePoint(p, 5.0, reach))
+			how = "direct";
+		else
+		{
+			RoadNetworkManager roads = aiWorld.GetRoadNetworkManager();
+			BaseRoad road;
+			float roadDist;
+			if (roads)
+				roads.GetClosestRoad(p, road, roadDist, true);
+			if (road && roadDist <= 250.0)
+			{
+				array<vector> pts = {};
+				road.GetPoints(pts);
+				float bestSq = float.MAX;
+				foreach (vector rp : pts)
+				{
+					float dSq = vector.DistanceSqXZ(rp, p);
+					if (dSq < bestSq)
+					{
+						bestSq = dSq;
+						res = rp;
+					}
+				}
+				if (bestSq <= 62500.0)
+					how = "road";
+				else
+					res = p;
+			}
+			if (how == "none" && nav && nav.GetReachablePoint(p, 250.0, reach))
+			{
+				res = reach;
+				how = "nav";
+			}
+			if (how != "none")
+				res = DCO_Util.Surface(res);
+		}
+		DCO_Perf.Count("logi:lz_snap_" + how);
+		Log(job, "lz_snap", string.Format("which=%1 how=%2 from=%3 to=%4 shift=%5 to_dest=%6", which, how, DCO_Util.XZ(p), DCO_Util.XZ(res), Math.Round(vector.DistanceXZ(p, res)), Math.Round(vector.DistanceXZ(res, job.m_vDest))));
+		return res;
 	}
 
 	protected static vector Rotate(vector dir, float deg)
@@ -896,16 +1113,11 @@ class DCO_Logistics
 		{
 			vector p = dest + dir * (i * 50.0);
 			if (!IsNearThreat(cmd, p, safe))
-				return Surface(p);
+				return DCO_Util.Surface(p);
 		}
-		return Surface(dest + dir * (8 * 50.0));
+		return DCO_Util.Surface(dest + dir * (8 * 50.0));
 	}
 
-	protected static vector Surface(vector p)
-	{
-		p[1] = GetGame().GetWorld().GetSurfaceY(p[0], p[2]);
-		return p;
-	}
 
 	bool IsNearThreat(AICommander_BaseComponent cmd, vector p, float safe)
 	{
@@ -985,7 +1197,7 @@ class DCO_Logistics
 				if (push.LengthSq() < 1)
 					push = Vector(-seg[2], 0, seg[0]);
 				push.Normalize();
-				outPts.Insert(Surface(pick.m_vBelievedPos + push * (safe + pick.m_fBelievedUncertainty + 75.0)));
+				outPts.Insert(DCO_Util.Surface(pick.m_vBelievedPos + push * (safe + pick.m_fBelievedUncertainty + 75.0)));
 			}
 		}
 		outPts.Insert(to);
@@ -1049,7 +1261,7 @@ class DCO_Logistics
 			Log(j, "cancel", "player_group=" + pgrp.GetGroupID());
 			j.m_iRequester = -1;
 			if (j.m_Team)
-				j.m_Team.AbortJob("player_cancel", Now());
+				j.m_Team.AbortJob("player_cancel", DCO_Util.NowS());
 			else
 				m_aJobs.RemoveItem(j);
 			return true;
@@ -1067,7 +1279,7 @@ class DCO_Logistics
 				return true;
 		}
 
-		DCO_LogiJob job = NewJob(DCO_ELogiJob.DEPLOY, from, dest, Now());
+		DCO_LogiJob job = NewJob(DCO_ELogiJob.DEPLOY, from, dest, DCO_Util.NowS());
 		job.m_aPlayerGroups.Insert(pgrp);
 		job.m_bFromPlayer = true;
 		job.m_bRolePriority = true;
@@ -1095,7 +1307,7 @@ class DCO_Logistics
 
 	protected void DoHandlePlayer(AICommander_BaseComponent cmd, int pid, SCR_AIGroup pgrp, IEntity player, DCO_ELogiJob kind, vector target)
 	{
-		float now = Now();
+		float now = DCO_Util.NowS();
 		vector ppos = player.GetOrigin();
 
 		if (kind == DCO_ELogiJob.MEDEVAC)
@@ -1136,7 +1348,7 @@ class DCO_Logistics
 		else if (!IsValidDest(ppos, target))
 		{
 			DCO_Radio.Player(pid, "LOGISTICS", "logi_no_dest", DCO_ERadioKind.WARNING);
-			DCO_BenchmarkLoggerComponent.Event(string.Format("logi_reject player=%1 reason=no_dest target=%2", pid, target));
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, "-", string.Format("logi_reject player=%1 reason=no_dest target=%2", pid, target));
 			return;
 		}
 
@@ -1209,8 +1421,7 @@ class DCO_Logistics
 	static void Log(DCO_LogiJob job, string what, string extra)
 	{
 		string line = string.Format("logi_%1 id=%2 kind=%3 %4", what, job.m_iId, typename.EnumToString(DCO_ELogiJob, job.m_eKind), extra);
-		Print("[DCO_Logistics] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, "-", line);
 	}
 
 	void DrawDebug(notnull array<ref Shape> shapes, notnull array<ref DebugTextWorldSpace> texts, int flags)

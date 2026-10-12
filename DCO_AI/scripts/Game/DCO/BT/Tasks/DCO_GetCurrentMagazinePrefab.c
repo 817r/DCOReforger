@@ -1,7 +1,7 @@
 class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 {
-	protected static const string PORT_PREFAB_RESOURCE_NAME = "PrefabResourceName";
-	protected static const string PORT_WEAPON_COMPONENT = "WeaponComponent";
+	protected static string PORT_PREFAB_RESOURCE_NAME() { return "PrefabResourceName"; }
+	protected static string PORT_WEAPON_COMPONENT() { return "WeaponComponent"; }
 
 	protected ResourceName m_sQueryResourceName;
 
@@ -19,7 +19,7 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 			return ENodeResult.FAIL;
 
 		BaseWeaponComponent newWeaponComp = null;
-		GetVariableIn(PORT_WEAPON_COMPONENT, newWeaponComp);
+		GetVariableIn(PORT_WEAPON_COMPONENT(), newWeaponComp);
 		BaseCompartmentSlot compartmentSlot = m_CompartmentAccessComp.GetCompartment();
 		BaseWeaponManagerComponent weaponMgr;
 		if (compartmentSlot)
@@ -46,7 +46,7 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 		}
 
 		SetVariableOut("MagazineWellArray", magazineWell);
-		SetVariableOut(PORT_PREFAB_RESOURCE_NAME, m_sQueryResourceName);
+		SetVariableOut(PORT_PREFAB_RESOURCE_NAME(), m_sQueryResourceName);
 
 		return ENodeResult.SUCCESS;
 	}
@@ -62,9 +62,21 @@ class SCR_AIGetCurrentMagazinePrefab : AITaskScripted
 
 	override static bool VisibleInPalette() { return true; }
 
-	protected static ref TStringArray s_aVarsIn = {PORT_WEAPON_COMPONENT};
-	override TStringArray GetVariablesIn() { return s_aVarsIn; }
+	protected static ref TStringArray s_aVarsIn;
+	protected static TStringArray GetVarsIn()
+	{
+		if (!s_aVarsIn)
+			s_aVarsIn = {PORT_WEAPON_COMPONENT()};
+		return s_aVarsIn;
+	}
+	override TStringArray GetVariablesIn() { return GetVarsIn(); }
 
-	protected static ref TStringArray s_aVarsOut = { PORT_PREFAB_RESOURCE_NAME, "MagazineWellArray" };
-	override TStringArray GetVariablesOut() { return s_aVarsOut; }
+	protected static ref TStringArray s_aVarsOut;
+	protected static TStringArray GetVarsOut()
+	{
+		if (!s_aVarsOut)
+			s_aVarsOut = { PORT_PREFAB_RESOURCE_NAME(), "MagazineWellArray" };
+		return s_aVarsOut;
+	}
+	override TStringArray GetVariablesOut() { return GetVarsOut(); }
 }

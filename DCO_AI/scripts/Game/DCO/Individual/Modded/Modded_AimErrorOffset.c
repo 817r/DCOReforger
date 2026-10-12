@@ -1,5 +1,12 @@
 modded class SCR_AIGetAimErrorOffset
 {
+	static const float CLOSE_RANGE_THRESHOLD = 60.0;
+	static const float AIMING_ERROR_SCALE = 1.0;
+	static const float AIMING_ERROR_FACTOR_MAX = 1.4;
+	static const float MAXIMAL_TOLERANCE = 10.0;
+	static const float MINIMAL_TOLERANCE = 0.005;
+	static const float AIMING_ERROR_FACTOR_MIN = 0.12;
+	static const float AIMING_ERROR_CLOSE_RANGE_FACTOR_MIN = 0.1;
 	static const float LONG_RANGE_THRESHOLD = 200.0;
 
 
@@ -19,24 +26,20 @@ modded class SCR_AIGetAimErrorOffset
 	protected float           m_fDCOAimHoldUntil_ms;
 	protected float           m_fDCOAimNextVisCheck_ms;
 	protected ref array<ref AimPoint> m_aDCOAimBuffer = {};
+	protected BaseWeaponComponent m_DCOZeroWeapon;
+	protected float m_fDCOZero = 300.0;
+	protected static int s_iDCOVertSample;
+	protected float m_fDCOCalibShot_ms = -1;
+	protected float m_fDCOLastLat;
+	protected float m_fDCOLastVert;
+	protected float m_fDCOLastDist;
+	protected EWeaponType m_eDCOLastWeapon;
+	protected IEntity m_DCOLastTarget;
+	protected static int s_iDCOCalib100;
+	protected static int s_iDCOCalib200;
+	protected static int s_iDCOCalib300;
+	protected static int s_iDCOCalibAll;
 
-	override float GetDistanceFactor(float distance)
-	{
-		float errorFactor = 0;
-		float MinError = 0.12 / m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAccuracy();
-		if (distance < 20.0)
-		{
-			errorFactor = Math.Map(distance, 0, 20.0, 0.03, 0.1);
-			return errorFactor;
-		} else if (distance < 60.0)
-		{
-			errorFactor = Math.Map(distance, 20.0, 60.0, 0.1, MinError);
-			return errorFactor;
-		}
-
-		float distanceCl = Math.Clamp((distance - 60.0) / LONG_RANGE_THRESHOLD, 0, 1.5);
-		return Math.Lerp(MinError, 1.4, distanceCl);
-	}
 
 	override float GetTolerance(IEntity observer, IEntity target, float angularSize, float distance, EWeaponType weaponType)
 	{
@@ -97,20 +100,26 @@ modded class SCR_AIGetAimErrorOffset
 		return 0;
 	}
 
-	protected float GetSuppressionFactor()
+	protected float DCO_StressFactor()
 	{
 		if (!m_InfoComponent)
 			return 1.0;
 
-		float suppressionLevel = m_InfoComponent.GetThreatSystem().GetSuppressionMeasure();
-		float maxSuppressionPenalty = 1.85;
-		float suppressionSpeedMultiplier = 1;
+		float base = 1.0;
+		EAIThreatState state = m_InfoComponent.GetThreatState();
+		if (state == EAIThreatState.THREATENED)
+			base = 1.4;
+		else if (state == EAIThreatState.ALERTED)
+			base = 1.2;
 
-		float modifiedSuppression = suppressionLevel * suppressionSpeedMultiplier;
-
-		modifiedSuppression = Math.Min(modifiedSuppression, 1.0);
-
-		return Math.Lerp(1.0, maxSuppressionPenalty, modifiedSuppression);
+		float supp = Math.Clamp(m_InfoComponent.GetThreatSystem().GetSuppressionMeasure(), 0, 1);
+		float stress = base * Math.Lerp(1.0, 2.3, supp);
+		if (stress > 3.2)
+		{
+			stress = 3.2;
+			DCO_Perf.Count("aim:pinned_cap");
+		}
+		return stress;
 	}
 
 	override float GetWeaponTypeFactor(EWeaponType weaponType)
@@ -157,40 +166,13 @@ modded class SCR_AIGetAimErrorOffset
 	{
 		switch(weaponType)
 		{
-			case EWeaponType.WT_RIFLE:
-			{
-				return 1.2;
-			}
-			case EWeaponType.WT_MACHINEGUN:
-			{
-				return 2.2;
-			}
 			case EWeaponType.WT_HANDGUN:
-			{
-				return 1.1;
-			}
-			case EWeaponType.WT_FRAGGRENADE:
-			{
-				return 1.5;
-			}
-			case EWeaponType.WT_SMOKEGRENADE:
-			{
-				return 1.3;
-			}
-			case EWeaponType.WT_ROCKETLAUNCHER:
-			{
-				return 0.5;
-			}
+				return 1.8;
 			case EWeaponType.WT_SNIPERRIFLE:
-			{
-				return 0.1;
-			}
+				return 0.6;
 			case EWeaponType.WT_AUTOCANNON:
-			{
 				return 2.6;
-			}
 		}
-
 		return 1.0;
 	}
 
@@ -198,52 +180,18 @@ modded class SCR_AIGetAimErrorOffset
 	{
 		PerceivableComponent perceivable = tgt.GetPerceivableComponent();
 		if (!perceivable)
-			return 10.0;
+			return 2.0;
 
 		if (perceivable.GetIlluminationFactor() < 0.2)
-			return 6.0;
+			return 2.0;
 
 		if (perceivable.GetIlluminationFactor() < 0.5)
-			return 3.0;
+			return 1.5;
 
 		return 1.0;
 	}
 
-	float GetRandomFactorDCOSkill(DCO_AISKILL skill, float mu)
-	{
-		return Math.RandomGaussFloat(DCO_AimUtility.SkillSigma(skill), mu);
-	}
 
-	float GetThreatFactor()
-	{
-		if (!m_InfoComponent)
-			return 1;
-
-		switch (m_InfoComponent.GetThreatState())
-		{
-			case EAIThreatState.THREATENED :
-			{
-				return 2.7;
-				break;
-			}
-			case EAIThreatState.ALERTED :
-			{
-				return 1.6;
-				break;
-			}
-			case EAIThreatState.VIGILANT :
-			{
-				return 1.2;
-				break;
-			}
-			case EAIThreatState.SAFE :
-			{
-				return 1;
-				break;
-			}
-		}
-		return 1;
-	}
 
 	float GetImprovement()
 	{
@@ -268,26 +216,21 @@ modded class SCR_AIGetAimErrorOffset
 
 	protected float GetScopeFactor(IEntity observer, IEntity target, float distance)
 	{
-		float extraMag = DCO_AimUtility.GetSightMagnification(m_CombatComponent) - 1;
-		if (extraMag <= 0)
+		float mag = DCO_AimUtility.GetSightMagnification(m_CombatComponent);
+		if (mag < 1.5)
 			return 1;
 
-		float factor;
-		if (distance < 30.0)
-			factor = 1 + extraMag * 0.3 * (1 - distance / 30.0);
-		else
-		{
-			float farFactor = 1 / (1 + extraMag * 0.25);
-			float t = Math.Clamp((distance - 30.0) / (100.0 - 30.0), 0, 1);
-			factor = Math.Lerp(1, farFactor, t);
-		}
+		float farFactor = 0.85;
+		if (mag >= 3.0)
+			farFactor = 0.65;
+		float factor = Math.Lerp(1, farFactor, Math.Clamp((distance - 50.0) / 100.0, 0, 1));
 
 		bool tooFast;
 		float angular = GetAngularSpeedFactor(observer, target, tooFast);
 		if (tooFast)
 			angular = 5.0;
 
-		return factor * (1 + (angular - 1) * extraMag * 0.1);
+		return factor * (1 + (angular - 1) * (mag - 1) * 0.1);
 	}
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
@@ -348,18 +291,65 @@ modded class SCR_AIGetAimErrorOffset
 		vector offsetX, offsetY;
 		float angularSize, distance, tolerance;
 		GetTargetAngularBounds(entity, aimPoint, offsetX, offsetY, angularSize, distance);
+		DCO_AimCalibSample(entity);
 
-		float distanceFactor = GetDistanceFactor(distance);
-		float offsetWeaponFactor = GetOffsetWeaponTypeFactor(weaponType);
-		float illuminationFactor = GetTargetIlluminationFactor(target);
+		SCR_AIUtilityComponent aimUtil = m_CombatComponent.GetUtilityComponent();
+		float accuracy = Math.Max(DCO_AIConfigComponent.AccuracyOf(aimUtil), 0.02);
+		float shake = Math.Max(DCO_AIConfigComponent.AimShakeOf(aimUtil), 0.25);
+		int posture;
+		bool supported, moving;
+		float sway = DCO_PostureFactor(posture, supported) * StaminaFactor();
+		sway = 1 + (sway - 1) / shake;
+		float stress = DCO_StressFactor();
+		float light = GetTargetIlluminationFactor(target);
+		float optic = GetScopeFactor(entity, targetEntity, distance);
+		float ramp = GetImprovement();
+		float move = DCO_MoveFactor(entity, moving);
+		float sigma = 0.45 * DCO_AimUtility.SkillSigma(DCO_AIConfigComponent.SkillOf(aimUtil)) * sway * stress * move * light * optic
+			* GetOffsetWeaponTypeFactor(weaponType) * GetTurretFactor(entity) * ramp / accuracy;
+		sigma *= DCO_SmokeField.AimFactor(entity.GetOrigin() + vector.Up * 1.6, aimPoint.GetPosition());
+		DCO_CtxState ctx = DCO_Ctx.Get(aimUtil);
+		if (ctx)
+		{
+			float ctxAcc = Math.Clamp(DCO_Ctx.P(ctx, DCO_ECtxParam.ACC), 0.5, 2.0);
+			sigma /= ctxAcc;
+			DCO_Perf.Count("ctx:aim");
+		}
+		if (sigma < 0.2)
+		{
+			sigma = 0.2;
+			DCO_Perf.Count("aim:floor_hit");
+		}
+		m_CombatComponent.DCO_SetAimDebug(sigma, posture, supported, stress, ramp, light, optic, moving);
 
-		EAISkill currentSkill = m_CombatComponent.GetAISkill();
-		DCO_AISKILL dcoSkill = m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAISkill();
-		float scopeFactor = GetScopeFactor(entity, targetEntity, distance) * GetTurretFactor(entity);
-		offsetX = GetRandomFactor(currentSkill, 0) * offsetX * 1.0 * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetSuppressionFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor() * scopeFactor;
-		offsetY = GetRandomFactor(currentSkill, 0) * offsetY * 1.0 * distanceFactor * offsetWeaponFactor * illuminationFactor * GetImprovement() * GetThreatFactor() * GetSuppressionFactor() * StaminaFactor() * GetRandomFactorDCOSkill(dcoSkill, 0) * GetStanceFactor() * scopeFactor;
+		float lat = sigma * 0.001 * distance;
+		float sv = DCO_VerticalSigma(distance, weaponType);
+		float vert = Math.Sqrt(lat * lat + sv * sv);
+		vector aimLos = aimPoint.GetPosition() - entity.GetOrigin();
+		vector right = Vector(aimLos[2], 0, -aimLos[0]);
+		if (right.LengthSq() > 0.0001)
+			right.Normalize();
+		offsetX = right * Math.RandomGaussFloat(1, 0) * lat;
+		offsetY = Vector(0, 1, 0) * Math.RandomGaussFloat(1, 0) * vert;
 
 		tolerance = GetTolerance(entity, targetEntity, angularSize, distance, weaponType);
+
+		if (target && target.GetTimeSinceSeen() > 0.5 && DCO_GlobalAIComponent.BehaviorOnFor(owner, DCO_EBehavior.SUPPRESS_LAST_KNOWN))
+		{
+			vector los = aimPoint.GetPosition() - entity.GetOrigin();
+			los[1] = 0;
+			if (los.Length() > 1)
+			{
+				los.Normalize();
+				offsetX = offsetX + Vector(los[2], 0, -los[0]) * Math.RandomFloat(-2.0, 2.0);
+			}
+		}
+
+		m_fDCOLastLat = offsetX.Length();
+		m_fDCOLastVert = offsetY.Length();
+		m_fDCOLastDist = distance;
+		m_eDCOLastWeapon = weaponType;
+		m_DCOLastTarget = targetEntity;
 
 		SetVariableOut(PORT_ERROR_OFFSET, offsetX + offsetY);
 		SetVariableOut(PORT_AIM_POINT, aimPoint);
@@ -377,51 +367,160 @@ modded class SCR_AIGetAimErrorOffset
 			return 1;
 
 		if (charCon.GetStamina() < 0.3)
-			return 1.7;
+			return 1.5;
 		else if (charCon.GetStamina() < 0.6)
-			return 1.4;
-		else
-			return 1;
+			return 1.25;
+		return 1;
 	}
 
-	protected float GetADSFactor()
-	{
-		if (charCon.IsWeaponADS())
-			return 0.7;
-		else
-			return 1;
-	}
 
-	protected float GetStanceFactor()
+	protected float DCO_PostureFactor(out int posture, out bool supported)
 	{
+		posture = 2;
+		supported = m_CombatComponent.DCO_GetRestMul() > 1.0;
 		if (!charCon)
-			return 1;
+			return 2.75;
 
-		switch (charCon.GetStance())
+		ECharacterStance stance = charCon.GetStance();
+		float f = 2.75;
+		if (supported)
+			f = 1.5;
+		if (stance == ECharacterStance.PRONE)
 		{
-			case ECharacterStance.PRONE:
+			posture = 0;
+			f = 1.3;
+			if (supported)
+				f = 1.0;
+		}
+		else if (stance == ECharacterStance.CROUCH)
+		{
+			posture = 1;
+			f = 1.8;
+			if (supported)
+				f = 1.3;
+		}
+
+		if (!supported && posture != 0 && m_CombatComponent.DCO_GetAimHold() > 7000.0)
+		{
+			f *= 1.15;
+			DCO_Perf.Count("aim:hold_shake");
+		}
+		return f;
+	}
+
+	protected float DCO_MoveFactor(IEntity observer, out bool moving)
+	{
+		moving = false;
+		if (!observer || !observer.GetPhysics() || (m_InfoComponent && m_InfoComponent.HasUnitState(EUnitState.IN_TURRET)))
+			return 1.0;
+
+		float speed = observer.GetPhysics().GetVelocity().Length();
+		if (speed <= 0.5)
+			return 1.0;
+
+		moving = true;
+		if (speed > 3.0)
+		{
+			DCO_Perf.Count("aim:running_fire");
+			return 8.0;
+		}
+		return 4.0;
+	}
+
+	protected void DCO_AimCalibSample(IEntity shooter)
+	{
+		if (!m_DCOLastTarget || m_fDCOLastDist <= 0 || m_fDCOLastDist > 400.0 || !DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO))
+			return;
+		float shot = DCO_ShotCounter.LastShotAt(shooter);
+		if (shot <= m_fDCOCalibShot_ms)
+			return;
+		m_fDCOCalibShot_ms = shot;
+
+		int band = 300;
+		int bandN;
+		if (m_fDCOLastDist < 150.0)
+		{
+			band = 100;
+			s_iDCOCalib100++;
+			bandN = s_iDCOCalib100;
+		}
+		else if (m_fDCOLastDist < 250.0)
+		{
+			band = 200;
+			s_iDCOCalib200++;
+			bandN = s_iDCOCalib200;
+		}
+		else
+		{
+			s_iDCOCalib300++;
+			bandN = s_iDCOCalib300;
+		}
+		s_iDCOCalibAll++;
+
+		string pick = "debug";
+		if (bandN <= 30)
+			pick = "band_quota";
+		else if (s_iDCOCalibAll % 20 == 0)
+			pick = "1in20";
+		else if (!DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
+			return;
+
+		string weapon = "rifle";
+		if (m_eDCOLastWeapon == EWeaponType.WT_MACHINEGUN)
+			weapon = "mg";
+		else if (m_eDCOLastWeapon == EWeaponType.WT_SNIPERRIFLE)
+			weapon = "dmr";
+		else if (m_eDCOLastWeapon == EWeaponType.WT_HANDGUN)
+			weapon = "pistol";
+		string posture = "stand";
+		if (m_CombatComponent.m_iDCOAimPosture == 0)
+			posture = "prone";
+		else if (m_CombatComponent.m_iDCOAimPosture == 1)
+			posture = "crouch";
+
+		string head = string.Format("miss_calib skill=%1 weapon=%2 band=%3 lat_m=%4 dist=%5 sigma_mrad=%6 posture=%7 supported=%8 stress=%9",
+			typename.EnumToString(DCO_AISKILL, DCO_AIConfigComponent.SkillOf(m_CombatComponent.GetUtilityComponent())), weapon, band, m_fDCOLastLat.ToString(-1, 2), Math.Round(m_fDCOLastDist),
+			m_CombatComponent.m_fDCOAimSigma.ToString(-1, 2), posture, m_CombatComponent.m_bDCOAimSupported, m_CombatComponent.m_fDCOAimStress.ToString(-1, 2));
+		string tail = string.Format(" ramp=%1 light=%2 optic=%3 moving=%4 target=%5 src=aim pick=%6 band_n=%7 vert_m=%8",
+			m_CombatComponent.m_fDCOAimRamp.ToString(-1, 2), m_CombatComponent.m_fDCOAimLight, m_CombatComponent.m_fDCOAimOptic.ToString(-1, 2), m_CombatComponent.m_bDCOAimMoving,
+			DCO_Log.IdUnit(m_DCOLastTarget), pick, bandN, m_fDCOLastVert.ToString(-1, 2));
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(shooter), head + tail);
+	}
+
+	protected float DCO_VerticalSigma(float distance, EWeaponType weaponType)
+	{
+		if (weaponType == EWeaponType.WT_SNIPERRIFLE || weaponType == EWeaponType.WT_HANDGUN || distance <= 300.0)
+			return 0;
+
+		BaseWeaponComponent weapon = m_CombatComponent.GetCurrentWeapon();
+		if (!weapon)
+			return 0;
+
+		if (weapon != m_DCOZeroWeapon)
+		{
+			m_DCOZeroWeapon = weapon;
+			m_fDCOZero = 300.0;
+			EntityPrefabData pd = weapon.GetOwner().GetPrefabData();
+			if (pd)
 			{
-				return 0.7;
-				break;
-			}
-			case ECharacterStance.CROUCH:
-			{
-				return 0.85;
-				break;
-			}
-			case ECharacterStance.STAND:
-			{
-				return 1;
-				break;
-			}
-			default:
-			{
-				return 1;
-				break;
+				string name = pd.GetPrefabName();
+				name.ToLower();
+				if (name.Contains("ak74") || name.Contains("rpk74") || name.Contains("ak-74") || name.Contains("rpk-74"))
+					m_fDCOZero = 440.0;
 			}
 		}
 
-		return 1;
+		if (distance <= m_fDCOZero)
+			return 0;
+
+		float tz = m_fDCOZero / 900.0;
+		float td = distance / 900.0;
+		float sv = 0.15 * 4.9 * (td * td - tz * tz);
+		DCO_Perf.Count("aim:vertical");
+		s_iDCOVertSample++;
+		if (s_iDCOVertSample % 20 == 0 && DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(m_CombatComponent.GetOwner()), string.Format("aim_vertical dist=%1 zero=%2 v=900 sigma_v_m=%3", Math.Round(distance), m_fDCOZero, sv.ToString(-1, 3)));
+		return sv;
 	}
 
 	override void OnInit(AIAgent owner)
@@ -436,6 +535,14 @@ modded class SCR_AIGetAimErrorOffset
 	}
 
 	protected AimPoint DCO_SelectAimPoint(IEntity self, BaseTarget target, EAimPointType aimpointTypes[3])
+	{
+		int perfStart = DCO_Perf.Begin();
+		AimPoint picked = DCO_SelectAimPointTimed(self, target, aimpointTypes);
+		DCO_Perf.End("aim_pick", perfStart);
+		return picked;
+	}
+
+	protected AimPoint DCO_SelectAimPointTimed(IEntity self, BaseTarget target, EAimPointType aimpointTypes[3])
 	{
 		PerceivableComponent perceivable = target.GetPerceivableComponent();
 		if (!perceivable)
@@ -478,6 +585,7 @@ modded class SCR_AIGetAimErrorOffset
 			{
 				order[0] = EAimPointType.WEAK;
 				order[1] = EAimPointType.NORMAL;
+				DCO_Perf.Count("aim:head");
 			}
 		}
 
@@ -570,19 +678,7 @@ modded class SCR_AIGetAimErrorOffset
 		else
 			eye = self.GetOrigin() + vector.Up * 1.6;
 
-		TraceParam param = new TraceParam();
-		param.Start     = eye;
-		param.End       = aimPoint.GetPosition();
-		param.Exclude   = self;
-		param.Flags     = TraceFlags.WORLD | TraceFlags.ENTS;
-		param.LayerMask = EPhysicsLayerDefs.Projectile;
-
-		DCO_Perf.Count("t:Modded_AimErrorOffset");
-		float frac = GetGame().GetWorld().TraceMove(param, null);
-		if (frac >= 0.98)
-			return true;
-
-		if (targetEnt && param.TraceEnt && param.TraceEnt.GetRootParent() == targetEnt.GetRootParent())
+		if (DCO_Util.TraceClear(eye, aimPoint.GetPosition(), self, 0.98, TraceFlags.WORLD | TraceFlags.ENTS, EPhysicsLayerDefs.Projectile, targetEnt, "t:Modded_AimErrorOffset"))
 			return true;
 
 		return false;
@@ -590,21 +686,23 @@ modded class SCR_AIGetAimErrorOffset
 
 	protected float DCO_GetHeadAimChance(float distance)
 	{
-		float chance = 0.2;
+		float chance = 0.1;
 
 		if (m_CombatComponent && m_CombatComponent.GetUtilityComponent() && m_CombatComponent.GetUtilityComponent().m_DCOConfig)
 		{
 			switch (m_CombatComponent.GetUtilityComponent().m_DCOConfig.GetAISkill())
 			{
-				case DCO_AISKILL.NOOB:        chance = 0.05; break;
-				case DCO_AISKILL.ROOKIE:      chance = 0.10; break;
-				case DCO_AISKILL.REGULAR:     chance = 0.20; break;
-				case DCO_AISKILL.VETERAN:     chance = 0.35; break;
-				case DCO_AISKILL.EXPERT:      chance = 0.50; break;
-				case DCO_AISKILL.SPECIAL_OPS: chance = 0.65; break;
-				case DCO_AISKILL.TERMINATOR:  chance = 0.80; break;
+				case DCO_AISKILL.NOOB:        chance = 0.02; break;
+				case DCO_AISKILL.ROOKIE:      chance = 0.05; break;
+				case DCO_AISKILL.REGULAR:     chance = 0.10; break;
+				case DCO_AISKILL.VETERAN:     chance = 0.18; break;
+				case DCO_AISKILL.EXPERT:      chance = 0.25; break;
+				case DCO_AISKILL.SPECIAL_OPS: chance = 0.33; break;
+				case DCO_AISKILL.TERMINATOR:  chance = 0.40; break;
 			}
 		}
+		if (m_CombatComponent)
+			chance *= DCO_Stress.T(m_CombatComponent.GetUtilityComponent(), "aim.head_mul", 1.0);
 
 		float distScale = 1.0;
 		if (distance > 100.0)
@@ -613,6 +711,6 @@ modded class SCR_AIGetAimErrorOffset
 			distScale = Math.Lerp(1.0, 0.3, t);
 		}
 
-		return chance * distScale;
+		return Math.Clamp(chance * distScale, 0, 1);
 	}
 }

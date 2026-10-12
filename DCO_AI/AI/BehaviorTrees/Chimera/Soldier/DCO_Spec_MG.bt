@@ -1,0 +1,709 @@
+BehaviorTree "{5DC0B7A1E3F24C68}AI/BehaviorTrees/Chimera/Soldier/DCO_Spec_MG.bt" {
+ Name "AI/BehaviorTrees/Chimera/Soldier/DCO_Spec_MG.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 1362.43 -426.19
+   Nodes {
+    Parallel Parallel {
+     Name "Parallel"
+     EditorPos 1362.43 -306.19
+     Nodes {
+      DCO_AISpecGunnerUpdate "DCO_AI Spec Gunner Update" {
+       Name "DCO_AI Spec Gunner Update"
+       EditorPos 832 -128
+       OutPorts {
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 0
+         PortName "Fire"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 1
+         PortName "Target"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 2
+         PortName "Volume"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 3
+         PortName "FireRate"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 4
+         PortName "AimPos"
+        }
+        SingleOutputPortContainer SingleOutputPortContainer {
+         Port 5
+         PortName "WeaponReady"
+        }
+       }
+      }
+      Selector Selector {
+       Name "Selector"
+       EditorPos 1856 416
+       Nodes {
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 225.217 654.783
+         Nodes {
+          Parallel Parallel {
+           Name "Parallel"
+           EditorPos 416 992
+           Nodes {
+            Selector Selector {
+             Name "Selector"
+             EditorPos 224 1184
+             Nodes {
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos -816 1376
+               Nodes {
+                RunBT RunBT {
+                 Name "RunBT"
+                 EditorPos -704 1584
+                 BehaviorTree "{B17860449093BF19}AI/BehaviorTrees/Chimera/Soldier/SwitchToExpectedWeapon.bt"
+                }
+               }
+               AbortType AbortChildrenBranchAndParentFurtherChildren
+               InVariable 15
+               TestType EqualsValue
+               TestValue "false"
+              }
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos -48 1488
+               Nodes {
+                RunBT RunBT {
+                 Name "RunBT"
+                 EditorPos -48 1680
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 20
+                   PortName "baseTarget"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 21
+                   PortName "eAimpointType0"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 22
+                   PortName "eAimpointType1"
+                  }
+                 }
+                 BehaviorTree "{F86FF905B2478F3C}AI/BehaviorTrees/Chimera/Soldier/Fire_Single.bt"
+                }
+               }
+               AbortType AbortChildrenBranchAndParentFurtherChildren
+               InVariable 23
+               TestType EqualsValue
+               TestValue "2"
+              }
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 487.33 1516.858
+               Nodes {
+                RunBT RunBT {
+                 Name "RunBT"
+                 EditorPos 496 1712
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 16
+                   PortName "baseTarget"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 17
+                   PortName "eAimpointType0"
+                  }
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 18
+                   PortName "eAimpointType1"
+                  }
+                 }
+                 BehaviorTree "{AC9D01C47FB90D2C}AI/BehaviorTrees/Chimera/Soldier/Fire_Burst.bt"
+                }
+               }
+               AbortType AbortChildrenBranchAndParentFurtherChildren
+               InVariable 19
+               TestType EqualsValue
+               TestValue "1"
+              }
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 1008 1680
+               Nodes {
+                Sequence Sequence {
+                 Name "Sequence"
+                 EditorPos 1120 1936
+                 Nodes {
+                  SCR_AIGetTargetSuppressionVolume "SCR_AI Get Target Suppression Volume" {
+                   Name "SCR_AI Get Target Suppression Volume"
+                   EditorPos 688 2208
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 24
+                     PortName "BaseTarget"
+                    }
+                   }
+                   OutPorts {
+                    SingleOutputPortContainer SingleOutputPortContainer {
+                     Port 25
+                     PortName "SuppressionVolume"
+                    }
+                   }
+                  }
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos 1104 2272
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 26
+                     PortName "SuppressionVolume"
+                    }
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 27
+                     PortName "FireRate"
+                    }
+                   }
+                   BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressive.bt"
+                  }
+                 }
+                }
+               }
+               AbortType AbortChildrenBranchAndParentFurtherChildren
+               InVariable 28
+               TestType EqualsValue
+               TestValue "3"
+              }
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 1632 1776
+               Nodes {
+                RunBT RunBT {
+                 Name "RunBT"
+                 EditorPos 1712 2208
+                 InPorts {
+                  SingleInputPortContainer SingleInputPortContainer {
+                   Port 29
+                   PortName "vLookPos"
+                  }
+                 }
+                 BehaviorTree "{FC302B880904CFE1}AI/BehaviorTrees/Chimera/Soldier/LookAtRandomized.bt"
+                }
+               }
+               AbortType AbortChildrenBranchAndParentFurtherChildren
+               InVariable 30
+               TestType EqualsValue
+               TestValue "5"
+              }
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 2400 1872
+               Nodes {
+                Sequence Sequence {
+                 Name "Sequence"
+                 EditorPos 2416 2112
+                 Nodes {
+                  AITaskIdle Idle {
+                   Name "Idle"
+                   EditorPos 2192 2384
+                   Period 3
+                   PeriodRandom 5
+                  }
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos 2448 2384
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 31
+                     PortName "ThrowPos"
+                    }
+                   }
+                   BehaviorTree "{3E39EEA91E8B92CF}AI/BehaviorTrees/Chimera/Soldier/DCO_Suppress_Grenade.bt"
+                  }
+                 }
+                }
+               }
+               InVariable 32
+               TestType EqualsValue
+               TestValue "6"
+              }
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 2976 1936
+               Nodes {
+                Sequence Sequence {
+                 Name "Sequence"
+                 EditorPos 3232 2352
+                 Nodes {
+                  AITaskIdle Idle {
+                   Name "Idle"
+                   EditorPos 3024 2592
+                   Period 3
+                   PeriodRandom 5
+                  }
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos 3296 2624
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 33
+                     PortName "ShootPos"
+                    }
+                   }
+                   BehaviorTree "{D8D4622F1DA4F465}AI/BehaviorTrees/Chimera/Soldier/DCO_Suppress_RPG.bt"
+                  }
+                 }
+                }
+               }
+               InVariable 34
+               TestType EqualsValue
+               TestValue "7"
+              }
+              DecoTestVariable "Test Variable" {
+               Name "Test Variable"
+               EditorPos 4128 2016
+               Nodes {
+                Sequence Sequence {
+                 Name "Sequence"
+                 EditorPos 4144 2304
+                 Nodes {
+                  AITaskIdle Idle {
+                   Name "Idle"
+                   EditorPos 3968 2624
+                   Period 3
+                   PeriodRandom 5
+                  }
+                  RunBT RunBT {
+                   Name "RunBT"
+                   EditorPos 4320 2560
+                   InPorts {
+                    SingleInputPortContainer SingleInputPortContainer {
+                     Port 35
+                     PortName "shootPos"
+                    }
+                   }
+                   BehaviorTree "{3910CE568158C4DE}AI/BehaviorTrees/Chimera/Soldier/DCO_Ugl.bt"
+                  }
+                 }
+                }
+               }
+               InVariable 36
+               TestType EqualsValue
+               TestValue "8"
+              }
+              Parallel Parallel {
+               Name "Parallel"
+               EditorPos 5472 2112
+               Nodes {
+                AITaskIdle Idle {
+                 Name "Idle"
+                 EditorPos 5392 2416
+                 Period 0.5
+                 PeriodRandom 0
+                }
+                AITaskCharacterAim "Character Aim" {
+                 Name "Character Aim"
+                 EditorPos 5744 2384
+                 InAimAtPosition 37
+                 PrecisionXZ 0
+                 PrecisionY 0
+                 Timeout -1
+                }
+               }
+               UseChildResult 1
+              }
+             }
+            }
+            SCR_AIUpdateTargetAttackData "SCR_AI Update Target Attack Data" {
+             Name "SCR_AI Update Target Attack Data"
+             EditorPos 1037.965 1303.415
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 6
+               PortName "BaseTarget"
+              }
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 7
+               PortName "WeaponReady"
+              }
+             }
+             OutPorts {
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 8
+               PortName "Visible"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 9
+               PortName "LastSeenPosition"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 10
+               PortName "ThreatPosition"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 11
+               PortName "FireTreeId"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 12
+               PortName "AimpointType0"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 13
+               PortName "AimpointType1"
+              }
+              SingleOutputPortContainer SingleOutputPortContainer {
+               Port 14
+               PortName "FireRate"
+              }
+             }
+            }
+           }
+          }
+         }
+         AbortType AbortChildrenBranchAndParentFurtherChildren
+         InVariable 38
+         TestType EqualsValue
+         TestValue "1"
+        }
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 2240 880
+         Nodes {
+          RunBT RunBT {
+           Name "RunBT"
+           EditorPos 2224 1088
+           InPorts {
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 39
+             PortName "SuppressionVolume"
+            }
+            SingleInputPortContainer SingleInputPortContainer {
+             Port 40
+             PortName "FireRate"
+            }
+           }
+           BehaviorTree "{2603840B02776A59}AI/BehaviorTrees/Chimera/Soldier/Fire_Suppressive.bt"
+          }
+         }
+         AbortType AbortChildrenBranchAndParentFurtherChildren
+         InVariable 41
+         TestType EqualsValue
+         TestValue "2"
+        }
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 3376 880
+         Nodes {
+          Parallel Parallel {
+           Name "Parallel"
+           EditorPos 3568 1120
+           Nodes {
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 3456 1360
+             Period 0.5
+             PeriodRandom 0
+            }
+            AITaskCharacterAim "Character Aim" {
+             Name "Character Aim"
+             EditorPos 3760 1344
+             InAimAtPosition 42
+             PrecisionXZ 0
+             PrecisionY 0
+             Timeout -1
+            }
+           }
+           UseChildResult 1
+          }
+         }
+         AbortType AbortChildrenBranchAndParentFurtherChildren
+         InVariable 43
+         TestType EqualsValue
+         TestValue "3"
+        }
+        DecoTestVariable "Test Variable" {
+         Name "Test Variable"
+         EditorPos 4784 944
+         Nodes {
+          Sequence Sequence {
+           Name "Sequence"
+           EditorPos 4800 1120
+           Nodes {
+            RunBT RunBT {
+             Name "RunBT"
+             EditorPos 4528 1296
+             InPorts {
+              SingleInputPortContainer SingleInputPortContainer {
+               Port 44
+               PortName "shootPos"
+              }
+             }
+             BehaviorTree "{3910CE568158C4DE}AI/BehaviorTrees/Chimera/Soldier/DCO_Ugl.bt"
+            }
+            AITaskIdle Idle {
+             Name "Idle"
+             EditorPos 4928 1312
+             Period 1
+             PeriodRandom 0
+            }
+           }
+          }
+         }
+         InVariable 45
+         TestType EqualsValue
+         TestValue "4"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+ Variables {
+  BtVariableInteger Fire {
+   Flags 0
+   Desc ""
+  }
+  BtVariableObject Target {
+   Flags 0
+   Desc ""
+  }
+  BtVariableObject Volume {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar FireRate {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector AimPos {
+   Flags 0
+   Desc ""
+  }
+  BtVariableBool WeaponReady {
+   Flags 0
+   Desc ""
+  }
+  BtVariableInteger FireTreeId {
+   Flags 0
+   Desc ""
+  }
+  BtVariableInteger Aim0 {
+   Flags 0
+   Desc ""
+  }
+  BtVariableInteger Aim1 {
+   Flags 0
+   Desc ""
+  }
+  BtVariableScalar AtkRate {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector LastSeen {
+   Flags 0
+   Desc ""
+  }
+  BtVariableBool Visible {
+   Flags 0
+   Desc ""
+  }
+  BtVariableObject TgtVol {
+   Flags 0
+   Desc ""
+  }
+  BtVariableVector ThreatPos {
+   Flags 0
+   Desc ""
+  }
+ }
+ VariablesRefs {
+  VariableReference Fire {
+   VariableType 0
+   EditorPos 1232 -128
+  }
+  VariableReference Target {
+   VariableType 1
+   EditorPos 1232 -48
+  }
+  VariableReference Volume {
+   VariableType 2
+   EditorPos 1232 32
+  }
+  VariableReference FireRate {
+   VariableType 3
+   EditorPos 1232 112
+  }
+  VariableReference AimPos {
+   VariableType 4
+   EditorPos 1232 192
+  }
+  VariableReference WeaponReady {
+   VariableType 5
+   EditorPos 1232 272
+  }
+  VariableReference Target {
+   VariableType 1
+   EditorPos 768 1264
+  }
+  VariableReference WeaponReady {
+   VariableType 5
+   EditorPos 768 1344
+  }
+  VariableReference Visible {
+   VariableType 11
+   EditorPos 1632 1184
+  }
+  VariableReference LastSeen {
+   VariableType 10
+   EditorPos 1632 1264
+  }
+  VariableReference ThreatPos {
+   VariableType 13
+   EditorPos 1632 1344
+  }
+  VariableReference FireTreeId {
+   VariableType 6
+   EditorPos 1632 1424
+  }
+  VariableReference Aim0 {
+   VariableType 7
+   EditorPos 1632 1504
+  }
+  VariableReference Aim1 {
+   VariableType 8
+   EditorPos 1632 1584
+  }
+  VariableReference AtkRate {
+   VariableType 9
+   EditorPos 1632 1664
+  }
+  VariableReference WeaponReady {
+   VariableType 5
+   EditorPos -1152 1424
+  }
+  VariableReference Target {
+   VariableType 1
+   EditorPos 288 1872
+  }
+  VariableReference Aim0 {
+   VariableType 7
+   EditorPos 320 1968
+  }
+  VariableReference Aim1 {
+   VariableType 8
+   EditorPos 336 2064
+  }
+  VariableReference FireTreeId {
+   VariableType 6
+   EditorPos 256 1632
+  }
+  VariableReference Target {
+   VariableType 1
+   EditorPos -384 1744
+  }
+  VariableReference Aim0 {
+   VariableType 7
+   EditorPos -336 1824
+  }
+  VariableReference Aim1 {
+   VariableType 8
+   EditorPos -336 1904
+  }
+  VariableReference FireTreeId {
+   VariableType 6
+   EditorPos -240 1536
+  }
+  VariableReference Target {
+   VariableType 1
+   EditorPos 448 2272
+  }
+  VariableReference TgtVol {
+   VariableType 12
+   EditorPos 1056 2192
+  }
+  VariableReference TgtVol {
+   VariableType 12
+   EditorPos 912 2384
+  }
+  VariableReference AtkRate {
+   VariableType 9
+   EditorPos 912 2464
+  }
+  VariableReference FireTreeId {
+   VariableType 6
+   EditorPos 864 1840
+  }
+  VariableReference ThreatPos {
+   VariableType 13
+   EditorPos 1488 2336
+  }
+  VariableReference FireTreeId {
+   VariableType 6
+   EditorPos 1424 1904
+  }
+  VariableReference LastSeen {
+   VariableType 10
+   EditorPos 2176 2560
+  }
+  VariableReference FireTreeId {
+   VariableType 6
+   EditorPos 2160 1968
+  }
+  VariableReference LastSeen {
+   VariableType 10
+   EditorPos 3088 2752
+  }
+  VariableReference FireTreeId {
+   VariableType 6
+   EditorPos 2768 2016
+  }
+  VariableReference LastSeen {
+   VariableType 10
+   EditorPos 4128 2704
+  }
+  VariableReference FireTreeId {
+   VariableType 6
+   EditorPos 3984 2080
+  }
+  VariableReference LastSeen {
+   VariableType 10
+   EditorPos 2224 2640
+  }
+  VariableReference Fire {
+   VariableType 0
+   EditorPos 64 768
+  }
+  VariableReference Volume {
+   VariableType 2
+   EditorPos 2016 1136
+  }
+  VariableReference FireRate {
+   VariableType 3
+   EditorPos 2080 1264
+  }
+  VariableReference Fire {
+   VariableType 0
+   EditorPos 2112 992
+  }
+  VariableReference AimPos {
+   VariableType 4
+   EditorPos 3584 1472
+  }
+  VariableReference Fire {
+   VariableType 0
+   EditorPos 3264 960
+  }
+  VariableReference AimPos {
+   VariableType 4
+   EditorPos 4304 1424
+  }
+  VariableReference Fire {
+   VariableType 0
+   EditorPos 4608 1008
+  }
+ }
+}

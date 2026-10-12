@@ -1,0 +1,59 @@
+ButtonWidgetClass {
+ Name "DCO_PageTitle"
+ Slot LayoutSlot "{8C2E5A7D1B4F9037}" {
+  VerticalAlign 1
+ }
+ style blank
+ {
+  SizeLayoutWidgetClass "{8C2E5A7D1B4F9042}" {
+   Name "DCO_PageTitle_Size"
+   Slot ButtonWidgetSlot "{8C2E5A7D1B4F9043}" {
+    Padding 3 0 3 0
+   }
+   Clipping False
+   AllowWidthOverride 1
+   WidthOverride 40
+   AllowHeightOverride 1
+   HeightOverride 40
+   {
+    OverlayWidgetClass "{8C2E5A7D1B4F9039}" {
+     Name "DCO_PageTitle_Overlay"
+     Slot AlignableSlot "{8C2E5A7D1B4F903A}" {
+      Padding 0 0 0 0
+     }
+     {
+      ImageWidgetClass "{8C2E5A7D1B4F903B}" {
+       Name "Bg"
+       Slot OverlayWidgetSlot "{8C2E5A7D1B4F903C}" {
+        HorizontalAlign 3
+        VerticalAlign 3
+       }
+       "Ignore Cursor" 1
+       Opacity 0.8
+       Color 0 0 0 1
+       Texture "{02D2F9B394AAA7B0}UI/Textures/Editor/Effects/Effect_Rounded_64x64.edds"
+       Size 64 64
+      }
+      TextWidgetClass "{8C2E5A7D1B4F903D}" {
+       Name "Text"
+       Slot OverlayWidgetSlot "{8C2E5A7D1B4F903E}" {
+        HorizontalAlign 1
+        VerticalAlign 1
+       }
+       "Ignore Cursor" 1
+       Color 1 1 1 0.9
+       Text "Vanilla"
+       "Font Size" 11
+       "Min Font Size" 8
+       FontProperties FontProperties "{8C2E5A7D1B4F9038}" {
+        Font "{EABA4FE9D014CCEF}UI/Fonts/RobotoCondensed/RobotoCondensed_Bold.fnt"
+        ShadowSize 2
+        ShadowOffset 1 1
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

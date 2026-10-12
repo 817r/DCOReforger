@@ -33,6 +33,28 @@ class DCO_PlayerTaskEntry
 	bool m_bOfferAnswered;
 	float m_fOfferAt_s;
 	float m_fOfferEta;
+	bool m_bPending;
+	int m_iOfferId;
+}
+
+class DCO_PlayerOffer
+{
+	int m_iId;
+	int m_iGroup;
+	int m_iType;
+	int m_iLeader = -1;
+	float m_fQueued_s;
+	float m_fSent_s;
+	float m_fExpire_s;
+	string m_sCallsign;
+	string m_sTitle;
+	string m_sSub;
+	string m_sDesc;
+	string m_sTactic;
+	string m_sRole;
+	string m_sObj;
+	vector m_vPos;
+	ref array<int> m_aSentTo = {};
 }
 
 class DCO_PlayerReliability
@@ -52,14 +74,16 @@ class DCO_PlayerRoleExclude
 class DCO_PlayerTasking
 {
 
-	protected static const ResourceName ICONS = "{10C0A9A305E8B3A4}UI/Imagesets/Tasks/Task_Icons.imageset";
-	protected static const float WALK_MPS = 1.8;
 
 	protected ref map<int, ref DCO_PlayerTaskEntry> m_mTasks = new map<int, ref DCO_PlayerTaskEntry>();
 	protected ref map<int, ref DCO_PlayerReliability> m_mReliability = new map<int, ref DCO_PlayerReliability>();
 	protected ref map<int, ref DCO_PlayerRoleExclude> m_mExclude = new map<int, ref DCO_PlayerRoleExclude>();
 	protected ref map<int, float> m_mOtherCd = new map<int, float>();
 	protected int m_iSeq;
+	protected ref map<int, ref DCO_PlayerOffer> m_mOffer = new map<int, ref DCO_PlayerOffer>();
+	protected ref map<int, ref array<ref DCO_PlayerOffer>> m_mOfferQueue = new map<int, ref array<ref DCO_PlayerOffer>>();
+	protected ref map<int, float> m_mOfferGap = new map<int, float>();
+	protected int m_iOfferSeq;
 
 	static void HandleRadial(int pid, int bit, bool requestOther)
 	{
@@ -90,7 +114,7 @@ class DCO_PlayerTasking
 			if (on)
 				roleKey = "role_on";
 			DCO_Radio.Group(grp.GetGroupID(), "COMMANDER", roleKey, DCO_ERadioKind.INFO, DCO_Radio.P("role", BitKey(bit)));
-			DCO_BenchmarkLoggerComponent.Event(string.Format("player_role_toggle grp=%1 role=%2 on=%3", grp.GetGroupID(), BitLabel(bit), on));
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_role_toggle grp=%1 role=%2 on=%3", grp.GetGroupID(), BitLabel(bit), on));
 			if (!on && cmd)
 				cmd.GetPlayerTasking().OnRoleDisabled(cmd, grp, bit);
 			return;
@@ -141,7 +165,7 @@ class DCO_PlayerTasking
 		array<SCR_AIGroup> eligible = {};
 		Eligible(cmd, eligible);
 
-		float now = Now();
+		float now = DCO_Util.NowS();
 		array<int> seen = {};
 		foreach (SCR_AIGroup grp : eligible)
 		{
@@ -175,7 +199,9 @@ class DCO_PlayerTasking
 		if (!ts || !groups)
 			return;
 
-		float now = Now();
+		ProcessOffers(cmd);
+
+		float now = DCO_Util.NowS();
 		array<int> remove = {};
 		array<CMD_AICommanderObjectiveComponent> early = {};
 		foreach (int id, DCO_PlayerTaskEntry e : m_mTasks)
@@ -213,7 +239,7 @@ class DCO_PlayerTasking
 					else if (now - e.m_fCreated_s > cmd.GetPlayerAcceptTime())
 					{
 						DCO_Radio.Group(id, "COMMANDER", "task_no_movement", DCO_ERadioKind.WARNING, DCO_Radio.P("callsign", DCO_PlayerComms.GetCallsign(grp), "task", e.m_Task.GetTaskName()));
-						Print(string.Format("[DCO_PlayerTask] grup %1 gak nerima task dalam %2 s -> dilepas ke AI", id, cmd.GetPlayerAcceptTime()));
+						DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("group %1 did not accept the task within %2 s -> released to AI", id, cmd.GetPlayerAcceptTime()));
 						RecordFail(cmd, id, true);
 						if (e.m_eType == DCO_EPlayerTaskType.ROLE && e.m_Objective)
 							cmd.GetTactics().RefillRole(cmd, e.m_Objective, id, now);
@@ -221,16 +247,7 @@ class DCO_PlayerTasking
 						continue;
 					}
 				}
-				else if (e.m_bOffered && !e.m_bOfferAnswered)
-				{
-					if (now - e.m_fOfferAt_s > cmd.GetPlayerAcceptTime())
-					{
-						e.m_bOfferAnswered = true;
-						DCO_BenchmarkLoggerComponent.Event(string.Format("player_transport_none grp=%1 reason=no_answer", id));
-						MakeBonus(cmd, id, e, "no_answer", "@bonus_no_answer");
-					}
-				}
-				else if (travels)
+				else if (travels && (!e.m_bOffered || e.m_bOfferAnswered))
 				{
 					RecalcOnVehicle(cmd, grp, id, e, from);
 					if (now > e.m_fEtaDeadline_s && !e.m_bArrived && !Arrived(grp, e.m_vPos, ArriveRadius(e)))
@@ -281,7 +298,7 @@ class DCO_PlayerTasking
 			if (!grp)
 				continue;
 
-			DCO_Radio.Group(id, "COMMANDER", "assault_go", DCO_ERadioKind.GO, DCO_Radio.P("obj", obj.GetOwner().GetName()));
+			DCO_Radio.Group(id, "COMMANDER", "assault_go", DCO_ERadioKind.GO, DCO_Radio.P("obj", obj.GetDisplayName()));
 			UpdateGroup(ts, cmd, grp, id);
 		}
 
@@ -290,10 +307,20 @@ class DCO_PlayerTasking
 			if (re.m_Objective != obj || re.m_eType != DCO_EPlayerTaskType.ROLE || re.m_bDone)
 				continue;
 			if (re.m_iRole == DCO_CommanderTactics.ROLE_FIX)
-				DCO_Radio.Group(rid, "COMMANDER", "assault_go_sbf", DCO_ERadioKind.GO, DCO_Radio.P("obj", obj.GetOwner().GetName()));
+				DCO_Radio.Group(rid, "COMMANDER", "assault_go_sbf", DCO_ERadioKind.GO, DCO_Radio.P("obj", obj.GetDisplayName()));
 			else if (re.m_iRole == DCO_CommanderTactics.ROLE_BLOCK)
-				DCO_Radio.Group(rid, "COMMANDER", "assault_go_block", DCO_ERadioKind.GO, DCO_Radio.P("obj", obj.GetOwner().GetName()));
+				DCO_Radio.Group(rid, "COMMANDER", "assault_go_block", DCO_ERadioKind.GO, DCO_Radio.P("obj", obj.GetDisplayName()));
 		}
+	}
+
+	bool HasActiveTask(CMD_AICommanderObjectiveComponent obj)
+	{
+		foreach (int id, DCO_PlayerTaskEntry e : m_mTasks)
+		{
+			if (e.m_Objective == obj && !e.m_bDone && e.m_bAccepted)
+				return true;
+		}
+		return false;
 	}
 
 	bool IsBlockingSync(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj)
@@ -302,7 +329,7 @@ class DCO_PlayerTasking
 		if (!groups)
 			return false;
 
-		float now = Now();
+		float now = DCO_Util.NowS();
 		foreach (int id, DCO_PlayerTaskEntry e : m_mTasks)
 		{
 			if (!e.m_bCounted || e.m_bLate || e.m_bDone || e.m_Objective != obj || e.m_eType != DCO_EPlayerTaskType.MOVE)
@@ -389,6 +416,8 @@ class DCO_PlayerTasking
 				Finish(ts, e, null);
 		}
 		m_mTasks.Clear();
+		m_mOffer.Clear();
+		m_mOfferQueue.Clear();
 	}
 
 	int BestRoleCandidate(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, int bit, vector pos, int role, bool small, bool fireSupport, out float outScore)
@@ -400,7 +429,7 @@ class DCO_PlayerTasking
 		array<SCR_AIGroup> eligible = {};
 		Eligible(cmd, eligible);
 
-		float now = Now();
+		float now = DCO_Util.NowS();
 		int counted = CountedOn(obj, -1);
 		int best = -1;
 		foreach (SCR_AIGroup grp : eligible)
@@ -474,17 +503,15 @@ class DCO_PlayerTasking
 		e.m_vRetreat = retreatDir;
 		e.m_vPos = goal;
 		e.m_bCounted = true;
-		e.m_fCreated_s = Now();
+		e.m_fCreated_s = DCO_Util.NowS();
 		e.m_fLastDesc_s = e.m_fCreated_s;
 		e.m_fStartDist = vector.DistanceXZ(from, goal);
-		e.m_Task = CreateTask(ts, cmd, id, e);
-		if (!e.m_Task)
-			return false;
+		e.m_bPending = true;
 
 		m_mTasks.Insert(id, e);
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_role_assigned grp=%1 role=%2 tactic=%3 obj=%4 counted=%5 dist=%6",
-			id, DCO_CommanderTactics.RoleName(role), DCO_CommanderTactics.Name(tactic), obj.GetOwner().GetName(), e.m_bCounted, Math.Round(e.m_fStartDist)));
-		DCO_Radio.Group(id, "COMMANDER", "task_new", DCO_ERadioKind.INFO, DCO_Radio.P("callsign", DCO_PlayerComms.GetCallsign(grp), "task", e.m_Task.GetTaskName()));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_role_assigned grp=%1 role=%2 tactic=%3 obj=%4 counted=%5 dist=%6",
+			id, DCO_CommanderTactics.RoleName(role), DCO_CommanderTactics.Name(tactic), obj.GetLogName(), e.m_bCounted, Math.Round(e.m_fStartDist)));
+		QueueOffer(cmd, grp, id, e, DCO_EOfferType.ROLE);
 		return true;
 	}
 
@@ -519,7 +546,7 @@ class DCO_PlayerTasking
 	void RequestOther(AICommander_BaseComponent cmd, SCR_AIGroup grp)
 	{
 		int id = grp.GetGroupID();
-		float now = Now();
+		float now = DCO_Util.NowS();
 		float cd;
 		if (m_mOtherCd.Find(id, cd) && now < cd)
 		{
@@ -549,16 +576,24 @@ class DCO_PlayerTasking
 		}
 
 		e.m_bOfferAnswered = true;
+		DCO_PlayerOffer tro = m_mOffer.Get(id);
+		if (tro && tro.m_iId == e.m_iOfferId)
+		{
+			e.m_iOfferId = 0;
+			CloseOffer(cmd, tro, DCO_EOfferResult.ACCEPTED);
+		}
+		else if (e.m_iOfferId > 0)
+			CancelOffer(cmd, e);
 		DCO_Logistics logi = cmd.GetLogistics();
 		if (!logi || !logi.RequestRoleTransport(cmd, pid, grp, LeaderPos(grp), e.m_vPos))
 		{
-			DCO_BenchmarkLoggerComponent.Event(string.Format("player_transport_none grp=%1 reason=request_failed", id));
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_transport_none grp=%1 reason=request_failed", id));
 			MakeBonus(cmd, id, e, "unavailable", "@bonus_unavailable");
 			return;
 		}
 
-		e.m_fEtaDeadline_s = Now() + cmd.GetPlayerEtaMargin() + e.m_fOfferEta;
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_transport_accept grp=%1 eta=%2", id, Math.Round(e.m_fOfferEta)));
+		e.m_fEtaDeadline_s = DCO_Util.NowS() + cmd.GetPlayerEtaMargin() + e.m_fOfferEta;
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_transport_accept grp=%1 eta=%2", id, Math.Round(e.m_fOfferEta)));
 		DCO_Radio.Group(id, "LOGISTICS", "transport_accepted", DCO_ERadioKind.INFO, DCO_Radio.P("eta", DCO_Radio.N(Math.Max(1, e.m_fOfferEta / 60))));
 	}
 
@@ -567,13 +602,13 @@ class DCO_PlayerTasking
 		int bit = EntryBit(e);
 		string objName = "-";
 		if (e.m_Objective)
-			objName = e.m_Objective.GetOwner().GetName();
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_role_request_other grp=%1 role=%2 obj=%3 reason=%4", id, EntryRoleLabel(e), objName, why));
+			objName = e.m_Objective.GetLogName();
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_role_request_other grp=%1 role=%2 obj=%3 reason=%4", id, EntryRoleLabel(e), objName, why));
 
 		DCO_PlayerRoleExclude ex = new DCO_PlayerRoleExclude();
 		ex.m_Obj = e.m_Objective;
 		ex.m_iBits = bit;
-		ex.m_fUntil_s = Now() + 300.0;
+		ex.m_fUntil_s = DCO_Util.NowS() + 300.0;
 		m_mExclude.Set(id, ex);
 
 		string taskName = "the task";
@@ -584,7 +619,7 @@ class DCO_PlayerTasking
 		Finish(ts, e, cmd);
 		m_mTasks.Remove(id);
 		if (e.m_eType == DCO_EPlayerTaskType.ROLE && e.m_Objective)
-			cmd.GetTactics().RefillRole(cmd, e.m_Objective, id, Now());
+			cmd.GetTactics().RefillRole(cmd, e.m_Objective, id, DCO_Util.NowS());
 
 		DCO_Radio.Group(id, "COMMANDER", "other_handed", DCO_ERadioKind.INFO, DCO_Radio.P("task", taskName));
 		if (ts)
@@ -632,7 +667,7 @@ class DCO_PlayerTasking
 				Finish(ts, e, cmd, true, e.m_eType == DCO_EPlayerTaskType.MOVE);
 				RecordSuccess(id);
 			}
-			if (e.m_Task || e.m_bDone)
+			if (e.m_Task || e.m_bDone || e.m_bPending)
 				return;
 		}
 
@@ -659,6 +694,7 @@ class DCO_PlayerTasking
 				{
 					e.m_bAccepted = true;
 					e.m_bSlot = slot;
+					ActivateWithoutOffer(ts, cmd, id, e);
 				}
 				return;
 			}
@@ -723,14 +759,15 @@ class DCO_PlayerTasking
 		e.m_vPos = pos;
 		e.m_bCounted = counted;
 		e.m_bFlank = flank;
-		e.m_fCreated_s = Now();
+		e.m_fCreated_s = DCO_Util.NowS();
 		e.m_fLastDesc_s = e.m_fCreated_s;
 		e.m_fStartDist = vector.DistanceXZ(from, pos);
-		e.m_Task = CreateTask(ts, cmd, id, e);
-		if (!e.m_Task)
-			return null;
+		e.m_bPending = true;
 
 		m_mTasks.Insert(id, e);
+		SCR_GroupsManagerComponent groups = SCR_GroupsManagerComponent.GetInstance();
+		if (groups)
+			QueueOffer(cmd, groups.FindGroup(id), id, e, DCO_EOfferType.TASK);
 		return e;
 	}
 
@@ -740,7 +777,7 @@ class DCO_PlayerTasking
 			return false;
 
 		DCO_PlayerReliability rel = m_mReliability.Get(id);
-		if (rel && Now() < rel.m_fBonusUntil_s)
+		if (rel && DCO_Util.NowS() < rel.m_fBonusUntil_s)
 			return false;
 
 		return CountedOn(obj, id) < cmd.GetPlayerMaxPerObjective();
@@ -765,8 +802,8 @@ class DCO_PlayerTasking
 		float calc = TravelTime(cmd, vector.DistanceXZ(from, e.m_vPos), e.m_bInVehicle);
 		float buffer = cmd.GetPlayerEtaMargin();
 		bool capped = calc > cmd.GetPlayerMaxEtaMin() * 60;
-		e.m_fEtaDeadline_s = Now() + buffer + calc;
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_eta grp=%1 calc=%2 buffer=%3 capped=%4 vehicle=%5 reason=accept", id, Math.Round(calc), Math.Round(buffer), capped, e.m_bInVehicle));
+		e.m_fEtaDeadline_s = DCO_Util.NowS() + buffer + calc;
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_eta grp=%1 calc=%2 buffer=%3 capped=%4 vehicle=%5 reason=accept", id, Math.Round(calc), Math.Round(buffer), capped, e.m_bInVehicle));
 
 		if (e.m_Objective && e.m_eType != DCO_EPlayerTaskType.DEFEND && !e.m_bSlot)
 		{
@@ -774,7 +811,7 @@ class DCO_PlayerTasking
 			e.m_bSlot = true;
 		}
 
-		Print(string.Format("[DCO_PlayerTask] grup %1 nerima %2 (dihitung, ETA %3 s)", id, e.m_Task.GetTaskName(), Math.Round(e.m_fEtaDeadline_s - Now())));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("group %1 accepted %2 (counted, ETA %3 s)", id, e.m_Task.GetTaskName(), Math.Round(e.m_fEtaDeadline_s - DCO_Util.NowS())));
 
 		if (capped)
 			OfferTransport(cmd, grp, id, e, from);
@@ -782,7 +819,7 @@ class DCO_PlayerTasking
 
 	protected float TravelTime(AICommander_BaseComponent cmd, float dist, bool vehicle)
 	{
-		float speed = WALK_MPS;
+		float speed = 1.8;
 		if (vehicle)
 			speed = 8.0;
 		return dist / speed * cmd.GetPlayerEtaFactor();
@@ -797,11 +834,11 @@ class DCO_PlayerTasking
 		e.m_bInVehicle = inVeh;
 		float calc = TravelTime(cmd, vector.DistanceXZ(from, e.m_vPos), inVeh);
 		float buffer = cmd.GetPlayerEtaMargin();
-		e.m_fEtaDeadline_s = Now() + buffer + calc;
+		e.m_fEtaDeadline_s = DCO_Util.NowS() + buffer + calc;
 		string why = "dismount";
 		if (inVeh)
 			why = "mount";
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_eta grp=%1 calc=%2 buffer=%3 capped=0 vehicle=%4 reason=%5", id, Math.Round(calc), Math.Round(buffer), inVeh, why));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_eta grp=%1 calc=%2 buffer=%3 capped=0 vehicle=%4 reason=%5", id, Math.Round(calc), Math.Round(buffer), inVeh, why));
 	}
 
 	protected void OfferTransport(AICommander_BaseComponent cmd, SCR_AIGroup grp, int id, DCO_PlayerTaskEntry e, vector from)
@@ -813,17 +850,18 @@ class DCO_PlayerTasking
 
 		if (eta < 0)
 		{
-			DCO_BenchmarkLoggerComponent.Event(string.Format("player_transport_none grp=%1 reason=no_team", id));
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_transport_none grp=%1 reason=no_team", id));
 			MakeBonus(cmd, id, e, "no_transport", "@bonus_no_transport");
 			return;
 		}
 
 		e.m_bOffered = true;
-		e.m_fOfferAt_s = Now();
+		e.m_fOfferAt_s = DCO_Util.NowS();
 		e.m_fOfferEta = eta;
-		e.m_fEtaDeadline_s = Now() + cmd.GetPlayerAcceptTime() + cmd.GetPlayerEtaMargin() + eta;
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_transport_offer grp=%1 pickup=%2 eta=%3", id, Math.Round(pickup), Math.Round(eta)));
+		e.m_fEtaDeadline_s = DCO_Util.NowS() + cmd.GetPlayerAcceptTime() + cmd.GetPlayerEtaMargin() + eta;
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_transport_offer grp=%1 pickup=%2 eta=%3", id, Math.Round(pickup), Math.Round(eta)));
 		DCO_Radio.Group(id, "COMMANDER", "offer_transport", DCO_ERadioKind.WARNING, DCO_Radio.P("eta", DCO_Radio.N(Math.Max(1, pickup / 60))));
+		QueueOffer(cmd, grp, id, e, DCO_EOfferType.TRANSPORT, pickup);
 	}
 
 	protected void MakeBonus(AICommander_BaseComponent cmd, int id, DCO_PlayerTaskEntry e, string why, string reasonKey)
@@ -833,7 +871,7 @@ class DCO_PlayerTasking
 		if (e.m_Task)
 			e.m_Task.SetTaskDescription(BuildDescription(cmd, e));
 		DCO_Radio.Group(id, "COMMANDER", "task_bonus", DCO_ERadioKind.WARNING, DCO_Radio.P("reason", reasonKey));
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_role_bonus grp=%1 reason=\"%2\"", id, why));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_role_bonus grp=%1 reason=\"%2\"", id, why));
 	}
 
 	protected void GoLate(SCR_TaskSystem ts, AICommander_BaseComponent cmd, SCR_AIGroup grp, int id, DCO_PlayerTaskEntry e)
@@ -851,7 +889,7 @@ class DCO_PlayerTasking
 
 		if (e.m_Objective)
 		{
-			string objName = e.m_Objective.GetOwner().GetName();
+			string objName = e.m_Objective.GetDisplayName();
 			e.m_eType = DCO_EPlayerTaskType.ATTACK;
 			e.m_vPos = e.m_Objective.GetOwner().GetOrigin();
 			e.m_Task.SetTaskName("Attack " + objName);
@@ -861,7 +899,7 @@ class DCO_PlayerTasking
 
 			DCO_Radio.Group(id, "COMMANDER", "task_late", DCO_ERadioKind.WARNING, DCO_Radio.P("callsign", DCO_PlayerComms.GetCallsign(grp), "obj", objName));
 		}
-		Print(string.Format("[DCO_PlayerTask] grup %1 lewat ETA -> gak ditunggu, jadi ATTACK bonus", id));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("group %1 past ETA -> no longer awaited, becomes ATTACK bonus", id));
 	}
 
 	protected void UpdateRoleArrival(SCR_AIGroup grp, int id, DCO_PlayerTaskEntry e)
@@ -870,7 +908,7 @@ class DCO_PlayerTasking
 			return;
 
 		e.m_bArrived = true;
-		string objName = e.m_Objective.GetOwner().GetName();
+		string objName = e.m_Objective.GetDisplayName();
 		string msg;
 		switch (e.m_iRole)
 		{
@@ -886,7 +924,7 @@ class DCO_PlayerTasking
 		}
 		if (!msg.IsEmpty())
 			DCO_Radio.Group(id, "COMMANDER", msg, DCO_ERadioKind.GO, DCO_Radio.P("obj", objName));
-		DCO_BenchmarkLoggerComponent.Event(string.Format("player_role_arrived grp=%1 role=%2 obj=%3", id, DCO_CommanderTactics.RoleName(e.m_iRole), objName));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_role_arrived grp=%1 role=%2 obj=%3", id, DCO_CommanderTactics.RoleName(e.m_iRole), e.m_Objective.GetLogName()));
 	}
 
 	protected SCR_Task CreateTask(SCR_TaskSystem ts, AICommander_BaseComponent cmd, int groupID, DCO_PlayerTaskEntry e)
@@ -900,7 +938,7 @@ class DCO_PlayerTasking
 		if (!task)
 			return null;
 
-		task.SetTaskIconPath(ICONS);
+		task.SetTaskIconPath("{10C0A9A305E8B3A4}UI/Imagesets/Tasks/Task_Icons.imageset");
 		task.SetTaskIconSetName(icon);
 		ts.SetTaskOwnership(task, SCR_ETaskOwnership.GROUP);
 		ts.SetTaskVisibility(task, SCR_ETaskVisibility.GROUP);
@@ -908,13 +946,13 @@ class DCO_PlayerTasking
 		ts.AddTaskFaction(task, cmd.GetCommanderFactionKey());
 		ts.AddTaskGroup(task, groupID);
 		ts.AssignTask(task, SCR_TaskSystem.TaskExecutorFromGroup(groupID), true);
-		Print(string.Format("[DCO_PlayerTask] %1 grup %2: %3 (dihitung %4)", taskID, groupID, name, e.m_bCounted));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("%1 group %2: %3 (counted %4)", taskID, groupID, name, e.m_bCounted));
 		return task;
 	}
 
 	protected string TaskName(DCO_PlayerTaskEntry e, out string icon)
 	{
-		string objName = e.m_Objective.GetOwner().GetName();
+		string objName = e.m_Objective.GetDisplayName();
 		switch (e.m_eType)
 		{
 			case DCO_EPlayerTaskType.MOVE:
@@ -956,7 +994,7 @@ class DCO_PlayerTasking
 
 	protected string BuildDescription(AICommander_BaseComponent cmd, DCO_PlayerTaskEntry e)
 	{
-		string objName = e.m_Objective.GetOwner().GetName();
+		string objName = e.m_Objective.GetDisplayName();
 		string desc;
 		switch (e.m_eType)
 		{
@@ -1025,7 +1063,7 @@ class DCO_PlayerTasking
 		switch (e.m_eType)
 		{
 			case DCO_EPlayerTaskType.MOVE:
-				return grp && Arrived(grp, e.m_vPos, ArriveRadius(e));
+				return grp && (Arrived(grp, e.m_vPos, ArriveRadius(e)) || Arrived(grp, e.m_Objective.GetOwner().GetOrigin(), ArriveRadius(e)));
 			case DCO_EPlayerTaskType.ATTACK:
 			case DCO_EPlayerTaskType.ROLE:
 				return e.m_Objective.IsCapturedBy(cmd.GetCommanderFactionKey());
@@ -1063,7 +1101,7 @@ class DCO_PlayerTasking
 		DCO_PlayerRoleExclude ex = m_mExclude.Get(id);
 		if (!ex)
 			return null;
-		if (Now() > ex.m_fUntil_s || !ex.m_Obj)
+		if (DCO_Util.NowS() > ex.m_fUntil_s || !ex.m_Obj)
 		{
 			m_mExclude.Remove(id);
 			return null;
@@ -1102,7 +1140,7 @@ class DCO_PlayerTasking
 			foreach (int pid : pids)
 			{
 				IEntity ent = pm.GetPlayerControlledEntity(pid);
-				if (IsAlive(ent))
+				if (DCO_Util.IsNotDead(ent))
 					outList.Insert(ent);
 			}
 		}
@@ -1114,15 +1152,9 @@ class DCO_PlayerTasking
 		foreach (AIAgent a : agents)
 		{
 			IEntity ent = a.GetControlledEntity();
-			if (IsAlive(ent) && !outList.Contains(ent))
+			if (DCO_Util.IsNotDead(ent) && !outList.Contains(ent))
 				outList.Insert(ent);
 		}
-	}
-
-	protected static bool IsAlive(IEntity ent)
-	{
-		ChimeraCharacter ch = ChimeraCharacter.Cast(ent);
-		return ch && ch.GetCharacterController() && !ch.GetCharacterController().IsDead();
 	}
 
 	protected static bool Arrived(SCR_AIGroup grp, vector pos, float radius)
@@ -1178,6 +1210,323 @@ class DCO_PlayerTasking
 		}
 	}
 
+	protected void QueueOffer(AICommander_BaseComponent cmd, SCR_AIGroup grp, int id, DCO_PlayerTaskEntry e, int type, float pickup = 0)
+	{
+		if (!grp || !e)
+			return;
+		DCO_PlayerOffer o = new DCO_PlayerOffer();
+		m_iOfferSeq++;
+		o.m_iId = m_iOfferSeq;
+		o.m_iGroup = id;
+		o.m_iType = type;
+		o.m_fQueued_s = DCO_Util.NowS();
+		o.m_sCallsign = DCO_PlayerComms.GetCallsign(grp);
+		o.m_vPos = e.m_vPos;
+		o.m_sObj = "-";
+		string objName = "";
+		if (e.m_Objective)
+		{
+			objName = e.m_Objective.GetDisplayName();
+			o.m_sObj = objName;
+		}
+		if (e.m_eType == DCO_EPlayerTaskType.ROLE)
+		{
+			o.m_sTactic = DCO_CommanderTactics.Name(e.m_eTactic);
+			o.m_sRole = DCO_CommanderTactics.RoleName(e.m_iRole);
+		}
+		else
+			o.m_sRole = typename.EnumToString(DCO_EPlayerTaskType, e.m_eType);
+
+		vector from = LeaderPos(grp);
+		float dist = vector.DistanceXZ(from, e.m_vPos);
+		string icon;
+		if (type == DCO_EOfferType.TRANSPORT)
+		{
+			o.m_sTitle = TaskName(e, icon);
+			o.m_sSub = string.Format("%1  ·  pickup in about %2 min", objName, Math.Max(1, Math.Round(pickup / 60)));
+			o.m_sDesc = "Distance too far to walk in time. Accept and a vehicle picks your group up here.";
+		}
+		else
+		{
+			o.m_sTitle = TaskName(e, icon);
+			if (!o.m_sTactic.IsEmpty())
+				o.m_sTitle = o.m_sTitle + " (" + o.m_sTactic + ")";
+			bool inVeh = DCO_VehicleCombat.GetVehicle(grp.GetLeaderEntity()) != null;
+			float eta = TravelTime(cmd, dist, inVeh) + cmd.GetPlayerEtaMargin();
+			o.m_sSub = string.Format("%1  ·  %2 m %3  ·  ETA %4 min", objName, Math.Round(dist), DCO_PlayerComms.Bearing(from, e.m_vPos), Math.Max(1, Math.Round(eta / 60)));
+			string desc = BuildDescription(cmd, e);
+			int nl = desc.IndexOf("\n");
+			if (nl > 0)
+				desc = desc.Substring(0, nl);
+			o.m_sDesc = desc;
+		}
+		e.m_iOfferId = o.m_iId;
+
+		array<ref DCO_PlayerOffer> q = m_mOfferQueue.Get(id);
+		if (!q)
+		{
+			q = {};
+			m_mOfferQueue.Insert(id, q);
+		}
+		int at = q.Count();
+		foreach (int i, DCO_PlayerOffer other : q)
+		{
+			if (type < other.m_iType)
+			{
+				at = i;
+				break;
+			}
+		}
+		q.InsertAt(o, at);
+	}
+
+	protected void ProcessOffers(AICommander_BaseComponent cmd)
+	{
+		if (!cmd || !Replication.IsServer())
+			return;
+		SCR_GroupsManagerComponent groups = SCR_GroupsManagerComponent.GetInstance();
+		if (!groups)
+			return;
+		float now = DCO_Util.NowS();
+
+		array<int> done = {};
+		foreach (int gid, DCO_PlayerOffer o : m_mOffer)
+		{
+			SCR_AIGroup grp = groups.FindGroup(gid);
+			if (!grp)
+			{
+				done.Insert(gid);
+				continue;
+			}
+			if (now >= o.m_fExpire_s)
+			{
+				done.Insert(gid);
+				continue;
+			}
+			SendOffer(grp, o, now);
+		}
+		foreach (int did : done)
+		{
+			DCO_PlayerOffer expired = m_mOffer.Get(did);
+			if (expired)
+				ResolveOffer(cmd, expired, DCO_EOfferResult.TIMEOUT, -1);
+		}
+
+		foreach (int qid, array<ref DCO_PlayerOffer> q : m_mOfferQueue)
+		{
+			if (!q || q.IsEmpty() || m_mOffer.Contains(qid))
+				continue;
+			float gap = 0;
+			if (m_mOfferGap.Find(qid, gap) && now < gap)
+				continue;
+			SCR_AIGroup qg = groups.FindGroup(qid);
+			if (!qg)
+				continue;
+			DCO_PlayerOffer next = q[0];
+			q.RemoveOrdered(0);
+			next.m_fSent_s = now;
+			next.m_fExpire_s = now + cmd.GetPlayerAcceptTime();
+			m_mOffer.Set(qid, next);
+			SendOffer(qg, next, now);
+			DCO_Radio.Group(qid, "COMMANDER", "offer_new", DCO_ERadioKind.INFO, DCO_Radio.P("callsign", next.m_sCallsign, "task", next.m_sTitle));
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_offer_sent grp=%1 type=%2 tactic=%3 role=%4 obj=%5 wait=%6",
+				qid, typename.EnumToString(DCO_EOfferType, next.m_iType), NoneIfEmpty(next.m_sTactic), next.m_sRole, next.m_sObj, Math.Round(now - next.m_fQueued_s)));
+		}
+	}
+
+	protected static string NoneIfEmpty(string s)
+	{
+		if (s.IsEmpty())
+			return "-";
+		return s;
+	}
+
+	protected void SendOffer(SCR_AIGroup grp, DCO_PlayerOffer o, float now)
+	{
+		int leader = grp.GetLeaderID();
+		if (leader != o.m_iLeader)
+		{
+			o.m_iLeader = leader;
+			o.m_aSentTo.Clear();
+		}
+		array<int> pids = grp.GetPlayerIDs();
+		if (!pids)
+			return;
+		float total = o.m_fExpire_s - o.m_fSent_s;
+		float remain = Math.Max(0, o.m_fExpire_s - now);
+		foreach (int pid : pids)
+		{
+			if (o.m_aSentTo.Contains(pid))
+				continue;
+			SCR_PlayerControllerGroupComponent comp = SCR_PlayerControllerGroupComponent.GetPlayerControllerComponent(pid);
+			if (!comp)
+				continue;
+			comp.DCO_SendOffer(o.m_iId, o.m_iType, o.m_sCallsign, o.m_sTitle, o.m_sSub, o.m_sDesc, o.m_vPos[0], o.m_vPos[2], remain, total, pid == leader);
+			o.m_aSentTo.Insert(pid);
+		}
+	}
+
+	protected void CloseOffer(AICommander_BaseComponent cmd, DCO_PlayerOffer o, int result)
+	{
+		m_mOffer.Remove(o.m_iGroup);
+		float gap = 30.0;
+		if (result == DCO_EOfferResult.ACCEPTED)
+			gap = 5.0;
+		m_mOfferGap.Set(o.m_iGroup, DCO_Util.NowS() + gap);
+
+		SCR_GroupsManagerComponent groups = SCR_GroupsManagerComponent.GetInstance();
+		array<int> pids = {};
+		pids.InsertAll(o.m_aSentTo);
+		if (groups)
+		{
+			SCR_AIGroup grp = groups.FindGroup(o.m_iGroup);
+			if (grp && grp.GetPlayerIDs())
+			{
+				foreach (int gp : grp.GetPlayerIDs())
+				{
+					if (!pids.Contains(gp))
+						pids.Insert(gp);
+				}
+			}
+		}
+		foreach (int pid : pids)
+		{
+			SCR_PlayerControllerGroupComponent comp = SCR_PlayerControllerGroupComponent.GetPlayerControllerComponent(pid);
+			if (comp)
+				comp.DCO_SendOfferClose(o.m_iId, result);
+		}
+
+		float answer = -1;
+		if (o.m_fSent_s > 0)
+			answer = DCO_Util.NowS() - o.m_fSent_s;
+		string res = typename.EnumToString(DCO_EOfferResult, result);
+		res.ToLower();
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_offer_%1 grp=%2 type=%3 tactic=%4 role=%5 obj=%6 answer_s=%7",
+			res, o.m_iGroup, typename.EnumToString(DCO_EOfferType, o.m_iType), NoneIfEmpty(o.m_sTactic), o.m_sRole, o.m_sObj, Math.Round(answer)));
+		DCO_PlayerComms.SendToGameMasters("DCO", string.Format("%1: offer %2 (%3) - %4", o.m_sCallsign, res, o.m_sTitle, o.m_sObj));
+	}
+
+	protected void ResolveOffer(AICommander_BaseComponent cmd, DCO_PlayerOffer o, int result, int pid)
+	{
+		CloseOffer(cmd, o, result);
+		DCO_PlayerTaskEntry e = m_mTasks.Get(o.m_iGroup);
+		if (!e || e.m_iOfferId != o.m_iId)
+			return;
+		e.m_iOfferId = 0;
+		int id = o.m_iGroup;
+		SCR_TaskSystem ts = SCR_TaskSystem.GetInstance();
+		SCR_GroupsManagerComponent groups = SCR_GroupsManagerComponent.GetInstance();
+		SCR_AIGroup grp;
+		if (groups)
+			grp = groups.FindGroup(id);
+
+		if (o.m_iType == DCO_EOfferType.TRANSPORT)
+		{
+			if (result == DCO_EOfferResult.ACCEPTED && grp)
+			{
+				AcceptTransport(cmd, grp, pid);
+				return;
+			}
+			if (result == DCO_EOfferResult.CANCELLED)
+				return;
+			e.m_bOfferAnswered = true;
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_transport_none grp=%1 reason=%2", id, typename.EnumToString(DCO_EOfferResult, result)));
+			MakeBonus(cmd, id, e, "no_transport", "@bonus_no_answer");
+			return;
+		}
+
+		if (result == DCO_EOfferResult.CANCELLED)
+			return;
+
+		if (result == DCO_EOfferResult.ACCEPTED && grp && ts)
+		{
+			e.m_bPending = false;
+			e.m_Task = CreateTask(ts, cmd, id, e);
+			if (!e.m_Task)
+			{
+				if (e.m_eType == DCO_EPlayerTaskType.ROLE && e.m_Objective)
+					cmd.GetTactics().RefillRole(cmd, e.m_Objective, id, DCO_Util.NowS());
+				Finish(ts, e, cmd);
+				m_mTasks.Remove(id);
+				return;
+			}
+			e.m_fCreated_s = DCO_Util.NowS();
+			if (e.m_bCounted && !e.m_bLate)
+				Accept(cmd, grp, id, e, LeaderPos(grp));
+			else
+				e.m_bAccepted = true;
+			DCO_Radio.Group(id, "COMMANDER", "offer_accepted", DCO_ERadioKind.INFO, DCO_Radio.P("callsign", o.m_sCallsign, "task", e.m_Task.GetTaskName()));
+			return;
+		}
+
+		string key = "offer_declined";
+		if (result == DCO_EOfferResult.TIMEOUT)
+			key = "offer_timeout";
+		DCO_PlayerRoleExclude ex = new DCO_PlayerRoleExclude();
+		ex.m_Obj = e.m_Objective;
+		ex.m_iBits = EntryBit(e);
+		ex.m_fUntil_s = DCO_Util.NowS() + 300.0;
+		m_mExclude.Set(id, ex);
+		if (e.m_eType == DCO_EPlayerTaskType.ROLE && e.m_Objective)
+			cmd.GetTactics().RefillRole(cmd, e.m_Objective, id, DCO_Util.NowS());
+		Finish(ts, e, cmd);
+		m_mTasks.Remove(id);
+		DCO_Radio.Group(id, "COMMANDER", key, DCO_ERadioKind.INFO, DCO_Radio.P("callsign", o.m_sCallsign));
+	}
+
+	void AnswerOffer(AICommander_BaseComponent cmd, SCR_AIGroup grp, int offerId, bool accept, int pid)
+	{
+		if (!grp)
+			return;
+		DCO_PlayerOffer o = m_mOffer.Get(grp.GetGroupID());
+		if (!o || o.m_iId != offerId)
+			return;
+		int result = DCO_EOfferResult.DECLINED;
+		if (accept)
+			result = DCO_EOfferResult.ACCEPTED;
+		ResolveOffer(cmd, o, result, pid);
+	}
+
+	protected void CancelOffer(AICommander_BaseComponent cmd, DCO_PlayerTaskEntry e)
+	{
+		int oid = e.m_iOfferId;
+		e.m_iOfferId = 0;
+		DCO_PlayerOffer hit;
+		foreach (int gid, DCO_PlayerOffer o : m_mOffer)
+		{
+			if (o.m_iId == oid)
+			{
+				hit = o;
+				break;
+			}
+		}
+		if (hit)
+		{
+			CloseOffer(cmd, hit, DCO_EOfferResult.CANCELLED);
+			DCO_Radio.Group(hit.m_iGroup, "COMMANDER", "offer_cancelled", DCO_ERadioKind.INFO, DCO_Radio.P("callsign", hit.m_sCallsign));
+			return;
+		}
+		foreach (int qid, array<ref DCO_PlayerOffer> q : m_mOfferQueue)
+		{
+			if (!q)
+				continue;
+			for (int i = q.Count() - 1; i >= 0; i--)
+			{
+				if (q[i].m_iId == oid)
+					q.RemoveOrdered(i);
+			}
+		}
+	}
+
+	protected void ActivateWithoutOffer(SCR_TaskSystem ts, AICommander_BaseComponent cmd, int id, DCO_PlayerTaskEntry e)
+	{
+		if (e.m_iOfferId > 0)
+			CancelOffer(cmd, e);
+		e.m_bPending = false;
+		if (!e.m_Task && ts)
+			e.m_Task = CreateTask(ts, cmd, id, e);
+	}
+
 	protected void RecordFail(AICommander_BaseComponent cmd, int id, bool acceptance)
 	{
 		DCO_PlayerReliability rel = m_mReliability.Get(id);
@@ -1189,13 +1538,13 @@ class DCO_PlayerTasking
 
 		rel.m_iFails++;
 		if (acceptance)
-			rel.m_fCooldownUntil_s = Now() + 120.0;
+			rel.m_fCooldownUntil_s = DCO_Util.NowS() + 120.0;
 
 		if (rel.m_iFails >= cmd.GetPlayerFailLimit())
 		{
 			rel.m_iFails = 0;
-			rel.m_fBonusUntil_s = Now() + cmd.GetPlayerBonusMinutes() * 60;
-			Print(string.Format("[DCO_PlayerTask] grup %1 gagal %2x berturut -> bonus %3 menit", id, cmd.GetPlayerFailLimit(), cmd.GetPlayerBonusMinutes()));
+			rel.m_fBonusUntil_s = DCO_Util.NowS() + cmd.GetPlayerBonusMinutes() * 60;
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("group %1 failed %2x in a row -> bonus %3 min", id, cmd.GetPlayerFailLimit(), cmd.GetPlayerBonusMinutes()));
 		}
 	}
 
@@ -1222,6 +1571,9 @@ class DCO_PlayerTasking
 		if (!e)
 			return;
 
+		if (e.m_iOfferId > 0)
+			CancelOffer(cmd, e);
+
 		if (!keepSlot)
 			ReleaseSlot(cmd, e);
 		if (!e.m_Task || !ts)
@@ -1236,7 +1588,7 @@ class DCO_PlayerTasking
 
 		ts.SetTaskState(e.m_Task, state);
 		GetGame().GetCallqueue().CallLater(DeleteTask, 10000, false, e.m_Task.GetTaskID());
-		Print(string.Format("[DCO_PlayerTask] %1 -> %2", e.m_Task.GetTaskID(), typename.EnumToString(SCR_ETaskState, state)));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("%1 -> %2", e.m_Task.GetTaskID(), typename.EnumToString(SCR_ETaskState, state)));
 	}
 
 	protected void DeleteTask(string taskID)
@@ -1255,8 +1607,4 @@ class DCO_PlayerTasking
 		return grp.GetOrigin();
 	}
 
-	protected static float Now()
-	{
-		return GetGame().GetWorld().GetWorldTime() / 1000.0;
-	}
 }

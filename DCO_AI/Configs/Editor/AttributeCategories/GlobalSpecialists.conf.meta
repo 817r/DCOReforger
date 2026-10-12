@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{4CF7F0162FB9653A}Configs/Editor/AttributeCategories/GlobalSpecialists.conf"
+ Configurations {
+  CONFResourceClass PC {
+  }
+  CONFResourceClass XBOX_ONE : PC {
+  }
+  CONFResourceClass XBOX_SERIES : PC {
+  }
+  CONFResourceClass PS4 : PC {
+  }
+  CONFResourceClass PS5 : PC {
+  }
+  CONFResourceClass HEADLESS : PC {
+  }
+ }
+}

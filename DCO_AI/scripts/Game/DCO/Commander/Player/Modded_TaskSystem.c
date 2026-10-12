@@ -26,7 +26,8 @@ modded class SCR_TaskSystem
 		if (!grp || grp.GetGroupID() != DCO_GetLocalGroupID() || !DCO_IsCommanderTask(task))
 			return;
 
-		DCO_Banner("NEW ORDERS", task, DCO_DistanceText(task), Color.FromRGBA(243, 178, 49, 255), SCR_SoundEvent.TASK_CREATED);
+		Color accent = Color.FromSRGBA(243, 178, 49, 255);
+		DCO_Banner("NEW ORDERS", task, DCO_DistanceText(task), accent, SCR_SoundEvent.TASK_CREATED);
 	}
 
 	protected void DCO_OnTaskStateChanged(SCR_Task task, SCR_ETaskState newState)
@@ -38,16 +39,19 @@ modded class SCR_TaskSystem
 		if (gid < 0 || !task.IsTaskAssignedTo(SCR_TaskSystem.TaskExecutorFromGroup(gid)))
 			return;
 
+		Color done = Color.FromSRGBA(110, 214, 96, 255);
+		Color fail = Color.FromSRGBA(222, 72, 60, 255);
+		Color cancel = Color.FromSRGBA(160, 160, 160, 255);
 		switch (newState)
 		{
 			case SCR_ETaskState.COMPLETED:
-				DCO_Banner("ORDER COMPLETE", task, "", Color.FromRGBA(110, 214, 96, 255), SCR_SoundEvent.TASK_SUCCEED);
+				DCO_Banner("ORDER COMPLETE", task, "", done, SCR_SoundEvent.TASK_SUCCEED);
 				break;
 			case SCR_ETaskState.FAILED:
-				DCO_Banner("ORDER FAILED", task, "", Color.FromRGBA(222, 72, 60, 255), SCR_SoundEvent.TASK_FAILED);
+				DCO_Banner("ORDER FAILED", task, "", fail, SCR_SoundEvent.TASK_FAILED);
 				break;
 			case SCR_ETaskState.CANCELLED:
-				DCO_Banner("ORDER CANCELLED", task, "", Color.FromRGBA(160, 160, 160, 255), SCR_SoundEvent.TASK_CANCELED);
+				DCO_Banner("ORDER CANCELLED", task, "", cancel, SCR_SoundEvent.TASK_CANCELED);
 				break;
 		}
 	}

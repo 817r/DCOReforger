@@ -1,0 +1,53 @@
+FrameWidgetClass {
+ Name "EditRoot"
+ Slot FrameWidgetSlot "{CB2388C5C32E742A}" {
+  Anchor 0 0 0 0
+  PositionX 0
+  OffsetLeft 0
+  PositionY 0
+  OffsetTop 0
+  SizeX 100
+  OffsetRight -100
+  SizeY 26
+  OffsetBottom -26
+ }
+ {
+  ImageWidgetClass "{6901E1F8950125AC}" {
+   Name "Bg"
+   Slot FrameWidgetSlot "{BE56BE5B379022A9}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 0
+    PositionY 0
+    OffsetTop 0
+    SizeX 0
+    OffsetRight 0
+    SizeY 0
+    OffsetBottom 0
+   }
+   Color 0.0052 0.0056 0.0061 1
+  }
+  EditBoxWidgetClass "{6BD4E46754DDD2B4}" {
+   Name "Box"
+   Slot FrameWidgetSlot "{D295406D3D2877B7}" {
+    Anchor 0 0 1 1
+    PositionX 0
+    OffsetLeft 6
+    PositionY 0
+    OffsetTop 2
+    SizeX 0
+    OffsetRight 6
+    SizeY 0
+    OffsetBottom 2
+   }
+   Clipping True
+   style blank
+   "Font Size" 16
+   "Use placeholder text" 1
+   "Placeholder text" ""
+   FontProperties FontProperties "{DC2AAA098A7F6CB5}" {
+    Font "{3E7733BAC8C831F6}UI/Fonts/RobotoCondensed/RobotoCondensed_Regular.fnt"
+   }
+  }
+ }
+}

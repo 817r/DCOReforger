@@ -3,82 +3,82 @@ class DCO_GroupContactReporterComponentClass : ScriptComponentClass {}
 
 class DCO_GroupContactReporterComponent : ScriptComponent
 {
-	[Attribute("15.0", UIWidgets.EditBox, "Interval scan enemy (detik). Global Contact Report Scan Interval > 0 menimpa nilai ini.", category: "Contact")]
+	[Attribute("15.0", UIWidgets.EditBox, "Enemy scan interval (s). Global Contact Report Scan Interval > 0 overrides this value.", category: "Contact")]
 	protected float m_fScanInterval;
 
-	[Attribute("3", UIWidgets.EditBox, "Maksimal laporan kontak per scan. Sisanya dilaporkan scan berikutnya. Global Contact Report Max Per Scan > 0 menimpa nilai ini.", category: "Contact")]
+	[Attribute("3", UIWidgets.EditBox, "Maximum contact reports per scan. The rest are reported on the next scan. Global Contact Report Max Per Scan > 0 overrides this value.", category: "Contact")]
 	protected int m_iMaxReportsPerScan;
 
-	[Attribute("0.5", UIWidgets.Range, "Report quality minimum buat dianggep 'confirmed' pas malem -- di bawah ini, minta ILLUMINATION dulu sebelum HE.", params: "0 1 0.01", category: "Contact")]
+	[Attribute("0.5", UIWidgets.Range, "Minimum report quality to count as 'confirmed' at night. Below this, request ILLUMINATION before HE.", params: "0 1 0.01", category: "Contact")]
 	protected float m_fLowConfidenceThreshold;
 
-	[Attribute("8", UIWidgets.EditBox, "Jumlah musuh minimum buat dianggep 'danger tinggi' (bareng jarak deket) -- minta SMOKE, bukan HE.", category: "Contact")]
+	[Attribute("8", UIWidgets.EditBox, "Minimum enemy count to count as 'high danger' (together with close range): request SMOKE instead of HE.", category: "Contact")]
 	protected int m_iHighDangerEnemyCount;
 
-	[Attribute("100.0", UIWidgets.EditBox, "Jarak maksimum (meter) spotter-ke-kontak buat dianggep 'danger tinggi'.", category: "Contact")]
+	[Attribute("100.0", UIWidgets.EditBox, "Maximum spotter-to-contact distance (m) to count as 'high danger'.", category: "Contact")]
 	protected float m_fHighDangerDistance;
 
-	[Attribute("1", UIWidgets.EditBox, "Minimum musuh infantri biasa sebelum dilaporkan. AT / MG / sniper / kendaraan / armor selalu dilaporkan. 1-2 infantri biasa = prioritas rendah.", category: "Contact")]
+	[Attribute("1", UIWidgets.EditBox, "Minimum regular infantry before a report is sent. AT, MG, sniper, vehicles and armor are always reported. 1-2 regular infantry = low priority.", category: "Contact")]
 	protected int m_iMinEnemyToReport;
 
 	[Attribute("3", UIWidgets.EditBox, "Minimum Unit Count for reinforcement request", category: "Contact")]
 	protected int m_iReinforcementThreshold;
 
-	[Attribute("4", UIWidgets.EditBox, "Minimum enemy visible untuk request artillery support", category: "Artillery")]
+	[Attribute("4", UIWidgets.EditBox, "Minimum visible enemies to request artillery support.", category: "Artillery")]
 	protected int m_iArtilleryEnemyThreshold;
 
-	[Attribute("120.0", UIWidgets.EditBox, "Cooldown antara artillery requests dari group ini (detik)", category: "Artillery")]
+	[Attribute("120.0", UIWidgets.EditBox, "Cooldown between artillery requests from this group (s).", category: "Artillery")]
 	protected float m_fArtilleryRequestCooldown;
 
-	[Attribute("90.0", UIWidgets.EditBox, "Detik sebelum reinforcement request flag di-reset paksa walau grup belum IDLE (nyegah stuck permanen)", category: "Contact")]
+	[Attribute("90.0", UIWidgets.EditBox, "Seconds before the reinforcement request flag is force-reset even if the group is not IDLE (prevents a permanent stuck state).", category: "Contact")]
 	protected float m_fReinfRequestTimeout;
 
-	[Attribute("0.35", UIWidgets.Range, "Chance artillery request DITOLAK kalau role grup bukan RECON/FLANK (0 = gak pernah ditolak, 1 = selalu ditolak)", params: "0 1 0.01", category: "Artillery")]
+	[Attribute("0.35", UIWidgets.Range, "Chance an artillery request is REJECTED if the group role is not RECON/FLANK (0 = never rejected, 1 = always rejected).", params: "0 1 0.01", category: "Artillery")]
 	protected float m_fNonFavoredRoleArtyRejectChance;
 
-	[Attribute("60.0", UIWidgets.EditBox, "Target yang terakhir terlihat lebih lama dari ini (detik) gak dilaporkan. Target LOST/DESTROYED/DISARMED juga gak.", category: "Contact Realism")]
+	[Attribute("60.0", UIWidgets.EditBox, "Targets last seen longer ago than this (s) are not reported. LOST, DESTROYED and DISARMED targets are not reported either.", category: "Contact Realism")]
 	protected float m_fContactMaxAge;
 
-	[Attribute("75.0", UIWidgets.EditBox, "Radius (meter) pengelompokan target jadi satu kelompok kontak = satu laporan.", category: "Contact Realism")]
+	[Attribute("75.0", UIWidgets.EditBox, "Radius (m) for grouping targets into one contact cluster = one report.", category: "Contact Realism")]
 	protected float m_fContactClusterRadius;
 
-	[Attribute("50.0", UIWidgets.EditBox, "Kelompok kontak dianggap info baru kalau posisinya geser lebih dari ini (meter).", category: "Contact Realism")]
+	[Attribute("50.0", UIWidgets.EditBox, "A contact cluster counts as new info if its position moved more than this (m).", category: "Contact Realism")]
 	protected float m_fReportMinShift;
 
-	[Attribute("30.0", UIWidgets.EditBox, "Jeda minimum (detik) laporan ulang yang cuma karena info lebih segar (posisi & jumlah sama).", category: "Contact Realism")]
+	[Attribute("30.0", UIWidgets.EditBox, "Minimum delay (s) between repeat reports that only carry fresher info (same position and count).", category: "Contact Realism")]
 	protected float m_fMinResendInterval;
 
-	[Attribute("8.0", UIWidgets.EditBox, "Noise posisi laporan (meter) per 100 m jarak pelapor ke kontak.", category: "Contact Realism")]
+	[Attribute("8.0", UIWidgets.EditBox, "Report position noise (m) per 100 m between reporter and contact.", category: "Contact Realism")]
 	protected float m_fNoisePer100m;
 
-	[Attribute("2.0", UIWidgets.EditBox, "Pengali noise waktu malam.", category: "Contact Realism")]
+	[Attribute("2.0", UIWidgets.EditBox, "Noise multiplier at night.", category: "Contact Realism")]
 	protected float m_fNightNoiseMul;
 
-	[Attribute("1.8", UIWidgets.EditBox, "Pengali noise kalau kontak cuma DETECTED (belum IDENTIFIED).", category: "Contact Realism")]
+	[Attribute("1.8", UIWidgets.EditBox, "Noise multiplier when the contact is only DETECTED (not yet IDENTIFIED).", category: "Contact Realism")]
 	protected float m_fDetectedNoiseMul;
 
-	[Attribute("4", UIWidgets.EditBox, "Jumlah minimum buat dilaporkan sebagai 'regu' (di bawahnya 'beberapa').", category: "Contact Realism")]
+	[Attribute("4", UIWidgets.EditBox, "Minimum count to report as a 'squad' (below it, 'several').", category: "Contact Realism")]
 	protected int m_iBucketSquadMin;
 
-	[Attribute("10", UIWidgets.EditBox, "Jumlah minimum buat dilaporkan sebagai 'peleton'.", category: "Contact Realism")]
+	[Attribute("10", UIWidgets.EditBox, "Minimum count to report as a 'platoon'.", category: "Contact Realism")]
 	protected int m_iBucketPlatoonMin;
 
-	[Attribute("400.0", UIWidgets.EditBox, "Armor cuma dilaporkan sebagai armor kalau IDENTIFIED dan dalam jarak ini (meter); selain itu kendaraan biasa.", category: "Contact Realism")]
+	[Attribute("400.0", UIWidgets.EditBox, "Armor is reported as armor only if IDENTIFIED and within this distance (m); otherwise as a regular vehicle.", category: "Contact Realism")]
 	protected float m_fArmorIdentifyDist;
 
-	[Attribute("5.0", UIWidgets.EditBox, "Jeda radio minimum (detik) sebelum laporan sampai ke commander.", category: "Contact Realism")]
+	[Attribute("5.0", UIWidgets.EditBox, "Minimum radio delay (s) before a report reaches the commander.", category: "Contact Realism")]
 	protected float m_fRadioDelayMin;
 
-	[Attribute("20.0", UIWidgets.EditBox, "Jeda radio maksimum (detik).", category: "Contact Realism")]
+	[Attribute("20.0", UIWidgets.EditBox, "Maximum radio delay (s).", category: "Contact Realism")]
 	protected float m_fRadioDelayMax;
 
-	[Attribute("0", UIWidgets.CheckBox, "Wajib radio: laporan cuma bisa dikirim kalau ada anggota grup yang bawa radio.", category: "Contact Realism")]
+	[Attribute("0", UIWidgets.CheckBox, "Radio required: reports can only be sent if a group member carries a radio.", category: "Contact Realism")]
 	protected bool m_bRequireRadio;
 
-	[Attribute("1.5", UIWidgets.EditBox, "Pengali jeda radio kalau grup lagi ditekan (suppressed).", category: "Contact Realism")]
+	[Attribute("1.5", UIWidgets.EditBox, "Radio delay multiplier when the group is suppressed.", category: "Contact Realism")]
 	protected float m_fSuppressedDelayMul;
 
-	[Attribute("1.5", UIWidgets.EditBox, "Pengali noise kalau grup lagi ditekan (suppressed).", category: "Contact Realism")]
+	[Attribute("1.5", UIWidgets.EditBox, "Noise multiplier when the group is suppressed.", category: "Contact Realism")]
 	protected float m_fSuppressedNoiseMul;
 
 	protected ref array<ref DCO_ContactTrack>   m_aTracks  = {};
@@ -154,8 +154,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		if (!leader)
 			return false;
 
-		CharacterControllerComponent ctrl = leader.GetCharacterController();
-		if (!ctrl || ctrl.GetLifeState() != ECharacterLifeState.ALIVE)
+		if (!DCO_Util.IsAlive(leader))
 			return false;
 
 		if (!m_bRequireRadio)
@@ -227,7 +226,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	    {
 	        if (Math.RandomFloat01() < m_fNonFavoredRoleArtyRejectChance)
 	        {
-	            Print(string.Format("[DCO_Reporter] Artillery request DITOLAK -- tugas %1 bukan prioritas buat call-in artillery", typename.EnumToString(DCO_EGroupTask, task)));
+	            DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("Artillery request REJECTED -- task %1 is not a priority for artillery call-in", typename.EnumToString(DCO_EGroupTask, task)));
 	            return;
 	        }
 	    }
@@ -238,7 +237,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 
 	    m_fLastArtilleryReqAt = worldTime;
 
-	    int shellCount = Math.Clamp(Math.Round(enemyCount * 0.5), 2, 8);
+	    int shellCount = Math.Clamp(Math.Round(1.0 * enemyCount * 0.5), 2, 8);
 
 	    float spotDistance  = vector.Distance(m_GroupUtil.GetOwner().GetOrigin(), contactPos);
 	    float reportQuality = CMD_ThreatResponseComponent.ComputeReportQuality(spotDistance);
@@ -253,6 +252,18 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	        infoTime,
 	        reportQuality
 	    );
+	    if (request.m_eShellType == SCR_EAIArtilleryAmmoType.SMOKE && DCO_InCQB())
+	    {
+	        if (spotDistance < 150.0)
+	        {
+	            DCO_Perf.Count("arty:squad_cqb_no_request");
+	            DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_reject req=squad@%1 reason=cqb_no_smoke grp=%2 dist_own=%3 action=dropped", DCO_Util.XZ(contactPos), GetOwner().GetName(), Math.Round(spotDistance)));
+	            return;
+	        }
+	        request.m_eShellType = SCR_EAIArtilleryAmmoType.HIGH_EXPLOSIVE;
+	        DCO_Perf.Count("arty:squad_cqb_smoke_to_he");
+	        DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_request_change req=squad@%1 grp=%2 from=SMOKE to=HE reason=cqb_no_smoke dist_own=%3", DCO_Util.XZ(contactPos), GetOwner().GetName(), Math.Round(spotDistance)));
+	    }
 	    request.m_fUncertainty = uncertainty;
 	    request.m_sSource = "squad";
 	    request.m_Requester = m_GroupUtil;
@@ -260,8 +271,16 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 
 	    threatComp.ReceiveArtillerySupport(request, m_GroupUtil);
 
-	    Print(string.Format("[DCO_Reporter] %1 requested artillery @ %2 (%3 shell)",
+	    DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("%1 requested artillery @ %2 (%3 shell)",
 	        GetOwner().GetName(), contactPos.ToString(), shellCount));
+	}
+
+	protected bool DCO_InCQB()
+	{
+		if (!m_GroupUtil || !m_GroupUtil.GetOwner())
+			return false;
+		SCR_AIGroupUtilityComponent gu = SCR_AIGroupUtilityComponent.Cast(m_GroupUtil.GetOwner().FindComponent(SCR_AIGroupUtilityComponent));
+		return gu && gu.GetCurrentAction() && DCO_CQBActivity.Cast(gu.GetCurrentAction()) != null;
 	}
 
 	SCR_EAIArtilleryAmmoType DetermineShellType(float worldTime, float reportQuality, bool isHighDanger = false)
@@ -371,8 +390,8 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 			{
 				vector vel = (c.m_vTrue - track.m_vTruePos) * (1.0 / (c.m_fInfoTime - track.m_fInfoTime));
 				vel[1] = 0;
-				if (vel.Length() > MAX_REPORTED_SPEED)
-					vel = vel.Normalized() * MAX_REPORTED_SPEED;
+				if (vel.Length() > 15.0)
+					vel = vel.Normalized() * 15.0;
 				c.m_vVelocity = vel;
 			}
 
@@ -423,7 +442,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 
 	protected int MaxReportsPerScan()
 	{
-		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetFor(GetOwner());
 		if (cfg && cfg.GetContactReportMaxPerScan() > 0)
 			return cfg.GetContactReportMaxPerScan();
 		return Math.Max(m_iMaxReportsPerScan, 1);
@@ -431,7 +450,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 
 	protected float ScanInterval()
 	{
-		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetFor(GetOwner());
 		if (cfg && cfg.GetContactReportScanInterval() > 0)
 			return cfg.GetContactReportScanInterval();
 		return m_fScanInterval;
@@ -439,6 +458,8 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 
 	protected void SendClusterReport(DCO_ContactCluster c, vector leaderPos, int effectiveArtyThreshold, float worldTime)
 	{
+		if (m_GroupUtil && m_GroupUtil.IsRadioDelayed())
+			return;
 		bool lowPriority = !c.IsDangerous() && c.m_iCount <= 2;
 		DCO_ContactTrack track = c.m_Track;
 		if (!track)
@@ -456,7 +477,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		CMD_ContactReport report = BuildReport(c, c.m_vTrue, leaderPos, c.m_iBucket, c.m_fInfoTime, worldTime);
 		report.m_vVelocity = velocity;
 		report.m_bLowPriority = lowPriority;
-		report.m_bMoving = velocity.Length() >= MOVING_MIN_SPEED;
+		report.m_bMoving = velocity.Length() >= 0.7;
 		if (report.m_bMoving)
 		{
 			float hdg = Math.Atan2(velocity[0], velocity[2]) * Math.RAD2DEG;
@@ -474,8 +495,6 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		QueueRadio(p, worldTime);
 	}
 
-	protected const float MAX_REPORTED_SPEED = 15.0;
-	protected const float MOVING_MIN_SPEED = 0.7;
 	protected ref map<IEntity, int> m_mTypeCache = new map<IEntity, int>();
 
 
@@ -583,18 +602,18 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	protected CMD_ContactReport BuildReport(DCO_ContactCluster c, vector truePos, vector reporterPos, int bucket, float infoTime, float worldTime)
 	{
 		float sigma = m_fNoisePer100m * vector.Distance(reporterPos, truePos) / 100.0;
-		if (CMD_ThreatResponseComponent.IsNight())
+		if (DCO_Util.IsNight())
 			sigma = sigma * m_fNightNoiseMul;
 		if (!c.m_bIdentified)
 			sigma = sigma * m_fDetectedNoiseMul;
 		if (IsSuppressed())
 			sigma = sigma * m_fSuppressedNoiseMul;
-		sigma = Math.Max(sigma, MIN_UNCERTAINTY);
+		sigma = Math.Max(sigma, 5.0);
 
 		float angle = Math.RandomFloat(0, Math.PI2);
 		float r     = sigma * Math.Sqrt(Math.RandomFloat01());
 		vector noisy = truePos + Vector(Math.Cos(angle) * r, 0, Math.Sin(angle) * r);
-		noisy[1] = GetGame().GetWorld().GetSurfaceY(noisy[0], noisy[2]);
+		noisy = DCO_Util.Surface(noisy);
 
 		CMD_ContactReport report = new CMD_ContactReport(noisy, bucket, worldTime, GetOwner().GetName());
 		report.m_bArmorSeen   = c.m_bArmor;
@@ -612,7 +631,6 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		return report;
 	}
 
-	protected const float MIN_UNCERTAINTY = 5.0;
 
 	protected DCO_ContactTrack FindTrack(vector truePos)
 	{
@@ -690,7 +708,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		if (!m_GroupUtil)
 			return;
 
-		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float worldTime = DCO_Util.NowS();
 		if (!m_aPending.IsEmpty())
 			ProcessPending(worldTime);
 

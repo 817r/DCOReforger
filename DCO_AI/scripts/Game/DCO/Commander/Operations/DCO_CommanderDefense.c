@@ -14,6 +14,8 @@ class DCO_Ambush
 	float m_fOpenAt;
 	int m_iStrength;
 	int m_iMaxTargets;
+	bool m_bDCOSprung;
+	float m_fDCOSprungAt;
 }
 
 class DCO_OPPost
@@ -26,6 +28,7 @@ class DCO_OPPost
 	float m_fStart;
 	int m_iStrength;
 	bool m_bOrdered;
+	bool m_bDCOReported;
 }
 
 class DCO_RoadTrack
@@ -54,14 +57,20 @@ class DCO_CounterAttack
 {
 	CMD_AICommanderObjectiveComponent m_Obj;
 	float m_fDeadline;
+	bool m_bDoctrine;
+	int m_iBand;
 }
 
 class DCO_CommanderDefense
 {
-	protected static const float TICK_S = 2;
 
 	protected ref array<ref DCO_Ambush> m_aAmbush = {};
 	protected ref array<ref DCO_OPPost> m_aOP = {};
+
+	int OPCount()
+	{
+		return m_aOP.Count();
+	}
 	protected ref array<ref DCO_RoadTrack> m_aRoads = {};
 	protected ref array<ref DCO_CBTrack> m_aCB = {};
 	protected ref array<ref DCO_CounterAttack> m_aCounter = {};
@@ -70,27 +79,33 @@ class DCO_CommanderDefense
 	protected float m_fTimer;
 	protected float m_fPlanTimer;
 	protected float m_fNextAmbush;
+	protected float m_fLastEnemyIDF = -10000;
+
+	float GetLastEnemyIDF()
+	{
+		return m_fLastEnemyIDF;
+	}
 
 	static void Event(string line)
 	{
-		Print("[DCO_Defense] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", line);
 	}
 
 	void Tick(AICommander_BaseComponent cmd, float timeSlice)
 	{
 		m_fTimer += timeSlice;
-		if (m_fTimer < TICK_S)
+		if (m_fTimer < 2.0)
 			return;
 		m_fTimer = 0;
 
-		float now = DCO_CommanderOps.Now();
+		float now = DCO_Util.NowS();
 		UpdateAmbushes(cmd, now);
 		UpdateOPs(cmd, now);
 		UpdateCounterAttacks(cmd, now);
 		UpdateCB(cmd, now);
+		UpdateIntercepts(now);
 
-		m_fPlanTimer += TICK_S;
+		m_fPlanTimer += 2.0;
 		if (m_fPlanTimer < 60.0)
 			return;
 		m_fPlanTimer = 0;
@@ -100,16 +115,77 @@ class DCO_CommanderDefense
 		PlanOPs(cmd, now);
 	}
 
-	protected bool CanStartAmbush(AICommander_BaseComponent cmd, float now)
+	protected ref array<DCO_GroupUtilityComponent> m_aInterceptors = {};
+	protected ref array<float> m_aInterceptAt = {};
+	protected float m_fLastIntercept = -1000;
+
+	void Intercept(AICommander_BaseComponent cmd, vector goal, vector dir, DCO_GroupUtilityComponent reporter)
 	{
-		return cmd.IsAmbushEnabled() && now >= m_fNextAmbush && m_aAmbush.Count() < cmd.GetMaxAmbushes();
+		float now = DCO_Util.NowS();
+		if (now - m_fLastIntercept < 60.0 || m_aInterceptors.Count() >= 2)
+			return;
+		vector cut = DCO_Util.Surface(goal + dir * 200.0);
+		DCO_GroupUtilityComponent h = PickReserve(cmd, cut, false, false, reporter, 1000, 17 | DCO_EGroupJob.RESERVE);
+		if (!h)
+			return;
+		h.CompleteAllWaypoints();
+		h.SetTask(DCO_EGroupTask.REINFORCE);
+		h.DCO_SetHold(now + 240.0);
+		if (!cmd.SpawnMoveRoute(h, h.GetOwner().GetOrigin(), cut, now))
+		{
+			h.SetTask(DCO_EGroupTask.NONE);
+			h.DCO_SetHold(0);
+			return;
+		}
+		m_fLastIntercept = now;
+		m_aInterceptors.Insert(h);
+		m_aInterceptAt.Insert(now);
+		DCO_Perf.Count("def_intercept");
+		Event(string.Format("def_intercept group=%1 reporter=%2 dist=%3", h.GetOwner().GetName(), reporter.GetOwner().GetName(), Math.Round(vector.DistanceXZ(h.GetOwner().GetOrigin(), cut))));
 	}
 
-	void RequestApproachAmbush(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, vector threatPos, bool vehicle, float now)
+	protected void UpdateIntercepts(float now)
+	{
+		for (int i = m_aInterceptors.Count() - 1; i >= 0; i--)
+		{
+			DCO_GroupUtilityComponent h = m_aInterceptors[i];
+			if (h && h.HasState(DCO_EGroupState.IN_CONTACT))
+				continue;
+			if (h && now - m_aInterceptAt[i] < 240.0 && h.GetTask() == DCO_EGroupTask.REINFORCE)
+				continue;
+			if (h)
+			{
+				h.DCO_SetHold(0);
+				if (h.GetTask() == DCO_EGroupTask.REINFORCE)
+				{
+					h.CompleteAllWaypoints();
+					h.SetTask(DCO_EGroupTask.NONE);
+				}
+			}
+			m_aInterceptors.Remove(i);
+			m_aInterceptAt.Remove(i);
+		}
+	}
+
+	protected float AmbushAggr(AICommander_BaseComponent cmd)
+	{
+		float a = cmd.DCO_EffAggression();
+		if (!cmd.DCO_AggProfile() || cmd.GetCommanderMode() != CMD_ECommanderMode.OFFENSIVE)
+			return a;
+		DCO_Perf.Count("agg:ambush_offensive_inv");
+		return Math.Clamp(1.0 - a, 0.0, 1.0);
+	}
+
+	protected bool CanStartAmbush(AICommander_BaseComponent cmd, float now)
+	{
+		return cmd.IsAmbushEnabled() && now >= m_fNextAmbush && m_aAmbush.Count() < DCO_Force.Max(cmd, "ambush", cmd.GetMaxAmbushes());
+	}
+
+	void RequestApproachAmbush(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, vector threatPos, bool vehicle, float now, bool force = false)
 	{
 		if (!obj || !CanStartAmbush(cmd, now))
 			return;
-		if (Math.RandomFloat01() > 0.4 + 0.3 * cmd.GetAggression() + 0.3 * cmd.GetRiskTaking())
+		if (!force && Math.RandomFloat01() > 0.4 + 0.3 * AmbushAggr(cmd) + 0.3 * cmd.GetRiskTaking())
 			return;
 
 		vector objPos = obj.GetOwner().GetOrigin();
@@ -122,7 +198,25 @@ class DCO_CommanderDefense
 		toObj = toObj * (1.0 / d);
 
 		vector kill = SnapKillZone(objPos - toObj * Math.Max(minKill, d * 0.5), 80);
-		StartAmbush(cmd, 0, kill, toObj, vehicle, "threat_projection", obj, now);
+		string purpose = "threat_projection";
+		if (force)
+			purpose = "threat_tai";
+		StartAmbush(cmd, 0, kill, toObj, vehicle, purpose, obj, now);
+	}
+
+	void RequestThreatOP(AICommander_BaseComponent cmd, vector watch, vector from, float now)
+	{
+		if (!cmd.IsOPEnabled() || HasOPPurpose("threat_nai") || m_aOP.Count() >= DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
+			return;
+		vector dir = from - watch;
+		dir[1] = 0;
+		if (dir.LengthSq() < 1.0)
+			return;
+		dir.Normalize();
+		vector site;
+		if (!FindSite(cmd, watch, dir, site, "op"))
+			site = DCO_Util.Surface(watch + dir * 250.0);
+		OpenOP(cmd, site, watch, "threat_nai", now);
 	}
 
 	protected void PlanScreen(AICommander_BaseComponent cmd, float now)
@@ -130,7 +224,7 @@ class DCO_CommanderDefense
 		if (!CanStartAmbush(cmd, now) || CountReserves(cmd) < 2)
 			return;
 
-		float w = 0.2 + 0.4 * cmd.GetAggression() + 0.4 * cmd.GetRiskTaking();
+		float w = 0.2 + 0.4 * AmbushAggr(cmd) + 0.4 * cmd.GetRiskTaking();
 		if (cmd.GetCommanderMode() == CMD_ECommanderMode.OFFENSIVE)
 			w *= 0.5;
 		if (Math.RandomFloat01() > w * 0.5)
@@ -156,7 +250,7 @@ class DCO_CommanderDefense
 				continue;
 			if (!CanStartAmbush(cmd, now))
 				return;
-			if (Math.RandomFloat01() > 0.3 + 0.35 * cmd.GetAggression() + 0.35 * cmd.GetRiskTaking())
+			if (Math.RandomFloat01() > 0.3 + 0.35 * AmbushAggr(cmd) + 0.35 * cmd.GetRiskTaking())
 				continue;
 			t.m_bUsed = true;
 			StartAmbush(cmd, 1, SnapKillZone(t.m_vPos, 40), t.m_vDir, true, "msr_sightings_" + t.m_iCount, null, now);
@@ -168,7 +262,7 @@ class DCO_CommanderDefense
 		m_fNextAmbush = now + 180.0;
 		string objName = "none";
 		if (obj)
-			objName = obj.GetOwner().GetName();
+			objName = obj.GetLogName();
 
 		vector site;
 		if (!FindSite(cmd, kill, approachDir, site))
@@ -177,7 +271,7 @@ class DCO_CommanderDefense
 			return;
 		}
 
-		DCO_GroupUtilityComponent g1 = PickReserve(cmd, site, vehicle, !vehicle, null, 1500);
+		DCO_GroupUtilityComponent g1 = PickReserve(cmd, site, vehicle, !vehicle, null, 1500, 16);
 		if (!g1)
 		{
 			Event(string.Format("def_ambush_skip kind=%1 reason=%2 obj=%3 why=no_group need_at=%4", kind, reason, objName, vehicle));
@@ -197,7 +291,7 @@ class DCO_CommanderDefense
 		vector away = site - kill;
 		away[1] = 0;
 		away.Normalize();
-		a.m_vRally = Surface(site + away * 150.0);
+		a.m_vRally = DCO_Util.Surface(site + away * 150.0);
 		if (IsWet(a.m_vRally))
 			a.m_vRally = site;
 
@@ -205,7 +299,7 @@ class DCO_CommanderDefense
 
 		if (vehicle || g1.GetUnitCount() < 6)
 		{
-			DCO_GroupUtilityComponent g2 = PickReserve(cmd, site, false, true, g1, 1000);
+			DCO_GroupUtilityComponent g2 = PickReserve(cmd, site, false, true, g1, 1000, 16);
 			if (g2)
 			{
 				a.m_aGroups.Insert(g2);
@@ -218,7 +312,7 @@ class DCO_CommanderDefense
 			a.m_iId, kind, reason, objName, kill, site, Math.Round(vector.DistanceXZ(site, kill)), vehicle, a.m_aGroups.Count()));
 	}
 
-	protected bool FindSite(AICommander_BaseComponent cmd, vector kill, vector approachDir, out vector site)
+	protected bool FindSite(AICommander_BaseComponent cmd, vector kill, vector approachDir, out vector site, string learnKind = "ambush")
 	{
 		array<vector> cands = {};
 		array<float> bonus = {};
@@ -241,9 +335,12 @@ class DCO_CommanderDefense
 
 		bool found;
 		float best = -float.MAX;
+		float siteRaw = 0;
+		float siteMult = 1.0;
+		float siteN = 0;
 		foreach (int k, vector raw : cands)
 		{
-			vector c = Surface(raw);
+			vector c = DCO_Util.Surface(raw);
 			float d = vector.DistanceXZ(c, kill);
 			if (d < 60.0 || d > 180.0)
 				continue;
@@ -257,13 +354,22 @@ class DCO_CommanderDefense
 				continue;
 
 			float s = bonus[k] + (1 - Math.AbsFloat(along)) * 2 - Math.AbsFloat(d - 110.0) / 60;
+			float sn = 0;
+			float sm = DCO_CmdLearn.TerrainMult(learnKind, c, 25.0, sn);
+			float sRaw = s;
+			s = DCO_CmdLearn.ApplyScore(s, sm);
 			if (s > best)
 			{
 				best = s;
 				site = c;
 				found = true;
+				siteRaw = sRaw;
+				siteMult = sm;
+				siteN = sn;
 			}
 		}
+		if (found && siteN > 0)
+			DCO_CmdLearn.LogUse(learnKind, DCO_LearnStore.PosKey(site, 25.0), siteRaw, siteMult, siteN);
 		return found;
 	}
 
@@ -272,13 +378,13 @@ class DCO_CommanderDefense
 		array<float> rots = {70, -70};
 		foreach (float rot : rots)
 		{
-			vector c = Surface(kill + DCO_CommanderOps.RotateXZ(site - kill, rot));
+			vector c = DCO_Util.Surface(kill + DCO_CommanderOps.RotateXZ(site - kill, rot));
 			if (!IsWet(c) && HasLOS(c, kill))
 				return c;
 		}
 		vector side = DCO_CommanderOps.RotateXZ(site - kill, 90);
 		side.Normalize();
-		return Surface(site + side * 25);
+		return DCO_Util.Surface(site + side * 25);
 	}
 
 	protected void MoveIntoPosition(AICommander_BaseComponent cmd, DCO_GroupUtilityComponent g, vector pos, vector look, float now)
@@ -287,6 +393,8 @@ class DCO_CommanderDefense
 		g.SetGroupObjective(null);
 		g.SetTask(DCO_EGroupTask.DEFEND);
 		g.DCO_SetHold(now + 3600);
+		g.m_eDCOCmdPosture = DCO_GroupTactics.AMBUSH;
+		g.m_bDCOCmdAmbush = true;
 		SetFire(g, false);
 
 		array<SCR_AIWaypoint> wps = {};
@@ -314,6 +422,7 @@ class DCO_CommanderDefense
 			if (a.m_aGroups.IsEmpty())
 			{
 				Event(string.Format("def_ambush_end id=%1 result=lost state=%2 targets=%3", a.m_iId, a.m_iState, a.m_iMaxTargets));
+				DCO_CmdLearn.Terrain("ambush", a.m_vPos, 25.0, 0, "wiped", "-");
 				m_aAmbush.Remove(i);
 				continue;
 			}
@@ -369,7 +478,7 @@ class DCO_CommanderDefense
 						Withdraw(cmd, a, "fire_time", now);
 					else if (now - a.m_fLastTarget > 15.0)
 						Withdraw(cmd, a, "target_gone", now);
-					else if (enemies > Strength(a) * 1.5)
+					else if (enemies > 1.0 * Strength(a) * 1.5)
 						Withdraw(cmd, a, "enemy_stronger", now);
 					break;
 				}
@@ -383,6 +492,19 @@ class DCO_CommanderDefense
 							rg.DCO_SetHold(0);
 						}
 						Event(string.Format("def_ambush_end id=%1 result=done kind=%2 max_targets=%3 casualties=%4", a.m_iId, a.m_iKind, a.m_iMaxTargets, Math.Max(a.m_iStrength - Strength(a), 0)));
+						float ambVal = 0.2;
+						string ambWhy = "never_sprung";
+						if (a.m_bDCOSprung)
+						{
+							ambVal = 0.4;
+							ambWhy = "sprung_no_kill";
+							if (DCO_CmdLearn.DeathsNear(a.m_vKill, cmd.GetAmbushKillRadius() * 2.0, cmd.GetCommanderFactionKey(), a.m_fDCOSprungAt) > 0)
+							{
+								ambVal = 1.0;
+								ambWhy = "sprung_kill";
+							}
+						}
+						DCO_CmdLearn.Terrain("ambush", a.m_vPos, 25.0, ambVal, ambWhy, "-");
 						m_aAmbush.Remove(i);
 					}
 					break;
@@ -393,6 +515,8 @@ class DCO_CommanderDefense
 
 	protected void Spring(DCO_Ambush a, string trigger, int targets, bool vehicle, float now)
 	{
+		a.m_bDCOSprung = true;
+		a.m_fDCOSprungAt = now;
 		a.m_iState = 2;
 		a.m_fStateTime = now;
 		a.m_fLastTarget = now;
@@ -424,6 +548,8 @@ class DCO_CommanderDefense
 		a.m_fStateTime = now;
 		foreach (DCO_GroupUtilityComponent g : a.m_aGroups)
 		{
+			if (DCO_BreakContact.Start(g, a.m_vKill, a.m_vRally, "ambush_" + why))
+				continue;
 			g.CompleteAllWaypoints();
 			g.SetRetreating(true);
 			SCR_AIWaypoint wp = cmd.SpawnMoveWP(a.m_vRally);
@@ -492,7 +618,7 @@ class DCO_CommanderDefense
 		return true;
 	}
 
-	protected static void SetFire(DCO_GroupUtilityComponent g, bool free)
+	static void SetFire(DCO_GroupUtilityComponent g, bool free)
 	{
 		SCR_AIGroupUtilityComponent u = g.GetGroupUtilityComponent();
 		if (!u)
@@ -510,6 +636,15 @@ class DCO_CommanderDefense
 		vel[1] = 0;
 		if (vel.Length() >= 4.0)
 			TrackRoadSighting(report.m_vPosition, vel, now);
+
+		if (grp)
+		{
+			foreach (DCO_OPPost rop : m_aOP)
+			{
+				if (rop && rop.m_Group == grp && now - rop.m_fStart <= 600.0)
+					rop.m_bDCOReported = true;
+			}
+		}
 
 		if (grp && grp.GetOwner() && grp.HasState(DCO_EGroupState.SUPPRESSED)
 			&& (grp.HasState(DCO_EGroupState.EN_ROUTE) || grp.HasState(DCO_EGroupState.MOUNTED) || grp.IsInTransport() || grp.IsDedicatedTransport()))
@@ -553,7 +688,7 @@ class DCO_CommanderDefense
 			m_aRoads.Remove(0);
 	}
 
-	protected void AddDanger(vector pos, float now)
+	void AddDanger(vector pos, float now)
 	{
 		foreach (CMD_ThreatEntry d : m_aDanger)
 		{
@@ -617,7 +752,7 @@ class DCO_CommanderDefense
 
 	protected void PlanOPs(AICommander_BaseComponent cmd, float now)
 	{
-		if (!cmd.IsOPEnabled() || m_aOP.Count() >= cmd.GetMaxOP())
+		if (!cmd.IsOPEnabled() || m_aOP.Count() >= DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
 			return;
 
 		DCO_CommanderOps ops = cmd.GetOps();
@@ -639,9 +774,9 @@ class DCO_CommanderDefense
 		vector enemyDir;
 		if (!FrontObjective(cmd, front, enemyDir))
 			return;
-		vector watch = Surface(front.GetOwner().GetOrigin() + enemyDir * (front.GetRadius() + 400));
+		vector watch = DCO_Util.Surface(front.GetOwner().GetOrigin() + enemyDir * (front.GetRadius() + 400));
 		vector site;
-		if (FindSite(cmd, watch, -enemyDir, site))
+		if (FindSite(cmd, watch, -enemyDir, site, "op"))
 			OpenOP(cmd, site, watch, "screen", now);
 	}
 
@@ -655,9 +790,9 @@ class DCO_CommanderDefense
 		return false;
 	}
 
-	protected void OpenOP(AICommander_BaseComponent cmd, vector pos, vector watch, string purpose, float now)
+	void OpenOP(AICommander_BaseComponent cmd, vector pos, vector watch, string purpose, float now)
 	{
-		DCO_GroupUtilityComponent parent = PickReserve(cmd, pos, false, false, null, 2000);
+		DCO_GroupUtilityComponent parent = PickReserve(cmd, pos, false, false, null, 2000, 8);
 		if (!parent)
 			return;
 
@@ -666,6 +801,8 @@ class DCO_CommanderDefense
 		p.m_vWatch = watch;
 		p.m_sPurpose = purpose;
 		p.m_fStart = now;
+		vector opDir = watch - pos;
+		DCO_Battle.Place(cmd, null, AIGroup.Cast(parent.GetOwner()), "op", pos, Math.Atan2(opDir[0], opDir[2]) * Math.RAD2DEG, "-", "-", "-", purpose);
 
 		if (parent.GetUnitCount() <= 3 + 1)
 			p.m_Group = parent;
@@ -705,6 +842,7 @@ class DCO_CommanderDefense
 			if (!p.m_Group || p.m_Group.GetUnitCount() == 0)
 			{
 				Event(string.Format("def_op_withdraw purpose=%1 why=lost", p.m_sPurpose));
+				DCO_CmdLearn.Terrain("op", p.m_vPos, 25.0, 0, "destroyed", "-");
 				m_aOP.Remove(i);
 				continue;
 			}
@@ -719,6 +857,7 @@ class DCO_CommanderDefense
 
 			if (p.m_Group.GetTask() != DCO_EGroupTask.DEFEND || p.m_Group.GetGroupObjective())
 			{
+				LearnOP(p, "reassigned");
 				m_aOP.Remove(i);
 				continue;
 			}
@@ -743,13 +882,26 @@ class DCO_CommanderDefense
 				vector back = cmd.GetOwner().GetOrigin() - p.m_vPos;
 				back[1] = 0;
 				back.Normalize();
-				SCR_AIWaypoint wp = cmd.SpawnMoveWP(Surface(p.m_vPos + back * 250));
-				if (wp)
-					p.m_Group.MoveTo(wp, now);
+				vector backPos = DCO_Util.Surface(p.m_vPos + back * 250);
+				if (why == "rotate" || !DCO_BreakContact.Start(p.m_Group, p.m_vWatch, backPos, "op_" + why))
+				{
+					SCR_AIWaypoint wp = cmd.SpawnMoveWP(backPos);
+					if (wp)
+						p.m_Group.MoveTo(wp, now);
+				}
 			}
 			Event(string.Format("def_op_withdraw purpose=%1 why=%2 team=%3 held_s=%4", p.m_sPurpose, why, p.m_Group.GetOwner().GetName(), Math.Round(now - p.m_fStart)));
+			LearnOP(p, why);
 			m_aOP.Remove(i);
 		}
+	}
+
+	protected void LearnOP(DCO_OPPost p, string why)
+	{
+		float v = 0.2;
+		if (p.m_bDCOReported)
+			v = 1.0;
+		DCO_CmdLearn.Terrain("op", p.m_vPos, 25.0, v, why, "-");
 	}
 
 	protected static bool EnemyNear(DCO_GroupUtilityComponent g, float dist)
@@ -770,13 +922,51 @@ class DCO_CommanderDefense
 
 	void OnObjectiveLost(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, float now)
 	{
+		DCO_Doctrine doc = cmd.GetDoctrine();
+		int band = DCO_EForceBand.EQUAL;
+		float eff;
+		float conf;
+		if (doc)
+		{
+			band = DCO_DoctrineDefense.LostBand(cmd, obj, eff, conf);
+			if (doc.Defense(band, DCO_EDefenseCol.ARTY_LOST))
+			{
+				bool fired = DCO_DefenseTactics.Mortar(cmd, obj.GetOwner().GetOrigin(), 6, "doctrine_arty_lost");
+				DCO_DoctrineDefense.Log(cmd, obj, "arty_lost", band, eff, conf, " fired=" + fired.ToString());
+			}
+		}
 		if (!cmd.IsCounterattackEnabled())
 			return;
+		float window = cmd.GetCounterattackWindow();
+		if (doc)
+		{
+			if (!doc.Defense(band, DCO_EDefenseCol.COUNTERATTACK))
+			{
+				Event(string.Format("def_counterattack_skip obj=%1 why=doctrine_band band=%2", obj.GetLogName(), DCO_Doctrine.BandName(band)));
+				return;
+			}
+			window = Math.RandomFloat(doc.m_fCounterMin, doc.m_fCounterMax);
+		}
 		DCO_CounterAttack c = new DCO_CounterAttack();
 		c.m_Obj = obj;
-		c.m_fDeadline = now + cmd.GetCounterattackWindow();
+		c.m_fDeadline = now + window;
+		c.m_bDoctrine = doc != null;
+		c.m_iBand = band;
 		m_aCounter.Insert(c);
-		Event(string.Format("def_counterattack_window obj=%1 window_s=%2", obj.GetOwner().GetName(), Math.Round(cmd.GetCounterattackWindow())));
+		Event(string.Format("def_counterattack_window obj=%1 window_s=%2 doctrine=%3", obj.GetLogName(), Math.Round(window), c.m_bDoctrine));
+	}
+
+	void RequestDoctrineOP(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, vector axis, float now)
+	{
+		if (!cmd.IsOPEnabled() || HasOPPurpose("doctrine_oplp") || m_aOP.Count() >= DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
+			return;
+		vector objPos = obj.GetOwner().GetOrigin();
+		vector watch = DCO_Util.Surface(objPos + axis * (obj.GetRadius() + 400.0));
+		vector site;
+		if (!FindSite(cmd, watch, -axis, site, "op"))
+			site = DCO_Util.Surface(objPos + axis * (obj.GetRadius() + 150.0));
+		OpenOP(cmd, site, watch, "doctrine_oplp", now);
+		DCO_DoctrineDefense.Log(cmd, obj, "oplp", DCO_EForceBand.UNKNOWN, 0, 0, " open=" + HasOPPurpose("doctrine_oplp").ToString());
 	}
 
 	protected void UpdateCounterAttacks(AICommander_BaseComponent cmd, float now)
@@ -792,22 +982,26 @@ class DCO_CommanderDefense
 			}
 			if (now > c.m_fDeadline)
 			{
-				Event(string.Format("def_counterattack_skip obj=%1 why=window_expired (-> rencana operasi biasa)", c.m_Obj.GetOwner().GetName()));
+				Event(string.Format("def_counterattack_skip obj=%1 why=window_expired (-> normal operation plan)", c.m_Obj.GetLogName()));
 				m_aCounter.Remove(i);
 				continue;
 			}
 			if (!c.m_Obj.CheckIsItLost(fk) || c.m_Obj.GetObjectiveState(fk) != CMD_EObjectiveState.PENDING)
 				continue;
-			if (TryCounterAttack(cmd, c.m_Obj, now))
+			if (TryCounterAttack(cmd, c, now))
 				m_aCounter.Remove(i);
 		}
 	}
 
-	protected bool TryCounterAttack(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, float now)
+	protected bool TryCounterAttack(AICommander_BaseComponent cmd, DCO_CounterAttack ca, float now)
 	{
+		CMD_AICommanderObjectiveComponent obj = ca.m_Obj;
 		vector p = obj.GetOwner().GetOrigin();
 		float enemy = Math.Max(cmd.EstimateEnemyAt(obj), 4.0);
 		float need = cmd.GetMinAttackRatio() * enemy;
+		if (ca.m_bDoctrine)
+			need = Math.Max(cmd.GetMinAttackRatio(), 1.0) * enemy;
+		int late = 0;
 
 		array<DCO_GroupUtilityComponent> cands = {};
 		array<float> dists = {};
@@ -817,9 +1011,22 @@ class DCO_CommanderDefense
 				continue;
 			if (!g.CanCommanderOverrideRole() || !g.CanItHaveOrder() || !cmd.CanCommitGroup(g))
 				continue;
+			if (!DCO_GroupJobs.Gate(cmd, g, 19 | DCO_EGroupJob.RESERVE, "counterattack"))
+				continue;
 			float d = vector.DistanceXZ(g.GetOwner().GetOrigin(), p);
 			if (d > 1200.0)
 				continue;
+			if (ca.m_bDoctrine)
+			{
+				float speed = 1.5;
+				if (g.IsArmor() || g.GetGroupVehicle())
+					speed = 6.0;
+				if (now + d / speed * 1.2 > ca.m_fDeadline)
+				{
+					late++;
+					continue;
+				}
+			}
 			int at = 0;
 			while (at < dists.Count() && dists[at] <= d)
 				at++;
@@ -829,6 +1036,12 @@ class DCO_CommanderDefense
 
 		array<DCO_GroupUtilityComponent> picks = {};
 		float strength;
+		int counterMax = DCO_Force.Max(cmd, "counter");
+		if (counterMax < 1)
+		{
+			DCO_Force.LogSkip(cmd, "counter", cands.Count(), 1);
+			return false;
+		}
 		foreach (DCO_GroupUtilityComponent c : cands)
 		{
 			picks.Insert(c);
@@ -836,10 +1049,10 @@ class DCO_CommanderDefense
 			if (c.IsArmor())
 				w *= 3;
 			strength += w;
-			if (strength >= need)
+			if (strength >= need || picks.Count() >= counterMax)
 				break;
 		}
-		if (strength < need)
+		if (strength < need || picks.Count() < DCO_Force.Min(cmd, "counter"))
 			return false;
 
 		FactionKey fk = cmd.GetCommanderFactionKey();
@@ -851,12 +1064,16 @@ class DCO_CommanderDefense
 			obj.SetObjectiveGroup(fk, 1);
 			cmd.SpawnMoveRoute(pg, pg.GetOwner().GetOrigin(), p, now);
 		}
-		Event(string.Format("def_counterattack obj=%1 groups=%2 strength=%3 need=%4 enemy_est=%5", obj.GetOwner().GetName(), picks.Count(), strength, Math.Round(need), enemy));
+		Event(string.Format("def_counterattack obj=%1 groups=%2 strength=%3 need=%4 enemy_est=%5", obj.GetLogName(), picks.Count(), strength, Math.Round(need), enemy));
+		if (ca.m_bDoctrine)
+			DCO_DoctrineDefense.Log(cmd, obj, "counterattack", ca.m_iBand, strength / Math.Max(enemy, 1.0), 0, " scope=lost groups=" + picks.Count().ToString() + " late=" + late.ToString() + " left_s=" + Math.Round(ca.m_fDeadline - now).ToString());
 		return true;
 	}
 
 	static void BroadcastIndirectFire(AICommander_BaseComponent shooterCmd, DCO_GroupUtilityComponent unit, vector impact)
 	{
+		if (DCO_GlobalAIComponent.BehaviorOnCommander(shooterCmd, DCO_EBehavior.EXPLOSION_REACTIONS))
+			return;
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
 		FactionManager fm = GetGame().GetFactionManager();
 		if (!mgr || !fm || !shooterCmd || !unit || !unit.GetOwner())
@@ -865,7 +1082,7 @@ class DCO_CommanderDefense
 		if (!sf)
 			return;
 
-		float now = DCO_CommanderOps.Now();
+		float now = DCO_Util.NowS();
 		foreach (AICommander_BaseComponent victim : mgr.m_aCommander)
 		{
 			if (!victim || victim == shooterCmd || !victim.GetDefense())
@@ -886,6 +1103,7 @@ class DCO_CommanderDefense
 
 	void OnIndirectFire(AICommander_BaseComponent cmd, IEntity source, vector truePos, float now)
 	{
+		m_fLastEnemyIDF = now;
 		if (!cmd.IsCounterBatteryEnabled())
 			return;
 
@@ -913,7 +1131,7 @@ class DCO_CommanderDefense
 		float unc = cmd.GetCBInitialError() / Math.Sqrt(t.m_iHits);
 		float ang = Math.RandomFloat(0, Math.PI * 2);
 		float r = unc * Math.Sqrt(Math.RandomFloat01());
-		vector est = Surface(truePos + Vector(Math.Cos(ang) * r, 0, Math.Sin(ang) * r));
+		vector est = DCO_Util.Surface(truePos + Vector(Math.Cos(ang) * r, 0, Math.Sin(ang) * r));
 
 		t.m_Entry.m_vPosition = est;
 		t.m_Entry.m_vBelievedPos = est;
@@ -962,7 +1180,7 @@ class DCO_CommanderDefense
 
 			if (t.m_bHunted)
 				continue;
-			DCO_GroupUtilityComponent h = PickReserve(cmd, est, false, false, null, 2500);
+			DCO_GroupUtilityComponent h = PickReserve(cmd, est, false, false, null, 2500, 1);
 			if (!h)
 				continue;
 			h.CompleteAllWaypoints();
@@ -994,8 +1212,11 @@ class DCO_CommanderDefense
 		t.m_Hunter = null;
 	}
 
-	protected DCO_GroupUtilityComponent PickReserve(AICommander_BaseComponent cmd, vector pos, bool needAT, bool preferMG, DCO_GroupUtilityComponent exclude, float maxDist)
+	DCO_GroupUtilityComponent PickReserve(AICommander_BaseComponent cmd, vector pos, bool needAT, bool preferMG, DCO_GroupUtilityComponent exclude, float maxDist, int job = 0)
 	{
+		int jm = job;
+		if (jm == 0)
+			jm = DCO_GroupJobs.AnyCombat() | DCO_EGroupJob.RESERVE;
 		DCO_GroupUtilityComponent best;
 		float bestScore = -float.MAX;
 		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
@@ -1003,6 +1224,8 @@ class DCO_CommanderDefense
 			if (!g || g == exclude || g.IsPlayerGroup() || g.IsDedicatedTransport() || g.IsMortar() || g.IsArmor() || !g.IsInfantry())
 				continue;
 			if (!g.IsAvailableReserve() || g.HasState(DCO_EGroupState.IN_CONTACT) || !g.CanCommanderOverrideRole() || !g.CanItHaveOrder() || !cmd.CanCommitGroup(g))
+				continue;
+			if (!DCO_GroupJobs.Gate(cmd, g, jm, "reserve_pick"))
 				continue;
 			if (needAT && !g.HasAT())
 				continue;
@@ -1117,10 +1340,10 @@ class DCO_CommanderDefense
 				p = best;
 			}
 		}
-		return Surface(p);
+		return DCO_Util.Surface(p);
 	}
 
-	protected static RoadNetworkManager Roads()
+	static RoadNetworkManager Roads()
 	{
 		SCR_AIWorld aiWorld = SCR_AIWorld.Cast(GetGame().GetAIWorld());
 		if (!aiWorld)
@@ -1128,11 +1351,6 @@ class DCO_CommanderDefense
 		return aiWorld.GetRoadNetworkManager();
 	}
 
-	protected static vector Surface(vector p)
-	{
-		p[1] = GetGame().GetWorld().GetSurfaceY(p[0], p[2]);
-		return p;
-	}
 
 	protected static bool IsWet(vector p)
 	{
@@ -1142,14 +1360,9 @@ class DCO_CommanderDefense
 		return waterType != EWaterSurfaceType.WST_NONE && p[1] < waterY;
 	}
 
-	protected static bool HasLOS(vector from, vector to)
+	static bool HasLOS(vector from, vector to)
 	{
-		TraceParam trace = new TraceParam();
-		trace.Start = Vector(from[0], from[1] + 1.2, from[2]);
-		trace.End = Vector(to[0], to[1] + 1.5, to[2]);
-		trace.Flags = TraceFlags.WORLD | TraceFlags.ENTS;
-		DCO_Perf.Count("t:DCO_CommanderDefense");
-		return GetGame().GetWorld().TraceMove(trace, null) >= 0.95;
+		return DCO_Util.TraceClear(Vector(from[0], from[1] + 1.2, from[2]), Vector(to[0], to[1] + 1.5, to[2]), null, 0.95, TraceFlags.WORLD | TraceFlags.ENTS, -1, null, "t:DCO_CommanderDefense");
 	}
 }
 

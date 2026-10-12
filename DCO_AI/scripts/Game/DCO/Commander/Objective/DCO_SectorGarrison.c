@@ -76,7 +76,7 @@ class DCO_SectorMath
 			return false;
 
 		float step     = (2.0 * Math.PI) / sectorCount;
-		float angStart = sectorOffset + sectorIndex * step + 0.20 * step;
+		float angStart = sectorOffset + 1.0 * sectorIndex * step + 0.20 * step;
 		float angEnd   = sectorOffset + (sectorIndex + 1) * step - 0.20 * step;
 		float minSepSq = minSep * minSep;
 
@@ -90,7 +90,7 @@ class DCO_SectorMath
 				0.0,
 				center[2] + rad * Math.Sin(ang));
 
-			candidate[1] = GetGame().GetWorld().GetSurfaceY(candidate[0], candidate[2]);
+			candidate = DCO_Util.Surface(candidate);
 
 			if (IsInWater(candidate))
 				continue;
@@ -107,7 +107,7 @@ class DCO_SectorMath
 			center[0] + radius * 0.90 * Math.Cos(midAng),
 			0.0,
 			center[2] + radius * 0.90 * Math.Sin(midAng));
-		result[1] = GetGame().GetWorld().GetSurfaceY(result[0], result[2]);
+		result = DCO_Util.Surface(result);
 
 		return false;
 	}

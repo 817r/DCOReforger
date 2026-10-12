@@ -1,4 +1,4 @@
-[EntityEditorProps(category: "GameCNHipted/Capture", description: "Zone/Area untuk dicapture (AI & Multi-Faction)")]
+[EntityEditorProps(category: "GameCNHipted/Capture", description: "Zone/area to capture (AI and multi-faction).")]
 class CNH_CaptureAreaClass : ScriptComponentClass {}
 
 class CNH_CaptureArea : ScriptComponent
@@ -6,16 +6,16 @@ class CNH_CaptureArea : ScriptComponent
     [Attribute("50", UIWidgets.EditBox, desc: "Radius Area Capture (meter)")]
     float m_fRadius;
 
-    [Attribute("2", UIWidgets.EditBox, desc: "Poin ke Manager tiap tick")]
+    [Attribute("2", UIWidgets.EditBox, desc: "Points sent to the Manager each tick.")]
     int m_iPointsPerTick;
 
-    [Attribute("10", UIWidgets.EditBox, desc: "Jeda Waktu Cek Area (detik)")]
+    [Attribute("10", UIWidgets.EditBox, desc: "Area check interval (s).")]
     float m_fTickInterval;
 
-    [Attribute("5", UIWidgets.EditBox, desc: "Kecepatan Capture per tick")]
+    [Attribute("5", UIWidgets.EditBox, desc: "Capture speed per tick")]
     int m_iCaptureSpeed;
 
-    [Attribute("50", UIWidgets.EditBox, desc: "Kecepatan Capture per tick")]
+    [Attribute("50", UIWidgets.EditBox, desc: "Capture speed per tick")]
     int m_iSectorLossPenalty;
 
     float m_fCaptureProgress = 0;

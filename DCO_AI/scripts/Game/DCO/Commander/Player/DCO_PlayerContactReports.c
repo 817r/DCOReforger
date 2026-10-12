@@ -1,7 +1,5 @@
 class DCO_PlayerContactReports
 {
-	protected static const float SCAN_S = 10;
-	protected static const float NOISE_PER_100M = 12;
 
 	protected static ref DCO_PlayerContactReports s_Instance;
 
@@ -22,7 +20,7 @@ class DCO_PlayerContactReports
 	{
 		DCO_PlayerContactReports r = Get();
 		r.m_fScanTimer += timeSlice;
-		if (r.m_fScanTimer < SCAN_S)
+		if (r.m_fScanTimer < 10.0)
 			return;
 		r.m_fScanTimer = 0;
 		r.ScanMarkers();
@@ -64,7 +62,7 @@ class DCO_PlayerContactReports
 			int wp[2];
 			marker.GetWorldPos(wp);
 			vector pos = Vector(wp[0], 0, wp[1]);
-			pos[1] = GetGame().GetWorld().GetSurfaceY(pos[0], pos[2]);
+			pos = DCO_Util.Surface(pos);
 
 			int flags = marker.GetFlags();
 			bool armor = (flags & (EMilitarySymbolIcon.ARMOR | EMilitarySymbolIcon.TRACKED_TRANSPORT)) != 0;
@@ -91,7 +89,7 @@ class DCO_PlayerContactReports
 
 	protected void Submit(int pid, vector pos, int count, bool armor, int markerID)
 	{
-		float now = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float now = DCO_Util.NowS();
 		float last;
 		if (m_mLastReport.Find(pid, last) && now - last < 20.0)
 		{
@@ -131,9 +129,9 @@ class DCO_PlayerContactReports
 		if (reporter)
 			dist = vector.DistanceXZ(reporter.GetOrigin(), pos);
 
-		float noise = dist / 100 * NOISE_PER_100M;
+		float noise = dist / 100 * 12.0;
 		vector noisy = pos + Vector(Math.RandomFloat(-noise, noise), 0, Math.RandomFloat(-noise, noise));
-		noisy[1] = GetGame().GetWorld().GetSurfaceY(noisy[0], noisy[2]);
+		noisy = DCO_Util.Surface(noisy);
 
 		CMD_ContactReport rep = new CMD_ContactReport(noisy, count, now, "player " + pid);
 		rep.m_bArmorSeen = armor;
@@ -154,8 +152,7 @@ class DCO_PlayerContactReports
 
 		string line = string.Format("player_contact_report player=%1 pos=%2 count=%3 armor=%4 dist=%5 noise=%6 marker=%7",
 			pid, pos, count, armor, Math.Round(dist), Math.Round(noise), markerID);
-		Print("[DCO_PlayerReport] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", line);
 	}
 
 	protected void Deliver(AICommander_BaseComponent cmd, CMD_ContactReport rep, int markerID, int pid)

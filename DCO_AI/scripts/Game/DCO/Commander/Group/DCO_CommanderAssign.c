@@ -1,7 +1,6 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_CommanderAssignBaseAttribute : SCR_BaseFloatValueHolderEditorAttribute
 {
-	protected const string NONE_LABEL = "None";
 
 	protected SCR_EditableEntityComponent GetValidEditable(Managed item)
 	{
@@ -83,14 +82,14 @@ class DCO_CommanderAssignBaseAttribute : SCR_BaseFloatValueHolderEditorAttribute
 
 			if (index > uids.Count())
 			{
-				Print(string.Format("[DCO_CommanderAssign] Index %1 di luar roster (%2 commander) -- dibatalin", index, uids.Count()), LogLevel.WARNING);
+				DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.WARN, "-", string.Format("Index %1 is outside the roster (%2 commanders) -- cancelled", index, uids.Count()));
 				return;
 			}
 
 			target = mgr.FindCommanderByUID(uids[index - 1]);
 			if (!target)
 			{
-				Print(string.Format("[DCO_CommanderAssign] Commander '%1' gak ketemu -- dibatalin", uids[index - 1]), LogLevel.WARNING);
+				DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.WARN, "-", string.Format("Commander '%1' not found -- cancelled", uids[index - 1]));
 				return;
 			}
 		}
@@ -112,14 +111,14 @@ class DCO_CommanderAssignBaseAttribute : SCR_BaseFloatValueHolderEditorAttribute
 		m_aValues.Clear();
 
 		SCR_EditorAttributeFloatStringValueHolder noneValue = new SCR_EditorAttributeFloatStringValueHolder();
-		noneValue.SetName(NONE_LABEL);
+		noneValue.SetName("None");
 		noneValue.SetFloatValue(0);
 		m_aValues.Insert(noneValue);
 
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
 		if (!mgr)
 		{
-			Print("[DCO_CommanderAssign] Dropdown cuma None: manager commander belum ada di mesin ini (replikasi?)", LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.WARN, "-", "Dropdown shows only None: no commander manager on this machine yet (replication?)");
 			return;
 		}
 
@@ -152,14 +151,14 @@ class DCO_CommanderAssignBaseAttribute : SCR_BaseFloatValueHolderEditorAttribute
 
 		if (fk.IsEmpty())
 		{
-			Print(string.Format("[DCO_CommanderAssign] Dropdown cuma None: faction item kosong (items %1)", items.Count()), LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.WARN, "-", string.Format("Dropdown shows only None: faction item is empty (items %1)", items.Count()));
 			return;
 		}
 
 		array<string> uids = {};
 		mgr.GetRosterUIDsForFaction(fk, uids);
 		if (uids.IsEmpty())
-			Print(string.Format("[DCO_CommanderAssign] Dropdown cuma None: roster gak punya commander faction %1 (roster '%2')", fk, mgr.DCO_GetRosterString()), LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.WARN, "-", string.Format("Dropdown shows only None: roster has no commander for faction %1 (roster '%2')", fk, mgr.DCO_GetRosterString()));
 
 		for (int i = 0; i < uids.Count(); i++)
 		{
@@ -221,7 +220,7 @@ class DCO_CommanderAssignGroupAttribute : DCO_CommanderAssignBaseAttribute
 		if (newCmd)
 		{
 			if (!newCmd.AssignGroup(groupUtil))
-				Print(string.Format("[DCO_CommanderAssign] AssignGroup ditolak: %1 -> %2", groupUtil.GetOwner().GetName(), newCmd.GetCommanderUID()), LogLevel.WARNING);
+				DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.WARN, "-", string.Format("AssignGroup refused: %1 -> %2", groupUtil.GetOwner().GetName(), newCmd.GetCommanderUID()));
 			return;
 		}
 
@@ -284,7 +283,7 @@ class DCO_CommanderAssignVehicleAttribute : DCO_CommanderAssignBaseAttribute
 		if (newCmd)
 		{
 			if (!newCmd.AssignVehicle(veh))
-				Print(string.Format("[DCO_CommanderAssign] AssignVehicle ditolak: %1 -> %2", veh.GetName(), newCmd.GetCommanderUID()), LogLevel.WARNING);
+				DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.WARN, "-", string.Format("AssignVehicle refused: %1 -> %2", veh.GetName(), newCmd.GetCommanderUID()));
 			return;
 		}
 

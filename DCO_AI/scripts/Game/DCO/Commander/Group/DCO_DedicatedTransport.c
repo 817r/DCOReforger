@@ -21,7 +21,7 @@ class DCO_TransportTeamComponentClass : ScriptComponentClass {}
 
 class DCO_TransportTeamComponent : ScriptComponent
 {
-	[Attribute("15", UIWidgets.Flags, "Job logistik yang boleh diambil tim ini. Transport = deploy / reinforce / redeploy. Resupply tetap butuh resupply station di kendaraan.", enums: ParamEnumArray.FromEnum(DCO_ELogiJobFlag), category: "Transport Team")]
+	[Attribute("15", UIWidgets.Flags, "Logistics jobs this team may take. Transport = deploy, reinforce, redeploy. Resupply also needs a resupply station on the vehicle.", enums: ParamEnumArray.FromEnum(DCO_ELogiJobFlag), category: "Transport Team")]
 	protected int m_iAllowedJobs;
 
 	int GetAllowedJobs()				{ return m_iAllowedJobs; }
@@ -39,34 +39,34 @@ class DCO_TransportTeamComponent : ScriptComponent
 		return (m_iAllowedJobs & flag) != 0;
 	}
 
-	[Attribute("25.0", UIWidgets.EditBox, "Jarak kendaraan tim ke penumpang yang dianggap cukup dekat buat mulai boarding (meter)", category: "Transport Team")]
+	[Attribute("25.0", UIWidgets.EditBox, "Distance (m) between the team vehicle and passengers that counts as close enough to start boarding.", category: "Transport Team")]
 	protected float m_fBoardingDist;
 
-	[Attribute("0.7", UIWidgets.Slider, "Cuma dipake pas boarding timeout: porsi anggota aktif (leader wajib) yang harus di dalam biar grup itu tetap ikut. Sisanya dipisah jadi grup cadangan di titik jemput. Normalnya nunggu SEMUA naik.", params: "0 1 0.05", category: "Transport Team")]
+	[Attribute("0.7", UIWidgets.Slider, "Only used on boarding timeout: share of active members (leader required) that must be inside for the group to come along. The rest are split into a reserve group at the pickup point. Normally waits for EVERYONE to board.", params: "0 1 0.05", category: "Transport Team")]
 	protected float m_fBoardedRatio;
 
-	[Attribute("25.0", UIWidgets.EditBox, "Jarak arrival ke destination (meter)", category: "Transport Team")]
+	[Attribute("25.0", UIWidgets.EditBox, "Arrival distance to the destination (m).", category: "Transport Team")]
 	protected float m_fArrivalDist;
 
-	[Attribute("60.0", UIWidgets.EditBox, "Boarding timeout (detik)", category: "Transport Team")]
+	[Attribute("60.0", UIWidgets.EditBox, "Boarding timeout (s).", category: "Transport Team")]
 	protected float m_fBoardingTimeout;
 
-	[Attribute("300.0", UIWidgets.EditBox, "Driving timeout (detik)", category: "Transport Team")]
+	[Attribute("300.0", UIWidgets.EditBox, "Driving timeout (s).", category: "Transport Team")]
 	protected float m_fDriveTimeout;
 
-	[Attribute("30.0", UIWidgets.EditBox, "Disembark timeout (detik)", category: "Transport Team")]
+	[Attribute("30.0", UIWidgets.EditBox, "Disembark timeout (s).", category: "Transport Team")]
 	protected float m_fDisembarkTimeout;
 
-	[Attribute("1", UIWidgets.CheckBox, "Setelah drop off passenger, RTB balik ke rally point (hub)? Kalau false, standby/parkir di LZ terakhir dan siap terima job baru dari situ.", category: "Transport Team")]
+	[Attribute("1", UIWidgets.CheckBox, "After dropping off passengers, return to the rally point (hub)? If false, stand by at the last LZ and take new jobs from there.", category: "Transport Team")]
 	protected bool m_bReturnToRallyAfterDrop;
 
-	[Attribute("10", UIWidgets.EditBox, "MEDEVAC: detik muat per korban", category: "Transport Team")]
+	[Attribute("10", UIWidgets.EditBox, "MEDEVAC: loading seconds per casualty.", category: "Transport Team")]
 	protected float m_fLoadTime;
 
-	[Attribute("20", UIWidgets.EditBox, "RESUPPLY: detik serah pasokan di grup", category: "Transport Team")]
+	[Attribute("20", UIWidgets.EditBox, "RESUPPLY: seconds to hand over supplies to a group.", category: "Transport Team")]
 	protected float m_fResupplyTime;
 
-	[Attribute("4", UIWidgets.EditBox, "RESUPPLY: magazen maksimal per orang", category: "Transport Team")]
+	[Attribute("4", UIWidgets.EditBox, "RESUPPLY: maximum magazines per soldier.", category: "Transport Team")]
 	protected int m_iResupplyMags;
 
 	protected DCO_ETransportTeamState   m_eTeamState       = DCO_ETransportTeamState.AVAILABLE;
@@ -164,16 +164,6 @@ class DCO_TransportTeamComponent : ScriptComponent
 		return GetOwner().GetOrigin();
 	}
 
-	protected static bool IsActiveMember(IEntity ent)
-	{
-		ChimeraCharacter c = ChimeraCharacter.Cast(ent);
-		if (!c)
-			return false;
-
-		CharacterControllerComponent ctrl = c.GetCharacterController();
-		return ctrl && ctrl.GetLifeState() == ECharacterLifeState.ALIVE;
-	}
-
 	static int CountFreeCargo(IEntity veh)
 	{
 		if (!veh)
@@ -221,7 +211,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 		foreach (AIAgent a : agents)
 		{
 			IEntity ent = a.GetControlledEntity();
-			if (!IsActiveMember(ent))
+			if (!DCO_Util.IsAlive(ent))
 				continue;
 
 			outActive++;
@@ -239,7 +229,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 		GetPlayerEntities(pg, ents);
 		foreach (IEntity ent : ents)
 		{
-			if (!IsActiveMember(ent))
+			if (!DCO_Util.IsAlive(ent))
 				continue;
 			outActive++;
 			if (DCO_VehicleCombat.GetVehicle(ent) == veh)
@@ -266,11 +256,11 @@ class DCO_TransportTeamComponent : ScriptComponent
 
 		int seats = GetFreeCargoSeats();
 		int need = job.SeatsNeeded();
-		Print(string.Format("[DCO_TransportTeam] %1 job #%2 %3 | seats need %4 have %5 | pickup %6 | LZ %7 (alt %8)",
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 job #%2 %3 | seats need %4 have %5 | pickup %6 | LZ %7 (alt %8)",
 			GetOwner().GetName(), job.m_iId, typename.EnumToString(DCO_ELogiJob, job.m_eKind), need, seats,
 			job.m_vPickup, job.m_vLZ, job.m_vAltLZ));
 		if (job.m_eKind != DCO_ELogiJob.RESUPPLY && seats < need)
-			Print(string.Format("[DCO_TransportTeam] %1 kursi kurang %2 -- sisanya dipisah / ditinggal", GetOwner().GetName(), need - seats), LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.WARN, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 short of %2 seats -- the rest split off / left behind", GetOwner().GetName(), need - seats));
 	}
 
 	void AddPassenger(DCO_GroupUtilityComponent grp, float worldTime)
@@ -297,6 +287,20 @@ class DCO_TransportTeamComponent : ScriptComponent
 				break;
 			}
 		}
+	}
+
+	protected bool m_bDCOHoldContact;
+
+	protected bool PassengersInContact()
+	{
+		if (!m_Job || !m_Job.IsTransportKind())
+			return false;
+		foreach (DCO_GroupUtilityComponent g : m_Job.m_aGroups)
+		{
+			if (g && (g.IsInContact() || g.IsBreakingContact()))
+				return true;
+		}
+		return false;
 	}
 
 	protected void UpdatePickup()
@@ -354,14 +358,14 @@ class DCO_TransportTeamComponent : ScriptComponent
 			if (!pg)
 				continue;
 			leader = GetGame().GetPlayerManager().GetPlayerControlledEntity(pg.GetLeaderID());
-			if (!IsActiveMember(leader))
+			if (!DCO_Util.IsAlive(leader))
 			{
 				leader = null;
 				array<IEntity> ents = {};
 				GetPlayerEntities(pg, ents);
 				foreach (IEntity e : ents)
 				{
-					if (IsActiveMember(e))
+					if (DCO_Util.IsAlive(e))
 					{
 						leader = e;
 						break;
@@ -421,6 +425,38 @@ class DCO_TransportTeamComponent : ScriptComponent
 			return;
 		}
 
+		if (PassengersInContact())
+		{
+			m_fStateStartTime = worldTime;
+			if (!m_bDCOHoldContact)
+			{
+				m_bDCOHoldContact = true;
+				float dist = vector.DistanceXZ(GetTeamPos(), m_Job.m_vPickup);
+				DCO_Logistics.Log(m_Job, "hold_contact", string.Format("dist=%1", Math.Round(dist)));
+				if (dist < 300.0)
+				{
+					vector away = GetTeamPos() - m_Job.m_vPickup;
+					away[1] = 0;
+					if (away.LengthSq() < 1.0)
+						away = Vector(1, 0, 0);
+					away.Normalize();
+					TeamMoveTo(DCO_Logistics.SnapPickup(m_Job.m_vPickup + away * 300.0), worldTime);
+				}
+				else
+					TeamMoveTo(GetTeamPos(), worldTime);
+			}
+			return;
+		}
+		if (m_bDCOHoldContact)
+		{
+			m_bDCOHoldContact = false;
+			UpdatePickup();
+			DCO_Logistics.Log(m_Job, "hold_resume", string.Format("pickup=%1", m_Job.m_vPickup));
+			m_fStateTimeout = m_fBoardingTimeout + vector.Distance(GetTeamPos(), m_Job.m_vPickup) / 3.0;
+			TeamMoveTo(m_Job.m_vPickup, worldTime);
+			m_fLastRetarget = worldTime;
+		}
+
 		if (worldTime - m_fLastRetarget > 10.0)
 		{
 			m_fLastRetarget = worldTime;
@@ -448,7 +484,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 
 		if ((worldTime - m_fStateStartTime) > m_fStateTimeout)
 		{
-			Print(string.Format("[DCO_TransportTeam] %1 timeout moving to pickup — aborting", GetOwner().GetName()));
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 timeout moving to pickup — aborting", GetOwner().GetName()));
 			Finish(false, "pickup_timeout", worldTime);
 		}
 	}
@@ -457,7 +493,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 	{
 		if (!ResolveVehicle())
 		{
-			Print(string.Format("[DCO_TransportTeam] %1 gak punya kendaraan — aborting", GetOwner().GetName()));
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 has no vehicle - aborting", GetOwner().GetName()));
 			Finish(false, "no_vehicle", worldTime);
 			return;
 		}
@@ -526,6 +562,20 @@ class DCO_TransportTeamComponent : ScriptComponent
 			return;
 		}
 
+		if (m_Job.m_iBoarded == 0 && PassengersInContact())
+		{
+			foreach (DCO_GroupUtilityComponent hg : m_Job.m_aGroups)
+			{
+				if (!hg || hg.IsMountedIn(veh))
+					continue;
+				SCR_AIGroup hgrp = SCR_AIGroup.Cast(hg.GetOwner());
+				if (hgrp)
+					hgrp.CompleteAllWaypoints();
+			}
+			SetTeamState(DCO_ETransportTeamState.MOVING_TO_PASSENGER, worldTime);
+			return;
+		}
+
 		bool allIn = true;
 		bool anyIn = false;
 		foreach (DCO_GroupUtilityComponent g : m_Job.m_aGroups)
@@ -564,7 +614,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			if (leaderIn && inside >= Math.Ceil(active * m_fBoardedRatio))
 				continue;
 
-			Print(string.Format("[DCO_TransportTeam] %1 board timeout %2 (naik %3/%4, leader %5) — ditinggal",
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 board timeout %2 (boarded %3/%4, leader %5) - left behind",
 				GetOwner().GetName(), g.GetOwner().GetName(), inside, active, leaderIn));
 			g.EndTransport();
 			m_Job.m_aGroups.Remove(i);
@@ -605,7 +655,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 
 			if (!LoadCasualty(c, veh))
 			{
-				Print(string.Format("[DCO_TransportTeam] %1 gak ada kursi buat korban lagi", GetOwner().GetName()));
+				DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 no seats left for casualties", GetOwner().GetName()));
 				m_Job.m_aCasualties.Clear();
 				break;
 			}
@@ -613,7 +663,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			m_Job.m_aCasualties.Remove(i);
 			m_Job.m_aLoaded.Insert(c);
 			m_fNextAction = worldTime + m_fLoadTime;
-			Print(string.Format("[DCO_TransportTeam] %1 korban dimuat (%2 di kendaraan, %3 sisa)", GetOwner().GetName(), m_Job.m_aLoaded.Count(), m_Job.m_aCasualties.Count()));
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 casualty loaded (%2 in vehicle, %3 left)", GetOwner().GetName(), m_Job.m_aLoaded.Count(), m_Job.m_aCasualties.Count()));
 			return;
 		}
 
@@ -664,7 +714,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			foreach (AIAgent a : agents)
 			{
 				IEntity ent = a.GetControlledEntity();
-				if (!IsActiveMember(ent) || vector.DistanceXZ(ent.GetOrigin(), veh.GetOrigin()) > 50.0)
+				if (!DCO_Util.IsAlive(ent) || vector.DistanceXZ(ent.GetOrigin(), veh.GetOrigin()) > 50.0)
 					continue;
 
 				SCR_InventoryStorageManagerComponent inv = SCR_InventoryStorageManagerComponent.Cast(ent.FindComponent(SCR_InventoryStorageManagerComponent));
@@ -675,6 +725,51 @@ class DCO_TransportTeamComponent : ScriptComponent
 			}
 		}
 		return n;
+	}
+
+	protected int CountAboard(SCR_AIGroup grp, IEntity veh)
+	{
+		int n;
+		array<AIAgent> agents = {};
+		grp.GetAgents(agents);
+		foreach (AIAgent a : agents)
+		{
+			IEntity c = a.GetControlledEntity();
+			if (c && DCO_VehicleCombat.GetVehicle(c) == veh)
+				n++;
+		}
+		return n;
+	}
+
+	protected void ReleaseToDest(DCO_GroupUtilityComponent g, vector dest, string why)
+	{
+		if (!g || !g.GetOwner() || !m_Commander)
+			return;
+		SCR_AIGroup grp = SCR_AIGroup.Cast(g.GetOwner());
+		if (!grp)
+			return;
+		grp.CompleteAllWaypoints();
+		float d = vector.DistanceXZ(g.GetOwner().GetOrigin(), dest);
+		bool moved = false;
+		if (d > 20.0)
+		{
+			SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(DCO_Util.Surface(dest));
+			if (wp)
+			{
+				grp.AddWaypoint(wp);
+				moved = true;
+			}
+		}
+		DCO_Perf.Count("transport_release:" + why);
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(grp), string.Format("transport_release team=%1 grp=%2 reason=%3 dist=%4 move=%5", GetOwner().GetName(), grp.GetName(), why, Math.Round(d), moved));
+	}
+
+	protected bool HoldsBoardingWaypoint(DCO_GroupUtilityComponent g)
+	{
+		AIGroup ag;
+		if (g)
+			ag = AIGroup.Cast(g.GetOwner());
+		return ag && SCR_BoardingWaypoint.Cast(ag.GetCurrentWaypoint()) != null;
 	}
 
 	protected int SplitLeftBehind(SCR_AIGroup passengerGrp, IEntity veh)
@@ -688,8 +783,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			if (!c || DCO_VehicleCombat.GetVehicle(c) == veh)
 				continue;
 
-			CharacterControllerComponent ctrl = c.GetCharacterController();
-			if (ctrl && ctrl.GetLifeState() == ECharacterLifeState.DEAD)
+			if (!DCO_Util.IsNotDead(c))
 				continue;
 
 			left.Insert(a);
@@ -699,11 +793,13 @@ class DCO_TransportTeamComponent : ScriptComponent
 			return 0;
 
 		SCR_AIGroup newGrp = DCO_Logistics.SplitIntoNewGroup(passengerGrp, left, m_Commander);
-		Print(string.Format("[DCO_TransportTeam] %1 %2 anggota tertinggal -> grup baru %3", GetOwner().GetName(), left.Count(), newGrp));
+		if (!newGrp && m_Job)
+			DCO_Logistics.MoveLeftBehind(passengerGrp, left, m_Job.m_vDest, "transport_split_failed");
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 %2 members left behind -> new group %3", GetOwner().GetName(), left.Count(), newGrp));
 		if (newGrp && m_Job && left.Count() >= 2 && CountFreeCargo(veh) == 0 && m_Commander && m_Commander.GetLogistics())
 		{
 			DCO_GroupUtilityComponent rest = DCO_GroupUtilityComponent.Cast(newGrp.FindComponent(DCO_GroupUtilityComponent));
-			m_Commander.GetLogistics().QueueFollowUp(rest, m_Job, DCO_Logistics.Now());
+			m_Commander.GetLogistics().QueueFollowUp(rest, m_Job, DCO_Util.NowS());
 		}
 		return left.Count();
 	}
@@ -716,6 +812,23 @@ class DCO_TransportTeamComponent : ScriptComponent
 		}
 		else
 		{
+			array<DCO_GroupUtilityComponent> walkers = {};
+			foreach (DCO_GroupUtilityComponent wg : m_Job.m_aGroups)
+			{
+				SCR_AIGroup wgrp;
+				if (wg)
+					wgrp = SCR_AIGroup.Cast(wg.GetOwner());
+				if (wgrp && CountAboard(wgrp, veh) == 0)
+					walkers.Insert(wg);
+			}
+			foreach (DCO_GroupUtilityComponent walker : walkers)
+			{
+				m_Job.m_aGroups.RemoveItem(walker);
+				m_Job.m_iLeft += walker.GetUnitCount();
+				if (walker.IsInTransport())
+					walker.EndTransport();
+				ReleaseToDest(walker, m_Job.m_vDest, "not_boarded");
+			}
 			foreach (DCO_GroupUtilityComponent g : m_Job.m_aGroups)
 			{
 				SCR_AIGroup grp = SCR_AIGroup.Cast(g.GetOwner());
@@ -738,7 +851,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 		m_fStateTimeout = Math.Max(m_fDriveTimeout, 60.0 + vector.Distance(GetTeamPos(), m_Job.m_vLZ) / 3.0);
 		TeamMoveTo(m_Job.m_vLZ, worldTime);
 
-		Print(string.Format("[DCO_TransportTeam] %1 berangkat job #%2 | naik %3 | tertinggal %4",
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 departing job #%2 | boarded %3 | left behind %4",
 			GetOwner().GetName(), m_Job.m_iId, m_Job.m_iBoarded, m_Job.m_iLeft));
 	}
 
@@ -780,7 +893,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 
 		if ((worldTime - m_fStateStartTime) > m_fStateTimeout)
 		{
-			Print(string.Format("[DCO_TransportTeam] %1 drive timeout — force disembark", GetOwner().GetName()));
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 drive timeout — force disembark", GetOwner().GetName()));
 			OnArrive(worldTime);
 		}
 	}
@@ -807,7 +920,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 		}
 
 		SetTeamState(DCO_ETransportTeamState.WAITING_FOR_DISEMBARK, worldTime);
-		Print(string.Format("[DCO_TransportTeam] %1 arrived job #%2 — disembarking", GetOwner().GetName(), m_Job.m_iId));
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 arrived job #%2 — disembarking", GetOwner().GetName(), m_Job.m_iId));
 	}
 
 	protected void TickWaitingForDisembark(float worldTime)
@@ -832,7 +945,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			if (m_SelfGroupUtil)
 				m_SelfGroupUtil.SetPhase(DCO_ETaskPhase.HOLDING);
 
-			Print(string.Format("[DCO_TransportTeam] %1 back at rally — available", GetOwner().GetName()));
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 back at rally — available", GetOwner().GetName()));
 			return;
 		}
 
@@ -846,10 +959,17 @@ class DCO_TransportTeamComponent : ScriptComponent
 
 		if (job)
 		{
+			IEntity finVeh = ResolveVehicle();
 			foreach (DCO_GroupUtilityComponent g : job.m_aGroups)
 			{
 				if (g && g.IsInTransport())
 					g.EndTransport();
+				if (!success || !job.IsTransportKind() || !HoldsBoardingWaypoint(g))
+					continue;
+				SCR_AIGroup fg = SCR_AIGroup.Cast(g.GetOwner());
+				if (fg && finVeh && CountAboard(fg, finVeh) > 0)
+					continue;
+				ReleaseToDest(g, job.m_vDest, "getout_held");
 			}
 			job.m_Team = null;
 			if (m_Commander && m_Commander.GetLogistics())
@@ -895,7 +1015,6 @@ class DCO_TransportTeamComponent : ScriptComponent
 		board.SetEntity(veh);
 		board.SetAllowance(false, false, true);
 		board.SetPriorityLevel(SCR_AIBehaviorBase.PRIORITY_LEVEL_PLAYER);
-		board.SetCompletionRadius(15);
 		board.SetCompletionType(EAIWaypointCompletionType.All);
 
 		passengerGrp.AddWaypoint(wpGetIn);
@@ -919,6 +1038,12 @@ class DCO_TransportTeamComponent : ScriptComponent
 			SCR_AIWaypoint wpGetOut = m_Commander.SpawnGetOutWP(dest);
 			if (wpGetOut)
 				grp.AddWaypoint(wpGetOut);
+			if (vector.DistanceXZ(dest, m_Job.m_vDest) > 20.0)
+			{
+				SCR_AIWaypoint wpOn = m_Commander.SpawnMoveWP(DCO_Util.Surface(m_Job.m_vDest));
+				if (wpOn)
+					grp.AddWaypoint(wpOn);
+			}
 		}
 		foreach (SCR_AIGroup pg : m_Job.m_aPlayerGroups)
 		{
@@ -953,7 +1078,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 		foreach (AIAgent a : agents)
 		{
 			IEntity ent = a.GetControlledEntity();
-			if (IsActiveMember(ent) && DCO_VehicleCombat.GetVehicle(ent) != veh)
+			if (DCO_Util.IsAlive(ent) && DCO_VehicleCombat.GetVehicle(ent) != veh)
 				onFoot++;
 		}
 
@@ -962,7 +1087,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			mgr = SCR_BaseCompartmentManagerComponent.Cast(veh.FindComponent(SCR_BaseCompartmentManagerComponent));
 		if (onFoot > 0 && onFoot > CMD_VehicleFinder.CountFreeSeats(mgr))
 		{
-			Print(string.Format("[DCO_TransportTeam] %1 %2 anggota tim gak kebagian kursi", GetOwner().GetName(), onFoot), LogLevel.WARNING);
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.WARN, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 %2 team members got no seat", GetOwner().GetName(), onFoot));
 			onFoot = 0;
 		}
 
@@ -997,7 +1122,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 		if (!wps.IsEmpty())
 			m_SelfGroupUtil.MoveToRoute(wps, worldTime);
 
-		Print(string.Format("[DCO_TransportTeam] %1 jalan ke %2 | state %3 | kendaraan %4 | jalan kaki %5 | detour %6",
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 moving to %2 | state %3 | vehicle %4 | on foot %5 | detour %6",
 			GetOwner().GetName(), pos, typename.EnumToString(DCO_ETransportTeamState, m_eTeamState), veh != null, onFoot, pts.Count() > 1));
 	}
 
@@ -1019,7 +1144,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			m_fProgressTime = worldTime;
 			return false;
 		}
-		if (worldTime - m_fProgressTime < 45.0)
+		if (worldTime - m_fProgressTime < 20.0)
 			return false;
 
 		m_fProgressTime = worldTime;
@@ -1119,8 +1244,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 
 	protected void LogEvent(string line)
 	{
-		Print("[DCO_TransportTeam] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), line);
 	}
 
 	protected void CheckVehicle(float worldTime)
@@ -1136,7 +1260,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 				m_bCrewInfantry = false;
 				m_SelfGroupUtil.DCO_SetDedicatedFlag(true);
 				m_Commander.RegisterTransportTeam(this);
-				Print(string.Format("[DCO_TransportTeam] %1 kru dapat kendaraan lagi — jadi tim transport lagi", GetOwner().GetName()));
+				DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), string.Format("%1 crew got a vehicle again - transport team again", GetOwner().GetName()));
 			}
 			return;
 		}
@@ -1157,9 +1281,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 		m_Commander.UnregisterTransportTeam(this);
 
 		string line = string.Format("logi_vehicle_lost team=%1 crew=%2 -> reserve infantry", GetOwner().GetName(), m_SelfGroupUtil.GetUnitCount());
-		Print("[DCO_TransportTeam] " + line);
-		DCO_BenchmarkLoggerComponent.Event(line);
-
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), line);
 		if (m_SelfGroupUtil.IsAutoTransport())
 		{
 			m_SelfGroupUtil.DemoteAutoTransport("vehicle_lost");
@@ -1175,7 +1297,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 		if (!Replication.IsServer())
 			return;
 
-		float worldTime = GetGame().GetWorld().GetWorldTime() / 1000.0;
+		float worldTime = DCO_Util.NowS();
 
 		m_fVehicleCheck += timeSlice;
 		if (m_fVehicleCheck >= 5)
