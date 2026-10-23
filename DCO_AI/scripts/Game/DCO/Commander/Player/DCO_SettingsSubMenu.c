@@ -29,7 +29,7 @@ class DCO_SettingsSubMenu : SCR_SettingsSubMenuBase
 		if (on)
 			title.SetText("Squad Contact Notifications");
 		else
-			title.SetText("Squad Contact Notifications" + " - Disabled by server");
+			title.SetText("Squad Contact Notifications - Off on this server (Game Master: DCO Settings > Contact Sharing > Squad Contact Notifications (Players))");
 	}
 
 	override void OnTabCreate(Widget menuRoot, ResourceName buttonsLayout, int index)
@@ -404,7 +404,7 @@ class DCO_SettingsSubMenu : SCR_SettingsSubMenuBase
 		if (title)
 		{
 			if (!on)
-				title.SetText("Commander Briefings - Disabled by server");
+				title.SetText("Commander Briefings - Off on this server (Game Master: DCO Settings > Players > Player Briefings)");
 			else if (cap < 2)
 				title.SetText("Commander Briefings - This server allows up to " + BriefLevelLabel(cap));
 			else

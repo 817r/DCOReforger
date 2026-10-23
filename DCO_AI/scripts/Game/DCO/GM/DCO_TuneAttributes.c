@@ -2466,6 +2466,27 @@ class DCO_T_StanceProneGateAttribute : DCO_TuneBoolAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_GM_SpawnerCardsAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "gm.spawner_cards"; }
+	override protected bool Def() { return true; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_GM_CmdAutoFactionAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "gm.cmd_autofaction"; }
+	override protected bool Def() { return true; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_GM_SpawnerAutoPresetAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "gm.spawner_autopreset"; }
+	override protected bool Def() { return true; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_T_TM_PanicVarietyAttribute : DCO_TuneBoolAttribute
 {
 	override protected string Key() { return "tm.panic_variety"; }

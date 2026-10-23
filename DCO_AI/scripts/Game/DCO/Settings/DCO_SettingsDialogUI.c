@@ -640,8 +640,16 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		return n;
 	}
 
+	protected static bool s_bDCOOpen;
+	static bool DCO_IsOpen()
+	{
+		return s_bDCOOpen;
+	}
+
 	override void OnMenuOpen()
 	{
+		s_bDCOOpen = true;
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "settings_dialog open=1 world_draw=hidden");
 		InitColors();
 		m_Manager = SCR_AttributesManagerEditorComponent.DCO_Get();
 		Widget root = GetRootWidget();
@@ -869,6 +877,8 @@ class DCO_SettingsDialogUI : EditorMenuBase
 
 	override void OnMenuClose()
 	{
+		s_bDCOOpen = false;
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "settings_dialog open=0 world_draw=shown");
 		m_iDragRow = -1;
 		GetGame().GetCallqueue().Remove(DoRender);
 		InputManager im = GetGame().GetInputManager();
@@ -4197,7 +4207,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		float sideH = 0;
 		if (SpSideOn())
 		{
-			sideH = 610;
+			sideH = Math.Clamp(bottom - top - 240, 0, 480);
 			bottom -= sideH;
 		}
 
@@ -4334,11 +4344,16 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		}
 		ScrollBar(x + w + 8, top, bottom - top, m_iTreeScroll, m_iMaxTreeScroll);
 		if (sideH > 0)
-			RenderSpawnerSide(x, bottom + 12, w);
+			RenderSpawnerSide(x, bottom + 12, w, sideH - 12);
 	}
+
+	protected float m_fSideLimit;
+	protected float m_fSideHLogged;
 
 	protected float SideLine(float x, float y, float w, string text, Color fg, int lines)
 	{
+		if (m_fSideLimit > 0 && y + 20 * lines > m_fSideLimit)
+			return y;
 		Widget c = Cell(m_wDyn, x, y, w, 20 * lines, text, m_cClear, fg, 0, 16, 0);
 		if (lines > 1)
 			WrapCell(c);
@@ -4350,24 +4365,52 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		return SpSub("CommanderSpawner") && SpEdited();
 	}
 
-	protected void RenderSpawnerSide(float x, float y, float w)
+	protected void RenderSpawnerSide(float x, float y, float w, float h)
 	{
 		DCO_CommanderSpawnerComponent s = SpEdited();
 		if (!s)
 			return;
-		Rule(x, y - 4, w);
+		float limit = y + h;
 		int st = s.GetRplState();
+		bool capWait = st == DCO_ESpawnerState.WAITING && s.StatusField(10) == "faction_cap";
+		float buttonsH = 102;
+		if (capWait)
+			buttonsH += 48;
+		else if (st == DCO_ESpawnerState.WAITING)
+			buttonsH += 34;
+		if (h != m_fSideHLogged)
+		{
+			m_fSideHLogged = h;
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("settings_spawner_side h=%1 text_limit=%2 buttons_h=%3", Math.Round(h), Math.Round(limit - buttonsH - y), Math.Round(buttonsH)));
+		}
+		Rule(x, y - 4, w);
 		Cell(m_wDyn, x, y, w, 28, SpStateName(st), SpStateColor(st), m_cDark, 3, 17, 0);
 		y += 32;
-		y = SideLine(x, y, w, s.StatusField(0), m_cText, 3);
+		m_fSideLimit = limit - buttonsH;
+		string stateLine = s.StatusField(0);
+		string stateHead = SpStateName(st) + ", ";
+		if (stateLine.Length() > stateHead.Length() && stateLine.Substring(0, stateHead.Length()) == stateHead)
+		{
+			string rest = stateLine.Substring(stateHead.Length(), stateLine.Length() - stateHead.Length());
+			stateLine = DCO_CommanderSpawnerComponent.Cap(rest);
+		}
+		string stateLow = stateLine;
+		stateLow.ToLower();
+		string nameLow = SpStateName(st);
+		nameLow.ToLower();
+		if (stateLow != nameLow)
+			y = SideLine(x, y, w, stateLine, m_cText, 3);
 		y = SideLine(x, y, w, "Preset: " + s.StatusField(14), m_cDim, 1);
 		string reinf = s.StatusField(15);
 		if (!reinf.IsEmpty() && reinf != "-")
 		{
 			if (reinf.Contains("URGENT"))
 			{
-				Cell(m_wDyn, x, y, w, 22, "Reinforcement: " + reinf, Color.FromSRGBA(12, 12, 12, 255), m_cDanger, 0, 16, 0);
-				y += 24;
+				if (y + 22 <= m_fSideLimit)
+				{
+					Cell(m_wDyn, x, y, w, 22, "Reinforcement: " + reinf, Color.FromSRGBA(12, 12, 12, 255), m_cDanger, 0, 16, 0);
+					y += 24;
+				}
 			}
 			else
 			{
@@ -4381,13 +4424,13 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		}
 		y = SideLine(x, y, w, "Feeds: " + s.StatusField(1), m_cText, 1);
 		y = SideLine(x, y, w, "Spawned: " + s.StatusField(2), m_cText, 1);
-		y = SideLine(x, y, w, "Last: " + s.StatusField(3), m_cText, 1);
 		y = SideLine(x, y, w, "Next allowed: " + s.StatusField(4), m_cText, 1);
 		array<string> orders = {};
 		string ostr = s.StatusField(5);
 		if (!ostr.IsEmpty())
 			ostr.Split(";", orders, true);
-		y = SideLine(x, y, w, string.Format("On the way: %1", orders.Count()), m_cText, 1);
+		if (!orders.IsEmpty())
+			y = SideLine(x, y, w, string.Format("On the way: %1", orders.Count()), m_cText, 1);
 		foreach (int oi, string o : orders)
 		{
 			if (oi >= 3)
@@ -4395,14 +4438,13 @@ class DCO_SettingsDialogUI : EditorMenuBase
 			y = SideLine(x + 8, y, w - 8, o, m_cDim, 1);
 		}
 		int mode = SpInt(s, 9);
-		Color menFg = m_cText;
-		if (mode != 1)
-			menFg = m_cDim;
-		Color ptsFg = m_cText;
-		if (mode != 2)
-			ptsFg = m_cDim;
-		y = SideLine(x, y, w, "Stock: " + s.StatusField(7), menFg, 1);
-		y = SideLine(x, y, w, "Stock: " + s.StatusField(8), ptsFg, 1);
+		string stock = string.Empty;
+		if (mode == 1)
+			stock = s.StatusField(7);
+		else if (mode == 2)
+			stock = s.StatusField(8);
+		if (!stock.IsEmpty() && stock != "-")
+			y = SideLine(x, y, w, "Stock: " + stock, m_cText, 1);
 		y = SideLine(x, y, w, s.StatusField(6), m_cText, 2);
 		string note = "Takes nothing from the commander stock.";
 		if (mode == 1)
@@ -4413,10 +4455,12 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		if (shared > 0 && mode != 0)
 			note += string.Format(" Shared with %1 other %2.", shared, DCO_CommanderSpawnerComponent.Plural(shared, "spawner", "spawners"));
 		y = SideLine(x, y, w, note, m_cDim, 2);
-		y += 4;
+		y = SideLine(x, y, w, "Last: " + s.StatusField(3), m_cDim, 1);
+		m_fSideLimit = 0;
+		y = Math.Min(y + 4, limit - buttonsH);
 		Cell(m_wDyn, x, y, w, 30, "Spawn now", m_cOrange, m_cDark, 3, 16, Act(DCO_ESetAct.SPAWNER, 0, 0, string.Empty));
 		y += 34;
-		if (st == DCO_ESpawnerState.WAITING && s.StatusField(10) == "faction_cap")
+		if (capWait)
 		{
 			y = SideLine(x, y, w, "The faction has reached its AI soldier cap. It spawns when there are fewer.", m_cAmber, 2);
 			y += 4;

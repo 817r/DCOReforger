@@ -167,6 +167,13 @@ modded class SCR_EntityTooltipDetailType
 			m_aDetails.Insert(new DCO_CharStatsTooltipDetail(true));
 			m_aDetails.Insert(new DCO_CharProfileTooltipDetail());
 		}
+		if (!m_bDCO_Added && m_EntityType == EEditableEntityType.SYSTEM && m_aDetails)
+		{
+			m_bDCO_Added = true;
+			m_aDetails.Insert(new DCO_CommanderTooltipDetail());
+			m_aDetails.Insert(new DCO_ObjectiveTooltipDetail());
+			m_aDetails.Insert(new DCO_SpawnerTooltipDetail());
+		}
 		return super.CreateDetailType(type, parent, entity, showImage);
 	}
 }

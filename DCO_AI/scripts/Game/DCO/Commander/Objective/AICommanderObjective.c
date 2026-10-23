@@ -220,6 +220,49 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 	protected ref map<FactionKey, float> m_mControl = new map<FactionKey, float>();
 
 	protected FactionKey m_sOwnerFaction;
+
+	[RplProp()]
+	protected string m_sDCORplOwner;
+
+	[RplProp()]
+	protected float m_fDCORplControl;
+
+	string DCO_GetRplOwner()
+	{
+		return m_sDCORplOwner;
+	}
+
+	float DCO_GetRplControl()
+	{
+		return m_fDCORplControl;
+	}
+
+	protected void DCO_PublishStatus()
+	{
+		string owner = "Neutral";
+		float control = 0;
+		if (!m_sOwnerFaction.IsEmpty())
+		{
+			owner = m_sOwnerFaction;
+			if (!m_sOwnerCommanderUID.IsEmpty())
+				owner = owner + " (" + m_sOwnerCommanderUID + ")";
+			control = GetControl(m_sOwnerFaction);
+		}
+		else
+		{
+			foreach (FactionKey k, float v : m_mControl)
+			{
+				if (v > control)
+					control = v;
+			}
+		}
+		control = Math.Round(control);
+		if (owner == m_sDCORplOwner && control == m_fDCORplControl)
+			return;
+		m_sDCORplOwner = owner;
+		m_fDCORplControl = control;
+		Replication.BumpMe();
+	}
 	protected FactionKey m_sLastOwnerFaction;
 	protected string     m_sOwnerCommanderUID = string.Empty;
 
@@ -776,8 +819,34 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		SetEventMask(owner, EntityEvent.FRAME);
 	}
 
+	protected void DCO_EditorRing(IEntity owner)
+	{
+		if (System.IsConsoleApp() || DCO_SettingsDialogUI.DCO_IsOpen())
+			return;
+		SCR_EditorManagerEntity em = SCR_EditorManagerEntity.GetInstance();
+		if (!em || !em.IsOpened())
+			return;
+		BaseWorld w = GetGame().GetWorld();
+		if (!w || m_fRadius <= 0)
+			return;
+		vector c = owner.GetOrigin();
+		int col = ARGB(255, 255, 170, 0);
+		if (m_sDCORplOwner == "Neutral" || m_sDCORplOwner.IsEmpty())
+			col = ARGB(255, 230, 230, 230);
+		vector ring[49];
+		for (int i = 0; i < 49; i++)
+		{
+			float a = i * Math.PI2 / 48;
+			float x = c[0] + Math.Cos(a) * m_fRadius;
+			float z = c[2] + Math.Sin(a) * m_fRadius;
+			ring[i] = Vector(x, w.GetSurfaceY(x, z) + 1.5, z);
+		}
+		Shape.CreateLines(col, ShapeFlags.ONCE | ShapeFlags.NOZBUFFER, ring, 49);
+	}
+
 	override void EOnFrame(IEntity owner, float timeSlice)
 	{
+		DCO_EditorRing(owner);
 		if (!Replication.IsServer())
 			return;
 
@@ -793,6 +862,7 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 
 		float elapsed  = m_fScanTimer;
 		m_fScanTimer   = 0.0;
+		DCO_PublishStatus();
 
 		float worldTime = DCO_Util.NowS();
 

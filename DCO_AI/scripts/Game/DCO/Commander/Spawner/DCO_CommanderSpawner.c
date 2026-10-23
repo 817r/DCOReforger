@@ -520,8 +520,12 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			if (ced)
 				cid = Replication.FindItemId(ced);
 		}
-		DCO_PlayerComms.SendSpawnerCard(sid, cid, kind, title, text);
-		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_card spawner=%1 kind=%2 title=%3", LogName(), kind, title));
+		bool shown = DCO_Ctx.TuneG("gm.spawner_cards", 1.0) > 0;
+		if (shown)
+			DCO_PlayerComms.SendSpawnerCard(sid, cid, kind, title, text);
+		else
+			DCO_Perf.Count("spawner:card_hidden");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_card spawner=%1 kind=%2 title=%3 shown=%4", LogName(), kind, title, DCO_Util.B01(shown)));
 	}
 
 	protected void CancelDue(int playerID)
@@ -561,18 +565,138 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_edit spawner=%1 field=%2 value=%3", LogName(), field, value));
 	}
 
+	protected void DCO_EditorRing(BaseWorld w, vector c, float r, int col)
+	{
+		if (r <= 0)
+			return;
+		vector ring[49];
+		for (int i = 0; i < 49; i++)
+		{
+			float a = i * Math.PI2 / 48;
+			float x = c[0] + Math.Cos(a) * r;
+			float z = c[2] + Math.Sin(a) * r;
+			ring[i] = Vector(x, w.GetSurfaceY(x, z) + 1.5, z);
+		}
+		Shape.CreateLines(col, ShapeFlags.ONCE | ShapeFlags.NOZBUFFER, ring, 49);
+	}
+
+	protected void DCO_EditorRings(IEntity owner)
+	{
+		if (System.IsConsoleApp() || DCO_SettingsDialogUI.DCO_IsOpen())
+			return;
+		SCR_EditorManagerEntity em = SCR_EditorManagerEntity.GetInstance();
+		if (!em || !em.IsOpened())
+			return;
+		BaseWorld w = GetGame().GetWorld();
+		if (!w)
+			return;
+		vector c = owner.GetOrigin();
+		int safeCol = ARGB(255, 244, 240, 226);
+		if (m_iRplState == DCO_ESpawnerState.WAITING)
+			safeCol = ARGB(255, 232, 137, 43);
+		else if (m_iRplState == DCO_ESpawnerState.OFF || m_iRplState == DCO_ESpawnerState.STOPPED)
+			safeCol = ARGB(255, 214, 69, 69);
+		DCO_EditorRing(w, c, m_fRplSpawnR, ARGB(255, 61, 163, 93));
+		DCO_EditorRing(w, c, m_fRplSafe, safeCol);
+	}
+
+	override void EOnFrame(IEntity owner, float timeSlice)
+	{
+		DCO_EditorRings(owner);
+	}
+
 	override protected void OnPostInit(IEntity owner)
 	{
 		super.OnPostInit(owner);
 		if (!GetAllStore().Contains(this))
 			GetAllStore().Insert(this);
+		if (!System.IsConsoleApp())
+			SetEventMask(owner, EntityEvent.FRAME);
 		if (!Replication.IsServer() || !GetGame().InPlayMode())
 			return;
 		m_fStartTime = DCO_Util.NowS();
 		InitClamp();
+		m_bDCOGmPlaced = GetGame().GetWorld().GetWorldTime() > 20000.0;
+		if (m_bDCOGmPlaced)
+			GetGame().GetCallqueue().CallLater(DCO_GmPlacedSetup, 2600, false);
 		GetGame().GetCallqueue().CallLater(Tick, 5000, true);
 		GetGame().GetCallqueue().CallLater(PublishPresets, 3000, false);
 		GetGame().GetCallqueue().CallLater(InitWorkbenchSetup, 2500, false);
+	}
+
+	bool DCO_HasTrigger()
+	{
+		if (m_bSpawnAtStart || m_bCommanderRequest)
+			return true;
+		return m_eObjectiveEvent != DCO_ESpawnerObjectiveEvent.NONE || m_iManpowerBelow != 0;
+	}
+
+	protected void DCO_GmPlacedSetup()
+	{
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		string factionPick = "-";
+		if (m_sFaction.IsEmpty() && m_eTarget != DCO_ESpawnerTarget.SPECIFIC_UID && mgr)
+		{
+			vector origin = GetOwner().GetOrigin();
+			float bestD = float.MAX;
+			foreach (AICommander_BaseComponent c : mgr.m_aCommander)
+			{
+				if (!c || !c.GetOwner() || c.GetCommanderFactionKey().IsEmpty())
+					continue;
+				float d = vector.DistanceXZ(c.GetOwner().GetOrigin(), origin);
+				if (d < bestD)
+				{
+					bestD = d;
+					m_sFaction = c.GetCommanderFactionKey();
+				}
+			}
+			if (!m_sFaction.IsEmpty())
+			{
+				factionPick = m_sFaction;
+				LogEdit("faction_auto", m_sFaction);
+			}
+		}
+		string action = "kept";
+		if (m_iPreset == 4 && !DCO_HasTrigger() && DCO_Ctx.TuneG("gm.spawner_autopreset", 1.0) > 0)
+		{
+			ApplyPreset(3);
+			m_bSpawnAtStart = true;
+			action = "commander_on_call";
+		}
+		AICommander_BaseComponent cmd = ResolveCommander();
+		string cmdName = "-";
+		if (cmd)
+			cmdName = cmd.GetCommanderUID();
+		DCO_Perf.Count("spawner:gm_placed_" + action);
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_gm_placed spawner=%1 faction_auto=%2 action=%3 cmd=%4 preset=%5", LogName(), factionPick, action, cmdName, PresetLabel()));
+		if (!cmd)
+		{
+			Card(1, Title() + " placed", string.Format("No AI Commander of faction %1 exists yet, so nothing can spawn. Place an AI Commander, or set Target Commander and Faction in the attributes.", FactionText()), null);
+			return;
+		}
+		if (action == "commander_on_call")
+			Card(0, Title() + " placed", string.Format("Sends 1 group in 10 s and more whenever %1 asks for reinforcements. Change Preset in the attributes, or use Spawn now from the context menu.", cmdName), cmd);
+		else
+			Card(0, Title() + " placed", string.Format("Feeds %1. Preset: %2. Spawn now is in the context menu.", cmdName, PresetLabel()), cmd);
+	}
+
+	protected string FactionText()
+	{
+		if (m_sFaction.IsEmpty())
+			return "Any";
+		return m_sFaction;
+	}
+
+	protected void DCO_IdleCard(AICommander_BaseComponent cmd, float now)
+	{
+		if (DCO_HasTrigger() || m_bStopped || m_bGMOff || m_bOff || now - m_fStartTime < 60.0)
+			return;
+		if (m_fDCOIdleCardNext >= 0 && now < m_fDCOIdleCardNext)
+			return;
+		m_fDCOIdleCardNext = now + 600.0;
+		DCO_Perf.Count("spawner:idle_card");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_idle_card spawner=%1 preset=%2", LogName(), PresetLabel()));
+		Card(1, Title() + " has no trigger", "Nothing will spawn. Pick a Preset in the attributes (Commander on call is a good default) or use Spawn now from the context menu.", cmd);
 	}
 
 	protected void InitWorkbenchSetup()
@@ -1060,6 +1184,8 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 	}
 
 	protected float m_fIdleLogAt = -1;
+	protected float m_fDCOIdleCardNext = -1;
+	protected bool m_bDCOGmPlaced;
 	protected SCR_AIGroup m_LastSpawnGrp;
 	protected int m_iDefStockPeak;
 
@@ -1157,6 +1283,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 	{
 		if (!m_aOrders.IsEmpty() || !m_sPending.IsEmpty() || now - m_fStartTime < 30.0)
 			return;
+		DCO_IdleCard(cmd, now);
 		if (m_fIdleLogAt >= 0 && now - m_fIdleLogAt < 120.0)
 			return;
 		m_fIdleLogAt = now;

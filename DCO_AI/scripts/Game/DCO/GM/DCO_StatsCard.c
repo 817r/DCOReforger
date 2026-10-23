@@ -216,6 +216,151 @@ class DCO_CharProfileTooltipDetail : SCR_EntityTooltipDetail
 	}
 }
 
+class DCO_CommanderTooltipDetail : SCR_EntityTooltipDetail
+{
+	protected AICommander_BaseComponent m_Cmd;
+	protected TextWidget m_Text;
+	protected string m_sShown;
+
+	void DCO_CommanderTooltipDetail()
+	{
+		m_Layout = "{93AF6A0EA7571B84}UI/layouts/Editor/Tooltips/TooltipPrefabs/TooltipPrefab_Text.layout";
+		m_bShowLabel = true;
+		m_sDisplayName = "Commander";
+	}
+
+	override bool NeedUpdate()
+	{
+		return true;
+	}
+
+	override bool InitDetail(SCR_EditableEntityComponent entity, Widget widget)
+	{
+		IEntity owner = entity.GetOwner();
+		if (!owner)
+			return false;
+		m_Cmd = AICommander_BaseComponent.Cast(owner.FindComponent(AICommander_BaseComponent));
+		m_Text = TextWidget.Cast(widget);
+		if (!m_Cmd || !m_Text)
+			return false;
+		m_sShown = string.Empty;
+		return true;
+	}
+
+	override void UpdateDetail(SCR_EditableEntityComponent entity)
+	{
+		if (!m_Cmd || !m_Text)
+			return;
+		string text = m_Cmd.DCO_GetRplStatus();
+		if (text.IsEmpty())
+			text = "No decision yet. The first one comes about a minute after placement.";
+		if (text == m_sShown)
+			return;
+		m_sShown = text;
+		m_Text.SetText(text);
+	}
+}
+
+class DCO_ObjectiveTooltipDetail : SCR_EntityTooltipDetail
+{
+	protected CMD_AICommanderObjectiveComponent m_Obj;
+	protected TextWidget m_Text;
+	protected string m_sShown;
+
+	void DCO_ObjectiveTooltipDetail()
+	{
+		m_Layout = "{93AF6A0EA7571B84}UI/layouts/Editor/Tooltips/TooltipPrefabs/TooltipPrefab_Text.layout";
+		m_bShowLabel = true;
+		m_sDisplayName = "Objective";
+	}
+
+	override bool NeedUpdate()
+	{
+		return true;
+	}
+
+	override bool InitDetail(SCR_EditableEntityComponent entity, Widget widget)
+	{
+		IEntity owner = entity.GetOwner();
+		if (!owner)
+			return false;
+		m_Obj = CMD_AICommanderObjectiveComponent.Cast(owner.FindComponent(CMD_AICommanderObjectiveComponent));
+		m_Text = TextWidget.Cast(widget);
+		if (!m_Obj || !m_Text)
+			return false;
+		m_sShown = string.Empty;
+		return true;
+	}
+
+	override void UpdateDetail(SCR_EditableEntityComponent entity)
+	{
+		if (!m_Obj || !m_Text)
+			return;
+		string owner = m_Obj.DCO_GetRplOwner();
+		if (owner.IsEmpty())
+			owner = "Neutral";
+		string text = string.Format("%1 · %2% control · radius %3 m", owner, Math.Round(m_Obj.DCO_GetRplControl()), Math.Round(m_Obj.GetRadius()));
+		if (text == m_sShown)
+			return;
+		m_sShown = text;
+		m_Text.SetText(text);
+	}
+}
+
+class DCO_SpawnerTooltipDetail : SCR_EntityTooltipDetail
+{
+	protected DCO_CommanderSpawnerComponent m_Spawner;
+	protected TextWidget m_Text;
+	protected string m_sShown;
+
+	void DCO_SpawnerTooltipDetail()
+	{
+		m_Layout = "{93AF6A0EA7571B84}UI/layouts/Editor/Tooltips/TooltipPrefabs/TooltipPrefab_Text.layout";
+		m_bShowLabel = true;
+		m_sDisplayName = "Spawner";
+	}
+
+	override bool NeedUpdate()
+	{
+		return true;
+	}
+
+	override bool InitDetail(SCR_EditableEntityComponent entity, Widget widget)
+	{
+		IEntity owner = entity.GetOwner();
+		if (!owner)
+			return false;
+		m_Spawner = DCO_CommanderSpawnerComponent.Cast(owner.FindComponent(DCO_CommanderSpawnerComponent));
+		m_Text = TextWidget.Cast(widget);
+		if (!m_Spawner || !m_Text)
+			return false;
+		m_sShown = string.Empty;
+		return true;
+	}
+
+	static string Field(array<string> f, int i)
+	{
+		if (i < 0 || i >= f.Count() || f[i].IsEmpty())
+			return "-";
+		return f[i];
+	}
+
+	override void UpdateDetail(SCR_EditableEntityComponent entity)
+	{
+		if (!m_Spawner || !m_Text)
+			return;
+		array<string> f = {};
+		m_Spawner.GetRplStatus().Split("\n", f, false);
+		string text = "No status yet";
+		if (f.Count() > 0)
+			text = string.Format("%1. Feeds %2. Preset %3. Spawned %4. Next spawn %5.", Field(f, 0), Field(f, 1), Field(f, 14), Field(f, 2), Field(f, 4));
+		if (text == m_sShown)
+			return;
+		m_sShown = text;
+		m_Text.SetText(text);
+	}
+}
+
 class DCO_GroupTaskTooltipDetail : DCO_GroupTooltipDetail
 {
 	protected bool m_bDoing;
@@ -243,6 +388,38 @@ class DCO_GroupTaskTooltipDetail : DCO_GroupTooltipDetail
 [BaseContainerProps(), SCR_BaseContainerCustomTitleEnum(EEditableEntityState, "m_State")]
 modded class SCR_BaseEditableEntityFilter
 {
+	protected static void DCO_DrawObjectiveRing(BaseWorld w, SCR_EditableEntityComponent entity)
+	{
+		if (DCO_SettingsDialogUI.DCO_IsOpen())
+			return;
+		if (!w || !entity || !entity.GetOwner())
+			return;
+		IEntity owner = entity.GetOwner();
+		CMD_AICommanderObjectiveComponent obj = CMD_AICommanderObjectiveComponent.Cast(owner.FindComponent(CMD_AICommanderObjectiveComponent));
+		if (!obj)
+			return;
+		float r = obj.GetRadius();
+		if (r <= 0)
+			return;
+		vector c = owner.GetOrigin();
+		int col = ARGB(255, 255, 170, 0);
+		if (obj.DCO_GetRplOwner() == "Neutral" || obj.DCO_GetRplOwner().IsEmpty())
+			col = ARGB(255, 230, 230, 230);
+		vector ring[49];
+		for (int i = 0; i < 49; i++)
+		{
+			float a = i * Math.PI2 / 48;
+			float x = c[0] + Math.Cos(a) * r;
+			float z = c[2] + Math.Sin(a) * r;
+			ring[i] = Vector(x, w.GetSurfaceY(x, z) + 1.5, z);
+		}
+		Shape.CreateLines(col, ShapeFlags.ONCE | ShapeFlags.NOZBUFFER, ring, 49);
+		vector pole[2];
+		pole[0] = Vector(c[0], w.GetSurfaceY(c[0], c[2]), c[2]);
+		pole[1] = Vector(c[0], w.GetSurfaceY(c[0], c[2]) + 15, c[2]);
+		Shape.CreateLines(col, ShapeFlags.ONCE | ShapeFlags.NOZBUFFER, pole, 2);
+	}
+
 	override void OnFrameBase(float timeSlice)
 	{
 		super.OnFrameBase(timeSlice);
@@ -252,6 +429,7 @@ modded class SCR_BaseEditableEntityFilter
 		BaseWorld w = GetGame().GetWorld();
 		foreach (SCR_EditableEntityComponent entity : m_Entities)
 		{
+			DCO_DrawObjectiveRing(w, entity);
 			SCR_EditableGroupComponent editableGroup = SCR_EditableGroupComponent.Cast(entity);
 			if (!editableGroup || !editableGroup.GetAIGroupComponent())
 				continue;

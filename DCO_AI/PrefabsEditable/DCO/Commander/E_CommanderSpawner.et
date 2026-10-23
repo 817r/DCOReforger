@@ -5,7 +5,7 @@ GameEntity : "{46702BA1D8E33B2A}Prefabs/Commander/CommanderSpawner.et" {
    m_EntityType SYSTEM
    m_UIInfo SCR_EditableEntityUIInfo "{B6064FFFCC04EFF7}" {
     Name "AI Commander Spawner"
-    Description "Spawns groups and hands them straight to an AI Commander (specific, weakest or nearest of a faction). Triggers: mission start, Spawn now (context menu), objective lost/captured, commander manpower below a value. Optional reinforcement stock, safe radius and faction AI cap. Empty group list = random groups from the commander's faction."
+    Description "Reinforcements for an AI Commander. 1: place it near your side, away from the fighting (nothing spawns while players or enemies are within 300 m). 2: pick a Preset in the attributes; Commander on call sends a group whenever the commander asks, Counterattack wave when the home objective is lost, One-shot everything at start. 3: done. Spawn now is in the context menu. With no group list it spawns random groups of the commander's faction. While Game Master is open the spawn area is drawn green and the safe radius light (orange = waiting, red = off)."
     Icon "{FDE4238500835875}UI/Textures/Editor/EditableEntities/Waypoints/EditableEntity_Waypoint_Move.edds"
     m_aAuthoredLabels {
      ENTITYTYPE_SYSTEM

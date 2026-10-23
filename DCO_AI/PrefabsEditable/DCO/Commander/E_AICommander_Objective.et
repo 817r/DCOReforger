@@ -10,7 +10,7 @@ GameEntity : "{9F3E9F8A6CF2FE5A}Prefabs/Commander/Commander_Objective.et" {
    m_EntityType SYSTEM
    m_UIInfo SCR_EditableEntityUIInfo "{5290894495FEE180}" {
     Name "AI Commander Objective"
-    Description "Objective for DCO AI Commanders to capture and hold. The area shows the capture radius."
+    Description "Objective for DCO AI Commanders to capture and hold. Set Name, Radius (town 100-150 m, farm 40-60 m) and Controlled By (the side that starts with it). The capture ring is drawn in the world while Game Master is open: orange = owned, grey = neutral."
     Icon "{3E3FB434FBFA4872}UI/Textures/Editor/EditableEntities/Objectives/EditableEntity_Objective_Attack.edds"
     m_aAuthoredLabels {
      ENTITYTYPE_SYSTEM

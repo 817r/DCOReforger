@@ -957,7 +957,8 @@ class DCO_CmdViewWorld : DCO_CVPainter
 		DCO_CmdViewUI ui = DCO_CmdViewUI.Inst();
 		SCR_MapEntity mapEnt = SCR_MapEntity.GetMapInstance();
 		bool mapOpen = mapEnt && mapEnt.IsOpen();
-		if (!mapOpen)
+		bool dlgOpen = DCO_SettingsDialogUI.DCO_IsOpen();
+		if (!mapOpen && !dlgOpen)
 			DrawSpawners();
 		if (!m_bOn)
 			empty = "off";
@@ -967,6 +968,8 @@ class DCO_CmdViewWorld : DCO_CVPainter
 			empty = "denied";
 		else if (mapOpen)
 			empty = "map_open";
+		else if (dlgOpen)
+			empty = "dialog_open";
 		else if (ui.RecvAt() <= 0)
 			empty = "no_snapshot";
 		else
@@ -1023,7 +1026,7 @@ class DCO_CmdViewWorld : DCO_CVPainter
 			string emptyName = empty;
 			if (empty == "no_snapshot")
 				emptyName = "no_store";
-			else if (empty == "map_open" || empty == "denied")
+			else if (empty == "map_open" || empty == "denied" || empty == "dialog_open")
 				emptyName = "hidden_" + empty;
 			EmptyOnce(emptyName, string.Format(" objs=%1 groups=%2 screen=%3x%4", objs, grps, Math.Round(m_fSw), Math.Round(m_fSh)));
 		}

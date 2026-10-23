@@ -5,6 +5,8 @@ modded class AICommander_BaseComponent
 		AICommander_ManagerComponent.GetOrSpawnInstance(m_sManagerPrefab, m_MyEnt);
 		if (!AICommander_ManagerComponent.GetInstance()) return;
 		AICommander_ManagerComponent.GetInstance().RegisterCommander(this);
+		if (Replication.IsServer() && GetGame().GetWorld().GetWorldTime() > 20000.0)
+			GetGame().GetCallqueue().CallLater(DCO_GmPlacedSetup, 2500, false);
 		threatComp = CMD_ThreatResponseComponent.Cast(m_MyEnt.FindComponent(CMD_ThreatResponseComponent));
 
 		m_eCommanderMode = m_eCommanderModeExternal;
@@ -23,6 +25,105 @@ modded class AICommander_BaseComponent
 
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("commander_init cmd=%1", m_sCommanderUID));
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("think_init cmd=%1 first_think_in=%2 interval=%3", m_sCommanderUID, (m_fThinkInterval - m_fThinkTimer).ToString(-1, 1), m_fThinkInterval));
+	}
+
+	protected FactionKey DCO_PickFactionForNewCommander(AICommander_ManagerComponent mgr)
+	{
+		AIWorld aiWorld = GetGame().GetAIWorld();
+		if (!aiWorld || !m_MyEnt)
+			return "";
+		array<AIAgent> agents = {};
+		aiWorld.GetAIAgents(agents);
+		map<string, int> counts = new map<string, int>();
+		vector here = m_MyEnt.GetOrigin();
+		foreach (AIAgent a : agents)
+		{
+			SCR_AIGroup grp = SCR_AIGroup.Cast(a);
+			if (!grp || !grp.GetFaction() || grp.GetAgentsCount() <= 0)
+				continue;
+			DCO_GroupUtilityComponent gu = DCO_GroupUtilityComponent.Cast(grp.FindComponent(DCO_GroupUtilityComponent));
+			if (!gu || gu.IsPlayerGroup() || gu.GetMyCommander())
+				continue;
+			if (vector.DistanceXZ(grp.GetOrigin(), here) > 2000.0)
+				continue;
+			string fk = grp.GetFaction().GetFactionKey();
+			bool taken = false;
+			foreach (AICommander_BaseComponent c : mgr.m_aCommander)
+			{
+				if (c && c != this && c.GetCommanderFactionKey() == fk)
+					taken = true;
+			}
+			if (taken)
+				continue;
+			int n;
+			counts.Find(fk, n);
+			counts.Set(fk, n + 1);
+		}
+		string best = "";
+		int bestN = 0;
+		foreach (string k, int v : counts)
+		{
+			if (v > bestN)
+			{
+				bestN = v;
+				best = k;
+			}
+		}
+		return best;
+	}
+
+	protected void DCO_GmPlacedSetup()
+	{
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!mgr)
+			return;
+		string pick = "-";
+		if (m_sFactionKey.IsEmpty() && DCO_Ctx.TuneG("gm.cmd_autofaction", 1.0) > 0)
+		{
+			FactionKey fk = DCO_PickFactionForNewCommander(mgr);
+			if (!fk.IsEmpty())
+			{
+				SetCommanderFactionKey(fk);
+				pick = fk;
+			}
+		}
+		DCO_Perf.Count("cmd:gm_placed");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("cmd_gm_placed cmd=%1 faction=%2 faction_auto=%3 mode=%4", m_sCommanderUID, m_sFactionKey, pick, typename.EnumToString(CMD_ECommanderMode, m_eCommanderMode)));
+		if (m_sFactionKey.IsEmpty())
+			DCO_PlayerComms.SendToGameMasters("DCO", string.Format("AI Commander %1 placed without a faction: set Faction in its attributes, or it refuses every group.", m_sCommanderUID));
+		else if (pick != "-")
+			DCO_PlayerComms.SendToGameMasters("DCO", string.Format("AI Commander %1 placed. Faction set to %2 (the nearest AI side without a commander). Give it groups with the group attribute Commander, or place an AI Commander Spawner.", m_sCommanderUID, m_sFactionKey));
+		else
+			DCO_PlayerComms.SendToGameMasters("DCO", string.Format("AI Commander %1 placed for %2. Give it groups with the group attribute Commander, or place an AI Commander Spawner.", m_sCommanderUID, m_sFactionKey));
+		DCO_PublishStatus(mgr);
+	}
+
+	protected void DCO_PublishStatus(AICommander_ManagerComponent mgr)
+	{
+		if (!Replication.IsServer())
+			return;
+		string mode = typename.EnumToString(CMD_ECommanderMode, m_eCommanderMode);
+		mode.ToLower();
+		string fk = m_sFactionKey;
+		if (fk.IsEmpty())
+			fk = "no faction";
+		int held = 0;
+		if (mgr)
+		{
+			foreach (CMD_AICommanderObjectiveComponent o : mgr.m_aObjective)
+			{
+				if (o && o.GetOwner() && !m_sFactionKey.IsEmpty() && o.IsCapturedBy(m_sFactionKey))
+					held++;
+			}
+		}
+		string doing = "no attack planned";
+		if (m_Ops && m_Ops.GetMainEffort())
+			doing = "attacking " + m_Ops.GetMainEffort().GetDisplayName();
+		string status = string.Format("%1 · %2 · %3 · %4 groups · holds %5 objectives · %6", m_sCommanderUID, fk, mode, m_aOwnedGroup.Count(), held, doing);
+		if (status == m_sDCORplStatus)
+			return;
+		m_sDCORplStatus = status;
+		Replication.BumpMe();
 	}
 
 	protected void ThinkBalanced(AICommander_ManagerComponent mgr, float worldTime)
@@ -149,6 +250,7 @@ modded class AICommander_BaseComponent
 		else
 			m_PlayerTasking.Clear();
 
+		DCO_PublishStatus(mgr);
 		m_eCommanderState = CMD_ECommanderState.COMMANDING;
 	}
 

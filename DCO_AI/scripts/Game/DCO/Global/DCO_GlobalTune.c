@@ -171,6 +171,15 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneSyncBD();
 		CfgCat("Vehicle AI");
 		DCO_TuneSyncVA();
+		CfgCat("Game Master");
+		DCO_TuneSyncGMX();
+	}
+
+	protected void DCO_TuneSyncGMX()
+	{
+		DCO_TuneCfg("gm.spawner_cards", "tune_gm_spawner_cards", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("gm.spawner_autopreset", "tune_gm_spawner_autopreset", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("gm.cmd_autofaction", "tune_gm_cmd_autofaction", 1.0, 0.0, 1.0);
 	}
 
 	protected void DCO_TuneSyncVA()

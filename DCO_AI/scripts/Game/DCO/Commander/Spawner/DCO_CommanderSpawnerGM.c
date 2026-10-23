@@ -144,6 +144,18 @@ class DCO_SpawnerTargetAttribute : DCO_SpawnerPresetAttribute
 		if (uids.IsIndexValid(index - 2))
 			s.SetTarget(DCO_ESpawnerTarget.SPECIFIC_UID, uids[index - 2]);
 	}
+
+	override void UpdateInterlinkedVariables(SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, bool isInit = false)
+	{
+		if (!var || !manager)
+			return;
+		bool byFaction = var.GetInt() <= 1;
+		if (isInit)
+			manager.SetAttributeAsSubAttribute(DCO_SpawnerFactionAttribute);
+		manager.SetAttributeEnabled(DCO_SpawnerFactionAttribute, byFaction);
+		if (!isInit)
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("spawner_ui_gate what=target index=%1 faction_on=%2", var.GetInt(), DCO_Util.B01(byFaction)));
+	}
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
@@ -308,13 +320,6 @@ class DCO_SpawnerAtStartAttribute : DCO_SpawnerBoolAttribute
 {
 	override protected bool Get(DCO_CommanderSpawnerComponent s) { return s.GetSpawnAtStart(); }
 	override protected void Set(DCO_CommanderSpawnerComponent s, bool value) { s.SetSpawnAtStart(value); }
-}
-
-[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class DCO_SpawnerUseStockAttribute : DCO_SpawnerBoolAttribute
-{
-	override protected bool Get(DCO_CommanderSpawnerComponent s) { return s.GetUseStock(); }
-	override protected void Set(DCO_CommanderSpawnerComponent s, bool value) { s.SetUseStock(value); }
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
@@ -518,6 +523,28 @@ class DCO_SpawnerPresetChoiceAttribute : DCO_SpawnerPresetAttribute
 		if (index != s.GetPreset())
 			s.ApplyPreset(index);
 	}
+
+	override void UpdateInterlinkedVariables(SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, bool isInit = false)
+	{
+		if (!var || !manager)
+			return;
+		bool custom = var.GetInt() == 4;
+		if (isInit)
+		{
+			manager.SetAttributeAsSubAttribute(DCO_SpawnerAtStartAttribute);
+			manager.SetAttributeAsSubAttribute(DCO_SpawnerObjectiveAttribute);
+			manager.SetAttributeAsSubAttribute(DCO_SpawnerObjectiveEventAttribute);
+			manager.SetAttributeAsSubAttribute(DCO_SpawnerManpowerBelowAttribute);
+			manager.SetAttributeAsSubAttribute(DCO_SpawnerCommanderRequestAttribute);
+		}
+		manager.SetAttributeEnabled(DCO_SpawnerAtStartAttribute, custom);
+		manager.SetAttributeEnabled(DCO_SpawnerObjectiveAttribute, custom);
+		manager.SetAttributeEnabled(DCO_SpawnerObjectiveEventAttribute, custom);
+		manager.SetAttributeEnabled(DCO_SpawnerManpowerBelowAttribute, custom);
+		manager.SetAttributeEnabled(DCO_SpawnerCommanderRequestAttribute, custom);
+		if (!isInit)
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("spawner_ui_gate what=preset index=%1 triggers_on=%2", var.GetInt(), DCO_Util.B01(custom)));
+	}
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
@@ -532,6 +559,17 @@ class DCO_SpawnerStopHomeAttribute : DCO_SpawnerBoolAttribute
 {
 	override protected bool Get(DCO_CommanderSpawnerComponent s) { return s.GetStopHomeLost(); }
 	override protected void Set(DCO_CommanderSpawnerComponent s, bool value) { s.SetStopHomeLost(value); }
+
+	override void UpdateInterlinkedVariables(SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, bool isInit = false)
+	{
+		if (!var || !manager)
+			return;
+		if (isInit)
+			manager.SetAttributeAsSubAttribute(DCO_SpawnerHomeAttribute);
+		manager.SetAttributeEnabled(DCO_SpawnerHomeAttribute, var.GetBool());
+		if (!isInit)
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("spawner_ui_gate what=stop_home home_on=%1", DCO_Util.B01(var.GetBool())));
+	}
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
@@ -546,6 +584,17 @@ class DCO_SpawnerStopLateAttribute : DCO_SpawnerBoolAttribute
 {
 	override protected bool Get(DCO_CommanderSpawnerComponent s) { return s.GetStopLate(); }
 	override protected void Set(DCO_CommanderSpawnerComponent s, bool value) { s.SetStopLate(value); }
+
+	override void UpdateInterlinkedVariables(SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, bool isInit = false)
+	{
+		if (!var || !manager)
+			return;
+		if (isInit)
+			manager.SetAttributeAsSubAttribute(DCO_SpawnerLateMinAttribute);
+		manager.SetAttributeEnabled(DCO_SpawnerLateMinAttribute, var.GetBool());
+		if (!isInit)
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("spawner_ui_gate what=stop_late late_min_on=%1", DCO_Util.B01(var.GetBool())));
+	}
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]

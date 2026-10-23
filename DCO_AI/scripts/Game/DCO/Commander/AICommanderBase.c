@@ -243,6 +243,14 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("", UIWidgets.Font, desc: "UID of the Commander.", category: "Commander 01. Identity"), RplProp()]
 	protected string m_sCommanderUID;
 
+	[RplProp()]
+	protected string m_sDCORplStatus;
+
+	string DCO_GetRplStatus()
+	{
+		return m_sDCORplStatus;
+	}
+
 	[Attribute("", UIWidgets.Auto, desc: "Faction Key of the Commander.", category: "Commander 01. Identity")]
 	protected FactionKey m_sFactionKey;
 
