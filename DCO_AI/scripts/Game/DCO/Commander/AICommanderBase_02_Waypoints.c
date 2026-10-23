@@ -95,7 +95,7 @@ modded class AICommander_BaseComponent
 		SCR_AIGroup ag = SCR_AIGroup.Cast(grp.GetOwner());
 		if (!ag)
 			return r;
-		float span = DCO_Formation.Span(grp.DCO_GetFormation(), ag.GetAgentsCount());
+		float span = DCO_Formation.FormationSpan(grp.DCO_GetFormation(), ag.GetAgentsCount());
 		if (span > 0)
 			r = Math.Max(r, 1.1 * span + 5.0);
 		return r;

@@ -29,7 +29,7 @@ class DCO_Formation
 		return ok;
 	}
 
-	static float Span(string name, int n)
+	static float FormationSpan(string name, int n)
 	{
 		AIFormationDefinition def = GetGame().GetAIWorld().GetFormation(name);
 		if (!def)
@@ -197,11 +197,11 @@ class DCO_Formation
 		}
 		limit = 0.7 * limit;
 		int spWant = sp;
-		float span = Span(shape + Suffix(sp), n);
+		float span = FormationSpan(shape + Suffix(sp), n);
 		while (sp > 0 && span > limit)
 		{
 			sp--;
-			span = Span(shape + Suffix(sp), n);
+			span = FormationSpan(shape + Suffix(sp), n);
 		}
 		string name = shape + Suffix(sp);
 		why = string.Format("src=%1 env=%2 night=%3 contact=%4 retreat=%5 threat_side=%6 n=%7 span=%8 limit=%9", src, DCO_Ctx.EnvName(env), DCO_Util.B01(night), DCO_Util.B01(contact), DCO_Util.B01(retreat), side, n, Math.Round(span), Math.Round(limit));

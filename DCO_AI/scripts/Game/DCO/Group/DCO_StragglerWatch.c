@@ -63,7 +63,7 @@ class DCO_StragglerWatch
 		bool grpContact = dgu && dgu.HasState(DCO_EGroupState.IN_CONTACT);
 		if (dgu)
 		{
-			float span = DCO_Formation.Span(dgu.DCO_GetFormation(), group.GetAgentsCount());
+			float span = DCO_Formation.FormationSpan(dgu.DCO_GetFormation(), group.GetAgentsCount());
 			if (span * 1.3 > moveCohesion)
 			{
 				moveCohesion = span * 1.3;
