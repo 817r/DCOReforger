@@ -22,6 +22,8 @@ modded class SCR_AIDangerReaction_DamageTaken
 
 		if (!shooter || dangerEvent.GetVictim() != utility.m_OwnerEntity)
 			return super.PerformReaction(utility, threatSystem, dangerEvent, dangerEventCount);
+		if (DCO_CivMode.IsCiv(utility))
+			return DCO_CivMode.OnHit(utility, dangerEvent);
 
 		utility.m_SectorThreatFilter.OnDamageTaken(shooter.GetOrigin());
 
@@ -63,6 +65,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 		vector shooterPos    = shooter.GetOrigin();
 		float  distToShooter = vector.Distance(utility.GetOrigin(), shooterPos);
 		bool   isLongRange   = distToShooter > 60.0;
+		DCO_Flinch(utility, combat, state);
 
 		TrySuppressShooter(utility, combat, shooterRoot);
 
@@ -86,12 +89,41 @@ modded class SCR_AIDangerReaction_DamageTaken
 		if (DCO_CoverPierced(utility, state, shooterPos))
 			return true;
 
-		if (state.IsExecutingRequest())
+		if (state.IsExecutingRequest() && (state.IsInValidCover() || state.DCO_IsCoverProtected()))
 			return true;
 
 		PushRetreatToCover(state, shooterPos, isLongRange);
 
 		return true;
+	}
+
+	protected void DCO_Flinch(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatComponent combat, notnull SCR_AICombatMoveState state)
+	{
+		float freeze = Math.RandomFloat(0.3, 0.6);
+		combat.DCO_FlinchNoFire(freeze);
+		string from = "-";
+		string to = "keep";
+		SCR_CharacterControllerComponent cc = combat.GetCharacterController();
+		if (cc && !DCO_Nav.Busy(cc, "flinch"))
+		{
+			int st = cc.GetStance();
+			from = typename.EnumToString(ECharacterStance, st);
+			if (st == ECharacterStance.STAND)
+			{
+				DCO_Stance.Request(cc, 2, "hit");
+				to = "CROUCH";
+			}
+			else if (st == ECharacterStance.CROUCH && !state.IsInValidCover())
+			{
+				DCO_Stance.Request(cc, 3, "hit");
+				to = "PRONE";
+			}
+		}
+		DCO_Perf.Count("flinch:hit");
+		DCO_AIMoraleSystem hitMs = utility.GetMoraleSystem();
+		if (hitMs)
+			hitMs.DCO_NoteHit();
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(utility.m_OwnerEntity), string.Format("flinch unit=%1 cause=hit stance_from=%2 stance_to=%3 freeze_s=%4 in_cover=%5", DCO_Log.IdUnit(utility.m_OwnerEntity), from, to, freeze.ToString(-1, 1), DCO_Util.B01(state.IsInValidCover())));
 	}
 
 	protected void PushRetreatToCover(notnull SCR_AICombatMoveState state, vector shooterPos, bool longRange)
@@ -146,6 +178,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 			rq.m_bTryFindCover = false;
 		}
 
+		state.m_bDCOUrgentNext = true;
 		state.ApplyNewRequest(rq);
 	}
 
@@ -188,6 +221,8 @@ modded class SCR_AIDangerReaction_DamageTaken
 		SCR_AISuppressionObjectVolumeBox volume = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
 
 		if (!volume)
+			return;
+		if (!DCO_SuppressGate.Allowed(utility, shooterOrigin, "damage"))
 			return;
 
 		SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, volume, 4.0, 1.5);

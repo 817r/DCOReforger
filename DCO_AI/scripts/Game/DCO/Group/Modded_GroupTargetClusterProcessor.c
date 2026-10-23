@@ -9,15 +9,37 @@ modded class SCR_AITargetClusterState
 	vector m_vDCOPursuit;
 	ref DCO_StrengthInfo m_DCOStrength = new DCO_StrengthInfo();
 	float m_fDCOStrengthAt_ms = -1;
+	float m_fDCOErrAng = -1;
+	int m_iDCOInfoEvents;
+	float m_fDCOPrevInfoAge = -1;
 }
 
 modded class SCR_AIGroupTargetClusterProcessor
 {
+	protected ref map<SCR_AITargetClusterState, float> m_mDCOAttackSince = new map<SCR_AITargetClusterState, float>();
+
 	override EAITargetClusterState EvaluateNewDesiredState(SCR_AITargetClusterState s)
 	{
 		EAITargetClusterState desired = super.EvaluateNewDesiredState(s);
 		DCO_Track(s);
 		desired = DCO_BlindCheck(s, desired);
+		float dwellNow = GetGame().GetWorld().GetWorldTime();
+		if (desired == EAITargetClusterState.ATTACKING && s.m_eState != EAITargetClusterState.ATTACKING)
+			m_mDCOAttackSince.Set(s, dwellNow);
+		if (desired == EAITargetClusterState.INVESTIGATING && s.m_eState == EAITargetClusterState.ATTACKING)
+		{
+			float attackSince;
+			if (m_mDCOAttackSince.Find(s, attackSince) && dwellNow - attackSince < 10000.0)
+			{
+				DCO_Perf.Count("cluster:attack_dwell");
+				desired = EAITargetClusterState.ATTACKING;
+			}
+		}
+		if (s.m_eState == EAITargetClusterState.NONE && s.m_fTimer_ms < 5000.0 && DCO_Relentless.Group(m_Utility.m_Owner))
+		{
+			DCO_Perf.Count("relentless:decide_now");
+			s.m_fTimer_ms = 5001.0;
+		}
 		if (DCO_StaleForAssault(s, desired) || DCO_DriveDrop(s, desired))
 			return EAITargetClusterState.NONE;
 		if (desired == EAITargetClusterState.ATTACKING || desired == EAITargetClusterState.DEFENDING)
@@ -47,14 +69,24 @@ modded class SCR_AIGroupTargetClusterProcessor
 			return desired;
 
 		bool idle = m_Utility.DCO_IsIdle();
+		bool relentless = DCO_Relentless.Group(m_Utility.m_Owner);
+		if (relentless && idle)
+		{
+			DCO_Perf.Count("relentless:idle_bypass");
+			idle = false;
+		}
 
 		if (desired == EAITargetClusterState.INVESTIGATING)
 		{
+			if (DCO_ArmorOnlyNoAT(s))
+				return EAITargetClusterState.NONE;
 			bool aware = DCO_GlobalAIComponent.BehaviorOnFor(m_Utility.m_Owner, DCO_EBehavior.AWARENESS);
 			float range = 150.0;
 			if (aware)
 				range = DCO_Awareness.PursuitRange(m_Utility.m_Owner);
-			if (s.m_bDCOEngaged && s.m_fDistMin <= range && DCO_CanPursue())
+			if (relentless)
+				range = 400.0;
+			if (s.m_bDCOEngaged && s.m_fDistMin <= range && DCO_CanPursue(relentless))
 			{
 				if (s.m_iDCOInvestigateRoll != 2)
 				{
@@ -135,6 +167,47 @@ modded class SCR_AIGroupTargetClusterProcessor
 		{
 			m_fDCOLeashLogAt = now + 30000.0;
 			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("def_cluster_hold grp=%1 state=%2 cluster_obj_m=%3 limit_m=%4 grp_dist=%5", DCO_Log.IdGroup(m_Utility.m_Owner), typename.EnumToString(EAITargetClusterState, desired), Math.Round(d), Math.Round(limit), Math.Round(s.m_fDistMin)));
+		}
+		return true;
+	}
+
+	protected float m_fDCOArmorSkipLogAt;
+
+	protected bool DCO_ArmorOnlyNoAT(SCR_AITargetClusterState s)
+	{
+		if (!s.m_Cluster)
+			return false;
+		DCO_GroupUtilityComponent g = m_Utility.DCO_GetUtil();
+		if (!g || g.IsPlayerGroup() || g.HasAT() || g.IsArmor())
+			return false;
+		int armored;
+		int other;
+		foreach (SCR_AITargetInfo t : s.m_Cluster.m_aTargets)
+		{
+			if (!t)
+				continue;
+			EAITargetInfoCategory cat = t.m_eCategory;
+			if (cat != EAITargetInfoCategory.DETECTED && cat != EAITargetInfoCategory.IDENTIFIED && cat != EAITargetInfoCategory.LOST)
+				continue;
+			IEntity ent = t.m_Entity;
+			IEntity veh;
+			if (ent && Vehicle.Cast(ent))
+				veh = ent;
+			else if (ent)
+				veh = DCO_VehicleCombat.GetVehicle(ent);
+			if (veh && DCO_VehicleCombat.IsArmored(veh))
+				armored++;
+			else
+				other++;
+		}
+		if (armored == 0 || other > 0)
+			return false;
+		DCO_Perf.Count("investigate_skip:armor_no_at");
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now >= m_fDCOArmorSkipLogAt)
+		{
+			m_fDCOArmorSkipLogAt = now + 30000.0;
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("investigate_skip grp=%1 why=armor_no_at armored=%2 dist=%3", DCO_Log.IdGroup(m_Utility.m_Owner), armored, Math.Round(s.m_fDistMin)));
 		}
 		return true;
 	}
@@ -268,7 +341,7 @@ modded class SCR_AIGroupTargetClusterProcessor
 		}
 	}
 
-	protected bool DCO_CanPursue()
+	protected bool DCO_CanPursue(bool relentless)
 	{
 		DCO_GroupUtilityComponent g = m_Utility.DCO_GetUtil();
 		if (!g)
@@ -282,6 +355,11 @@ modded class SCR_AIGroupTargetClusterProcessor
 		int peak = Math.Max(g.DCO_GetPeakStrength(), 1);
 		bool heavyLoss = g.GetUnitCount() < 1.0 * peak * 0.7;
 		bool lowAmmo = grp && DCO_Logistics.IsLowAmmo(grp, 3);
+		if (heavyLoss && relentless)
+		{
+			DCO_Perf.Count("relentless:pursue_despite_losses");
+			heavyLoss = false;
+		}
 		if (heavyLoss || lowAmmo)
 		{
 			DCO_Perf.Count("pursue_skip:lace");

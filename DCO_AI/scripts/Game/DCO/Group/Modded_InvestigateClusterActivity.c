@@ -96,6 +96,8 @@ modded class SCR_AIInvestigateClusterActivity
 		return SCR_SearchAndDestroyWaypoint.Cast(m_Utility.m_Owner.GetCurrentWaypoint()) != null;
 	}
 
+	protected bool m_bDCOAreaLogged;
+
 	protected void DCO_Area(out vector pos, out float radius)
 	{
 		CalculateInvestigationArea(m_ClusterState, pos, radius);
@@ -104,13 +106,52 @@ modded class SCR_AIInvestigateClusterActivity
 			pos = m_ClusterState.m_vDCOPursuit;
 			radius = Math.Max(radius, 20.0);
 		}
+		DCO_Uncertain(pos, radius);
+	}
+
+	protected void DCO_Uncertain(inout vector pos, inout float radius)
+	{
+		SCR_AITargetClusterState s = m_ClusterState;
+		float age = s.GetTimeSinceLastNewInformation();
+		if (s.m_fDCOPrevInfoAge >= 0 && age < s.m_fDCOPrevInfoAge - 0.5)
+			s.m_iDCOInfoEvents++;
+		s.m_fDCOPrevInfoAge = age;
+		float errM = 0;
+		string src = "visual";
+		float k = DCO_Ctx.TuneForGU(m_Utility, "inv.pos_err", 0.12);
+		if (s.m_iCountIdentified == 0 && k > 0)
+		{
+			if (s.m_fDCOErrAng < 0)
+				s.m_fDCOErrAng = Math.RandomFloat(0.0, 360.0);
+			float d = vector.DistanceXZ(m_Utility.m_Owner.GetCenterOfMass(), pos);
+			float shrink = Math.Max(Math.Pow(0.85, s.m_iDCOInfoEvents), 0.3);
+			errM = d * k * shrink;
+			float a = s.m_fDCOErrAng * Math.DEG2RAD;
+			pos = DCO_Util.Surface(pos + Vector(Math.Cos(a) * errM, 0, Math.Sin(a) * errM));
+		}
+		float shotErr = DCO_ShotLocate.LastErr(m_Utility.m_Owner, GetGame().GetWorld().GetWorldTime());
+		if (shotErr > errM)
+		{
+			errM = shotErr;
+			src = "shot";
+		}
+		float grow = Math.Min(age * DCO_Ctx.TuneForGU(m_Utility, "inv.age_grow", 1.0), 60.0);
+		radius = Math.Max(radius, Math.Max(errM * 0.7, grow));
+		if (m_bDCOAreaLogged)
+			return;
+		m_bDCOAreaLogged = true;
+		DCO_Perf.Count("inv:area_" + src);
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("investigate_area grp=%1 src=%2 err_m=%3 age_s=%4 info_events=%5 radius=%6 identified=%7 pos=%8",
+			DCO_Log.IdGroup(m_Utility.m_Owner), src, Math.Round(errM), Math.Round(age), s.m_iDCOInfoEvents, Math.Round(radius), s.m_iCountIdentified, DCO_Log.Pos(pos)));
 	}
 
 	protected void DCO_NextBound(float now_ms)
 	{
 		m_fDCOBoundStart_ms = now_ms;
 
-		if (m_aFireteamsCover.IsEmpty())
+		if (DCO_Relentless.Group(m_Utility.m_Owner))
+			DCO_Perf.Count("relentless:investigate_direct");
+		if (m_aFireteamsCover.IsEmpty() || DCO_Relentless.Group(m_Utility.m_Owner))
 		{
 			m_bDCOCoverTeamMoving = false;
 			m_bDCOFinal = true;

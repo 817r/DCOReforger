@@ -513,6 +513,15 @@ class DCO_Battle
 				vseat = typename.EnumToString(ECompartmentType, vslot.GetType());
 		}
 
+		string vpers = "-";
+		string vskill = "-";
+		string vlead = "-";
+		if (vu)
+		{
+			vpers = DCO_Leadership.PersName(DCO_AIConfigComponent.PersonalityOf(vu));
+			vskill = typename.EnumToString(DCO_AISKILL, DCO_AIConfigComponent.SkillOf(vu));
+			vlead = DCO_Leadership.Name(DCO_Leadership.Of(vu));
+		}
 		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, "-",
 			string.Format("death_ctx victim=%1 vname=%2 vfac=%3 vgrp=%4 vroles=%5 vtask=%6 vphase=%7 vtr_role=%8 vtr_phase=%9", DCO_Log.IdUnit(victim), Prefab(victim), vfac, vgrp, RoleNames(vroleMask), vtask, vphase, vtrRole, vtrPhase)
 			+ string.Format(" vtactic=%1 vobj=%2 vbeh=%3 vact=%4 vorder=%5 vorder_age_s=%6 vstance=%7 vmoving=%8 vspeed=%9", TacticOf(vgu), vobj, vbeh, vact, vorder, Math.Round(vorderAge), Stance(victim), DCO_Util.B01(vmoving), vspeed.ToString(-1, 1))
@@ -520,7 +529,7 @@ class DCO_Battle
 			+ string.Format(" hitzone=%1 vlead_d=%2 vfriend_d=%3 enemies_los=%4 killer=%5 kname=%6 kgrp=%7 kroles=%8 kbeh=%9", hitzone, Math.Round(vleadD), Math.Round(vfriendD), enemiesLos, killerId, kname, kgrp, kroles, kbeh)
 			+ string.Format(" kstance=%1 kindoor=%2 kveh=%3 dist=%4 dz=%5 seen=%6 seen_age_s=%7 dmg=%8 src=%9", kstance, DCO_Util.B01(kindoor), DCO_Util.B01(kveh), Math.Round(dist), dz.ToString(-1, 1), seen, Math.Round(seenAge), dmg, src)
 			+ string.Format(" wound_to_death_s=%1 bleed=%2 medic=%3 ff=%4 cause=%5 pos=%6 kpos=%7 vsupp_lvl=%8 vstill_s=%9", Math.Round(woundToDeath), DCO_Util.B01(bleed), medic, DCO_Util.B01(ff), cause, DCO_Util.XZ(victim.GetOrigin()), KPos(killer), vsuppLvl, vstill.ToString(-1, 1))
-			+ string.Format(" vzone=%1 vinveh=%2 vseat=%3 vcid=%4", DCO_Engage.ZoneOf(vu), DCO_Util.B01(vinveh), vseat, DCO_CoverId.Brief(vu, victim))
+			+ string.Format(" vzone=%1 vinveh=%2 vseat=%3 vcid=%4 vpers=%5 vskill=%6 vlead=%7", DCO_Engage.ZoneOf(vu), DCO_Util.B01(vinveh), vseat, DCO_CoverId.Brief(vu, victim), vpers, vskill, vlead)
 			+ SmartActionInfo(vu));
 		DCO_Perf.Count("death_ctx:" + cause);
 
@@ -1045,7 +1054,7 @@ class DCO_Battle
 		if (!owner)
 			return " vsa=no_owner vsa_pos=-";
 		string tags = "-";
-		AISmartActionComponent asa = AISmartActionComponent.Cast(sa);
+		AISmartActionComponent asa = sa;
 		if (asa)
 		{
 			array<string> tagList = {};

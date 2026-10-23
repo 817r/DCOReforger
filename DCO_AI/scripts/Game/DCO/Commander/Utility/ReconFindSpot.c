@@ -12,7 +12,9 @@ class CMD_ReconSpotFinder
 		vector targetPos,
 		float  minDistToTarget,
 		float  maxDistToTarget,
-		int    candidateCount  = 16)
+		int    candidateCount  = 16,
+		vector avoidDir = "0 0 0",
+		float  avoidWeight = 0.5)
 	{
 		if (!Replication.IsServer())
 			return vector.Zero;
@@ -52,10 +54,18 @@ class CMD_ReconSpotFinder
 				continue;
 
 			float nearSide = 1.0 - Math.AbsFloat(ang - baseAngle) / arcHalf;
+			float avoidPen = 0;
+			if (avoidDir.LengthSq() > 0.5)
+			{
+				float dotA = Math.Cos(ang) * avoidDir[0] + Math.Sin(ang) * avoidDir[2];
+				if (dotA > 0.5)
+					avoidPen = avoidWeight * dotA;
+			}
 
 			float score = (ScoreLOS(candidate, targetPos) * WEIGHT_LOS())
 				+ (ScoreElevation(candidate, targetPos) * WEIGHT_ELEVATION())
-				+ (Math.Clamp(nearSide, 0, 1) * WEIGHT_NEAR_SIDE());
+				+ (Math.Clamp(nearSide, 0, 1) * WEIGHT_NEAR_SIDE())
+				- avoidPen;
 
 			if (score > bestScore)
 			{

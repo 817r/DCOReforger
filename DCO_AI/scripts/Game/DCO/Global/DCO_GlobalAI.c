@@ -109,11 +109,26 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute("3", UIWidgets.Slider, "RECKLESS personality weight.", params: "0 100 1")]
 	protected float m_fPersonalityWeightReckless;
 
+	[Attribute("15", UIWidgets.Slider, "POOR leadership weight (relative to the other 3, does not need to total 100).", params: "0 100 1")]
+	protected float m_fLeadershipWeightPoor;
+
+	[Attribute("60", UIWidgets.Slider, "AVERAGE leadership weight.", params: "0 100 1")]
+	protected float m_fLeadershipWeightAverage;
+
+	[Attribute("20", UIWidgets.Slider, "GOOD leadership weight.", params: "0 100 1")]
+	protected float m_fLeadershipWeightGood;
+
+	[Attribute("5", UIWidgets.Slider, "INSPIRING leadership weight.", params: "0 100 1")]
+	protected float m_fLeadershipWeightInspiring;
+
 	[Attribute("0.6", UIWidgets.Slider, "Chance AI dodge (run for cover) each time they hear gunfire. Scaled by personality when dodgeScaleByPersonality is on.", params: "0 1 0.05")]
 	protected float m_fDodgeChance;
 
-	[Attribute("1.0", UIWidgets.Slider, "Chance AI may go prone in any situation. 0 = never prone, 1 = always allowed. The roll is kept for 10 s per AI; AI already prone stay prone.", params: "0 1 0.05")]
+	[Attribute("1.0", UIWidgets.Slider, "Chance AI may go prone in any situation. 0 = never prone, not even when hit, panicking or pinned. 1 = always allowed. The roll is kept for 10 s per AI; AI already prone stay prone.", params: "0 1 0.05")]
 	protected float m_fProneChance;
+
+	[Attribute("1.0", UIWidgets.Slider, "Chance AI may crouch in any situation. 0 = never crouch (they stand instead), 1 = always allowed. The roll is kept for 10 s per AI; AI already crouched stay crouched.", params: "0 1 0.05")]
+	protected float m_fCrouchChance;
 
 	[Attribute("0.0", UIWidgets.Slider, "Chance AI may go prone in CQB (inside a building or enemy closer than close combat range). 0 = never prone in CQB, 1 = always allowed. The roll is kept for 10 s per AI.", params: "0 1 0.05")]
 	protected float m_fCQBProneChance;
@@ -650,8 +665,8 @@ class DCO_GlobalAIComponent: ScriptComponent
 	}
 
 	protected int m_iCfgMode;
-	protected ref SCR_JsonLoadContext m_CfgLoad;
-	protected ref SCR_JsonSaveContext m_CfgSave;
+	protected ref JsonLoadContext m_CfgLoad;
+	protected ref JsonSaveContext m_CfgSave;
 	protected ref array<string> m_aCfgMissing = {};
 	protected int m_iCfgApplied;
 	protected bool m_bCfgTrace;
@@ -707,6 +722,10 @@ class DCO_GlobalAIComponent: ScriptComponent
 		m_fPersonalityWeightCautious = CfgF("personalityWeightCautious", m_fPersonalityWeightCautious, 0.0, 100.0);
 		m_fPersonalityWeightAggressive = CfgF("personalityWeightAggressive", m_fPersonalityWeightAggressive, 0.0, 100.0);
 		m_fPersonalityWeightReckless = CfgF("personalityWeightReckless", m_fPersonalityWeightReckless, 0.0, 100.0);
+		m_fLeadershipWeightPoor = CfgF("leadershipWeightPoor", m_fLeadershipWeightPoor, 0.0, 100.0);
+		m_fLeadershipWeightAverage = CfgF("leadershipWeightAverage", m_fLeadershipWeightAverage, 0.0, 100.0);
+		m_fLeadershipWeightGood = CfgF("leadershipWeightGood", m_fLeadershipWeightGood, 0.0, 100.0);
+		m_fLeadershipWeightInspiring = CfgF("leadershipWeightInspiring", m_fLeadershipWeightInspiring, 0.0, 100.0);
 
 		CfgCat("Dodge");
 		m_fDodgeChance = CfgF("dodgeChance", m_fDodgeChance, 0.0, 1.0);
@@ -715,6 +734,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 		m_fDodgeSearchDist = CfgF("dodgeSearchDist", m_fDodgeSearchDist, 5.0, 100.0);
 		m_bDodgeScaleByPersonality = CfgB("dodgeScaleByPersonality", m_bDodgeScaleByPersonality);
 		m_fProneChance = CfgF("proneChance", m_fProneChance, 0.0, 1.0);
+		m_fCrouchChance = CfgF("crouchChance", m_fCrouchChance, 0.0, 1.0);
 		m_fCQBProneChance = CfgF("cqbProneChance", m_fCQBProneChance, 0.0, 1.0);
 		m_iDodgeShotThreshold = CfgI("dodgeShotThreshold", m_iDodgeShotThreshold, 1, 20);
 		m_fDodgeShotWindow = CfgF("dodgeShotWindow", m_fDodgeShotWindow, 1.0, 30.0);
@@ -1390,8 +1410,8 @@ class DCO_GlobalAIComponent: ScriptComponent
 		string sub;
 		for (int bi = s; bi <= e; bi++)
 			sub += g.m_sCfgFactions.Get(bi);
-		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
-		if (!ctx.ImportFromString(sub))
+		JsonLoadContext ctx = new JsonLoadContext();
+		if (!ctx.LoadFromString(sub))
 		{
 			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.ERROR, "-", string.Format("cfg_faction_parse_fail faction=%1 file=%2 (this faction block is skipped)", factionKey, g.m_sServerConfigPath));
 			return false;
@@ -1651,7 +1671,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 			return;
 		}
 
-		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
+		JsonLoadContext ctx = new JsonLoadContext();
 		if (!ctx.LoadFromFile(m_sServerConfigPath))
 		{
 			m_bCfgParseFailed = true;
@@ -1817,7 +1837,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 		if (!dir.IsEmpty())
 			FileIO.MakeDirectory(dir);
 
-		m_CfgSave = new SCR_JsonSaveContext();
+		m_CfgSave = new JsonSaveContext();
 		m_CfgSave.SetMaxDecimalPlaces(6);
 		m_CfgSave.WriteValue("_comment", "DCO Global AI server config. Every key, its default and allowed range are listed in DCO_GlobalConfig_README.txt next to this file. Missing keys are added with the current values at server start (old file copied to .bak).");
 
@@ -1829,7 +1849,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 		WriteConfigReadme();
 		m_aCfgReadme = null;
 
-		string raw = m_CfgSave.ExportToString();
+		string raw = m_CfgSave.SaveToString();
 		m_CfgSave = null;
 		int last = raw.Length() - 1;
 		while (last > 0 && raw.Get(last) != "}")
@@ -1948,6 +1968,8 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	float GetProneChance()				{ return m_fProneChance; }
 	void SetProneChance(float f)		{ m_fProneChance = Math.Clamp(f, 0.0, 1.0); }
+	float GetCrouchChance()				{ return m_fCrouchChance; }
+	void SetCrouchChance(float f)		{ m_fCrouchChance = Math.Clamp(f, 0.0, 1.0); }
 	float GetCQBProneChance()			{ return m_fCQBProneChance; }
 	void SetCQBProneChance(float f)		{ m_fCQBProneChance = Math.Clamp(f, 0.0, 1.0); }
 
@@ -2457,6 +2479,23 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 		string line = string.Format("lod_summary reason=%1 global=%2 vanilla=%3 prevent=%4 full=%5", reason, typename.EnumToString(DCO_EAILODMode, GlobalLODMode()), countVanilla, countPrevent, countFull);
 		DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", line);
+	}
+
+	DCO_ELeadership RollWeightedLeadership()
+	{
+		float total = m_fLeadershipWeightPoor + m_fLeadershipWeightAverage + m_fLeadershipWeightGood + m_fLeadershipWeightInspiring;
+		if (total <= 0.0)
+			return DCO_ELeadership.AVERAGE;
+		float roll = Math.RandomFloat(0.0, total);
+		if (roll < m_fLeadershipWeightPoor)
+			return DCO_ELeadership.POOR;
+		roll -= m_fLeadershipWeightPoor;
+		if (roll < m_fLeadershipWeightAverage)
+			return DCO_ELeadership.AVERAGE;
+		roll -= m_fLeadershipWeightAverage;
+		if (roll < m_fLeadershipWeightGood)
+			return DCO_ELeadership.GOOD;
+		return DCO_ELeadership.INSPIRING;
 	}
 
 	DCO_EAIPersonality RollWeightedPersonality()

@@ -36,6 +36,7 @@ class DCO_VehicleCombat
 			s_mTurretFillNext = new map<IEntity, float>();
 		return s_mTurretFillNext;
 	}
+	protected static ref map<IEntity, int> s_mTurretFillFails;
 	protected static ref array<BaseTarget> s_aTargets;
 	protected static array<BaseTarget> GetTargets()
 	{
@@ -169,15 +170,46 @@ class DCO_VehicleCombat
 		}
 		if (!empty || !ownCrew)
 			return false;
-		GetTurretFillNext().Set(vehicle, now + 10000.0);
+		if (!s_mTurretFillFails)
+			s_mTurretFillFails = new map<IEntity, int>();
+		int fails;
+		s_mTurretFillFails.Find(vehicle, fails);
+		float cooldown = 10000.0;
+		if (fails >= 3)
+			cooldown = 80000.0;
+		else if (fails == 2)
+			cooldown = 40000.0;
+		else if (fails == 1)
+			cooldown = 20000.0;
+		GetTurretFillNext().Set(vehicle, now + cooldown);
+		IEntity deadOcc = empty.GetOccupant();
+		bool ejected;
+		if (deadOcc)
+		{
+			SCR_CompartmentAccessComponent dacc = SCR_CompartmentAccessComponent.Cast(deadOcc.FindComponent(SCR_CompartmentAccessComponent));
+			if (dacc)
+			{
+				vector tm[4];
+				vehicle.GetWorldTransform(tm);
+				tm[3] = DCO_Util.Surface(vehicle.GetOrigin() + tm[0] * 3.0);
+				ejected = dacc.GetOutVehicle_NoDoor(tm, true, true);
+			}
+			DCO_Perf.Count("veh:turret_eject_dead");
+		}
 		bool reserved = empty.IsReserved();
 		bool ok = acc.MoveInVehicle(vehicle, ECompartmentType.TURRET, false, empty);
 		if (ok)
+		{
 			DCO_Perf.Count("veh:turret_fill_ok");
+			s_mTurretFillFails.Remove(vehicle);
+		}
 		else
+		{
 			DCO_Perf.Count("veh:turret_fill_fail");
-		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, DCO_Log.IdVeh(vehicle), string.Format("veh_turret_fill veh=%1 unit=%2 grp=%3 ok=%4 reserved=%5 dead_occ=%6",
-			DCO_Log.IdVeh(vehicle), DCO_Log.IdUnit(selfCh), DCO_Log.IdGroup(grp), DCO_Util.B01(ok), DCO_Util.B01(reserved), DCO_Util.B01(empty.GetOccupant() != null)));
+			s_mTurretFillFails.Set(vehicle, fails + 1);
+		}
+		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, DCO_Log.IdVeh(vehicle), string.Format("veh_turret_fill veh=%1 unit=%2 grp=%3 ok=%4 reserved=%5 dead_occ=%6 ejected=%7 fails=%8",
+			DCO_Log.IdVeh(vehicle), DCO_Log.IdUnit(selfCh), DCO_Log.IdGroup(grp), DCO_Util.B01(ok), DCO_Util.B01(reserved), DCO_Util.B01(deadOcc != null), DCO_Util.B01(ejected), fails));
 		return ok;
 	}
 

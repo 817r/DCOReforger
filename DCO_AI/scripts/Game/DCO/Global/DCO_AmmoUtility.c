@@ -55,17 +55,18 @@ class DCO_AmmoUtility
 		if (!utility || !utility.m_DCOConfig)
 			return 1.0;
 
+		float lm = DCO_Leadership.AmmoMul(DCO_Leadership.OfGroupOf(utility));
 		switch (utility.m_DCOConfig.GetPersonality())
 		{
 			case DCO_EAIPersonality.CAUTIOUS:
-				return 1.6;
+				return 1.6 * lm;
 			case DCO_EAIPersonality.AGGRESSIVE:
-				return 0.7;
+				return 0.7 * lm;
 			case DCO_EAIPersonality.RECKLESS:
-				return 0.4;
+				return 0.4 * lm;
 			default:
-				return 1.0;
+				return lm;
 		}
-		return 1.0;
+		return lm;
 	}
 }

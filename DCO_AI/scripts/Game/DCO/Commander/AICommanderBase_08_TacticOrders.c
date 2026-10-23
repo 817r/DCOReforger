@@ -31,8 +31,10 @@ modded class AICommander_BaseComponent
 	void TacticAppendMove(DCO_GroupUtilityComponent g, vector pos, float worldTime)
 	{
 		SCR_AIWaypoint wp = SpawnMoveWP(pos);
-		if (wp)
-			g.MoveTo(wp, worldTime);
+		if (!wp)
+			return;
+		DCO_SetupMoveWP(wp, g, false);
+		g.MoveTo(wp, worldTime);
 	}
 
 	bool DCO_OrderAllowed(DCO_GroupUtilityComponent g, string what)
@@ -92,12 +94,25 @@ modded class AICommander_BaseComponent
 		if (!wps.IsEmpty())
 			g.MoveToRoute(wps, worldTime);
 		g.SetTask(DCO_EGroupTask.ATTACK, "AICommanderBase:909");
+		DCO_MarkRelentless(g);
 
 		if (g.GetGroupObjective() != obj)
 		{
 			g.SetGroupObjective(obj);
 			obj.SetObjectiveGroup(m_sFactionKey, 1);
 		}
+	}
+
+	void DCO_MarkRelentless(DCO_GroupUtilityComponent g)
+	{
+		if (!g || !g.GetOwner() || !DCO_RelentlessCmd())
+			return;
+		SCR_AIGroupUtilityComponent gu = SCR_AIGroupUtilityComponent.Cast(g.GetOwner().FindComponent(SCR_AIGroupUtilityComponent));
+		if (!gu || gu.m_bDCOCmdRelentless)
+			return;
+		gu.m_bDCOCmdRelentless = true;
+		DCO_Perf.Count("relentless_cmd:group_on");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("relentless_cmd cmd=%1 grp=%2 action=group_on task=%3", m_sCommanderUID, g.GetOwner().GetName(), typename.EnumToString(DCO_EGroupTask, g.GetTask())));
 	}
 
 	void TacticRelease(DCO_GroupUtilityComponent g, CMD_AICommanderObjectiveComponent obj)

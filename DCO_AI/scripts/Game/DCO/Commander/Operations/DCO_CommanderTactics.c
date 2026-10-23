@@ -49,6 +49,7 @@ class DCO_TacticPlan
 	int m_iFlankSide = 1;
 	float m_fIntelConf0;
 	float m_fArrivedAt = -1;
+	vector m_vDCOFollowAt;
 	string m_sLearnCtx;
 	string m_sLearnCtxTR;
 	string m_sLearnVs;
@@ -58,6 +59,9 @@ class DCO_TacticPlan
 	ref map<DCO_GroupUtilityComponent, float> m_mProgressAt = new map<DCO_GroupUtilityComponent, float>();
 	ref set<DCO_GroupUtilityComponent> m_sConsolidated = new set<DCO_GroupUtilityComponent>();
 	float m_fConsolCheckAt;
+	float m_fDCOContactSince = -1;
+	float m_fDCOControl0;
+	int m_iDCOUnits0;
 	ref array<DCO_GroupUtilityComponent> m_aGroups = {};
 	ref array<int> m_aRoles = {};
 	ref array<int> m_aStartUnits = {};
@@ -173,7 +177,6 @@ class DCO_CommanderTactics
 
 	static void Event(string line)
 	{
-		Print("[DCO_Tactics] " + line);
 		DCO_BenchmarkLoggerComponent.Event(line);
 	}
 
@@ -279,6 +282,11 @@ class DCO_CommanderTactics
 		{
 			if ((usable & Bit(t)) == 0)
 				scores.Insert(0);
+			else if (RecentlyFailed(obj, t) && (usable & ~Bit(t)) != 0)
+			{
+				DCO_Perf.Count("tactic:banned_recent");
+				scores.Insert(0);
+			}
 			else if (mett)
 				scores.Insert(DCO_MettTable.Score(cmd, obj, t, s, RecentlyFailed(obj, t)));
 			else
@@ -659,7 +667,7 @@ class DCO_CommanderTactics
 					v += 1;
 				break;
 			case DCO_ETactic.BYPASS:
-				if (s.m_fRatio >= s.m_fMinRatio * 0.7 || !s.m_bOtherObjective || s.m_iGroups < 1)
+				if (s.m_fRatio >= s.m_fMinRatio * 0.7 || !s.m_bOtherObjective || s.m_iGroups < 1 || cmd.DCO_RelentlessCmd())
 					return 0;
 				v = 1.5 + strategy;
 				break;
@@ -931,7 +939,10 @@ class DCO_CommanderTactics
 				{
 					vector fpos = FollowPos(lead.GetOwner().GetOrigin(), objPos);
 					if (cmd.TacticCommit(follow, obj, DCO_EGroupTask.ATTACK, fpos, now))
+					{
 						p.AddGroup(follow, 4, fpos);
+						p.m_vDCOFollowAt = fpos;
+					}
 				}
 				break;
 			}
@@ -1564,6 +1575,9 @@ class DCO_CommanderTactics
 			Consolidate(cmd, p, now);
 		}
 
+		if (StalemateCheck(cmd, p, now))
+			return true;
+
 		switch (p.m_eTactic)
 		{
 			case DCO_ETactic.MOVEMENT_TO_CONTACT: return UpdateMTC(cmd, p, now);
@@ -1683,10 +1697,22 @@ class DCO_CommanderTactics
 	protected void Rechoose(AICommander_BaseComponent cmd, DCO_TacticPlan p, string why)
 	{
 		int freed;
+		string fcSrc;
+		bool friendC = cmd.DCO_FriendContactAtObj(p.m_Obj, fcSrc);
 		foreach (DCO_GroupUtilityComponent g : p.m_aGroups)
 		{
 			if (!g || g.IsInTransport())
 				continue;
+			bool attacking = g.GetTask() == DCO_EGroupTask.ATTACK || g.GetTask() == DCO_EGroupTask.FLANK;
+			float objD = 99999.0;
+			if (g.GetOwner() && p.m_Obj && p.m_Obj.GetOwner())
+				objD = vector.DistanceXZ(g.GetOwner().GetOrigin(), p.m_Obj.GetOwner().GetOrigin());
+			if (attacking && (g.IsInContact() || objD <= 150.0 || friendC))
+			{
+				DCO_Perf.Count("tactic:rechoose_keep_attacker");
+				Event(string.Format("tactic_rechoose_keep obj=%1 grp=%2 why=%3 contact=%4 obj_m=%5 friend=%6", p.m_Obj.GetOwner().GetName(), g.GetOwner().GetName(), why, DCO_Util.B01(g.IsInContact()), Math.Round(objD), DCO_Util.B01(friendC)));
+				continue;
+			}
 			cmd.TacticRelease(g, p.m_Obj);
 			freed++;
 		}
@@ -1694,6 +1720,52 @@ class DCO_CommanderTactics
 		DCO_TacticTest.NoteHandOff(cmd, p.m_Obj, why);
 		Event(string.Format("tactic_phase obj=%1 tactic=%2 phase=rechoose reason=%3 freed=%4", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic), why, freed));
 		cmd.TacticRestart(p.m_Obj);
+	}
+
+	protected bool StalemateCheck(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now)
+	{
+		if (p.m_eTactic == DCO_ETactic.SIEGE || p.m_eTactic == DCO_ETactic.ATTACK_BY_FIRE || p.m_eTactic == DCO_ETactic.MOVEMENT_TO_CONTACT)
+			return false;
+		float limit = DCO_Ctx.TuneForCmd(cmd, "tac.stalemate_s", 300.0);
+		if (limit <= 0 || !p.m_Obj || !p.m_Obj.GetOwner())
+			return false;
+		bool contact;
+		int units;
+		foreach (DCO_GroupUtilityComponent g : p.m_aGroups)
+		{
+			if (!g)
+				continue;
+			units += g.GetUnitCount();
+			if (g.HasState(DCO_EGroupState.IN_CONTACT))
+				contact = true;
+		}
+		if (!contact)
+		{
+			p.m_fDCOContactSince = -1;
+			return false;
+		}
+		float control = p.m_Obj.GetControl(cmd.GetCommanderFactionKey());
+		bool moved = Math.AbsFloat(control - p.m_fDCOControl0) >= 5.0;
+		if (p.m_fDCOContactSince < 0 || moved)
+		{
+			p.m_fDCOContactSince = now;
+			p.m_fDCOControl0 = control;
+			p.m_iDCOUnits0 = units;
+			return false;
+		}
+		if (now - p.m_fDCOContactSince < limit)
+			return false;
+		if (p.m_iDCOUnits0 > 0 && units <= p.m_iDCOUnits0 * 0.75)
+		{
+			p.m_fDCOContactSince = now;
+			p.m_iDCOUnits0 = units;
+			return false;
+		}
+		MarkFailed(p.m_Obj, p.m_eTactic);
+		DCO_Perf.Count("tactic:stalemate");
+		Event(string.Format("tactic_stalemate obj=%1 tactic=%2 contact_s=%3 control=%4 units=%5 action=rechoose_banned", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic), Math.Round(now - p.m_fDCOContactSince), Math.Round(control), units));
+		Rechoose(cmd, p, "stalemate");
+		return true;
 	}
 
 	protected bool UpdateMTC(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now)
@@ -1714,11 +1786,28 @@ class DCO_CommanderTactics
 			return true;
 		}
 
-		if (follow && !follow.HasState(DCO_EGroupState.IN_CONTACT))
+		bool leadClose = lead.GetOwner() && vector.DistanceXZ(lead.GetOwner().GetOrigin(), p.m_Obj.GetOwner().GetOrigin()) <= p.m_Obj.GetRadius() + 150.0;
+		bool followFree = follow && !follow.HasState(DCO_EGroupState.IN_CONTACT) && !p.m_sConsolidated.Contains(follow);
+		if (follow && !followFree)
+			DCO_Perf.Count("tactic:mtc_follow_consolidated");
+		if (followFree && leadClose)
+			DCO_Perf.Count("tactic:mtc_follow_lead_close");
+		if (followFree && !leadClose)
 		{
 			vector fpos = FollowPos(lead.GetOwner().GetOrigin(), p.m_Obj.GetOwner().GetOrigin());
-			if (vector.DistanceXZ(follow.GetOwner().GetOrigin(), fpos) > 80)
+			float movedM = vector.DistanceXZ(fpos, p.m_vDCOFollowAt);
+			SCR_AIGroup fg = SCR_AIGroup.Cast(follow.GetOwner());
+			bool noWp = fg && !fg.GetCurrentWaypoint();
+			bool far = vector.DistanceXZ(follow.GetOwner().GetOrigin(), fpos) > 80;
+			if (far && (movedM > 100.0 || noWp))
+			{
+				p.m_vDCOFollowAt = fpos;
 				cmd.TacticMove(follow, fpos, now);
+				DCO_Perf.Count("tactic:mtc_follow");
+				Event(string.Format("tactic_follow obj=%1 grp=%2 moved_m=%3 no_wp=%4", p.m_Obj.GetLogName(), DCO_Log.IdGroup(AIGroup.Cast(follow.GetOwner())), Math.Round(movedM), DCO_Util.B01(noWp)));
+			}
+			else
+				DCO_Perf.Count("tactic:mtc_follow_hold");
 		}
 		return false;
 	}
@@ -1778,6 +1867,12 @@ class DCO_CommanderTactics
 			Rechoose(cmd, p, "intel");
 			return true;
 		}
+		if (cmd.DCO_RelentlessCmd())
+		{
+			DCO_Perf.Count("relentless_cmd:raid_again");
+			Rechoose(cmd, p, "raid_again");
+			return true;
+		}
 
 		foreach (DCO_GroupUtilityComponent g3 : p.m_aGroups)
 		{
@@ -1833,6 +1928,12 @@ class DCO_CommanderTactics
 
 		if (now - p.m_fStart < 900.0)
 			return false;
+		if (cmd.DCO_RelentlessCmd())
+		{
+			DCO_Perf.Count("relentless_cmd:standoff_rechoose");
+			Rechoose(cmd, p, "standoff_timeout");
+			return true;
+		}
 
 		foreach (DCO_GroupUtilityComponent g2 : p.m_aGroups)
 		{

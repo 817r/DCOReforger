@@ -539,6 +539,8 @@ modded class SCR_AIDangerReaction_Explosion
 {
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
+		if (DCO_CivMode.IsCiv(utility))
+			return DCO_CivMode.OnExplosion(utility, dangerEvent);
 		if (!DCO_GlobalAIComponent.BehaviorOnUtility(utility, DCO_EBehavior.EXPLOSION_REACTIONS))
 			return super.PerformReaction(utility, threatSystem, dangerEvent, dangerEventCount);
 		int pt = DCO_Perf.Begin();

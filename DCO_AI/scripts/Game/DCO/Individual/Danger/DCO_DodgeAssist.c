@@ -211,6 +211,20 @@ class DCO_DodgeAssist
 				ce.Insert(te);
 			}
 		}
+		if (!src && cp.Count() == 1 && u.GetAIAgent())
+		{
+			AIGroup feGrp = u.GetAIAgent().GetParentGroup();
+			vector fePos;
+			float feR;
+			int feN;
+			if (feGrp && DCO_FireEstimate.Get(feGrp, Now(), 15000.0, fePos, feR, feN) && vector.DistanceXZ(fePos, p0) > 10.0)
+			{
+				cp.Insert(fePos);
+				cw.Insert(Weight(u, null, my, fePos));
+				ce.Insert(null);
+				DCO_Perf.Count("dodge:shooter_fire_est");
+			}
+		}
 		int maxN = (int)DCO_Stress.T(u, "dodge.max_shooters", 3.0);
 		while (sp.Count() < maxN && !cp.IsEmpty())
 		{

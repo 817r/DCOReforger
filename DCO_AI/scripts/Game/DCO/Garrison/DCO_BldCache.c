@@ -22,12 +22,12 @@ class DCO_BldCache
 		return "$profile:DCO/BuildingCache/" + Id(prefab) + ".json";
 	}
 
-	protected static ref map<string, ref SCR_JsonLoadContext> s_mPre;
+	protected static ref map<string, ref JsonLoadContext> s_mPre;
 
 	static void Preload()
 	{
 		int t0 = System.GetTickCount();
-		s_mPre = new map<string, ref SCR_JsonLoadContext>();
+		s_mPre = new map<string, ref JsonLoadContext>();
 		array<string> files = SCR_FileIOHelper.FindFiles("$profile:DCO/BuildingCache/", ".json");
 		int failed;
 		if (files)
@@ -37,7 +37,7 @@ class DCO_BldCache
 				string id = FilePath.StripExtension(FilePath.StripPath(pf));
 				if (id.IsEmpty())
 					continue;
-				SCR_JsonLoadContext pctx = new SCR_JsonLoadContext();
+				JsonLoadContext pctx = new JsonLoadContext();
 				if (pctx.LoadFromFile("$profile:DCO/BuildingCache/" + id + ".json"))
 					s_mPre.Set(id, pctx);
 				else
@@ -54,7 +54,7 @@ class DCO_BldCache
 	static DCO_GarrisonPrefabSlots Load(ResourceName prefab, IEntity building)
 	{
 		string file = File(prefab);
-		SCR_JsonLoadContext ctx;
+		JsonLoadContext ctx;
 		bool okFile;
 		if (s_mPre)
 		{
@@ -71,11 +71,11 @@ class DCO_BldCache
 		{
 			if (!FileIO.FileExists(file))
 				return null;
-			ctx = new SCR_JsonLoadContext();
+			ctx = new JsonLoadContext();
 			okFile = ctx.LoadFromFile(file);
 		}
 		if (!ctx)
-			ctx = new SCR_JsonLoadContext();
+			ctx = new JsonLoadContext();
 
 		vector mins, maxs;
 		building.GetBounds(mins, maxs);
@@ -221,7 +221,7 @@ class DCO_BldCache
 			gone.Insert(at);
 		}
 
-		SCR_JsonSaveContext ctx = new SCR_JsonSaveContext();
+		JsonSaveContext ctx = new JsonSaveContext();
 		ctx.WriteValue("version", 2);
 		ctx.WriteValue("prefab", Name(prefab));
 		ctx.WriteValue("bbox", bb);

@@ -307,7 +307,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 				cfg.SetLeashRadius(center, leashR);
 
 			member.m_bFlanking = true;
-			utility.AddAction(new SCR_AIMoveIndividuallyBehavior(utility, this, flankPos, priorityLevel: m_fPriorityLevel.m_Value, radius: 8));
+			utility.AddAction(new DCO_MoveIndividuallyBehavior(utility, this, flankPos, priorityLevel: m_fPriorityLevel.m_Value, radius: 8));
 		}
 
 		m_fFlankUntil_ms = now_ms + 60000.0;

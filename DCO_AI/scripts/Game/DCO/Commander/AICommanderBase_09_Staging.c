@@ -89,7 +89,7 @@ modded class AICommander_BaseComponent
 	        return;
 	    }
 
-	    if (obj.GetRequiredGroupCount() >= 2 && !ObjectiveHasSuppressGroup(obj))
+	    if (obj.GetRequiredGroupCount() >= 2 && !ObjectiveHasSuppressGroup(obj) && DCO_SbfAllowed(obj))
 	    {
 	        DCO_GroupUtilityComponent sbf = FindBestIdleGroupForTask(DCO_EGroupTask.SUPPORT_BY_FIRE, objPos, false, obj);
 	        if (sbf && !sbf.IsPlayerGroup() && CanCommitGroup(sbf))
@@ -162,6 +162,31 @@ modded class AICommander_BaseComponent
 	        }
 	    }
 	    }
+	}
+
+	protected bool DCO_SbfAllowed(CMD_AICommanderObjectiveComponent obj)
+	{
+		bool allowed = m_bUseSynchronizedAttack;
+		if (m_DoctrineRt && m_DoctrineRt.GetPlanner())
+			allowed = m_DoctrineRt.GetPlanner().UseStaging(this, obj, m_bUseSynchronizedAttack);
+		if (!allowed)
+			DCO_Perf.Count("sbf:skip_staging_off");
+		return allowed;
+	}
+
+	void DCO_ReleaseStaleSbf(float worldTime)
+	{
+		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
+		{
+			if (!g || !g.GetOwner() || g.GetTask() != DCO_EGroupTask.SUPPORT_BY_FIRE || g.GetGroupObjective())
+				continue;
+			if (g.IsPlayerGroup() || g.IsInTransport())
+				continue;
+			DCO_Perf.Count("sbf:release_no_obj");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("sbf_release cmd=%1 grp=%2 why=no_objective", m_sCommanderUID, g.GetOwner().GetName()));
+			g.CompleteAllWaypoints();
+			g.SetTask(DCO_EGroupTask.NONE, "AICommanderBase:sbf_no_obj");
+		}
 	}
 
 	protected bool ObjectiveHasSuppressGroup(CMD_AICommanderObjectiveComponent obj)
@@ -367,7 +392,6 @@ modded class AICommander_BaseComponent
 			}
 			int losHits;
 			int losTests;
-			string losAim = "none";
 			vector site = vector.Zero;
 			bool losHere = site != vector.Zero && vector.DistanceXZ(site, pos) <= m_fVehOwSiteTolerance;
 			string action = "hold";
@@ -647,6 +671,85 @@ modded class AICommander_BaseComponent
 		return vector.Zero;
 	}
 
+	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mDCOFriendContactAt = new map<CMD_AICommanderObjectiveComponent, float>();
+	protected ref map<CMD_AICommanderObjectiveComponent, bool> m_mDCOFriendContactRes = new map<CMD_AICommanderObjectiveComponent, bool>();
+	protected ref map<CMD_AICommanderObjectiveComponent, string> m_mDCOFriendContactSrc = new map<CMD_AICommanderObjectiveComponent, string>();
+	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mDCOFriendContactLogAt = new map<CMD_AICommanderObjectiveComponent, float>();
+
+	bool DCO_FriendContactAtObj(CMD_AICommanderObjectiveComponent obj, out string src)
+	{
+		src = "";
+		if (!obj || !obj.GetOwner())
+			return false;
+		float now = DCO_Util.NowS();
+		float at;
+		if (m_mDCOFriendContactAt.Find(obj, at) && now - at < 5.0)
+		{
+			src = m_mDCOFriendContactSrc.Get(obj);
+			return m_mDCOFriendContactRes.Get(obj);
+		}
+		vector op = obj.GetOwner().GetOrigin();
+		float r = obj.GetRadius() + 150.0;
+		bool res = false;
+		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
+		{
+			if (!g || !g.GetOwner() || g.GetUnitCount() <= 0 || !g.HasState(DCO_EGroupState.IN_CONTACT))
+				continue;
+			if (vector.DistanceXZ(g.GetOwner().GetOrigin(), op) > r)
+				continue;
+			src = "group:" + g.GetOwner().GetName();
+			if (g.IsPlayerGroup())
+				src = "player_group:" + g.GetOwner().GetName();
+			res = true;
+			break;
+		}
+		if (!res)
+		{
+			CMD_ThreatResponseComponent tr = GetThreatResponseComponent();
+			if (tr)
+			{
+				foreach (CMD_ThreatEntry t : tr.GetThreats())
+				{
+					if (!t || now - t.m_fLastUpdateTime > 60.0 || vector.DistanceXZ(t.m_vBelievedPos, op) > r)
+						continue;
+					src = "report:" + Math.Round(now - t.m_fLastUpdateTime).ToString() + "s";
+					res = true;
+					break;
+				}
+			}
+		}
+		m_mDCOFriendContactAt.Set(obj, now);
+		m_mDCOFriendContactRes.Set(obj, res);
+		m_mDCOFriendContactSrc.Set(obj, src);
+		if (res)
+		{
+			DCO_Perf.Count("friend_contact:obj");
+			float lastLog;
+			if (!m_mDCOFriendContactLogAt.Find(obj, lastLog) || now - lastLog >= 30.0)
+			{
+				m_mDCOFriendContactLogAt.Set(obj, now);
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("friend_contact cmd=%1 obj=%2 src=%3", m_sCommanderUID, obj.GetLogName(), src));
+			}
+		}
+		return res;
+	}
+
+	void DCO_AssaultGo(CMD_AICommanderObjectiveComponent obj, float worldTime, string why)
+	{
+		if (!obj)
+			return;
+		bool rel;
+		if (m_mAssaultReleased.Find(obj, rel) && rel)
+			return;
+		if (!m_mStagingStartTime.Contains(obj))
+			m_mStagingStartTime.Insert(obj, worldTime);
+		DCO_Perf.Count("assault_go:" + why);
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("assault_go cmd=%1 obj=%2 why=%3", m_sCommanderUID, obj.GetLogName(), why));
+		ReleaseSynchronizedAssault(obj, worldTime);
+		m_mAssaultReleased.Set(obj, true);
+		TrySendAssaultWithSlots(obj, worldTime);
+	}
+
 	protected void CountStagingGroups(CMD_AICommanderObjectiveComponent obj, out int here, out int total, out float maxDist)
 	{
 		here = 0;
@@ -852,6 +955,7 @@ modded class AICommander_BaseComponent
 		{
 			DCO_GroupUtilityComponent grp = toRelease[gi];
 			grp.CompleteAllWaypoints();
+			DCO_MarkRelentless(grp);
 
 			array<SCR_AIWaypoint> searchWPs = {};
 			GenerateSearchWaypoints(objPos, obj.GetRadius(), searchWPs, m_fSearchWpSpacing, approachDeg - 90.0 + sectorSize * gi, sectorSize);
@@ -868,6 +972,7 @@ modded class AICommander_BaseComponent
 		{
 			DCO_GroupUtilityComponent fgrp = toFlank[fi];
 			fgrp.CompleteAllWaypoints();
+			DCO_MarkRelentless(fgrp);
 
 			float flankOwnDeg = ApproachAngle(fgrp.GetOwner().GetOrigin(), objPos) * Math.RAD2DEG;
 			float sideSign    = 1.0;
@@ -954,7 +1059,7 @@ modded class AICommander_BaseComponent
 		float  objRad    = obj.GetRadius();
 		int    slotsLeft = required - obj.GetCurrentAssignedGroupCount(m_sFactionKey);
 
-		if (required >= 2 && !ObjectiveHasSuppressGroup(obj) && onObjAll + 1 < DCO_Force.AttackMax(this))
+		if (required >= 2 && !ObjectiveHasSuppressGroup(obj) && onObjAll + 1 < DCO_Force.AttackMax(this) && DCO_SbfAllowed(obj))
 		{
 			DCO_GroupUtilityComponent suppressGrp = FindBestIdleGroupForTask(DCO_EGroupTask.SUPPORT_BY_FIRE, objCenter, false, obj);
 			if (suppressGrp && !suppressGrp.IsPlayerGroup() && CanCommitGroup(suppressGrp))
@@ -998,6 +1103,7 @@ modded class AICommander_BaseComponent
 						SpawnMoveRoute(assaultGrp, from, entry, worldTime);
 						assaultGrp.MoveToRoute(searchWPs, worldTime);
 						assaultGrp.SetTask(DCO_EGroupTask.ATTACK, "AICommanderBase:6852");
+						DCO_MarkRelentless(assaultGrp);
 						sent = true;
 					}
 				}

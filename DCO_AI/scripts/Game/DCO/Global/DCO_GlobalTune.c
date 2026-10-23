@@ -194,6 +194,25 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("va.recon_soft_per_min", "tune_va_recon_soft_per_min", 8.0, 0.0, 30.0);
 		DCO_TuneCfg("va.recon_apc_per_min", "tune_va_recon_apc_per_min", 5.0, 0.0, 30.0);
 		DCO_TuneCfg("va.recon_ammo_floor", "tune_va_recon_ammo_floor", 0.3, 0.0, 1.0);
+		DCO_TuneCfg("veh.gm_pair", "tune_veh_gm_pair", 0.0, 0.0, 1.0);
+		DCO_TuneCfg("veh.cruise_kmh", "tune_veh_cruise_kmh", 0.0, 0.0, 120.0);
+		DCO_TuneCfg("ammo.magic_chance", "tune_ammo_magic_chance", 0.0, 0.0, 100.0);
+		DCO_TuneCfg("stance.prone_gate", "tune_stance_prone_gate", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("civ.pickup", "tune_civ_pickup", 0.0, 0.0, 1.0);
+		DCO_TuneCfg("civ.mode", "tune_civ_mode", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("civ.caution", "tune_civ_caution", 1.0, 0.0, 2.0);
+		DCO_TuneCfg("civ.hide_s", "tune_civ_hide_s", 180.0, 10.0, 900.0);
+		DCO_TuneCfg("civ.cautious_s", "tune_civ_cautious_s", 240.0, 10.0, 900.0);
+		DCO_TuneCfg("ind.yield_m", "tune_ind_yield_m", 150.0, 0.0, 600.0);
+		DCO_TuneCfg("inv.pos_err", "tune_inv_pos_err", 0.12, 0.0, 0.5);
+		DCO_TuneCfg("inv.age_grow", "tune_inv_age_grow", 1.0, 0.0, 5.0);
+		DCO_TuneCfg("ax.used_pen", "tune_ax_used_pen", 0.25, 0.0, 1.0);
+		DCO_TuneCfg("ax.vary", "tune_ax_vary", 0.3, 0.0, 1.0);
+		DCO_TuneCfg("ax.staging_ttl_s", "tune_ax_staging_ttl_s", 900.0, 60.0, 3600.0);
+		DCO_TuneCfg("hear.snap_bld_m", "tune_hear_snap_bld_m", 25.0, 0.0, 60.0);
+		DCO_TuneCfg("intel.stack_reports", "tune_intel_stack_reports", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("tac.stalemate_s", "tune_tac_stalemate_s", 300.0, 0.0, 1800.0);
+		DCO_TuneCfg("ops.bypass_screen", "tune_ops_bypass_screen", 1.0, 0.0, 1.0);
 	}
 
 	protected void DCO_TuneSyncFIAP()
@@ -520,6 +539,7 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("osc.dir_noreverse_s", "tune_osc_dir_noreverse_s", 15.0, 1.0, 60.0);
 		DCO_TuneCfg("osc.fix_commit", "tune_osc_fix_commit", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("osc.commit_s", "tune_osc_commit_s", 3.0, 0.5, 15.0);
+		DCO_TuneCfg("osc.danger_pass_thr", "tune_osc_danger_pass_thr", 0.85, 0.0, 2.5);
 		DCO_TuneCfg("osc.fix_cover", "tune_osc_fix_cover", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("osc.cover_half_deg", "tune_osc_cover_half_deg", 60.0, 10.0, 180.0);
 		DCO_TuneCfg("osc.fix_short", "tune_osc_fix_short", 1.0, 0.0, 1.0);
@@ -557,6 +577,14 @@ modded class DCO_GlobalAIComponent
 		return DCO_EAIPersonality.RECKLESS;
 	}
 
+	float DCO_GT_LeadershipWeightPoor()				{ return m_fLeadershipWeightPoor; }
+	void DCO_ST_LeadershipWeightPoor(float v)			{ m_fLeadershipWeightPoor = v; }
+	float DCO_GT_LeadershipWeightAverage()			{ return m_fLeadershipWeightAverage; }
+	void DCO_ST_LeadershipWeightAverage(float v)		{ m_fLeadershipWeightAverage = v; }
+	float DCO_GT_LeadershipWeightGood()				{ return m_fLeadershipWeightGood; }
+	void DCO_ST_LeadershipWeightGood(float v)			{ m_fLeadershipWeightGood = v; }
+	float DCO_GT_LeadershipWeightInspiring()			{ return m_fLeadershipWeightInspiring; }
+	void DCO_ST_LeadershipWeightInspiring(float v)	{ m_fLeadershipWeightInspiring = v; }
 	float DCO_GT_PersonalityWeightStandard()			{ return m_fPersonalityWeightStandard; }
 	void DCO_ST_PersonalityWeightStandard(float v)		{ m_fPersonalityWeightStandard = v; }
 

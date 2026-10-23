@@ -170,7 +170,7 @@ class DCO_TransportMissionComponent : ScriptComponent
 			m_PassengerGroup.EndTransport();
 			SetState(DCO_ETransportState.CLAIMED, worldTime);
 			DCO_Perf.Count("veh:pool_kept");
-			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, "-", string.Format("veh_pool_kept grp=%1 veh=%2", m_PassengerGroup.GetOwner(), GetOwner()));
+			DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, "-", string.Format("veh_pool_kept grp=%1 veh=%2", DCO_Log.IdGroup(AIGroup.Cast(m_PassengerGroup.GetOwner())), GetOwner().GetName()));
 			return;
 		}
 		if (!staysMounted)

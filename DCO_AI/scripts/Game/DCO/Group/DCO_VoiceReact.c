@@ -36,7 +36,7 @@ class DCO_VoiceReact
 		st.m_fLastAt = now_ms;
 
 		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("heard_voice grp=%1 speaker=%2 dist=%3 bearing_only=%4 noise=%5 talkers=%6 contact=%7",
-			grp, src, Math.Round(dist), bearingOnly, Math.Round(noise), talkers, contact));
+			DCO_Log.IdGroup(grp), DCO_Log.IdUnit(src), Math.Round(dist), bearingOnly, Math.Round(noise), talkers, contact));
 
 		DCO_GroupUtilityComponent g = DCO_GroupUtilityComponent.Cast(grp.FindComponent(DCO_GroupUtilityComponent));
 		Report(g, st, pos, talkers, bearingOnly, noise, now_ms);

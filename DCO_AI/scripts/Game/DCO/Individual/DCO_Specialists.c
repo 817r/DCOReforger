@@ -166,7 +166,7 @@ class DCO_Specialist
 			existing.m_vPosition.m_Value = pos;
 			return;
 		}
-		u.AddAction(new SCR_AIMoveIndividuallyBehavior(u, null, pos));
+		u.AddAction(new DCO_MoveIndividuallyBehavior(u, null, pos));
 	}
 
 	static void SpecMove(SCR_AIUtilityComponent u, vector pos, vector threat, bool findCover, ECharacterStance stance, float duration, string why, bool crit = false)
@@ -403,7 +403,7 @@ class DCO_Specialist
 			SCR_AIMoveIndividuallyBehavior existing = SCR_AIMoveIndividuallyBehavior.Cast(u.FindActionOfType(SCR_AIMoveIndividuallyBehavior));
 			if (existing)
 				existing.Fail();
-			u.AddAction(new SCR_AIMoveIndividuallyBehavior(u, null, pos, 60.0, ent: leader, radius: 15.0));
+			u.AddAction(new DCO_MoveIndividuallyBehavior(u, null, pos, 60.0, ent: leader, radius: 15.0));
 		}
 		DCO_Perf.Count("spec:sortie_end_" + end);
 		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_sortie_end unit=%1 kind=%2 why=%3 result=%4 dur_s=%5 moved=%6 leader_dist=%7 return=%8 cooldown_s=%9", DCO_Log.IdUnit(me), SortieName(st.m_iSortie), st.m_sSortieWhy, end, Math.Round((now - st.m_fSortieStart_ms) / 1000.0), Math.Round(vector.DistanceXZ(st.m_vSortieFrom, me.GetOrigin())), Math.Round(leaderDist), DCO_Util.B01(back), cd_s));
@@ -430,7 +430,10 @@ class DCO_Specialist
 			UpdateFirePhase(u, st, now);
 		vector gbThreat;
 		bool gbHas = ThreatPos(u, now, gbThreat);
-		if (fighting || gbHas)
+		bool relentless = DCO_Relentless.Unit(u);
+		if (relentless && !InCombat(u))
+			DCO_Perf.Count("relentless:mg_no_bof");
+		if ((fighting || gbHas) && (!relentless || InCombat(u)))
 		{
 			if (!fighting && !DCO_GunnerBehavior.Get(u))
 				DCO_Perf.Count("spec_bt:start_group_target");
@@ -451,7 +454,7 @@ class DCO_Specialist
 		}
 		if (!InCombat(u))
 		{
-			if (TickMGUnseen(u, st, now))
+			if (!relentless && TickMGUnseen(u, st, now))
 				return;
 			if (now - st.m_fBofAt_ms > 45000.0)
 			{
@@ -977,6 +980,11 @@ class DCO_Specialist
 		else if (step == 2)
 			off = 0.5 * w;
 		vector c = DCO_Util.Surface(center + lat * off);
+		if (!DCO_SuppressGate.Allowed(u, c, "traverse"))
+		{
+			st.m_fTravNext_ms = now + 3000.0;
+			return false;
+		}
 		vector bbMin, bbMax;
 		SCR_AISuppressionVolumeBase.CreateSuppressionBox(c, 2.5, 3.0, bbMin, bbMax);
 		SCR_AISuppressionObjectVolumeBox vol = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
@@ -1360,7 +1368,7 @@ class DCO_Specialist
 
 	protected static void UpdateAssistant(SCR_AIUtilityComponent u, DCO_SpecState st, AIGroup grp, IEntity leader, vector enemyPos)
 	{
-		if (!grp)
+		if (!grp || DCO_Relentless.Unit(u))
 			return;
 		IEntity me = u.m_OwnerEntity;
 		if (!st.m_Assistant || !DCO_Util.IsAlive(st.m_Assistant.GetControlledEntity()) || st.m_Assistant.GetParentGroup() != grp)
@@ -1627,7 +1635,7 @@ class DCO_Specialist
 		SCR_AIMoveIndividuallyBehavior existing = SCR_AIMoveIndividuallyBehavior.Cast(u.FindActionOfType(SCR_AIMoveIndividuallyBehavior));
 		if (existing)
 			existing.Fail();
-		u.AddAction(new SCR_AIMoveIndividuallyBehavior(u, null, pos, 75.0, radius: 5.0));
+		u.AddAction(new DCO_MoveIndividuallyBehavior(u, null, pos, 75.0, radius: 5.0));
 		AICharacterMovementComponent move = AICharacterMovementComponent.Cast(u.GetAIAgent().GetMovementComponent());
 		if (move)
 			move.SetMovementTypeWanted(EMovementType.RUN);

@@ -177,7 +177,7 @@ class DCO_MountedOps
 			{
 				st.m_iMode = 3;
 				DCO_Perf.Count("veh:pickup");
-				DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_pickup grp=%1 dist=%2", grp, Math.Round(vector.DistanceXZ(st.m_Vehicle.GetOrigin(), lp))));
+				DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_pickup grp=%1 dist=%2", DCO_Log.IdGroup(grp), Math.Round(vector.DistanceXZ(st.m_Vehicle.GetOrigin(), lp))));
 				MoveGroup(crewGrp, cmd, lp);
 			}
 			if (vector.DistanceXZ(st.m_Vehicle.GetOrigin(), lp) < 40.0)
@@ -355,7 +355,7 @@ class DCO_MountedOps
 			MoveGroup(crewGrp, cmd, DCO_Util.Surface(laager));
 			DCO_Perf.Count("veh:dismount_motor");
 		}
-		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_dismount grp=%1 mech=%2 why=%3 crew=%4 dismounts=%5", grp, st.m_bMech, why, crew.Count(), dismounts.Count()));
+		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_dismount grp=%1 mech=%2 why=%3 crew=%4 dismounts=%5", DCO_Log.IdGroup(grp), st.m_bMech, why, crew.Count(), dismounts.Count()));
 	}
 
 	protected static void Board(SCR_AIGroup grp, DCO_MountedState st, AICommander_BaseComponent cmd, bool front)

@@ -158,6 +158,7 @@ class DCO_Force
 			want = Math.Round(share * avail);
 		want = Math.ClampInt(want, min, max);
 		int n = want;
+		cap = Lift(cmd, key, n, cap);
 		if (cap < n)
 		{
 			LogCap(cmd, key, want, cap);
@@ -175,6 +176,7 @@ class DCO_Force
 		int max;
 		Get(cmd, key, min, share, max);
 		int n = max;
+		cap = Lift(cmd, key, n, cap);
 		if (cap < n)
 		{
 			LogCap(cmd, key, max, cap);
@@ -267,6 +269,22 @@ class DCO_Force
 			return;
 		GetLogAt().Set(k, now);
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("force_skip cmd=%1 mission=%2 avail=%3 min=%4", Uid(cmd), key, avail, min));
+	}
+
+	protected static int Lift(AICommander_BaseComponent cmd, string key, int wanted, int cap)
+	{
+		if (key != "attack" || cap >= wanted || !cmd || !cmd.DCO_RelentlessCmd())
+			return cap;
+		DCO_Perf.Count("force:relentless_lift");
+		string k = Uid(cmd) + ":lift:" + key;
+		float now = DCO_Util.NowS();
+		float last;
+		if (!GetLogAt().Find(k, last) || now - last >= 30.0)
+		{
+			GetLogAt().Set(k, now);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("force_cap cmd=%1 mission=%2 wanted=%3 cap=%4 relentless_lift=1", Uid(cmd), key, wanted, cap));
+		}
+		return wanted;
 	}
 
 	protected static void LogCap(AICommander_BaseComponent cmd, string key, int wanted, int cap)

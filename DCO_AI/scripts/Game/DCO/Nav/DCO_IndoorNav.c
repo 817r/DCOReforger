@@ -51,7 +51,7 @@ class DCO_INavGraph
 	string m_sPrefab;
 	vector m_vMins;
 	vector m_vMaxs;
-	float m_fStep = 1.0;
+	float m_fStep = 0.6;
 	int m_iTraces;
 	float m_fMs;
 	ref array<float> m_aFloors = {};
@@ -220,7 +220,7 @@ class DCO_IndoorNav
 		building.GetBounds(g.m_vMins, g.m_vMaxs);
 		vector size = g.m_vMaxs - g.m_vMins;
 		if (Math.Min(size[0], size[2]) < 8.0)
-			g.m_fStep = 0.75;
+			g.m_fStep = 0.5;
 
 		CollectDoors(g);
 		Sample(g, nav);

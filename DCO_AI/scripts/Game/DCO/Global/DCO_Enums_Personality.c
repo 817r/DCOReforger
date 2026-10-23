@@ -5,3 +5,11 @@ enum DCO_EAIPersonality
 	AGGRESSIVE,
 	RECKLESS
 }
+
+enum DCO_ELeadership
+{
+	POOR,
+	AVERAGE,
+	GOOD,
+	INSPIRING
+}

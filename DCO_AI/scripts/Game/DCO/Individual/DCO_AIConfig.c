@@ -27,9 +27,6 @@ class DCO_AIConfigComponent : ScriptComponent
 	[Attribute("2", UIWidgets.ComboBox, "AI Custom skill in combat", "", ParamEnumArray.FromEnum(DCO_AISKILL) )]
 	protected DCO_AISKILL m_eAISkillDefault;
 
-	[Attribute("", UIWidgets.Auto, "Lock Player UID", "")]
-	protected array<string> m_eLockPlayerUID;
-
 	[Attribute( defvalue: "1", uiwidget: UIWidgets.Slider, desc: "How Suppression Affecting this AI", params: "0 2 0.01" )]
 	protected float m_fSuppressionEffect;
 
@@ -60,6 +57,9 @@ class DCO_AIConfigComponent : ScriptComponent
 	[Attribute("1", UIWidgets.ComboBox, "AI Personality: this AI's combat style, separate from skill.", "", ParamEnumArray.FromEnum(DCO_EAIPersonality))]
 	protected DCO_EAIPersonality m_ePersonality;
 
+	[Attribute("1", UIWidgets.ComboBox, "Leadership: how well this AI steadies and leads his squad when he is the leader.", "", ParamEnumArray.FromEnum(DCO_ELeadership))]
+	protected DCO_ELeadership m_eLeadership;
+
 	[Attribute("0.5", UIWidgets.Slider, "How often this AI throws frag grenades. 0 = never, 0.5 = default, 1 = very often.", params: "0 1 0.01")]
 	protected float m_fGrenadeUsage;
 
@@ -71,6 +71,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	[Attribute("0.5", UIWidgets.Slider, "How often this AI throws smoke to cover movement. 0 = never, 0.5 = default, 1 = very often.", params: "0 1 0.01")]
 	protected float m_fSmokeUsage;
+	protected bool m_bDCOSmokeOverride;
 
 	protected bool m_bHoldPosition = false;
 	protected float m_fDCOAggrApplied = 1.0;
@@ -148,6 +149,7 @@ class DCO_AIConfigComponent : ScriptComponent
 		m_fSuppressionEffect = settings.GetSuppressionEffect();
 		m_fTakeCoverChance = settings.GetTakeCoverChance();
 		m_ePersonality = settings.RollWeightedPersonality();
+		m_eLeadership = settings.RollWeightedLeadership();
 		m_fDodgeChance             = settings.GetDodgeChance();
 		m_fDodgeCooldown           = settings.GetDodgeCooldown();
 		m_fDodgeMaxDist            = settings.GetDodgeMaxDist();
@@ -386,6 +388,17 @@ class DCO_AIConfigComponent : ScriptComponent
 		return m_ePersonality;
 	}
 
+	DCO_ELeadership GetLeadership()
+	{
+		return m_eLeadership;
+	}
+
+	DCO_ELeadership SetLeadership(DCO_ELeadership l)
+	{
+		m_eLeadership = l;
+		return m_eLeadership;
+	}
+
 	float GetGrenadeUsage()
 	{
 		return m_fGrenadeUsage;
@@ -427,7 +440,13 @@ class DCO_AIConfigComponent : ScriptComponent
 	float SetSmokeUsage(float f)
 	{
 		m_fSmokeUsage = Math.Clamp(f, 0.0, 1.0);
+		m_bDCOSmokeOverride = true;
 		return m_fSmokeUsage;
+	}
+
+	bool DCO_SmokeOverridden()
+	{
+		return m_bDCOSmokeOverride;
 	}
 
 	int GetDodgeShotThreshold()
@@ -574,6 +593,14 @@ class DCO_AIConfigComponent : ScriptComponent
 		return DCO_EAIPersonality.STANDARD;
 	}
 
+	static DCO_ELeadership LeadershipOf(SCR_AIUtilityComponent u)
+	{
+		DCO_AIConfigComponent c = Of(u);
+		if (c)
+			return c.GetLeadership();
+		return DCO_ELeadership.AVERAGE;
+	}
+
 	static float SuppressionOf(SCR_AIUtilityComponent u)
 	{
 		DCO_AIConfigComponent c = Of(u);
@@ -632,7 +659,7 @@ class DCO_AIConfigComponent : ScriptComponent
 	static float SmokeUsageOf(SCR_AIUtilityComponent u)
 	{
 		DCO_AIConfigComponent c = Of(u);
-		if (c)
+		if (c && c.DCO_SmokeOverridden())
 			return c.GetSmokeUsage();
 		DCO_GlobalAIComponent g = DCO_GlobalAIComponent.GetForUtility(u);
 		if (g)

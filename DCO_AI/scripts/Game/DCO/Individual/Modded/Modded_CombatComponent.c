@@ -74,6 +74,8 @@ modded class SCR_AICombatComponent
 		vector bent = Vector(dir[0] * Math.Cos(a) - dir[2] * Math.Sin(a), 0, dir[0] * Math.Sin(a) + dir[2] * Math.Cos(a));
 		vector aim = me + bent * (dist * Math.RandomFloat(0.9, 1.1));
 		aim[1] = shooterPos[1];
+		if (!DCO_SuppressGate.Allowed(m_Utility, aim, "retfire"))
+			return;
 		float radius = Math.Map(Math.Min(dist, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE), 0, SCR_AICombatComponent.LONG_RANGE_COMBAT_DISTANCE, 2.0, 10.0);
 		vector bbMin, bbMax;
 		SCR_AISuppressionVolumeBase.CreateSuppressionBox(aim, radius, 3.0, bbMin, bbMax);
@@ -648,11 +650,14 @@ modded class SCR_AICombatComponent
 	{
 		super.Update(timeSliceMs);
 		slicedTime = timeSliceMs;
+		if (DCO_CivMode.IsCiv(m_Utility))
+			return;
 		DCO_UpdateLean();
 		DCO_UpdateReload();
 		DCO_UpdateWindowFire();
 		DCO_UpdateSpecialist();
 		DCO_UpdateRearm();
+		DCO_UpdateProneWatch();
 		DCO_UpdateGrenadeDrop();
 		DCO_UpdateRest();
 		DCO_UpdateStress();
@@ -685,6 +690,11 @@ modded class SCR_AICombatComponent
 		out BaseTarget outPrevTarget, out BaseTarget outCurrentTarget,
 		out bool outRetreatTargetChanged, out bool outCompartmentChanged)
 	{
+		if (DCO_CivMode.IsCiv(m_Utility))
+		{
+			super.EvaluateWeaponAndTarget(outWeaponEvent, outSelectedTargetChanged, outPrevTarget, outCurrentTarget, outRetreatTargetChanged, outCompartmentChanged);
+			return;
+		}
 		float worldTime = GetGame().GetWorld().GetWorldTime();
 		if (worldTime < m_fNextWeaponTargetEvaluation_ms)
 		{
@@ -822,6 +832,12 @@ modded class SCR_AICombatComponent
 		}
 
 		newTarget = DCO_CloseOverride(newTarget, worldTime);
+		newTarget = DCO_CivMode.TargetGate(m_Utility, newTarget);
+		if (newTarget && newTarget.GetTargetEntity() && DCO_GroupUtilityComponent.SimOffFor(newTarget.GetTargetEntity()))
+		{
+			DCO_Perf.Count("tgt:sim_off");
+			newTarget = null;
+		}
 
 		if (newTarget && newTarget != m_SelectedTarget)
 			DCO_BuddyCallout(newTarget, worldTime);
@@ -905,6 +921,11 @@ modded class SCR_AICombatComponent
 
 	override void UpdatePerceptionFactor(PerceptionComponent perceptionComp, SCR_AIThreatSystem threatSystem)
 	{
+		if (DCO_CivMode.IsCiv(m_Utility))
+		{
+			super.UpdatePerceptionFactor(perceptionComp, threatSystem);
+			return;
+		}
 		EAIThreatState threatState = threatSystem.GetState();
 		float perceptionFactor;
 		switch (threatState)
@@ -1160,19 +1181,33 @@ modded class SCR_AICombatComponent
 	{
 		if (!DCO_GlobalAIComponent.BehaviorOnFor(GetOwner(), DCO_EBehavior.REACTION_TIME) || !m_Utility || !m_Utility.m_ThreatSystem || !ownerEntity)
 			return;
-		if (m_Utility.m_ThreatSystem.GetState() != EAIThreatState.SAFE)
+		EAIThreatState stState = m_Utility.m_ThreatSystem.GetState();
+		if (stState == EAIThreatState.THREATENED)
+			return;
+		float stDist = vector.DistanceXZ(ownerEntity.GetOrigin(), impactPos);
+		if (stState != EAIThreatState.SAFE && stDist > 1.0)
 			return;
 		float now = GetGame().GetWorld().GetWorldTime();
-		if (now - m_fDCOStartleAt_ms < 2000.0)
+		float stCd = 2000.0;
+		if (stState != EAIThreatState.SAFE)
+			stCd = 4000.0;
+		if (now - m_fDCOStartleAt_ms < stCd)
 			return;
 		m_fDCOStartleAt_ms = now;
 
 		ECharacterStance stance = ECharacterStance.PRONE;
+		ECharacterStance stFrom = ECharacterStance.STAND;
 		ChimeraCharacter ch = ChimeraCharacter.Cast(ownerEntity);
-		if (Math.RandomFloat01() < 0.5 && ch && ch.GetCharacterController())
-			stance = ch.GetCharacterController().GetStance();
-		DCO_Specialist.CombatMove(m_Utility, ownerEntity.GetOrigin(), impactPos, false, stance, Math.RandomFloat(0.3, 0.7));
+		if (ch && ch.GetCharacterController())
+			stFrom = ch.GetCharacterController().GetStance();
+		if (Math.RandomFloat01() < 0.5)
+			stance = stFrom;
+		float stDur = Math.RandomFloat(0.3, 0.7);
+		DCO_Specialist.CombatMove(m_Utility, ownerEntity.GetOrigin(), impactPos, false, stance, stDur);
 		DCO_Perf.Count("startle");
+		if (stState != EAIThreatState.SAFE)
+			DCO_Perf.Count("flinch:nearmiss");
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(ownerEntity), string.Format("flinch unit=%1 cause=nearmiss threat=%2 stance_from=%3 stance_to=%4 freeze_s=%5 dist=%6", DCO_Log.IdUnit(ownerEntity), typename.EnumToString(EAIThreatState, stState), typename.EnumToString(ECharacterStance, stFrom), typename.EnumToString(ECharacterStance, stance), stDur.ToString(-1, 1), stDist.ToString(-1, 1)));
 	}
 
 	protected BaseTarget DCO_TurretPriority(BaseTarget vanillaPick, float now)
@@ -2356,7 +2391,16 @@ modded class SCR_AICombatComponent
 	protected int m_iDCOPanicPhase;
 	protected float m_fDCOPanicFreezeUntil_ms = -1;
 	protected float m_fDCOPanicNoFireUntil_ms = -1;
+	protected float m_fDCOFlinchNoFireUntil_ms = -1;
+
+	void DCO_FlinchNoFire(float freeze_s)
+	{
+		m_fDCOFlinchNoFireUntil_ms = GetGame().GetWorld().GetWorldTime() + freeze_s * 1000.0;
+	}
 	protected float m_fDCOPanicStart_ms = -1;
+	protected int m_iDCOPanicLegs;
+	protected float m_fDCOPanicLegAt_ms = -1;
+	protected string m_sDCOPanicReaction = "-";
 	protected bool m_bDCOBreak;
 	protected vector m_vDCOBreakFrom;
 	protected float m_fDCOBreakStart_ms = -1;
@@ -2399,10 +2443,23 @@ modded class SCR_AICombatComponent
 		float now = GetGame().GetWorld().GetWorldTime();
 		if (now < m_fDCOPanicFreezeUntil_ms)
 			return true;
+		if (now < m_fDCOFlinchNoFireUntil_ms)
+		{
+			DCO_Perf.Count("flinch:no_fire");
+			return true;
+		}
 		if (now < m_fDCOPanicNoFireUntil_ms && targetDist > 15.0)
 			return true;
 		if (m_bDCOBreak && targetDist > 30.0)
 			return true;
+		DCO_AIMoraleSystem sdMs;
+		if (m_Utility)
+			sdMs = m_Utility.GetMoraleSystem();
+		if (sdMs && targetDist > 30.0 && sdMs.DCO_Shutdown())
+		{
+			DCO_Perf.Count("tm:shutdown_no_fire");
+			return true;
+		}
 		return false;
 	}
 
@@ -2421,7 +2478,11 @@ modded class SCR_AICombatComponent
 		if (next == moraleState.PANIC && prev < moraleState.PANIC)
 		{
 			m_iDCOPanicPhase = 1;
+			m_iDCOPanicLegs = 0;
+			m_fDCOPanicLegAt_ms = -1;
+			m_sDCOPanicReaction = "-";
 			m_fDCOPanicStart_ms = now;
+			DCO_Opp.UnderFireCallout(m_Utility, now);
 			m_fDCOPanicFreezeUntil_ms = now + Math.RandomFloat(DCO_Stress.T(m_Utility, "tm.panic_freeze_min_s", 1.0), DCO_Stress.T(m_Utility, "tm.panic_freeze_max_s", 3.0)) * 1000.0;
 			DCO_EngageInfo pei = DCO_Engage.Info(m_Utility);
 			if (pei && pei.m_fDist >= 0 && pei.m_fDist < DCO_Stress.T(m_Utility, "tm.panic_close_m", 15.0))
@@ -2445,6 +2506,64 @@ modded class SCR_AICombatComponent
 		}
 		if (next < moraleState.BREAK && m_bDCOBreak)
 			DCO_EndBreak(now, "morale_recovered");
+		if (prev == moraleState.PANIC && next < moraleState.PANIC && m_iDCOPanicPhase > 0)
+		{
+			DCO_Perf.Count("tm:panic_end");
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("panic_end unit=%1 dur_s=%2 legs=%3 reaction=%4 to=%5",
+				DCO_Log.IdUnit(m_Utility.m_OwnerEntity), Math.Round((now - m_fDCOPanicStart_ms) / 1000.0), m_iDCOPanicLegs, m_sDCOPanicReaction, typename.EnumToString(moraleState, next)));
+			m_iDCOPanicPhase = 0;
+			m_fDCOPanicFreezeUntil_ms = -1;
+		}
+	}
+
+	protected float m_fDCOProneSince_ms = -1;
+	protected float m_fDCOProneLogAt_ms = -1000;
+	protected float m_fDCOProneCheck_ms;
+
+	protected void DCO_UpdateProneWatch()
+	{
+		if (!m_Utility || !Replication.IsServer() || !m_CharacterController || !ownerEntity)
+			return;
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now < m_fDCOProneCheck_ms)
+			return;
+		m_fDCOProneCheck_ms = now + 2000.0;
+		if (m_CharacterController.GetStance() != ECharacterStance.PRONE)
+		{
+			m_fDCOProneSince_ms = -1;
+			return;
+		}
+		if (m_fDCOProneSince_ms < 0)
+			m_fDCOProneSince_ms = now;
+		if (!m_SelectedTarget || !m_SelectedTarget.GetTargetEntity())
+			return;
+		float unseen = m_SelectedTarget.GetTimeSinceSeen();
+		if (unseen < 8.0 || unseen > 60.0)
+			return;
+		IEntity tgtEnt = m_SelectedTarget.GetTargetEntity();
+		vector tgt = m_SelectedTarget.GetLastSeenPosition() + Vector(0, 1.0, 0);
+		vector base = ownerEntity.GetOrigin();
+		bool losStand = DCO_Util.TraceClear(base + Vector(0, 1.6, 0), tgt, ownerEntity, 0.97, TraceFlags.WORLD | TraceFlags.ENTS, -1, tgtEnt, "t:DCO_ProneLos");
+		bool losProne = DCO_Util.TraceClear(base + Vector(0, 0.4, 0), tgt, ownerEntity, 0.97, TraceFlags.WORLD | TraceFlags.ENTS, -1, tgtEnt, "t:DCO_ProneLos");
+		float proneS = (now - m_fDCOProneSince_ms) / 1000.0;
+		float tgtD = vector.DistanceXZ(base, tgt);
+		if (now - m_fDCOProneLogAt_ms >= 30000.0)
+		{
+			m_fDCOProneLogAt_ms = now;
+			DCO_Perf.Count("prone:watch_sample");
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(ownerEntity), string.Format("perc_los_stance unit=%1 stance=PRONE unseen_s=%2 prone_s=%3 los_stand=%4 los_prone=%5 tgt_d=%6", DCO_Log.IdUnit(ownerEntity), Math.Round(unseen), Math.Round(proneS), DCO_Util.B01(losStand), DCO_Util.B01(losProne), Math.Round(tgtD)));
+		}
+		bool underFire = m_Utility.m_ThreatSystem && m_Utility.m_ThreatSystem.GetState() == EAIThreatState.THREATENED;
+		if (underFire || DCO_Stress.Level(m_Utility) >= 1 || losProne || !losStand)
+			return;
+		if (!DCO_Stance.Request(m_CharacterController, 2, "no_los"))
+		{
+			DCO_Perf.Count("prone:rise_blocked");
+			return;
+		}
+		m_fDCOProneSince_ms = -1;
+		DCO_Perf.Count("prone:rise_no_los");
+		DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(ownerEntity), string.Format("stance_rise unit=%1 why=no_los prone_s=%2 tgt_d=%3 unseen_s=%4", DCO_Log.IdUnit(ownerEntity), Math.Round(proneS), Math.Round(tgtD), Math.Round(unseen)));
 	}
 
 	protected void DCO_UpdateStress()
@@ -2457,6 +2576,8 @@ modded class SCR_AICombatComponent
 		DCO_TrackCoverReach(now);
 		if (m_iDCOPanicPhase == 1 && now >= m_fDCOPanicFreezeUntil_ms)
 			DCO_PanicFlight(now);
+		else if (m_iDCOPanicPhase == 2)
+			DCO_PanicRebolt(now);
 		if (m_bDCOBreak)
 			DCO_BreakStep(now);
 	}
@@ -2528,9 +2649,167 @@ modded class SCR_AICombatComponent
 		m_fDCOFireCalm_ms = -1;
 	}
 
+	protected void DCO_PanicRebolt(float now)
+	{
+		DCO_AIMoraleSystem ms = m_Utility.GetMoraleSystem();
+		if (!ms || ms.GetState() != moraleState.PANIC)
+			return;
+		if (m_fDCOPanicLegAt_ms >= 0 && now - m_fDCOPanicLegAt_ms < 3000.0)
+			return;
+		SCR_CharacterDamageManagerComponent dm = SCR_CharacterDamageManagerComponent.Cast(m_Utility.m_OwnerEntity.FindComponent(SCR_CharacterDamageManagerComponent));
+		bool hit = dm && dm.DCO_HitsWithin(2.0) > 0;
+		if (!hit && DCO_NearMissCount(now, 2000.0) == 0)
+			return;
+		DCO_RelocateBehavior cur = DCO_RelocateBehavior.Cast(m_Utility.FindActionOfType(DCO_RelocateBehavior));
+		if (cur && cur.DCO_Why() == "stress_panic" && !cur.DCO_IsDone())
+			return;
+		if (m_sDCOPanicReaction == "flatten")
+		{
+			m_fDCOPanicLegAt_ms = now;
+			if (!m_CharacterController || m_CharacterController.GetStance() != ECharacterStance.PRONE || DCO_Nav.Busy(m_CharacterController, "panic_roll"))
+				return;
+			m_CharacterController.SetRoll(Math.RandomIntInclusive(1, 2));
+			DCO_Perf.Count("tm:panic_roll");
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("panic_roll unit=%1 hit=%2 near_miss_2s=%3", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), DCO_Util.B01(hit), DCO_NearMissCount(now, 2000.0)));
+			return;
+		}
+		if (m_iDCOPanicLegs >= Math.Round(DCO_Stress.T(m_Utility, "tm.panic_legs_max", 3.0)))
+		{
+			DCO_Perf.Count("tm:panic_rebolt_max");
+			return;
+		}
+		DCO_Perf.Count("tm:panic_rebolt");
+		DCO_PanicFlight(now);
+	}
+
+	protected string DCO_PanicPick()
+	{
+		if (DCO_Stress.T(m_Utility, "tm.panic_variety", 1.0) <= 0)
+			return "cover";
+		int wCover = 35;
+		int wFlat = 25;
+		int wFriend = 25;
+		int wBlind = 15;
+		switch (DCO_AIConfigComponent.PersonalityOf(m_Utility))
+		{
+			case DCO_EAIPersonality.CAUTIOUS:
+			{
+				wCover = 30;
+				wFlat = 35;
+				wFriend = 30;
+				wBlind = 5;
+				break;
+			}
+			case DCO_EAIPersonality.AGGRESSIVE:
+			{
+				wCover = 30;
+				wFlat = 10;
+				wFriend = 15;
+				wBlind = 45;
+				break;
+			}
+			case DCO_EAIPersonality.RECKLESS:
+			{
+				wCover = 25;
+				wFlat = 5;
+				wFriend = 10;
+				wBlind = 60;
+				break;
+			}
+		}
+		int r = Math.RandomInt(0, wCover + wFlat + wFriend + wBlind);
+		if (r < wCover)
+			return "cover";
+		r -= wCover;
+		if (r < wFlat)
+			return "flatten";
+		r -= wFlat;
+		if (r < wFriend)
+			return "friend";
+		return "blind";
+	}
+
+	protected IEntity DCO_PanicFriend(float r, vector enemy)
+	{
+		AIAgent ag = m_Utility.GetAIAgent();
+		if (!ag || !ag.GetParentGroup())
+			return null;
+		array<AIAgent> agents = {};
+		ag.GetParentGroup().GetAgents(agents);
+		vector me = m_Utility.m_OwnerEntity.GetOrigin();
+		IEntity best;
+		float bestD = r;
+		foreach (AIAgent a : agents)
+		{
+			IEntity e = a.GetControlledEntity();
+			if (!e || e == m_Utility.m_OwnerEntity || !DCO_Util.IsAlive(e))
+				continue;
+			float d = vector.DistanceXZ(e.GetOrigin(), me);
+			if (d < 3.0 || d > bestD)
+				continue;
+			if (enemy != vector.Zero && vector.DistanceXZ(e.GetOrigin(), enemy) < vector.DistanceXZ(me, enemy) - 5.0)
+				continue;
+			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
+			if (!ca || !ca.m_UtilityComponent || !ca.m_UtilityComponent.GetMoraleSystem())
+				continue;
+			if (ca.m_UtilityComponent.GetMoraleSystem().GetState() > moraleState.TENSE)
+				continue;
+			best = e;
+			bestD = d;
+		}
+		return best;
+	}
+
+	protected void DCO_PanicBlindFire(vector at, float now)
+	{
+		if (at == vector.Zero || GetCombatMode() == EAIGroupCombatMode.HOLD_FIRE)
+		{
+			DCO_Perf.Count("tm:panic_blind_skip_hold");
+			return;
+		}
+		vector me = m_Utility.m_OwnerEntity.GetOrigin();
+		float dist = vector.Distance(at, me);
+		if (dist < 10.0)
+			return;
+		BaseWeaponComponent rw;
+		int rm;
+		GetSelectedWeapon(rw, rm);
+		if (DCO_AmmoUtility.ShouldAvoidSuppressiveFire(m_Utility, rw))
+		{
+			DCO_Perf.Count("tm:panic_blind_skip_ammo");
+			return;
+		}
+		vector dir = at - me;
+		dir[1] = 0;
+		dir.Normalize();
+		float errDeg = Math.RandomFloat(-1.0, 1.0) * (12.0 + dist / 20.0);
+		float a = errDeg * Math.DEG2RAD;
+		vector bent = Vector(dir[0] * Math.Cos(a) - dir[2] * Math.Sin(a), 0, dir[0] * Math.Sin(a) + dir[2] * Math.Cos(a));
+		vector aim = me + bent * (dist * Math.RandomFloat(0.7, 1.2));
+		aim[1] = at[1];
+		if (!DCO_SuppressGate.Allowed(m_Utility, aim, "panic_blind"))
+		{
+			DCO_Perf.Count("tm:panic_blind_skip_gate");
+			return;
+		}
+		float radius = Math.Clamp(dist * 0.08, 3.0, 12.0);
+		vector bbMin, bbMax;
+		SCR_AISuppressionVolumeBase.CreateSuppressionBox(aim, radius, 3.0, bbMin, bbMax);
+		SCR_AISuppressionObjectVolumeBox volume = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
+		float dur = Math.RandomFloat(1.5, 3.0);
+		SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(m_Utility, null, volume, dur, 1.3);
+		m_Utility.AddAction(supp);
+		m_fDCOPanicNoFireUntil_ms = now + (dur + Math.RandomFloat(5.0, 10.0)) * 1000.0;
+		DCO_Perf.Count("tm:panic_blind_fire");
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("panic_blind_fire unit=%1 dist=%2 err_deg=%3 radius=%4 dur_s=%5",
+			DCO_Log.IdUnit(m_Utility.m_OwnerEntity), Math.Round(dist), Math.Round(errDeg), Math.Round(radius), dur.ToString(-1, 1)));
+	}
+
 	protected void DCO_PanicFlight(float now)
 	{
 		m_iDCOPanicPhase = 2;
+		m_iDCOPanicLegs++;
+		m_fDCOPanicLegAt_ms = now;
 		float freeze_s = (m_fDCOPanicFreezeUntil_ms - m_fDCOPanicStart_ms) / 1000.0;
 		m_fDCOPanicNoFireUntil_ms = now + Math.RandomFloat(DCO_Stress.T(m_Utility, "tm.panic_nofire_min_s", 10.0), DCO_Stress.T(m_Utility, "tm.panic_nofire_max_s", 30.0)) * 1000.0;
 		IEntity me = m_Utility.m_OwnerEntity;
@@ -2559,10 +2838,22 @@ modded class SCR_AICombatComponent
 		string result = "cover";
 		float dist = 0;
 		bool away = threat != vector.Zero;
+		bool smoke;
+		string pick = "-";
+		DCO_AIMoraleSystem pms = m_Utility.GetMoraleSystem();
+		bool shutdown = pms && pms.DCO_Shutdown();
 		if (band == "close")
 		{
 			result = "fight";
 			m_fDCOPanicNoFireUntil_ms = now;
+		}
+		else if (shutdown)
+		{
+			result = "shutdown_hold";
+			m_sDCOPanicReaction = "flatten";
+			m_fDCOPanicNoFireUntil_ms = now + Math.RandomFloat(DCO_Stress.T(m_Utility, "tm.panic_mid_nofire_min_s", 5.0), DCO_Stress.T(m_Utility, "tm.panic_mid_nofire_max_s", 10.0)) * 1000.0;
+			if (m_CharacterController && !DCO_Nav.Busy(m_CharacterController, "panic_prone") && m_CharacterController.GetStance() != ECharacterStance.PRONE)
+				DCO_Stance.Request(m_CharacterController, 3, "panic");
 		}
 		else if (m_Utility.m_CombatMoveState && m_Utility.m_CombatMoveState.IsInValidCover())
 		{
@@ -2579,6 +2870,8 @@ modded class SCR_AICombatComponent
 		else
 		{
 			bool mid = band == "mid";
+			pick = DCO_PanicPick();
+			m_sDCOPanicReaction = pick;
 			float coverMax = DCO_Stress.T(m_Utility, "tm.panic_flight_max_m", 30.0);
 			if (mid)
 			{
@@ -2587,44 +2880,102 @@ modded class SCR_AICombatComponent
 				if (m_CharacterController && !DCO_Nav.Busy(m_CharacterController, "panic_prone") && m_CharacterController.GetStance() != ECharacterStance.PRONE)
 					DCO_Stance.Request(m_CharacterController, 3, "panic");
 			}
+			bool moving = pick == "cover" || pick == "friend";
+			if (moving && Math.RandomFloat01() < DCO_Stress.T(m_Utility, "tm.panic_smoke", 0.5) && DCO_SmokeUtility.TryDeploySmokeForRetreat(m_Utility, threat))
+			{
+				smoke = true;
+				DCO_Perf.Count("tm:panic_smoke");
+			}
 			vector pos;
 			DCO_RelocateBehavior b;
-			bool found = DCO_Stress.FindCover(me, threat, coverMax, pos);
-			if (found && nearest != vector.Zero && vector.DistanceXZ(pos, nearest) < vector.DistanceXZ(me.GetOrigin(), nearest) - 2.0)
+			if (pick == "flatten")
 			{
-				found = false;
-				DCO_Perf.Count("tm:panic_cover_toward_enemy");
+				result = "flatten";
+				m_fDCOPanicNoFireUntil_ms = now + Math.RandomFloat(DCO_Stress.T(m_Utility, "tm.panic_mid_nofire_min_s", 5.0), DCO_Stress.T(m_Utility, "tm.panic_mid_nofire_max_s", 10.0)) * 1000.0;
+				if (m_CharacterController && !DCO_Nav.Busy(m_CharacterController, "panic_prone") && m_CharacterController.GetStance() != ECharacterStance.PRONE)
+					DCO_Stance.Request(m_CharacterController, 3, "panic");
 			}
-			if (found)
+			else if (pick == "blind")
 			{
-				dist = vector.DistanceXZ(me.GetOrigin(), pos);
-				if (mid)
-				{
-					result = "crawl_cover";
-					b = DCO_RelocateBehavior.Start(m_Utility, pos, threat, true, ECharacterStance.PRONE, dist * 1.5 + 4.0, "stress_panic");
-					if (b)
-						b.DCO_SetMove(ECharacterStance.PRONE, EMovementType.WALK, 3.0, true);
-				}
-				else
-				{
-					b = DCO_RelocateBehavior.Start(m_Utility, pos, threat, true, ECharacterStance.PRONE, dist / 4.0 + 4.0, "stress_panic");
-					if (b)
-						b.DCO_SetMove(ECharacterStance.STAND, EMovementType.SPRINT, 3.0, true);
-				}
+				result = "blind_fire";
+				DCO_PanicBlindFire(threat, now);
+				if (m_CharacterController && !DCO_Nav.Busy(m_CharacterController, "panic_prone") && m_CharacterController.GetStance() != ECharacterStance.PRONE)
+					DCO_Stance.Request(m_CharacterController, 3, "panic");
 			}
 			else
 			{
-				result = "crawl";
-				dist = Math.RandomFloat(4.0, 8.0);
-				pos = DCO_Stress.AwayPoint(me, threat, dist, 40.0);
-				b = DCO_RelocateBehavior.Start(m_Utility, pos, threat, true, ECharacterStance.PRONE, dist * 1.5 + 4.0, "stress_panic");
-				if (b)
-					b.DCO_SetMove(ECharacterStance.PRONE, EMovementType.WALK, 8.0, true);
+				bool found = false;
+				if (pick == "friend")
+				{
+					float friendR = DCO_Stress.T(m_Utility, "tm.panic_friend_m", 40.0);
+					if (mid)
+						friendR = Math.Min(friendR, 15.0);
+					IEntity fr = DCO_PanicFriend(friendR, nearest);
+					if (fr)
+					{
+						vector toMe = me.GetOrigin() - fr.GetOrigin();
+						toMe[1] = 0;
+						pos = fr.GetOrigin();
+						if (toMe.Length() > 2.0)
+						{
+							toMe.Normalize();
+							pos = DCO_Util.Surface(fr.GetOrigin() + toMe * 2.0);
+						}
+						found = true;
+						result = "run_friend";
+						if (mid)
+							result = "crawl_friend";
+					}
+					else
+						DCO_Perf.Count("tm:panic_friend_none");
+				}
+				if (!found)
+				{
+					found = DCO_Stress.FindCover(me, threat, coverMax, pos);
+					if (found && nearest != vector.Zero && vector.DistanceXZ(pos, nearest) < vector.DistanceXZ(me.GetOrigin(), nearest) - 2.0)
+					{
+						found = false;
+						DCO_Perf.Count("tm:panic_cover_toward_enemy");
+					}
+					if (found)
+					{
+						result = "cover";
+						if (mid)
+							result = "crawl_cover";
+					}
+				}
+				if (found)
+				{
+					dist = vector.DistanceXZ(me.GetOrigin(), pos);
+					if (mid)
+					{
+						b = DCO_RelocateBehavior.Start(m_Utility, pos, threat, true, ECharacterStance.PRONE, dist * 1.5 + 4.0, "stress_panic");
+						if (b)
+							b.DCO_SetMove(ECharacterStance.PRONE, EMovementType.WALK, 3.0, true);
+					}
+					else
+					{
+						b = DCO_RelocateBehavior.Start(m_Utility, pos, threat, true, ECharacterStance.PRONE, dist / 4.0 + 4.0, "stress_panic");
+						if (b)
+							b.DCO_SetMove(ECharacterStance.STAND, EMovementType.SPRINT, 3.0, true);
+					}
+				}
+				else
+				{
+					result = "crawl";
+					dist = Math.RandomFloat(4.0, 8.0);
+					pos = DCO_Stress.AwayPoint(me, threat, dist, 40.0);
+					b = DCO_RelocateBehavior.Start(m_Utility, pos, threat, true, ECharacterStance.PRONE, dist * 1.5 + 4.0, "stress_panic");
+					if (b)
+						b.DCO_SetMove(ECharacterStance.PRONE, EMovementType.WALK, 8.0, true);
+				}
+				if (!b)
+					result = "no_relocate";
 			}
-			if (!b)
-				result = "no_relocate";
 		}
 		DCO_Perf.Count("tm:panic_flight_" + result);
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("panic_leg unit=%1 leg=%2 pick=%3 smoke=%4 shutdown=%5 result=%6",
+			DCO_Log.IdUnit(me), m_iDCOPanicLegs, pick, DCO_Util.B01(smoke), DCO_Util.B01(shutdown), result));
 		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("panic_flight unit=%1 freeze_s=%2 dist=%3 away=%4 no_fire_s=%5 result=%6 band=%7 enemy_d=%8 known=%9",
 			DCO_Log.IdUnit(me), freeze_s.ToString(-1, 1), Math.Round(dist), DCO_Util.B01(away), Math.Round((m_fDCOPanicNoFireUntil_ms - now) / 1000.0), result, band, Math.Round(enemyD), known));
 	}
@@ -2844,6 +3195,20 @@ modded class SCR_AICombatComponent
 		return m_bDCOProneRoll;
 	}
 
+	protected float m_fDCOCrouchRollUntil_ms;
+	protected bool m_bDCOCrouchRoll;
+
+	bool DCO_CrouchRoll(float chance)
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now >= m_fDCOCrouchRollUntil_ms)
+		{
+			m_bDCOCrouchRoll = Math.RandomFloat01() < chance;
+			m_fDCOCrouchRollUntil_ms = now + 10000.0;
+		}
+		return m_bDCOCrouchRoll;
+	}
+
 	protected float m_fDCOCQBProneRollUntil_ms;
 	protected bool m_bDCOCQBProneRoll;
 
@@ -2874,7 +3239,7 @@ modded class SCR_AICombatComponent
 		bool lead = DCO_Stress.LeaderNear(m_Utility, 20.0);
 		bool iso = DCO_Stress.Isolated(m_Utility, 30.0, false);
 		if (lead)
-			rec *= 0.6;
+			rec *= DCO_Leadership.PinRecMul(DCO_Leadership.OfGroupOf(m_Utility));
 		if (iso)
 			rec *= 1.5;
 		if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))

@@ -173,6 +173,44 @@ class DCO_SquadLODAttribute : SCR_BaseFloatValueHolderEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_SquadSimModeAttribute : SCR_BaseFloatValueHolderEditorAttribute
+{
+	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
+	{
+		DCO_GroupUtilityComponent g = DCO_SquadCmdBoolAttribute.GetSquad(item);
+		if (!g)
+			return null;
+		return SCR_BaseEditorAttributeVar.CreateInt(g.GetSimMode());
+	}
+
+	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
+	{
+		DCO_GroupUtilityComponent g = DCO_SquadCmdBoolAttribute.GetSquad(item);
+		if (g && var)
+			g.SetSimMode(var.GetInt());
+	}
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_SquadSpeedLimitAttribute : SCR_BaseValueListEditorAttribute
+{
+	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
+	{
+		DCO_GroupUtilityComponent g = DCO_SquadCmdBoolAttribute.GetSquad(item);
+		if (!g)
+			return null;
+		return SCR_BaseEditorAttributeVar.CreateFloat(g.GetCruiseGM());
+	}
+
+	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
+	{
+		DCO_GroupUtilityComponent g = DCO_SquadCmdBoolAttribute.GetSquad(item);
+		if (g && var)
+			g.SetCruiseGM(var.GetFloat());
+	}
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_SquadRetreatWhenAttribute : SCR_BaseFloatValueHolderEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)

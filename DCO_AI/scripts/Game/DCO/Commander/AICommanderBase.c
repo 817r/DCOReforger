@@ -246,8 +246,17 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("", UIWidgets.Auto, desc: "Faction Key of the Commander.", category: "Commander 01. Identity")]
 	protected FactionKey m_sFactionKey;
 
-	[Attribute("3.0", UIWidgets.Auto, "Number of the Objective Can be processed at the same time", category: "Commander 04. Attack")]
+	[Attribute("-1", UIWidgets.Auto, "Max objectives this commander works on at once (attack, staging, recon). -1 = follow the doctrine preset. 1-10 = this value overrides the doctrine.", category: "Commander 04. Attack")]
 	protected int m_fObjectiveAtTheSameTime;
+
+	[Attribute("2", UIWidgets.Slider, "Reserve employment. 0 = reserves wait where they are. 1 = one QRF is kept near the staging area or the threatened objective. 2 = QRF plus link patrols between own objectives, flank observation posts, a counter-attack ambush and local defence of newly captured objectives. At most half of the free reserves are used.", "0 2 1", category: "Commander 04. Attack")]
+	protected int m_iReserveEmployment;
+
+	[Attribute("0.4", UIWidgets.Slider, "Intel confidence needed before the enemy strength at an objective counts as known. Below it the force band is Unknown and the doctrine falls back to recon, waiting or movement to contact. Contact reports give 0.2 to 1.0 depending on distance; several squads reporting the same enemy add up.", "0.1 0.9 0.05", category: "Commander 04. Attack")]
+	protected float m_fIntelBandConf;
+
+	[Attribute("900", UIWidgets.Slider, "Seconds an attack attempt on an objective may run without capturing it before it counts as failed. A failed attempt records its approach bearing, raises the force needed next time and, after three failures, puts the objective on cooldown.", "300 3600 60", category: "Commander 04. Attack")]
+	protected float m_fAttemptTimeout_s;
 
 	[Attribute("1", UIWidgets.CheckBox, "Use Synchronized Attack (groups gather at staging until full or timeout, then attack together). Off = previous behavior (each group goes to the objective as soon as it gets a slot).", category: "Commander 04. Attack")]
 	protected bool m_bUseSynchronizedAttack;
@@ -407,24 +416,26 @@ class AICommander_BaseComponent : ScriptComponent
 
 	void SetObjectivesAtOnce(float value)
 	{
-		m_fObjectiveAtTheSameTime = Math.Clamp(Math.Round(value), 1, 10);
-		m_bDCOObjCapGM = true;
+		m_fObjectiveAtTheSameTime = Math.Clamp(Math.Round(value), -1, 10);
+		if (m_fObjectiveAtTheSameTime == 0)
+			m_fObjectiveAtTheSameTime = -1;
+		m_bDCOObjCapGM = m_fObjectiveAtTheSameTime > 0;
 		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("obj_cap_set cmd=%1 value=%2 src=gm", m_sCommanderUID, m_fObjectiveAtTheSameTime));
 	}
 
 	int DCO_ObjectiveCap()
 	{
 		int doc = DCO_Force.Max(this, "objectives");
-		bool explicit = m_bDCOObjCapGM || (m_iDCOObjCapInit >= 0 && m_fObjectiveAtTheSameTime != m_iDCOObjCapInit);
-		int cap = Math.Min(doc, m_fObjectiveAtTheSameTime);
+		bool explicit = m_fObjectiveAtTheSameTime > 0;
+		int cap = doc;
 		string src = "doctrine";
 		if (explicit)
 		{
 			cap = m_fObjectiveAtTheSameTime;
 			src = "commander_setting";
 		}
-		else if (m_fObjectiveAtTheSameTime < doc)
-			src = "commander_setting";
+		if (cap < 1)
+			cap = 1;
 		string key = cap.ToString() + "|" + src;
 		if (key != m_sDCOObjCapLog)
 		{
@@ -1313,6 +1324,14 @@ class AICommander_BaseComponent : ScriptComponent
 
 	[Attribute("60", UIWidgets.EditBox, "How long (s) the deception runs before the main effort is released.", category: "Commander 09. Defense Ops (Ambush, OP, Counter)")]
 	protected float m_fFeintLead;
+
+	[Attribute("0", UIWidgets.CheckBox, "Relentless offensive: this commander never drops an objective. No doctrine wait or skip, no abort for lack of forces, objective cooldowns capped at 60 s, failed tactics are swapped instead of abandoned, no retreat below 70 percent losses, feints run even when weaker, and released attack groups fight with the Relentless squad rules. The Max attack groups limit is lifted while this is on. In defensive mode: no doctrine withdraw, fallback to the final line instead, garrisons hold when attacked, counterattacks fire sooner, a QRF group covers the objectives, retakes use search arcs plus a support-by-fire group. Commanders with trait aggression 1.5 or higher get this automatically.", category: "Commander 04. Attack")]
+	protected bool m_bDCORelentless;
+
+	bool DCO_RelentlessAttr()
+	{
+		return m_bDCORelentless;
+	}
 
 	protected ref DCO_CommanderDefense m_Defense = new DCO_CommanderDefense();
 	DCO_CommanderDefense GetDefense()			{ return m_Defense; }

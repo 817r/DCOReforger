@@ -148,6 +148,8 @@ class DCO_SmokeDrill
 			}
 			if (DCO_SmokeField.Inside(m.m_OwnerEntity.GetOrigin(), 1.2))
 				continue;
+			if (!DCO_SuppressGate.Allowed(m, cloud.m_vPos, "smoke"))
+				continue;
 			vector bbMin, bbMax;
 			SCR_AISuppressionVolumeBase.CreateSuppressionBox(cloud.m_vPos + vector.Up, Math.Max(r, 3.0), 3, bbMin, bbMax);
 			SCR_AISuppressionObjectVolumeBox vol = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);

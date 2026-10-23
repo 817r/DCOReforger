@@ -33,6 +33,14 @@ class DCO_CQBActivity : SCR_AIActivityBase
 	protected ref map<SCR_ChimeraAIAgent, DCO_CQBMemberBehavior> m_mOrd = new map<SCR_ChimeraAIAgent, DCO_CQBMemberBehavior>();
 	protected ref map<SCR_ChimeraAIAgent, vector> m_mSpot = new map<SCR_ChimeraAIAgent, vector>();
 	protected ref array<vector> m_aTried = {};
+	protected float m_fDCOStackFireAt_ms;
+	protected bool m_bDCOStackSwitched;
+
+	void NoteStackUnderFire(float now_ms)
+	{
+		if (m_ePhase == DCO_ECQBPhase.STACK && m_fDCOStackFireAt_ms <= 0)
+			m_fDCOStackFireAt_ms = now_ms;
+	}
 	protected DCO_ECQBPhase m_ePhase = DCO_ECQBPhase.PLAN;
 	protected int m_iPair;
 	protected int m_iRoom = -1;
@@ -173,6 +181,179 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		if (!info.IsEmpty())
 			line += " " + info;
 		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", line);
+	}
+
+	protected ref array<float> m_aBelief = {};
+	protected float m_fBeliefAt_ms;
+	protected int m_iBeliefTop = -1;
+	protected int m_iRestacks;
+	protected int m_iResweeps;
+	protected float m_fEvidenceAt_ms = -1;
+	protected vector m_vEvidence;
+
+	protected int DCO_RoomNearest(vector pos)
+	{
+		int bestRoom = -1;
+		float bestD = 99999.0;
+		foreach (int i, DCO_CQBRoom r : m_aRooms)
+		{
+			if (r.m_iState != 0)
+				continue;
+			float d = vector.DistanceXZ(r.m_vCenter, pos) + Math.AbsFloat(r.m_vCenter[1] - pos[1]) * 3.0;
+			if (d < bestD)
+			{
+				bestD = d;
+				bestRoom = i;
+			}
+		}
+		return bestRoom;
+	}
+
+	protected void DCO_Believe(int room, float w, string src, float now)
+	{
+		if (room < 0 || room >= m_aBelief.Count() || w <= m_aBelief[room])
+			return;
+		m_aBelief[room] = w;
+		DCO_Perf.Count("cqb:belief_" + src);
+	}
+
+	protected void DCO_UpdateBelief(float now)
+	{
+		if (now - m_fBeliefAt_ms < 1000.0)
+			return;
+		m_fBeliefAt_ms = now;
+		if (m_aBelief.Count() != m_aRooms.Count())
+		{
+			m_aBelief.Clear();
+			foreach (DCO_CQBRoom r0 : m_aRooms)
+				m_aBelief.Insert(0);
+		}
+		if (m_Nav)
+			m_Nav.m_aBelief = m_aBelief;
+		for (int i = 0; i < m_aBelief.Count(); i++)
+		{
+			m_aBelief[i] = m_aBelief[i] * 0.98;
+			if (m_aRooms[i].m_iState != 0)
+				m_aBelief[i] = 0;
+		}
+		if (!m_Utility || !m_Utility.m_Perception || !m_Building || !m_Utility.m_Owner)
+			return;
+		IEntity leader = m_Utility.m_Owner.GetLeaderEntity();
+		PerceptionManager pm = GetGame().GetPerceptionManager();
+		float pmNow = 0;
+		if (pm)
+			pmNow = pm.GetTime();
+		foreach (SCR_AITargetInfo t : m_Utility.m_Perception.m_aTargets)
+		{
+			if (!t || !t.m_Entity || !DCO_Util.IsAlive(t.m_Entity))
+				continue;
+			float age = pmNow - t.m_fTimestamp;
+			if (age > 90.0)
+				continue;
+			string method;
+			if (SCR_CoverManagerComponent.DCO_GetBuildingAtPos(t.m_vWorldPos, leader, method) != m_Building)
+				continue;
+			m_fEvidenceAt_ms = now;
+			m_vEvidence = t.m_vWorldPos;
+			DCO_Believe(DCO_RoomNearest(t.m_vWorldPos), 1.0 - age / 90.0, "seen", now);
+		}
+		vector est;
+		float rad;
+		int cnt;
+		float conf = 1.0;
+		string estSrc;
+		if (DCO_FireEstimate.GetQ(m_Utility.m_Owner, now, 25000.0, est, rad, cnt, conf, estSrc))
+		{
+			string hm;
+			if (SCR_CoverManagerComponent.DCO_GetBuildingAtPos(est, leader, hm) == m_Building)
+			{
+				m_fEvidenceAt_ms = now;
+				m_vEvidence = est;
+				DCO_Believe(DCO_RoomNearest(est), 0.6 * Math.Clamp(conf, 0.3, 1.0), "heard", now);
+			}
+		}
+		int top = -1;
+		float topV = 0.05;
+		for (int j = 0; j < m_aBelief.Count(); j++)
+		{
+			if (m_aBelief[j] > topV)
+			{
+				topV = m_aBelief[j];
+				top = j;
+			}
+		}
+		if (m_Nav)
+		{
+			m_Nav.m_iBeliefFloor = -1;
+			if (top >= 0)
+				m_Nav.m_iBeliefFloor = m_aRooms[top].m_iFloor;
+			else if (m_fEvidenceAt_ms >= 0 && now - m_fEvidenceAt_ms < 30000.0)
+			{
+				int evRoom = DCO_RoomNearestAny(m_vEvidence);
+				if (evRoom >= 0)
+					m_Nav.m_iBeliefFloor = m_aRooms[evRoom].m_iFloor;
+			}
+		}
+		if (top != m_iBeliefTop)
+		{
+			m_iBeliefTop = top;
+			string floorTxt = "-";
+			if (top >= 0)
+				floorTxt = m_aRooms[top].m_iFloor.ToString();
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_belief grp=%1 room=%2 floor=%3 value=%4 rooms=%5", Grp(), top, floorTxt, topV.ToString(-1, 2), m_aBelief.Count()));
+		}
+	}
+
+	protected int DCO_RoomNearestAny(vector pos)
+	{
+		int bestRoom = -1;
+		float bestD = 99999.0;
+		foreach (int i, DCO_CQBRoom r : m_aRooms)
+		{
+			float d = vector.DistanceXZ(r.m_vCenter, pos) + Math.AbsFloat(r.m_vCenter[1] - pos[1]) * 3.0;
+			if (d < bestD)
+			{
+				bestD = d;
+				bestRoom = i;
+			}
+		}
+		return bestRoom;
+	}
+
+	protected float DCO_RoomBelief(int room)
+	{
+		if (room < 0 || room >= m_aBelief.Count())
+			return 0;
+		return m_aBelief[room];
+	}
+
+	protected void OrderContain(int room)
+	{
+		if (m_aRear.IsEmpty())
+			return;
+		vector side = Vector(m_vDir[2], 0, -m_vDir[0]);
+		vector look = m_vDoor + Vector(0, 1.2, 0);
+		int n = 0;
+		foreach (int i, SCR_ChimeraAIAgent r : m_aRear)
+		{
+			if (!r || !r.m_UtilityComponent)
+				continue;
+			float sign = 1.0;
+			if (i % 2 == 1)
+				sign = -1.0;
+			vector spot = DCO_Util.Surface(m_vDoor - m_vDir * 6.0 + side * (2.5 * sign));
+			m_mSpot.Set(r, spot);
+			Order(r, new DCO_CQBSupportBehavior(r.m_UtilityComponent, this, spot, look, ECharacterStance.CROUCH, EMovementType.RUN, 300.0, "contain_" + (i + 1).ToString()));
+			n++;
+		}
+		DCO_Perf.Count("cqb:contain");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_contain grp=%1 room=%2 floor=%3 belief=%4 units=%5", Grp(), room, m_aRooms[room].m_iFloor, DCO_RoomBelief(room).ToString(-1, 2), n));
+	}
+
+	protected int DCO_PriorityRoom()
+	{
+		DCO_UpdateBelief(Now());
+		return m_iBeliefTop;
 	}
 
 	protected string GroupName(SCR_AIGroupUtilityComponent u)
@@ -494,10 +675,28 @@ class DCO_CQBActivity : SCR_AIActivityBase
 			return false;
 		}
 		CheckCasualties();
-		if (m_aEntry.IsEmpty() || m_iLosses >= m_iAbortLosses)
+		if (m_aEntry.IsEmpty())
 		{
 			Abort("losses");
 			return false;
+		}
+		if (m_iLosses >= m_iAbortLosses)
+		{
+			if (m_iRestacks >= 1 || m_aEntry.Count() < 2)
+			{
+				Abort("losses");
+				return false;
+			}
+			m_iRestacks++;
+			m_iLosses = 0;
+			m_fEnemyAt_ms = Now();
+			DCO_Perf.Count("cqb:restack");
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_restack grp=%1 room=%2 entry=%3 rear=%4 why=losses_frag_next", Grp(), m_iRoom, m_aEntry.Count(), m_aRear.Count()));
+			if (m_ePhase == DCO_ECQBPhase.ROOMS && m_iRoom >= 0)
+			{
+				OrderStack();
+				SetStep(1);
+			}
 		}
 		if (m_fDeadline_ms > 0 && Now() > m_fDeadline_ms)
 		{
@@ -575,6 +774,8 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		}
 		m_Nav.FillRooms(m_aRooms);
 		m_vEntry = m_Nav.EntryPos();
+		m_fDCOStackFireAt_ms = 0;
+		m_bStackOrdered = false;
 		vector outv = TeamCenter() - m_vEntry;
 		outv[1] = 0;
 		if (outv.LengthSq() < 0.01)
@@ -649,6 +850,16 @@ class DCO_CQBActivity : SCR_AIActivityBase
 			SetStep(0);
 			return ENodeResult.SUCCESS;
 		}
+		if (m_fDCOStackFireAt_ms > 0 && age > 30000.0 && !m_bDCOStackSwitched && at < need)
+		{
+			m_bDCOStackSwitched = true;
+			m_aTried.Insert(m_vEntry);
+			DCO_Perf.Count("cqb:stack_switch");
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_stack_switch grp=%1 from=%2 why=under_fire age_s=%3 arrived=%4", Grp(), DCO_Util.XZ(m_vEntry), Math.Round(age * 0.001), at));
+			SetPhase(DCO_ECQBPhase.PLAN);
+			SetStep(0);
+			return ENodeResult.SUCCESS;
+		}
 		if (age > limit)
 		{
 			m_aTried.Insert(m_vEntry);
@@ -688,6 +899,7 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		if (m_ePhase != DCO_ECQBPhase.ROOMS)
 			return ENodeResult.SUCCESS;
 		float now = Now();
+		DCO_UpdateBelief(now);
 		if (m_iStep > 0 && m_iRoom >= 0 && now - m_fRoomAt_ms > m_fRoomLimit_ms)
 		{
 			FinishRoom("timeout");
@@ -700,13 +912,30 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		{
 			case 0:
 			{
-				int idx = m_Nav.Pick(m_aRooms, m_iFoothold, -1);
+				int idx = m_Nav.Pick(m_aRooms, m_iFoothold, DCO_PriorityRoom());
 				if (idx < 0)
 				{
 					string why = "all_rooms";
 					if (idx == -2)
 						why = "rest_unreachable";
 					DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_rooms_end grp=%1 reason=%2 cleared=%3 timeouts=%4 rooms=%5", Grp(), why, m_iCleared, m_iTimeouts, m_aRooms.Count()));
+					if (why == "all_rooms" && m_iResweeps < 1 && m_fEvidenceAt_ms >= 0 && now - m_fEvidenceAt_ms < 30000.0)
+					{
+						int evRoom = DCO_RoomNearestAny(m_vEvidence);
+						int reopened = 0;
+						foreach (DCO_CQBRoom rr : m_aRooms)
+						{
+							if (evRoom >= 0 && rr.m_iFloor != m_aRooms[evRoom].m_iFloor)
+								continue;
+							rr.m_iState = 0;
+							reopened++;
+						}
+						m_iResweeps++;
+						DCO_Perf.Count("cqb:resweep");
+						DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_resweep grp=%1 reopened=%2 evidence_age_s=%3", Grp(), reopened, Math.Round((now - m_fEvidenceAt_ms) * 0.001)));
+						if (reopened > 0)
+							return ENodeResult.RUNNING;
+					}
 					SetPhase(DCO_ECQBPhase.CONSOLIDATE);
 					return ENodeResult.SUCCESS;
 				}
@@ -733,6 +962,8 @@ class DCO_CQBActivity : SCR_AIActivityBase
 				m_vStackA = sa;
 				m_vStackB = sb;
 				OrderStack();
+				if (DCO_RoomBelief(idx) >= 0.5)
+					OrderContain(idx);
 				DCO_Perf.Count("cqb:room_pick");
 				DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_room_pick grp=%1 room=%2 floor=%3 pair=%4 door=%5 graph_door=%6 slots=%7 left=%8", Grp(), idx, room.m_iFloor, ActivePair() + 1, DCO_Util.XZ(door), DCO_Util.B01(real), room.m_aSlots.Count(), PendingRooms()));
 				SetStep(1);
@@ -754,7 +985,7 @@ class DCO_CQBActivity : SCR_AIActivityBase
 					return ENodeResult.RUNNING;
 				DCO_CQBRoom troom = m_aRooms[m_iRoom];
 				vector where;
-				bool enemy = EnemyInRoom(troom, where) || now - m_fEnemyAt_ms < 15000.0;
+				bool enemy = EnemyInRoom(troom, where) || now - m_fEnemyAt_ms < 15000.0 || DCO_RoomBelief(m_iRoom) >= 0.5;
 				bool frag = m_iBreach == 1 || (m_iBreach == 0 && enemy);
 				if (!frag && enemy)
 					DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_frag_skip grp=%1 room=%2 reason=gm_breach_mode mode=%3", Grp(), m_iRoom, m_iBreach));

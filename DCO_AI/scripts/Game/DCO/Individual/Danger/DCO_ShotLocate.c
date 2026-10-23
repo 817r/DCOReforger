@@ -11,6 +11,35 @@ class DCO_ShotLocate
 {
 	protected static ref map<string, ref DCO_ShotEstState> s_mEst;
 
+	protected static ref map<AIGroup, float> s_mLastErr;
+	protected static ref map<AIGroup, float> s_mLastErrAt;
+
+	static float LastErr(AIGroup grp, float now_ms)
+	{
+		if (!grp || !s_mLastErr || !s_mLastErrAt)
+			return 0;
+		float at;
+		float err;
+		if (!s_mLastErrAt.Find(grp, at) || now_ms - at > 30000.0 || !s_mLastErr.Find(grp, err))
+			return 0;
+		return err;
+	}
+
+	protected static void NoteErr(AIGroup grp, float err, float now_ms)
+	{
+		if (!s_mLastErr)
+			s_mLastErr = new map<AIGroup, float>();
+		if (!s_mLastErrAt)
+			s_mLastErrAt = new map<AIGroup, float>();
+		if (s_mLastErr.Count() > 300)
+		{
+			s_mLastErr.Clear();
+			s_mLastErrAt.Clear();
+		}
+		s_mLastErr.Set(grp, err);
+		s_mLastErrAt.Set(grp, now_ms);
+	}
+
 	protected static map<string, ref DCO_ShotEstState> GetEst()
 	{
 		if (!s_mEst)
@@ -75,9 +104,42 @@ class DCO_ShotLocate
 		float scale = Math.Max(1.0 + rngFrac, 0.3);
 		vector rot = Vector((off[0] * c - off[2] * s) * scale, 0, (off[0] * s + off[2] * c) * scale);
 		vector est = DCO_Util.Surface(me + rot);
+		string snap = "none";
+		float snapM = DCO_Stress.T(u, "hear.snap_bld_m", 25.0);
+		if (snapM > 0)
+		{
+			string bm;
+			if (SCR_CoverManagerComponent.DCO_GetBuildingAtPos(est, null, bm))
+				snap = "inside";
+			else
+			{
+				DCO_GarrisonRegistry reg = DCO_GarrisonRegistry.GetInstance();
+				array<IEntity> blds = {};
+				if (reg)
+					reg.FindBuildings(est, snapM, blds);
+				IEntity nb;
+				float nd = float.MAX;
+				foreach (IEntity b : blds)
+				{
+					float bd = vector.DistanceXZ(b.GetOrigin(), est);
+					if (b && bd < nd)
+					{
+						nd = bd;
+						nb = b;
+					}
+				}
+				if (nb)
+				{
+					est = DCO_Util.Surface(nb.GetOrigin());
+					snap = DCO_Util.PrefabShort(nb);
+					DCO_Perf.Count("hear:shot_snap_bld");
+				}
+			}
+		}
+		NoteErr(grp, vector.DistanceXZ(est, shotPos), now);
 		DCO_Perf.Count("hear:shot_est");
 		if (fresh)
-			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(grp), string.Format("gunshot_est grp=%1 shooter=%2 dist=%3 err_m=%4 ang_deg=%5 range_pct=%6 aud=%7 k=%8", DCO_Log.IdGroup(grp), DCO_Log.IdUnit(shooter), Math.Round(dist), Math.Round(vector.DistanceXZ(est, shotPos)), angDeg.ToString(-1, 1), Math.Round(rngFrac * 100.0), aud.ToString(-1, 2), k.ToString(-1, 2)));
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(grp), string.Format("gunshot_est grp=%1 shooter=%2 dist=%3 err_m=%4 ang_deg=%5 range_pct=%6 aud=%7 k=%8 snap=%9", DCO_Log.IdGroup(grp), DCO_Log.IdUnit(shooter), Math.Round(dist), Math.Round(vector.DistanceXZ(est, shotPos)), angDeg.ToString(-1, 1), Math.Round(rngFrac * 100.0), aud.ToString(-1, 2), k.ToString(-1, 2), snap));
 		return est;
 	}
 

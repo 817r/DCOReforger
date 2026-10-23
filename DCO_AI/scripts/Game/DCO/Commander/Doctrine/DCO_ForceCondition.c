@@ -269,7 +269,7 @@ class DCO_DoctrineRuntime
 		e.m_fAt = now;
 
 		bool stale = intel.m_fUpdated < 0 || now - intel.m_fUpdated > 300;
-		if (!intel.m_bEverSeen || intel.m_fConfidence < 0.4 || stale)
+		if (!intel.m_bEverSeen || intel.m_fConfidence < cmd.DCO_GT_IntelBandConf() || stale)
 		{
 			e.m_iBaseBand = DCO_EForceBand.UNKNOWN;
 			e.m_iBand = DCO_EForceBand.UNKNOWN;
@@ -282,6 +282,13 @@ class DCO_DoctrineRuntime
 			int shifted = BandOf(e.m_fEff * (1 + e.m_fShift));
 			e.m_iBaseBand = baseBand;
 			e.m_iBand = Math.ClampInt(shifted, baseBand - 1, baseBand + 1);
+			if (cmd.DCO_AggressiveCmd() && e.m_iBand >= DCO_EForceBand.EQUAL && e.m_iBand <= DCO_EForceBand.WEAKER)
+			{
+				e.m_iBand = e.m_iBand - 1;
+				DCO_Perf.Count("doctrine:aggr_band_up");
+				if (e.m_iBand != oldBand)
+					DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(cmd), string.Format("doctrine_aggr_band cmd=%1 band=%2 base=%3 trait=%4", DCO_Log.IdCmd(cmd), DCO_Doctrine.BandName(e.m_iBand), DCO_Doctrine.BandName(baseBand), cmd.DCO_EffTraitAggression().ToString(-1, 2)));
+			}
 		}
 
 		if (e.m_iBand != oldBand)

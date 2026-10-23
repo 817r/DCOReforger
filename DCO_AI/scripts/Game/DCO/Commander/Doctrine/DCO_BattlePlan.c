@@ -91,6 +91,11 @@ class DCO_BattlePlanner
 		DCO_Doctrine d = cmd.GetDoctrine();
 		if (d)
 			baseWait = d.m_fWaitTimeout;
+		if (cmd.DCO_AggressiveCmd())
+		{
+			baseWait *= 0.5;
+			DCO_Perf.Count("doctrine:aggr_wait_half");
+		}
 		if (cmd.GetDecision() == DCO_EDecision.FAST)
 			return baseWait * 0.5;
 		if (cmd.GetDecision() == DCO_EDecision.SLOW)
@@ -184,6 +189,13 @@ class DCO_BattlePlanner
 		}
 
 		bool reconWanted = d.Battle(band, DCO_EBattleCol.RECON);
+		bool reconBlocked = cmd.DCO_AssignSkip(obj, "recon");
+		if (reconWanted && reconBlocked && !st.m_bReconDone)
+		{
+			st.m_bReconDone = true;
+			DCO_Perf.Count("doc:recon_blocked_gm");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(cmd), string.Format("doctrine_recon_skip cmd=%1 obj=%2 why=gm_rule", cmd.GetCommanderUID(), obj.GetLogName()));
+		}
 		if (!reconWanted)
 		{
 			if (st.m_iReconRoll < 0)
@@ -195,6 +207,12 @@ class DCO_BattlePlanner
 			}
 			reconWanted = st.m_iReconRoll == 1;
 		}
+		if (reconWanted && !st.m_bReconDone && NearestOwnGroupM(cmd, obj) <= 300.0)
+		{
+			st.m_bReconDone = true;
+			DCO_Perf.Count("doc:recon_skip_near");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(cmd), string.Format("doctrine_recon_skip cmd=%1 obj=%2 why=near nearest_m=%3", cmd.GetCommanderUID(), obj.GetLogName(), Math.Round(NearestOwnGroupM(cmd, obj))));
+		}
 		if (reconWanted && !st.m_bReconDone)
 		{
 			bool reconOk = band != DCO_EForceBand.UNKNOWN && obj.IsReconArrived(cmd.GetCommanderFactionKey(), now);
@@ -203,6 +221,13 @@ class DCO_BattlePlanner
 				if (st.m_fReconStart < 0)
 					st.m_fReconStart = now;
 				float reconLimit = d.m_fReconTimeout / Tempo(cmd);
+				if (cmd.DCO_AggressiveCmd())
+				{
+					reconLimit *= 0.5;
+					DCO_Perf.Count("doctrine:aggr_recon_half");
+				}
+				if (band == DCO_EForceBand.UNKNOWN)
+					reconLimit = Math.Min(reconLimit, 60.0);
 				if (cmd.DCO_K2())
 					reconLimit = Math.Max(reconLimit, Math.Min(d.m_fReconTimeout, DCO_Ctx.TuneForCmd(cmd, "agg.k2_recon_floor_s", 90.0)));
 				if (now - st.m_fReconStart < reconLimit)
@@ -226,7 +251,7 @@ class DCO_BattlePlanner
 			st.m_bReconDone = true;
 		}
 
-		if (band == DCO_EForceBand.UNKNOWN && st.m_bReconDone && (allowed & DCO_CommanderTactics.Bit(DCO_ETactic.MOVEMENT_TO_CONTACT)) != 0 && reconWanted)
+		if (band == DCO_EForceBand.UNKNOWN && st.m_bReconDone && (allowed & DCO_CommanderTactics.Bit(DCO_ETactic.MOVEMENT_TO_CONTACT)) != 0 && (reconWanted || reconBlocked))
 		{
 			tacticMask = DCO_CommanderTactics.Bit(DCO_ETactic.MOVEMENT_TO_CONTACT);
 			Phase(cmd, obj, "mtc", "still_unknown", now);
@@ -291,6 +316,23 @@ class DCO_BattlePlanner
 	DCO_BattleState Peek(CMD_AICommanderObjectiveComponent obj)
 	{
 		return m_mState.Get(obj);
+	}
+
+	static float NearestOwnGroupM(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj)
+	{
+		if (!cmd || !obj || !obj.GetOwner())
+			return 99999.0;
+		vector op = obj.GetOwner().GetOrigin();
+		float best = 99999.0;
+		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
+		{
+			if (!g || !g.GetOwner() || g.GetUnitCount() <= 0 || g.IsPlayerGroup())
+				continue;
+			float d = vector.DistanceXZ(g.GetOwner().GetOrigin(), op);
+			if (d < best)
+				best = d;
+		}
+		return best;
 	}
 
 	bool UseStaging(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, bool fallback)
@@ -370,6 +412,11 @@ class DCO_BattlePlanner
 				return 0;
 			if ((AttackMask(d, band) & cmd.GetAllowedTactics()) != 0)
 				return 0;
+		}
+		if (cmd.DCO_RelentlessCmd() && (!lossHit || loss < 0.7))
+		{
+			DCO_Perf.Count("relentless_cmd:no_retreat");
+			return 0;
 		}
 		bool canFallback = d.Battle(band, DCO_EBattleCol.FALLBACK);
 		bool canWithdraw = d.Battle(band, DCO_EBattleCol.WITHDRAW) || (lossHit && !canFallback);

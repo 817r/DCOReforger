@@ -2,6 +2,8 @@ modded class SCR_AIUtilityComponent
 {
 	protected ref DCO_AIMoraleSystem moraleSystem;
 	DCO_AIConfigComponent m_DCOConfig;
+	int m_iDCOCiv = -1;
+	float m_fDCOCivAt;
 	AIAgent myAgent;
 	int m_iDCO_LOD;
 	int m_iDCORoles;
@@ -16,6 +18,15 @@ modded class SCR_AIUtilityComponent
 		{
 			DCO_Perf.End("agent_eval", evalStart);
 			return null;
+		}
+		if (DCO_CivMode.IsCiv(this))
+		{
+			int civVanT = DCO_Perf.Begin();
+			SCR_AIBehaviorBase civBehavior = super.EvaluateBehavior(unknownTarget);
+			DCO_Perf.End("civ_vanilla_eval", civVanT);
+			DCO_CivMode.Tick(this, m_OwnerEntity.GetWorld().GetWorldTime());
+			DCO_Perf.End("agent_eval_civ", evalStart);
+			return civBehavior;
 		}
 
 		#ifdef AI_DEBUG

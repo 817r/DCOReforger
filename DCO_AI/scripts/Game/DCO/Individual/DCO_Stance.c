@@ -79,6 +79,22 @@ class DCO_Stance
 		return Math.Sqrt(v[0] * v[0] + v[2] * v[2]);
 	}
 
+	protected static ref map<IEntity, float> s_mClampLogAt;
+
+	protected static void ClampLog(IEntity me, string who, int want, int to, string why)
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (!s_mClampLogAt)
+			s_mClampLogAt = new map<IEntity, float>();
+		if (s_mClampLogAt.Count() > 400)
+			s_mClampLogAt.Clear();
+		float last;
+		if (s_mClampLogAt.Find(me, last) && now - last < 10000.0)
+			return;
+		s_mClampLogAt.Set(me, now);
+		DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("stance_clamp unit=%1 who=%2 want=%3 to=%4 why=%5", DCO_Log.IdUnit(me), who, Name(want), Name(to), why));
+	}
+
 	static bool Request(CharacterControllerComponent ctrl, int change, string who)
 	{
 		if (!ctrl || change < 1 || change > 3)
@@ -89,6 +105,14 @@ class DCO_Stance
 		int to = change - 1;
 		int cur = ctrl.GetStance();
 		bool changing = ctrl.IsChangingStance();
+		string clampWhy;
+		int want = to;
+		to = DCO_CQC.ClampByChance(me, to, clampWhy);
+		if (to != want)
+		{
+			DCO_Perf.Count("stance:clamp_" + who);
+			ClampLog(me, who, want, to, clampWhy);
+		}
 		if (!s_mReq)
 			s_mReq = new map<IEntity, ref DCO_StanceReq>();
 		DCO_StanceReq last = s_mReq.Get(me);

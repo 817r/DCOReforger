@@ -357,6 +357,231 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	}
 
 	protected bool m_bCruiseLimited;
+	protected float m_fDCOCruiseGM;
+	protected float m_fDCOCruiseWanted;
+	protected float m_fDCOCruiseApplied = -1;
+	protected IEntity m_DCOCruiseVeh;
+	protected float m_fDCOCruiseAt_s;
+
+	float GetCruiseGM() { return m_fDCOCruiseGM; }
+
+	void SetCruiseGM(float kmh)
+	{
+		m_fDCOCruiseGM = kmh;
+		DCO_ApplyCruise("gm");
+	}
+
+	float DCO_ResolveCruise(out string src)
+	{
+		float eff = m_fDCOCruiseWanted;
+		src = "patrol";
+		float fac = DCO_Ctx.TuneFor(GetOwner(), "veh.cruise_kmh", 0.0);
+		if (fac > 0)
+		{
+			eff = fac;
+			src = "faction";
+		}
+		if (m_fDCOCruiseGM > 0)
+		{
+			eff = m_fDCOCruiseGM;
+			src = "squad";
+		}
+		if (eff <= 0)
+			src = "vanilla";
+		return eff;
+	}
+
+	void DCO_ApplyCruise(string by)
+	{
+		IEntity veh = GetGroupVehicle();
+		if (!veh)
+		{
+			m_DCOCruiseVeh = null;
+			m_fDCOCruiseApplied = -1;
+			return;
+		}
+		AICarMovementComponent car = AICarMovementComponent.Cast(veh.FindComponent(AICarMovementComponent));
+		if (!car)
+			return;
+		string src;
+		float eff = DCO_ResolveCruise(src);
+		if (veh == m_DCOCruiseVeh && eff == m_fDCOCruiseApplied)
+			return;
+		if (eff > 0)
+			car.SetCruiseSpeed(eff);
+		else
+			car.ResetCruiseSpeed();
+		m_bCruiseLimited = eff > 0;
+		m_DCOCruiseVeh = veh;
+		m_fDCOCruiseApplied = eff;
+		DCO_Perf.Count("veh:cruise_set");
+		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("cruise_set grp=%1 kmh=%2 src=%3 by=%4 veh=%5", DCO_Log.IdGroup(m_Group), Math.Round(eff), src, by, DCO_Util.PrefabShort(veh)));
+	}
+
+	protected int m_iDCOSimMode;
+	protected float m_fDCOSimAt_s;
+	protected int m_iDCOReserveJob;
+	protected float m_fDCOReserveJobAt_s = -1;
+
+	int DCO_ReserveJob() { return m_iDCOReserveJob; }
+	float DCO_ReserveJobAt() { return m_fDCOReserveJobAt_s; }
+
+	void DCO_SetReserveJob(int job, float at_s)
+	{
+		m_iDCOReserveJob = job;
+		m_fDCOReserveJobAt_s = at_s;
+	}
+
+	int GetSimMode() { return m_iDCOSimMode; }
+	bool IsSimOff() { return m_iDCOSimMode > 0; }
+
+	static bool SimOffFor(IEntity e)
+	{
+		ChimeraCharacter ch = ChimeraCharacter.Cast(e);
+		if (!ch)
+			return false;
+		AIControlComponent ctl = ch.GetAIControlComponent();
+		if (!ctl || !ctl.GetAIAgent() || !ctl.GetAIAgent().GetParentGroup())
+			return false;
+		DCO_GroupUtilityComponent gu = DCO_GroupUtilityComponent.Cast(ctl.GetAIAgent().GetParentGroup().FindComponent(DCO_GroupUtilityComponent));
+		return gu && gu.IsSimOff();
+	}
+
+	static string SimModeName(int mode)
+	{
+		if (mode == 2)
+			return "hidden";
+		if (mode == 1)
+			return "off";
+		return "auto";
+	}
+
+	void SetSimMode(int mode)
+	{
+		if (mode < 0 || mode > 2 || mode == m_iDCOSimMode)
+			return;
+		m_iDCOSimMode = mode;
+		DCO_ApplySim("gm");
+	}
+
+	protected void DCO_StreamTo(IEntity e, bool enable)
+	{
+		RplComponent rpl = RplComponent.Cast(e.FindComponent(RplComponent));
+		if (!rpl)
+			return;
+		PlayerManager pm = GetGame().GetPlayerManager();
+		if (!pm)
+			return;
+		array<int> ids = {};
+		pm.GetPlayers(ids);
+		foreach (int id : ids)
+		{
+			PlayerController pc = pm.GetPlayerController(id);
+			if (pc)
+				rpl.EnableStreamingConNode(pc.GetRplIdentity(), enable);
+		}
+	}
+
+	void DCO_ApplySim(string by)
+	{
+		if (!m_Group || !Replication.IsServer())
+			return;
+		bool off = m_iDCOSimMode > 0;
+		bool hide = m_iDCOSimMode == 2;
+		array<AIAgent> agents = {};
+		m_Group.GetAgents(agents);
+		int n;
+		foreach (AIAgent a : agents)
+		{
+			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
+			IEntity e = a.GetControlledEntity();
+			if (!ca || !e)
+				continue;
+			AIControlComponent ctl = ca.GetControlComponent();
+			if (ctl && off)
+				ctl.DeactivateAI();
+			else if (ctl)
+				ctl.ActivateAI();
+			if (hide)
+				e.ClearFlags(EntityFlags.VISIBLE | EntityFlags.TRACEABLE, true);
+			else
+				e.SetFlags(EntityFlags.VISIBLE | EntityFlags.TRACEABLE, true);
+			DCO_StreamTo(e, !hide);
+			n++;
+		}
+		if (by == "tick")
+			return;
+		DCO_Perf.Count("ai_sim:" + SimModeName(m_iDCOSimMode));
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("ai_sim grp=%1 mode=%2 by=%3 members=%4", DCO_Log.IdGroup(m_Group), SimModeName(m_iDCOSimMode), by, n));
+	}
+
+	void DCO_SimTick()
+	{
+		if (m_iDCOSimMode == 0)
+			return;
+		float now = DCO_Util.NowS();
+		if (now - m_fDCOSimAt_s < 10.0)
+			return;
+		m_fDCOSimAt_s = now;
+		DCO_ApplySim("tick");
+	}
+
+	protected SCR_AIWaypoint m_DCOMarkedDestWp;
+	protected SCR_AIWaypoint m_DCOWpWatch;
+	protected float m_fDCOWpLeaderInAt_s = -1;
+	protected float m_fDCOWpAt_s;
+
+	void DCO_MarkDestWp(SCR_AIWaypoint wp)
+	{
+		m_DCOMarkedDestWp = wp;
+	}
+
+	void DCO_WpTick()
+	{
+		float now = DCO_Util.NowS();
+		if (now - m_fDCOWpAt_s < 5.0 || !m_Group)
+			return;
+		m_fDCOWpAt_s = now;
+		SCR_AIWaypoint wp = SCR_AIWaypoint.Cast(m_Group.GetCurrentWaypoint());
+		IEntity leader = m_Group.GetLeaderEntity();
+		if (!wp || !leader || wp != m_DCOMarkedDestWp)
+		{
+			m_DCOWpWatch = null;
+			m_fDCOWpLeaderInAt_s = -1;
+			return;
+		}
+		float d = vector.DistanceXZ(leader.GetOrigin(), wp.GetOrigin());
+		if (wp != m_DCOWpWatch || d > wp.GetCompletionRadius())
+		{
+			m_DCOWpWatch = wp;
+			m_fDCOWpLeaderInAt_s = -1;
+			if (d <= wp.GetCompletionRadius())
+				m_fDCOWpLeaderInAt_s = now;
+			return;
+		}
+		if (m_fDCOWpLeaderInAt_s < 0)
+		{
+			m_fDCOWpLeaderInAt_s = now;
+			return;
+		}
+		if (now - m_fDCOWpLeaderInAt_s < 20.0)
+			return;
+		DCO_Perf.Count("wp:force_complete");
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("wp_force_complete grp=%1 leader_d=%2 radius=%3 wait_s=%4 why=stragglers", DCO_Log.IdGroup(m_Group), Math.Round(d), Math.Round(wp.GetCompletionRadius()), Math.Round(now - m_fDCOWpLeaderInAt_s)));
+		m_Group.CompleteWaypoint(wp);
+		m_DCOWpWatch = null;
+		m_DCOMarkedDestWp = null;
+		m_fDCOWpLeaderInAt_s = -1;
+	}
+
+	void DCO_CruiseTick()
+	{
+		float now = DCO_Util.NowS();
+		if (now - m_fDCOCruiseAt_s < 10.0)
+			return;
+		m_fDCOCruiseAt_s = now;
+		DCO_ApplyCruise("tick");
+	}
 
 	IEntity GetGroupVehicle()
 	{
@@ -401,19 +626,8 @@ class DCO_GroupUtilityComponent : ScriptComponent
 
 	void SetVehicleCruiseSpeed(float speedKmH)
 	{
-		IEntity veh = GetGroupVehicle();
-		if (!veh)
-			return;
-
-		AICarMovementComponent car = AICarMovementComponent.Cast(veh.FindComponent(AICarMovementComponent));
-		if (!car)
-			return;
-
-		if (speedKmH > 0)
-			car.SetCruiseSpeed(speedKmH);
-		else
-			car.ResetCruiseSpeed();
-		m_bCruiseLimited = speedKmH > 0;
+		m_fDCOCruiseWanted = speedKmH;
+		DCO_ApplyCruise("order");
 	}
 
 	void SetDedicatedCommanderUID(string uid)
@@ -874,6 +1088,8 @@ class DCO_GroupUtilityComponent : ScriptComponent
 
 	protected void DCO_UpdateFormation(bool now, string by)
 	{
+		if (DCO_CivMode.CivGroup(m_Group))
+			return;
 		bool contact = IsInContact();
 		string why;
 		string f = DCO_Formation.Pick(m_Group, DCO_TaskFormation(), m_bRetreating, contact, m_Task.m_eType == DCO_EGroupTask.RECON, m_iDCOFormShape, m_iDCOFormSp, why);
@@ -1001,6 +1217,57 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	void DCO_SetHold(float untilTime)	{ m_fDCOHoldUntil = untilTime; }
 	bool DCO_IsHeld()					{ return m_fDCOHoldUntil > 0 && DCO_Util.NowS() < m_fDCOHoldUntil; }
 	int DCO_GetPeakStrength()			{ return m_iPeakStrength; }
+
+	bool m_bDCOLowAmmo;
+	protected float m_fDCOLowAmmoAt_s = -1000;
+
+	void DCO_LowAmmoTick()
+	{
+		float now = DCO_Util.NowS();
+		if (now - m_fDCOLowAmmoAt_s < 10.0 || !m_Group)
+			return;
+		m_fDCOLowAmmoAt_s = now;
+		array<AIAgent> agents = {};
+		m_Group.GetAgents(agents);
+		int total;
+		int low;
+		foreach (AIAgent a : agents)
+		{
+			if (!a)
+				continue;
+			IEntity ent = a.GetControlledEntity();
+			if (!ent || !DCO_Util.IsAlive(ent))
+				continue;
+			SCR_AICombatComponent combat = SCR_AICombatComponent.Cast(ent.FindComponent(SCR_AICombatComponent));
+			typename well;
+			int spare = DCO_Rearm.SpareMags(combat, ent, well);
+			if (spare < 0)
+				continue;
+			total++;
+			if (spare <= 1)
+				low++;
+		}
+		bool lowNow = total > 0 && low * 2 >= total;
+		if (lowNow == m_bDCOLowAmmo)
+			return;
+		m_bDCOLowAmmo = lowNow;
+		if (lowNow)
+			DCO_Perf.Count("grp:low_ammo_on");
+		else
+			DCO_Perf.Count("grp:low_ammo_off");
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("grp_low_ammo grp=%1 low=%2 total=%3 state=%4", DCO_Log.IdGroup(m_Group), low, total, DCO_Util.B01(lowNow)));
+	}
+
+	void DCO_ResetPeak(string why)
+	{
+		int from = m_iPeakStrength;
+		int to = GetUnitCount();
+		if (to >= from)
+			return;
+		m_iPeakStrength = to;
+		DCO_Perf.Count("grp:peak_reset");
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("peak_reset grp=%1 from=%2 to=%3 why=%4", GetOwner().GetName(), from, to, why));
+	}
 
 	bool IsAvailableReserve()
 	{
@@ -1473,6 +1740,13 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	{
 		if (myCommander && Replication.IsServer())
 			RefreshCapability();
+		if (Replication.IsServer())
+		{
+			DCO_LowAmmoTick();
+			DCO_CruiseTick();
+			DCO_SimTick();
+			DCO_WpTick();
+		}
 		UpdateGroupDebug(timeSlice);
 	}
 
@@ -2043,11 +2317,11 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		if (!m_UtilityComp)
 			return false;
 
-		SCR_AIGroupPerception perc = m_UtilityComp.GetPercGroupComp();
-		if (!perc)
+		SCR_AIGroupPerception gpc = m_UtilityComp.GetPercGroupComp();
+		if (!gpc)
 			return false;
 
-		foreach (SCR_AIGroupTargetCluster c : perc.m_aTargetClusters)
+		foreach (SCR_AIGroupTargetCluster c : gpc.m_aTargetClusters)
 		{
 			if (!c.m_State || c.m_State.m_iCountAlive <= 0)
 				continue;

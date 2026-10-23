@@ -153,6 +153,11 @@ class DCO_ContactSharing
 		SCR_AIGroup grp = u.m_Owner;
 		if (!grp || !u.m_Perception || !DCO_Util.IsAlive(grp.GetLeaderEntity()) || DCO_Util.IsPlayerGroup(grp))
 			return;
+		if (DCO_CivMode.CivGroup(grp))
+		{
+			DCO_Perf.Count("civ:share_skip");
+			return;
+		}
 
 		DCO_GroupUtilityComponent dg = DCO_GroupUtilityComponent.Cast(grp.FindComponent(DCO_GroupUtilityComponent));
 		float pmNow = pm.GetTime();

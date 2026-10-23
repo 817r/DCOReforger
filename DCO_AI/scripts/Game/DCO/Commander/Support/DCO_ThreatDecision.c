@@ -45,6 +45,7 @@ class CMD_ThreatAssessment
 	CMD_AICommanderObjectiveComponent m_OpObjective;
 
 	float m_fFriendly;
+	float m_fReserveAdd;
 	float m_fEnemy;
 	float m_fRatio;
 	bool m_bCanMatch;
@@ -90,6 +91,8 @@ class CMD_ThreatMission
 	bool m_bSeen;
 	bool m_bExecuted;
 	bool m_bTimedOut;
+	float m_fLostAt = -1;
+	vector m_vLkp;
 	int m_iDossier = -1;
 	CMD_AICommanderObjectiveComponent m_HoldObj;
 	ref array<DCO_GroupUtilityComponent> m_aGroups = {};

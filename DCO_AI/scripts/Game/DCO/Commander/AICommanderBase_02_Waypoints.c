@@ -87,6 +87,41 @@ modded class AICommander_BaseComponent
 	    }
 	}
 
+	float DCO_DestRadius(DCO_GroupUtilityComponent grp)
+	{
+		float r = m_fMoveWpRadius;
+		if (!grp || !grp.GetOwner())
+			return r;
+		SCR_AIGroup ag = SCR_AIGroup.Cast(grp.GetOwner());
+		if (!ag)
+			return r;
+		float span = DCO_Formation.Span(grp.DCO_GetFormation(), ag.GetAgentsCount());
+		if (span > 0)
+			r = Math.Max(r, 1.1 * span + 5.0);
+		return r;
+	}
+
+	void DCO_SetupMoveWP(SCR_AIWaypoint wp, DCO_GroupUtilityComponent grp, bool leg)
+	{
+		if (!wp)
+			return;
+		string kind = "leg";
+		string type = "any";
+		if (leg)
+			wp.SetCompletionType(EAIWaypointCompletionType.Any);
+		else
+		{
+			kind = "dest";
+			type = "all";
+			wp.SetCompletionRadius(DCO_DestRadius(grp));
+			if (grp)
+				grp.DCO_MarkDestWp(wp);
+		}
+		DCO_Perf.Count("move_wp:" + kind);
+		if (grp && DCO_Log.On(DCO_ELogChannel.CMD, DCO_ELogLevel.DEBUG))
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.DEBUG, DCO_Log.IdCmd(this), string.Format("move_wp grp=%1 kind=%2 radius=%3 type=%4 pos=%5", DCO_Log.IdGroup(AIGroup.Cast(grp.GetOwner())), kind, Math.Round(wp.GetCompletionRadius()), type, DCO_Util.XZ(wp.GetOrigin())));
+	}
+
 	bool SpawnMoveRoute(DCO_GroupUtilityComponent grp, vector from, vector to, float worldTime)
 	{
 		if (!grp)
@@ -114,6 +149,7 @@ modded class AICommander_BaseComponent
 					legWp = SpawnMoveWP(safeLeg);
 				if (legWp)
 				{
+					DCO_SetupMoveWP(legWp, grp, true);
 					grp.MoveTo(legWp, worldTime);
 					addedLegs.Insert(legWp);
 				}
@@ -141,6 +177,7 @@ modded class AICommander_BaseComponent
 			return false;
 		}
 
+		DCO_SetupMoveWP(destWp, grp, false);
 		grp.MoveTo(destWp, worldTime);
 		return true;
 	}

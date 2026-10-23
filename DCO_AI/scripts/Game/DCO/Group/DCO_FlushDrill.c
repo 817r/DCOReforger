@@ -74,7 +74,10 @@ class DCO_FlushDrill
 				continue;
 			}
 			float hidden_ms = now_ms - st.m_mHiddenSince.Get(tc);
-			if (hidden_ms < 20000.0)
+			float flushWait_ms = 20000.0;
+			if (DCO_Relentless.Group(grp))
+				flushWait_ms = 3000.0;
+			if (hidden_ms < flushWait_ms)
 				continue;
 			if (Act(u, grp, st, tc, tgt.m_vWorldPos, hidden_ms, now_ms))
 				return;
@@ -301,7 +304,8 @@ class DCO_FlushDrill
 		vector bbMin, bbMax;
 		SCR_AISuppressionVolumeBase.CreateSuppressionBox(pos, 3.0, 3, bbMin, bbMax);
 		SCR_AISuppressionObjectVolumeBox vol = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
-		supp.AddAction(new SCR_AISuppressBehavior(supp, null, vol, 8.0, 1.5));
+		if (DCO_SuppressGate.Allowed(supp, pos, "flush"))
+			supp.AddAction(new SCR_AISuppressBehavior(supp, null, vol, 8.0, 1.5));
 
 		st.m_mFlankNext.Set(enemy, now_ms + 45000.0);
 		st.m_fFlankGroupNext_ms = now_ms + 45000.0;

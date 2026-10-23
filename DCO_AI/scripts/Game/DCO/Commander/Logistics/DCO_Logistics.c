@@ -619,7 +619,7 @@ class DCO_Logistics
 			if (resupply && doctrineSupport)
 				wantSupply = doctrineSupport.WantsSupplies(cmd, g, m_sHubSource, now);
 			else if (resupply)
-				wantSupply = IsLowAmmo(grp, cmd.GetLogiLowAmmoMags());
+				wantSupply = IsLowAmmo(grp, cmd.GetLogiLowAmmoMags()) || g.m_bDCOLowAmmo;
 			if (wantSupply)
 			{
 				DCO_LogiJob job = NewJob(DCO_ELogiJob.RESUPPLY, pos, pos, now);
@@ -956,6 +956,9 @@ class DCO_Logistics
 		DCO_GroupUtilityComponent util = DCO_GroupUtilityComponent.Cast(newGrp.FindComponent(DCO_GroupUtilityComponent));
 		if (util && cmd)
 			cmd.AssignGroup(util);
+		DCO_GroupUtilityComponent oldUtil = DCO_GroupUtilityComponent.Cast(template.FindComponent(DCO_GroupUtilityComponent));
+		if (oldUtil)
+			oldUtil.DCO_ResetPeak("split");
 		return newGrp;
 	}
 
@@ -999,7 +1002,7 @@ class DCO_Logistics
 				SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
 				if (!ca || !ca.m_UtilityComponent || !DCO_Util.IsNotDead(ca.GetControlledEntity()))
 					continue;
-				ca.m_UtilityComponent.AddAction(new SCR_AIMoveIndividuallyBehavior(ca.m_UtilityComponent, null, dest, SCR_AIActionBase.PRIORITY_BEHAVIOR_ATTACK_SELECTED + 1, radius: 15));
+				ca.m_UtilityComponent.AddAction(new DCO_MoveIndividuallyBehavior(ca.m_UtilityComponent, null, dest, SCR_AIActionBase.PRIORITY_BEHAVIOR_ATTACK_SELECTED + 1, radius: 15));
 				moved++;
 			}
 		}

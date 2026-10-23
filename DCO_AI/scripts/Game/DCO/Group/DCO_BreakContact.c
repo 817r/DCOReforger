@@ -21,6 +21,7 @@ class DCO_BreakContact
 	vector m_vDogleg;
 	float m_fLegStart;
 	ref array<ref array<AIAgent>> m_aElements = {};
+	bool m_bFast;
 
 	static int ActiveCount()
 	{
@@ -38,7 +39,7 @@ class DCO_BreakContact
 			return false;
 		DCO_EGroupTask bcTask = g.GetTask();
 		bool cmdOrder = why.StartsWith("def_") || why.StartsWith("op_") || why == "threat_withdraw" || why.EndsWith("_depleted") || why.EndsWith("_shaken");
-		if (!cmdOrder && (g.m_iDCOTRPhase >= 0 || bcTask == DCO_EGroupTask.ATTACK || bcTask == DCO_EGroupTask.SUPPORT_BY_FIRE))
+		if (!cmdOrder && (g.m_iDCOTRPhase >= 0 || bcTask == DCO_EGroupTask.ATTACK || bcTask == DCO_EGroupTask.SUPPORT_BY_FIRE || bcTask == DCO_EGroupTask.FLANK))
 		{
 			DCO_Perf.Count("break_contact_skip:attack_task");
 			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("break_contact_skip grp=%1 why=%2 reason=attack_task task=%3 tr_phase=%4", DCO_Log.IdGroup(grp), why, typename.EnumToString(DCO_EGroupTask, bcTask), g.m_iDCOTRPhase));
@@ -48,6 +49,11 @@ class DCO_BreakContact
 		{
 			DCO_Perf.Count("break_contact_skip:defend_task");
 			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("break_contact_skip grp=%1 why=%2 reason=defend_task_commander_decides", DCO_Log.IdGroup(grp), why));
+			return false;
+		}
+		if (!cmdOrder && DCO_Relentless.Group(grp))
+		{
+			DCO_Relentless.Note(grp, "break_contact_refused", "trigger=" + why);
 			return false;
 		}
 		vector lp = grp.GetLeaderEntity().GetOrigin();
@@ -75,13 +81,26 @@ class DCO_BreakContact
 		bc.m_vFrom = lp;
 		bc.m_fStart = now;
 		bc.m_fLastSeen = now;
+		bc.m_bFast = why.StartsWith("posture_evasive");
 		g.m_DCOBreak = bc;
 		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("roe_set grp=%1 why=breaking_contact mode=FIRE_AT_WILL", DCO_Log.IdGroup(grp)));
 		if (g.GetMyCommander())
 			g.CompleteAllWaypoints();
 		g.SetRetreating(true);
 		bc.Split(grp);
-		CMD_ThreatResponseComponent.ThrowSmoke(g, threat);
+		if (bc.m_bFast && bc.m_aElements.Count() > 1)
+		{
+			array<AIAgent> all = {};
+			foreach (array<AIAgent> fel : bc.m_aElements)
+			{
+				foreach (AIAgent fa : fel)
+					all.Insert(fa);
+			}
+			bc.m_aElements.Clear();
+			bc.m_aElements.Insert(all);
+		}
+		if (!bc.m_bFast || DCO_ConcealmentUtility.IsPositionExposed(lp, grp.GetLeaderEntity()))
+			CMD_ThreatResponseComponent.ThrowSmoke(g, threat);
 		bc.NextStep(now);
 
 		if (!s_aActive)
@@ -92,7 +111,7 @@ class DCO_BreakContact
 		s_aActive.Insert(bc);
 		DCO_Perf.Count("bc:start");
 		DCO_MoraleEvents.OnEnemyRetreat(grp.GetLeaderEntity(), grp.GetFaction());
-		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("break_contact_start grp=%1 why=%2 dist=%3 elements=%4", DCO_Log.IdGroup(grp), why, Math.Round(vector.DistanceXZ(lp, threat)), bc.m_aElements.Count()));
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("break_contact_start grp=%1 why=%2 dist=%3 elements=%4 fast=" + bc.m_bFast.ToString(), DCO_Log.IdGroup(grp), why, Math.Round(vector.DistanceXZ(lp, threat)), bc.m_aElements.Count()));
 		return true;
 	}
 
@@ -185,7 +204,7 @@ class DCO_BreakContact
 				if (!g.GetMyCommander())
 				{
 					foreach (array<AIAgent> legEl : m_aElements)
-						MoveElement(legEl, m_vRally, m_vThreat);
+						MoveElement(legEl, m_vRally, m_vThreat, m_bFast);
 				}
 				string legWhy = "reached";
 				if (!reached)
@@ -216,7 +235,14 @@ class DCO_BreakContact
 
 		RefreshThreat(g, now);
 		float dist = vector.DistanceXZ(lp, m_vThreat);
-		if (dist > 500.0 || now - m_fLastSeen >= 30.0 || now - m_fStart > 240.0)
+		float doneDist = 500.0;
+		float unseenS = 30.0;
+		if (m_bFast)
+		{
+			doneDist = 300.0;
+			unseenS = 20.0;
+		}
+		if (dist > doneDist || now - m_fLastSeen >= unseenS || now - m_fStart > 240.0)
 		{
 			m_bRegroup = true;
 			m_fRegroupStart = now;
@@ -241,10 +267,10 @@ class DCO_BreakContact
 				if (m_iLeg == 0)
 					firstGoal = m_vDogleg;
 				foreach (array<AIAgent> el : m_aElements)
-					MoveElement(el, firstGoal, m_vThreat);
+					MoveElement(el, firstGoal, m_vThreat, m_bFast);
 			}
 			string why = "distance";
-			if (dist <= 500.0)
+			if (dist <= doneDist)
 				why = "los_broken";
 			if (now - m_fStart > 240.0)
 				why = "timeout";
@@ -262,7 +288,10 @@ class DCO_BreakContact
 			if (a && a.GetControlledEntity() && DCO_Util.IsAlive(a.GetControlledEntity()) && vector.DistanceXZ(a.GetControlledEntity().GetOrigin(), m_vGoal) > 12.0)
 				arrived = false;
 		}
-		if (arrived || now - m_fStepStart > 25.0)
+		float stepMax = 25.0;
+		if (m_bFast)
+			stepMax = 35.0;
+		if (arrived || now - m_fStepStart > stepMax)
 			NextStep(now);
 		return true;
 	}
@@ -313,12 +342,21 @@ class DCO_BreakContact
 		vector from = first.GetOrigin();
 		vector dir = DCO_Specialist.Flat(DCO_Specialist.Flat(from - m_vThreat) + DCO_Specialist.Flat(m_vRally - from));
 		vector side = Vector(dir[2], 0, -dir[0]) * m_fSide;
-		vector goal = from + dir * Math.RandomFloat(50.0, 100.0) + side * Math.RandomFloat(15.0, 30.0);
-		vector cover = DCO_TerrainCache.QueryBest(DCO_ETerrainFlag.FOREST_EDGE, goal, 30.0, string.Empty, goal, m_vThreat);
+		float legMin = 50.0;
+		float legMax = 100.0;
+		float coverR = 30.0;
+		if (m_bFast)
+		{
+			legMin = 100.0;
+			legMax = 150.0;
+			coverR = 60.0;
+		}
+		vector goal = from + dir * Math.RandomFloat(legMin, legMax) + side * Math.RandomFloat(15.0, 30.0);
+		vector cover = DCO_TerrainCache.QueryBest(DCO_ETerrainFlag.FOREST_EDGE, goal, coverR, string.Empty, goal, m_vThreat);
 		if (cover != vector.Zero)
 			goal = cover;
 		m_vGoal = DCO_Util.Surface(goal);
-		MoveElement(mover, m_vGoal, m_vThreat);
+		MoveElement(mover, m_vGoal, m_vThreat, m_bFast);
 
 		if (DCO_ConcealmentUtility.IsPositionExposed(from, first))
 			CMD_ThreatResponseComponent.ThrowSmoke(m_Group, m_vThreat);
@@ -401,7 +439,7 @@ class DCO_BreakContact
 		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("break_contact_face grp=%1 units=%2 bearing=%3 fan=%4 dur_s=%5 threat_d=%6", DCO_Log.IdGroup(grp), n, Math.Round(bearing), Math.Round(fan), Math.Round(dur), Math.Round(vector.DistanceXZ(lp, m_vThreat))));
 	}
 
-	protected static void MoveElement(array<AIAgent> el, vector goal, vector threat)
+	protected static void MoveElement(array<AIAgent> el, vector goal, vector threat, bool fast = false)
 	{
 		foreach (AIAgent a : el)
 		{
@@ -410,7 +448,7 @@ class DCO_BreakContact
 				continue;
 			vector p = DCO_Util.Surface(goal + Vector(Math.RandomFloat(-4, 4), 0, Math.RandomFloat(-4, 4)));
 			float d = vector.DistanceXZ(ca.GetControlledEntity().GetOrigin(), p);
-			if (d > 60.0)
+			if (d > 60.0 || fast)
 				DCO_Specialist.MoveIndividually(ca.m_UtilityComponent, p);
 			else
 				DCO_RelocateBehavior.Start(ca.m_UtilityComponent, p, threat, true, ECharacterStance.CROUCH, d / 3.5 + 3.0, "break_contact");

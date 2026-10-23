@@ -222,7 +222,8 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 	        return;
 
 	    DCO_EGroupTask task = m_GroupUtil.GetTask();
-	    if (!callForFire && task != DCO_EGroupTask.RECON && task != DCO_EGroupTask.FLANK)
+	    bool relentlessCmd = m_GroupUtil.GetMyCommander() && m_GroupUtil.GetMyCommander().DCO_RelentlessCmd();
+	    if (!callForFire && !relentlessCmd && task != DCO_EGroupTask.RECON && task != DCO_EGroupTask.FLANK)
 	    {
 	        if (Math.RandomFloat01() < m_fNonFavoredRoleArtyRejectChance)
 	        {
@@ -328,19 +329,20 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 		if (!leaderUtil || !leaderUtil.m_DCOConfig)
 			return 1.0;
 
+		float lm = DCO_Leadership.ReportMul(DCO_Leadership.Of(leaderUtil));
 		switch (leaderUtil.m_DCOConfig.GetPersonality())
 		{
 			case DCO_EAIPersonality.CAUTIOUS:
-				return 0.7;
+				return 0.7 * lm;
 			case DCO_EAIPersonality.AGGRESSIVE:
-				return 1.2;
+				return 1.2 * lm;
 			case DCO_EAIPersonality.RECKLESS:
-				return 1.4;
+				return 1.4 * lm;
 			default:
-				return 1.0;
+				return lm;
 		}
 
-		return 1.0;
+		return lm;
 	}
 
 	protected void ScanForEnemies(float worldTime)

@@ -114,6 +114,81 @@ class DCO_SettingsPresets
 		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "dco_preset_migrate from=AI group=" + toGroup.ToString() + " unit=" + toUnit.ToString());
 	}
 
+	static string BuiltinPrefix()
+	{
+		return "Built-in: ";
+	}
+
+	static bool IsBuiltin(string name)
+	{
+		return name.StartsWith(BuiltinPrefix());
+	}
+
+	static void Builtin(string scope, notnull array<string> outNames, notnull array<string> outContents)
+	{
+		if (scope == "Global")
+		{
+			outNames.Insert("Recommended");
+			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=0;DCO_T_PC_IdentifyMulAttribute=1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=500;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+		}
+		if (scope == "Global")
+		{
+			outNames.Insert("Realistic");
+			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=0;DCO_T_PC_IdentifyMulAttribute=0.8;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1.2;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.15;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=500;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+		}
+		if (scope == "Global")
+		{
+			outNames.Insert("Forgiving");
+			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=2;DCO_T_PC_IdentifyMulAttribute=1.3;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=0.5;DCO_T_IND_YieldMAttribute=100;DCO_T_INV_PosErrAttribute=0.05;DCO_T_StanceProneGateAttribute=0;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=50;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=0;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=600;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+		}
+		if (scope == "Global")
+		{
+			outNames.Insert("Players Defend");
+			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=3;DCO_T_PC_IdentifyMulAttribute=1.1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=700;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=1;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=1;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+		}
+		if (scope == "Global")
+		{
+			outNames.Insert("Players Attack");
+			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=1;DCO_T_PC_IdentifyMulAttribute=1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=300;DCO_InvestigateChanceAttribute=0.7;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=1;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+		}
+		if (scope == "Global")
+		{
+			outNames.Insert("Large Server");
+			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=0;DCO_T_PC_IdentifyMulAttribute=1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=0;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=400;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=0;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+		}
+		if (scope.StartsWith("Faction_"))
+		{
+			outNames.Insert("US style");
+			outContents.Insert("DCO_T_CIV_CautionAttribute=2;DCO_T_PC_IdentifyMulAttribute=0.95;DCO_T_HEAR_ShotErrAttribute=0.9;DCO_T_StanceProneGateAttribute=1");
+		}
+		if (scope.StartsWith("Faction_"))
+		{
+			outNames.Insert("USSR style");
+			outContents.Insert("DCO_T_CIV_CautionAttribute=1;DCO_T_PC_IdentifyMulAttribute=1.05;DCO_T_HEAR_ShotErrAttribute=1.1;DCO_T_StanceProneGateAttribute=1");
+		}
+		if (scope.StartsWith("Faction_"))
+		{
+			outNames.Insert("Irregular");
+			outContents.Insert("DCO_T_CIV_CautionAttribute=0;DCO_T_CIV_ScavengeAttribute=1;DCO_T_PC_IdentifyMulAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_StanceProneGateAttribute=1;DCO_IdleLeaveToInvestigateAttribute=1");
+		}
+	}
+
+	static bool BuiltinContent(string scope, string name, out string content)
+	{
+		array<string> names = {};
+		array<string> contents = {};
+		Builtin(scope, names, contents);
+		foreach (int i, string n : names)
+		{
+			if (BuiltinPrefix() + n == name)
+			{
+				content = contents[i];
+				return true;
+			}
+		}
+		return false;
+	}
+
 	static string Dir(string scope)
 	{
 		return "$profile:DCO/Presets/" + scope + "/";
@@ -131,30 +206,45 @@ class DCO_SettingsPresets
 		if (scope == "Group" || scope == "Unit")
 			MigrateLegacy();
 		array<string> files = SCR_FileIOHelper.FindFiles(Dir(scope), ".json");
-		if (!files)
-			return;
-		foreach (string f : files)
+		if (files)
 		{
-			string n = FilePath.StripExtension(FilePath.StripPath(f));
-			if (!n.IsEmpty() && outNames.Find(n) < 0)
-				outNames.Insert(n);
+			foreach (string f : files)
+			{
+				string n = FilePath.StripExtension(FilePath.StripPath(f));
+				if (!n.IsEmpty() && outNames.Find(n) < 0)
+					outNames.Insert(n);
+			}
 		}
 		outNames.Sort();
+		array<string> bNames = {};
+		array<string> bContents = {};
+		Builtin(scope, bNames, bContents);
+		foreach (int bi, string bn : bNames)
+		{
+			string full = BuiltinPrefix() + bn;
+			if (outNames.Find(full) < 0)
+				outNames.InsertAt(full, bi);
+		}
 	}
 
 	static bool Exists(string scope, string name)
 	{
-		return ValidScope(scope) && !name.IsEmpty() && FileIO.FileExists(PathOf(scope, name));
+		if (!ValidScope(scope) || name.IsEmpty())
+			return false;
+		string bc;
+		if (IsBuiltin(name))
+			return BuiltinContent(scope, name, bc);
+		return FileIO.FileExists(PathOf(scope, name));
 	}
 
 	static bool Save(string scope, string name, string content)
 	{
-		if (!ValidScope(scope) || name.IsEmpty())
+		if (!ValidScope(scope) || name.IsEmpty() || IsBuiltin(name))
 			return false;
 		FileIO.MakeDirectory("$profile:DCO");
 		FileIO.MakeDirectory("$profile:DCO/Presets");
 		FileIO.MakeDirectory(Dir(scope));
-		SCR_JsonSaveContext save = new SCR_JsonSaveContext();
+		JsonSaveContext save = new JsonSaveContext();
 		save.WriteValue("scope", scope);
 		save.WriteValue("version", 2);
 		save.WriteValue("values", content);
@@ -165,7 +255,14 @@ class DCO_SettingsPresets
 	{
 		if (!Exists(scope, name))
 			return false;
-		SCR_JsonLoadContext load = new SCR_JsonLoadContext();
+		if (IsBuiltin(name))
+		{
+			bool okB = BuiltinContent(scope, name, content);
+			DCO_Perf.Count("preset:builtin_load");
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("dco_preset_builtin scope=%1 name=%2 ok=%3", scope, name, DCO_Util.B01(okB)));
+			return okB;
+		}
+		JsonLoadContext load = new JsonLoadContext();
 		if (!load.LoadFromFile(PathOf(scope, name)))
 			return false;
 		string fileScope;
@@ -208,6 +305,8 @@ class DCO_SettingsPresets
 
 	static bool Delete(string scope, string name)
 	{
+		if (IsBuiltin(name))
+			return false;
 		if (!Exists(scope, name))
 			return false;
 		return FileIO.DeleteFile(PathOf(scope, name));

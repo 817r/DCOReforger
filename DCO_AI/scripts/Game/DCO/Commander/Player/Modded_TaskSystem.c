@@ -1,6 +1,19 @@
 modded class SCR_TaskSystem
 {
-	protected static const ref array<string> DCO_COMPASS = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"};
+	protected static string DCO_CompassName(int sector)
+	{
+		switch (sector)
+		{
+			case 1: return "NE";
+			case 2: return "E";
+			case 3: return "SE";
+			case 4: return "S";
+			case 5: return "SW";
+			case 6: return "W";
+			case 7: return "NW";
+		}
+		return "N";
+	}
 
 	override protected void OnInit()
 	{
@@ -82,7 +95,7 @@ modded class SCR_TaskSystem
 
 		int dist = Math.Round(vector.DistanceXZ(task.GetTaskPosition(), me.GetOrigin()) / 10) * 10;
 		int sector = Math.Round(yaw / 45);
-		return string.Format("%1 m  ·  %2", dist, DCO_COMPASS[sector % 8]);
+		return string.Format("%1 m  ·  %2", dist, DCO_CompassName(sector % 8));
 	}
 
 	protected void DCO_Banner(string header, SCR_Task task, string sub, Color accent, string sound)

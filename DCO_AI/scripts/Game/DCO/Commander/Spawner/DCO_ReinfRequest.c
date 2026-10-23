@@ -96,6 +96,8 @@ class DCO_ReinfBoard
 	float m_fFilledAt = -1000;
 	ref DCO_ReinfRequest m_Strength;
 	ref DCO_ReinfRequest m_Capability;
+	float m_fCapSince = -1;
+	float m_fCapGoneSince = -1;
 	protected ref map<DCO_GroupUtilityComponent, float> m_mCounted = new map<DCO_GroupUtilityComponent, float>();
 	protected ref map<DCO_GroupUtilityComponent, IEntity> m_mLeader = new map<DCO_GroupUtilityComponent, IEntity>();
 	protected ref map<DCO_GroupUtilityComponent, float> m_mLeaderLostAt = new map<DCO_GroupUtilityComponent, float>();
@@ -1008,25 +1010,46 @@ class DCO_ReinfBoard
 			capType = string.Empty;
 		if (!capType.IsEmpty())
 		{
+			m_fCapGoneSince = -1;
+			if (m_fCapSince < 0)
+			{
+				m_fCapSince = now;
+				DCO_Perf.Count("reinf:cap_wait");
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("reinf_cap_wait cmd=%1 type=%2 hold_s=90", cmd.GetCommanderUID(), capType));
+			}
 			if (m_Capability && m_Capability.m_sType != capType)
 			{
-				Cancel(m_Capability, "gap_closed");
+				Cancel(m_Capability, "type_change");
 				m_Capability = null;
+				m_fCapSince = now - 90.0;
 			}
-			if (!m_Capability)
+			if (!m_Capability && now - m_fCapSince >= 90.0)
 			{
 				m_Capability = Create(2, capType, "capability", capPrio, capGroups * 8.0, capGroups, cmd.GetOwner().GetOrigin(), now);
 				if (capType == "AT" && !armorList.IsEmpty())
 					m_Capability.m_vPos = armorList[0].m_vBelievedPos;
 				LogRequest(m_Capability);
 			}
-			else
+			else if (m_Capability)
 				Update(m_Capability, capPrio, capGroups * 8.0, capGroups, "capability", armorClose, now);
 		}
-		else if (m_Capability)
+		else
 		{
-			Cancel(m_Capability, "gap_closed");
-			m_Capability = null;
+			m_fCapSince = -1;
+			if (m_Capability)
+			{
+				if (m_fCapGoneSince < 0)
+				{
+					m_fCapGoneSince = now;
+					DCO_Perf.Count("reinf:cap_gone_wait");
+				}
+				else if (now - m_fCapGoneSince >= 120.0)
+				{
+					Cancel(m_Capability, "gap_closed");
+					m_Capability = null;
+					m_fCapGoneSince = -1;
+				}
+			}
 		}
 	}
 }

@@ -106,6 +106,8 @@ class DCO_Rearm
 		ChimeraCharacter me = ChimeraCharacter.Cast(u.m_OwnerEntity);
 		if (!me || me.IsInVehicle() || !DCO_GlobalAIComponent.BehaviorOnFor(me, DCO_EBehavior.REARM))
 			return;
+		if (DCO_WeaponPickup.CivilianBlocked(u, me, "rearm"))
+			return;
 		if (u.FindActionOfType(DCO_AIRearmBehavior))
 			return;
 
@@ -124,8 +126,17 @@ class DCO_Rearm
 			TryOppLoot(u, me, combat, well, spare, now, st);
 			return;
 		}
-		if (spare < 0 || spare > 1 || now < st.m_fNextSearch_ms)
+		int thr = Math.Round(st.m_iInitSpare / 3.0);
+		if (thr < 1)
+			thr = 1;
+		if (spare < 0 || spare > thr || now < st.m_fNextSearch_ms)
 			return;
+		bool threatened = u.m_ThreatSystem && u.m_ThreatSystem.GetState() == EAIThreatState.THREATENED;
+		if (spare > 1 && (threatened || GroupInContact(u)))
+		{
+			DCO_Perf.Count("rearm:early_skip_contact");
+			return;
+		}
 		if (spare > 0 && spare >= st.m_iInitSpare && DCO_Stress.T(u, "rearm.rel_init", 1.0) > 0.5)
 		{
 			st.m_fNextSearch_ms = now + 15000.0;
@@ -140,15 +151,34 @@ class DCO_Rearm
 			return;
 		}
 
-		bool threatened = u.m_ThreatSystem && u.m_ThreatSystem.GetState() == EAIThreatState.THREATENED;
+		if (spare == 0 && !threatened && TryShare(u, me, well, now))
+			return;
+
 		float maxDist = 35.0;
 		if (spare == 0)
 			maxDist = 60.0;
 		if (threatened || Leashed(u))
 			maxDist = 15.0;
+		float vehMax = 60.0;
+		if (threatened || Leashed(u))
+			vehMax = 15.0;
+		IEntity gveh = GroupVehicle(u);
 
 		bool station;
-		IEntity src = Pick(me, well, maxDist, station, now, st);
+		IEntity src = Pick(me, well, maxDist, station, now, st, gveh, vehMax);
+		if (!src && threatened && !Leashed(u))
+		{
+			IEntity far = Pick(me, well, 25.0, station, now, st, null, 0);
+			if (far && SourceAwayFromThreat(u, me, combat, far, now))
+			{
+				src = far;
+				DCO_Perf.Count("rearm:threat_side_ok");
+			}
+			else if (far)
+				DCO_Perf.Count("rearm:threat_side_reject");
+		}
+		if (spare > 1 && src)
+			DCO_Perf.Count("rearm:start_early");
 		if (!src)
 		{
 			DCO_Perf.Count("rearm:no_source");
@@ -157,11 +187,154 @@ class DCO_Rearm
 			return;
 		}
 
-		if (!station)
+		if (!station && !Vehicle.Cast(src))
 			Book(src, now + 95000.0);
 		DCO_AIRearmBehavior rb = new DCO_AIRearmBehavior(u, null, src, station, well, spare);
 		rb.DCO_SetState(st);
 		u.AddAction(rb);
+	}
+
+	protected static ref map<IEntity, float> s_mShareUntil;
+
+	protected static bool ShareBlocked(IEntity donor, float now)
+	{
+		if (!s_mShareUntil)
+			return false;
+		float until;
+		if (!s_mShareUntil.Find(donor, until))
+			return false;
+		if (now < until)
+			return true;
+		s_mShareUntil.Remove(donor);
+		return false;
+	}
+
+	protected static bool GroupInContact(SCR_AIUtilityComponent u)
+	{
+		AIAgent agent = u.GetAIAgent();
+		if (!agent || !agent.GetParentGroup())
+			return false;
+		DCO_GroupUtilityComponent g = DCO_GroupUtilityComponent.Cast(agent.GetParentGroup().FindComponent(DCO_GroupUtilityComponent));
+		return g && g.HasState(DCO_EGroupState.IN_CONTACT);
+	}
+
+	protected static IEntity GroupVehicle(SCR_AIUtilityComponent u)
+	{
+		AIAgent agent = u.GetAIAgent();
+		if (!agent || !agent.GetParentGroup())
+			return null;
+		DCO_GroupUtilityComponent g = DCO_GroupUtilityComponent.Cast(agent.GetParentGroup().FindComponent(DCO_GroupUtilityComponent));
+		if (!g)
+			return null;
+		return g.GetGroupVehicle();
+	}
+
+	static bool MoveOneMag(IEntity from, IEntity to, typename well, out int rounds)
+	{
+		rounds = 0;
+		SCR_InventoryStorageManagerComponent src = SCR_InventoryStorageManagerComponent.Cast(from.FindComponent(SCR_InventoryStorageManagerComponent));
+		SCR_InventoryStorageManagerComponent dst = SCR_InventoryStorageManagerComponent.Cast(to.FindComponent(SCR_InventoryStorageManagerComponent));
+		if (!src || !dst)
+			return false;
+		array<IEntity> items = {};
+		array<typename> comps = {};
+		comps.Insert(MagazineComponent);
+		src.FindItemsWithComponents(items, comps);
+		foreach (IEntity it : items)
+		{
+			MagazineComponent mag = MagazineComponent.Cast(it.FindComponent(MagazineComponent));
+			if (!mag || !mag.GetMagazineWell() || mag.GetMagazineWell().Type() != well)
+				continue;
+			int r = mag.GetAmmoCount();
+			if (r <= 0)
+				continue;
+			if (it.GetParent() && it.GetParent().FindComponent(BaseWeaponComponent) && !ChimeraCharacter.Cast(it.GetParent()))
+				continue;
+			BaseInventoryStorageComponent storage = dst.FindStorageForItem(it, EStoragePurpose.PURPOSE_DEPOSIT);
+			if ((storage && dst.TryMoveItemToStorage(it, storage)) || dst.TryInsertItem(it, EStoragePurpose.PURPOSE_DEPOSIT))
+			{
+				rounds = r;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	protected static bool TryShare(SCR_AIUtilityComponent u, ChimeraCharacter me, typename well, float now)
+	{
+		AIAgent agent = u.GetAIAgent();
+		if (!agent || !agent.GetParentGroup())
+			return false;
+		array<AIAgent> agents = {};
+		agent.GetParentGroup().GetAgents(agents);
+		IEntity donor;
+		int donorSpare;
+		foreach (AIAgent a : agents)
+		{
+			if (!a || a == agent)
+				continue;
+			IEntity e = a.GetControlledEntity();
+			if (!e || !DCO_Util.IsAlive(e) || vector.DistanceXZ(e.GetOrigin(), me.GetOrigin()) > 10.0)
+				continue;
+			SCR_AICombatComponent dc = SCR_AICombatComponent.Cast(e.FindComponent(SCR_AICombatComponent));
+			typename dw;
+			int ds = SpareMags(dc, e, dw);
+			if (dw != well || ds < 3 || ds <= donorSpare || ShareBlocked(e, now))
+				continue;
+			donor = e;
+			donorSpare = ds;
+		}
+		if (!donor)
+		{
+			DCO_Perf.Count("rearm:share_no_donor");
+			return false;
+		}
+		int rounds;
+		if (!MoveOneMag(donor, me, well, rounds))
+		{
+			DCO_Perf.Count("rearm:share_fail");
+			return false;
+		}
+		if (!s_mShareUntil)
+			s_mShareUntil = new map<IEntity, float>();
+		s_mShareUntil.Set(donor, now + 60000.0);
+		DCO_Perf.Count("rearm:share");
+		DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("ammo_share from=%1 to=%2 well=%3 rounds=%4 donor_left=%5", DCO_Log.IdUnit(donor), DCO_Log.IdUnit(me), well.ToString(), rounds, donorSpare - 1));
+		return true;
+	}
+
+	protected static bool SourceAwayFromThreat(SCR_AIUtilityComponent u, ChimeraCharacter me, SCR_AICombatComponent combat, IEntity src, float now)
+	{
+		vector tpos = vector.Zero;
+		bool have = false;
+		BaseTarget cur;
+		if (combat)
+			cur = combat.GetCurrentTarget();
+		if (cur)
+		{
+			tpos = cur.GetLastSeenPosition();
+			have = true;
+		}
+		else
+		{
+			AIAgent agent = u.GetAIAgent();
+			float fr;
+			int fn;
+			if (agent && agent.GetParentGroup() && DCO_FireEstimate.Get(agent.GetParentGroup(), now, 20000.0, tpos, fr, fn))
+				have = true;
+		}
+		if (!have)
+			return false;
+		vector toSrc = src.GetOrigin() - me.GetOrigin();
+		vector toThr = tpos - me.GetOrigin();
+		toSrc[1] = 0;
+		toThr[1] = 0;
+		if (toSrc.Length() < 1.0 || toThr.Length() < 1.0)
+			return false;
+		float dot = vector.Dot(toSrc.Normalized(), toThr.Normalized());
+		bool ok = dot < -0.3;
+		DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("rearm_side who=%1 src_d=%2 dot=%3 ok=%4", DCO_Log.IdUnit(me), Math.Round(toSrc.Length()), dot.ToString(-1, 2), DCO_Util.B01(ok)));
+		return ok;
 	}
 
 	protected static void TryOppLoot(SCR_AIUtilityComponent u, ChimeraCharacter me, SCR_AICombatComponent combat, typename well, int spare, float now, DCO_RearmState st)
@@ -178,7 +351,7 @@ class DCO_Rearm
 			return;
 		}
 		bool station;
-		IEntity src = Pick(me, well, 10.0, station, now, st);
+		IEntity src = Pick(me, well, 10.0, station, now, st, null, 0);
 		if (!src || station)
 			return;
 		if (!DCO_Opp.LootSafe(u, src))
@@ -281,7 +454,7 @@ class DCO_Rearm
 		return a.Count();
 	}
 
-	protected static IEntity Pick(IEntity me, typename well, float maxDist, out bool station, float now, DCO_RearmState st)
+	protected static IEntity Pick(IEntity me, typename well, float maxDist, out bool station, float now, DCO_RearmState st, IEntity veh, float vehMax)
 	{
 		vector mp = me.GetOrigin();
 		float maxSq = maxDist * maxDist;
@@ -362,6 +535,17 @@ class DCO_Rearm
 				station = false;
 			}
 		}
+		if (veh && vehMax > 0 && !(st && st.IsBlocked(veh, now)))
+		{
+			float vSq = vector.DistanceSqXZ(mp, veh.GetOrigin());
+			if (vSq <= vehMax * vehMax && vSq < bestScore && HasMags(veh, well))
+			{
+				bestScore = vSq;
+				best = veh;
+				station = false;
+				DCO_Perf.Count("rearm:pick_vehicle");
+			}
+		}
 		s_sLastRej = string.Format("far:%1|booked:%2|faction:%3|nomags:%4", rFar, rBooked, rFaction, rNoMags);
 		return best;
 	}
@@ -377,6 +561,21 @@ class DCO_TakeBehavior : SCR_AIBehaviorBase
 	float DCO_CurrentPrio()
 	{
 		return 0;
+	}
+
+	float DCO_Yielded(float p, IEntity src)
+	{
+		if (p <= 0 || !m_Utility || !m_Utility.m_OwnerEntity)
+			return p;
+		float td;
+		if (!DCO_ContactYield.Should(m_Utility, ClassName(), td))
+			return p;
+		if (src && td > 50.0 && vector.DistanceXZ(m_Utility.m_OwnerEntity.GetOrigin(), src.GetOrigin()) <= 10.0)
+		{
+			DCO_Perf.Count("yield:take_finish_first");
+			return p;
+		}
+		return Math.Min(p, 69.0);
 	}
 }
 
@@ -481,6 +680,8 @@ class DCO_AIRearmBehavior : DCO_TakeBehavior
 	{
 		if (m_bDCOStation)
 			return "station";
+		if (Vehicle.Cast(m_DCOSource))
+			return "vehicle";
 		return "corpse";
 	}
 
@@ -504,7 +705,7 @@ class DCO_AIRearmBehavior : DCO_TakeBehavior
 
 	override float DCO_CurrentPrio()
 	{
-		return m_fDCOPrio;
+		return DCO_Yielded(m_fDCOPrio, m_DCOSource);
 	}
 
 	override int GetCause()
@@ -578,7 +779,7 @@ class DCO_AIRearmBehavior : DCO_TakeBehavior
 			if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG))
 				DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(me), string.Format("rearm_pause who=%1 paused=%2 reason=threatened dist=%3", DCO_Log.IdUnit(me), DCO_Util.B01(paused), Math.Round(d)));
 		}
-		return m_fDCOPrio;
+		return DCO_Yielded(m_fDCOPrio, m_DCOSource);
 	}
 
 	override int DCO_DoTake()

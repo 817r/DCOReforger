@@ -130,6 +130,25 @@ class CMD_ThreatEntry
 		return m_iMG > 0 || m_iAT > 0 || m_bFiringAtUs || m_iArmor > 0 || m_bArmorSeen;
 	}
 
+	ref map<string, float> m_mDCOReporterAt = new map<string, float>();
+
+	void DCO_NoteReporter(string name, float now)
+	{
+		if (!name.IsEmpty())
+			m_mDCOReporterAt.Set(name, now);
+	}
+
+	int DCO_Reporters(float now, float window_s)
+	{
+		int n;
+		foreach (string k, float at : m_mDCOReporterAt)
+		{
+			if (now - at <= window_s)
+				n++;
+		}
+		return n;
+	}
+
 	void MergeReport(CMD_ContactReport r)
 	{
 		m_iMG = Math.Max(m_iMG, r.m_iMG);
@@ -183,6 +202,7 @@ class CMD_FireMissionRequest
 	int m_iPlayerGroup = -1;
 	bool m_bQueued;
 	string m_sDeny;
+	int m_iPriority = 1;
 
 	void CMD_FireMissionRequest(vector pos, SCR_EAIArtilleryAmmoType shellType, float time, int req = 1, float targetLastSeenTime = -1.0, float reportQuality = 0.7)
 	{

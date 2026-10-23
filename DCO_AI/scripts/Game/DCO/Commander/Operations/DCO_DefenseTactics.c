@@ -738,8 +738,52 @@ class DCO_DefenseTactics : Managed
 		return DCO_DoctrineDefense.Decide(cmd, p.m_Obj, p.m_fRatio, conf, prepared, encircled, Allowed(cmd, DCO_EDefTacticFlag.DELAY), p.m_iDocBand, band);
 	}
 
+	protected float DefLosses(DCO_DefensePlan p)
+	{
+		int start;
+		int alive;
+		foreach (int i, DCO_GroupUtilityComponent g : p.m_aGroups)
+		{
+			start += p.m_aStartUnits[i];
+			if (g && g.GetOwner())
+				alive += g.GetUnitCount();
+		}
+		if (start <= 0)
+			return 0;
+		return 1.0 - 1.0 * alive / start;
+	}
+
+	protected void FallbackFinal(AICommander_BaseComponent cmd, DCO_DefensePlan p, array<DCO_GroupUtilityComponent> defs, float now, string why)
+	{
+		vector objPos = p.m_Obj.GetOwner().GetOrigin();
+		float R = p.m_Obj.GetRadius();
+		vector fl = FinalLine(p, objPos, R);
+		vector side = Vector(-p.m_vAxis[2], 0, p.m_vAxis[0]);
+		int moved;
+		foreach (int i, DCO_GroupUtilityComponent g : defs)
+		{
+			if (!g || !g.GetOwner() || g.IsInTransport())
+				continue;
+			vector pos = DCO_Util.Surface(fl + side * (12.0 * (i - (defs.Count() - 1) * 0.5)));
+			SetRole(p, g, DCO_EDefRole.FINAL);
+			Place(cmd, g, pos, objPos + p.m_vAxis * R, true, now);
+			moved++;
+		}
+		p.m_iFallbacks++;
+		DCO_Perf.Count("relentless_cmd:def_final_line");
+		Event(string.Format("def_phase obj=%1 tactic=%2 phase=relentless_final why=%3 groups=%4 moved=%5 losses=%6 pos=%7", p.m_Obj.GetLogName(), Name(p.m_eTactic), why, defs.Count(), moved, DefLosses(p).ToString(-1, 2), DCO_Util.XZ(fl)));
+	}
+
 	protected void DoctrineRetreat(AICommander_BaseComponent cmd, DCO_DefensePlan p, array<DCO_GroupUtilityComponent> defs, array<CMD_ThreatEntry> near, bool fallback, float now)
 	{
+		if (cmd.DCO_RelentlessCmd() && DefLosses(p) < 0.7)
+		{
+			string rWhy = "withdraw";
+			if (fallback)
+				rWhy = "fallback";
+			FallbackFinal(cmd, p, defs, now, "doctrine_" + rWhy);
+			return;
+		}
 		string target;
 		vector to = DCO_DoctrineDefense.RetreatTarget(cmd, p.m_Obj, p.m_vAxis, fallback, target);
 		int moved;
@@ -1405,9 +1449,16 @@ class DCO_DefenseTactics : Managed
 			return false;
 		if (p.m_iDelayStep >= 3)
 			return true;
+		if (cmd.DCO_RelentlessCmd() && p.m_iDelayStep >= 1)
+		{
+			DCO_Perf.Count("relentless_cmd:delay_hold_final");
+			return false;
+		}
 		vector objPos = p.m_Obj.GetOwner().GetOrigin();
 		p.m_iDelayStep++;
 		vector next = DCO_Util.Surface(objPos - p.m_vAxis * (150.0 * (p.m_iDelayStep + 1)));
+		if (cmd.DCO_RelentlessCmd())
+			next = FinalLine(p, objPos, p.m_Obj.GetRadius());
 		p.m_fNextBound = now + 90.0;
 		int moveN = Math.Round(DCO_Force.Share(cmd, "delay_move") * line.Count());
 		if (moveN < 1)
@@ -1607,7 +1658,10 @@ class DCO_DefenseTactics : Managed
 			if (!t.m_bFiringAtUs || vector.DistanceXZ(t.m_vBelievedPos, objPos) > R + 150.0)
 				continue;
 			float still = StillFor(t, now);
-			if (still >= 60.0 && still > fixedS)
+			float needStill = 60.0;
+			if (cmd.DCO_RelentlessCmd())
+				needStill = 0.0;
+			if (still >= needStill && (still > fixedS || !fixedT))
 			{
 				fixedS = still;
 				fixedT = t;
@@ -1618,8 +1672,10 @@ class DCO_DefenseTactics : Managed
 		if (DCO_Force.Max(cmd, "counter") < 1)
 			return;
 		DCO_GroupUtilityComponent res2 = p.m_Reserve;
-		if (!res2 && defs.Count() == 2)
+		if (!res2 && (defs.Count() == 2 || cmd.DCO_RelentlessCmd()))
 			res2 = LeastEngaged(p, defs, near);
+		if (res2 && cmd.DCO_RelentlessCmd())
+			DCO_Perf.Count("relentless_cmd:counter_try");
 		if (!res2 || res2.HasState(DCO_EGroupState.IN_CONTACT))
 			return;
 

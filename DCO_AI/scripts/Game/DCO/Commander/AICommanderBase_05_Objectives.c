@@ -2,7 +2,22 @@ modded class AICommander_BaseComponent
 {
 	void SetObjectiveCooldown(CMD_AICommanderObjectiveComponent obj, float seconds)
 	{
+		if (DCO_RelentlessCmd() && seconds > 60.0)
+		{
+			DCO_Perf.Count("relentless_cmd:cooldown_cap");
+			seconds = 60.0;
+		}
 		m_mAttackCooldown.Set(obj, DCO_Util.NowS() + seconds);
+	}
+
+	bool DCO_AggressiveCmd()
+	{
+		return DCO_EffTraitAggression() >= 1.5;
+	}
+
+	bool DCO_RelentlessCmd()
+	{
+		return DCO_RelentlessAttr() || DCO_AggressiveCmd();
 	}
 
 	float GetMinAttackRatio()
@@ -13,6 +28,11 @@ modded class AICommander_BaseComponent
 			r = Math.Max(1, d.m_fAttackRatio * Math.Lerp(m_fRatioScaleCautious, m_fRatioScaleAggressive, Math.Clamp(DCO_EffTraitAggression() / 2, 0, 1)));
 		else
 			r = Math.Max(1, Math.Lerp(m_fAttackRatioCautious, m_fAttackRatioAggressive, DCO_EffAggression()));
+		if (DCO_AggressiveCmd() && r > 1.3)
+		{
+			r = 1.3;
+			DCO_Perf.Count("doctrine:aggr_ratio_floor");
+		}
 		if (!DCO_AggProfile())
 			return r;
 		float floorR = Math.Min(r, DCO_Ctx.TuneForCmd(this, "agg.k2_ratio_floor", 1.3));

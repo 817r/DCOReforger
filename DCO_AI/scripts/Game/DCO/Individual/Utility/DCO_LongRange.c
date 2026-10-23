@@ -128,7 +128,7 @@ class DCO_LongRange
 
 	static void ApplyStance(SCR_AIUtilityComponent u, bool visible)
 	{
-		if (!u.m_CombatComponent)
+		if (!u.m_CombatComponent || DCO_Relentless.Unit(u))
 			return;
 		SCR_CharacterControllerComponent ctrl = u.m_CombatComponent.GetCharacterController();
 		if (!ctrl)

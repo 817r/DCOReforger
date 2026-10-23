@@ -17,6 +17,9 @@ class DCO_StragglerWatch
 
 	protected ref map<AIAgent, ref DCO_StragglerEntry> m_mEntries = new map<AIAgent, ref DCO_StragglerEntry>();
 	protected float m_fNext_ms;
+	protected float m_fFarAnySince_ms = -1;
+	protected float m_fHoldSince_ms = -1;
+	protected float m_fHoldCooldown_ms;
 
 	bool IsStuck(AIAgent agent)
 	{
@@ -55,9 +58,18 @@ class DCO_StragglerWatch
 		IEntity leader = group.GetLeaderEntity();
 		AIAgent leaderAgent = group.GetLeaderAgent();
 		vector leaderPos = leader.GetOrigin();
-		float moveCohesion = Math.Max(cohesion, 80.0);
+		float moveCohesion = cohesion;
 		DCO_GroupUtilityComponent dgu = DCO_GroupUtilityComponent.Cast(group.FindComponent(DCO_GroupUtilityComponent));
 		bool grpContact = dgu && dgu.HasState(DCO_EGroupState.IN_CONTACT);
+		if (dgu)
+		{
+			float span = DCO_Formation.Span(dgu.DCO_GetFormation(), group.GetAgentsCount());
+			if (span * 1.3 > moveCohesion)
+			{
+				moveCohesion = span * 1.3;
+				DCO_Perf.Count("straggler:span_limit");
+			}
+		}
 		SCR_AIGroupUtilityComponent sgu = SCR_AIGroupUtilityComponent.Cast(group.FindComponent(SCR_AIGroupUtilityComponent));
 		bool grpBusy = false;
 		if (sgu)
@@ -66,6 +78,9 @@ class DCO_StragglerWatch
 			grpBusy = gact && gact.ClassName().Contains("Cluster");
 		}
 
+		bool anyFar;
+		float farDist;
+		string farUnit;
 		array<AIAgent> agents = {};
 		group.GetAgents(agents);
 		for (int i = m_mEntries.Count() - 1; i >= 0; i--)
@@ -94,6 +109,12 @@ class DCO_StragglerWatch
 			{
 				bool urban;
 				limit = DCO_Util.CombatCohesionDist(group, c, leader, urban);
+			}
+			if (!grpContact && dist > limit * 1.5 && dist > farDist)
+			{
+				anyFar = true;
+				farDist = dist;
+				farUnit = DCO_Log.IdUnit(c);
 			}
 			if (dist <= limit)
 			{
@@ -163,7 +184,7 @@ class DCO_StragglerWatch
 
 				e.m_iRetries++;
 				e.m_fBestTime_ms = now_ms;
-				ActionLog(group, c, dist, "regroup_alt", now_ms - e.m_fFarSince_ms, DCO_ELogLevel.DEBUG, "");
+				ActionLog(group, c, dist, "regroup_alt", now_ms - e.m_fFarSince_ms, DCO_ELogLevel.INFO, "");
 				PushRegroup(util, e, AltPoint(leaderPos, c.GetOrigin()), null, limit);
 				continue;
 			}
@@ -174,10 +195,53 @@ class DCO_StragglerWatch
 			if (log)
 				LogStraggler(c, util, dist, group);
 
-			ActionLog(group, c, dist, "regroup", now_ms - e.m_fFarSince_ms, DCO_ELogLevel.DEBUG, "");
+			ActionLog(group, c, dist, "regroup", now_ms - e.m_fFarSince_ms, DCO_ELogLevel.INFO, "");
 			FailStale(util);
 			PushRegroup(util, e, leaderPos, leader, limit);
 		}
+		CohesionHold(now_ms, group, leader, leaderAgent, anyFar, farDist, farUnit, grpContact);
+	}
+
+	protected void CohesionHold(float now_ms, AIGroup group, IEntity leader, AIAgent leaderAgent, bool anyFar, float farDist, string farUnit, bool grpContact)
+	{
+		if (!anyFar || grpContact)
+		{
+			m_fFarAnySince_ms = -1;
+			if (m_fHoldSince_ms >= 0)
+			{
+				DCO_Perf.Count("cohesion:hold_end");
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(group), string.Format("cohesion_hold grp=%1 phase=end wait_s=%2", DCO_Log.IdGroup(group), Math.Round((now_ms - m_fHoldSince_ms) / 1000.0)));
+				m_fHoldSince_ms = -1;
+			}
+			return;
+		}
+		if (m_fFarAnySince_ms < 0)
+			m_fFarAnySince_ms = now_ms;
+		if (now_ms - m_fFarAnySince_ms < 10000.0 || now_ms < m_fHoldCooldown_ms || !group.GetCurrentWaypoint())
+			return;
+		ChimeraCharacter lc = ChimeraCharacter.Cast(leader);
+		SCR_ChimeraAIAgent la = SCR_ChimeraAIAgent.Cast(leaderAgent);
+		if (!lc || lc.IsInVehicle() || !la || !la.m_UtilityComponent)
+			return;
+		if (m_fHoldSince_ms < 0)
+		{
+			m_fHoldSince_ms = now_ms;
+			DCO_Perf.Count("cohesion:hold_start");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(group), string.Format("cohesion_hold grp=%1 phase=start unit=%2 dist=%3", DCO_Log.IdGroup(group), farUnit, Math.Round(farDist)));
+		}
+		if (now_ms - m_fHoldSince_ms > 45000.0)
+		{
+			m_fHoldCooldown_ms = now_ms + 60000.0;
+			DCO_Perf.Count("cohesion:hold_giveup");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(group), string.Format("cohesion_hold grp=%1 phase=giveup unit=%2 dist=%3 wait_s=45", DCO_Log.IdGroup(group), farUnit, Math.Round(farDist)));
+			m_fHoldSince_ms = -1;
+			m_fFarAnySince_ms = -1;
+			return;
+		}
+		vector lp = leader.GetOrigin();
+		vector face = lp + leader.GetTransformAxis(2) * 10.0;
+		DCO_Specialist.CombatMove(la.m_UtilityComponent, lp, face, false, ECharacterStance.CROUCH, 4.0);
+		DCO_Perf.Count("cohesion:hold_tick");
 	}
 
 	protected void ActionLog(AIGroup group, ChimeraCharacter c, float dist, string action, float far_ms, DCO_ELogLevel level, string extra)
@@ -296,7 +360,7 @@ class DCO_StragglerWatch
 			if (DCO_Log.On(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG))
 				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(util.m_OwnerEntity), string.Format("straggler_regroup_prio unit=%1 prio=%2 reason=has_target", DCO_Log.IdUnit(util.m_OwnerEntity), prio));
 		}
-		SCR_AIMoveIndividuallyBehavior regroup = new SCR_AIMoveIndividuallyBehavior(util, null, pos, prio, ent: leader, radius: cohesion * 0.5);
+		SCR_AIMoveIndividuallyBehavior regroup = new DCO_MoveIndividuallyBehavior(util, null, pos, prio, ent: leader, radius: cohesion * 0.5);
 		util.AddAction(regroup);
 		e.m_Regroup = regroup;
 

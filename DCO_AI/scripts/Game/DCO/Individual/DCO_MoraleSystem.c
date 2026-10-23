@@ -43,6 +43,10 @@ class DCO_AIMoraleSystem
 	private bool m_bDCOCalm;
 	private string m_sLastEvent = "-";
 	private string m_sCondTop = "-";
+	private float m_fDCOHitStress_ms = -1;
+	private float m_fDCOBonusRaw;
+	private ref array<float> m_aDCOPanicAt;
+	private float m_fDCOShutdownStart_ms = -1;
 
 	private SCR_AIUtilityComponent				m_Utility;
 	private SCR_AICombatComponent				m_Combat;
@@ -156,6 +160,24 @@ class DCO_AIMoraleSystem
 		DCO_Perf.Count("morale:" + why);
 	}
 
+	void DCO_NoteHit()
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (m_fDCOHitStress_ms >= 0 && now - m_fDCOHitStress_ms < 3000.0)
+			return;
+		float v = DCO_Stress.T(m_Utility, "tm.morale_hit", 0.3);
+		if (v <= 0)
+			return;
+		string why = "hit";
+		if (m_fDCOHitStress_ms >= 0 && now - m_fDCOHitStress_ms < 30000.0)
+		{
+			v *= 0.5;
+			why = "hit_again";
+		}
+		m_fDCOHitStress_ms = now;
+		AddStress(v, why);
+	}
+
 	void DCO_NoteUnseen()
 	{
 		float now = GetGame().GetWorld().GetWorldTime();
@@ -223,12 +245,97 @@ class DCO_AIMoraleSystem
 		m_fBelowSince_ms = -1;
 		DCO_Perf.Count("morale:to_" + typename.EnumToString(moraleState, newState));
 		if (m_Utility && m_Utility.m_OwnerEntity)
-			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("morale_state unit=%1 from=%2 to=%3 total=%4 top_cause=%5 hold_s=%6",
-				DCO_Log.IdUnit(m_Utility.m_OwnerEntity), typename.EnumToString(moraleState, prev), typename.EnumToString(moraleState, newState), m_fMoraleTotal.ToString(-1, 2), TopCause(), Math.Round(hold_s)));
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("morale_state unit=%1 from=%2 to=%3 total=%4 top_cause=%5 hold_s=%6 boost=%7 boost_raw=%8 pers=%9",
+				DCO_Log.IdUnit(m_Utility.m_OwnerEntity), typename.EnumToString(moraleState, prev), typename.EnumToString(moraleState, newState), m_fMoraleTotal.ToString(-1, 2), TopCause(), Math.Round(hold_s), m_fBoost.ToString(-1, 2), m_fDCOBonusRaw.ToString(-1, 2), DCO_Leadership.PersName(DCO_AIConfigComponent.PersonalityOf(m_Utility))));
 		if (m_Utility)
 			DCO_Events.Morale(m_Utility.m_OwnerEntity, prev, newState);
+		if (newState == moraleState.PANIC && m_Utility && m_Utility.m_OwnerEntity)
+			DCO_OnPanicEnter(now);
 		if (m_Combat)
 			m_Combat.DCO_OnMoraleState(prev, newState);
+	}
+
+	protected void DCO_OnPanicEnter(float now)
+	{
+		if (!m_aDCOPanicAt)
+			m_aDCOPanicAt = new array<float>();
+		m_aDCOPanicAt.Insert(now);
+		for (int i = m_aDCOPanicAt.Count() - 1; i >= 0; i--)
+		{
+			if (now - m_aDCOPanicAt[i] > 300000.0)
+				m_aDCOPanicAt.Remove(i);
+		}
+		int need = Math.Round(DCO_Stress.T(m_Utility, "tm.panic_shutdown_n", 3.0));
+		if (need > 0 && m_aDCOPanicAt.Count() >= need && m_fDCOShutdownStart_ms < 0)
+		{
+			m_fDCOShutdownStart_ms = now;
+			DCO_Perf.Count("morale:shutdown_on");
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("panic_shutdown unit=%1 on=1 panics=%2 window_s=300", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), m_aDCOPanicAt.Count()));
+		}
+		DCO_PanicShout(now);
+	}
+
+	protected void DCO_PanicShout(float now)
+	{
+		float v = DCO_Stress.T(m_Utility, "tm.panic_shout", 0.2) * (1.0 - DCO_Leadership.ShoutDamp(DCO_Leadership.OfGroupOf(m_Utility)));
+		if (v <= 0)
+			return;
+		AIAgent ag = m_Utility.GetAIAgent();
+		if (!ag || !ag.GetParentGroup())
+			return;
+		array<AIAgent> agents = {};
+		ag.GetParentGroup().GetAgents(agents);
+		vector mp = m_Utility.m_OwnerEntity.GetOrigin();
+		int n;
+		foreach (AIAgent a : agents)
+		{
+			IEntity e = a.GetControlledEntity();
+			if (!e || e == m_Utility.m_OwnerEntity || !DCO_Util.IsAlive(e))
+				continue;
+			if (vector.DistanceXZ(e.GetOrigin(), mp) > 20.0)
+				continue;
+			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
+			if (!ca || !ca.m_UtilityComponent || !ca.m_UtilityComponent.GetMoraleSystem())
+				continue;
+			ca.m_UtilityComponent.GetMoraleSystem().AddStress(v, "panic_shout");
+			n++;
+		}
+		DCO_Perf.Count("morale:panic_shout");
+		DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("panic_shout unit=%1 friends=%2 stress=%3", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), n, v.ToString(-1, 2)));
+	}
+
+	bool DCO_Shutdown()
+	{
+		if (m_fDCOShutdownStart_ms < 0)
+			return false;
+		float now = GetGame().GetWorld().GetWorldTime();
+		float hold = DCO_Stress.T(m_Utility, "tm.panic_shutdown_s", 60.0) * 1000.0;
+		if (now - m_fDCOShutdownStart_ms < hold || now - m_fLastBad_ms < hold)
+			return true;
+		float dur = (now - m_fDCOShutdownStart_ms) / 1000.0;
+		m_fDCOShutdownStart_ms = -1;
+		if (m_aDCOPanicAt)
+			m_aDCOPanicAt.Clear();
+		DCO_Perf.Count("morale:shutdown_off");
+		if (m_Utility && m_Utility.m_OwnerEntity)
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("panic_shutdown unit=%1 on=0 dur_s=%2", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), Math.Round(dur)));
+		return false;
+	}
+
+	protected bool DCO_LeaderRally()
+	{
+		if (!DCO_Stress.LeaderNear(m_Utility, DCO_Stress.T(m_Utility, "tm.panic_rally_m", 10.0)))
+			return false;
+		AIAgent ag = m_Utility.GetAIAgent();
+		if (!ag)
+			return false;
+		SCR_AIGroup grp = SCR_AIGroup.Cast(ag.GetParentGroup());
+		if (!grp)
+			return false;
+		SCR_ChimeraAIAgent la = SCR_ChimeraAIAgent.Cast(grp.GetLeaderAgent());
+		if (!la || !la.m_UtilityComponent || !la.m_UtilityComponent.GetMoraleSystem())
+			return false;
+		return la.m_UtilityComponent.GetMoraleSystem().GetState() <= moraleState.TENSE;
 	}
 
 	protected string TopCause()
@@ -271,6 +378,11 @@ class DCO_AIMoraleSystem
 	{
 		moraleState newState = moraleState.CALM;
 		float personalityScale = Math.Clamp(DCO_PersonalityCombatUtility.GetMoraleThresholdScale(m_Utility) * SkillScale() * (1.0 + m_fVeteranBonus) * m_fDCOLevelMul, 0.7, 1.3);
+		if (DCO_Relentless.Unit(m_Utility))
+		{
+			DCO_Perf.Count("relentless:morale_scale");
+			personalityScale = personalityScale * 1.3;
+		}
 
 		if (m_fMoraleTotal > Threshold(moraleState.BREAK, personalityScale))
 			newState = moraleState.BREAK;
@@ -285,6 +397,9 @@ class DCO_AIMoraleSystem
 		if (m_State == moraleState.PANIC)
 		{
 			float panicMax = DCO_Stress.T(m_Utility, "tm.panic_max_s", 30.0);
+			bool rally = DCO_LeaderRally();
+			if (rally)
+				panicMax = Math.Min(panicMax, DCO_Stress.T(m_Utility, "tm.panic_rally_s", 10.0) * DCO_Leadership.RallyMul(DCO_Leadership.OfGroupOf(m_Utility)));
 			if (panicMax > 0 && panicNow - m_fStateEnter_ms >= panicMax * 1000.0)
 			{
 				float cap = Threshold(moraleState.PANIC, personalityScale) * 0.9;
@@ -300,8 +415,10 @@ class DCO_AIMoraleSystem
 				}
 				m_fDCOPanicRefractUntil_ms = panicNow + DCO_Stress.T(m_Utility, "tm.panic_refract_s", 20.0) * 1000.0;
 				DCO_Perf.Count("morale:panic_release");
+				if (rally)
+					DCO_Perf.Count("morale:rally");
 				if (m_Utility && m_Utility.m_OwnerEntity)
-					DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("panic_release unit=%1 held_s=%2 total=%3", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), Math.Round((panicNow - m_fStateEnter_ms) / 1000.0), m_fMoraleTotal.ToString(-1, 2)));
+					DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("panic_release unit=%1 held_s=%2 total=%3 rally=%4", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), Math.Round((panicNow - m_fStateEnter_ms) / 1000.0), m_fMoraleTotal.ToString(-1, 2), DCO_Util.B01(rally)));
 				StateTransition(moraleState.SHAKEN);
 				return;
 			}
@@ -588,6 +705,7 @@ class DCO_AIMoraleSystem
 		int near30;
 		int alive;
 		int contagion;
+		float relief;
 		bool armorNear;
 		bool activeNear;
 		foreach (AIAgent a : agents)
@@ -619,13 +737,14 @@ class DCO_AIMoraleSystem
 		}
 		IEntity leader = grp.GetLeaderEntity();
 		m_fBoost = Math.Min(near30, 6) * 0.1;
-		if (leader && leader != me && DCO_Util.IsAlive(leader) && vector.Distance(leader.GetOrigin(), mp) < 100.0)
+		int leadLvl = DCO_Leadership.OfEntity(leader);
+		if (leader && leader != me && DCO_Util.IsAlive(leader) && vector.Distance(leader.GetOrigin(), mp) < DCO_Leadership.AuraRadius(leadLvl))
 		{
-			m_fBoost += 0.15;
+			m_fBoost += DCO_Leadership.Aura(leadLvl);
 			SCR_ChimeraAIAgent la = SCR_ChimeraAIAgent.Cast(grp.GetLeaderAgent());
 			if (la && la.m_UtilityComponent && la.m_UtilityComponent.GetMoraleSystem() && la.m_UtilityComponent.GetMoraleSystem().GetState() == moraleState.CALM
 				&& vector.Distance(leader.GetOrigin(), mp) < 30.0)
-				m_fMoraleCondition -= 0.15;
+				relief += DCO_Leadership.Aura(leadLvl);
 		}
 		if (contagion > 0)
 		{
@@ -682,12 +801,21 @@ class DCO_AIMoraleSystem
 					continue;
 				if (vector.Distance(o.GetOwner().GetOrigin(), mp) < 100.0)
 				{
-					m_fMoraleCondition -= 0.3;
+					relief += 0.3;
 					DCO_Perf.Count("morale:friendly_support");
 					break;
 				}
 			}
 		}
+		float bonus = m_fBoost + relief;
+		m_fDCOBonusRaw = bonus;
+		float cap = DCO_Stress.T(m_Utility, "tm.morale_boost_cap", 0.5);
+		if (cap >= 0 && bonus > cap)
+		{
+			bonus = cap;
+			DCO_Perf.Count("morale:boost_capped");
+		}
+		m_fBoost = bonus;
 	}
 
 	void DCO_GetComponents(out float supp, out float endangered, out float events, out float relief, out float condition, out float boost)

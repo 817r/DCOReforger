@@ -1129,7 +1129,7 @@ class DCO_CmdViewUI : DCO_CVPainter
 			age = DCO_CmdViewStore.Clock(g.m_fAge);
 		if (m_iZoom >= 3 || hl)
 			MapLbl(gx, gy + 18.0 * m_fDpi, g.m_sCs + " · " + age, col, 18, sel);
-		string tip = g.m_sCs + " · " + DCO_CmdViewServer.RoleName(g.m_iRole) + "\n" + g.m_sTask + " · order " + age;
+		string tip = g.m_sCs + " · " + DCO_CmdViewServer.RoleName(g.m_iRole) + "\n" + g.m_sTask + " · order " + age + "\n" + g.m_sLine;
 		float r = 15.0 * m_fDpi;
 		Hit(2, g.m_iCi, gid, gx - r, gy - r, gx + r, gy + r, tip, col, g.m_fX, g.m_fZ);
 	}

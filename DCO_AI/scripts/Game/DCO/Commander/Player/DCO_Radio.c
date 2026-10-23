@@ -339,7 +339,7 @@ class DCO_Radio
 			return;
 		}
 
-		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
+		JsonLoadContext ctx = new JsonLoadContext();
 		if (!ctx.LoadFromFile("$profile:DCO/DCO_Radio.json"))
 		{
 			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.ERROR, "-", "FAILED to parse " + "$profile:DCO/DCO_Radio.json" + " -- using the default bank.");
@@ -408,7 +408,7 @@ class DCO_Radio
 	protected static void WriteTemplate()
 	{
 		FileIO.MakeDirectory("$profile:DCO");
-		SCR_JsonSaveContext save = new SCR_JsonSaveContext();
+		JsonSaveContext save = new JsonSaveContext();
 		save.WriteValue("_comment", "DCO radio override. Fill a key array with your own lines (they replace the default bank for that key). Optional tags in front: [US,AGGRESSIVE,CRITICAL] text. Faction = faction key, personality = AGGRESSIVE/CAUTIOUS/MEASURED, urgency = CRITICAL/CALM. Placeholders are the same as in the default bank, for example {callsign} {grid}. Empty array = use the default bank.");
 
 		array<string> keys = {};

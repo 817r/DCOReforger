@@ -265,7 +265,8 @@ class DCO_PlyLearn
 			vector bbMin, bbMax;
 			SCR_AISuppressionVolumeBase.CreateSuppressionBox(s.m_vPos, Math.Clamp(s.m_fErr, 2.0, 6.0), 3, bbMin, bbMax);
 			SCR_AISuppressionObjectVolumeBox vol = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
-			u.AddAction(new SCR_AISuppressBehavior(u, null, vol, 8.0, 1.5));
+			if (DCO_SuppressGate.Allowed(u, s.m_vPos, "plylearn"))
+				u.AddAction(new SCR_AISuppressBehavior(u, null, vol, 8.0, 1.5));
 			s.m_fSuppNext_ms = now + 20000.0;
 			what = "suppress";
 		}

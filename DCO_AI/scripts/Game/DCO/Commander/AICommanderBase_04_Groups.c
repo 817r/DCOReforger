@@ -318,6 +318,11 @@ modded class AICommander_BaseComponent
 
 	bool CanCommitGroup(DCO_GroupUtilityComponent grp)
 	{
+		if (grp && grp.IsSimOff())
+		{
+			DCO_Perf.Count("commit_skip:sim_off");
+			return false;
+		}
 		if (DCO_PlanGuard(grp, "commit"))
 			return false;
 

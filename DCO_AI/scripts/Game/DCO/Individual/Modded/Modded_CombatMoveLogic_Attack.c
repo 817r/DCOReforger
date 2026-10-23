@@ -356,7 +356,8 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (m_State.IsExecutingRequest())
 			return false;
 
-		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.85)
+		bool omRelentless = DCO_Relentless.Unit(m_Utility);
+		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.85 && !omRelentless)
 			return false;
 
 		if (m_fTargetDist > 30.0)
@@ -372,6 +373,8 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			}
 		}
 
+		if (omRelentless)
+			return m_State.m_fTimerStopped_s > 0.5;
 		return m_State.m_fTimerStopped_s > 2.5 * DCO_PersonalityCombatUtility.GetStoppedWaitTimeScale(m_Utility);
 	}
 
@@ -497,6 +500,8 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 	{
 		if (m_State.IsExecutingRequest() || m_State.m_bInCover || m_bCloseRangeCombat || !m_Target)
 			return false;
+		if (DCO_Relentless.Unit(m_Utility))
+			return false;
 		bool v2 = DCO_Stress.T(m_Utility, "tm.open_rule_v2", 1.0) > 0;
 		if (m_eThreatState < EAIThreatState.VIGILANT || (!v2 && m_eThreatState < EAIThreatState.ALERTED))
 			return false;
@@ -584,11 +589,14 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			return DCO_OvermatchMoveCondition();
 
 		m_bDCONoAdvance = !DCO_Engage.AdvanceAllowed(m_Utility, "move_next");
+		bool relentless = DCO_Relentless.Unit(m_Utility);
 		DCO_CtxState ctx = DCO_Ctx.Get(m_Utility);
 		if (ctx && !IsInvestigating())
 		{
 			int ctxMove = DCO_Ctx.P(ctx, DCO_ECtxParam.MOVE);
 			bool ctxAtk = DCO_CtxAttacker();
+			if (relentless)
+				ctxMove = 3;
 			if (ctxAtk && (ctxMove == 0 || ctxMove == 5 || ctxMove == 8 || (ctxMove == 2 && ctx.m_iKind == DCO_ECtxKind.NONE)))
 			{
 				DCO_Perf.Count("ctx:atk_keep_advance");
@@ -619,7 +627,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 					if (ctxGu && ctxGu.m_FireteamMgr)
 						ctxTurn = ctxGu.m_FireteamMgr.DCO_IsBoundingTurn(m_Utility.GetAIAgent(), ctxPaired, ctxPeriod);
 				}
-				if (!ctxTurn)
+				if (!ctxTurn && !relentless)
 				{
 					DCO_Perf.Count("ctx:bound_wait_" + ctxUnit);
 					return false;
@@ -666,7 +674,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			DCO_Perf.Count("pos_hold_move");
 			return false;
 		}
-		if (DCO_MoveBrain.On(m_Utility))
+		if (DCO_MoveBrain.On(m_Utility) && !relentless)
 		{
 			bool mbAttacker = posture != DCO_GroupTactics.DEFENSIVE && DCO_MbAttacker();
 			bool mbTb = false;
@@ -689,7 +697,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			return false;
 
 		bool holdLock = m_CombatComp.GetCombatMode() == EAIGroupCombatMode.HOLD_FIRE && !DCO_AssaultMoveAllowed();
-		if (m_Utility.ShouldKeepFormation() || holdLock)
+		if ((m_Utility.ShouldKeepFormation() && !relentless) || holdLock)
 		{
 			if (!IsFirstExecution())
 				return false;
@@ -724,6 +732,8 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 			if (m_State.m_bInCover)
 				aggrWait *= DCO_Stress.T(m_Utility, "tm.cover_hold_mul", 2.0);
 			aggrWait /= cqbAggr;
+			if (relentless)
+				aggrWait = 0.5;
 			if (m_State.m_fTimerStopped_s > aggrWait)
 			{
 				DCO_Perf.Count("aggr_push");
@@ -761,6 +771,28 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 
 	override protected void ResolveMoveRequestMovePosAndDir(vector targetPos, out vector outMovePos, out vector outAvoidStraightPathDir, out SCR_EAICombatMoveDirection outDirection, out float outCoverSearchSectorHalfAngleRad)
 	{
+		if (DCO_Relentless.Unit(m_Utility))
+		{
+			vector rlMy = m_MyEntity.GetOrigin();
+			vector rlTo = targetPos - rlMy;
+			rlTo[1] = 0;
+			float rlDist = rlTo.Length();
+			if (rlDist > 12.0)
+			{
+				float rlStep = Math.Min(rlDist - 8.0, 40.0);
+				vector rlSpot = DCO_Util.Surface(rlMy + rlTo * (rlStep / rlDist));
+				NavmeshWorldComponent rlNav = GetGame().GetAIWorld().GetNavmeshWorldComponent("Soldiers");
+				vector rlReach;
+				if (rlNav && rlNav.IsTileLoaded(rlSpot) && rlNav.GetReachablePoint(rlSpot, 3.0, rlReach))
+					rlSpot = rlReach;
+				outMovePos = rlSpot;
+				outDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
+				outAvoidStraightPathDir = vector.Zero;
+				outCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
+				DCO_Perf.Count("relentless:straight_bound");
+				return;
+			}
+		}
 		vector boundPos;
 		if (DCO_InOvermatch() && DCO_OvermatchBoundPos(targetPos, boundPos))
 		{
@@ -1064,10 +1096,26 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		if (!m_State.m_bInCover)
 			coverSearchDistMin = 3;
 
+		bool rqRelentless = DCO_Relentless.Unit(m_Utility);
+		if (rqRelentless)
+		{
+			DCO_Perf.Count("relentless:pace");
+			rq.m_bTryFindCover = false;
+			rq.m_bFailIfNoCover = false;
+			rq.m_bUseCoverSearchDirectivity = false;
+			rq.m_eMovementType = EMovementType.RUN;
+			if (m_fTargetDist > 60.0 && m_eThreatState != EAIThreatState.THREATENED)
+				rq.m_eMovementType = EMovementType.SPRINT;
+			if (m_eThreatState != EAIThreatState.THREATENED)
+				rq.m_eStanceMoving = ECharacterStance.STAND;
+		}
+
 		if (ctx)
 		{
 			int ctxMv = DCO_Ctx.P(ctx, DCO_ECtxParam.MOVE);
 			if (DCO_CtxAttacker() && (ctxMv == 0 || ctxMv == 5 || ctxMv == 8 || (ctxMv == 2 && ctx.m_iKind == DCO_ECtxKind.NONE)))
+				ctxMv = 3;
+			if (rqRelentless)
 				ctxMv = 3;
 			if (ctxMv <= 1)
 			{
@@ -1292,6 +1340,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.GetOnMovementStarted().Insert(OnMovementStarted);
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
 
+		m_State.m_bDCOFromAttackLogic = true;
 		m_State.ApplyNewRequest(rq);
 	}
 
@@ -1493,6 +1542,7 @@ modded class SCR_AICombatMoveLogic_Attack : SCR_AICombatMoveLogicBase
 		rq.m_bAimAtTarget = true;
 		rq.m_bAimAtTargetEnd = true;
 		rq.m_fMoveDuration_s = 6.0;
+		m_State.m_bDCOFromAttackLogic = true;
 		m_State.ApplyNewRequest(rq);
 	}
 

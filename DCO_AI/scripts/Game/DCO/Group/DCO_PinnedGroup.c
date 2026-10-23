@@ -48,7 +48,7 @@ class DCO_PinnedGroup
 
 		if (!u.m_bDCOPinGroup)
 		{
-			if (alive < 2 || ratio < 0.5)
+			if (alive < 2 || (pinned < 2 && ratio < 0.34))
 				return;
 			if (u.m_fDCOPinGroupAt_ms >= 0 && now_ms - u.m_fDCOPinGroupAt_ms < 60000.0)
 				return;
@@ -162,6 +162,8 @@ class DCO_PinnedGroup
 	protected static void Suppress(SCR_AIUtilityComponent fu, vector shooter)
 	{
 		if (!fu || !fu.m_CombatComponent || shooter == vector.Zero)
+			return;
+		if (!DCO_SuppressGate.Allowed(fu, shooter, "pinned"))
 			return;
 		vector bbMin, bbMax;
 		SCR_AISuppressionVolumeBase.CreateSuppressionBox(shooter, 3.0, 3, bbMin, bbMax);

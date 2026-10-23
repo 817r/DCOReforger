@@ -380,7 +380,8 @@ class CMD_ArtillerySupport : ScriptComponent
 	        return false;
 	    }
 
-	    if (req.m_iPlayerGroup < 0 && m_fBaseRejectionChance > 0 && Math.RandomFloat01() < m_fBaseRejectionChance)
+	    bool relentlessCmd = m_Commander && m_Commander.DCO_RelentlessCmd();
+	    if (req.m_iPlayerGroup < 0 && m_fBaseRejectionChance > 0 && !relentlessCmd && Math.RandomFloat01() < m_fBaseRejectionChance)
 	    {
 	        LogDenied(req, "random");
 	        return false;
@@ -406,23 +407,29 @@ class CMD_ArtillerySupport : ScriptComponent
 	    req.m_fRequestedTime = worldTime;
 	    if (req.m_fSafeRadius <= 0)
 	        req.m_fSafeRadius = ComputeSafeRadius(req, worldTime);
-	    int at = m_aQueue.Count();
-	    if (req.m_iPlayerGroup >= 0)
-	    {
-	        at = 0;
-	        while (at < m_aQueue.Count() && m_aQueue[at] && m_aQueue[at].m_iPlayerGroup >= 0)
-	            at++;
-	    }
+	    int prio = QueuePrio(req);
+	    int at = 0;
+	    while (at < m_aQueue.Count() && m_aQueue[at] && QueuePrio(m_aQueue[at]) >= prio)
+	        at++;
 	    m_aQueue.InsertAt(req, at);
 	    req.m_bQueued = true;
 
 	    string line = string.Format("arty_request src=%1 tier=%2 unc=%3 shells=%4 type=%5 safe=%6 pos=%7,%8",
 	        req.m_sSource, req.m_sTier, Math.Round(req.m_fUncertainty), shellCount,
 	        typename.EnumToString(SCR_EAIArtilleryAmmoType, req.m_eShellType), Math.Round(req.m_fSafeRadius),
-	        Math.Round(req.m_vImpactPos[0]), Math.Round(req.m_vImpactPos[2]));
+	        Math.Round(req.m_vImpactPos[0]), Math.Round(req.m_vImpactPos[2])) + " prio=" + prio.ToString() + " queue_at=" + at.ToString();
 	    DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", line);
 	    DCO_Events.FireMission(line);
 	    return true;
+	}
+
+	static int QueuePrio(CMD_FireMissionRequest r)
+	{
+		if (!r)
+			return 0;
+		if (r.m_iPlayerGroup >= 0)
+			return 3;
+		return r.m_iPriority;
 	}
 
 	static float TimeOfFlight(vector from, vector to)
@@ -498,6 +505,37 @@ class CMD_ArtillerySupport : ScriptComponent
 			return false;
 
 		return HasFriendlyNearFire(req);
+	}
+
+	protected float m_fDCOCivNearSq;
+	protected vector m_vDCOCivQueryPos;
+
+	protected bool DCO_CivNearImpact(CMD_FireMissionRequest req, DCO_GroupUtilityComponent unit)
+	{
+		if (!unit || !unit.GetOwner())
+			return false;
+		float mul = DCO_CivMode.CautionMul(unit.GetOwner());
+		if (mul <= 0)
+			return false;
+		float r = 150.0 * mul;
+		m_fDCOCivNearSq = -1;
+		m_vDCOCivQueryPos = req.m_vImpactPos;
+		DCO_Perf.Count("q:DCO_ArtyCiv");
+		GetGame().GetWorld().QueryEntitiesBySphere(req.m_vImpactPos, r, DCO_CivCallback, null, EQueryEntitiesFlags.DYNAMIC);
+		if (m_fDCOCivNearSq < 0)
+			return false;
+		DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("fire_hold_civ what=mortar src=%1 pos=%2 civ_m=%3 radius=%4 caution=%5", req.m_sSource, DCO_Util.XZ(req.m_vImpactPos), Math.Round(Math.Sqrt(m_fDCOCivNearSq)), Math.Round(r), DCO_CivMode.CautionName(mul)));
+		return true;
+	}
+
+	protected bool DCO_CivCallback(IEntity ent)
+	{
+		if (!ChimeraCharacter.Cast(ent) || !DCO_Util.IsCivilianEnt(ent))
+			return true;
+		float d = vector.DistanceSqXZ(ent.GetOrigin(), m_vDCOCivQueryPos);
+		if (m_fDCOCivNearSq < 0 || d < m_fDCOCivNearSq)
+			m_fDCOCivNearSq = d;
+		return true;
 	}
 
 	protected bool HasFriendlyNearFire(CMD_FireMissionRequest req)
@@ -634,6 +672,13 @@ class CMD_ArtillerySupport : ScriptComponent
 		    }
 
 		    req.m_fSafeRadius = ComputeSafeRadius(req, worldTime);
+		    if (IsLethal(req) && DCO_CivNearImpact(req, unit))
+		    {
+		        LogDenied(req, "civilian");
+		        DCO_Perf.Count("arty_reject:civilian");
+		        m_aQueue.Remove(qi);
+		        continue;
+		    }
 		    if (IsLethal(req) && HasFriendlyNearFire(req))
 		    {
 		        LogDenied(req, "friendly");

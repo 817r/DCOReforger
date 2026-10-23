@@ -143,7 +143,7 @@ class DCO_DoctrineSupport
 		if (trait >= 1.5)
 			mags++;
 		SCR_AIGroup grp = SCR_AIGroup.Cast(g.GetOwner());
-		if (grp && DCO_Logistics.IsLowAmmo(grp, mags))
+		if (grp && (DCO_Logistics.IsLowAmmo(grp, mags) || g.m_bDCOLowAmmo))
 			mask |= DCO_ESupportCond.LOW_AMMO;
 		if (g.GetGroupMorale() > cmd.GetMoraleAttackThreshold())
 			mask |= DCO_ESupportCond.LOW_MORALE;

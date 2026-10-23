@@ -158,12 +158,14 @@ modded class SCR_EntityTooltipDetailType
 			m_aDetails.Insert(new DCO_GroupTaskTooltipDetail(true));
 			m_aDetails.Insert(new DCO_GroupLODTooltipDetail());
 			m_aDetails.Insert(new DCO_GroupThreatTooltipDetail());
+			m_aDetails.Insert(new DCO_GroupLeaderTooltipDetail());
 		}
 		if (!m_bDCO_Added && m_EntityType == EEditableEntityType.CHARACTER && m_aDetails)
 		{
 			m_bDCO_Added = true;
 			m_aDetails.Insert(new DCO_CharStatsTooltipDetail(false));
 			m_aDetails.Insert(new DCO_CharStatsTooltipDetail(true));
+			m_aDetails.Insert(new DCO_CharProfileTooltipDetail());
 		}
 		return super.CreateDetailType(type, parent, entity, showImage);
 	}

@@ -25,6 +25,9 @@ modded class SCR_AISetStance : AITaskScripted
 
 		if (stance == ECharacterStance.PRONE && !DCO_CQC.ProneRoll(owner.GetControlledEntity()))
 			stance = ECharacterStance.CROUCH;
+		string gateWhy;
+		if (stance == ECharacterStance.PRONE && !DCO_ProneGate.Allow(owner, "bt", gateWhy))
+			stance = ECharacterStance.CROUCH;
 
 		if (stance != ECharacterStance.STAND && DCO_Nav.Busy(m_CharacterController, "bt_stance"))
 			return ENodeResult.SUCCESS;

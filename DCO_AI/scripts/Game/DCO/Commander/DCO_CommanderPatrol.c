@@ -51,6 +51,32 @@ class DCO_CommanderPatrol : Managed
 	protected float m_fLosWeight = 0.6;
 	protected float m_fElevationWeight = 0.4;
 
+	protected ref map<DCO_GroupUtilityComponent, ref array<vector>> m_mActiveRoutes = new map<DCO_GroupUtilityComponent, ref array<vector>>();
+
+	protected DCO_GroupUtilityComponent OverlapWith(DCO_GroupUtilityComponent grp, array<vector> points)
+	{
+		foreach (DCO_GroupUtilityComponent other, array<vector> pts : m_mActiveRoutes)
+		{
+			if (!other || other == grp || !pts || other.GetUnitCount() <= 0 || other.GetTask() != DCO_EGroupTask.PATROL)
+				continue;
+			int near;
+			foreach (vector p : points)
+			{
+				foreach (vector q : pts)
+				{
+					if (vector.DistanceXZ(p, q) < 150.0)
+					{
+						near++;
+						break;
+					}
+				}
+			}
+			if (near >= 2)
+				return other;
+		}
+		return null;
+	}
+
 	void ResetSmartBudget(int budget)
 	{
 		m_iSmartRemaining = budget;
@@ -58,6 +84,7 @@ class DCO_CommanderPatrol : Managed
 
 	void ForgetGroup(DCO_GroupUtilityComponent grp)
 	{
+		m_mActiveRoutes.Remove(grp);
 		m_mMemory.Remove(grp);
 	}
 
@@ -89,6 +116,33 @@ class DCO_CommanderPatrol : Managed
 			case DCO_EPatrolPattern.ADVANCE: BuildAdvance(patrolCenter, patrolRadius, lookAt, points);         break;
 			default:                         BuildRing(patrolCenter, patrolRadius, points);                    break;
 		}
+
+		DCO_GroupUtilityComponent clash = OverlapWith(grp, points);
+		if (clash)
+		{
+			vector side = Vector(-lookAt[2], 0, lookAt[0]);
+			if (side.Length() < 1.0 || !hasThreat)
+				side = Vector(1, 0, 0);
+			side.Normalize();
+			if (Math.RandomFloat01() < 0.5)
+				side = side * -1.0;
+			vector shifted = DCO_Util.Surface(patrolCenter + side * Math.Max(300.0, patrolRadius * 2.0));
+			points.Clear();
+			switch (pattern)
+			{
+				case DCO_EPatrolPattern.LANE:    BuildLane(shifted, patrolRadius, hasThreat, lookAt, points); break;
+				case DCO_EPatrolPattern.ARC:     BuildArc(shifted, patrolRadius, lookAt, points);             break;
+				case DCO_EPatrolPattern.ADVANCE: BuildAdvance(shifted, patrolRadius, lookAt, points);         break;
+				default:                         BuildRing(shifted, patrolRadius, points);                    break;
+			}
+			DCO_Perf.Count("patrol:overlap_shift");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("patrol_route_skip grp=%1 why=overlap with=%2 shift_m=%3 center=%4", DCO_Log.IdGroup(SCR_AIGroup.Cast(grp.GetOwner())), DCO_Log.IdGroup(SCR_AIGroup.Cast(clash.GetOwner())), Math.Round(vector.DistanceXZ(shifted, patrolCenter)), DCO_Util.XZ(shifted)));
+			patrolCenter = shifted;
+		}
+		array<vector> keep = {};
+		foreach (vector kp : points)
+			keep.Insert(kp);
+		m_mActiveRoutes.Set(grp, keep);
 
 		grp.CompleteAllWaypoints();
 

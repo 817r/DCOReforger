@@ -115,9 +115,11 @@ class DCO_Util
 			return false;
 
 		string myFactionKey = selfFac.GetAffiliatedFaction().GetFactionKey();
+		float civMul = DCO_CivMode.CautionMul(self);
+		float civR = radius * civMul;
 
 		DCO_Perf.Count(perfSource);
-		GetGame().GetWorld().QueryEntitiesBySphere(pos, radius, null, QueryBufferCallback, EQueryEntitiesFlags.DYNAMIC);
+		GetGame().GetWorld().QueryEntitiesBySphere(pos, Math.Max(radius, civR), null, QueryBufferCallback, EQueryEntitiesFlags.DYNAMIC);
 
 		bool found = false;
 		foreach (IEntity ent : GetQueryBuffer())
@@ -126,8 +128,20 @@ class DCO_Util
 				continue;
 
 			FactionAffiliationComponent fac = FactionAffiliationComponent.Cast(ent.FindComponent(FactionAffiliationComponent));
-			if (fac && fac.GetAffiliatedFaction() && fac.GetAffiliatedFaction().GetFactionKey() == myFactionKey)
+			if (!fac || !fac.GetAffiliatedFaction())
+				continue;
+			bool own = fac.GetAffiliatedFaction().GetFactionKey() == myFactionKey;
+			float entD = vector.Distance(pos, ent.GetOrigin());
+			bool civHit = !own && civMul > 0 && entD <= civR && IsCivilianEnt(ent);
+			if (civHit || (own && (civR <= radius || entD <= radius)))
 			{
+				if (civHit)
+				{
+					DCO_Perf.Count("ff:civ_block");
+					DCO_Perf.Count("civ:fire_hold_" + DCO_CivMode.CautionName(civMul));
+					if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
+						DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(self), string.Format("fire_hold_civ unit=%1 what=%2 civ_dist=%3 radius=%4 caution=%5", DCO_Log.IdUnit(self), perfSource, Math.Round(entD), Math.Round(civR), DCO_CivMode.CautionName(civMul)));
+				}
 				if (wallShields && TraceFrac(pos + Vector(0, 0.5, 0), ent.GetOrigin() + Vector(0, 1.2, 0), ent, TraceFlags.WORLD, -1, perfSource) < 0.99)
 					continue;
 				found = true;
@@ -137,6 +151,23 @@ class DCO_Util
 
 		GetQueryBuffer().Clear();
 		return found;
+	}
+
+	static bool IsCivilianEnt(IEntity e)
+	{
+		if (!e)
+			return false;
+		FactionAffiliationComponent fa = FactionAffiliationComponent.Cast(e.FindComponent(FactionAffiliationComponent));
+		if (!fa)
+			return false;
+		SCR_Faction f = SCR_Faction.Cast(fa.GetAffiliatedFaction());
+		return f && !f.IsMilitary() && IsAlive(e);
+	}
+
+	static bool HoldsWeapon(IEntity e)
+	{
+		BaseWeaponManagerComponent wm = BaseWeaponManagerComponent.Cast(e.FindComponent(BaseWeaponManagerComponent));
+		return wm && wm.GetCurrentWeapon();
 	}
 
 	static float CombatCohesionDist(AIGroup group, IEntity me, IEntity leader, out bool urban)

@@ -359,6 +359,18 @@ class DCO_VehicleActive
 		}
 	}
 
+	protected static bool BusyElsewhere(SCR_AIUtilityComponent u, IEntity veh)
+	{
+		DCO_TransportMissionComponent tm = DCO_TransportMissionComponent.Cast(veh.FindComponent(DCO_TransportMissionComponent));
+		if (tm && tm.IsActiveVehicle())
+			return true;
+		AIAgent ag = u.GetAIAgent();
+		if (!ag || !ag.GetParentGroup())
+			return false;
+		DCO_GroupUtilityComponent dg = DCO_GroupUtilityComponent.Cast(ag.GetParentGroup().FindComponent(DCO_GroupUtilityComponent));
+		return dg && dg.GetTask() == DCO_EGroupTask.RECON;
+	}
+
 	static void Tick(SCR_AIUtilityComponent u, IEntity veh)
 	{
 		if (!u || !veh || !u.m_CombatComponent || DCO_Stress.T(u, "va.enabled", 1.0) < 0.5)
@@ -376,8 +388,14 @@ class DCO_VehicleActive
 			DCO_Perf.Count("veh:active_skip_troops");
 			return;
 		}
+		if (BusyElsewhere(u, veh))
+		{
+			DCO_Perf.Count("veh:active_skip_task");
+			return;
+		}
 		DCO_VehActState st = Get(veh);
 		float now = GetGame().GetWorld().GetWorldTime();
+		bool relentless = DCO_Relentless.Unit(u);
 
 		BaseTarget cur = u.m_CombatComponent.GetCurrentTarget();
 		bool vis = cur && cur.GetTimeSinceSeen() < 2.0;
@@ -403,7 +421,8 @@ class DCO_VehicleActive
 			float gd = vector.DistanceXZ(veh.GetOrigin(), gpos);
 			if (st.m_vAnchor == vector.Zero)
 				st.m_vAnchor = veh.GetOrigin();
-			if (gd <= EffMax(cls) * 1.5 && now >= st.m_fNextSeek_ms && !st.m_bWithdrawn && !ds.IsExecutingRequest() && !DCO_VehiclePositioning.IsHiding(veh))
+			bool gdOk = gd <= EffMax(cls) * 1.5 || relentless;
+			if (gdOk && now >= st.m_fNextSeek_ms && !st.m_bWithdrawn && !ds.IsExecutingRequest() && !DCO_VehiclePositioning.IsHiding(veh))
 			{
 				DCO_Perf.Count("veh:seek_group_intel");
 				Seek(u, veh, ds, st, cls, gpos, true, "group_intel", now);
@@ -422,7 +441,7 @@ class DCO_VehicleActive
 		if (st.m_vAnchor == vector.Zero)
 			st.m_vAnchor = veh.GetOrigin();
 
-		if (!st.m_bWithdrawn && Withdraw(u, veh, ds, st, cls, lkp, now))
+		if (!st.m_bWithdrawn && !relentless && Withdraw(u, veh, ds, st, cls, lkp, now))
 			return;
 
 		if (DCO_VehiclePositioning.IsHiding(veh))
@@ -465,7 +484,11 @@ class DCO_VehicleActive
 			return;
 		}
 
-		if (!vis && (st.m_fLastLos_ms < 0 || now - st.m_fLastLos_ms > 8000.0) && d <= EffMax(cls) * 1.5 && now >= st.m_fNextSeek_ms && !st.m_bWithdrawn)
+		float losGap_ms = 8000.0;
+		if (relentless)
+			losGap_ms = 3000.0;
+		bool dOk = d <= EffMax(cls) * 1.5 || relentless;
+		if (!vis && (st.m_fLastLos_ms < 0 || now - st.m_fLastLos_ms > losGap_ms) && dOk && now >= st.m_fNextSeek_ms && !st.m_bWithdrawn)
 		{
 			Seek(u, veh, ds, st, cls, lkp, at, "no_los", now);
 			return;
@@ -480,10 +503,22 @@ class DCO_VehicleActive
 
 	protected static bool Seek(SCR_AIUtilityComponent u, IEntity veh, SCR_AICombatMoveState ds, DCO_VehActState st, int cls, vector lkp, bool at, string trigger, float now)
 	{
+		bool relentless = DCO_Relentless.Unit(u);
 		st.m_fNextSeek_ms = now + 4000.0;
+		if (relentless)
+		{
+			DCO_Perf.Count("relentless:veh_seek");
+			at = false;
+			st.m_fNextSeek_ms = now + 2000.0;
+		}
 		vector c;
 		float r;
 		Bounds(u, veh, st, c, r);
+		if (relentless)
+		{
+			c = lkp;
+			r = Math.Max(r, EffMax(cls));
+		}
 		float boundR = r;
 		float vc = vector.DistanceXZ(veh.GetOrigin(), c);
 		if (vc > r)
@@ -495,6 +530,8 @@ class DCO_VehicleActive
 		float desired = Math.Clamp(d, EffMin(cls), EffMax(cls) * 0.7);
 		if (at)
 			desired = Math.Max(desired, ATStandoff(cls));
+		if (relentless)
+			desired = EffMin(cls);
 		vector pos;
 		int checks;
 		bool found = DCO_VehiclePositioning.FindFirePositionEx(veh, lkp, desired, DCO_VehiclePositioning.GetHullDownWeight(DCO_VehiclePositioning.GetPosture(u)), c, r, st.m_vLastFire, true, pos, checks, FriendPos(u));
@@ -505,6 +542,10 @@ class DCO_VehicleActive
 			st.m_vLastFire = pos;
 			st.m_fFireSince_ms = -1;
 			st.m_fExpose_s = ExposeTime_s(u, cls);
+			st.m_fNextSeek_ms = now + 20000.0;
+			if (relentless)
+				st.m_fNextSeek_ms = now + 10000.0;
+			DCO_Perf.Count("veh:seek_hold");
 		}
 		else if (!at)
 		{
@@ -512,7 +553,10 @@ class DCO_VehicleActive
 			dir[1] = 0;
 			if (dir.Length() > 1.0)
 			{
-				pos = DCO_Util.Surface(veh.GetOrigin() + dir.Normalized() * Math.RandomFloat(30.0, 50.0));
+				float step = Math.RandomFloat(30.0, 50.0);
+				if (relentless)
+					step = Math.RandomFloat(80.0, 120.0);
+				pos = DCO_Util.Surface(veh.GetOrigin() + dir.Normalized() * step);
 				ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(veh.GetOrigin(), pos, lkp, SCR_EAICombatMoveReason.STANDARD));
 				action = "advance";
 			}

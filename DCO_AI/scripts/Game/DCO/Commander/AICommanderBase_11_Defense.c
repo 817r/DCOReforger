@@ -77,7 +77,7 @@ modded class AICommander_BaseComponent
 	        return;
 
 	    array<CMD_AICommanderObjectiveComponent> candidates = {};
-	    mgr.GetTopObjectivesOffensive(this, m_fObjectiveAtTheSameTime + 2, candidates);
+	    mgr.GetTopObjectivesOffensive(this, DCO_ObjectiveCap() + 2, candidates);
 
 	    CMD_AICommanderObjectiveComponent altObj = null;
 	    foreach (CMD_AICommanderObjectiveComponent c : candidates)
@@ -396,6 +396,22 @@ modded class AICommander_BaseComponent
 		}
 		if (enemyNear > 0 && enemyNear >= friendlyNear)
 		{
+			if (DCO_RelentlessCmd())
+			{
+				float gAng = ComputeThreatAngle(obj);
+				vector gDir = Vector(Math.Cos(gAng), 0, Math.Sin(gAng));
+				int refaced;
+				foreach (DCO_GroupUtilityComponent hg : garrison)
+				{
+					DCO_AIGarrisonActivity hact = hg.GetGarrisonActivity();
+					if (hact && hact.IsActive() && hact.DCO_Reface(gDir, true))
+						refaced++;
+				}
+				DCO_Perf.Count("relentless_cmd:garrison_hold");
+				if (DCO_RoleOnce(obj.GetLogName() + "|garrison_hold", 60.0))
+					DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("def_garrison_hold cmd=%1 obj=%2 enemy=%3 friendly=%4 garrison=%5 refaced=%6", m_sCommanderUID, obj.GetLogName(), enemyNear, friendlyNear, garrison.Count(), refaced));
+				return;
+			}
 			foreach (DCO_GroupUtilityComponent rg : garrison)
 			{
 				DCO_AIGarrisonActivity act = rg.GetGarrisonActivity();
@@ -493,6 +509,7 @@ modded class AICommander_BaseComponent
 		int garrisonCap = obj.GetDefendGroupCount();
 		if (garrisonCap <= 0)
 			garrisonCap = 1;
+		garrisonCap = DCO_DefendNeedCap(obj, garrisonCap);
 
 		int staffedNow = obj.GetStaffedSectorCount(m_sFactionKey);
 		bool shortOn = DCO_DefShortfall.On(this);
@@ -572,7 +589,82 @@ modded class AICommander_BaseComponent
 			DCO_Perf.Count("def:reinf_shift_donor_used");
 			return d;
 		}
-		return FindBestIdleGroupForTask(DCO_EGroupTask.DEFEND, pos);
+		DCO_GroupUtilityComponent pick = FindBestIdleGroupForTask(DCO_EGroupTask.DEFEND, pos);
+		if (pick && pick == m_DCOQrf)
+		{
+			DCO_Perf.Count("relentless_cmd:qrf_kept");
+			return null;
+		}
+		return pick;
+	}
+
+	protected DCO_GroupUtilityComponent m_DCOQrf;
+	protected float m_fDCOQrfAt = -1000;
+
+	protected void DCO_QrfTick(notnull array<CMD_AICommanderObjectiveComponent> objs, float worldTime)
+	{
+		if (!DCO_RelentlessCmd())
+			return;
+		if (m_DCOQrf && (!m_DCOQrf.GetOwner() || m_DCOQrf.GetUnitCount() == 0 || m_DCOQrf.GetTask() != DCO_EGroupTask.REINFORCE))
+			m_DCOQrf = null;
+		CMD_AICommanderObjectiveComponent target;
+		float bestScore = 0;
+		vector centroid;
+		int n;
+		foreach (CMD_AICommanderObjectiveComponent obj : objs)
+		{
+			if (!obj || !obj.GetOwner() || !obj.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+				continue;
+			centroid = centroid + obj.GetOwner().GetOrigin();
+			n++;
+			int fr;
+			int en;
+			obj.CountNearbyUnitsCached(obj.GetThreatRadius(), m_sFactionKey, fr, en, 30.0);
+			float score = 0;
+			if (IsObjectiveContested(obj))
+				score += 50;
+			if (en > 0 && en >= fr)
+				score += 30 + en;
+			DCO_DefensePlan dp = GetDefenseTactics().GetPlan(obj);
+			if (dp && dp.m_iBand >= 0 && dp.m_iBand <= 1)
+				score += 40;
+			if (score > bestScore)
+			{
+				bestScore = score;
+				target = obj;
+			}
+		}
+		if (n == 0)
+			return;
+		centroid = centroid * (1.0 / n);
+		if (!m_DCOQrf)
+		{
+			if (worldTime - m_fDCOQrfAt < 30.0)
+				return;
+			m_fDCOQrfAt = worldTime;
+			DCO_GroupUtilityComponent pick = FindBestIdleGroupForTask(DCO_EGroupTask.REINFORCE, centroid);
+			if (!pick || pick.IsPlayerGroup() || m_Frontline.IsReconGroup(pick) || pick.IsInTransport())
+				return;
+			m_DCOQrf = pick;
+			pick.CompleteAllWaypoints();
+			pick.SetTask(DCO_EGroupTask.REINFORCE, "DCO_Qrf");
+			pick.SetGroupObjective(null);
+			SpawnMoveRoute(pick, pick.GetOwner().GetOrigin(), DCO_Util.Surface(centroid), worldTime);
+			DCO_Perf.Count("relentless_cmd:qrf_form");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("def_qrf cmd=%1 action=form grp=%2 objectives=%3 pos=%4", m_sCommanderUID, pick.GetOwner().GetName(), n, DCO_Util.XZ(centroid)));
+			return;
+		}
+		if (!target || m_DCOQrf.IsInTransport())
+			return;
+		DCO_GroupUtilityComponent q = m_DCOQrf;
+		m_DCOQrf = null;
+		m_fDCOQrfAt = worldTime;
+		q.CompleteAllWaypoints();
+		q.SetTask(DCO_EGroupTask.DEFEND, "DCO_Qrf");
+		q.SetGroupObjective(target);
+		SpawnMoveRoute(q, q.GetOwner().GetOrigin(), target.GetOwner().GetOrigin(), worldTime);
+		DCO_Perf.Count("relentless_cmd:qrf_dispatch");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("def_qrf cmd=%1 action=dispatch grp=%2 obj=%3 score=%4 dist=%5", m_sCommanderUID, q.GetOwner().GetName(), target.GetLogName(), Math.Round(bestScore), Math.Round(vector.DistanceXZ(q.GetOwner().GetOrigin(), target.GetOwner().GetOrigin()))));
 	}
 
 	protected void DCO_DefShortfallPlan(CMD_AICommanderObjectiveComponent obj, int cap, int staffed, string why, float worldTime)

@@ -185,6 +185,8 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 
 	protected float DCO_ChaseExtra()
 	{
+		if (DCO_Relentless.Unit(m_Utility))
+			return 600.0;
 		if (DCO_VehiclePositioning.Aggr(m_Utility))
 			return 150.0;
 		return 0;
@@ -444,6 +446,8 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 
 	protected float ResolveStandoffDistance()
 	{
+		if (DCO_Relentless.Unit(m_Utility))
+			return Math.Max(m_fWeaponMinDist + 5.0, 50.0);
 		float dist = ResolveOptimalDistance(m_fWeaponMinDist);
 		if (!DCO_IsATKnown())
 		{
@@ -475,6 +479,8 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 
 		if (IsFirstExecution())
 			return true;
+		if (DCO_Relentless.Unit(m_Utility))
+			return m_DriverState.m_fTimerStopped_s > 1.0;
 
 		float stoppedWaitTime = ResolveStoppedWaitTime(m_eThreatState);
 		return m_DriverState.m_fTimerStopped_s > stoppedWaitTime;

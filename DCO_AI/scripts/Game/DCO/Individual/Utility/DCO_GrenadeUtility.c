@@ -306,11 +306,15 @@ class DCO_GrenadeUtility
 		bool predict = radius > 3.0 && DCO_Ctx.TuneFor(self, "gren.ff_predict", 1.0) > 0;
 		float extra = 0;
 		float qr = radius;
+		float civMul = DCO_CivMode.CautionMul(self);
+		float civR = radius * civMul;
 		if (predict)
 		{
 			extra = 0.1 * vector.Distance(self.GetOrigin(), pos);
-			qr = radius + extra + 21.0;
+			qr = Math.Max(radius, civR) + extra + 21.0;
 		}
+		else
+			qr = Math.Max(radius, civR);
 		DCO_Perf.Count("q:DCO_GrenadeUtility");
 		GetGame().GetWorld().QueryEntitiesBySphere(pos, qr, CollectBlast, null, EQueryEntitiesFlags.DYNAMIC);
 		bool found = false;
@@ -319,20 +323,36 @@ class DCO_GrenadeUtility
 			if (!e || e == self || !DCO_Util.IsAlive(e))
 				continue;
 			FactionAffiliationComponent fac = FactionAffiliationComponent.Cast(e.FindComponent(FactionAffiliationComponent));
-			if (!fac || fac.GetAffiliatedFaction() != mine)
+			if (!fac)
 				continue;
+			bool own = fac.GetAffiliatedFaction() == mine;
+			bool civ = !own && civMul > 0 && DCO_Util.IsCivilianEnt(e);
+			if (!own && !civ)
+				continue;
+			float lim = radius + extra;
+			if (civ)
+				lim = civR + extra;
 			bool pred = false;
 			float fd = vector.Distance(e.GetOrigin(), pos);
-			if (predict && fd > radius + extra)
+			if (fd > lim)
 			{
+				if (!predict)
+					continue;
 				vector v;
 				Physics ph = e.GetPhysics();
 				if (ph)
 					v = ph.GetVelocity();
 				v[1] = 0;
-				if (vector.Distance(e.GetOrigin() + v * 3.5, pos) > radius + extra)
+				if (vector.Distance(e.GetOrigin() + v * 3.5, pos) > lim)
 					continue;
 				pred = true;
+			}
+			if (civ)
+			{
+				DCO_Perf.Count("ff:civ_block");
+				DCO_Perf.Count("civ:fire_hold_" + DCO_CivMode.CautionName(civMul));
+				if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
+					DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(self), string.Format("fire_hold_civ unit=%1 what=grenade_blast civ_dist=%2 radius=%3 caution=%4", DCO_Log.IdUnit(self), Math.Round(fd), Math.Round(civR), DCO_CivMode.CautionName(civMul)));
 			}
 			if (OuterWallBetween(pos, e))
 			{

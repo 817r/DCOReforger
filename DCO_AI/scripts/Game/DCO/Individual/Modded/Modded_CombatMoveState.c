@@ -25,6 +25,17 @@ modded class SCR_AICombatMoveState
 	protected bool  m_bDCOGateDropped;
 
 	protected ref array<IEntity> m_aDCOQueryChars = {};
+	protected float m_fDCOCommitStart_ms = -1;
+	protected vector m_vDCOCommitFrom;
+	protected float m_fDCOCommitLogAt_ms;
+	protected float m_fDCOLastDangerCover_ms = -1;
+	protected float m_fDCOLastCover_ms = -1;
+	protected vector m_vDCOLastCoverPos;
+	protected SCR_EAICombatMoveReason m_eDCOLastCoverReason;
+	bool m_bDCOUrgentNext;
+	bool m_bDCOFromAttackLogic;
+	protected float m_fDCOCoverHoldLogAt_ms;
+	protected float m_fDCOCoverDupLogAt_ms;
 
 	void DCO_ApplyCoverRequest(SCR_AICombatMoveRequestBase rq, float protect_s)
 	{
@@ -263,6 +274,8 @@ modded class SCR_AICombatMoveState
 		DCO_CQC.ClampProne(m_DCOOwnerUtility, request);
 
 		SCR_AICombatMoveRequest_Move moveRq = SCR_AICombatMoveRequest_Move.Cast(request);
+		bool fromAtk = m_bDCOFromAttackLogic;
+		m_bDCOFromAttackLogic = false;
 		if (moveRq && DCO_CQC.IsCQC(m_DCOOwnerUtility))
 			DCO_CQC.ClampMoveRequest(moveRq);
 
@@ -279,14 +292,17 @@ modded class SCR_AICombatMoveState
 			return;
 		}
 
+		bool relentless = DCO_Relentless.Unit(m_DCOOwnerUtility);
 		string drop;
 		if (DCO_LeashGate(request))
 			drop = "leash";
-		else if (DCO_IdleHoldGate(moveRq))
+		else if (relentless && moveRq && (moveRq.m_eDirection == SCR_EAICombatMoveDirection.BACKWARD || moveRq.m_eReason == SCR_EAICombatMoveReason.MOVE_FROM_DANGER))
+			drop = "relentless_hold_line";
+		else if (!relentless && DCO_IdleHoldGate(moveRq))
 			drop = "idle_hold";
 		else if (moveRq && moveRq.m_eReason != SCR_EAICombatMoveReason.MOVE_FROM_DANGER && DCO_LongRange.ShouldHold(m_DCOOwnerUtility))
 			drop = "long_range";
-		else if (DCO_ContactMoveGate(moveRq))
+		else if (!relentless && DCO_ContactMoveGate(moveRq))
 			drop = "contact_bound";
 		else if (DCO_IndoorGate(request))
 			drop = "indoor";
@@ -296,6 +312,12 @@ modded class SCR_AICombatMoveState
 			drop = "prone_guard";
 		else if (moveRq && DCO_FlipGate(moveRq))
 			drop = "flip";
+		else if (moveRq && DCO_CommitGate(moveRq))
+			drop = "commit";
+		else if (moveRq && DCO_CoverDupGate(moveRq))
+			drop = "cover_dup";
+		else if (moveRq && fromAtk && DCO_CoverHoldGate(moveRq))
+			drop = "cover_hold";
 		if (!drop.IsEmpty())
 		{
 			DCO_Drop(drop, request);
@@ -311,6 +333,8 @@ modded class SCR_AICombatMoveState
 		if (moveRq && !moveRq.m_bAimAtTarget)
 			DCO_StrafeGate(moveRq);
 
+		if (moveRq)
+			DCO_NoteCommit(moveRq);
 		if (moveRq && moveRq.m_bTryFindCover)
 			DCO_Perf.Count("cm:req_cover");
 		else if (moveRq)
@@ -318,6 +342,118 @@ modded class SCR_AICombatMoveState
 		else
 			DCO_Perf.Count("cm:req_other");
 		super.ApplyNewRequest(request);
+	}
+
+	protected bool DCO_CommitGate(SCR_AICombatMoveRequest_Move rq)
+	{
+		if (m_bDCOUrgentNext)
+		{
+			m_bDCOUrgentNext = false;
+			return false;
+		}
+		SCR_AICombatMoveRequest_Move cur = SCR_AICombatMoveRequest_Move.Cast(m_Request);
+		if (!cur || cur.m_eState != SCR_EAICombatMoveRequestState.EXECUTING || !m_DCOOwnerUtility || !m_DCOOwnerUtility.m_OwnerEntity)
+			return false;
+		if (m_fDCOCommitStart_ms < 0 || DCO_Stress.T(m_DCOOwnerUtility, "osc.fix_commit", 1.0) <= 0)
+			return false;
+		float now = GetGame().GetWorld().GetWorldTime();
+		float age_ms = now - m_fDCOCommitStart_ms;
+		if (age_ms > DCO_Stress.T(m_DCOOwnerUtility, "osc.commit_s", 3.0) * 1000.0)
+			return false;
+		if (rq.m_eReason == cur.m_eReason && !DCO_Osc.Opposite(cur.m_eDirection, rq.m_eDirection))
+			return false;
+		float moved = vector.DistanceXZ(m_DCOOwnerUtility.m_OwnerEntity.GetOrigin(), m_vDCOCommitFrom);
+		if (moved > 8.0)
+			return false;
+		if (rq.m_eReason == SCR_EAICombatMoveReason.MOVE_FROM_DANGER && m_DCOOwnerUtility.m_ThreatSystem && !IsInValidCover())
+		{
+			float passThr = DCO_Stress.T(m_DCOOwnerUtility, "osc.danger_pass_thr", 0.85);
+			float threat = m_DCOOwnerUtility.m_ThreatSystem.GetThreatMeasure();
+			if (passThr > 0 && threat >= passThr)
+			{
+				DCO_Perf.Count("cm:commit_danger_pass");
+				if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO))
+					DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_DCOOwnerUtility.m_OwnerEntity), string.Format("cm_commit_pass unit=%1 why=danger keep=%2/%3 threat=%4 age_s=%5 moved_m=%6", DCO_Log.IdUnit(m_DCOOwnerUtility.m_OwnerEntity), typename.EnumToString(SCR_EAICombatMoveReason, cur.m_eReason), typename.EnumToString(SCR_EAICombatMoveDirection, cur.m_eDirection), threat.ToString(-1, 2), (age_ms * 0.001).ToString(-1, 1), Math.Round(moved)));
+				return false;
+			}
+		}
+		if (now >= m_fDCOCommitLogAt_ms && DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO))
+		{
+			m_fDCOCommitLogAt_ms = now + 5000.0;
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_DCOOwnerUtility.m_OwnerEntity), string.Format("cm_commit unit=%1 keep=%2/%3 drop=%4/%5 age_s=%6 moved_m=%7", DCO_Log.IdUnit(m_DCOOwnerUtility.m_OwnerEntity), typename.EnumToString(SCR_EAICombatMoveReason, cur.m_eReason), typename.EnumToString(SCR_EAICombatMoveDirection, cur.m_eDirection), typename.EnumToString(SCR_EAICombatMoveReason, rq.m_eReason), typename.EnumToString(SCR_EAICombatMoveDirection, rq.m_eDirection), (age_ms * 0.001).ToString(-1, 1), Math.Round(moved)));
+		}
+		return true;
+	}
+
+	protected bool DCO_CoverDupGate(SCR_AICombatMoveRequest_Move rq)
+	{
+		if (!rq.m_bTryFindCover || m_fDCOLastCover_ms < 0 || !m_DCOOwnerUtility)
+			return false;
+		if (DCO_Stress.T(m_DCOOwnerUtility, "osc.fix_cover", 1.0) <= 0)
+			return false;
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now - m_fDCOLastCover_ms > 10000.0 || rq.m_eReason != m_eDCOLastCoverReason)
+			return false;
+		float between = vector.DistanceXZ(rq.m_vMovePos, m_vDCOLastCoverPos);
+		if (between >= 5.0)
+			return false;
+		if (now >= m_fDCOCoverDupLogAt_ms && m_DCOOwnerUtility.m_OwnerEntity && DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO))
+		{
+			m_fDCOCoverDupLogAt_ms = now + 5000.0;
+			vector mePos = m_DCOOwnerUtility.m_OwnerEntity.GetOrigin();
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_DCOOwnerUtility.m_OwnerEntity), string.Format("cm_cover_dup unit=%1 between_m=%2 new_d=%3 last_d=%4 age_s=%5 reason=%6 in_cover=%7", DCO_Log.IdUnit(m_DCOOwnerUtility.m_OwnerEntity), Math.Round(between), Math.Round(vector.DistanceXZ(mePos, rq.m_vMovePos)), Math.Round(vector.DistanceXZ(mePos, m_vDCOLastCoverPos)), Math.Round((now - m_fDCOLastCover_ms) / 1000.0), typename.EnumToString(SCR_EAICombatMoveReason, rq.m_eReason), DCO_Util.B01(m_bInCover)));
+		}
+		return true;
+	}
+
+	protected bool DCO_CoverHoldGate(SCR_AICombatMoveRequest_Move rq)
+	{
+		if (!rq || !m_bInCover || m_bDCOUrgentNext || !m_DCOOwnerUtility)
+			return false;
+		if (rq.m_eReason != SCR_EAICombatMoveReason.STANDARD)
+			return false;
+		if (rq.m_eDirection != SCR_EAICombatMoveDirection.FORWARD && rq.m_eDirection != SCR_EAICombatMoveDirection.CUSTOM_POS)
+			return false;
+		SCR_AIUtilityComponent u = m_DCOOwnerUtility;
+		if (!u.m_ThreatSystem || u.m_ThreatSystem.GetState() != EAIThreatState.THREATENED || !u.m_CombatComponent)
+			return false;
+		if (DCO_Relentless.Unit(u) || DCO_PostureCombatUtility.GetPosture(u) == DCO_GroupTactics.AGGRESIVE)
+			return false;
+		BaseTarget t = u.m_CombatComponent.GetCurrentTarget();
+		if (!t || t.GetTimeSinceSeen() > 2.0)
+			return false;
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now >= m_fDCOCoverHoldLogAt_ms && u.m_OwnerEntity && DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO))
+		{
+			m_fDCOCoverHoldLogAt_ms = now + 10000.0;
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(u.m_OwnerEntity), string.Format("cm_cover_hold unit=%1 dir=%2 target_seen_s=%3 move_d=%4", DCO_Log.IdUnit(u.m_OwnerEntity), typename.EnumToString(SCR_EAICombatMoveDirection, rq.m_eDirection), t.GetTimeSinceSeen().ToString(-1, 1), Math.Round(vector.DistanceXZ(u.m_OwnerEntity.GetOrigin(), rq.m_vMovePos))));
+		}
+		return true;
+	}
+
+	protected void DCO_NoteCommit(SCR_AICombatMoveRequest_Move rq)
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		m_fDCOCommitStart_ms = now;
+		if (m_DCOOwnerUtility && m_DCOOwnerUtility.m_OwnerEntity)
+			m_vDCOCommitFrom = m_DCOOwnerUtility.m_OwnerEntity.GetOrigin();
+		if (!rq.m_bTryFindCover)
+			return;
+		m_fDCOLastCover_ms = now;
+		m_vDCOLastCoverPos = rq.m_vMovePos;
+		m_eDCOLastCoverReason = rq.m_eReason;
+	}
+
+	bool DCO_DangerCoverAllowed(float window_ms)
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (m_fDCOLastDangerCover_ms >= 0 && now - m_fDCOLastDangerCover_ms < window_ms)
+		{
+			DCO_Perf.Count("cm:danger_cover_debounce");
+			return false;
+		}
+		m_fDCOLastDangerCover_ms = now;
+		return true;
 	}
 
 	protected float m_fDCODropLogAt_ms;
@@ -632,12 +768,46 @@ modded class SCR_AICombatMoveState
 
 	protected void DCO_OnDodgeCompleted(SCR_AIUtilityComponent utility, SCR_AICombatMoveRequestBase request)
 	{
-		if (!IsInValidCover() || !utility || !utility.m_CombatComponent)
+		if (!IsInValidCover() || !utility || !utility.m_CombatComponent || !utility.m_OwnerEntity)
 			return;
 
 		SCR_CharacterControllerComponent charCon = utility.m_CombatComponent.GetCharacterController();
-		if (charCon && charCon.GetStance() == ECharacterStance.STAND && !DCO_Nav.Busy(charCon, "dodge_stance"))
+		if (!charCon || DCO_Nav.Busy(charCon, "dodge_stance"))
+			return;
+		int dgStance = charCon.GetStance();
+		if (dgStance == ECharacterStance.STAND)
+		{
 			DCO_Stance.Request(charCon, 2, "move_state");
+			return;
+		}
+		if (dgStance != ECharacterStance.PRONE)
+			return;
+		vector dgThreat;
+		DCO_EngageInfo dgEi = DCO_Engage.Info(utility);
+		if (dgEi && dgEi.m_iKnown > 0 && dgEi.m_vNearest != vector.Zero)
+			dgThreat = dgEi.m_vNearest;
+		else
+		{
+			AIGroup dgGrp;
+			if (utility.GetAIAgent())
+				dgGrp = utility.GetAIAgent().GetParentGroup();
+			float dgR;
+			int dgN;
+			if (!dgGrp || !DCO_FireEstimate.Get(dgGrp, GetGame().GetWorld().GetWorldTime(), 15000.0, dgThreat, dgR, dgN))
+				return;
+		}
+		vector dgPos = utility.m_OwnerEntity.GetOrigin();
+		vector dgDir = DCO_Specialist.Flat(dgThreat - dgPos);
+		if (dgDir == vector.Zero)
+			return;
+		IEntity dgHit;
+		float dgH;
+		int dgProt = DCO_CoverId.Prot(dgPos, dgDir, utility.m_OwnerEntity, dgHit, dgH);
+		if (dgProt < 2)
+			return;
+		DCO_Perf.Count("dodge:end_crouch_cover");
+		DCO_Stance.Request(charCon, 2, "move_state");
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(utility.m_OwnerEntity), string.Format("dodge_end_stance unit=%1 to=CROUCH protects=%2 kind=%3", DCO_Log.IdUnit(utility.m_OwnerEntity), DCO_CoverId.ProtName(dgProt), DCO_Util.HitKind(dgHit)));
 	}
 
 	protected bool DCO_ContactMoveGate(SCR_AICombatMoveRequest_Move rq)

@@ -128,7 +128,7 @@ modded class AICommander_BaseComponent
 				continue;
 			}
 			int need = GetRequiredAttackGroups(obj);
-			if (idle * 2 <= need)
+			if (idle * 2 <= need && !(DCO_RelentlessCmd() && idle >= 1))
 			{
 				DCO_ObjSkip(obj, "watchdog_few_idle", worldTime);
 				continue;
@@ -175,7 +175,7 @@ modded class AICommander_BaseComponent
 			released++;
 		}
 		ResetSyncState(obj);
-		m_mAttackCooldown.Set(obj, worldTime + m_fAttackAbortCooldown);
+		SetObjectiveCooldown(obj, m_fAttackAbortCooldown);
 		if (!m_bTacticAborting)
 			m_Tactics.OnAborted(obj, "undermanned");
 

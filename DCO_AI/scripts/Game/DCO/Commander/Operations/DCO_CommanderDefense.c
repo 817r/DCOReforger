@@ -110,6 +110,8 @@ class DCO_CommanderDefense
 			return;
 		m_fPlanTimer = 0;
 		PurgeDangers(now);
+		if (GarrisonShort(cmd, now))
+			return;
 		PlanMSR(cmd, now);
 		PlanScreen(cmd, now);
 		PlanOPs(cmd, now);
@@ -270,8 +272,19 @@ class DCO_CommanderDefense
 			Event(string.Format("def_ambush_skip kind=%1 reason=%2 obj=%3 why=no_site kill=%4", kind, reason, objName, kill));
 			return;
 		}
+		if (GarrisonShort(cmd, now))
+		{
+			Event(string.Format("def_ambush_skip kind=%1 reason=%2 obj=%3 why=garrison_short", kind, reason, objName));
+			return;
+		}
+		if (NearOutpost(site, 150.0))
+		{
+			DCO_Perf.Count("def:ambush_skip_spacing");
+			Event(string.Format("def_ambush_skip kind=%1 reason=%2 obj=%3 why=spacing site=%4", kind, reason, objName, DCO_Util.XZ(site)));
+			return;
+		}
 
-		DCO_GroupUtilityComponent g1 = PickReserve(cmd, site, vehicle, !vehicle, null, 1500, 16);
+		DCO_GroupUtilityComponent g1 = PickReserve(cmd, site, vehicle, !vehicle, null, 1500, 16, !vehicle);
 		if (!g1)
 		{
 			Event(string.Format("def_ambush_skip kind=%1 reason=%2 obj=%3 why=no_group need_at=%4", kind, reason, objName, vehicle));
@@ -299,7 +312,7 @@ class DCO_CommanderDefense
 
 		if (vehicle || g1.GetUnitCount() < 6)
 		{
-			DCO_GroupUtilityComponent g2 = PickReserve(cmd, site, false, true, g1, 1000, 16);
+			DCO_GroupUtilityComponent g2 = PickReserve(cmd, site, false, true, g1, 1000, 16, true);
 			if (g2)
 			{
 				a.m_aGroups.Insert(g2);
@@ -750,6 +763,81 @@ class DCO_CommanderDefense
 		return false;
 	}
 
+	protected float m_fDCOShortLogAt = -1000;
+	protected ref map<DCO_GroupUtilityComponent, float> m_mDCOVehSkipLogAt = new map<DCO_GroupUtilityComponent, float>();
+
+	protected bool GarrisonShort(AICommander_BaseComponent cmd, float now)
+	{
+		if (cmd.GetCommanderMode() == CMD_ECommanderMode.OFFENSIVE)
+			return false;
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!mgr)
+			return false;
+		FactionKey fk = cmd.GetCommanderFactionKey();
+		foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
+		{
+			if (!obj || !obj.GetOwner() || !obj.IsCapturedBy(fk) || cmd.DCO_RoleSkipDefend(obj))
+				continue;
+			int have = DCO_DefShortfall.Defenders(cmd, obj);
+			int need = cmd.DCO_DefendNeedCap(obj, DCO_DefShortfall.Need(cmd, obj, 0));
+			if (have >= need)
+				continue;
+			DCO_Perf.Count("def:outpost_skip_garrison");
+			if (now - m_fDCOShortLogAt >= 60.0)
+			{
+				m_fDCOShortLogAt = now;
+				Event(string.Format("def_outpost_skip why=garrison_short obj=%1 have=%2 need=%3", obj.GetLogName(), have, need));
+			}
+			return true;
+		}
+		return false;
+	}
+
+	protected bool NearOutpost(vector pos, float dist)
+	{
+		foreach (DCO_OPPost p : m_aOP)
+		{
+			if (p && vector.DistanceXZ(p.m_vPos, pos) < dist)
+				return true;
+		}
+		foreach (DCO_Ambush a : m_aAmbush)
+		{
+			if (a && vector.DistanceXZ(a.m_vPos, pos) < dist)
+				return true;
+		}
+		return false;
+	}
+
+	protected float OwnLineDist(AICommander_BaseComponent cmd, vector pos)
+	{
+		float best = float.MAX;
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		FactionKey fk = cmd.GetCommanderFactionKey();
+		if (mgr)
+		{
+			foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
+			{
+				if (!obj || !obj.GetOwner() || !obj.IsCapturedBy(fk))
+					continue;
+				float d = vector.DistanceXZ(obj.GetOwner().GetOrigin(), pos);
+				if (d < best)
+					best = d;
+			}
+		}
+		if (best == float.MAX)
+			best = vector.DistanceXZ(cmd.GetOwner().GetOrigin(), pos);
+		return best;
+	}
+
+	protected void VehSkipLog(DCO_GroupUtilityComponent g, float now)
+	{
+		float last;
+		if (m_mDCOVehSkipLogAt.Find(g, last) && now - last < 300.0)
+			return;
+		m_mDCOVehSkipLogAt.Set(g, now);
+		Event(string.Format("reserve_pick_skip why=vehicle_group grp=%1 cap=%2", g.GetOwner().GetName(), typename.EnumToString(DCO_EGroupCapability, g.GetCapability())));
+	}
+
 	protected void PlanOPs(AICommander_BaseComponent cmd, float now)
 	{
 		if (!cmd.IsOPEnabled() || m_aOP.Count() >= DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
@@ -763,7 +851,14 @@ class DCO_CommanderDefense
 			vector pos = ops.FindOverwatch(main, cmd.GetOwner().GetOrigin());
 			if (pos != vector.Zero)
 			{
-				OpenOP(cmd, pos, mainPos, "intel", now);
+				float ownD = OwnLineDist(cmd, pos);
+				if (ownD > 800.0)
+				{
+					DCO_Perf.Count("def:op_skip_too_far");
+					Event(string.Format("def_op_skip why=too_far purpose=intel obj=%1 own_d=%2", main.GetLogName(), Math.Round(ownD)));
+				}
+				else
+					OpenOP(cmd, pos, mainPos, "intel", now);
 				return;
 			}
 		}
@@ -792,7 +887,13 @@ class DCO_CommanderDefense
 
 	void OpenOP(AICommander_BaseComponent cmd, vector pos, vector watch, string purpose, float now)
 	{
-		DCO_GroupUtilityComponent parent = PickReserve(cmd, pos, false, false, null, 2000, 8);
+		if (NearOutpost(pos, 150.0))
+		{
+			DCO_Perf.Count("def:op_skip_spacing");
+			Event(string.Format("def_op_skip why=spacing purpose=%1 pos=%2", purpose, DCO_Util.XZ(pos)));
+			return;
+		}
+		DCO_GroupUtilityComponent parent = PickReserve(cmd, pos, false, false, null, 2000, 8, true);
 		if (!parent)
 			return;
 
@@ -834,6 +935,24 @@ class DCO_CommanderDefense
 		Event(string.Format("def_op_open purpose=%1 pos=%2 watch=%3 team=%4 split_from=%5", purpose, pos, watch, p.m_Group.GetOwner().GetName(), parentName));
 	}
 
+	bool ReserveOP(AICommander_BaseComponent cmd, vector pos, vector watch, string purpose, float now)
+	{
+		if (!cmd.IsOPEnabled() || HasOPPurpose(purpose) || m_aOP.Count() >= DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
+			return false;
+		int before = m_aOP.Count();
+		OpenOP(cmd, pos, watch, purpose, now);
+		return m_aOP.Count() > before;
+	}
+
+	bool ReserveAmbush(AICommander_BaseComponent cmd, vector kill, vector approachDir, string purpose, float now)
+	{
+		if (!CanStartAmbush(cmd, now) || CountReserves(cmd) < 2)
+			return false;
+		int before = m_aAmbush.Count();
+		StartAmbush(cmd, 0, SnapKillZone(kill, 80), approachDir, false, purpose, null, now);
+		return m_aAmbush.Count() > before;
+	}
+
 	protected void UpdateOPs(AICommander_BaseComponent cmd, float now)
 	{
 		for (int i = m_aOP.Count() - 1; i >= 0; i--)
@@ -852,10 +971,18 @@ class DCO_CommanderDefense
 				p.m_bOrdered = true;
 				p.m_iStrength = p.m_Group.GetUnitCount();
 				MoveIntoPosition(cmd, p.m_Group, p.m_vPos, p.m_vWatch, now);
+				if (p.m_sPurpose == "intel")
+				{
+					p.m_Group.SetTask(DCO_EGroupTask.RECON);
+					DCO_Perf.Count("def:op_intel_recon_task");
+					Event(string.Format("def_op_task purpose=intel team=%1 task=RECON", p.m_Group.GetOwner().GetName()));
+				}
 				continue;
 			}
 
-			if (p.m_Group.GetTask() != DCO_EGroupTask.DEFEND || p.m_Group.GetGroupObjective())
+			DCO_EGroupTask opTask = p.m_Group.GetTask();
+			bool opTaskOk = opTask == DCO_EGroupTask.DEFEND || opTask == DCO_EGroupTask.RECON;
+			if (!opTaskOk || p.m_Group.GetGroupObjective())
 			{
 				LearnOP(p, "reassigned");
 				m_aOP.Remove(i);
@@ -1001,6 +1128,9 @@ class DCO_CommanderDefense
 		float need = cmd.GetMinAttackRatio() * enemy;
 		if (ca.m_bDoctrine)
 			need = Math.Max(cmd.GetMinAttackRatio(), 1.0) * enemy;
+		bool relentless = cmd.DCO_RelentlessCmd();
+		if (relentless)
+			need = enemy;
 		int late = 0;
 
 		array<DCO_GroupUtilityComponent> cands = {};
@@ -1058,11 +1188,29 @@ class DCO_CommanderDefense
 		FactionKey fk = cmd.GetCommanderFactionKey();
 		foreach (DCO_GroupUtilityComponent pg : picks)
 		{
+			if (relentless)
+			{
+				cmd.TacticAssault(pg, obj, now);
+				continue;
+			}
 			pg.CompleteAllWaypoints();
 			pg.SetTask(DCO_EGroupTask.ATTACK);
 			pg.SetGroupObjective(obj);
 			obj.SetObjectiveGroup(fk, 1);
 			cmd.SpawnMoveRoute(pg, pg.GetOwner().GetOrigin(), p, now);
+		}
+		if (relentless && strength < enemy * 1.3 && cands.Count() > picks.Count())
+		{
+			DCO_GroupUtilityComponent sbf = cands[picks.Count()];
+			vector sbfPos = cmd.GetOps().FindOverwatch(obj, sbf.GetOwner().GetOrigin());
+			if (sbfPos == vector.Zero)
+				sbfPos = cmd.TacticStagingPos(obj);
+			if (cmd.SendSupportSquad(sbf, DCO_EGroupTask.SUPPORT_BY_FIRE, sbfPos, p))
+			{
+				sbf.SetGroupObjective(obj);
+				DCO_Perf.Count("relentless_cmd:retake_sbf");
+				Event(string.Format("def_counterattack_sbf obj=%1 grp=%2 ratio=%3", obj.GetLogName(), sbf.GetOwner().GetName(), (strength / Math.Max(enemy, 1.0)).ToString(-1, 2)));
+			}
 		}
 		Event(string.Format("def_counterattack obj=%1 groups=%2 strength=%3 need=%4 enemy_est=%5", obj.GetLogName(), picks.Count(), strength, Math.Round(need), enemy));
 		if (ca.m_bDoctrine)
@@ -1212,8 +1360,9 @@ class DCO_CommanderDefense
 		t.m_Hunter = null;
 	}
 
-	DCO_GroupUtilityComponent PickReserve(AICommander_BaseComponent cmd, vector pos, bool needAT, bool preferMG, DCO_GroupUtilityComponent exclude, float maxDist, int job = 0)
+	DCO_GroupUtilityComponent PickReserve(AICommander_BaseComponent cmd, vector pos, bool needAT, bool preferMG, DCO_GroupUtilityComponent exclude, float maxDist, int job = 0, bool footOnly = false)
 	{
+		float pickNow = DCO_Util.NowS();
 		int jm = job;
 		if (jm == 0)
 			jm = DCO_GroupJobs.AnyCombat() | DCO_EGroupJob.RESERVE;
@@ -1223,6 +1372,12 @@ class DCO_CommanderDefense
 		{
 			if (!g || g == exclude || g.IsPlayerGroup() || g.IsDedicatedTransport() || g.IsMortar() || g.IsArmor() || !g.IsInfantry())
 				continue;
+			if (footOnly && (g.GetGroupVehicle() || g.GetCapability() != DCO_EGroupCapability.INFANTRY))
+			{
+				DCO_Perf.Count("reserve_pick:skip_vehicle_group");
+				VehSkipLog(g, pickNow);
+				continue;
+			}
 			if (!g.IsAvailableReserve() || g.HasState(DCO_EGroupState.IN_CONTACT) || !g.CanCommanderOverrideRole() || !g.CanItHaveOrder() || !cmd.CanCommitGroup(g))
 				continue;
 			if (!DCO_GroupJobs.Gate(cmd, g, jm, "reserve_pick"))

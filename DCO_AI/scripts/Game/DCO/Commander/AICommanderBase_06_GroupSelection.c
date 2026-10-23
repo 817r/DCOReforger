@@ -36,7 +36,7 @@ modded class AICommander_BaseComponent
 
 		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
 		{
-			if (!grp)
+			if (!grp || grp.IsSimOff())
 				continue;
 
 			bool isReservePatrol = grp.GetTask() == DCO_EGroupTask.PATROL || (grp.IsArmor() && grp.GetTask() == DCO_EGroupTask.NONE);
@@ -329,6 +329,45 @@ modded class AICommander_BaseComponent
 		return best;
 	}
 
+	protected ref array<float> m_aDCOLostAt = {};
+	protected float m_fDCOLastThreatAt;
+	protected float m_fDCOShareLogAt = -1000;
+
+	int DCO_DefendNeedCap(CMD_AICommanderObjectiveComponent obj, int cap)
+	{
+		if (m_eCommanderMode != CMD_ECommanderMode.BALANCED || cap <= 1 || !obj || !obj.GetOwner())
+			return cap;
+		int fr;
+		int en;
+		obj.CountNearbyUnitsCached(obj.GetThreatRadius(), m_sFactionKey, fr, en, 30.0);
+		if (en > 0 || IsObjectiveContested(obj))
+		{
+			m_fDCOLastThreatAt = DCO_Util.NowS();
+			DCO_Perf.Count("balanced:need_threat");
+			return cap;
+		}
+		bool front = false;
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (mgr)
+		{
+			vector op = obj.GetOwner().GetOrigin();
+			foreach (CMD_AICommanderObjectiveComponent o : mgr.m_aObjective)
+			{
+				if (!o || !o.GetOwner() || o.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+					continue;
+				if (vector.DistanceXZ(o.GetOwner().GetOrigin(), op) < 1500.0)
+					front = true;
+			}
+		}
+		if (front)
+		{
+			DCO_Perf.Count("balanced:need_front");
+			return Math.Min(cap, 2);
+		}
+		DCO_Perf.Count("balanced:need_rear");
+		return 1;
+	}
+
 	protected int CountDefendDemand()
 	{
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
@@ -355,6 +394,7 @@ modded class AICommander_BaseComponent
 			int cap = obj.GetDefendGroupCount();
 			if (cap <= 0)
 				cap = 1;
+			cap = DCO_DefendNeedCap(obj, cap);
 
 			if (!obj.HasSectorGrid(m_sFactionKey))
 			{

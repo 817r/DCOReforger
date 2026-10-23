@@ -865,7 +865,7 @@ class DCO_LearnDefense
 			Event(string.Format("learn_load kind=defense file=%1 entries=0 sessions=1 fresh=1", m_sFile));
 			return;
 		}
-		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
+		JsonLoadContext ctx = new JsonLoadContext();
 		array<string> keys = {};
 		array<float> ns = {};
 		array<float> vs = {};
@@ -912,7 +912,7 @@ class DCO_LearnDefense
 			ns.Insert(s[0]);
 			vs.Insert(s[1]);
 		}
-		SCR_JsonSaveContext ctx = new SCR_JsonSaveContext();
+		JsonSaveContext ctx = new JsonSaveContext();
 		ctx.WriteValue("version", 1);
 		ctx.WriteValue("sessions", m_iSessions);
 		ctx.WriteValue("keys", keys);

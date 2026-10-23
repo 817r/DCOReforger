@@ -123,3 +123,38 @@ class DCO_T_SA_HazardSkipAttribute : DCO_TuneFloatAttribute
 	override protected string Key() { return "sa.hazard_skip"; }
 	override protected float Def() { return 1.0; }
 }
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_CIV_ModeAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "civ.mode"; }
+	override protected bool Def() { return true; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_CIV_CautionAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "civ.caution"; }
+	override protected float Def() { return 1.0; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_CIV_HideAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "civ.hide_s"; }
+	override protected float Def() { return 180.0; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_CIV_CautiousAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "civ.cautious_s"; }
+	override protected float Def() { return 240.0; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_CIV_ScavengeAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "civ.pickup"; }
+	override protected bool Def() { return false; }
+}

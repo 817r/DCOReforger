@@ -373,6 +373,11 @@ modded class SCR_AIThreatSystem
 
 	override void Update(SCR_AIUtilityComponent utility, float timeSlice)
 	{
+		if (DCO_CivMode.IsCiv(utility))
+		{
+			super.Update(utility, timeSlice);
+			return;
+		}
 		float suppDrop = DCO_Stress.T(m_Utility, "tm.supp_drop_s", 0.06) * 0.001 * DCO_MoraleMul(true);
 		m_fThreatSuppression = Falloff(m_fThreatSuppression, suppDrop, timeSlice);
 		m_fThreatShotsFired = Falloff(m_fThreatShotsFired, THREAT_SHOT_DROP_RATE, timeSlice);

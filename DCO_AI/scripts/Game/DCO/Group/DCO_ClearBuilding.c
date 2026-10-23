@@ -764,6 +764,8 @@ class DCO_CQBClear
 			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
 			if (!ca || !ca.m_InfoComponent || !ca.m_InfoComponent.HasRole(EUnitRole.HAS_SMOKE_GRENADE) || !ca.GetCommunicationComponent())
 				continue;
+			if (!DCO_SmokeUtility.Allowed(ca.m_UtilityComponent, "cqb"))
+				continue;
 
 			SCR_AIMessage_ThrowGrenadeTo msg = SCR_AIMessage_ThrowGrenadeTo.Create(pos, EWeaponType.WT_SMOKEGRENADE, 0);
 			msg.m_fPriorityLevel = SCR_AIActionBase.PRIORITY_BEHAVIOR_THROW_GRENADE;

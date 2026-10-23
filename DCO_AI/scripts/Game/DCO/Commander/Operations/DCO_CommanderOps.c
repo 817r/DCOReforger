@@ -25,6 +25,7 @@ class DCO_AttackAttempt
 class DCO_ObjectiveMemory
 {
 	ref array<float> m_aFailedBearings = {};
+	ref array<float> m_aUsedBearings = {};
 	int m_iFails;
 	float m_fFailAt;
 	ref DCO_AttackAttempt m_Active;
@@ -179,13 +180,29 @@ class DCO_CommanderOps
 			float r = obj.GetRadius() + 150;
 			bool armor = false;
 			float conf = 0;
+			int reporters = 0;
+			bool stackOn = DCO_Ctx.TuneForCmd(cmd, "intel.stack_reports", 1.0) > 0;
 			foreach (CMD_ThreatEntry t : tr.GetThreats())
 			{
 				if (!t || vector.DistanceXZ(t.m_vBelievedPos, p) > r)
 					continue;
 				armor = armor || t.m_bArmorSeen;
 				float fresh = Math.Clamp(1 - (now - t.m_fLastUpdateTime) / 120.0, 0, 1);
-				conf = Math.Max(conf, t.m_fReportQuality * fresh * NightIntelScale());
+				float q = Math.Clamp(t.m_fReportQuality * fresh * NightIntelScale(), 0.0, 0.95);
+				int nRep = Math.Clamp(t.DCO_Reporters(now, 120.0), 1, 4);
+				float stacked = q;
+				if (stackOn && nRep > 1)
+					stacked = 1.0 - Math.Pow(1.0 - q, nRep);
+				if (stacked > conf)
+				{
+					conf = stacked;
+					reporters = nRep;
+				}
+			}
+			if (reporters > 1 && conf > intel.m_fConfidence)
+			{
+				DCO_Perf.Count("intel:stacked");
+				Event(string.Format("intel_conf obj=%1 reporters=%2 conf=%3 old=%4", obj.GetLogName(), reporters, conf.ToString(-1, 2), intel.m_fConfidence.ToString(-1, 2)));
 			}
 
 			int raw;
@@ -1394,7 +1411,7 @@ class DCO_CommanderOps
 				continue;
 
 			bool exhausted = !HasOperationGroups(cmd, obj);
-			if (!exhausted && now - mem.m_Active.m_fStart < 900.0)
+			if (!exhausted && now - mem.m_Active.m_fStart < cmd.DCO_GT_AttemptTimeout())
 				continue;
 
 			float casualties = mem.m_Active.m_fStrength - cmd.GetAttackStrength(obj);
@@ -1431,6 +1448,23 @@ class DCO_CommanderOps
 		if (m_Main == obj)
 			m_Main = null;
 		Event(string.Format("ops_deprioritize obj=%1 fails=%2 minutes=%3", obj.GetLogName(), mem.m_iFails, Math.Round(minutes)));
+		DCO_CommanderDefense def = cmd.GetDefense();
+		if (def && obj.GetOwner() && DCO_Ctx.TuneForCmd(cmd, "ops.bypass_screen", 1.0) > 0)
+		{
+			vector objPos = obj.GetOwner().GetOrigin();
+			vector toUs = cmd.TacticStagingPos(obj) - objPos;
+			toUs[1] = 0;
+			if (toUs.Length() > 1.0)
+			{
+				toUs.Normalize();
+				vector kill = DCO_Util.Surface(objPos + toUs * (obj.GetRadius() + 200.0));
+				if (def.ReserveAmbush(cmd, kill, toUs, "bypass_screen", now))
+				{
+					DCO_Perf.Count("ops:bypass_screen");
+					Event(string.Format("ops_bypass_screen obj=%1 kill=%2", obj.GetLogName(), DCO_Util.XZ(kill)));
+				}
+			}
+		}
 		mem.m_iFails = 0;
 	}
 
@@ -1475,12 +1509,19 @@ class DCO_CommanderOps
 			}
 			if (!clear)
 				continue;
-			float rotBase = 1.0 - Math.AbsFloat(rot) / 360.0;
+			float rotBase = 1.0 - 0.5 * Math.AbsFloat(rot) / 360.0;
+			float usedPen = 0;
+			foreach (float ub : mem.m_aUsedBearings)
+			{
+				if (AngleDiff(approach, ub) < 45.0)
+					usedPen += DCO_Ctx.TuneG("ax.used_pen", 0.25);
+			}
+			float vary = Math.RandomFloat(0.0, DCO_Ctx.TuneG("ax.vary", 0.3));
 			float n = 0;
 			float m = 1.0;
 			if (!explore)
 				m = DCO_CmdLearn.ApproachMult(obj, approach, n);
-			float sc = rotBase * m;
+			float sc = (rotBase - usedPen + vary) * m;
 			if (sc > bestScore)
 			{
 				bestScore = sc;
@@ -1494,6 +1535,17 @@ class DCO_CommanderOps
 		}
 		if (bestScore < 0)
 			return axis;
+		int usedBefore;
+		foreach (float ub2 : mem.m_aUsedBearings)
+		{
+			if (AngleDiff(bestApproach, ub2) < 45.0)
+				usedBefore++;
+		}
+		mem.m_aUsedBearings.Insert(bestApproach);
+		if (mem.m_aUsedBearings.Count() > 8)
+			mem.m_aUsedBearings.RemoveOrdered(0);
+		DCO_Perf.Count("axis:rot_" + Math.Round(Math.AbsFloat(bestRot)).ToString());
+		Event(string.Format("attack_axis obj=%1 rot=%2 bearing=%3 score=%4 used_before=%5 mult=%6 n=%7", obj.GetLogName(), bestRot, Math.Round(bestApproach), bestScore.ToString(-1, 2), usedBefore, bestMult.ToString(-1, 2), bestN));
 		if (bestRot != 0)
 			Event(string.Format("ops_avoid_bearing obj=%1 rotate=%2 new_bearing=%3", obj.GetLogName(), bestRot, Math.Round(bestApproach)));
 		if (explore)
@@ -2017,14 +2069,17 @@ class DCO_CommanderOps
 	protected bool TryFeint(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, float now)
 	{
 		m_mFeint.Set(obj, 0);
-		if (!cmd.IsFeintEnabled() || !cmd.IsAttackRatioMet(obj))
+		bool relentless = cmd.DCO_RelentlessCmd();
+		if (!cmd.IsFeintEnabled() || (!cmd.IsAttackRatioMet(obj) && !relentless))
 			return false;
-		if (DCO_Force.Max(cmd, "feint") < 1)
+		if (relentless)
+			DCO_Perf.Count("relentless_cmd:feint_try");
+		if (DCO_Force.Max(cmd, "feint") < 1 && !relentless)
 		{
 			DCO_Force.LogSkip(cmd, "feint", 1, 1);
 			return false;
 		}
-		if (Math.RandomFloat01() > 0.15 + 0.35 * cmd.DCO_EffAggression() + 0.35 * cmd.GetRiskTaking())
+		if (!relentless && Math.RandomFloat01() > 0.15 + 0.35 * cmd.DCO_EffAggression() + 0.35 * cmd.GetRiskTaking())
 			return false;
 
 		vector objPos = obj.GetOwner().GetOrigin();

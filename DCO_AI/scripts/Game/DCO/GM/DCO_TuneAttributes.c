@@ -1107,6 +1107,34 @@ class DCO_T_TT_ResupplyMagsAttribute : DCO_TuneFloatAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_GA_LeadershipWeightPoorAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.DCO_GT_LeadershipWeightPoor(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value) { cfg.DCO_ST_LeadershipWeightPoor(value); DCO_TuneAttr.Log("ga.LeadershipWeightPoor", value, -1); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_GA_LeadershipWeightAverageAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.DCO_GT_LeadershipWeightAverage(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value) { cfg.DCO_ST_LeadershipWeightAverage(value); DCO_TuneAttr.Log("ga.LeadershipWeightAverage", value, -1); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_GA_LeadershipWeightGoodAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.DCO_GT_LeadershipWeightGood(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value) { cfg.DCO_ST_LeadershipWeightGood(value); DCO_TuneAttr.Log("ga.LeadershipWeightGood", value, -1); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_GA_LeadershipWeightInspiringAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.DCO_GT_LeadershipWeightInspiring(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value) { cfg.DCO_ST_LeadershipWeightInspiring(value); DCO_TuneAttr.Log("ga.LeadershipWeightInspiring", value, -1); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_T_GA_PersonalityWeightStandardAttribute : DCO_GlobalFloatAttribute
 {
 	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.DCO_GT_PersonalityWeightStandard(); }
@@ -1161,6 +1189,30 @@ class DCO_T_CMD_DelayFirstIterationAttribute : DCO_CmdTuneFloatAttribute
 	override protected string Key() { return "cmd.DelayFirstIteration"; }
 	override protected float Get(AICommander_BaseComponent c) { return c.DCO_GT_DelayFirstIteration(); }
 	override protected void Set(AICommander_BaseComponent c, float v) { c.DCO_ST_DelayFirstIteration(v); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_CMD_AttemptTimeoutAttribute : DCO_CmdTuneFloatAttribute
+{
+	override protected string Key() { return "cmd.AttemptTimeout"; }
+	override protected float Get(AICommander_BaseComponent c) { return c.DCO_GT_AttemptTimeout(); }
+	override protected void Set(AICommander_BaseComponent c, float v) { c.DCO_ST_AttemptTimeout(v); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_CMD_IntelBandConfAttribute : DCO_CmdTuneFloatAttribute
+{
+	override protected string Key() { return "cmd.IntelBandConf"; }
+	override protected float Get(AICommander_BaseComponent c) { return c.DCO_GT_IntelBandConf(); }
+	override protected void Set(AICommander_BaseComponent c, float v) { c.DCO_ST_IntelBandConf(v); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_CMD_ReserveEmploymentAttribute : DCO_CmdTuneFloatAttribute
+{
+	override protected string Key() { return "cmd.ReserveEmployment"; }
+	override protected float Get(AICommander_BaseComponent c) { return c.DCO_GT_ReserveEmployment(); }
+	override protected void Set(AICommander_BaseComponent c, float v) { c.DCO_ST_ReserveEmployment(v); }
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
@@ -1828,14 +1880,6 @@ class DCO_T_TR_LedgerTTLAttribute : DCO_ThreatTuneFloatAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class DCO_T_TR_ReinforceBehindDistAttribute : DCO_ThreatTuneFloatAttribute
-{
-	override protected string Key() { return "tr.ReinforceBehindDist"; }
-	override protected float Get(CMD_ThreatResponseComponent c) { return c.DCO_GT_ReinforceBehindDist(); }
-	override protected void Set(CMD_ThreatResponseComponent c, float v) { c.DCO_ST_ReinforceBehindDist(v); }
-}
-
-[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_T_TR_ReinforceStandoffDistAttribute : DCO_ThreatTuneFloatAttribute
 {
 	override protected string Key() { return "tr.ReinforceStandoffDist"; }
@@ -2391,6 +2435,76 @@ class DCO_T_VA_ReconApcAttribute : DCO_TuneFloatAttribute
 {
 	override protected string Key() { return "va.recon_apc_per_min"; }
 	override protected float Def() { return 5.0; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_VA_GmPairAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "veh.gm_pair"; }
+	override protected bool Def() { return false; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_VA_CruiseKmhAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "veh.cruise_kmh"; }
+	override protected float Def() { return 0.0; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_AmmoMagicChanceAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "ammo.magic_chance"; }
+	override protected float Def() { return 0.0; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_StanceProneGateAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "stance.prone_gate"; }
+	override protected bool Def() { return true; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_TM_PanicVarietyAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "tm.panic_variety"; }
+	override protected bool Def() { return true; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_TM_PanicShoutAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "tm.panic_shout"; }
+	override protected float Def() { return 0.2; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_TM_MoraleHitAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "tm.morale_hit"; }
+	override protected float Def() { return 0.3; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_TM_MoraleBoostCapAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "tm.morale_boost_cap"; }
+	override protected float Def() { return 0.5; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_IND_YieldMAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "ind.yield_m"; }
+	override protected float Def() { return 150.0; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_INV_PosErrAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "inv.pos_err"; }
+	override protected float Def() { return 0.12; }
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]

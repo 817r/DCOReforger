@@ -306,7 +306,7 @@ class DCO_UISettings
 		if (!FileIO.FileExists("$profile:DCO_UI.json"))
 			return;
 
-		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
+		JsonLoadContext ctx = new JsonLoadContext();
 		if (!ctx.LoadFromFile("$profile:DCO_UI.json"))
 			return;
 
@@ -358,7 +358,7 @@ class DCO_UISettings
 
 	protected static void Save()
 	{
-		SCR_JsonSaveContext ctx = new SCR_JsonSaveContext();
+		JsonSaveContext ctx = new JsonSaveContext();
 		ctx.WriteValue("scale", s_fScale);
 		ctx.WriteValue("position", s_sPos);
 		ctx.WriteValue("offsetX", s_fOffX);

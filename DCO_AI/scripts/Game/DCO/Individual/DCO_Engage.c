@@ -157,6 +157,8 @@ class DCO_Engage
 	static float BaseMinDist(SCR_AIUtilityComponent u)
 	{
 		DCO_GroupTactics posture = DCO_PostureCombatUtility.GetPosture(u);
+		if (posture == DCO_GroupTactics.AGGRESIVE && DCO_Relentless.Unit(u))
+			return 10.0;
 		if (posture == DCO_GroupTactics.AGGRESIVE)
 			return DCO_Stress.TA(u, "tm.min_dist_agg_m", 30.0, -0.5, 15.0, 200.0);
 		if (posture == DCO_GroupTactics.DEFENSIVE || posture == DCO_GroupTactics.EVASIVE || posture == DCO_GroupTactics.DELAY)
@@ -215,6 +217,8 @@ class DCO_Engage
 			why = aw;
 		else if (CqbPush(u))
 			why = "cqb_range";
+		else if (DCO_Relentless.Unit(u) && (i.m_fDistFresh < 0 || i.m_fDistFresh >= MinDist(u)))
+			why = "relentless";
 		else
 		{
 			int lvl = DCO_Stress.Level(u);

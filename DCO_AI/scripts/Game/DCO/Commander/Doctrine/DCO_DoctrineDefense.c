@@ -70,6 +70,11 @@ class DCO_DoctrineDefense
 		{
 			if (act == DCO_EDefAction.DELAY && !delayAllowed)
 				continue;
+			if (act == DCO_EDefAction.WITHDRAW && cmd.DCO_RelentlessCmd())
+			{
+				DCO_Perf.Count("relentless_cmd:def_no_withdraw");
+				continue;
+			}
 			if (d.Defense(band, Column(act)))
 				return act;
 		}

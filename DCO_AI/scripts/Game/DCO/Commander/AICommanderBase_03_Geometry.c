@@ -52,11 +52,19 @@ modded class AICommander_BaseComponent
 		return Math.Clamp((candidate[1] - objective[1]) / m_fFlankHeightScale, -1.0, 1.0) + Math.RandomFloat(0.0, m_fFlankScoreJitter);
 	}
 
+	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mDCOStagingAt = new map<CMD_AICommanderObjectiveComponent, float>();
+
 	protected vector GetOrCreateStagingPos(CMD_AICommanderObjectiveComponent obj)
 	{
 		vector cached;
 		if (m_mStagingPos.Find(obj, cached))
-			return cached;
+		{
+			float pickedAt;
+			bool active = m_Ops && m_Ops.GetMemory(obj) && m_Ops.GetMemory(obj).m_Active;
+			if (active || !m_mDCOStagingAt.Find(obj, pickedAt) || DCO_Util.NowS() - pickedAt < DCO_Ctx.TuneG("ax.staging_ttl_s", 900.0))
+				return cached;
+			DCO_Perf.Count("staging:repick");
+		}
 
 		vector objPos = obj.GetOwner().GetOrigin();
 		vector base   = DCO_AttackerCentroid();
@@ -95,7 +103,8 @@ modded class AICommander_BaseComponent
 			StagingSideOk(objPos, obj.GetRadius(), base, pos, sideDeg, pathClear);
 		}
 
-		m_mStagingPos.Insert(obj, pos);
+		m_mStagingPos.Set(obj, pos);
+		m_mDCOStagingAt.Set(obj, DCO_Util.NowS());
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("staging_pos cmd=%1 obj=%2 pos=%3 obj_dist=%4 side_deg=%5 path_clear=%6 rotated=%7 from=%8", m_sCommanderUID, obj.GetLogName(), DCO_Util.XZ(pos), Math.Round(vector.DistanceXZ(pos, objPos)), Math.Round(sideDeg), pathClear, rotated, DCO_Util.XZ(base)));
 
 		return pos;

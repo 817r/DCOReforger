@@ -119,6 +119,7 @@ class DCO_API
 			case "suppressionEffect": return c.GetSuppressionEffect();
 			case "takeCoverChance": return c.GetTakeCoverChance();
 			case "personality": return c.GetPersonality();
+			case "leadership": return c.GetLeadership();
 		}
 		return 0;
 	}
@@ -141,6 +142,7 @@ class DCO_API
 			case "suppressionEffect": c.SetSuppressionEffect(Math.Clamp(value, 0.0, 2.0)); break;
 			case "takeCoverChance": c.SetTakeCoverChance(Math.Clamp(value, 0.0, 1.0)); break;
 			case "personality": c.SetPersonality(Math.ClampInt(Math.Round(value), DCO_EAIPersonality.CAUTIOUS, DCO_EAIPersonality.RECKLESS)); break;
+			case "leadership": c.SetLeadership(Math.ClampInt(Math.Round(value), DCO_ELeadership.POOR, DCO_ELeadership.INSPIRING)); break;
 			default: return Reject(mod, scope, key, "unknown_key");
 		}
 		Applied(mod, scope, key, old, GetSoldierSetting(soldier, key));

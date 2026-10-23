@@ -137,8 +137,8 @@ modded class AICommander_BaseComponent
 	protected bool m_bDCOPresetDirty;
 	protected float m_fDCOPresetTimer;
 
-	protected ref SCR_JsonSaveContext m_DCOPSave;
-	protected ref SCR_JsonLoadContext m_DCOPLoad;
+	protected ref JsonSaveContext m_DCOPSave;
+	protected ref JsonLoadContext m_DCOPLoad;
 	protected int m_iDCOPMode;
 	protected int m_iDCOPApplied;
 
@@ -209,7 +209,7 @@ modded class AICommander_BaseComponent
 			return false;
 		}
 
-		m_DCOPLoad = new SCR_JsonLoadContext();
+		m_DCOPLoad = new JsonLoadContext();
 		if (!m_DCOPLoad.LoadFromFile(path))
 		{
 			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.ERROR, "-", string.Format("%1: failed to parse %2 (invalid JSON)", m_sCommanderUID, path));
@@ -243,7 +243,7 @@ modded class AICommander_BaseComponent
 		FileIO.MakeDirectory("$profile:DCO");
 		FileIO.MakeDirectory(DCO_CommanderPresets.Dir());
 
-		m_DCOPSave = new SCR_JsonSaveContext();
+		m_DCOPSave = new JsonSaveContext();
 		m_DCOPSave.WriteValue("_comment", "DCO commander preset. Keys may be removed (missing key = setting unchanged). Values are clamped on load.");
 		m_iDCOPMode = 1;
 		DCO_PresetSyncAll(false);
@@ -265,11 +265,11 @@ modded class AICommander_BaseComponent
 
 	protected string DCO_PresetSignature()
 	{
-		m_DCOPSave = new SCR_JsonSaveContext();
+		m_DCOPSave = new JsonSaveContext();
 		m_iDCOPMode = 1;
 		DCO_PresetSyncAll(false);
 		m_iDCOPMode = 0;
-		string s = m_DCOPSave.ExportToString();
+		string s = m_DCOPSave.SaveToString();
 		m_DCOPSave = null;
 		return s;
 	}
@@ -427,7 +427,10 @@ modded class AICommander_BaseComponent
 
 	protected void DCO_PresetSync0()
 	{
-		m_fObjectiveAtTheSameTime = DCO_PI("ObjectiveAtTheSameTime", m_fObjectiveAtTheSameTime, 1, 10);
+		m_fObjectiveAtTheSameTime = DCO_PI("ObjectiveAtTheSameTime", m_fObjectiveAtTheSameTime, -1, 10);
+		m_iReserveEmployment = DCO_PI("ReserveEmployment", m_iReserveEmployment, 0, 2);
+		m_fIntelBandConf = DCO_PF("IntelBandConf", m_fIntelBandConf, 0.1, 0.9);
+		m_fAttemptTimeout_s = DCO_PF("AttemptTimeout", m_fAttemptTimeout_s, 300, 3600);
 		m_bUseSynchronizedAttack = DCO_PB("UseSynchronizedAttack", m_bUseSynchronizedAttack);
 		m_fSyncAttackMaxWaitTime = DCO_PF("SyncAttackMaxWaitTime", m_fSyncAttackMaxWaitTime, 0, 100000);
 		m_fReconWaitTimeout = DCO_PF("ReconWaitTimeout", m_fReconWaitTimeout, 0, 100000);
@@ -634,6 +637,7 @@ modded class AICommander_BaseComponent
 		m_fCBInitialError = DCO_PF("CBInitialError", m_fCBInitialError, 0, 100000);
 		m_bFeint = DCO_PB("Feint", m_bFeint);
 		m_fFeintLead = DCO_PF("FeintLead", m_fFeintLead, 0, 100000);
+		m_bDCORelentless = DCO_PB("Relentless", m_bDCORelentless);
 	}
 
 	protected void DCO_PresetSyncAll(bool runtime)

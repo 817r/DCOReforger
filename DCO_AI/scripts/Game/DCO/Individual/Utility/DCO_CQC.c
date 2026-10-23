@@ -96,6 +96,55 @@ class DCO_CQC
 		return false;
 	}
 
+	static bool CrouchRoll(IEntity me)
+	{
+		DCO_GlobalAIComponent g = DCO_GlobalAIComponent.GetFor(me);
+		if (!g || g.GetCrouchChance() >= 1.0)
+			return true;
+		float chance = g.GetCrouchChance();
+		if (chance <= 0.0)
+		{
+			DCO_Perf.Count("crouch_blocked:chance0");
+			return false;
+		}
+		ChimeraCharacter ch = ChimeraCharacter.Cast(me);
+		if (!ch)
+			return true;
+		CharacterControllerComponent ctrl = ch.GetCharacterController();
+		if (ctrl && ctrl.GetStance() == ECharacterStance.CROUCH)
+			return true;
+		SCR_AICombatComponent cc = SCR_AICombatComponent.Cast(ch.FindComponent(SCR_AICombatComponent));
+		if (cc && cc.DCO_CrouchRoll(chance))
+			return true;
+		if (!cc && Math.RandomFloat01() < chance)
+			return true;
+		DCO_Perf.Count("crouch_blocked:chance");
+		return false;
+	}
+
+	static int ClampByChance(IEntity me, int to, out string why)
+	{
+		why = "";
+		DCO_GlobalAIComponent g = DCO_GlobalAIComponent.GetFor(me);
+		if (!g)
+			return to;
+		if (to == ECharacterStance.PRONE && g.GetProneChance() <= 0.0)
+		{
+			DCO_Perf.Count("prone_blocked:chance0_forced");
+			to = ECharacterStance.CROUCH;
+			why = "prone_chance0";
+		}
+		if (to == ECharacterStance.CROUCH && !CrouchRoll(me))
+		{
+			to = ECharacterStance.STAND;
+			if (g.GetCrouchChance() <= 0.0)
+				why = "crouch_chance0";
+			else
+				why = "crouch_roll";
+		}
+		return to;
+	}
+
 	static void ClampProneStance(SCR_AICombatMoveRequestBase request, IEntity me)
 	{
 		SCR_AICombatMoveRequest_Move moveRq = SCR_AICombatMoveRequest_Move.Cast(request);

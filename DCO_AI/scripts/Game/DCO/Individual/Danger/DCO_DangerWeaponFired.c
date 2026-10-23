@@ -224,6 +224,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 	[Attribute("12.0", UIWidgets.EditBox, "Upper limit (m) of the cover search distance. Caps the DodgeSearchDist value so AI do not sprint far away.")]
 	protected float m_fCoverSearchDistCap;
+	protected float m_fDCONearOpenCap;
+	protected string m_sDCOLastPick;
 
 	[Attribute("0.4", UIWidgets.EditBox, "Minimum threat score for AI to run for cover. Below this AI only turn and lower their stance.")]
 	protected float m_fCoverThreatGate;
@@ -281,6 +283,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
+		if (DCO_CivMode.IsCiv(utility))
+			return DCO_CivMode.OnShot(utility, dangerEvent);
 		DCO_Perf.Count("ev:shot");
 		int perfStart = DCO_Perf.Begin();
 		bool reacted = DCO_PerformShotReaction(utility, threatSystem, dangerEvent, dangerEventCount);
@@ -556,6 +560,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		{
 			float timeTillGroupNotified_s = Math.Min(timeTillFlyby_s, timeTillGunshotHeard_s);
 			vector groupShotPos = DCO_ShotLocate.Estimate(utility, myGroup, instigatorEntity, shotPos, distance, ComputeAudibility(distance, isShotSuppressed, isInVehicle), isShotSuppressed);
+			DCO_WindowSuppress.OnShot(utility, myGroup, instigatorEntity, groupShotPos, GetGame().GetWorld().GetWorldTime());
 
 			if (timeTillGroupNotified_s < 0)
 				NotifyGroup(myGroup, shooter, instigatorEntity, instigatorFaction, groupShotPos, endangeringForGroup);
@@ -826,8 +831,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 		float missScore = 0;
 		if (missDist <= 2.0)
 			missScore = 1.0;
-		else if (missDist < 25.0)
-			missScore = 1.0 - (missDist - 2.0) / (25.0 - 2.0);
+		else if (missDist < 15.0)
+			missScore = 1.0 - (missDist - 2.0) / (15.0 - 2.0);
 
 		float burstScore = Math.Clamp(1.0 * dangerEventCount / 5.0, 0.0, 1.0);
 
@@ -1122,6 +1127,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 	{
 		string pick;
 		int r = DCO_DodgeAssist.Apply(utility, rq, threatPos, searchDist, losOnly, pick);
+		m_sDCOLastPick = pick;
 		if (!pick.IsEmpty())
 			DCO_DodgeNote("dir_" + pick, true);
 		if (r == 2 && utility.m_OwnerEntity)
@@ -1137,6 +1143,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		if (!utility || !utility.m_OwnerEntity)
 			return;
 
+		m_fDCONearOpenCap = 0;
 		if (DCO_AssaultLock.DodgeCap(utility) == 0)
 		{
 			LowerStance(utility);
@@ -1149,9 +1156,14 @@ modded class SCR_AIDangerReaction_WeaponFired
 			dnT = utility.m_CombatComponent.GetCurrentTarget();
 		if (dnT && dnT.GetTargetEntity() && utility.m_CombatComponent.IsTargetVisible(dnT) && vector.Distance(dnT.GetTargetEntity().GetOrigin(), utility.m_OwnerEntity.GetOrigin()) < DCO_Stress.T(utility, "rt.close_m", 30.0))
 		{
-			LowerStance(utility);
-			DCO_DodgeNote("cov_near_target", false);
-			return;
+			if (!utility.m_CombatMoveState || utility.m_CombatMoveState.IsInValidCover())
+			{
+				LowerStance(utility);
+				DCO_DodgeNote("cov_near_target", false);
+				return;
+			}
+			m_fDCONearOpenCap = 8.0;
+			DCO_DodgeNote("near_target_open", true);
 		}
 
 		DCO_DodgeNote("enter_cov", true);
@@ -1247,7 +1259,10 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
-		if (state.IsInValidCover() && !DCO_CoverCompromisedNote(utility, perceivedShotPos))
+		bool compromised = false;
+		if (state.IsInValidCover())
+			compromised = DCO_CoverCompromisedNote(utility, perceivedShotPos);
+		if (state.IsInValidCover() && !compromised)
 		{
 			DCO_DodgeNote("cov_in_cover", false);
 			if (DCO_DodgeAssist.RecentNearMiss(utility))
@@ -1270,7 +1285,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
-		if (!DCO_CoverMoveBudget.CanMove(ownerEnt, m_fSharedMoveCooldown))
+		if (!compromised && !DCO_CoverMoveBudget.CanMove(ownerEnt, m_fSharedMoveCooldown))
 		{
 			DCO_DodgeNote("cov_budget", false);
 			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: move budget (last move %1s ago, minimum %2s)",
@@ -1292,7 +1307,9 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
-		if (!CanDodgeNow(ownerEnt, cooldown_s))
+		if (compromised)
+			DCO_DodgeNote("compromised_go", true);
+		if (!compromised && !CanDodgeNow(ownerEnt, cooldown_s))
 		{
 			DCO_DodgeNote("cov_cooldown", false);
 			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: cooldown active (%1s)", cooldown_s));
@@ -1412,6 +1429,8 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 	protected void PushCoverMove(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatMoveState state, vector perceivedShotPos, float threatScore)
 	{
+		if (!state.DCO_DangerCoverAllowed(8000.0))
+			return;
 		float searchDist = DCO_AIConfigComponent.DodgeSearchDistOf(utility);
 
 		if (m_fCoverSearchDistCap > 0)
@@ -1419,6 +1438,11 @@ modded class SCR_AIDangerReaction_WeaponFired
 		float dodgeCap = DCO_AssaultLock.DodgeCap(utility);
 		if (dodgeCap > 0)
 			searchDist = Math.Min(searchDist, dodgeCap);
+		if (m_fDCONearOpenCap > 0)
+		{
+			searchDist = Math.Min(searchDist, m_fDCONearOpenCap);
+			m_fDCONearOpenCap = 0;
+		}
 
 		SCR_AICombatMoveRequest_Move rq = new SCR_AICombatMoveRequest_Move();
 
@@ -1451,6 +1475,14 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		if (asst == 0)
 			ApplyWaypointDodgeBias(utility, rq, searchDist);
+		if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO))
+		{
+			vector dgMe = utility.m_OwnerEntity.GetOrigin();
+			string dgPick = m_sDCOLastPick;
+			if (dgPick.IsEmpty())
+				dgPick = "random";
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(utility.m_OwnerEntity), string.Format("dodge_go unit=%1 threat=%2 search_m=%3 move_m=%4 dir=%5 pick=%6 end_stance=%7 in_cover=%8 shot_d=%9", DCO_Log.IdUnit(utility.m_OwnerEntity), threatScore.ToString(-1, 2), Math.Round(searchDist), Math.Round(vector.DistanceXZ(dgMe, rq.m_vMovePos)), typename.EnumToString(SCR_EAICombatMoveDirection, rq.m_eDirection), dgPick, typename.EnumToString(ECharacterStance, rq.m_eStanceEnd), DCO_Util.B01(state.IsInValidCover()), Math.Round(vector.DistanceXZ(dgMe, perceivedShotPos))));
+		}
 
 		DCO_CoverMoveBudget.MarkMove(utility.m_OwnerEntity);
 
@@ -1527,7 +1559,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		if (m_bDebugCoverReaction)
 		{
 			DebugCover(ownerEnt, string.Format("BUILDING POLL left=%1 fail=%2 executing=%3 isOldRq=%4",
-				pollsLeft, DebugFailReason(buildingRq), executing, state.GetOldRequest() == SCR_AICombatMoveRequestBase.Cast(buildingRq)));
+				pollsLeft, DebugFailReason(buildingRq), executing, state.GetOldRequest() == buildingRq));
 		}
 
 		if (buildingRq.m_eFailReason == SCR_EAICombatMoveRequestFailReason.NO_BUILDING_FOUND)

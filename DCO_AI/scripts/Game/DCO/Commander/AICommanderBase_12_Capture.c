@@ -1,5 +1,7 @@
 modded class AICommander_BaseComponent
 {
+	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mDCOCapturedAt = new map<CMD_AICommanderObjectiveComponent, float>();
+
 	protected void ThinkCaptureProgress(float worldTime)
 	{
 	    if (!Replication.IsServer())
@@ -61,6 +63,7 @@ modded class AICommander_BaseComponent
 	            obj.ResetAssignedGroupCount(m_sFactionKey);
 	            obj.ResetStalemateTracking();
 	            SweepObjective(obj);
+	            m_mDCOCapturedAt.Set(obj, worldTime);
 	            m_Tactics.OnCaptured(this, obj, worldTime);
 	        }
 	    }

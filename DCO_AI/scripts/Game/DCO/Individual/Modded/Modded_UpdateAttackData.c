@@ -594,7 +594,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			return false;
 
 		float skillFactor       = DCO_PersonalityCombatUtility.GetSkillDisciplineFactor(m_UtilityComponent);
-		float personalityScale  = DCO_PersonalityCombatUtility.GetDisciplineBreakChanceScale(m_UtilityComponent);
+		float personalityScale  = DCO_PersonalityCombatUtility.GetDisciplineBreakChanceScale(m_UtilityComponent) * DCO_Leadership.DisciplineMul(DCO_Leadership.OfGroupOf(m_UtilityComponent));
 
 		float breakChance = 0.35 * skillFactor * personalityScale;
 		breakChance = Math.Clamp(breakChance, 0.0, 0.4);

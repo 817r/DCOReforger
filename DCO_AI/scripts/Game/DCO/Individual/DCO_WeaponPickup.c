@@ -114,10 +114,32 @@ class DCO_WeaponPickup
 			s_mBooked.Remove(w);
 	}
 
+	protected static ref map<IEntity, float> s_mCivLogAt;
+
+	static bool CivilianBlocked(SCR_AIUtilityComponent u, IEntity me, string what)
+	{
+		if (!u || !me || u.IsMilitary() || DCO_Stress.T(u, "civ.pickup", 0.0) > 0)
+			return false;
+		DCO_Perf.Count(what + ":skip_civilian");
+		float now = DCO_Util.NowS();
+		if (!s_mCivLogAt)
+			s_mCivLogAt = new map<IEntity, float>();
+		if (s_mCivLogAt.Count() > 500)
+			s_mCivLogAt.Clear();
+		float last;
+		if (s_mCivLogAt.Find(me, last) && now - last < 300.0)
+			return true;
+		s_mCivLogAt.Set(me, now);
+		DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("%1_skip unit=%2 why=civilian", what, DCO_Log.IdUnit(me)));
+		return true;
+	}
+
 	static void Tick(SCR_AIUtilityComponent u, SCR_AICombatComponent combat, DCO_PickupState st, float now)
 	{
 		ChimeraCharacter me = ChimeraCharacter.Cast(u.m_OwnerEntity);
 		if (!me || me.IsInVehicle() || !DCO_GlobalAIComponent.BehaviorOnFor(me, DCO_EBehavior.REARM))
+			return;
+		if (CivilianBlocked(u, me, "pickup"))
 			return;
 		if (now < st.m_fNext_ms || u.FindActionOfType(DCO_AIPickupWeaponBehavior) || u.FindActionOfType(DCO_AIRearmBehavior))
 			return;
@@ -347,7 +369,7 @@ class DCO_AIPickupWeaponBehavior : DCO_TakeBehavior
 
 	override float DCO_CurrentPrio()
 	{
-		return m_fDCOPrio;
+		return DCO_Yielded(m_fDCOPrio, m_DCOWeapon);
 	}
 
 	override int GetCause()
@@ -409,7 +431,7 @@ class DCO_AIPickupWeaponBehavior : DCO_TakeBehavior
 			DCO_Perf.Count("pickup:remove");
 			return 0;
 		}
-		return m_fDCOPrio;
+		return DCO_Yielded(m_fDCOPrio, m_DCOWeapon);
 	}
 
 	override int DCO_DoTake()

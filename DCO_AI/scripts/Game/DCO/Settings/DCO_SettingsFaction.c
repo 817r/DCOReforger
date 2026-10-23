@@ -147,19 +147,19 @@ modded class DCO_GlobalAIComponent
 
 	string DCO_ExportConfig()
 	{
-		m_CfgSave = new SCR_JsonSaveContext();
+		m_CfgSave = new JsonSaveContext();
 		m_iCfgMode = 1;
 		SyncConfig();
 		m_iCfgMode = 0;
-		string json = m_CfgSave.ExportToString();
+		string json = m_CfgSave.SaveToString();
 		m_CfgSave = null;
 		return json;
 	}
 
 	void DCO_ImportConfig(string json)
 	{
-		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
-		if (!ctx.ImportFromString(json))
+		JsonLoadContext ctx = new JsonLoadContext();
+		if (!ctx.LoadFromString(json))
 			return;
 		m_iCfgMode = 0;
 		m_CfgLoad = ctx;

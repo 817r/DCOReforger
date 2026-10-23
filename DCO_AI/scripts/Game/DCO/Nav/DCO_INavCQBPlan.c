@@ -16,6 +16,8 @@ class DCO_INavCQBPlan
 	ref DCO_INavHop m_Entry;
 	ref DCO_INavHop m_Hop;
 	ref map<int, float> m_mDoorTry = new map<int, float>();
+	ref array<float> m_aBelief;
+	int m_iBeliefFloor = -1;
 	string m_sGrp;
 
 	static DCO_INavCQBPlan Make(IEntity building, vector from, array<vector> tried, string grp, out string why)
@@ -127,7 +129,7 @@ class DCO_INavCQBPlan
 		if (room < 0)
 			return false;
 		int kind = m_G.m_aRooms[room].m_iKind;
-		return kind == 0 || kind == 1;
+		return kind == 0 || kind == 1 || kind == 3;
 	}
 
 	protected bool IsStairHop(DCO_INavHop h)
@@ -324,6 +326,10 @@ class DCO_INavCQBPlan
 		s += 100.0 * rooms[c].m_iDefer;
 		if (c == priority)
 			s -= 1000.0;
+		if (m_aBelief && c < m_aBelief.Count())
+			s -= 1000.0 * m_aBelief[c];
+		if (m_iBeliefFloor >= 0 && rooms[c].m_iFloor == m_iBeliefFloor)
+			s -= 200.0;
 		return s;
 	}
 

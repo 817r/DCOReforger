@@ -6843,6 +6843,8 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		DCO_SettingsPresets.List(scope, locals);
 		foreach (string localName : locals)
 		{
+			if (DCO_SettingsPresets.IsBuiltin(localName) && m_aPresetNames.Find(localName) >= 0)
+				continue;
 			m_aPresetNames.Insert(localName);
 			m_aPresetLocal.Insert(true);
 		}

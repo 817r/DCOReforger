@@ -391,6 +391,13 @@ class DCO_CmdViewServer
 		}
 		if (g.m_iDCOTRPhase >= 0)
 			line += " · " + typename.EnumToString(DCO_ETRPhase, g.m_iDCOTRPhase);
+		line += " · " + typename.EnumToString(DCO_EGroupTask, g.GetTask()) + "/" + typename.EnumToString(DCO_ETaskPhase, g.GetPhase());
+		SCR_AIGroupUtilityComponent gu = g.GetGroupUtilityComponent();
+		if (gu)
+			line += " · " + typename.EnumToString(DCO_GroupTactics, gu.DCO_GetPosture());
+		if (g.IsInContact())
+			line += " · CONTACT";
+		line += " · " + g.GetUnitCount().ToString() + " men";
 		return line;
 	}
 

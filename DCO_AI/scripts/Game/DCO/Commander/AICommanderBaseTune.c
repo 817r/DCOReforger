@@ -1,5 +1,11 @@
 modded class AICommander_BaseComponent
 {
+	float DCO_GT_AttemptTimeout()				{ return m_fAttemptTimeout_s; }
+	void DCO_ST_AttemptTimeout(float v)			{ m_fAttemptTimeout_s = Math.Clamp(v, 300.0, 3600.0); }
+	float DCO_GT_IntelBandConf()				{ return m_fIntelBandConf; }
+	void DCO_ST_IntelBandConf(float v)			{ m_fIntelBandConf = Math.Clamp(v, 0.1, 0.9); }
+	float DCO_GT_ReserveEmployment()			{ return m_iReserveEmployment; }
+	void DCO_ST_ReserveEmployment(float v)		{ m_iReserveEmployment = Math.Clamp(Math.Round(v), 0, 2); }
 	float DCO_GT_DelayFirstIteration()			{ return m_fDelayFirstIteration; }
 	void DCO_ST_DelayFirstIteration(float v)		{ m_fDelayFirstIteration = v; }
 	float DCO_GT_CaptureCheckInterval()			{ return m_fCaptureCheckInterval; }

@@ -109,6 +109,20 @@ class DCO_SmokeUtility
 		return 0.5;
 	}
 
+	static bool Allowed(SCR_AIUtilityComponent u, string path)
+	{
+		float usage = DCO_AIConfigComponent.SmokeUsageOf(u);
+		if (usage <= 0)
+		{
+			DCO_Perf.Count("smoke_block:usage_zero_" + path);
+			return false;
+		}
+		if (Math.RandomFloat01() < Math.Min(usage * 2.0, 1.0))
+			return true;
+		DCO_Perf.Count("smoke_block:usage_roll_" + path);
+		return false;
+	}
+
 	static bool TryDeploySmokeForRetreat(SCR_AIUtilityComponent utility, vector threatPos, float dangerSeverity = -1)
 	{
 		if (!utility || !utility.m_CombatComponent || !utility.m_ThreatSystem || !utility.m_CombatMoveState)

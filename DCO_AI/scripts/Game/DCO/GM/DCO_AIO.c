@@ -40,6 +40,13 @@ class DCO_GlobalProneChanceAttribute : DCO_GlobalFloatAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_GlobalCrouchChanceAttribute : DCO_GlobalFloatAttribute
+{
+	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.GetCrouchChance(); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value) { cfg.SetCrouchChance(value); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_GlobalCQBProneChanceAttribute : DCO_GlobalFloatAttribute
 {
 	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.GetCQBProneChance(); }

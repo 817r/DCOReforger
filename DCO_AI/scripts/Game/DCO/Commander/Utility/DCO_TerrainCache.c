@@ -412,7 +412,7 @@ class DCO_TerrainCache
 			los.Insert(l);
 		}
 
-		SCR_JsonSaveContext ctx = new SCR_JsonSaveContext();
+		JsonSaveContext ctx = new JsonSaveContext();
 		ctx.WriteValue("key", m_sKey);
 		ctx.WriteValue("x", xs);
 		ctx.WriteValue("y", ys);
@@ -429,7 +429,7 @@ class DCO_TerrainCache
 		if (!FileIO.FileExists(m_sFile))
 			return false;
 
-		SCR_JsonLoadContext ctx = new SCR_JsonLoadContext();
+		JsonLoadContext ctx = new JsonLoadContext();
 		if (!ctx.LoadFromFile(m_sFile))
 			return false;
 

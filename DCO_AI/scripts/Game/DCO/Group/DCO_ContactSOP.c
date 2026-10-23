@@ -58,7 +58,7 @@ class DCO_ContactSOP
 					return DCO_ESOPAction.ENGAGE;
 				if (moving)
 				{
-					if (onAxis)
+					if (onAxis || g.GetTask() == DCO_EGroupTask.FLANK)
 						return DCO_ESOPAction.ENGAGE;
 					return DCO_ESOPAction.BYPASS;
 				}

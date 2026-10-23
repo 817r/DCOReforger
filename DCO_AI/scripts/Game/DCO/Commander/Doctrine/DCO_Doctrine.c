@@ -527,7 +527,7 @@ class DCO_DoctrineStore
 		string path = Dir() + name + ".json";
 		if (name.IsEmpty() || !FileIO.FileExists(path))
 			return null;
-		SCR_JsonLoadContext load = new SCR_JsonLoadContext();
+		JsonLoadContext load = new JsonLoadContext();
 		if (!load.LoadFromFile(path))
 			return null;
 		DCO_DoctrinePreset preset = new DCO_DoctrinePreset();
@@ -574,7 +574,7 @@ class DCO_DoctrineStore
 			return false;
 		FileIO.MakeDirectory("$profile:DCO");
 		FileIO.MakeDirectory(Dir());
-		SCR_JsonSaveContext save = new SCR_JsonSaveContext();
+		JsonSaveContext save = new JsonSaveContext();
 		save.WriteValue("version", 3);
 		save.WriteValue("battle", preset.m_sBattle);
 		save.WriteValue("defense", preset.m_sDefense);

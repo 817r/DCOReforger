@@ -35,7 +35,6 @@ class SCR_AIFindArsenalWithMagazineWell : AITaskScripted
 		DCO_Perf.Count("q:DCO_FindArsenalWithMagazineWell");
 		GetGame().GetWorld().QueryEntitiesBySphere(searchPos, m_fSearchRadius, QueryCallback);
 
-		Print(m_aQueryFoundEntities.Count().ToString() + " < FOUND ARSENAL WITH MAGAZINE WELL > " + prefabResourceName.ToString());
 
 		IEntity nearestEntity = null;
 		float smallestDistSq = float.MAX;
@@ -51,7 +50,6 @@ class SCR_AIFindArsenalWithMagazineWell : AITaskScripted
 		}
 
 		if (nearestEntity)
-			Print(nearestEntity.Type().ToString() + " < FOUND NEAREST ARSENAL TO RESUPPLY > " + prefabResourceName.ToString());
 
 		if (!nearestEntity)
 			return ENodeResult.FAIL;
@@ -65,7 +63,6 @@ class SCR_AIFindArsenalWithMagazineWell : AITaskScripted
 		SCR_ServicePointComponent comp = SCR_ServicePointComponent.Cast(e.FindComponent(SCR_ServicePointComponent));
 		if (comp)
 		{
-			Print(e.Type().ToString() + " < FOUND SERVICE POINT TYPE > " + comp.GetType());
 			if (comp.GetType() == SCR_EServicePointType.ARMORY)
 				m_aQueryFoundEntities.Insert(e);
 		}

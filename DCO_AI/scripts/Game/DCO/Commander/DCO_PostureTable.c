@@ -410,7 +410,9 @@ class DCO_PostureTable
 		if (tactic == DCO_ETactic.HAMMER_AND_ANVIL && role == DCO_CommanderTactics.ROLE_BLOCK && !moving && (contact || u.m_fDCOAmbSprung_ms >= 0))
 			g.m_bDCOPosSprung = true;
 
-		bool quiet = g.m_bDCOPosNight || g.m_bDCOPosClosed;
+		string fcSrc;
+		bool friendC = cmd && obj && attackObj && task == DCO_EGroupTask.ATTACK && cmd.DCO_FriendContactAtObj(obj, fcSrc);
+		bool quiet = (g.m_bDCOPosNight || g.m_bDCOPosClosed) && !friendC;
 		string row;
 		bool pair;
 		DCO_GroupTactics post;
@@ -418,6 +420,15 @@ class DCO_PostureTable
 			post = DCO_DefenseTactics.RolePosture(g, stage, row);
 		else
 			post = For(task, tactic, role, stage, planPhase, moving, contact, g.m_bDCOPosSprung, g.m_iDCOThreatAct, attackObj, g.m_bDCOPosFront, g.IsRetreating(), g.m_bDCOPursuitCons, quiet, row, pair);
+		if (friendC && moving && !contact && stage == 0)
+		{
+			post = DCO_GroupTactics.BALANCE;
+			if (vector.DistanceXZ(lp, obj.GetOwner().GetOrigin()) <= obj.GetRadius() + 300.0)
+				post = DCO_GroupTactics.AGGRESIVE;
+			row = row + "+friend_contact";
+			pair = false;
+			DCO_Perf.Count("posture:friend_contact");
+		}
 
 		string variant = "base";
 		if (pair)
@@ -554,6 +565,8 @@ class DCO_AssaultCommit
 				continue;
 			SCR_AIUtilityComponent u = ca.m_UtilityComponent;
 			if (!u || !u.m_CombatComponent || !u.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_SMOKEGRENADE))
+				continue;
+			if (!DCO_SmokeUtility.Allowed(u, "posture"))
 				continue;
 			vector me = ca.GetControlledEntity().GetOrigin();
 			vector sp = DCO_Util.Surface(me + DCO_Specialist.Flat(enemy - me) * Math.Min(15.0, vector.DistanceXZ(me, enemy) * 0.4));

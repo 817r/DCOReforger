@@ -234,6 +234,20 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 		m_fNextRush_ms = GetGame().GetWorld().GetWorldTime() + delay_s * 1000.0;
 	}
 
+	protected bool m_bDCOSkipLogged;
+	protected float m_fNoYieldPause_ms = 1500.0;
+
+	protected bool ShooterInTargetBuilding()
+	{
+		DCO_CQBActivity pa = DCO_CQBActivity.Cast(GetRelatedGroupActivity());
+		if (!pa || !pa.m_Building || !m_Utility.m_CombatComponent)
+			return false;
+		BaseTarget t = m_Utility.m_CombatComponent.GetCurrentTarget();
+		if (!t || !t.GetTargetEntity())
+			return false;
+		return SCR_CoverManagerComponent.DCO_GetBuildingAt(t.GetTargetEntity()) == pa.m_Building;
+	}
+
 	protected float YieldTo(float nowEv)
 	{
 		IEntity me = m_Utility.m_OwnerEntity;
@@ -247,7 +261,7 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 			{
 				m_fYieldSince_ms = 0;
 				m_fYieldUntil_ms = 0;
-				m_fNoYieldUntil_ms = nowEv + 1500.0;
+				m_fNoYieldUntil_ms = nowEv + m_fNoYieldPause_ms;
 				m_bYieldPosSet = false;
 				m_bArrived = false;
 				DCO_Perf.Count("cqb:push_burst");
@@ -555,7 +569,23 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 			}
 		}
 		bool y = DCO_AimedYield.TargetVisible(m_Utility, m_fYieldDist);
-		if (!y && !m_bCharge && ShotAtBy(200.0))
+		if (!y && !m_bCharge && m_sRole.StartsWith("stack_") && ShotAtBy(200.0) && ShooterInTargetBuilding())
+		{
+			DCO_Perf.Count("cqb:yield_skip_target_bld");
+			DCO_CQBActivity ya = DCO_CQBActivity.Cast(GetRelatedGroupActivity());
+			if (ya)
+				ya.NoteStackUnderFire(nowEv);
+			BaseTarget shotT = m_Utility.m_CombatComponent.GetCurrentTarget();
+			AIAgent myAg = m_Utility.GetAIAgent();
+			if (shotT && shotT.GetTargetEntity() && myAg && myAg.GetParentGroup())
+				DCO_WindowSuppress.OnShot(m_Utility, myAg.GetParentGroup(), shotT.GetTargetEntity(), shotT.GetTargetEntity().GetOrigin(), nowEv, "cqb_stack");
+			if (!m_bDCOSkipLogged)
+			{
+				m_bDCOSkipLogged = true;
+				DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("cqb_yield_skip unit=%1 role=%2 why=shooter_in_target", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), m_sRole));
+			}
+		}
+		else if (!y && !m_bCharge && ShotAtBy(200.0))
 		{
 			y = true;
 			if (!m_bYield)
@@ -619,6 +649,7 @@ class DCO_CQBMoveSlotBehavior : DCO_CQBMemberBehavior
 		m_fArrive = 2.0;
 		m_bHoldAfter = true;
 		m_fMaxYield_ms = 6000.0;
+		m_fNoYieldPause_ms = 10000.0;
 	}
 }
 

@@ -49,6 +49,12 @@ class DCO_FindIndoorPositionIdle : DCO_FindIndoorPosition
 {
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
+		if (DCO_CivMode.IsCiv(SCR_AIUtilityComponent.Cast(owner.FindComponent(SCR_AIUtilityComponent))))
+		{
+			DCO_Perf.Count("civ:idle_cover_skip");
+			SetVariableOut(PORT_VECTOR_BOOL, false);
+			return ENodeResult.FAIL;
+		}
 		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetFor(owner);
 		if (cfg)
 			m_fRadius = DCO_AICreateIdleCoverQueryProps.IdleRadius(owner, cfg.GetIdleCoverSearchDist());
@@ -65,9 +71,15 @@ class DCO_AICreateIdleCoverQueryProps : SCR_AICreateBasicCoverQueryProps
 		if (!group || !group.GetGroupUtilityComponent())
 			return radius;
 		DCO_GroupUtilityComponent util = group.GetGroupUtilityComponent().DCO_GetUtil();
-		if (!util || !util.GetGroupObjective() || radius <= 20.0)
+		if (!util || radius <= 20.0)
 			return radius;
-		DCO_Perf.Count("idle_cover_leash");
+		bool gm = !util.GetMyCommander();
+		if (!gm && !util.GetGroupObjective())
+			return radius;
+		if (gm)
+			DCO_Perf.Count("idle_cover_leash_gm");
+		else
+			DCO_Perf.Count("idle_cover_leash");
 		return 20.0;
 	}
 
@@ -129,7 +141,8 @@ class DCO_AIIdleHoldInPlace : AITaskScripted
 
 		bool open = IsInOpenArea(me, 15.0);
 		ECharacterStance stance = ECharacterStance.CROUCH;
-		if (open && DCO_CQC.IsProneAllowed(me, 1000.0))
+		string gateWhy;
+		if (open && DCO_CQC.IsProneAllowed(me, 1000.0) && DCO_ProneGate.Allow(owner, "idle", gateWhy))
 			stance = ECharacterStance.PRONE;
 		CharacterControllerComponent ctrl = m_Utility.GetCharacterController();
 		if (ctrl && !DCO_Nav.Busy(ctrl, "idle_stance"))

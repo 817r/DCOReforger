@@ -12,6 +12,8 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("tm.morale_alerted_s", "morale_alerted_per_s", 0.015, 0.0, 0.1);
 		DCO_TuneCfg("tm.morale_threatened_s", "morale_threatened_per_s", 0.03, 0.0, 0.2);
 		DCO_TuneCfg("tm.morale_aimed", "morale_aimed_at_stress", 0.04, 0.0, 0.3);
+		DCO_TuneCfg("tm.morale_hit", "morale_hit_stress", 0.3, 0.0, 1.5);
+		DCO_TuneCfg("tm.morale_boost_cap", "morale_boost_cap", 0.5, 0.0, 2.0);
 		DCO_TuneCfg("tm.morale_rec_s", "morale_recover_per_s", 0.01, 0.0, 0.1);
 		DCO_TuneCfg("tm.morale_rec_calm_s", "morale_recover_calm_s", 10.0, 0.0, 60.0);
 		DCO_TuneCfg("tm.morale_rec_friend_s", "morale_recover_per_friend_s", 0.001, 0.0, 0.01);
@@ -64,6 +66,15 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("tm.panic_mid_nofire_max_s", "panic_mid_nofire_max_s", 10.0, 0.0, 60.0);
 		DCO_TuneCfg("tm.break_min_m", "individual_break_min_m", 100.0, 20.0, 500.0);
 		DCO_TuneCfg("tm.break_max_m", "individual_break_max_m", 300.0, 50.0, 1000.0);
+		DCO_TuneCfg("tm.panic_variety", "panic_reaction_variety", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("tm.panic_legs_max", "panic_legs_max", 3.0, 1.0, 6.0);
+		DCO_TuneCfg("tm.panic_friend_m", "panic_run_to_friend_m", 40.0, 5.0, 100.0);
+		DCO_TuneCfg("tm.panic_smoke", "panic_smoke_chance", 0.5, 0.0, 1.0);
+		DCO_TuneCfg("tm.panic_rally_s", "panic_leader_rally_s", 10.0, 0.0, 60.0);
+		DCO_TuneCfg("tm.panic_rally_m", "panic_leader_rally_m", 10.0, 2.0, 40.0);
+		DCO_TuneCfg("tm.panic_shout", "panic_shout_stress", 0.2, 0.0, 1.0);
+		DCO_TuneCfg("tm.panic_shutdown_n", "panic_shutdown_count", 3.0, 0.0, 10.0);
+		DCO_TuneCfg("tm.panic_shutdown_s", "panic_shutdown_s", 60.0, 10.0, 300.0);
 		DCO_TuneCfg("tm.morale_cover_mul", "morale_in_cover_mul", 0.85, 0.3, 1.5);
 		DCO_TuneCfg("tm.morale_down_hold_s", "morale_down_hold_s", 40.0, 0.0, 300.0);
 		DCO_TuneCfg("tm.area_fire_clear_m", "sbf_area_fire_clear_m", 40.0, 10.0, 150.0);

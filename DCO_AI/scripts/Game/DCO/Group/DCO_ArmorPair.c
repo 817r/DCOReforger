@@ -4,6 +4,8 @@ class DCO_PairState
 	DCO_GroupUtilityComponent m_Armor;
 	float m_fDiverge_ms = -1;
 	float m_fIdle_ms = -1;
+	vector m_vInfAt;
+	vector m_vGoal;
 }
 
 class DCO_ArmorPair
@@ -87,9 +89,20 @@ class DCO_ArmorPair
 		return grp.GetCurrentWaypoint() || (l && l.GetPhysics() && l.GetPhysics().GetVelocity().Length() > 1.0);
 	}
 
+	static bool On()
+	{
+		return DCO_Ctx.TuneG("veh.gm_pair", 0.0) > 0;
+	}
+
 	static void Tick(DCO_GroupUtilityComponent g, SCR_AIGroup grp, SCR_AIGroupUtilityComponent u)
 	{
 		float now = GetGame().GetWorld().GetWorldTime();
+		if (!On())
+		{
+			if (g && g.m_DCOPair)
+				Break(g.m_DCOPair, "off");
+			return;
+		}
 		if (!Eligible(g))
 		{
 			if (g && g.m_DCOPair)
@@ -282,11 +295,18 @@ class DCO_ArmorPair
 
 		if (contact && !close)
 			desired = HullDown(desired, EnemyCenter(iu, u));
-		if (vector.DistanceXZ(ap, desired) > 30.0)
+		bool infMoved = st.m_vInfAt == vector.Zero || vector.DistanceXZ(lp, st.m_vInfAt) > 15.0;
+		bool goalMoved = st.m_vGoal == vector.Zero || vector.DistanceXZ(desired, st.m_vGoal) > 40.0;
+		if (vector.DistanceXZ(ap, desired) > 30.0 && infMoved && goalMoved)
 		{
+			st.m_vInfAt = lp;
+			st.m_vGoal = desired;
 			Move(grp, desired);
 			DCO_Perf.Count("pair:armor_follow_inf");
+			DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("pair_follow armor=%1 goal=%2 d=%3", grp, DCO_Util.XZ(desired), Math.Round(vector.DistanceXZ(ap, desired))));
 		}
+		else
+			DCO_Perf.Count("pair:follow_hold");
 
 		MarkTargets(iu, u, now);
 	}
@@ -428,8 +448,13 @@ class DCO_ArmorPair
 				if (back.Length() > 1)
 					back.Normalize();
 				vector pos = DCO_Util.Surface(il.GetOrigin() + back * 80.0);
-				if (vector.DistanceXZ(ap, pos) > 40.0)
+				bool goalNew = memo.m_vGoal == vector.Zero || vector.DistanceXZ(pos, memo.m_vGoal) > 40.0;
+				if (vector.DistanceXZ(ap, pos) > 40.0 && goalNew)
+				{
+					memo.m_vGoal = pos;
 					Move(grp, pos);
+					DCO_Perf.Count("pair:idle_support_move");
+				}
 			}
 			return;
 		}
@@ -511,6 +536,7 @@ class DCO_ArmorSupportMemo
 {
 	DCO_GroupUtilityComponent m_Inf;
 	vector m_vHome;
+	vector m_vGoal;
 	float m_fQuiet_ms = -1;
 
 	protected static ref map<DCO_GroupUtilityComponent, ref DCO_ArmorSupportMemo> s_mMemo;

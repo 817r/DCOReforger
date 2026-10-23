@@ -16,8 +16,6 @@ modded class CMD_ThreatResponseComponent
 	void DCO_ST_ArtilleryAccuracy(float v)		{ m_fArtilleryAccuracy = v; }
 	float DCO_GT_LedgerTTL()			{ return m_fLedgerTTL; }
 	void DCO_ST_LedgerTTL(float v)		{ m_fLedgerTTL = v; }
-	float DCO_GT_ReinforceBehindDist()			{ return m_fReinforceBehindDist; }
-	void DCO_ST_ReinforceBehindDist(float v)		{ m_fReinforceBehindDist = v; }
 	float DCO_GT_ReinforceStandoffDist()			{ return m_fReinforceStandoffDist; }
 	void DCO_ST_ReinforceStandoffDist(float v)		{ m_fReinforceStandoffDist = v; }
 	float DCO_GT_FlankTaskExpiry()			{ return m_fFlankTaskExpiry; }

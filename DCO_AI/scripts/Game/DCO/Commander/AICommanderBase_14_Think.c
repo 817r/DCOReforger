@@ -27,13 +27,37 @@ modded class AICommander_BaseComponent
 
 	protected void ThinkBalanced(AICommander_ManagerComponent mgr, float worldTime)
 	{
+		bool offenseFirst = DCO_RelentlessCmd();
+		if (offenseFirst)
+		{
+			m_iPhaseBudget = -1;
+			ThinkOffensive(mgr, worldTime);
+		}
+
 		int defendDemand = CountDefendDemand();
 		int idleAvail    = CountIdleCommittableGroups();
+		float baseShare = GetDefendShare();
+		float share = baseShare;
+		int lostRecent = 0;
+		for (int li = m_aDCOLostAt.Count() - 1; li >= 0; li--)
+		{
+			if (worldTime - m_aDCOLostAt[li] > 300.0)
+				m_aDCOLostAt.Remove(li);
+			else
+				lostRecent++;
+		}
+		float quiet = worldTime - m_fDCOLastThreatAt;
+		if (!m_bAllIn)
+		{
+			share += 0.2 * lostRecent;
+			if (lostRecent == 0 && quiet > 180.0)
+				share -= 0.2;
+			share = Math.Clamp(share, 0.1, 1.0);
+		}
 
 		int defendBudget = 0;
 		if (defendDemand > 0 && idleAvail > 0)
 		{
-			float share = GetDefendShare();
 			defendBudget = Math.Round(1.0 * idleAvail * share);
 
 			if (defendBudget > defendDemand)
@@ -43,15 +67,24 @@ modded class AICommander_BaseComponent
 				defendBudget = 1;
 		}
 
+		if (worldTime - m_fDCOShareLogAt >= 60.0)
+		{
+			m_fDCOShareLogAt = worldTime;
+			DCO_Perf.Count("balanced:think");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("balanced_share cmd=%1 base=%2 lost_recent=%3 quiet_s=%4 share=%5 demand=%6 idle=%7 budget=%8 offense_first=%9", m_sCommanderUID, baseShare.ToString(-1, 2), lostRecent, Math.Round(quiet), share.ToString(-1, 2), defendDemand, idleAvail, defendBudget, DCO_Util.B01(offenseFirst)));
+		}
+
 		m_iPhaseBudget = defendBudget;
 		ThinkDefensive(worldTime);
 
 		m_iPhaseBudget = -1;
-		ThinkOffensive(mgr, worldTime);
+		if (!offenseFirst)
+			ThinkOffensive(mgr, worldTime);
 	}
 
 	protected void Think(float worldTime)
 	{
+		DCO_ReleaseStaleSbf(worldTime);
 		if (!Replication.IsServer())
 			return;
 
@@ -117,6 +150,350 @@ modded class AICommander_BaseComponent
 			m_PlayerTasking.Clear();
 
 		m_eCommanderState = CMD_ECommanderState.COMMANDING;
+	}
+
+	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mDCOOppAt = new map<CMD_AICommanderObjectiveComponent, float>();
+
+	protected float DCO_NearestOwnObjDist(AICommander_ManagerComponent mgr, vector pos)
+	{
+		float best = float.MAX;
+		foreach (CMD_AICommanderObjectiveComponent o : mgr.m_aObjective)
+		{
+			if (!o || !o.GetOwner() || !o.IsCapturedBy(m_sFactionKey))
+				continue;
+			float d = vector.DistanceXZ(o.GetOwner().GetOrigin(), pos);
+			if (d < best)
+				best = d;
+		}
+		return best;
+	}
+
+	protected void DCO_OpportunityGrab(AICommander_ManagerComponent mgr, float worldTime)
+	{
+		if (!mgr || !m_Ops)
+			return;
+		foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
+		{
+			if (!obj || !obj.GetOwner() || obj.IsCapturedBy(m_sFactionKey) || !obj.DCO_CanProcess(m_sCommanderUID))
+				continue;
+			if (HasCommittedGroups(obj) || DCO_RoleBlocksAttack(obj, "opportunity"))
+				continue;
+			float last;
+			if (m_mDCOOppAt.Find(obj, last) && worldTime - last < 300.0)
+				continue;
+			DCO_ObjectiveIntel intel = m_Ops.GetIntel(obj);
+			if (!intel || intel.m_fDefenders > 3.0)
+				continue;
+			vector op = obj.GetOwner().GetOrigin();
+			float ownD = DCO_NearestOwnObjDist(mgr, op);
+			if (ownD > 800.0)
+				continue;
+			DCO_GroupUtilityComponent g = FindBestIdleGroupForTask(DCO_EGroupTask.ATTACK, op);
+			if (!g || !g.GetOwner() || g.IsPlayerGroup() || !CanCommitGroup(g))
+				continue;
+			m_mDCOOppAt.Set(obj, worldTime);
+			TacticAssault(g, obj, worldTime);
+			DCO_Perf.Count("obj:opportunity");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("obj_opportunity cmd=%1 obj=%2 grp=%3 est=%4 conf=%5 own_d=%6", m_sCommanderUID, obj.GetLogName(), DCO_Log.IdGroup(AIGroup.Cast(g.GetOwner())), intel.m_fDefenders.ToString(-1, 1), intel.m_fConfidence.ToString(-1, 2), Math.Round(ownD)));
+			return;
+		}
+	}
+
+	protected float m_fDCOReserveAsmAt = -1000;
+
+	protected float m_fDCOReserveJobsAt;
+	protected float m_fDCOReserveAmbushAt = -1;
+	protected ref map<string, float> m_mDCOLinkAt = new map<string, float>();
+
+	protected static string DCO_JobName(int job)
+	{
+		if (job == 1)
+			return "qrf";
+		if (job == 2)
+			return "link";
+		return "none";
+	}
+
+	protected bool DCO_ReserveFree(DCO_GroupUtilityComponent g, float worldTime)
+	{
+		if (!g || !g.GetOwner() || g.IsPlayerGroup() || g.IsMortar() || g.IsDedicatedTransport())
+			return false;
+		if (g.GetGroupObjective() || g.HasState(DCO_EGroupState.IN_CONTACT))
+			return false;
+		if (!g.IsAvailableReserve() || !g.CanItHaveOrder() || !g.CanCommanderOverrideRole())
+			return false;
+		DCO_EGroupTask t = g.GetTask();
+		if (t == DCO_EGroupTask.NONE)
+			return true;
+		if (t != DCO_EGroupTask.PATROL || g.DCO_ReserveJob() == 0)
+			return false;
+		SCR_AIGroup grp = SCR_AIGroup.Cast(g.GetOwner());
+		bool idle = !grp || !grp.GetCurrentWaypoint();
+		return idle || worldTime - g.DCO_ReserveJobAt() > 900.0;
+	}
+
+	protected bool DCO_LinkPair(vector objPos, float worldTime, out vector a, out vector b, out string key)
+	{
+		array<CMD_AICommanderObjectiveComponent> own = {};
+		foreach (CMD_AICommanderObjectiveComponent o : DCO_AllObjectives())
+		{
+			if (o && o.GetOwner() && o.IsCapturedBy(m_sFactionKey))
+				own.Insert(o);
+		}
+		if (own.Count() < 2)
+			return false;
+		float best = float.MAX;
+		for (int i = 0; i < own.Count(); i++)
+		{
+			for (int j = i + 1; j < own.Count(); j++)
+			{
+				vector pa = own[i].GetOwner().GetOrigin();
+				vector pb = own[j].GetOwner().GetOrigin();
+				float d = vector.DistanceXZ(pa, pb);
+				if (d < 150.0 || d > 2500.0)
+					continue;
+				string k = own[i].GetLogName() + "|" + own[j].GetLogName();
+				float at;
+				if (m_mDCOLinkAt.Find(k, at) && worldTime - at < 900.0)
+					continue;
+				float score = d + vector.DistanceXZ(pa, objPos) * 0.5;
+				if (score < best)
+				{
+					best = score;
+					a = pa;
+					b = pb;
+					key = k;
+				}
+			}
+		}
+		return best < float.MAX;
+	}
+
+	protected bool DCO_LatestThreat(float now, out vector pos)
+	{
+		CMD_ThreatResponseComponent tr = GetThreatResponseComponent();
+		if (!tr)
+			return false;
+		float best = -1;
+		foreach (CMD_ThreatEntry t : tr.GetThreats())
+		{
+			if (!t || now - t.m_fLastUpdateTime > 600.0)
+				continue;
+			if (t.m_fLastUpdateTime > best)
+			{
+				best = t.m_fLastUpdateTime;
+				pos = t.m_vBelievedPos;
+			}
+		}
+		return best >= 0;
+	}
+
+	protected CMD_AICommanderObjectiveComponent DCO_OwnObjNearest(vector from)
+	{
+		CMD_AICommanderObjectiveComponent best;
+		float bd = float.MAX;
+		foreach (CMD_AICommanderObjectiveComponent o : DCO_AllObjectives())
+		{
+			if (!o || !o.GetOwner() || !o.IsCapturedBy(m_sFactionKey))
+				continue;
+			float d = vector.DistanceXZ(o.GetOwner().GetOrigin(), from);
+			if (d < bd)
+			{
+				bd = d;
+				best = o;
+			}
+		}
+		return best;
+	}
+
+	protected DCO_GroupUtilityComponent DCO_NearestFree(array<DCO_GroupUtilityComponent> free, vector pos, out float dist)
+	{
+		DCO_GroupUtilityComponent best;
+		dist = float.MAX;
+		foreach (DCO_GroupUtilityComponent q : free)
+		{
+			float d = vector.DistanceXZ(q.GetOwner().GetOrigin(), pos);
+			if (d < dist)
+			{
+				dist = d;
+				best = q;
+			}
+		}
+		return best;
+	}
+
+	protected void DCO_ReserveJobLog(string job, string grp, vector pos, string main, string extra)
+	{
+		DCO_Perf.Count("reserve:job_" + job);
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("reserve_job cmd=%1 grp=%2 job=%3 pos=%4 main=%5 %6", m_sCommanderUID, grp, job, DCO_Util.XZ(pos), main, extra));
+	}
+
+	protected void DCO_ReserveJobs(float worldTime, bool defensive)
+	{
+		int mode = m_iReserveEmployment;
+		if (mode <= 0 || !m_Ops || worldTime - m_fDCOReserveJobsAt < 60.0)
+			return;
+		m_fDCOReserveJobsAt = worldTime;
+		CMD_AICommanderObjectiveComponent main;
+		vector objPos;
+		vector axis;
+		vector rear;
+		float objR = 100.0;
+		string src = "staging";
+		if (!defensive)
+		{
+			main = m_Ops.GetMainEffort();
+			if (!main || !main.GetOwner())
+				return;
+			objPos = main.GetOwner().GetOrigin();
+			objR = main.GetRadius();
+			rear = TacticStagingPos(main);
+			axis = objPos - rear;
+		}
+		else
+		{
+			vector threat;
+			bool hasThreat = DCO_LatestThreat(worldTime, threat);
+			if (hasThreat)
+				main = DCO_OwnObjNearest(threat);
+			else
+				main = DCO_OwnObjNearest(GetOwner().GetOrigin());
+			if (!main || !main.GetOwner())
+				return;
+			objPos = main.GetOwner().GetOrigin();
+			objR = main.GetRadius();
+			src = "self";
+			axis = objPos - GetOwner().GetOrigin();
+			if (hasThreat)
+			{
+				axis = threat - objPos;
+				src = "threat";
+			}
+			axis[1] = 0;
+			if (axis.Length() < 1.0)
+				axis = Vector(1, 0, 0);
+			axis.Normalize();
+			rear = DCO_Util.Surface(objPos - axis * (objR + 150.0));
+		}
+		axis[1] = 0;
+		if (axis.Length() < 1.0)
+			return;
+		axis.Normalize();
+		vector side = Vector(-axis[2], 0, axis[0]);
+		string mainName = main.GetLogName();
+		array<DCO_GroupUtilityComponent> free = {};
+		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
+		{
+			if (DCO_ReserveFree(g, worldTime) && DCO_GroupJobs.Gate(this, g, DCO_EGroupJob.RESERVE, "reserve_jobs"))
+				free.Insert(g);
+		}
+		if (free.IsEmpty())
+			return;
+		int useMax = Math.Ceil(free.Count() * 0.5);
+		int used = 0;
+		vector qpos = DCO_Util.Surface(rear - axis * 120.0);
+		if (defensive)
+			qpos = DCO_Util.Surface(objPos - axis * (objR + 60.0));
+		float qd;
+		DCO_GroupUtilityComponent qrf = DCO_NearestFree(free, qpos, qd);
+		if (qrf)
+		{
+			if (qrf.DCO_ReserveJob() != 1)
+			{
+				if (qd > 150.0)
+					TacticMove(qrf, qpos, worldTime);
+				qrf.DCO_SetReserveJob(1, worldTime);
+				DCO_ReserveJobLog("qrf", DCO_Log.IdGroup(AIGroup.Cast(qrf.GetOwner())), qpos, mainName, "d=" + Math.Round(qd).ToString());
+			}
+			free.RemoveItem(qrf);
+			used++;
+		}
+		if (mode == 1)
+			return;
+		if (m_Defense && used < useMax)
+		{
+			vector opL = DCO_Util.Surface(rear + side * 300.0);
+			vector opR = DCO_Util.Surface(rear - side * 300.0);
+			vector watch = objPos;
+			if (defensive)
+			{
+				opL = DCO_Util.Surface(objPos + side * (objR + 200.0));
+				opR = DCO_Util.Surface(objPos - side * (objR + 200.0));
+				watch = DCO_Util.Surface(objPos + axis * 300.0);
+			}
+			if (m_Defense.ReserveOP(this, opL, watch, "reserve_flank_l", worldTime))
+			{
+				used++;
+				DCO_ReserveJobLog("op_flank_l", "-", opL, mainName, "src=" + src);
+			}
+			if (used < useMax && m_Defense.ReserveOP(this, opR, watch, "reserve_flank_r", worldTime))
+			{
+				used++;
+				DCO_ReserveJobLog("op_flank_r", "-", opR, mainName, "src=" + src);
+			}
+			if (defensive && used < useMax)
+			{
+				vector rdir = DCO_CommanderOps.RotateXZ(axis, Math.RandomFloat(90.0, 270.0));
+				vector opX = DCO_Util.Surface(objPos + rdir * (objR + 200.0));
+				if (m_Defense.ReserveOP(this, opX, DCO_Util.Surface(objPos + rdir * 500.0), "reserve_random", worldTime))
+				{
+					used++;
+					DCO_ReserveJobLog("op_random", "-", opX, mainName, "src=random");
+				}
+			}
+		}
+		foreach (CMD_AICommanderObjectiveComponent co : DCO_AllObjectives())
+		{
+			if (used >= useMax || free.IsEmpty())
+				break;
+			float capAt;
+			if (!co || !co.GetOwner() || !m_mDCOCapturedAt.Find(co, capAt) || worldTime - capAt > 600.0)
+				continue;
+			if (!co.IsCapturedBy(m_sFactionKey) || DCO_DefShortfall.Defenders(this, co) > 0)
+				continue;
+			float dd;
+			DCO_GroupUtilityComponent dg = DCO_NearestFree(free, co.GetOwner().GetOrigin(), dd);
+			if (!dg)
+				break;
+			StartObjectiveGarrison(dg, co, worldTime);
+			dg.DCO_SetReserveJob(3, worldTime);
+			free.RemoveItem(dg);
+			used++;
+			DCO_ReserveJobLog("local_defend", DCO_Log.IdGroup(AIGroup.Cast(dg.GetOwner())), co.GetOwner().GetOrigin(), co.GetLogName(), "captured_s=" + Math.Round(worldTime - capAt).ToString());
+		}
+		foreach (DCO_GroupUtilityComponent lg : free)
+		{
+			if (used >= useMax)
+				break;
+			if (lg.DCO_ReserveJob() == 2 && worldTime - lg.DCO_ReserveJobAt() < 900.0)
+				continue;
+			vector a;
+			vector b;
+			string key;
+			if (!DCO_LinkPair(objPos, worldTime, a, b, key))
+				break;
+			TacticMove(lg, a, worldTime);
+			TacticAppendMove(lg, b, worldTime);
+			TacticAppendMove(lg, a, worldTime);
+			lg.SetTask(DCO_EGroupTask.PATROL, "reserve_link");
+			lg.DCO_SetReserveJob(2, worldTime);
+			m_mDCOLinkAt.Set(key, worldTime);
+			used++;
+			DCO_ReserveJobLog("link", DCO_Log.IdGroup(AIGroup.Cast(lg.GetOwner())), a, mainName, "to=" + DCO_Util.XZ(b) + " pair=" + key);
+		}
+		if (m_Defense && used < useMax && (m_fDCOReserveAmbushAt < 0 || worldTime - m_fDCOReserveAmbushAt > 900.0))
+		{
+			vector kill = DCO_Util.Surface(rear + axis * 250.0);
+			if (defensive)
+				kill = DCO_Util.Surface(objPos + axis * (objR + 250.0));
+			if (m_Defense.ReserveAmbush(this, kill, -axis, "reserve_counter", worldTime))
+			{
+				m_fDCOReserveAmbushAt = worldTime;
+				used++;
+				DCO_ReserveJobLog("ambush", "-", kill, mainName, "src=" + src);
+			}
+		}
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("reserve_jobs cmd=%1 mode=%2 defensive=%3 free=%4 used=%5 max=%6 main=%7 src=%8", m_sCommanderUID, mode, DCO_Util.B01(defensive), free.Count(), used, useMax, mainName, src));
 	}
 
 	protected void ThinkOffensive(AICommander_ManagerComponent mgr, float worldTime)
@@ -191,7 +568,7 @@ modded class AICommander_BaseComponent
 				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, DCO_Log.IdCmd(this), string.Format("obj_over_cap cmd=%1 committed=%2 cap=%3 action=keep_committed_no_new", m_sCommanderUID, committed.Count(), objCap));
 			}
 		}
-		mgr.GetTopObjectivesOffensive(this, Math.Max(objCap, m_fObjectiveAtTheSameTime) + committed.Count() + m_iOffensiveRankExtra, ranked);
+		mgr.GetTopObjectivesOffensive(this, objCap + committed.Count() + m_iOffensiveRankExtra, ranked);
 		for (int ri = ranked.Count() - 1; ri >= 0; ri--)
 		{
 			if (DCO_RoleBlocksAttack(ranked[ri], "attack"))
@@ -278,6 +655,8 @@ modded class AICommander_BaseComponent
 
 		if (m_bDebugMode)
 			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("cmd=%1 THINK OFFENSIVE", m_sCommanderUID));
+		DCO_ReserveJobs(worldTime, false);
+		DCO_OpportunityGrab(mgr, worldTime);
 	}
 
 	protected void DCO_Think(CMD_AICommanderObjectiveComponent obj, int mine, string decision, string why)
@@ -310,6 +689,8 @@ modded class AICommander_BaseComponent
 	{
 		if (obj.GetObjectiveState(m_sFactionKey) != CMD_EObjectiveState.PENDING && obj.CheckAndMarkIfLost(m_sFactionKey))
 		{
+			m_aDCOLostAt.Insert(DCO_Util.NowS());
+			DCO_Perf.Count("balanced:lost_note");
 			ReleaseGroupsFromObjective(obj);
 			obj.ResetAssignedGroupCount(m_sFactionKey);
 			obj.SetObjectiveState(m_sFactionKey, CMD_EObjectiveState.PENDING);
@@ -390,6 +771,9 @@ modded class AICommander_BaseComponent
 			AssignDefendToObjective(obj, worldTime);
 			hasAnyWork = true;
 		}
+
+		DCO_QrfTick(allObjs, worldTime);
+		DCO_ReserveJobs(worldTime, true);
 
 		if (m_bDebugMode)
 		{

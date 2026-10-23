@@ -469,6 +469,7 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 
 		DCO_CoverMoveBudget.MarkMove(utility.m_OwnerEntity);
 
+		state.m_bDCOUrgentNext = true;
 		if (m_bCoverVeryHighPriority)
 			state.DCO_ApplyCoverRequest(rq, rq.m_fMoveDuration_s + 1.0);
 		else
@@ -644,6 +645,8 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 
 		SCR_AISuppressionObjectVolumeBox suppVolume = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
 		if (!suppVolume)
+			return;
+		if (!DCO_SuppressGate.Allowed(utility, shooterRoot.GetOrigin(), "hit"))
 			return;
 
 		SCR_AISuppressBehavior supp = new SCR_AISuppressBehavior(utility, null, suppVolume, duration, interval);

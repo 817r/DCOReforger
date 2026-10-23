@@ -12,6 +12,19 @@ modded class SCR_ChimeraCharacter
 	[RplProp()]
 	protected int m_iDCO_MoraleState;
 
+	[RplProp()]
+	protected int m_iDCO_Traits = -1;
+
+	int DCO_GetTraits()			{ return m_iDCO_Traits; }
+
+	void DCO_SetTraits(int traits)
+	{
+		if (traits == m_iDCO_Traits)
+			return;
+		m_iDCO_Traits = traits;
+		Replication.BumpMe();
+	}
+
 	float DCO_GetThreat()		{ return m_fDCO_Threat; }
 	int DCO_GetThreatState()	{ return m_iDCO_ThreatState; }
 	float DCO_GetMorale()		{ return m_fDCO_Morale; }
@@ -45,6 +58,19 @@ modded class SCR_AIGroup
 
 	[RplProp()]
 	protected vector m_vDCO_Dest;
+
+	[RplProp()]
+	protected int m_iDCO_LeaderTraits = -1;
+
+	int DCO_GetLeaderTraits()	{ return m_iDCO_LeaderTraits; }
+
+	void DCO_SetLeaderTraits(int traits)
+	{
+		if (traits == m_iDCO_LeaderTraits)
+			return;
+		m_iDCO_LeaderTraits = traits;
+		Replication.BumpMe();
+	}
 
 	string DCO_GetTaskInfo()	{ return m_sDCO_Task; }
 	string DCO_GetDoingInfo()	{ return m_sDCO_Doing; }
@@ -95,6 +121,10 @@ modded class SCR_AIGroup
 				ms = mor.GetState();
 			}
 			ch.DCO_SetStats(t, util.m_ThreatSystem.GetState(), m, ms);
+			int traits = DCO_Leadership.PackTraits(util);
+			ch.DCO_SetTraits(traits);
+			if (a == GetLeaderAgent())
+				DCO_SetLeaderTraits(traits);
 			threat += t;
 			morale += m;
 			n++;
@@ -130,6 +160,59 @@ class DCO_GroupThreatTooltipDetail : DCO_GroupTooltipDetail
 		if (m_Group.DCO_GetAvgThreat() < 0)
 			return "-";
 		return m_Group.DCO_GetAvgThreat().ToString(1, 2) + " / " + m_Group.DCO_GetAvgMorale().ToString(1, 2);
+	}
+}
+
+class DCO_GroupLeaderTooltipDetail : DCO_GroupTooltipDetail
+{
+	void DCO_GroupLeaderTooltipDetail()
+	{
+		m_sDisplayName = "Leader";
+	}
+
+	override protected string BuildText()
+	{
+		return DCO_Leadership.TraitsText(m_Group.DCO_GetLeaderTraits());
+	}
+}
+
+class DCO_CharProfileTooltipDetail : SCR_EntityTooltipDetail
+{
+	protected SCR_ChimeraCharacter m_Char;
+	protected TextWidget m_Text;
+	protected string m_sShown;
+
+	void DCO_CharProfileTooltipDetail()
+	{
+		m_Layout = "{93AF6A0EA7571B84}UI/layouts/Editor/Tooltips/TooltipPrefabs/TooltipPrefab_Text.layout";
+		m_bShowLabel = true;
+		m_sDisplayName = "Profile";
+	}
+
+	override bool NeedUpdate()
+	{
+		return true;
+	}
+
+	override bool InitDetail(SCR_EditableEntityComponent entity, Widget widget)
+	{
+		m_Char = SCR_ChimeraCharacter.Cast(entity.GetOwner());
+		m_Text = TextWidget.Cast(widget);
+		if (!m_Char || !m_Text || m_Char.DCO_GetTraits() < 0)
+			return false;
+		m_sShown = string.Empty;
+		return true;
+	}
+
+	override void UpdateDetail(SCR_EditableEntityComponent entity)
+	{
+		if (!m_Char || !m_Text)
+			return;
+		string text = DCO_Leadership.TraitsText(m_Char.DCO_GetTraits());
+		if (text == m_sShown)
+			return;
+		m_sShown = text;
+		m_Text.SetText(text);
 	}
 }
 

@@ -185,6 +185,61 @@ class DCO_UGLUtility
 		return false;
 	}
 
+	protected static ref map<IEntity, float> s_mNoUglLogAt;
+
+	protected static void NoUglLog(IEntity self, BaseWeaponComponent weap)
+	{
+		if (!self)
+			return;
+		float now = DCO_Util.NowS();
+		if (!s_mNoUglLogAt)
+			s_mNoUglLogAt = new map<IEntity, float>();
+		if (s_mNoUglLogAt.Count() > 300)
+			s_mNoUglLogAt.Clear();
+		float last;
+		if (s_mNoUglLogAt.Find(self, last) && now - last < 60.0)
+			return;
+		s_mNoUglLogAt.Set(self, now);
+		string wname = "-";
+		int muzzles = 0;
+		string types = "";
+		if (weap)
+		{
+			wname = DCO_Util.PrefabShort(weap.GetOwner());
+			array<BaseMuzzleComponent> list = {};
+			weap.GetMuzzlesList(list);
+			muzzles = list.Count();
+			foreach (BaseMuzzleComponent m : list)
+			{
+				if (!m)
+					continue;
+				if (!types.IsEmpty())
+					types = types + ",";
+				types = types + typename.EnumToString(EMuzzleType, m.GetMuzzleType());
+			}
+		}
+		string other = "-";
+		BaseWeaponManagerComponent wm = BaseWeaponManagerComponent.Cast(self.FindComponent(BaseWeaponManagerComponent));
+		if (wm)
+		{
+			array<WeaponSlotComponent> slots = {};
+			wm.GetWeaponsSlots(slots);
+			foreach (WeaponSlotComponent slot : slots)
+			{
+				if (!slot || !slot.GetWeaponEntity())
+					continue;
+				BaseWeaponComponent wc = BaseWeaponComponent.Cast(slot.GetWeaponEntity().FindComponent(BaseWeaponComponent));
+				if (wc && wc != weap && HasUGL(wc))
+				{
+					other = DCO_Util.PrefabShort(slot.GetWeaponEntity());
+					DCO_Perf.Count("gl_rej:ugl_not_selected");
+					break;
+				}
+			}
+		}
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(self), string.Format("gl_muzzle unit=%1 weapon=%2 muzzles=%3 types=%4 other_ugl=%5", DCO_Log.IdUnit(self), wname, muzzles, types, other));
+	}
+
 	static bool ShouldUseGL(SCR_AIUtilityComponent utility, BaseWeaponComponent weap, vector targetPos)
 	{
 		if (!utility || !utility.m_OwnerEntity)
@@ -197,6 +252,7 @@ class DCO_UGLUtility
 		if (uglIdx == -1)
 		{
 			DCO_Perf.Count("gl_rej:no_ugl_muzzle");
+			NoUglLog(self, weap);
 			return false;
 		}
 

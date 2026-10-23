@@ -28,7 +28,7 @@ modded class SCR_AIPerformActionBehavior
 			return;
 		if (DCO_Stress.T(m_Utility, "sa.hazard_skip", 1.0) <= 0)
 			return;
-		AISmartActionComponent sa = AISmartActionComponent.Cast(m_SmartActionComponent.m_Value);
+		AISmartActionComponent sa = m_SmartActionComponent.m_Value;
 		if (!sa || !sa.GetOwner())
 			return;
 		IEntity owner = sa.GetOwner();

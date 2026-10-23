@@ -27,6 +27,11 @@ class DCO_TeamBound
 
 	static bool On(SCR_AIGroup group)
 	{
+		if (DCO_Relentless.Group(group))
+		{
+			DCO_Perf.Count("relentless:tb_off");
+			return false;
+		}
 		DCO_GlobalAIComponent g = DCO_GlobalAIComponent.GetFor(group);
 		return g && g.DCO_TuneF("tb.on", 1.0) > 0;
 	}
