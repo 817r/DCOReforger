@@ -422,7 +422,7 @@ modded class SCR_AICombatMoveLogic_Suppressive
 			coverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD;
 			avoidStraightPathDir = vector.Zero;
 		}
-		else if (!wp || SCR_EntityWaypoint.Cast(wp))
+		else if (group && group.GetLeaderEntity() && (!wp || SCR_EntityWaypoint.Cast(wp)))
 		{
 			if (agent != group.GetLeaderAgent() && vector.Distance(group.GetLeaderEntity().GetOrigin(), m_MyEntity.GetOrigin()) > 50)
 			{

@@ -43,6 +43,16 @@ class DCO_PlayerRequests
 		return s_Instance;
 	}
 
+	static void RefundFire(int gid, string reason)
+	{
+		DCO_PlayerRequests r = Get();
+		if (!r.m_mLastFire.Contains(gid))
+			return;
+		r.m_mLastFire.Remove(gid);
+		DCO_Perf.Count("player:fire_refund");
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_fire_refund grp=%1 reason=%2", gid, reason));
+	}
+
 	static void Handle(int pid, DCO_EPlayerRequest type, vector pos)
 	{
 		if (Replication.IsServer())

@@ -1,4 +1,4 @@
-modded class SCR_CoverManagerComponent
+modded class DCO_CoverManagerComponent
 {
 	protected DCO_GlobalAIComponent m_DCOTuneSrc_CM;
 	protected int m_iDCOTuneVer_CM = -1;

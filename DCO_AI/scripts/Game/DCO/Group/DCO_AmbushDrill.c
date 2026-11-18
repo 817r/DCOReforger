@@ -25,8 +25,8 @@ class DCO_AmbushDrill
 			cmd.GetDefense().AddDanger(threat, now);
 		bool mounted = g.IsInTransport() || g.HasState(DCO_EGroupState.MOUNTED);
 		DCO_Perf.Count("amb:detect");
-		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("ambush_detected grp=%1 dist=%2 known=%3 L=%4 mounted=%5 mode=%6", grp, Math.Round(dist), known, lShape, mounted,
-			typename.EnumToString(DCO_EAmbushReaction, g.GetAmbushReaction())));
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("ambush_detected grp=%1 dist=%2 known=%3 L=%4 mounted=%5 mode=%6 task=%7", grp, Math.Round(dist), known, lShape, mounted,
+			typename.EnumToString(DCO_EAmbushReaction, g.GetAmbushReaction()), typename.EnumToString(DCO_EGroupTask, g.GetTask())));
 		if (mounted)
 			return;
 
@@ -81,7 +81,7 @@ class DCO_AmbushDrill
 		}
 		else
 		{
-			CMD_ThreatResponseComponent.ThrowSmoke(g, threat);
+			CMD_ThreatResponseComponent.ThrowSmoke(g, threat, "ambush");
 			foreach (AIAgent a : agents)
 				Move(a, side * Math.RandomFloat(15.0, 25.0), threat, true, ECharacterStance.PRONE, 15.0);
 			d.m_bDecide = true;
@@ -153,6 +153,8 @@ class DCO_AmbushDrill
 		string verdict = "break_contact";
 		if (!m_bL && enemies > 0 && units >= 4 && units >= 1.0 * enemies * 1.5)
 			verdict = "flank";
+		else if (enemies == 0 && units >= 1.0 * m_Group.DCO_GetPeakStrength() * 0.6)
+			verdict = "resume";
 
 		if (verdict == "flank")
 		{
@@ -172,7 +174,7 @@ class DCO_AmbushDrill
 				DCO_RelocateBehavior.Start(ca.m_UtilityComponent, DCO_Util.Surface(flank + Vector(Math.RandomFloat(-5, 5), 0, Math.RandomFloat(-5, 5))), m_vThreat, true, ECharacterStance.CROUCH, vector.DistanceXZ(ca.GetControlledEntity().GetOrigin(), flank) / 3.0 + 3.0, "ambush_flank");
 			}
 		}
-		else if (!DCO_BreakContact.Start(m_Group, m_vThreat, vector.Zero, "ambush_far"))
+		else if (verdict == "break_contact" && !DCO_BreakContact.Start(m_Group, m_vThreat, vector.Zero, "ambush_far"))
 			verdict = "fight";
 
 		DCO_Perf.Count("amb:" + verdict);

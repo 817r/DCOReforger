@@ -1,0 +1,9 @@
+DCO_TacticWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et" {
+ ID "F69CB41DCDDC1E68"
+ Type "Move"
+ Title "Withdraw waypoint"
+ AIBehaviorTreeMoveTo "{A3755C1F88DED8D6}AI/BehaviorTrees/Waypoints/WP_Move.bt"
+ CompletionRadius 10
+ CompletionType Any
+ m_eMode WITHDRAW
+}

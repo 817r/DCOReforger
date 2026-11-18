@@ -4,7 +4,7 @@ GameEntity : "{C28F5F51499CB912}Prefabs/Commander/US_Commander.et" {
   AICommander_AlgorithmComponent "{68F8849956F58560}" {
    m_sDefaultMoveWaypointPrefab "{750A8D1695BD6998}Prefabs/AI/Waypoints/AIWaypoint_Move.et"
    m_sDefaultGetInWaypointPrefab "{712F4795CF8B91C7}Prefabs/AI/Waypoints/AIWaypoint_GetIn.et"
-   m_fObjectiveAtTheSameTime 4
+   m_fObjectiveAtTheSameTime -1
    m_fSyncAttackMaxWaitTime 360
    m_fPatrolFrontlineDrift 100
    m_fTransportDistanceThreshold 400

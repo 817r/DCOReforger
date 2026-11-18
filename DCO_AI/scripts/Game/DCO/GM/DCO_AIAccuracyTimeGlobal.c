@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalAIMTimeAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalAIMTimeAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -33,7 +33,7 @@ class SCR_AIGlobalAIMTimeAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalAIMShakeAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalAIMShakeAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{

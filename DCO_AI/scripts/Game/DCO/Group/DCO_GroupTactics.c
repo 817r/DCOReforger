@@ -1,8 +1,8 @@
-class SCR_AIGroupTacticsComponentClass : ScriptComponentClass
+class DCO_GroupTacticsComponentClass : ScriptComponentClass
 {
 }
 
-class SCR_AIGroupTacticsComponent : ScriptComponent
+class DCO_GroupTacticsComponent : ScriptComponent
 {
 	[Attribute("0", UIWidgets.ComboBox, "AI Tactics in combat", "", ParamEnumArray.FromEnum(DCO_GroupTactics) )]
 	protected DCO_GroupTactics m_eAITacticsDefault;

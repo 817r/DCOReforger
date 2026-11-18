@@ -1,0 +1,26 @@
+DCO_BuildWaypoint : "{7D21A9C4E05B3F18}Prefabs/AI/Waypoints/AIWaypoint_Build.et" {
+ ID "6A1F3C9B2D4E5A70"
+ components {
+  SCR_EditableEntityVisibilityChildComponent "{6D2DA66697962EE6}" : "{CA7D13FC9D385E8F}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityVisibilityChildComponent.ct" {
+  }
+  SCR_EditableWaypointComponent "{F87CF3D848AEF4DE}" : "{89CF6086B34A8800}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityComponent.ct" {
+   m_UIInfo SCR_EditableEntityUIInfo "{2C8B32FFE46B09B1}" {
+    Name "Build (DCO)"
+    Icon "{6FAED0D746483096}UI/Textures/Editor/Toolbar/Commanding/Toolbar_Commanding_Waypoint_Defend.edds"
+    IconSetName "Waypoint_Defend"
+    m_aAutoLabels {
+     ENTITYTYPE_SYSTEM SIZE_XL
+    }
+   }
+   m_EntityInteraction SCR_EditableAttachableEntityInteraction "{815D45EC0AD5226B}" {
+    m_aAttachableTypes {
+     GROUP
+    }
+   }
+  }
+  SCR_WaypointAreaMeshComponent "{4DCBF7DB497979A0}" : "{3CE012874EA1DC23}Prefabs/Editor/Components/Waypoint_SCR_WaypointAreaMeshComponent.ct" {
+  }
+  RplComponent "{E6B766B4B78642F2}" : "{B193E926C1935A4C}Prefabs/Editor/Components/Default_RplComponent.ct" {
+  }
+ }
+}

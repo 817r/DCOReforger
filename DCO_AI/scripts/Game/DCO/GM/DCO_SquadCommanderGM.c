@@ -125,6 +125,25 @@ class DCO_SquadDedicatedTransportAttribute : DCO_SquadCmdBoolAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_SquadRoleAttribute : SCR_BaseFloatValueHolderEditorAttribute
+{
+	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
+	{
+		DCO_GroupUtilityComponent g = DCO_SquadCmdBoolAttribute.GetSquad(item);
+		if (!g || !g.IsCommanderEligible())
+			return null;
+		return SCR_BaseEditorAttributeVar.CreateInt(g.DCO_GetWantedRole());
+	}
+
+	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
+	{
+		DCO_GroupUtilityComponent g = DCO_SquadCmdBoolAttribute.GetSquad(item);
+		if (g && var)
+			g.DCO_SetWantedRole(var.GetInt(), playerID);
+	}
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_TransportAllowedJobsAttribute : SCR_BaseMultiSelectPresetsEditorAttribute
 {
 	protected static DCO_TransportTeamComponent GetTeam(Managed item)

@@ -1,0 +1,17 @@
+MetaFileClass {
+ Name "{9BD50C74BF89F2F5}Configs/Systems/Persistence/Configuration/Editor/EditableEntity.conf"
+ Configurations {
+  CONFResourceClass PC {
+  }
+  CONFResourceClass XBOX_ONE : PC {
+  }
+  CONFResourceClass XBOX_SERIES : PC {
+  }
+  CONFResourceClass PS4 : PC {
+  }
+  CONFResourceClass PS5 : PC {
+  }
+  CONFResourceClass HEADLESS : PC {
+  }
+ }
+}

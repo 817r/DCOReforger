@@ -74,6 +74,23 @@ class DCO_CQBActivity : SCR_AIActivityBase
 	protected int m_iAbortLosses = 99;
 	protected int m_iBreach;
 	protected float m_fRoomLimit_ms = 60000.0;
+	protected float m_fFirstAt_ms = -1;
+	protected bool m_bSwapTried;
+	protected float m_fNearAt_ms = -1;
+	protected float m_fProgAt_ms;
+	protected bool m_bCoverFired;
+	protected float m_fPrepUntil_ms;
+	protected bool m_bFragOther;
+	protected float m_fLoneAt_ms = -1;
+	protected int m_iReorders;
+	protected bool m_bTwoDoor;
+	protected bool m_bSecondSent;
+	protected bool m_bSecondUsed;
+	protected vector m_vEntry2;
+	protected vector m_vOut2;
+	protected vector m_vStack2A;
+	protected vector m_vStack2B;
+	protected float m_fReady0_ms = -1;
 
 	protected static ref map<string, int> s_mBadPrefab;
 
@@ -157,6 +174,9 @@ class DCO_CQBActivity : SCR_AIActivityBase
 	{
 		m_sBehaviorTree = "AI/BehaviorTrees/Chimera/Group/DCO_CQB.bt";
 		SetPriority(PRIORITY_ACTIVITY_ATTACK_CLUSTER + 4);
+		SCR_AIWaypoint levelWp = SCR_AIWaypoint.Cast(relatedWaypoint);
+		if (levelWp)
+			m_fPriorityLevel.m_Value = levelWp.GetPriorityLevel();
 		m_Building = building;
 		m_sFaction = faction;
 		m_sTrigger = trigger;
@@ -251,7 +271,7 @@ class DCO_CQBActivity : SCR_AIActivityBase
 			if (age > 90.0)
 				continue;
 			string method;
-			if (SCR_CoverManagerComponent.DCO_GetBuildingAtPos(t.m_vWorldPos, leader, method) != m_Building)
+			if (DCO_CoverManagerComponent.DCO_GetBuildingAtPos(t.m_vWorldPos, leader, method) != m_Building)
 				continue;
 			m_fEvidenceAt_ms = now;
 			m_vEvidence = t.m_vWorldPos;
@@ -265,7 +285,7 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		if (DCO_FireEstimate.GetQ(m_Utility.m_Owner, now, 25000.0, est, rad, cnt, conf, estSrc))
 		{
 			string hm;
-			if (SCR_CoverManagerComponent.DCO_GetBuildingAtPos(est, leader, hm) == m_Building)
+			if (DCO_CoverManagerComponent.DCO_GetBuildingAtPos(est, leader, hm) == m_Building)
 			{
 				m_fEvidenceAt_ms = now;
 				m_vEvidence = est;
@@ -576,6 +596,10 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		float ms = Now() - m_fPhaseAt_ms;
 		m_ePhase = p;
 		m_fPhaseAt_ms = Now();
+		m_fFirstAt_ms = -1;
+		m_bSwapTried = false;
+		m_fNearAt_ms = -1;
+		m_fReady0_ms = -1;
 		string name = typename.EnumToString(DCO_ECQBPhase, p);
 		name.ToLower();
 		DCO_Perf.Count("cqb:phase_" + name);
@@ -586,6 +610,9 @@ class DCO_CQBActivity : SCR_AIActivityBase
 	{
 		m_iStep = s;
 		m_fStepAt_ms = Now();
+		m_fFirstAt_ms = -1;
+		m_bSwapTried = false;
+		m_iReorders = 0;
 	}
 
 	protected void Order(SCR_ChimeraAIAgent ca, DCO_CQBMemberBehavior b)
@@ -751,7 +778,9 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		}
 		if (changed && m_ePhase == DCO_ECQBPhase.ROOMS && m_iStep > 0 && m_iStep < 5)
 		{
-			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_pair_reform grp=%1 room=%2 step=%3 pair=%4", Grp(), m_iRoom, m_iStep, ActivePair() + 1));
+			m_fEnemyAt_ms = Now();
+			m_vEnemy = vector.Zero;
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_pair_reform grp=%1 room=%2 step=%3 pair=%4 evidence=casualty", Grp(), m_iRoom, m_iStep, ActivePair() + 1));
 			OrderStack();
 			SetStep(1);
 		}
@@ -790,21 +819,139 @@ class DCO_CQBActivity : SCR_AIActivityBase
 			total += 120000.0;
 		m_fDeadline_ms = m_fStart_ms + Math.Min(total, 1200000.0);
 		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_plan grp=%1 building=%2 rooms=%3 entry=%4 pairs=%5 rear=%6 deadline_s=%7 order=random", Grp(), DCO_Util.PrefabShort(m_Building), m_aRooms.Count(), DCO_Util.XZ(m_vEntry), PairCount(), m_aRear.Count(), Math.Round((m_fDeadline_ms - m_fStart_ms) * 0.001)));
+		PlanSecond();
 		OrderRear();
 		SetPhase(DCO_ECQBPhase.STACK);
 		return ENodeResult.SUCCESS;
 	}
 
+	protected void PlanSecond()
+	{
+		m_bTwoDoor = false;
+		m_bSecondSent = false;
+		m_bSecondUsed = false;
+		if (m_aEntry.Count() < 4 || DCO_Ctx.TuneG("cqb.two_door", 1.0) <= 0)
+			return;
+		vector d2, o2, a2, b2;
+		if (!m_Nav.SecondEntry(TeamCenter(), d2, o2, a2, b2))
+		{
+			DCO_Perf.Count("cqb:second_entry_none");
+			return;
+		}
+		vector side2 = Vector(o2[2], 0, -o2[0]);
+		if (a2 == vector.Zero)
+			a2 = DCO_Util.Surface(d2 + o2 * 0.7 + side2 * 1.2);
+		if (b2 == vector.Zero)
+			b2 = DCO_Util.Surface(d2 + o2 * 0.7 - side2 * 1.2);
+		m_bTwoDoor = true;
+		m_vEntry2 = d2;
+		m_vOut2 = o2;
+		m_vStack2A = a2;
+		m_vStack2B = b2;
+		DCO_Perf.Count("cqb:second_entry");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_second_entry grp=%1 door=%2 from_entry_m=%3 pairs=%4", Grp(), DCO_Util.XZ(d2), Math.Round(vector.DistanceXZ(d2, m_vEntry)), PairCount()));
+	}
+
+	protected void OrderSecond()
+	{
+		m_bSecondSent = true;
+		vector in2 = m_vOut2 * -1.0;
+		vector side2 = Vector(in2[2], 0, -in2[0]);
+		vector spot = m_vEntry2 + in2 * 3.2;
+		vector look = m_vEntry2 + in2 * 7.0 + Vector(0, 1.2, 0);
+		int sent = 0;
+		for (int k = 0; k < 2; k++)
+		{
+			SCR_ChimeraAIAgent s = PairMember(1, k);
+			if (!s || !OrdArrived(s))
+				continue;
+			float sign = 1.0;
+			if (k == 1)
+				sign = -1.0;
+			Order(s, new DCO_CQBEnterBehavior(s.m_UtilityComponent, this, spot + side2 * (0.8 * sign), look, ECharacterStance.STAND, EMovementType.RUN, 90.0, "no" + (k + 1).ToString()));
+			sent++;
+		}
+		DCO_Perf.Count("cqb:second_breach");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_second_breach grp=%1 door=%2 men=%3", Grp(), DCO_Util.XZ(m_vEntry2), sent));
+	}
+
+	protected bool SecondTeam(SCR_ChimeraAIAgent a)
+	{
+		if (!m_bTwoDoor || m_bSecondUsed || ActivePair() != 0)
+			return false;
+		return PairMember(1, 0) == a || PairMember(1, 1) == a;
+	}
+
+	protected vector PairCenter()
+	{
+		vector a = Pos(PairMember(ActivePair(), 0));
+		vector b = Pos(PairMember(ActivePair(), 1));
+		if (a == vector.Zero)
+			return b;
+		if (b == vector.Zero)
+			return a;
+		return (a + b) * 0.5;
+	}
+
+	protected bool InRoom(DCO_CQBRoom room, vector p)
+	{
+		if (p == vector.Zero || Math.AbsFloat(p[1] - room.m_vCenter[1]) > 1.8)
+			return false;
+		if (vector.DistanceXZ(p, room.m_vCenter) <= 4.0)
+			return true;
+		foreach (vector s : room.m_aSlots)
+		{
+			if (vector.DistanceXZ(p, s) <= 2.5)
+				return true;
+		}
+		return false;
+	}
+
+	protected bool PairInside(DCO_CQBRoom room)
+	{
+		SCR_ChimeraAIAgent p1 = PairMember(ActivePair(), 0);
+		SCR_ChimeraAIAgent p2 = PairMember(ActivePair(), 1);
+		if (!p1 || !InRoom(room, Pos(p1)))
+			return false;
+		return !p2 || InRoom(room, Pos(p2));
+	}
+
 	protected void OrderRear()
 	{
 		vector side = Vector(m_vOut[2], 0, -m_vOut[0]);
-		vector look = m_vEntry + Vector(0, 1.2, 0);
+		array<vector> exits = {};
+		array<vector> exitDirs = {};
+		array<int> usedExits = {};
+		if (m_Nav && DCO_Ctx.TuneG("cqb.rear_exit", 1.0) > 0)
+			m_Nav.Exits(exits, exitDirs);
 		foreach (int i, SCR_ChimeraAIAgent r : m_aRear)
 		{
 			float sign = 1.0;
 			if (i % 2 == 1)
 				sign = -1.0;
+			vector look = m_vEntry + Vector(0, 1.2, 0);
 			vector spot = DCO_Util.Surface(m_vEntry + m_vOut * 10.0 + side * (6.0 * sign));
+			int pickExit = -1;
+			float farExit = -1;
+			foreach (int xi, vector xp : exits)
+			{
+				if (usedExits.Contains(xi) || (m_bTwoDoor && vector.DistanceXZ(xp, m_vEntry2) < 4.0))
+					continue;
+				float xd = vector.DistanceXZ(xp, m_vEntry);
+				if (xd > farExit)
+				{
+					farExit = xd;
+					pickExit = xi;
+				}
+			}
+			if (pickExit >= 0)
+			{
+				usedExits.Insert(pickExit);
+				spot = DCO_Util.Surface(exits[pickExit] + exitDirs[pickExit] * 10.0);
+				look = exits[pickExit] + Vector(0, 1.2, 0);
+				DCO_Perf.Count("cqb:rear_exit");
+				DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_rear_exit grp=%1 unit=%2 exit=%3 from_entry_m=%4 spot=%5", Grp(), DCO_Log.IdUnit(r.GetControlledEntity()), DCO_Util.XZ(exits[pickExit]), Math.Round(farExit), DCO_Util.XZ(spot)));
+			}
 			m_mSpot.Set(r, spot);
 			Order(r, new DCO_CQBSupportBehavior(r.m_UtilityComponent, this, spot, look, ECharacterStance.CROUCH, EMovementType.RUN, 1200.0, "rear_" + (i + 1).ToString()));
 		}
@@ -820,14 +967,8 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		{
 			m_bStackOrdered = true;
 			foreach (int i, SCR_ChimeraAIAgent a : m_aEntry)
-			{
-				vector slot = m_vStackA;
-				if (i % 2 == 1)
-					slot = m_vStackB;
-				slot = slot + m_vOut * (1.2 * (i / 2));
-				EMovementType pace = EMovementType.RUN;
-				Order(a, new DCO_CQBMoveSlotBehavior(a.m_UtilityComponent, this, slot, m_vEntry + Vector(0, 1.2, 0), ECharacterStance.STAND, pace, 240.0, "stack_" + (i + 1).ToString()));
-			}
+				OrderStackSlot(i);
+			m_fProgAt_ms = Now() + 30000.0;
 			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_stack grp=%1 entry=%2 stack_a=%3 stack_b=%4", Grp(), DCO_Util.XZ(m_vEntry), DCO_Util.XZ(m_vStackA), DCO_Util.XZ(m_vStackB)));
 		}
 		SCR_ChimeraAIAgent p1 = PairMember(0, 0);
@@ -840,11 +981,50 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		int need = 1;
 		if (p2)
 			need = 2;
-		float age = Now() - m_fPhaseAt_ms;
+		float now = Now();
+		float age = now - m_fPhaseAt_ms;
 		float limit = 90000.0;
 		if (m_bPlanned)
 			limit = 180000.0;
-		if (at >= need || (at >= 1 && age > m_fStackWait_ms))
+		if (m_fNearAt_ms < 0 && NearEntry(40.0))
+			m_fNearAt_ms = now;
+		if (at >= 1 && m_fFirstAt_ms < 0)
+			m_fFirstAt_ms = now;
+		float waited = 0;
+		if (m_fFirstAt_ms >= 0)
+			waited = now - m_fFirstAt_ms;
+		StackProgress(now, at, need);
+		foreach (int ri, SCR_ChimeraAIAgent ra : m_aEntry)
+		{
+			DCO_CQBMemberBehavior rb = Ord(ra);
+			if (!rb || !rb.IsDone() || rb.Why() != "timeout")
+				continue;
+			OrderStackSlot(ri);
+			DCO_Perf.Count("cqb:stack_reorder");
+		}
+		bool swapNow = at == 1 && need == 2 && !m_bSwapTried && waited > 2000.0;
+		if (swapNow)
+		{
+			m_bSwapTried = true;
+			if (SwapPartner(m_vEntry, false))
+				return ENodeResult.RUNNING;
+		}
+		bool go = at >= need || (at >= 1 && waited > m_fStackWait_ms);
+		if (go && m_bTwoDoor)
+		{
+			if (m_fReady0_ms < 0)
+				m_fReady0_ms = now;
+			bool second = OrdArrived(PairMember(1, 0)) || OrdArrived(PairMember(1, 1));
+			if (!second && now - m_fReady0_ms < 15000.0)
+				go = false;
+			else if (!second)
+			{
+				m_bTwoDoor = false;
+				DCO_Perf.Count("cqb:second_entry_cancel");
+				DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_second_entry_cancel grp=%1 why=not_arrived waited_s=15", Grp()));
+			}
+		}
+		if (go)
 		{
 			SetPhase(DCO_ECQBPhase.ROOMS);
 			SetStep(0);
@@ -860,13 +1040,222 @@ class DCO_CQBActivity : SCR_AIActivityBase
 			SetStep(0);
 			return ENodeResult.SUCCESS;
 		}
-		if (age > limit)
+		if (m_fNearAt_ms >= 0 && now - m_fNearAt_ms > limit)
 		{
 			m_aTried.Insert(m_vEntry);
 			Abort("stack_timeout");
 			return ENodeResult.FAIL;
 		}
 		return ENodeResult.RUNNING;
+	}
+
+	protected void OrderStackSlot(int i)
+	{
+		SCR_ChimeraAIAgent a = m_aEntry[i];
+		if (!a)
+			return;
+		vector slot = m_vStackA;
+		if (i % 2 == 1)
+			slot = m_vStackB;
+		slot = slot + m_vOut * (1.2 * (i / 2));
+		vector look = m_vEntry + Vector(0, 1.2, 0);
+		if (m_bTwoDoor && i / 2 == 1)
+		{
+			slot = m_vStack2A;
+			if (i % 2 == 1)
+				slot = m_vStack2B;
+			look = m_vEntry2 + Vector(0, 1.2, 0);
+		}
+		Order(a, new DCO_CQBMoveSlotBehavior(a.m_UtilityComponent, this, slot, look, ECharacterStance.STAND, EMovementType.RUN, 240.0, "stack_" + (i + 1).ToString()));
+	}
+
+	protected bool NearEntry(float r)
+	{
+		foreach (SCR_ChimeraAIAgent a : m_aEntry)
+		{
+			if (a && a.GetControlledEntity() && vector.DistanceXZ(Pos(a), m_vEntry) <= r)
+				return true;
+		}
+		return false;
+	}
+
+	protected void StackProgress(float now, int at, int need)
+	{
+		if (now < m_fProgAt_ms)
+			return;
+		m_fProgAt_ms = now + 30000.0;
+		string men = "";
+		foreach (SCR_ChimeraAIAgent a : m_aEntry)
+		{
+			if (!a || !a.GetControlledEntity())
+				continue;
+			string act = "-";
+			if (a.m_UtilityComponent && a.m_UtilityComponent.GetCurrentAction())
+				act = a.m_UtilityComponent.GetCurrentAction().ClassName();
+			if (!men.IsEmpty())
+				men += ",";
+			men += string.Format("%1:%2:%3", DCO_Log.IdUnit(a.GetControlledEntity()), Math.Round(vector.Distance(Pos(a), m_vEntry)), act);
+		}
+		float clock = -1;
+		if (m_fNearAt_ms >= 0)
+			clock = Math.Round((now - m_fNearAt_ms) * 0.001);
+		DCO_Perf.Count("cqb:stack_wait_log");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_stack_wait grp=%1 age_s=%2 clock_s=%3 arrived=%4/%5 under_fire=%6 men=%7", Grp(), Math.Round((now - m_fPhaseAt_ms) * 0.001), clock, at, need, DCO_Util.B01(m_fDCOStackFireAt_ms > 0), men));
+	}
+
+	protected bool SwapPartner(vector door, bool room)
+	{
+		int b0 = ActivePair() * 2;
+		SCR_ChimeraAIAgent p1 = PairMember(ActivePair(), 0);
+		SCR_ChimeraAIAgent p2 = PairMember(ActivePair(), 1);
+		if (!p1 || !p2)
+			return false;
+		int far = b0 + 1;
+		if (!OrdArrived(p1))
+			far = b0;
+		float farD = vector.Distance(Pos(m_aEntry[far]), door);
+		if (farD <= 10.0)
+			return false;
+		int best = -1;
+		float bestD = farD - 3.0;
+		foreach (int i, SCR_ChimeraAIAgent a : m_aEntry)
+		{
+			if (i == b0 || i == b0 + 1 || !a)
+				continue;
+			float d = vector.Distance(Pos(a), door);
+			if (d < bestD)
+			{
+				bestD = d;
+				best = i;
+			}
+		}
+		if (best < 0)
+			return false;
+		SCR_ChimeraAIAgent outA = m_aEntry[far];
+		SCR_ChimeraAIAgent inA = m_aEntry[best];
+		m_aEntry[far] = inA;
+		m_aEntry[best] = outA;
+		DCO_Perf.Count("cqb:pair_swap");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_pair_swap grp=%1 room=%2 out=%3 out_dist=%4 in=%5 in_dist=%6", Grp(), m_iRoom, DCO_Log.IdUnit(outA.GetControlledEntity()), Math.Round(farD), DCO_Log.IdUnit(inA.GetControlledEntity()), Math.Round(bestD)));
+		if (!room)
+		{
+			OrderStackSlot(far);
+			OrderStackSlot(best);
+			return true;
+		}
+		vector look = m_vDoor + m_vDir * 2.0 + Vector(0, 1.2, 0);
+		vector spot = m_vStackB;
+		string role = "room_stack_2";
+		if (far == b0)
+		{
+			spot = m_vStackA;
+			role = "room_stack_1";
+		}
+		Order(inA, new DCO_CQBMoveSlotBehavior(inA.m_UtilityComponent, this, spot, look, ECharacterStance.STAND, EMovementType.RUN, 40.0, role));
+		DCO_CQBFollowBehavior f = new DCO_CQBFollowBehavior(outA.m_UtilityComponent, this, Pos(outA), m_vDoor + Vector(0, 1.2, 0), ECharacterStance.STAND, EMovementType.RUN, 120.0, "snake_swap");
+		f.SetLead(inA.GetControlledEntity(), 3.0);
+		Order(outA, f);
+		return true;
+	}
+
+	protected bool LoneHold(float now)
+	{
+		if (m_aEntry.Count() != 1 || PendingRooms() == 0)
+		{
+			m_fLoneAt_ms = -1;
+			return false;
+		}
+		array<AIAgent> agents = {};
+		m_Utility.m_Owner.GetAgents(agents);
+		foreach (AIAgent ag : agents)
+		{
+			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(ag);
+			if (!ca || m_aEntry.Contains(ca) || m_aRear.Contains(ca) || !Usable(m_Utility, ag))
+				continue;
+			m_aEntry.Insert(ca);
+			m_aLost.RemoveItem(ca);
+			DCO_Perf.Count("cqb:rejoin");
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_rejoin grp=%1 unit=%2 entry=%3", Grp(), DCO_Log.IdUnit(ca.GetControlledEntity()), m_aEntry.Count()));
+		}
+		if (m_aEntry.Count() > 1)
+		{
+			m_fLoneAt_ms = -1;
+			if (m_iStep == 0)
+				return false;
+			OrderStack();
+			SetStep(1);
+			return true;
+		}
+		SCR_ChimeraAIAgent last = m_aEntry[0];
+		if (m_fLoneAt_ms < 0)
+		{
+			m_fLoneAt_ms = now;
+			DCO_Perf.Count("cqb:lone_hold");
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_lone_hold grp=%1 room=%2 unit=%3 pending=%4 max_s=60", Grp(), m_iRoom, DCO_Log.IdUnit(last.GetControlledEntity()), PendingRooms()));
+			Order(last, new DCO_CQBHoldBehavior(last.m_UtilityComponent, this, m_vStackA, m_vDoor + Vector(0, 1.2, 0), ECharacterStance.CROUCH, EMovementType.RUN, 70.0, "lone_hold"));
+		}
+		if (now - m_fLoneAt_ms > 60000.0)
+		{
+			Abort("lone");
+			return true;
+		}
+		m_fRoomAt_ms = now;
+		return true;
+	}
+
+	protected void ReorderStuck(SCR_ChimeraAIAgent p, int k)
+	{
+		DCO_CQBMemberBehavior ob = Ord(p);
+		if (!ob || !ob.IsDone() || ob.Why() != "stuck" || m_iReorders >= 2)
+			return;
+		m_iReorders++;
+		vector look = m_vDoor + m_vDir * 2.0 + Vector(0, 1.2, 0);
+		vector goal = m_vDoor + m_vDir * 2.0;
+		string role = "no" + (k + 1).ToString();
+		if (m_iStep == 1)
+		{
+			goal = m_vStackA;
+			if (k == 1)
+				goal = m_vStackB;
+			goal = goal - m_vDir * 1.0;
+			role = "room_stack_" + (k + 1).ToString();
+			Order(p, new DCO_CQBMoveSlotBehavior(p.m_UtilityComponent, this, goal, look, ECharacterStance.STAND, EMovementType.RUN, 40.0, role));
+		}
+		else
+			Order(p, new DCO_CQBEnterBehavior(p.m_UtilityComponent, this, goal, look, ECharacterStance.STAND, EMovementType.RUN, 14.0, role));
+		DCO_Perf.Count("cqb:reorder_stuck");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_reorder grp=%1 room=%2 unit=%3 role=%4 step=%5 try=%6 goal=%7 why=stuck", Grp(), m_iRoom, DCO_Log.IdUnit(p.GetControlledEntity()), role, m_iStep, m_iReorders, DCO_Util.XZ(goal)));
+	}
+
+	protected bool TryCover(SCR_ChimeraAIAgent p1, SCR_ChimeraAIAgent p2, DCO_CQBRoom room)
+	{
+		if (m_bCoverFired)
+			return false;
+		m_bCoverFired = true;
+		vector aim = room.m_vCenter;
+		bool fresh = Now() - m_fEnemyAt_ms < 15000.0 && m_vEnemy != vector.Zero;
+		if (fresh && vector.Distance(m_vEnemy, room.m_vCenter) < 6.0)
+			aim = m_vEnemy;
+		array<SCR_ChimeraAIAgent> men = {p2, p1};
+		foreach (SCR_ChimeraAIAgent c : men)
+		{
+			if (!c || !c.m_UtilityComponent || !c.GetControlledEntity() || !OrdArrived(c))
+				continue;
+			if (!DCO_SuppressGate.Allowed(c.m_UtilityComponent, aim, "cqb_cover"))
+				continue;
+			vector bbMin, bbMax;
+			SCR_AISuppressionVolumeBase.CreateSuppressionBox(aim, 1.5, 2, bbMin, bbMax);
+			SCR_AISuppressBehavior cover = new SCR_AISuppressBehavior(c.m_UtilityComponent, null, new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax), 2.0, 1.5);
+			cover.SetPriority(96);
+			c.m_UtilityComponent.AddAction(cover);
+			m_fPrepUntil_ms = Now() + 2500.0;
+			DCO_Perf.Count("cqb:cover_fire");
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_cover_fire grp=%1 room=%2 unit=%3 target=%4 dist=%5 secs=2", Grp(), m_iRoom, DCO_Log.IdUnit(c.GetControlledEntity()), DCO_Util.XZ(aim), vector.Distance(Pos(c), aim).ToString(-1, 1)));
+			return true;
+		}
+		DCO_Perf.Count("cqb:cover_skip");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_cover_skip grp=%1 room=%2 reason=no_line target=%3", Grp(), m_iRoom, DCO_Util.XZ(aim)));
+		return false;
 	}
 
 	protected void OrderStack()
@@ -880,15 +1269,38 @@ class DCO_CQBActivity : SCR_AIActivityBase
 			Order(p1, new DCO_CQBMoveSlotBehavior(p1.m_UtilityComponent, this, sa, look, ECharacterStance.STAND, EMovementType.RUN, 40.0, "room_stack_1"));
 		if (p2)
 			Order(p2, new DCO_CQBMoveSlotBehavior(p2.m_UtilityComponent, this, sb, look, ECharacterStance.STAND, EMovementType.RUN, 40.0, "room_stack_2"));
-		vector cover = m_vDoor - m_vDir * 2.5;
+		if (p2 && m_Nav.HopStairs() && Ord(p2))
+		{
+			Ord(p2).SetStartDelay(2000.0);
+			DCO_Perf.Count("cqb:stairs_file");
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_stairs_file grp=%1 room=%2 second=%3 delay_ms=2000", Grp(), m_iRoom, DCO_Log.IdUnit(p2.GetControlledEntity())));
+		}
+		SCR_ChimeraAIAgent leadAgent = p2;
+		if (!leadAgent)
+			leadAgent = p1;
+		IEntity lead = null;
+		if (leadAgent)
+			lead = leadAgent.GetControlledEntity();
+		int followers = 0;
 		foreach (SCR_ChimeraAIAgent a : m_aEntry)
 		{
-			if (InActivePair(a) || !OrdIdle(a))
+			if (InActivePair(a) || m_aRear.Contains(a) || !lead)
 				continue;
-			vector stay = Pos(a);
-			if (vector.Distance(stay, m_vDoor) > 25.0)
-				stay = cover;
-			Order(a, new DCO_CQBHoldBehavior(a.m_UtilityComponent, this, stay, m_vDoor + Vector(0, 1.2, 0), ECharacterStance.CROUCH, EMovementType.WALK, 120.0, "security"));
+			if (SecondTeam(a))
+				continue;
+			DCO_CQBBreachBehavior br = DCO_CQBBreachBehavior.Cast(Ord(a));
+			if (br && !br.IsDone())
+				continue;
+			followers++;
+			DCO_CQBFollowBehavior f = new DCO_CQBFollowBehavior(a.m_UtilityComponent, this, Pos(a), m_vDoor + Vector(0, 1.2, 0), ECharacterStance.STAND, EMovementType.RUN, 120.0, "snake_" + followers.ToString());
+			f.SetLead(lead, 3.0);
+			Order(a, f);
+			lead = a.GetControlledEntity();
+		}
+		if (followers > 0)
+		{
+			DCO_Perf.Count("cqb:snake");
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_snake grp=%1 room=%2 lead=%3 followers=%4", Grp(), m_iRoom, DCO_Log.IdUnit(leadAgent.GetControlledEntity()), followers));
 		}
 	}
 
@@ -900,6 +1312,12 @@ class DCO_CQBActivity : SCR_AIActivityBase
 			return ENodeResult.SUCCESS;
 		float now = Now();
 		DCO_UpdateBelief(now);
+		if (m_iStep <= 1 && LoneHold(now))
+		{
+			if (m_bFinished)
+				return ENodeResult.FAIL;
+			return ENodeResult.RUNNING;
+		}
 		if (m_iStep > 0 && m_iRoom >= 0 && now - m_fRoomAt_ms > m_fRoomLimit_ms)
 		{
 			FinishRoom("timeout");
@@ -908,11 +1326,26 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		SCR_ChimeraAIAgent p1 = PairMember(ActivePair(), 0);
 		SCR_ChimeraAIAgent p2 = PairMember(ActivePair(), 1);
 		float age = now - m_fStepAt_ms;
+		if (m_iStep == 1 || m_iStep == 3)
+		{
+			ReorderStuck(p1, 0);
+			ReorderStuck(p2, 1);
+		}
 		switch (m_iStep)
 		{
 			case 0:
 			{
-				int idx = m_Nav.Pick(m_aRooms, m_iFoothold, DCO_PriorityRoom());
+				int prio = DCO_PriorityRoom();
+				int second = -1;
+				if (m_bTwoDoor && m_bSecondSent && !m_bSecondUsed && ActivePair() == 1)
+					second = m_Nav.SecondRoom();
+				if (second >= 0 && second < m_aRooms.Count() && m_aRooms[second].m_iState == 0)
+					prio = second;
+				else
+					second = -1;
+				if (m_bSecondSent && ActivePair() == 1)
+					m_bSecondUsed = true;
+				int idx = m_Nav.Pick(m_aRooms, m_iFoothold, prio, PairCenter());
 				if (idx < 0)
 				{
 					string why = "all_rooms";
@@ -941,6 +1374,7 @@ class DCO_CQBActivity : SCR_AIActivityBase
 				}
 				m_iRoom = idx;
 				m_fRoomAt_ms = now;
+				m_bCoverFired = false;
 				DCO_CQBRoom room = m_aRooms[idx];
 				vector door = room.m_vCenter;
 				vector dir = room.m_vCenter - TeamCenter();
@@ -961,11 +1395,32 @@ class DCO_CQBActivity : SCR_AIActivityBase
 					sb = DCO_Util.Surface(door - dir * 0.6 - side * 0.9);
 				m_vStackA = sa;
 				m_vStackB = sb;
-				OrderStack();
+				bool inRoom = second >= 0 && idx == second && PairInside(room);
+				if (!inRoom)
+					OrderStack();
 				if (DCO_RoomBelief(idx) >= 0.5)
 					OrderContain(idx);
 				DCO_Perf.Count("cqb:room_pick");
 				DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_room_pick grp=%1 room=%2 floor=%3 pair=%4 door=%5 graph_door=%6 slots=%7 left=%8", Grp(), idx, room.m_iFloor, ActivePair() + 1, DCO_Util.XZ(door), DCO_Util.B01(real), room.m_aSlots.Count(), PendingRooms()));
+				if (inRoom)
+				{
+					DCO_Perf.Count("cqb:room_already_inside");
+					DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_room_inside grp=%1 room=%2 pair=%3 why=second_door", Grp(), idx, ActivePair() + 1));
+					OrderEnter();
+					SetStep(3);
+					return ENodeResult.RUNNING;
+				}
+				vector seen;
+				bool quiet = now - m_fEnemyAt_ms >= 15000.0 && DCO_RoomBelief(idx) < 0.5;
+				bool together = !p2 || vector.Distance(Pos(p1), Pos(p2)) <= 5.0;
+				if (!together)
+					DCO_Perf.Count("cqb:flow_skip_apart");
+				bool flow = real && m_iBreach != 1 && quiet && together && !EnemyInRoom(room, seen);
+				if (flow && OrderFlow())
+				{
+					SetStep(3);
+					return ENodeResult.RUNNING;
+				}
 				SetStep(1);
 				return ENodeResult.RUNNING;
 			}
@@ -979,10 +1434,21 @@ class DCO_CQBActivity : SCR_AIActivityBase
 				int need = 1;
 				if (p2)
 					need = 2;
-				if (at < need && age < 20000.0)
-					return ENodeResult.RUNNING;
+				if (at >= 1 && m_fFirstAt_ms < 0)
+					m_fFirstAt_ms = now;
 				if (at == 0 && age < 30000.0)
 					return ENodeResult.RUNNING;
+				if (at >= 1 && at < need)
+				{
+					float waited = now - m_fFirstAt_ms;
+					if (!m_bSwapTried && waited > 2000.0)
+					{
+						m_bSwapTried = true;
+						SwapPartner(m_vDoor, true);
+					}
+					if (waited < 20000.0)
+						return ENodeResult.RUNNING;
+				}
 				DCO_CQBRoom troom = m_aRooms[m_iRoom];
 				vector where;
 				bool enemy = EnemyInRoom(troom, where) || now - m_fEnemyAt_ms < 15000.0 || DCO_RoomBelief(m_iRoom) >= 0.5;
@@ -990,6 +1456,11 @@ class DCO_CQBActivity : SCR_AIActivityBase
 				if (!frag && enemy)
 					DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_frag_skip grp=%1 room=%2 reason=gm_breach_mode mode=%3", Grp(), m_iRoom, m_iBreach));
 				if (frag && m_iFrags < 3 && TryFrag(p1, p2, troom))
+				{
+					SetStep(2);
+					return ENodeResult.RUNNING;
+				}
+				if (enemy && TryCover(p1, p2, troom))
 				{
 					SetStep(2);
 					return ENodeResult.RUNNING;
@@ -1009,7 +1480,16 @@ class DCO_CQBActivity : SCR_AIActivityBase
 				}
 				if (busy && age < 12000.0)
 					return ENodeResult.RUNNING;
-				DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_frag_done grp=%1 room=%2 ms=%3", Grp(), m_iRoom, Math.Round(age)));
+				if (now < m_fPrepUntil_ms)
+					return ENodeResult.RUNNING;
+				if (m_fPrepUntil_ms <= 0)
+					DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_frag_done grp=%1 room=%2 ms=%3", Grp(), m_iRoom, Math.Round(age)));
+				m_fPrepUntil_ms = 0;
+				if (m_bFragOther)
+				{
+					m_bFragOther = false;
+					OrderStack();
+				}
 				OrderEnter();
 				SetStep(3);
 				return ENodeResult.RUNNING;
@@ -1040,12 +1520,12 @@ class DCO_CQBActivity : SCR_AIActivityBase
 					FinishRoom("no_entry");
 					return ENodeResult.RUNNING;
 				}
-				DCO_CQBRoom sroom = m_aRooms[m_iRoom];
-				vector look = sroom.m_vCenter + Vector(0, 1.2, 0);
+				vector look1, look2;
+				LookPair(look1, look2);
 				if (p1)
-					Order(p1, new DCO_CQBHoldBehavior(p1.m_UtilityComponent, this, Pos(p1), look, ECharacterStance.STAND, EMovementType.WALK, 90.0, "sweep_1"));
+					Order(p1, new DCO_CQBHoldBehavior(p1.m_UtilityComponent, this, Pos(p1), look1, ECharacterStance.STAND, EMovementType.WALK, 90.0, "sweep_1"));
 				if (p2)
-					Order(p2, new DCO_CQBHoldBehavior(p2.m_UtilityComponent, this, Pos(p2), look, ECharacterStance.STAND, EMovementType.WALK, 90.0, "sweep_2"));
+					Order(p2, new DCO_CQBHoldBehavior(p2.m_UtilityComponent, this, Pos(p2), look2, ECharacterStance.STAND, EMovementType.WALK, 90.0, "sweep_2"));
 				m_fSweepUntil_ms = now + 1500.0;
 				DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_room_sweep grp=%1 room=%2 inside=%3/%4 ms=%5", Grp(), m_iRoom, inside, needIn, Math.Round(age)));
 				SetStep(4);
@@ -1082,33 +1562,41 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		if (Now() - m_fEnemyAt_ms < 15000.0 && m_vEnemy != vector.Zero)
 			aim = m_vEnemy + Vector(0, 0.3, 0);
 		array<SCR_ChimeraAIAgent> throwers = {p1, p2};
+		foreach (SCR_ChimeraAIAgent o : m_aEntry)
+		{
+			if (o != p1 && o != p2)
+				throwers.Insert(o);
+		}
+		int armed = 0;
 		foreach (SCR_ChimeraAIAgent t : throwers)
 		{
 			if (!t || !t.m_UtilityComponent || !t.m_UtilityComponent.m_CombatComponent || !t.GetControlledEntity())
 				continue;
 			if (!t.m_UtilityComponent.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_FRAGGRENADE))
 				continue;
+			armed++;
 			float d = vector.Distance(Pos(t), aim);
 			if (d < 2.0 || d > 15.0)
 				continue;
 			Order(t, new DCO_CQBBreachBehavior(t.m_UtilityComponent, this, Pos(t), aim, ECharacterStance.CROUCH, EMovementType.RUN, 12.0, "breach"));
+			m_bFragOther = t != p1 && t != p2;
 			m_iFrags++;
 			DCO_Perf.Count("cqb:frag");
 			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_frag grp=%1 room=%2 unit=%3 dist=%4 frags=%5", Grp(), m_iRoom, DCO_Log.IdUnit(t.GetControlledEntity()), d.ToString(-1, 1), m_iFrags));
 			return true;
 		}
-		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_frag_skip grp=%1 room=%2 reason=no_thrower", Grp(), m_iRoom));
+		string skipWhy = "no_grenade";
+		if (armed > 0)
+			skipWhy = "out_of_range";
+		DCO_Perf.Count("cqb:frag_skip_" + skipWhy);
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_frag_skip grp=%1 room=%2 reason=%3 candidates=%4 armed=%5", Grp(), m_iRoom, skipWhy, throwers.Count(), armed));
 		return false;
 	}
 
-	protected void OrderEnter()
+	protected bool EntryCorners(out vector left, out vector right)
 	{
-		SCR_ChimeraAIAgent p1 = PairMember(ActivePair(), 0);
-		SCR_ChimeraAIAgent p2 = PairMember(ActivePair(), 1);
 		DCO_CQBRoom room = m_aRooms[m_iRoom];
 		vector side = Vector(m_vDir[2], 0, -m_vDir[0]);
-		vector left = room.m_vCenter + side * 1.5;
-		vector right = room.m_vCenter - side * 1.5;
 		vector gl, gr;
 		bool graph = m_Nav.EntryPicks(m_iRoom, room, gl, gr);
 		if (graph)
@@ -1121,16 +1609,74 @@ class DCO_CQBActivity : SCR_AIActivityBase
 			left = m_vDoor + m_vDir * 2.4 + side * 0.8;
 			right = m_vDoor + m_vDir * 2.4 - side * 0.8;
 		}
+		return graph;
+	}
+
+	bool WallSpot(vector near, float r, out vector spot)
+	{
+		spot = vector.Zero;
+		return m_Nav && m_Nav.WallSpot(near, r, spot);
+	}
+
+	protected void LookPair(out vector l1, out vector l2)
+	{
+		vector base = m_aRooms[m_iRoom].m_vCenter + m_vDir * 2.0 + Vector(0, 1.2, 0);
+		l1 = base;
+		l2 = base;
+		vector a, b;
+		int n = m_Nav.ThreatLooks(m_iRoom, m_vDoor, a, b);
+		if (n <= 0)
+		{
+			DCO_Perf.Count("cqb:look_center");
+			return;
+		}
+		l1 = a;
+		l2 = b;
+		DCO_Perf.Count("cqb:look_threat");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_look grp=%1 room=%2 threats=%3 p1=%4 p2=%5", Grp(), m_iRoom, n, DCO_Util.XZ(a), DCO_Util.XZ(b)));
+	}
+
+	protected bool OrderFlow()
+	{
+		SCR_ChimeraAIAgent p1 = PairMember(ActivePair(), 0);
+		SCR_ChimeraAIAgent p2 = PairMember(ActivePair(), 1);
+		DCO_CQBMemberBehavior b1 = Ord(p1);
+		DCO_CQBMemberBehavior b2 = Ord(p2);
+		if (!b1)
+			return false;
+		vector left, right;
+		bool graph = EntryCorners(left, right);
+		vector look1, look2;
+		LookPair(look1, look2);
+		b1.SetNext(left, look1);
+		if (b2)
+			b2.SetNext(right, look2);
+		DCO_Perf.Count("cqb:flow");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_flow grp=%1 room=%2 pair=%3 corners=%4 left=%5 right=%6 why=no_threat", Grp(), m_iRoom, ActivePair() + 1, DCO_Util.B01(graph), DCO_Util.XZ(left), DCO_Util.XZ(right)));
+		return true;
+	}
+
+	protected void OrderEnter()
+	{
+		SCR_ChimeraAIAgent p1 = PairMember(ActivePair(), 0);
+		SCR_ChimeraAIAgent p2 = PairMember(ActivePair(), 1);
+		DCO_CQBRoom room = m_aRooms[m_iRoom];
+		vector side = Vector(m_vDir[2], 0, -m_vDir[0]);
+		vector left, right;
+		bool graph = EntryCorners(left, right);
 		if (m_iEnterTry > 0)
 		{
 			left = m_vDoor + m_vDir * 2.0 + side * 0.6;
 			right = m_vDoor + m_vDir * 2.0 - side * 0.6;
 		}
-		vector look = room.m_vCenter + m_vDir * 2.0 + Vector(0, 1.2, 0);
+		vector look1, look2;
+		LookPair(look1, look2);
 		if (p1)
-			Order(p1, new DCO_CQBEnterBehavior(p1.m_UtilityComponent, this, left, look, ECharacterStance.STAND, EMovementType.RUN, 14.0, "no1"));
+			Order(p1, new DCO_CQBEnterBehavior(p1.m_UtilityComponent, this, left, look1, ECharacterStance.STAND, EMovementType.RUN, 14.0, "no1"));
 		if (p2)
-			Order(p2, new DCO_CQBEnterBehavior(p2.m_UtilityComponent, this, right, look, ECharacterStance.STAND, EMovementType.RUN, 16.0, "no2"));
+			Order(p2, new DCO_CQBEnterBehavior(p2.m_UtilityComponent, this, right, look2, ECharacterStance.STAND, EMovementType.RUN, 16.0, "no2"));
+		if (m_bTwoDoor && !m_bSecondSent && ActivePair() == 0)
+			OrderSecond();
 		DCO_Perf.Count("cqb:room_enter");
 		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_room_enter grp=%1 room=%2 pair=%3 corners=%4 left=%5 right=%6", Grp(), m_iRoom, ActivePair() + 1, DCO_Util.B01(graph), DCO_Util.XZ(left), DCO_Util.XZ(right)));
 	}
@@ -1171,7 +1717,13 @@ class DCO_CQBActivity : SCR_AIActivityBase
 		if (m_fConsolidateAt_ms < 0)
 		{
 			m_fConsolidateAt_ms = now;
-			DCO_BuildingClear.Finish(m_Building, m_sFaction, m_Utility.m_Owner, true, now, 0);
+			bool partial = m_Nav && m_Nav.m_iUnreachedFloors > 0 && m_fEvidenceAt_ms >= 0 && now - m_fEvidenceAt_ms < 120000.0;
+			DCO_BuildingClear.Finish(m_Building, m_sFaction, m_Utility.m_Owner, !partial, now, 60000.0);
+			if (partial)
+			{
+				DCO_Perf.Count("cqb:partial");
+				DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("cqb_partial grp=%1 building=%2 unreached_rooms=%3 unreached_floors=%4 evidence_age_s=%5 retry_s=60", Grp(), DCO_Util.PrefabShort(m_Building), m_Nav.m_iUnreached, m_Nav.m_iUnreachedFloors, Math.Round((now - m_fEvidenceAt_ms) * 0.001)));
+			}
 			vector look = m_vEntry + m_vOut * 10.0 + Vector(0, 1.2, 0);
 			foreach (int i, SCR_ChimeraAIAgent a : m_aEntry)
 			{

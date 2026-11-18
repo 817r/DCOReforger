@@ -39,6 +39,7 @@ class DCO_PlayerAwareness
 
 		array<float> groups = {};
 		array<float> objectives = {};
+		string objNames;
 		array<CMD_AICommanderObjectiveComponent> relevantObjs = {};
 		int myGroup = pcg.GetGroupID();
 
@@ -101,6 +102,7 @@ class DCO_PlayerAwareness
 					objectives.Insert(sp[2]);
 					objectives.Insert(15);
 					objectives.Insert(4);
+					objNames += "|";
 				}
 			}
 		}
@@ -125,9 +127,12 @@ class DCO_PlayerAwareness
 			objectives.Insert(op[2]);
 			objectives.Insert(o.GetRadius());
 			objectives.Insert(rel);
+			string objName = o.GetDisplayName();
+			objName.Replace("|", "/");
+			objNames += objName + "|";
 		}
 
-		pcg.DCO_SendOverlay(groups, objectives);
+		pcg.DCO_SendOverlay(groups, objectives, objNames);
 	}
 
 	protected static bool IsContested(CMD_AICommanderObjectiveComponent o, AICommander_ManagerComponent mgr, FactionKey fk)

@@ -32,7 +32,7 @@ class DCO_SettingsCodec
 			if (eq <= 0)
 				continue;
 			string key = e.Substring(0, eq);
-			key = key.Trim();
+			key = DCO_ClassAlias.Resolve(key.Trim());
 			string raw = e.Substring(eq + 1, e.Length() - eq - 1);
 			array<string> parts = {};
 			raw.Split(",", parts, false);
@@ -84,7 +84,9 @@ class DCO_SettingsPresets
 {
 	static bool ValidScope(string scope)
 	{
-		return scope == "Global" || scope == "Group" || scope == "Unit" || scope == "AI" || scope.StartsWith("Faction_");
+		if (scope.StartsWith("Faction_"))
+			return SafeName(scope.Substring(8, scope.Length() - 8));
+		return scope == "Global" || scope == "Group" || scope == "Unit" || scope == "AI";
 	}
 
 	static void MigrateLegacy()
@@ -124,37 +126,44 @@ class DCO_SettingsPresets
 		return name.StartsWith(BuiltinPrefix());
 	}
 
+	static bool SafeName(string name)
+	{
+		if (name.Trim().IsEmpty())
+			return false;
+		return !name.Contains("/") && !name.Contains("\\") && !name.Contains("..");
+	}
+
 	static void Builtin(string scope, notnull array<string> outNames, notnull array<string> outContents)
 	{
 		if (scope == "Global")
 		{
 			outNames.Insert("Recommended");
-			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=0;DCO_T_PC_IdentifyMulAttribute=1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=500;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+			outContents.Insert("DCO_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=0;DCO_T_PC_IdentifyMulAttribute=1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=500;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
 		}
 		if (scope == "Global")
 		{
 			outNames.Insert("Realistic");
-			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=0;DCO_T_PC_IdentifyMulAttribute=0.8;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1.2;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.15;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=500;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+			outContents.Insert("DCO_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=0;DCO_T_PC_IdentifyMulAttribute=0.8;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1.2;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.15;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=500;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
 		}
 		if (scope == "Global")
 		{
 			outNames.Insert("Forgiving");
-			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=2;DCO_T_PC_IdentifyMulAttribute=1.3;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=0.5;DCO_T_IND_YieldMAttribute=100;DCO_T_INV_PosErrAttribute=0.05;DCO_T_StanceProneGateAttribute=0;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=50;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=0;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=600;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+			outContents.Insert("DCO_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=2;DCO_T_PC_IdentifyMulAttribute=1.3;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=0.5;DCO_T_IND_YieldMAttribute=100;DCO_T_INV_PosErrAttribute=0.05;DCO_T_StanceProneGateAttribute=0;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=50;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=0;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=600;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
 		}
 		if (scope == "Global")
 		{
 			outNames.Insert("Players Defend");
-			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=3;DCO_T_PC_IdentifyMulAttribute=1.1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=700;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=1;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=1;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+			outContents.Insert("DCO_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=3;DCO_T_PC_IdentifyMulAttribute=1.1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=700;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=1;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=1;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
 		}
 		if (scope == "Global")
 		{
 			outNames.Insert("Players Attack");
-			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=1;DCO_T_PC_IdentifyMulAttribute=1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=300;DCO_InvestigateChanceAttribute=0.7;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=1;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+			outContents.Insert("DCO_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=1;DCO_T_PC_IdentifyMulAttribute=1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=1;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=300;DCO_InvestigateChanceAttribute=0.7;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=1;DCO_T_VA_ReconOnAttribute=1;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
 		}
 		if (scope == "Global")
 		{
 			outNames.Insert("Large Server");
-			outContents.Insert("SCR_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=0;DCO_T_PC_IdentifyMulAttribute=1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=0;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=400;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=0;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
+			outContents.Insert("DCO_AIGlobalLODModeAttribute=0;DCO_DocPresetAttribute=0;DCO_T_PC_IdentifyMulAttribute=1;DCO_T_PC_NightOnAttribute=1;DCO_T_HEAR_ShotErrAttribute=1;DCO_T_IND_YieldMAttribute=150;DCO_T_INV_PosErrAttribute=0.12;DCO_T_StanceProneGateAttribute=1;DCO_GlobalProneChanceAttribute=1;DCO_T_AmmoMagicChanceAttribute=0;DCO_T_CIV_ModeAttribute=0;DCO_T_CIV_CautionAttribute=1;DCO_T_CIV_ScavengeAttribute=0;DCO_InvestigateMaxDistAttribute=400;DCO_InvestigateChanceAttribute=1;DCO_IdleLeaveToInvestigateAttribute=0;DCO_T_VA_EnabledAttribute=1;DCO_T_VA_GmPairAttribute=0;DCO_T_VA_ReconOnAttribute=0;DCO_T_VA_CruiseKmhAttribute=0;DCO_GlobalLogModeAttribute=1;DCO_T_RT_FastAttribute=1");
 		}
 		if (scope.StartsWith("Faction_"))
 		{
@@ -187,6 +196,29 @@ class DCO_SettingsPresets
 			}
 		}
 		return false;
+	}
+
+	static int ChunkSize()
+	{
+		return 512;
+	}
+
+	static void SplitChunks(string content, int chunk, notnull array<string> outParts)
+	{
+		outParts.Clear();
+		int len = content.Length();
+		if (chunk <= 0 || len <= 0)
+			return;
+		int total = (len + chunk - 1) / chunk;
+		for (int i = 0; i < total; i++)
+		{
+			string part;
+			int start = i * chunk;
+			int end = Math.Min(start + chunk, len);
+			for (int j = start; j < end; j++)
+				part += content.Get(j);
+			outParts.Insert(part);
+		}
 	}
 
 	static string Dir(string scope)
@@ -289,7 +321,10 @@ class DCO_SettingsPresets
 			string key = e;
 			if (key.StartsWith("m:"))
 				key = key.Substring(2, key.Length() - 2);
-			if (key.StartsWith("SCR_AIGlobalAIMAttribute=") || key.StartsWith("SCR_AIIndividualAIMAttribute=") || key.StartsWith("SCR_AIGlobalAIMTimeAttribute=") || key.StartsWith("SCR_AIIndividualAIMTimeAttribute="))
+			int aliasEq = key.IndexOf("=");
+			if (aliasEq > 0)
+				key = DCO_ClassAlias.Resolve(key.Substring(0, aliasEq)) + key.Substring(aliasEq, key.Length() - aliasEq);
+			if (key.StartsWith("DCO_AIGlobalAIMAttribute=") || key.StartsWith("DCO_AIIndividualAIMAttribute=") || key.StartsWith("DCO_AIGlobalAIMTimeAttribute=") || key.StartsWith("DCO_AIIndividualAIMTimeAttribute="))
 			{
 				dropped++;
 				continue;

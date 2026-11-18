@@ -1,0 +1,26 @@
+BehaviorTree "{5B9E2D47C1A83F6E}AI/BehaviorTrees/Waypoints/DCO_WP_Build.bt" {
+ Name "AI/BehaviorTrees/Waypoints/DCO_WP_Build.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 0 -150
+     Nodes {
+      DCO_AIBuild "DCO_AI Build" {
+       Name "DCO_AI Build"
+       EditorPos -200 50
+      }
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos 100 50
+       Period 2
+      }
+     }
+    }
+   }
+  }
+ }
+}

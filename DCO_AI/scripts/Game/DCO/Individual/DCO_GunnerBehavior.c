@@ -261,6 +261,11 @@ class DCO_GunnerBehavior : SCR_AIBehaviorBase
 		DCO_Perf.Count("spec_bt:lob_order");
 	}
 
+	bool DCO_IsLobbing()
+	{
+		return GetGame().GetWorld().GetWorldTime() < m_fLobUntil_ms;
+	}
+
 	void Suppress(SCR_AISuppressionVolumeBase vol, float rate, float dur_s, string why)
 	{
 		float now = GetGame().GetWorld().GetWorldTime();
@@ -445,7 +450,7 @@ class DCO_GunnerBehavior : SCR_AIBehaviorBase
 		if (ctrl.GetStance() != ECharacterStance.PRONE && DCO_CQC.IsProneAllowed(me, vector.Distance(me.GetOrigin(), m_vThreat)))
 			lowered = DCO_Stance.Set(ctrl, ECharacterStance.PRONE, "spec_bt_reload");
 		DCO_Perf.Count("spec_bt:reload_cover");
-		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_bt_reload unit=%1 role=%2 state=%3 lowered=%4 stance=%5", DCO_Log.IdUnit(me), m_sRole, typename.EnumToString(DCO_EGunnerState, m_iState), DCO_Util.B01(lowered), typename.EnumToString(ECharacterStance, ctrl.GetStance())));
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_bt_reload unit=%1 role=%2 state=%3 lowered=%4 stance=%5 hold_fire=1", DCO_Log.IdUnit(me), m_sRole, typename.EnumToString(DCO_EGunnerState, m_iState), DCO_Util.B01(lowered), typename.EnumToString(ECharacterStance, ctrl.GetStance())));
 	}
 
 	ENodeResult Update(out int fire, out BaseTarget tgt, out SCR_AISuppressionVolumeBase vol, out float rate, out vector aim, out bool ready)
@@ -504,6 +509,20 @@ class DCO_GunnerBehavior : SCR_AIBehaviorBase
 			return ENodeResult.RUNNING;
 		}
 		CheckReload(now);
+		if (m_bReloadLow)
+		{
+			DCO_Perf.Count("spec_bt:dry_hold");
+			SetState(DCO_EGunnerState.WATCH, "dry", now);
+			ready = false;
+			fire = 3;
+			return ENodeResult.RUNNING;
+		}
+		if (m_Utility.m_CombatComponent && m_Utility.m_CombatComponent.DCO_ForcedHold())
+		{
+			DCO_Perf.Count("spec_bt:forced_hold");
+			fire = 3;
+			return ENodeResult.RUNNING;
+		}
 		BaseTarget t = m_Utility.m_CombatComponent.GetCurrentTarget();
 		bool recentOk = m_bFireRecent || m_bHold;
 		bool suppPrio = m_Vol && now < m_fSuppUntil_ms && m_sSuppWhy.StartsWith("designated") && t && t.GetTimeSinceSeen() > 2.0;
@@ -579,7 +598,9 @@ class DCO_GunnerBehavior : SCR_AIBehaviorBase
 		IEntity me = m_Utility.m_OwnerEntity;
 		if (m_Utility.m_AIInfo && m_Utility.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
 			return "vehicle";
-		if (DCO_AimedYield.TargetVisible(m_Utility, DCO_Stress.T(m_Utility, "rt.close_m", 30.0)))
+		if (DCO_Util.PlayerOrderActive(m_Utility))
+			return "player_order";
+		if (DCO_AimedYield.TargetVisible(m_Utility, DCO_Stress.T(m_Utility, "ind.yield_m", 150.0)))
 			return "close_target";
 		if (DCO_Util.IsBleeding(me) && BleedYield(me))
 			return "bleeding";

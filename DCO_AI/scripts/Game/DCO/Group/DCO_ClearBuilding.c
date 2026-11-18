@@ -68,7 +68,7 @@ class DCO_BuildingClear
 				continue;
 			foreach (string fk, DCO_BuildingClearEntry e : perFaction)
 			{
-				if (e && e.m_iState == 2 && e.m_Owner && e.m_Owner.GetAgentsCount() > 0)
+				if (e && e.m_iState == 2 && e.m_Owner && DCO_Dormant.Count(e.m_Owner) > 0)
 				{
 					best = d;
 					building = b;
@@ -107,7 +107,7 @@ class DCO_BuildingClear
 		if (!e || !group)
 			return false;
 
-		if (e.m_iState == 2 && e.m_Owner && e.m_Owner != group && e.m_Owner.GetAgentsCount() > 0)
+		if (e.m_iState == 2 && e.m_Owner && e.m_Owner != group && DCO_Dormant.Count(e.m_Owner) > 0)
 			return false;
 		if (e.m_iState == 3)
 		{
@@ -152,7 +152,7 @@ class DCO_BuildingClear
 			if (!building)
 				continue;
 			DCO_BuildingClearEntry e = perFaction.Get(faction);
-			if (!e || e.m_iState != 2 || !e.m_Owner || e.m_Owner.GetAgentsCount() == 0)
+			if (!e || e.m_iState != 2 || !e.m_Owner || DCO_Dormant.Count(e.m_Owner) == 0)
 				continue;
 			float dsq = vector.DistanceSqXZ(building.GetOrigin(), p);
 			if (dsq <= bestSq)
@@ -621,7 +621,7 @@ class DCO_CQBClear
 		{
 			if (!tgt || !tgt.m_Entity || tgt.m_eCategory != EAITargetInfoCategory.IDENTIFIED || t - tgt.m_fTimestamp > 5)
 				continue;
-			if (SCR_CoverManagerComponent.DCO_GetBuildingAt(tgt.m_Entity) != m_Building)
+			if (DCO_CoverManagerComponent.DCO_GetBuildingAt(tgt.m_Entity) != m_Building)
 				continue;
 
 			m_bContact = true;
@@ -764,8 +764,8 @@ class DCO_CQBClear
 			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
 			if (!ca || !ca.m_InfoComponent || !ca.m_InfoComponent.HasRole(EUnitRole.HAS_SMOKE_GRENADE) || !ca.GetCommunicationComponent())
 				continue;
-			if (!DCO_SmokeUtility.Allowed(ca.m_UtilityComponent, "cqb"))
-				continue;
+			if (!DCO_SmokeUtility.GroupOk(m_Util.m_Owner, ca.m_UtilityComponent, pos, "cqb"))
+				return;
 
 			SCR_AIMessage_ThrowGrenadeTo msg = SCR_AIMessage_ThrowGrenadeTo.Create(pos, EWeaponType.WT_SMOKEGRENADE, 0);
 			msg.m_fPriorityLevel = SCR_AIActionBase.PRIORITY_BEHAVIOR_THROW_GRENADE;

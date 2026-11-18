@@ -62,7 +62,7 @@ class SCR_AIFindPositionWithMagazineWell : AITaskScripted
         components.Insert(MagazineComponent);
 		SCR_InventoryStorageManagerComponent comp = SCR_InventoryStorageManagerComponent.Cast(e.FindComponent(SCR_InventoryStorageManagerComponent));
 		SCR_CharacterPerceivableComponent perc = SCR_CharacterPerceivableComponent.Cast(e.FindComponent(SCR_CharacterPerceivableComponent));
-		if (comp && perc.isDead)
+		if (comp && perc && perc.isDead)
 		{
 			comp.FindItemsWithComponents(outItems, components);
 		}

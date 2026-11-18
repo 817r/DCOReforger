@@ -61,7 +61,8 @@ enum DCO_ESetAct
 	DISCARD_BACK,
 	DISCARD_APPLY,
 	SPAWNER,
-	CFG_SAVE
+	CFG_SAVE,
+	SCOPE
 }
 
 enum DCO_ESetPanel
@@ -346,6 +347,7 @@ class DCO_SetInput : ScriptedWidgetEventHandler
 
 class DCO_SettingsDialogUI : EditorMenuBase
 {
+	protected static ref map<string, string> s_mDCOLastPreset;
 	protected SCR_AttributesManagerEditorComponent m_Manager;
 	protected ref DCO_SetInput m_Input;
 	protected Widget m_wWindow;
@@ -394,6 +396,11 @@ class DCO_SettingsDialogUI : EditorMenuBase
 	protected string m_sSaveName;
 	protected string m_sStatus;
 	protected bool m_bPresetListReady;
+	protected float m_fPresetWaitUntil_ms = -1;
+	protected string m_sPresetWaitKind;
+	protected string m_sPresetChunkName;
+	protected ref array<string> m_aPresetChunks;
+	protected int m_iPresetChunksGot;
 	protected bool m_bConfirmOverwrite;
 	protected bool m_bConfirmDelete;
 	protected bool m_bStartup;
@@ -478,6 +485,10 @@ class DCO_SettingsDialogUI : EditorMenuBase
 	protected ref array<int> m_aLineRowIdx = {};
 	protected ref array<bool> m_aLineFav = {};
 	protected int m_iMember;
+	protected ref array<Managed> m_aScopeGroups;
+	protected int m_iScope;
+	protected bool m_bScopeSwitch;
+	protected Managed m_ScopeNext;
 	protected bool m_bMembersReady;
 	protected int m_iSkippedPlayers;
 	protected ref array<int> m_aMemberIds = {};
@@ -734,12 +745,42 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		}
 	}
 
+	protected void PresetWait(string kind)
+	{
+		m_sPresetWaitKind = kind;
+		m_fPresetWaitUntil_ms = GetGame().GetWorld().GetWorldTime() + 8000.0;
+	}
+
+	protected void PresetWaitDone()
+	{
+		m_fPresetWaitUntil_ms = -1;
+		m_sPresetWaitKind = string.Empty;
+	}
+
+	protected void PresetWaitTick()
+	{
+		if (m_fPresetWaitUntil_ms < 0 || GetGame().GetWorld().GetWorldTime() < m_fPresetWaitUntil_ms)
+			return;
+		string kind = m_sPresetWaitKind;
+		PresetWaitDone();
+		if (kind == "list")
+			m_bPresetListReady = true;
+		m_aPresetChunks = null;
+		m_sPresetChunkName = string.Empty;
+		m_sStatus = T("set_preset_timeout");
+		DCO_Perf.Count("set:preset_timeout");
+		Print("[DCO] preset timeout kind=" + kind + " wait_s=8", LogLevel.WARNING);
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.WARN, "-", "dco_preset_timeout kind=" + kind + " wait_s=8 scope=" + PresetScope());
+		RequestRender();
+	}
+
 	override void OnMenuUpdate(float tDelta)
 	{
 		InputManager im = GetGame().GetInputManager();
 		if (im)
 			im.ActivateContext("DCO_SettingsDialogContext");
 		SpRefresh();
+		PresetWaitTick();
 		bool pad = DCO_SettingsChooserUI.PadInput();
 		if (pad != m_bPad)
 		{
@@ -917,6 +958,8 @@ class DCO_SettingsDialogUI : EditorMenuBase
 			if (!m_bEnded && m_Manager.DCO_IsMode())
 				m_Manager.CancelEditing();
 		}
+		if (m_bScopeSwitch && m_Manager)
+			m_Manager.DCO_ScopeReopen(m_ScopeNext);
 		DCO_SettingsPrefs.Save();
 	}
 
@@ -941,6 +984,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		if (m_bDiscardOpen)
 		{
 			m_bDiscardOpen = false;
+			m_bScopeSwitch = false;
 			RequestRender();
 			return;
 		}
@@ -1320,6 +1364,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		if (m_bDiscardOpen)
 		{
 			m_bDiscardOpen = false;
+			m_bScopeSwitch = false;
 			RequestRender();
 			return;
 		}
@@ -1980,6 +2025,9 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		array<Managed> items = {};
 		m_Manager.GetEditedItems(items);
 		m_iItems = CountTargets(items);
+		m_aScopeGroups = {};
+		m_Manager.DCO_ScopeGroups(m_aScopeGroups);
+		m_iScope = m_aScopeGroups.Find(m_Manager.DCO_ScopeItem()) + 1;
 
 		DCO_SettingsTreeConfig cfg = DCO_SettingsTree.Get();
 		map<int, int> subByKey = new map<int, int>();
@@ -4028,7 +4076,11 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		string title = T("set_editing") + "  ·  " + m_sTarget;
 		if (m_iItems > 1)
 			title += "  <color rgba=\"201,151,111,255\">×" + m_iItems.ToString() + "</color>";
-		Cell(m_wDyn, m_fPad, 12, 740, 46, title, m_cClear, m_cInk, 1, 30, 0);
+		float titleW = 740;
+		if (m_aScopeGroups && m_aScopeGroups.Count() > 1)
+			titleW = 500;
+		Cell(m_wDyn, m_fPad, 12, titleW, 46, title, m_cClear, m_cInk, 1, 30, 0);
+		RenderScope();
 		RenderSpinner();
 
 		float ty = m_fToolY + 8;
@@ -4090,6 +4142,8 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		int presetId = Act(DCO_ESetAct.PRESET, 0, 0, presetTip);
 		string presetName = m_sPresetName;
 		if (presetName.IsEmpty())
+			presetName = RememberedPreset();
+		if (presetName.IsEmpty())
 			presetName = T("set_preset_none");
 		float right = m_fWinW - m_fPad;
 		if (m_bPad)
@@ -4099,6 +4153,64 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		Cell(m_wDyn, right - 380, ty, 346, 30, "<color rgba=\"143,149,154,255\">" + T("set_preset_label") + "</color>   " + presetName, m_cClear, m_cInk, 0, 17, presetId);
 
 		Cell(m_wDyn, 0, m_fRuleY, TotalW(), 2, string.Empty, m_cOrange, m_cText, 0, 10, 0);
+	}
+
+	protected void RenderScope()
+	{
+		if (!m_aScopeGroups || m_aScopeGroups.Count() < 2)
+			return;
+		int count = m_aScopeGroups.Count();
+		string value = T2("set_groups_all", "n", count.ToString());
+		if (m_iScope > 0 && m_aScopeGroups.IsIndexValid(m_iScope - 1))
+			value = m_iScope.ToString() + ". " + TargetName(m_aScopeGroups[m_iScope - 1]);
+		float right = m_fWinW - m_fPad - 420;
+		float valW = 190;
+		float y = 18;
+		int prevId = Act(DCO_ESetAct.SCOPE, -1, 0, T("set_tip_scope_groups"));
+		int nextId = Act(DCO_ESetAct.SCOPE, 1, 0, T("set_tip_scope_groups"));
+		IconCell(m_wDyn, right - 20, y + 6, 18, m_sIconRight, string.Empty, m_cText, nextId);
+		Cell(m_wDyn, right - 24 - valW, y, valW, 30, value, m_cClear, m_cInk, 2, 19, nextId);
+		IconCell(m_wDyn, right - 46 - valW, y + 6, 18, m_sIconLeft, string.Empty, m_cText, prevId);
+		Cell(m_wDyn, right - 46 - valW - 84, y, 78, 30, T("set_scope_groups"), m_cClear, m_cDim, 0, 19, 0);
+		if (count > 12)
+			return;
+		float dashW = 12;
+		float dx = right - 24 - valW * 0.5 - ((count + 1) * (dashW + 3) - 3) * 0.5;
+		for (int i = 0; i <= count; i++)
+		{
+			Color dash = Color.FromSRGBA(110, 116, 121, 255);
+			if (i == m_iScope)
+				dash = m_cOrange;
+			Cell(m_wDyn, dx + i * (dashW + 3), y + 33, dashW, 2, string.Empty, dash, m_cText, 0, 10, 0);
+		}
+	}
+
+	protected void StepGroup(int dir)
+	{
+		if (!m_aScopeGroups || m_aScopeGroups.Count() < 2)
+			return;
+		int count = m_aScopeGroups.Count() + 1;
+		int index = m_iScope;
+		for (int i = 1; i < count; i++)
+		{
+			index = (m_iScope + dir * i + count * i) % count;
+			if (index == 0 || m_aScopeGroups[index - 1])
+				break;
+		}
+		if (index == m_iScope)
+			return;
+		Managed next;
+		if (index > 0)
+			next = m_aScopeGroups[index - 1];
+		if (index > 0 && !next)
+			return;
+		string name = "all";
+		if (next)
+			name = DCO_SettingsBaseline.LogText(TargetName(next));
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "dco_settings_scope_group groups=" + m_aScopeGroups.Count().ToString() + " from=" + m_iScope.ToString() + " to=" + index.ToString() + " target=" + name + " pending=" + TotalPending().ToString());
+		m_ScopeNext = next;
+		m_bScopeSwitch = true;
+		RequestClose();
 	}
 
 	protected void RenderSpinner()
@@ -5471,7 +5583,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		Cell(m_wDyn, x, y - 2, 104, 20, MeterName(meter), m_cClear, m_cText, 0, 14, id);
 		string value = state.m_iPending.ToString();
 		if (state.m_iPending != state.m_iApplied)
-			value = state.m_iApplied.ToString() + " → " + state.m_iPending.ToString();
+			value = state.m_iApplied.ToString() + " -> " + state.m_iPending.ToString();
 		float valueW = TextW(value, 8.2);
 		Cell(m_wDyn, x + 104, y - 3, valueW, 20, value, m_cClear, m_cInk, 0, 15, id);
 		string word = MeterWord(meter, state.m_iPending);
@@ -5510,7 +5622,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		string text = Bold(MeterName(meter)) + "   ";
 		if (state.m_iApplied == state.m_iPending)
 			return text + state.m_iPending.ToString() + "  ·  " + Dim(T("set_meter_nochange"));
-		text += state.m_iApplied.ToString() + " → " + state.m_iPending.ToString() + "  ·  " + MeterWord(meter, state.m_iApplied) + " → " + MeterWord(meter, state.m_iPending);
+		text += state.m_iApplied.ToString() + " -> " + state.m_iPending.ToString() + "  ·  " + MeterWord(meter, state.m_iApplied) + " -> " + MeterWord(meter, state.m_iPending);
 		array<float> deltas = {};
 		deltas.Copy(state.m_aDelta);
 		string parts;
@@ -6339,6 +6451,11 @@ class DCO_SettingsDialogUI : EditorMenuBase
 				RequestRender();
 				break;
 			}
+			case DCO_ESetAct.SCOPE:
+			{
+				StepGroup(a);
+				break;
+			}
 			case DCO_ESetAct.SPIN:
 			{
 				if (m_bGlobalTarget && !m_aFactionKeys.IsEmpty())
@@ -6397,6 +6514,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 			case DCO_ESetAct.DISCARD_BACK:
 			{
 				m_bDiscardOpen = false;
+				m_bScopeSwitch = false;
 				RequestRender();
 				break;
 			}
@@ -6583,6 +6701,22 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		return outText;
 	}
 
+	protected string PresetMemKey()
+	{
+		string key = PresetScope();
+		if (m_iTargetKind != 0 && !FactionMode())
+			key = key + "|" + m_sTarget;
+		return key;
+	}
+
+	protected string RememberedPreset()
+	{
+		string name;
+		if (s_mDCOLastPreset)
+			s_mDCOLastPreset.Find(PresetMemKey(), name);
+		return name;
+	}
+
 	protected string PresetScope()
 	{
 		if (FactionMode())
@@ -6625,7 +6759,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 	protected int RowByClass(string className)
 	{
 		int index;
-		if (m_mRowByClass.Find(className, index))
+		if (m_mRowByClass.Find(DCO_ClassAlias.Resolve(className), index))
 			return index;
 		return -1;
 	}
@@ -6634,7 +6768,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 	{
 		if (row.m_iKind == DCO_ESetKind.TEXT || ShowsMixed(row))
 			return false;
-		if (row.m_sClass == "DCO_CommanderPresetLoadAttribute")
+		if (row.m_sClass == "DCO_CommanderPresetLoadAttribute" || row.m_sClass == "DCO_GlobalStartupPromptAttribute")
 			return false;
 		return true;
 	}
@@ -6744,6 +6878,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		else
 		{
 			m_bPresetListReady = false;
+			PresetWait("list");
 			m_Manager.DCO_PresetList(scope);
 		}
 		RequestRender();
@@ -6784,8 +6919,9 @@ class DCO_SettingsDialogUI : EditorMenuBase
 			ClosePanel();
 			return;
 		}
-		m_Manager.DCO_PresetLoad(PresetScope(), name);
+		PresetWait("load");
 		m_sStatus = T("set_preset_loading");
+		m_Manager.DCO_PresetLoad(PresetScope(), name);
 		RequestRender();
 	}
 
@@ -6821,9 +6957,10 @@ class DCO_SettingsDialogUI : EditorMenuBase
 			ClosePanel();
 			return;
 		}
-		m_Manager.DCO_PresetSave(PresetScope(), name, BuildContent(), exists);
+		PresetWait("save");
 		m_bConfirmOverwrite = false;
 		m_sStatus = T("set_preset_saving");
+		m_Manager.DCO_PresetSave(PresetScope(), name, BuildContent(), exists);
 		RequestRender();
 	}
 
@@ -7044,6 +7181,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 			{
 				if (a != PresetScope())
 					return;
+				PresetWaitDone();
 				m_aPresetNames.Clear();
 				m_aPresetLocal.Clear();
 				if (!b.IsEmpty())
@@ -7060,6 +7198,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 			}
 			case 2:
 			{
+				PresetWaitDone();
 				int applied = ApplyContent(b);
 				m_sPresetName = a;
 				m_sStatus = T2("set_preset_loaded", "n", a, "c", applied.ToString());
@@ -7069,6 +7208,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 			}
 			case 3:
 			{
+				PresetWaitDone();
 				if (a == "save_ok")
 				{
 					m_sPresetName = b;
@@ -7083,6 +7223,45 @@ class DCO_SettingsDialogUI : EditorMenuBase
 				{
 					m_sStatus = T2("set_preset_" + a, "n", b);
 				}
+				break;
+			}
+			case 8:
+			{
+				array<string> meta = {};
+				a.Split("|", meta, false);
+				if (meta.Count() < 3)
+					break;
+				string chunkName = meta[0];
+				int chunkIndex = meta[1].ToInt();
+				int chunkTotal = meta[2].ToInt();
+				if (chunkTotal <= 0 || chunkIndex < 0 || chunkIndex >= chunkTotal)
+					break;
+				if (m_sPresetChunkName != chunkName || !m_aPresetChunks || m_aPresetChunks.Count() != chunkTotal)
+				{
+					m_sPresetChunkName = chunkName;
+					m_aPresetChunks = new array<string>();
+					m_iPresetChunksGot = 0;
+					for (int ci = 0; ci < chunkTotal; ci++)
+						m_aPresetChunks.Insert(string.Empty);
+				}
+				if (m_aPresetChunks[chunkIndex].IsEmpty())
+					m_iPresetChunksGot++;
+				m_aPresetChunks[chunkIndex] = b;
+				PresetWait("load");
+				if (m_iPresetChunksGot < chunkTotal)
+					break;
+				string full;
+				foreach (string part : m_aPresetChunks)
+					full += part;
+				m_aPresetChunks = null;
+				m_sPresetChunkName = string.Empty;
+				PresetWaitDone();
+				DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "dco_preset_chunks name=" + chunkName + " parts=" + chunkTotal.ToString() + " len=" + full.Length().ToString());
+				int appliedChunks = ApplyContent(full);
+				m_sPresetName = chunkName;
+				m_sStatus = T2("set_preset_loaded", "n", chunkName, "c", appliedChunks.ToString());
+				m_iPanel = DCO_ESetPanel.NONE;
+				StartupFinish(chunkName, appliedChunks);
 				break;
 			}
 			case 4:
@@ -7383,7 +7562,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 				string prefix;
 				if (row.m_bMember)
 					prefix = Dim("[" + T("set_members_all") + "]  ");
-				lines.Insert(prefix + row.m_sLabel + "      " + Dim(oldText) + "   →   " + newText);
+				lines.Insert(prefix + row.m_sLabel + "      " + Dim(oldText) + "   ->   " + newText);
 				kinds.Insert(1);
 				if (row.m_iKind != DCO_ESetKind.TEXT)
 				{
@@ -7416,7 +7595,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 					string toText = T("set_global_tag") + " (" + ValueText(frow, frow.m_vOrig) + ")";
 					if (hasNew)
 						toText = ValueText(frow, newValue);
-					lines.Insert(Dim("[" + FactionName(factionKey) + "]  ") + frow.m_sLabel + "      " + Dim(fromText) + "   →   " + toText);
+					lines.Insert(Dim("[" + FactionName(factionKey) + "]  ") + frow.m_sLabel + "      " + Dim(fromText) + "   ->   " + toText);
 					kinds.Insert(1);
 				}
 			}
@@ -7435,7 +7614,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 				DCO_SetRow mrow = m_aRows[mr];
 				vector before;
 				memberEdit.m_mOrig.Find(className, before);
-				lines.Insert(Dim("[" + m_aMemberNames[memberIndex] + "]  ") + mrow.m_sLabel + "      " + Dim(ValueText(mrow, before)) + "   →   " + ValueText(mrow, value));
+				lines.Insert(Dim("[" + m_aMemberNames[memberIndex] + "]  ") + mrow.m_sLabel + "      " + Dim(ValueText(mrow, before)) + "   ->   " + ValueText(mrow, value));
 				kinds.Insert(1);
 			}
 		}
@@ -7444,7 +7623,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 			foreach (int mi, string memberClass : m_aMemberClasses)
 			{
 				vector mv = m_aMemberValues[mi];
-				lines.Insert(Dim("[" + T("set_members_all") + "]  ") + m_Manager.DCO_LabelOf(memberClass) + "   →   " + DCO_SettingsCodec.Num(mv[0]));
+				lines.Insert(Dim("[" + T("set_members_all") + "]  ") + m_Manager.DCO_LabelOf(memberClass) + "   ->   " + DCO_SettingsCodec.Num(mv[0]));
 				kinds.Insert(1);
 			}
 		}
@@ -7556,7 +7735,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 			m_aLogLines[i].Split("|", f, false);
 			string text = m_aLogLines[i];
 			if (f.Count() >= 6)
-				text = Dim(f[0] + "   " + f[1] + "   " + f[2]) + "   " + f[3] + ":  " + Dim(f[4]) + "  →  " + f[5];
+				text = Dim(f[0] + "   " + f[1] + "   " + f[2]) + "   " + f[3] + ":  " + Dim(f[4]) + "  ->  " + f[5];
 			Cell(m_wDyn, x0 + 18, y, w - 36, 30, string.Empty, m_cRowBg, m_cText, 0, 10, 0);
 			Cell(m_wDyn, x0 + 28, y, w - 56, 30, text, m_cClear, m_cInk, 0, 16, 0);
 			y += 32;
@@ -7816,6 +7995,13 @@ class DCO_SettingsDialogUI : EditorMenuBase
 
 	protected void DoApply()
 	{
+		if (!m_sPresetName.IsEmpty() && !PresetScope().IsEmpty())
+		{
+			if (!s_mDCOLastPreset)
+				s_mDCOLastPreset = new map<string, string>();
+			s_mDCOLastPreset.Set(PresetMemKey(), m_sPresetName);
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "dco_preset_remembered key=" + PresetMemKey() + " name=" + m_sPresetName);
+		}
 		array<string> warnings = {};
 		Warnings(warnings);
 		string applyScope = "base";
@@ -7902,6 +8088,7 @@ class DCO_SettingsDialogUI : EditorMenuBase
 		m_Manager.DCO_BeginApply(ids, resetAll, warnings.Count());
 		m_bEnded = true;
 		m_Manager.ConfirmEditing();
+		m_Manager.DCO_EndServer();
 		if (m_Manager.DCO_IsMode())
 			CloseSelf();
 	}

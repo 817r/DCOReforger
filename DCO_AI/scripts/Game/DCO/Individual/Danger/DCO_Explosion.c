@@ -149,7 +149,7 @@ class DCO_Explosion
 		DCO_GroupUtilityComponent g = DCO_GroupUtilityComponent.Cast(agent.GetParentGroup().FindComponent(DCO_GroupUtilityComponent));
 		if (!g || (g.GetTask() != DCO_EGroupTask.GARRISON && g.GetTask() != DCO_EGroupTask.DEFEND))
 			return false;
-		return SCR_CoverManagerComponent.IsEntityInsideBuilding(u.m_OwnerEntity);
+		return DCO_CoverManagerComponent.IsEntityInsideBuilding(u.m_OwnerEntity);
 	}
 
 	protected static void KeepAll()
@@ -287,6 +287,8 @@ class DCO_Explosion
 		{
 			if (!s_mIDFReported)
 				s_mIDFReported = new map<IEntity, float>();
+			if (s_mIDFReported.Count() > 64)
+				s_mIDFReported.Clear();
 			float last;
 			if (!s_mIDFReported.Find(src, last) || now - last > 3.0)
 			{
@@ -317,7 +319,7 @@ class DCO_Explosion
 	{
 		if (!e)
 			return false;
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(e))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(e))
 			return true;
 		vector p = e.GetOrigin();
 		return !DCO_Util.TraceClear(p + Vector(0, 1.5, 0), p + Vector(0, 12.0, 0), e, 0.99, TraceFlags.WORLD | TraceFlags.ENTS, -1, null, "t:idf_roof");

@@ -234,7 +234,7 @@ class DCO_TransportMissionComponent : ScriptComponent
 
 		m_PassengerGroup.SetPhase(DCO_ETaskPhase.MOVING);
 
-		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdVeh(GetOwner()), string.Format("Group boarding vehicle → moving to %1", dest.ToString()));
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdVeh(GetOwner()), string.Format("Group boarding vehicle -> moving to %1", dest.ToString()));
 	}
 
 	protected void DisembarkGroup()

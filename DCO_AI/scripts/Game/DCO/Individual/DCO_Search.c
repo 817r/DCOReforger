@@ -145,6 +145,7 @@ modded class SCR_AIMoveAndInvestigateBehavior
 	protected bool m_bDCOSEnded;
 	protected bool m_bDCOSFound;
 	protected int m_iDCOSTick;
+	protected vector m_vDCOSStartPos;
 
 	override void OnActionExecuted()
 	{
@@ -207,6 +208,7 @@ modded class SCR_AIMoveAndInvestigateBehavior
 				return;
 			m_iDCOSPhase = 1;
 			m_fDCOSStart_ms = now;
+			m_vDCOSStartPos = pos;
 			DCO_Perf.Count("search:start");
 			DCO_SquadChatter.NoteSearch(me, lkp);
 			if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO))
@@ -407,8 +409,11 @@ modded class SCR_AIMoveAndInvestigateBehavior
 		DCO_Perf.Count("search:end_" + reason);
 		if (!found && m_iDCOSPhase == 2)
 			DCO_Perf.Count("search:cut");
+		string legInfo;
+		if (me)
+			legInfo = string.Format(" left_m=%1 moved_m=%2", Math.Round(vector.DistanceXZ(me.GetOrigin(), m_vPosition.m_Value)), Math.Round(vector.DistanceXZ(me.GetOrigin(), m_vDCOSStartPos)));
 		if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO))
 			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("search_end unit=%1 reason=%2 phase=%3 found=%4 spots=%5 corners=%6 head_on=%7 dur_s=%8",
-				DCO_Log.IdUnit(me), reason, phase, found, m_iDCOSSpots, m_iDCOSCorners, m_iDCOSHeadOn, Math.Round((GetGame().GetWorld().GetWorldTime() - m_fDCOSStart_ms) / 1000.0)));
+				DCO_Log.IdUnit(me), reason, phase, found, m_iDCOSSpots, m_iDCOSCorners, m_iDCOSHeadOn, Math.Round((GetGame().GetWorld().GetWorldTime() - m_fDCOSStart_ms) / 1000.0)) + " fail=" + typename.EnumToString(EAIActionFailReason, GetFailReason()) + legInfo);
 	}
 }

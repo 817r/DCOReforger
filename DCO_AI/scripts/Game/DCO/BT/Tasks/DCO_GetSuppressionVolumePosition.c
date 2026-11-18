@@ -13,6 +13,7 @@ class DCO_AIGetSuppressionVolumeRandomPosition : AITaskScripted
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
+		DCO_BtWatch.Mark("SuppressBehavior");
 		SCR_AISuppressionVolumeBase volume;
 		GetVariableIn("SuppressionVolume", volume);
 

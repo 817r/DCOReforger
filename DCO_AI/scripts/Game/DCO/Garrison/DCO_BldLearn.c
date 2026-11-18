@@ -58,7 +58,7 @@ class DCO_BldLearn
 			s_Inst = new DCO_BldLearn();
 			s_Inst.m_World = GetGame().GetWorld();
 			string bldDir = "$profile:DCO/BuildingLearn/";
-			if (DCO_TestCaseComponent.Active())
+			if (DCO_Dev.TestActive())
 				bldDir = "$profile:DCO/BuildingLearn/_test/";
 			s_Inst.m_Prefab = new DCO_LearnStore(bldDir + "Prefabs.json");
 			s_Inst.m_Inst = new DCO_LearnStore(bldDir + DCO_LearnStore.WorldName() + ".json");
@@ -431,8 +431,8 @@ class DCO_BldLearn
 		ep.m_fArrived = now;
 		ep.m_fHp0 = Hp(e);
 		ep.m_iShots0 = DCO_ShotCounter.Total(e);
-		ep.m_iKills0 = DCO_Battle.UnitKills(e);
-		ep.m_iHits0 = DCO_Battle.UnitHits(e);
+		ep.m_iKills0 = DCO_Dev.UnitKills(e);
+		ep.m_iHits0 = DCO_Dev.UnitHits(e);
 	}
 
 	protected void Sample(DCO_BldEpisode ep, IEntity e, float nowMs, float now)
@@ -523,8 +523,8 @@ class DCO_BldLearn
 		if (e)
 		{
 			shots = DCO_ShotCounter.Total(e) - ep.m_iShots0;
-			kills = DCO_Battle.UnitKills(e) - ep.m_iKills0;
-			hits = DCO_Battle.UnitHits(e) - ep.m_iHits0;
+			kills = DCO_Dev.UnitKills(e) - ep.m_iKills0;
+			hits = DCO_Dev.UnitHits(e) - ep.m_iHits0;
 		}
 
 		bool forced = false;

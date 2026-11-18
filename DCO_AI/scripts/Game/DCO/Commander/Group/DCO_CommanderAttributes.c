@@ -143,10 +143,15 @@ class DCO_CommanderPersonalityBaseAttribute : SCR_BaseValueListEditorAttribute
 	{
 	}
 
+	protected bool DCO_Hidden()
+	{
+		return false;
+	}
+
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
 		AICommander_BaseComponent cmd = DCO_CommanderBaseAttribute.GetCommander(item);
-		if (!cmd)
+		if (!cmd || DCO_Hidden())
 			return null;
 
 		return SCR_BaseEditorAttributeVar.CreateFloat(ReadPersonality(cmd));
@@ -166,6 +171,7 @@ class DCO_CommanderPersonalityBaseAttribute : SCR_BaseValueListEditorAttribute
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_CommanderAggressionAttribute : DCO_CommanderPersonalityBaseAttribute
 {
+	override protected bool DCO_Hidden() { return true; }
 	override protected float ReadPersonality(AICommander_BaseComponent cmd) { return cmd.GetAggression(); }
 	override protected void WritePersonality(AICommander_BaseComponent cmd, float value) { cmd.SetAggression(value); }
 }
@@ -173,6 +179,7 @@ class DCO_CommanderAggressionAttribute : DCO_CommanderPersonalityBaseAttribute
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_CommanderAdaptabilityAttribute : DCO_CommanderPersonalityBaseAttribute
 {
+	override protected bool DCO_Hidden() { return true; }
 	override protected float ReadPersonality(AICommander_BaseComponent cmd) { return cmd.GetAdaptability(); }
 	override protected void WritePersonality(AICommander_BaseComponent cmd, float value) { cmd.SetAdaptability(value); }
 }
@@ -180,6 +187,7 @@ class DCO_CommanderAdaptabilityAttribute : DCO_CommanderPersonalityBaseAttribute
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_CommanderRiskTakingAttribute : DCO_CommanderPersonalityBaseAttribute
 {
+	override protected bool DCO_Hidden() { return true; }
 	override protected float ReadPersonality(AICommander_BaseComponent cmd) { return cmd.GetRiskTaking(); }
 	override protected void WritePersonality(AICommander_BaseComponent cmd, float value) { cmd.SetRiskTaking(value); }
 }
@@ -187,6 +195,7 @@ class DCO_CommanderRiskTakingAttribute : DCO_CommanderPersonalityBaseAttribute
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_CommanderResilienceAttribute : DCO_CommanderPersonalityBaseAttribute
 {
+	override protected bool DCO_Hidden() { return true; }
 	override protected float ReadPersonality(AICommander_BaseComponent cmd) { return cmd.GetResilience(); }
 	override protected void WritePersonality(AICommander_BaseComponent cmd, float value) { cmd.SetResilience(value); }
 }
@@ -194,6 +203,7 @@ class DCO_CommanderResilienceAttribute : DCO_CommanderPersonalityBaseAttribute
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_CommanderPatienceAttribute : DCO_CommanderPersonalityBaseAttribute
 {
+	override protected bool DCO_Hidden() { return true; }
 	override protected float ReadPersonality(AICommander_BaseComponent cmd) { return cmd.GetPatience(); }
 	override protected void WritePersonality(AICommander_BaseComponent cmd, float value) { cmd.SetPatience(value); }
 }
@@ -201,6 +211,7 @@ class DCO_CommanderPatienceAttribute : DCO_CommanderPersonalityBaseAttribute
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_CommanderCombatFocusAttribute : DCO_CommanderPersonalityBaseAttribute
 {
+	override protected bool DCO_Hidden() { return true; }
 	override protected float ReadPersonality(AICommander_BaseComponent cmd) { return cmd.GetCombatFocus(); }
 	override protected void WritePersonality(AICommander_BaseComponent cmd, float value) { cmd.SetCombatFocus(value); }
 }
@@ -208,6 +219,7 @@ class DCO_CommanderCombatFocusAttribute : DCO_CommanderPersonalityBaseAttribute
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_CommanderMaxFrontlineReconAttribute : DCO_CommanderPersonalityBaseAttribute
 {
+	override protected bool DCO_Hidden() { return true; }
 	override protected float ReadPersonality(AICommander_BaseComponent cmd) { return cmd.GetMaxFrontlineRecon(); }
 	override protected void WritePersonality(AICommander_BaseComponent cmd, float value) { cmd.SetMaxFrontlineRecon(Math.Round(value)); }
 }

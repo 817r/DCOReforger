@@ -13,7 +13,11 @@ modded class SCR_AIThrowGrenadeToBehavior : SCR_AIBehaviorBase
 				m_DCOHeldGren = wm.GetCurrentGrenade().GetOwner();
 		}
 		float age = GetGame().GetWorld().GetWorldTime() - m_fStartTime;
-		if (age > 3000.0 && (!m_bDCOSelected || age > 10000.0))
+		bool smokeBoost = e_WeaponType.m_Value == EWeaponType.WT_SMOKEGRENADE && m_Utility && DCO_Stress.T(m_Utility, "smk.prio_boost", 1.0) > 0;
+		float selectMs = 3000.0;
+		if (smokeBoost)
+			selectMs = 8000.0;
+		if (age > selectMs && (!m_bDCOSelected || age > selectMs + 7000.0))
 		{
 			DCO_Perf.Count("throw_timeout");
 			Fail();
@@ -36,7 +40,10 @@ modded class SCR_AIThrowGrenadeToBehavior : SCR_AIBehaviorBase
 			}
 		}
 
-		return super.CustomEvaluate();
+		float prio = super.CustomEvaluate();
+		if (smokeBoost && prio > 0)
+			prio = Math.Max(prio, PRIORITY_BEHAVIOR_ATTACK_HIGH_PRIORITY + 1 - EvaluatePriorityLevel());
+		return prio;
 	}
 
 	override void OnActionSelected()
@@ -45,13 +52,26 @@ modded class SCR_AIThrowGrenadeToBehavior : SCR_AIBehaviorBase
 		m_bDCOSelected = true;
 	}
 
+	protected void DCO_SmokeLog(string ev)
+	{
+		if (e_WeaponType.m_Value != EWeaponType.WT_SMOKEGRENADE || !m_Utility || !m_Utility.m_OwnerEntity)
+			return;
+		DCO_Perf.Count(ev);
+		float age_s = (GetGame().GetWorld().GetWorldTime() - m_fStartTime) * 0.001;
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, "-", string.Format("%1 unit=%2 after_s=%3 selected=%4 dist=%5 pos=%6", ev, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), age_s.ToString(-1, 1), DCO_Util.B01(m_bDCOSelected),
+			Math.Round(vector.DistanceXZ(m_Utility.m_OwnerEntity.GetOrigin(), m_vTargetPosition.m_Value)), DCO_Log.Pos(m_vTargetPosition.m_Value)));
+	}
+
 	override void OnActionCompleted()
 	{
 		super.OnActionCompleted();
 		if (DCO_Util.Teardown("throw_completed"))
 			return;
 		if (e_WeaponType.m_Value == EWeaponType.WT_SMOKEGRENADE)
+		{
 			DCO_SmokeField.Add(null, m_vTargetPosition.m_Value, "ai_throw", 3.0, 55.0);
+			DCO_SmokeLog("smoke_thrown");
+		}
 		if (e_WeaponType.m_Value == EWeaponType.WT_FRAGGRENADE && m_Utility && m_Utility.m_OwnerEntity)
 		{
 			float d = vector.DistanceXZ(m_Utility.m_OwnerEntity.GetOrigin(), m_vTargetPosition.m_Value);
@@ -72,7 +92,10 @@ modded class SCR_AIThrowGrenadeToBehavior : SCR_AIBehaviorBase
 		if (m_Utility && e_WeaponType.m_Value == EWeaponType.WT_FRAGGRENADE)
 			DCO_GrenadeWatch.OnFailed(m_Utility.m_OwnerEntity);
 		if (!DCO_Util.Teardown("throw_failed"))
+		{
+			DCO_SmokeLog("smoke_drop");
 			DCO_RestoreWeapon();
+		}
 	}
 
 	protected static ref array<IEntity> s_aDCOCook;
@@ -167,6 +190,15 @@ modded class SCR_AIThrowGrenadeToBehavior : SCR_AIBehaviorBase
 			return;
 		}
 		float rem = vector.DistanceXZ(p1, aim);
+		float gain = vector.DistanceXZ(p0, aim) - rem;
+		if ((vh >= 1.0 && gain < 0.5 * vector.DistanceXZ(p0, p1)) || (vh < 1.0 && rem > 4.0))
+		{
+			DCO_Perf.Count("gren:cook_skip_deflected");
+			if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO))
+				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("gren_cook_skip unit=%1 dist=%2 reason=deflected speed=%3 left_m=%4 gain_m=%5",
+					DCO_Log.IdUnit(me), Math.Round(dist), vh.ToString(1, 1), rem.ToString(1, 1), gain.ToString(1, 1)));
+			return;
+		}
 		float flight = 3.0;
 		if (vh > 1.0)
 			flight = rem / vh;
@@ -262,6 +294,14 @@ class DCO_GrenadeWatch
 			return null;
 		if (!s_mState)
 			s_mState = new map<IEntity, ref DCO_GrenWatchState>();
+		if (s_mState.Count() > 256)
+		{
+			for (int pi = s_mState.Count() - 1; pi >= 0; pi--)
+			{
+				if (!s_mState.GetKey(pi))
+					s_mState.RemoveElement(pi);
+			}
+		}
 		DCO_GrenWatchState st = s_mState.Get(thrower);
 		if (!st && create)
 		{

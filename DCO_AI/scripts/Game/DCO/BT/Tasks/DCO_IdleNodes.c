@@ -11,6 +11,7 @@ class DCO_AIIdleWait : AITaskScripted
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
+		DCO_BtWatch.Mark("Idle");
 		if (!m_Utility || !m_Utility.m_CombatMoveState || m_Utility.m_CombatMoveState.m_bInCover)
 			return ENodeResult.RUNNING;
 
@@ -85,6 +86,7 @@ class DCO_AICreateIdleCoverQueryProps : SCR_AICreateBasicCoverQueryProps
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
+		DCO_BtWatch.Mark("Idle_TakeCover");
 		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetFor(owner);
 		if (cfg)
 			m_fRadius = IdleRadius(owner, cfg.GetIdleCoverSearchDist());

@@ -10,12 +10,18 @@ class DCO_VehActState
 	ref array<float> m_aRecon = {};
 	ref array<float> m_aRockets = {};
 	bool m_bWithdrawn;
+	string m_sWithdrawWhy;
+	float m_fWithdrawAt_ms;
 	bool m_bHid;
 	float m_fHideStart_ms = -1;
 	float m_fIdleSince_ms = -1;
 	float m_fNextDiag_ms;
 	int m_iScoots;
 	string m_sIdle = "-";
+	vector m_vStuckPos;
+	float m_fStuckAt_ms = -1;
+	int m_iStuckFails;
+	float m_fStuckHold_ms;
 }
 
 class DCO_VehicleActive
@@ -311,7 +317,7 @@ class DCO_VehicleActive
 			return false;
 		if (DCO_VehicleCombat.TargetVehicle(e))
 			return true;
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(e))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(e))
 			return true;
 		return DCO_Util.IsMGShooter(e);
 	}
@@ -368,7 +374,7 @@ class DCO_VehicleActive
 		if (!ag || !ag.GetParentGroup())
 			return false;
 		DCO_GroupUtilityComponent dg = DCO_GroupUtilityComponent.Cast(ag.GetParentGroup().FindComponent(DCO_GroupUtilityComponent));
-		return dg && dg.GetTask() == DCO_EGroupTask.RECON;
+		return dg && (dg.GetTask() == DCO_EGroupTask.RECON || dg.IsDedicatedTransport());
 	}
 
 	static void Tick(SCR_AIUtilityComponent u, IEntity veh)
@@ -396,6 +402,17 @@ class DCO_VehicleActive
 		DCO_VehActState st = Get(veh);
 		float now = GetGame().GetWorld().GetWorldTime();
 		bool relentless = DCO_Relentless.Unit(u);
+		if (st.m_bWithdrawn && st.m_sWithdrawWhy == "rockets" && now - st.m_fWithdrawAt_ms > 60000.0 && !DCO_VehiclePositioning.IsHiding(veh))
+		{
+			bool recentRocket = !st.m_aRockets.IsEmpty() && now - st.m_aRockets[st.m_aRockets.Count() - 1] < 60000.0;
+			if (!recentRocket)
+			{
+				st.m_bWithdrawn = false;
+				st.m_aRockets.Clear();
+				DCO_Perf.Count("veh:withdraw_end");
+				DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, DCO_Log.IdVeh(veh), string.Format("veh_withdraw_end veh=%1 class=%2 reason=%3 after_s=%4", DCO_Log.IdVeh(veh), ClassName(cls), st.m_sWithdrawWhy, Math.Round((now - st.m_fWithdrawAt_ms) / 1000.0)));
+			}
+		}
 
 		BaseTarget cur = u.m_CombatComponent.GetCurrentTarget();
 		bool vis = cur && cur.GetTimeSinceSeen() < 2.0;
@@ -469,6 +486,8 @@ class DCO_VehicleActive
 			return;
 		}
 
+		if (DCO_StuckCheck(veh, ds, st, cls, lkp, now))
+			return;
 		if (ds.IsExecutingRequest())
 			return;
 
@@ -499,6 +518,59 @@ class DCO_VehicleActive
 			Recon(u, veh, st, known.GetLastSeenPosition(), known.GetTimeSinceSeen(), Confirmed(known), "own", cls, now);
 			Idle(u, veh, st, now, "no_los", d, cls);
 		}
+	}
+
+	protected static bool DCO_StuckCheck(IEntity veh, SCR_AICombatMoveState ds, DCO_VehActState st, int cls, vector lkp, float now)
+	{
+		if (now < st.m_fStuckHold_ms)
+			return true;
+		if (!ds.IsExecutingRequest())
+		{
+			st.m_fStuckAt_ms = -1;
+			return false;
+		}
+		vector p = veh.GetOrigin();
+		if (st.m_fStuckAt_ms < 0)
+		{
+			st.m_fStuckAt_ms = now;
+			st.m_vStuckPos = p;
+			return false;
+		}
+		if (now - st.m_fStuckAt_ms < 12000.0)
+			return false;
+		float moved = vector.DistanceXZ(p, st.m_vStuckPos);
+		st.m_fStuckAt_ms = now;
+		st.m_vStuckPos = p;
+		if (moved >= 3.0)
+		{
+			st.m_iStuckFails = 0;
+			return false;
+		}
+		st.m_iStuckFails++;
+		vector back = p - veh.GetTransformAxis(2) * 12.0;
+		string step = "reverse";
+		if (st.m_iStuckFails == 2)
+			step = "repath";
+		else if (st.m_iStuckFails >= 3)
+			step = "hold";
+		if (step == "hold")
+		{
+			st.m_fStuckHold_ms = now + 120000.0;
+			st.m_fNextSeek_ms = now + 120000.0;
+			st.m_iStuckFails = 0;
+		}
+		else
+		{
+			if (step == "repath")
+			{
+				st.m_vLastFire = vector.Zero;
+				st.m_fNextSeek_ms = now;
+			}
+			ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(p, DCO_Util.Surface(back), lkp, SCR_EAICombatMoveReason.STANDARD));
+		}
+		DCO_Perf.Count("veh:stuck_" + step);
+		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, DCO_Log.IdVeh(veh), string.Format("veh_stuck veh=%1 class=%2 moved_m=%3 fails=%4 step=%5", DCO_Log.IdVeh(veh), ClassName(cls), moved.ToString(-1, 1), st.m_iStuckFails, step));
+		return true;
 	}
 
 	protected static bool Seek(SCR_AIUtilityComponent u, IEntity veh, SCR_AICombatMoveState ds, DCO_VehActState st, int cls, vector lkp, bool at, string trigger, float now)
@@ -536,7 +608,13 @@ class DCO_VehicleActive
 		int checks;
 		bool found = DCO_VehiclePositioning.FindFirePositionEx(veh, lkp, desired, DCO_VehiclePositioning.GetHullDownWeight(DCO_VehiclePositioning.GetPosture(u)), c, r, st.m_vLastFire, true, pos, checks, FriendPos(u));
 		string action = "firepos";
-		if (found)
+		if (found && trigger != "scoot" && vector.DistanceXZ(veh.GetOrigin(), pos) < 30.0)
+		{
+			st.m_fNextSeek_ms = now + 40000.0;
+			action = "hold_near";
+			DCO_Perf.Count("veh:seek_hold_near");
+		}
+		else if (found)
 		{
 			ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(veh.GetOrigin(), pos, lkp, SCR_EAICombatMoveReason.STANDARD));
 			st.m_vLastFire = pos;
@@ -559,19 +637,44 @@ class DCO_VehicleActive
 				pos = DCO_Util.Surface(veh.GetOrigin() + dir.Normalized() * step);
 				ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(veh.GetOrigin(), pos, lkp, SCR_EAICombatMoveReason.STANDARD));
 				action = "advance";
+				st.m_fNextSeek_ms = now + 20000.0;
+				if (relentless)
+					st.m_fNextSeek_ms = now + 10000.0;
 			}
 			else
 				action = "none";
 		}
 		else
 		{
-			st.m_fNextSeek_ms = now + 10000.0;
-			action = "wait_at";
+			float standoff = ATStandoff(cls);
+			vector dirA = lkp - veh.GetOrigin();
+			dirA[1] = 0;
+			if (d > standoff + 40.0 && dirA.Length() > 1.0)
+			{
+				float stepA = Math.Min(Math.RandomFloat(30.0, 50.0), d - standoff);
+				pos = DCO_Util.Surface(veh.GetOrigin() + dirA.Normalized() * stepA);
+				ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(veh.GetOrigin(), pos, lkp, SCR_EAICombatMoveReason.STANDARD));
+				action = "advance_at";
+				st.m_fNextSeek_ms = now + 20000.0;
+			}
+			else
+			{
+				st.m_fNextSeek_ms = now + 10000.0;
+				action = "wait_at";
+				vector backPos = DCO_Util.Surface(veh.GetOrigin() - dirA.Normalized() * Math.Min(standoff - d, 80.0));
+				if (d < standoff - 20.0 && dirA.Length() > 1.0 && vector.DistanceXZ(backPos, c) <= r)
+				{
+					pos = backPos;
+					ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(veh.GetOrigin(), pos, lkp, SCR_EAICombatMoveReason.STANDARD));
+					action = "backoff_at";
+					st.m_fNextSeek_ms = now + 20000.0;
+				}
+			}
 		}
 		DCO_Perf.Count("veh:seek_" + action);
 		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, DCO_Log.IdVeh(veh), string.Format("veh_firepos_seek veh=%1 class=%2 trigger=%3 checks=%4 found=%5 action=%6 move=%7 tgt_d=%8 at=%9",
 			DCO_Log.IdVeh(veh), ClassName(cls), trigger, checks, DCO_Util.B01(found), action, Math.Round(vector.DistanceXZ(veh.GetOrigin(), pos)), Math.Round(d), DCO_Util.B01(at)) + string.Format(" bound_r=%1 bound_d=%2", Math.Round(boundR), Math.Round(vc)));
-		return found || action == "advance";
+		return found || action == "advance" || action == "advance_at" || action == "backoff_at";
 	}
 
 	protected static bool Withdraw(SCR_AIUtilityComponent u, IEntity veh, SCR_AICombatMoveState ds, DCO_VehActState st, int cls, vector lkp, float now)
@@ -596,6 +699,8 @@ class DCO_VehicleActive
 		if (why.IsEmpty())
 			return false;
 		st.m_bWithdrawn = true;
+		st.m_sWithdrawWhy = why;
+		st.m_fWithdrawAt_ms = now;
 		IEntity atShooter;
 		vector threat = lkp;
 		vector atPos;

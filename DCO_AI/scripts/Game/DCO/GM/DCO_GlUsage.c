@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalGrenadeUsageAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalGrenadeUsageAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -29,7 +29,7 @@ class SCR_AIGlobalGrenadeUsageAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalGLUsageAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalGLUsageAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -59,7 +59,7 @@ class SCR_AIGlobalGLUsageAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualGrenadeUsageAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualGrenadeUsageAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -67,7 +67,7 @@ class SCR_AIIndividualGrenadeUsageAttribute : SCR_ValidTypeBaseValueListEditorAt
 		if (!aiConf)
 			return null;
 
-		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.GetGrenadeUsage());
+		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.DCO_GrenRaw());
 	}
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
@@ -104,7 +104,7 @@ class SCR_AIIndividualGrenadeUsageAttribute : SCR_ValidTypeBaseValueListEditorAt
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualGLUsageAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualGLUsageAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -112,7 +112,7 @@ class SCR_AIIndividualGLUsageAttribute : SCR_ValidTypeBaseValueListEditorAttribu
 		if (!aiConf)
 			return null;
 
-		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.GetGLUsage());
+		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.DCO_GLRaw());
 	}
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
@@ -149,7 +149,7 @@ class SCR_AIIndividualGLUsageAttribute : SCR_ValidTypeBaseValueListEditorAttribu
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalGLAccuracyAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalGLAccuracyAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -179,7 +179,7 @@ class SCR_AIGlobalGLAccuracyAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualGLAccuracyAttribute : SCR_AIIndividualGLUsageAttribute
+class DCO_AIIndividualGLAccuracyAttribute : DCO_AIIndividualGLUsageAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -201,7 +201,7 @@ class SCR_AIIndividualGLAccuracyAttribute : SCR_AIIndividualGLUsageAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalSmokeUsageAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalSmokeUsageAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -231,7 +231,7 @@ class SCR_AIGlobalSmokeUsageAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualSmokeUsageAttribute : SCR_AIIndividualGLUsageAttribute
+class DCO_AIIndividualSmokeUsageAttribute : DCO_AIIndividualGLUsageAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{

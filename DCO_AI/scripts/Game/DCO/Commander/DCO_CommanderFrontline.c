@@ -434,7 +434,7 @@ class DCO_CommanderFrontline : Managed
 			if (t && t.m_Squad)
 				activeRecon++;
 		}
-		if (activeRecon >= DCO_Force.Max(cmd, "recon_front", cmd.GetMaxFrontlineRecon()))
+		if (activeRecon >= DCO_Force.Max(cmd, "recon_front"))
 			return;
 
 		vector frontlinePos;

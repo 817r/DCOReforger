@@ -64,7 +64,7 @@ class DCO_Engage
 	protected static int ComputeZone(SCR_AIUtilityComponent u)
 	{
 		IEntity me = u.m_OwnerEntity;
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(me))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(me))
 			return 2;
 		SCR_AIGroupUtilityComponent gu = GroupUtil(u);
 		if (gu && gu.DCO_IsClearingBuilding())
@@ -282,7 +282,7 @@ class DCO_Engage
 			s_mCqbKind.Clear();
 		}
 		int kind = 2;
-		if (DCO_AssaultLock.InCQB(u) || DCO_CQC.IsTargetInMyBuilding(u) || SCR_CoverManagerComponent.IsEntityInsideBuilding(u.m_OwnerEntity))
+		if (DCO_AssaultLock.InCQB(u) || DCO_CQC.IsTargetInMyBuilding(u) || DCO_CoverManagerComponent.IsEntityInsideBuilding(u.m_OwnerEntity))
 			kind = 1;
 		int prev = -1;
 		if (s_mCqbKind.Contains(u))
@@ -378,6 +378,8 @@ class DCO_Engage
 			why = aw;
 		else if (CqbPush(u))
 			why = "cqb_range";
+		else if (DCO_Stress.Level(u) >= 1 && DCO_Opp.CoverFire(u))
+			why = "under_fire_covered";
 		else if (DCO_Stress.Level(u) >= 1)
 		{
 			ok = false;

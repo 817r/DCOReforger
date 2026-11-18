@@ -8,7 +8,40 @@ modded class SCR_AIInvestigateClusterActivity
 	protected float  m_fDCOBoundStart_ms;
 	protected float  m_fDCONextUpdate_ms;
 	protected float  m_fDCOBoundTimeout_ms = 20000.0;
+	protected float  m_fDCOStart_ms;
+	protected int    m_iDCOBounds;
 	protected float  m_fDCOObserveEnd_ms = -1;
+	protected bool   m_bDCOEndLogged;
+	protected float  m_fDCODeselAt_ms = -1;
+	protected bool   m_bDCOCancelHeld;
+	protected int    m_iDCOGraceKept;
+	protected float  m_fDCOGraceLog_ms;
+
+	override protected void SendCancelMessages()
+	{
+		if (m_bDCOCancelHeld)
+			return;
+		super.SendCancelMessages();
+	}
+
+	protected void DCO_GraceCancel(string why, float now_ms)
+	{
+		if (m_fDCODeselAt_ms < 0)
+			return;
+		float held_s = (now_ms - m_fDCODeselAt_ms) * 0.001;
+		m_fDCODeselAt_ms = -1;
+		if (!m_Utility || !m_Utility.m_Owner)
+			return;
+		DCO_Perf.Count("inv:grace_cancel");
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("investigate_grace grp=%1 action=cancel why=%2 held_s=%3", DCO_Log.IdGroup(m_Utility.m_Owner), why, held_s.ToString(-1, 1)));
+		SendCancelMessages();
+	}
+
+	override void OnActionRemoved()
+	{
+		DCO_GraceCancel("removed", GetGame().GetWorld().GetWorldTime());
+		super.OnActionRemoved();
+	}
 
 	override void OnActionSelected()
 	{
@@ -16,9 +49,24 @@ modded class SCR_AIInvestigateClusterActivity
 		super.OnActionSelected();
 
 		float now_ms = GetGame().GetWorld().GetWorldTime();
+		bool kept = m_bDCOStarted && m_fDCODeselAt_ms >= 0;
+		m_fDCODeselAt_ms = -1;
+		if (kept)
+		{
+			DCO_Perf.Count("inv:grace_keep");
+			m_iDCOGraceKept++;
+			if (now_ms - m_fDCOGraceLog_ms >= 10000.0)
+			{
+				m_fDCOGraceLog_ms = now_ms;
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("investigate_grace grp=%1 action=keep kept=%2", DCO_Log.IdGroup(m_Utility.m_Owner), m_iDCOGraceKept));
+				m_iDCOGraceKept = 0;
+			}
+			return;
+		}
 		if (!m_bDCOStarted)
 		{
 			m_bDCOStarted = true;
+			m_fDCOStart_ms = now_ms;
 			float blind = DCO_LostGap.Blind(m_Utility.m_Owner);
 			DCO_Perf.Count("lostgap:investigate_start");
 			if (blind > 15.0)
@@ -37,6 +85,9 @@ modded class SCR_AIInvestigateClusterActivity
 
 	void DCO_Update(float now_ms)
 	{
+		if (m_fDCODeselAt_ms >= 0 && now_ms - m_fDCODeselAt_ms > DCO_Ctx.TuneForGU(m_Utility, "inv.desel_grace_s", 2.0) * 1000.0)
+			DCO_GraceCancel("expired", now_ms);
+
 		if (!m_bDCOStarted || GetActionState() != EAIActionState.RUNNING)
 			return;
 
@@ -46,6 +97,7 @@ modded class SCR_AIInvestigateClusterActivity
 
 		if (m_Utility.DCO_GetPosture() == DCO_GroupTactics.EVASIVE)
 		{
+			DCO_End("evasive", now_ms);
 			Fail();
 			return;
 		}
@@ -57,6 +109,7 @@ modded class SCR_AIInvestigateClusterActivity
 				m_fDCOObserveEnd_ms = -1;
 				DCO_Perf.Count("ctx:inv_observe_end");
 				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("ctxinvestigate grp=%1 phase=observe_end result=no_contact", DCO_Log.IdGroup(m_Utility.m_Owner)));
+				DCO_End("observe_end", now_ms);
 				Complete();
 			}
 			return;
@@ -74,7 +127,7 @@ modded class SCR_AIInvestigateClusterActivity
 		else if (boundS < DCO_Ctx.TuneForGU(m_Utility, "osc.bound_min_s", 4.0))
 		{
 			why = "arrived_fast";
-			if (DCO_Ctx.TuneForGU(m_Utility, "osc.fix_bound", 0.0) > 0)
+			if (DCO_Ctx.TuneForGU(m_Utility, "osc.fix_bound", 1.0) > 0)
 			{
 				DCO_Perf.Count("inv:bound_hold");
 				return;
@@ -145,9 +198,49 @@ modded class SCR_AIInvestigateClusterActivity
 			DCO_Log.IdGroup(m_Utility.m_Owner), src, Math.Round(errM), Math.Round(age), s.m_iDCOInfoEvents, Math.Round(radius), s.m_iCountIdentified, DCO_Log.Pos(pos)));
 	}
 
+	protected void DCO_End(string how, float now_ms)
+	{
+		if (m_bDCOEndLogged || !m_bDCOStarted)
+			return;
+		m_bDCOEndLogged = true;
+		DCO_Perf.Count("investigate:end_" + how);
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("investigate_end grp=%1 how=%2 dur_s=%3 bounds=%4 identified=%5", DCO_Log.IdGroup(m_Utility.m_Owner), how, Math.Round((now_ms - m_fDCOStart_ms) / 1000.0), m_iDCOBounds, m_ClusterState.m_iCountIdentified));
+	}
+
+	override void OnActionCompleted()
+	{
+		DCO_End("completed", GetGame().GetWorld().GetWorldTime());
+		m_fDCODeselAt_ms = -1;
+		super.OnActionCompleted();
+	}
+
+	override void OnActionFailed()
+	{
+		DCO_End("failed_" + typename.EnumToString(EAIActionFailReason, GetFailReason()), GetGame().GetWorld().GetWorldTime());
+		m_fDCODeselAt_ms = -1;
+		super.OnActionFailed();
+	}
+
+	override void OnActionDeselected()
+	{
+		if (m_bDCOStarted && !m_bDCOEndLogged)
+		{
+			DCO_Perf.Count("investigate:deselect");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("investigate_deselect grp=%1 dur_s=%2 bounds=%3 final=%4 state=%5", DCO_Log.IdGroup(m_Utility.m_Owner), Math.Round((GetGame().GetWorld().GetWorldTime() - m_fDCOStart_ms) / 1000.0), m_iDCOBounds, DCO_Util.B01(m_bDCOFinal), typename.EnumToString(EAIActionState, GetActionState())));
+		}
+		if (m_bDCOStarted && !m_bDCOEndLogged && DCO_Ctx.TuneForGU(m_Utility, "inv.desel_grace_s", 2.0) > 0)
+		{
+			m_fDCODeselAt_ms = GetGame().GetWorld().GetWorldTime();
+			m_bDCOCancelHeld = true;
+		}
+		super.OnActionDeselected();
+		m_bDCOCancelHeld = false;
+	}
+
 	protected void DCO_NextBound(float now_ms)
 	{
 		m_fDCOBoundStart_ms = now_ms;
+		m_iDCOBounds++;
 
 		if (DCO_Relentless.Group(m_Utility.m_Owner))
 			DCO_Perf.Count("relentless:investigate_direct");
@@ -240,6 +333,15 @@ modded class SCR_AIInvestigateClusterActivity
 
 		m_vDCOBoundPos = movingPos + dir * advance;
 		m_vDCOBoundPos = DCO_Util.Surface(m_vDCOBoundPos);
+		AIWorld navWorld = GetGame().GetAIWorld();
+		NavmeshWorldComponent nav;
+		if (navWorld)
+			nav = navWorld.GetNavmeshWorldComponent("Soldiers");
+		vector snapped;
+		if (nav && nav.GetReachablePoint(m_vDCOBoundPos, 8.0, snapped))
+			m_vDCOBoundPos = snapped;
+		else
+			DCO_Perf.Count("investigate:bound_no_navmesh");
 	}
 
 	protected void DCO_SendOrders()
@@ -301,7 +403,7 @@ modded class SCR_AIInvestigateClusterActivity
 				if (env == DCO_EEnv.INDOOR)
 				{
 					string bldMethod;
-					IEntity bld = SCR_CoverManagerComponent.DCO_GetBuildingAtPos(areaPos, null, bldMethod);
+					IEntity bld = DCO_CoverManagerComponent.DCO_GetBuildingAtPos(areaPos, null, bldMethod);
 					string fac = m_Utility.DCO_FactionKey();
 					string gateWhy;
 					if (bld && g.DCO_TuneF("ctx.cqb_gate", 1.0) > 0 && DCO_CQBPrecheck.Check(bld, m_Utility.m_Owner, gateWhy) == 0)
@@ -335,7 +437,7 @@ modded class SCR_AIInvestigateClusterActivity
 			return;
 		}
 
-		DCO_SendInvestigate(comms, DCO_GetMovingTeam(), m_vDCOBoundPos, 5.0, m_fDCOBoundTimeout_ms * 0.001);
+		DCO_SendInvestigate(comms, DCO_GetMovingTeam(), m_vDCOBoundPos, 8.0, m_fDCOBoundTimeout_ms * 0.001);
 		DCO_SendCover(comms, DCO_GetCoverTeam(), areaPos);
 	}
 

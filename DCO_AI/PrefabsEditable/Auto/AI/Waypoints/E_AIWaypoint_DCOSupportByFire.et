@@ -1,0 +1,26 @@
+DCO_TacticWaypoint : "{34D3DACD38BE47B2}Prefabs/AI/Waypoints/AIWaypoint_DCOSupportByFire.et" {
+ ID "3D41BEA9D77E2649"
+ components {
+  SCR_EditableEntityVisibilityChildComponent "{8D8EB3D248555FBF}" : "{CA7D13FC9D385E8F}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityVisibilityChildComponent.ct" {
+  }
+  SCR_EditableWaypointComponent "{C6972F331A3CA982}" : "{89CF6086B34A8800}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityComponent.ct" {
+   m_UIInfo SCR_EditableEntityUIInfo "{5695EED17C3D7507}" {
+    Name "Support by Fire (DCO)"
+    Icon "{6FAED0D746483096}UI/Textures/Editor/Toolbar/Commanding/Toolbar_Commanding_Waypoint_Defend.edds"
+    IconSetName "Waypoint_Defend"
+    m_aAutoLabels {
+     ENTITYTYPE_SYSTEM SIZE_XL
+    }
+   }
+   m_EntityInteraction SCR_EditableAttachableEntityInteraction "{BDCAA8F18491212E}" {
+    m_aAttachableTypes {
+     GROUP
+    }
+   }
+  }
+  SCR_WaypointAreaMeshComponent "{C8123BC4E254F868}" : "{3CE012874EA1DC23}Prefabs/Editor/Components/Waypoint_SCR_WaypointAreaMeshComponent.ct" {
+  }
+  RplComponent "{D1258A36D1A2B9A8}" : "{B193E926C1935A4C}Prefabs/Editor/Components/Default_RplComponent.ct" {
+  }
+ }
+}

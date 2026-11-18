@@ -1,0 +1,25 @@
+DCO_TacticWaypoint : "{F8D20A89C0EBD1AC}Prefabs/AI/Waypoints/AIWaypoint_DCOConvoy.et" {
+ ID "58BAEE2466157764"
+ components {
+  SCR_EditableEntityVisibilityChildComponent "{72ED6B41B415FE49}" : "{CA7D13FC9D385E8F}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityVisibilityChildComponent.ct" {
+  }
+  SCR_EditableWaypointComponent "{A4B637E23420A2B6}" : "{89CF6086B34A8800}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityComponent.ct" {
+   m_UIInfo SCR_EditableEntityUIInfo "{7412C6C3CA358F60}" {
+    Name "Convoy (DCO)"
+    Icon "{FDE4238500835875}UI/Textures/Editor/EditableEntities/Waypoints/EditableEntity_Waypoint_Move.edds"
+    m_aAutoLabels {
+     ENTITYTYPE_SYSTEM SIZE_XL
+    }
+   }
+   m_EntityInteraction SCR_EditableAttachableEntityInteraction "{319FE5A438154BDE}" {
+    m_aAttachableTypes {
+     GROUP
+    }
+   }
+  }
+  SCR_WaypointAreaMeshComponent "{A3FD6F3209B20EA9}" : "{3CE012874EA1DC23}Prefabs/Editor/Components/Waypoint_SCR_WaypointAreaMeshComponent.ct" {
+  }
+  RplComponent "{97313A819D8C750F}" : "{B193E926C1935A4C}Prefabs/Editor/Components/Default_RplComponent.ct" {
+  }
+ }
+}

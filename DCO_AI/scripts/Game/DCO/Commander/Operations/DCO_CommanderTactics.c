@@ -35,6 +35,15 @@ enum DCO_ETacticFlag
 class DCO_TacticPlan
 {
 	CMD_AICommanderObjectiveComponent m_Obj;
+	bool m_bDCORechoose;
+	bool m_bDCOCaptured;
+	float m_fDCOFixSince = -1;
+	bool m_bDCOMainGo;
+	bool m_bDCOAnvilIn;
+	float m_fDCOHoldSince = -1;
+	bool m_bDCOHoldLate;
+	ref array<DCO_GroupUtilityComponent> m_aDCOForce = {};
+	ref array<int> m_aDCOForce0 = {};
 	DCO_ETactic m_eTactic;
 	int m_iPhase;
 	float m_fStart;
@@ -127,6 +136,7 @@ class DCO_TacticPlan
 class DCO_TacticSituation
 {
 	int m_iGroups;
+	int m_iCommitted;
 	int m_iSmallGroups;
 	float m_fRatio;
 	float m_fConfidence;
@@ -177,7 +187,7 @@ class DCO_CommanderTactics
 
 	static void Event(string line)
 	{
-		DCO_BenchmarkLoggerComponent.Event(line);
+		DCO_Dev.Event(line);
 	}
 
 	static bool IsAllowed(AICommander_BaseComponent cmd, int t)
@@ -227,6 +237,8 @@ class DCO_CommanderTactics
 	bool HoldRelease(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, float now)
 	{
 		DCO_TacticPlan p = m_mPlans.Get(obj);
+		if (p && p.m_eTactic == DCO_ETactic.INFILTRATION)
+			return HoldForInfiltrator(cmd, p, now);
 		if (!p || p.m_eTactic != DCO_ETactic.HAMMER_AND_ANVIL)
 			return false;
 
@@ -251,7 +263,7 @@ class DCO_CommanderTactics
 			return false;
 		}
 
-		if (now - p.m_fStart > 240.0 || !hasAnvil)
+		if (now - p.m_fStart > DCO_Ctx.TuneForCmd(cmd, "tac.anvil_wait_s", 240.0) || !hasAnvil)
 		{
 			p.m_eTactic = DCO_ETactic.FLANKING;
 			string why = "anvil_timeout";
@@ -261,6 +273,31 @@ class DCO_CommanderTactics
 			return false;
 		}
 		return true;
+	}
+
+	protected bool HoldForInfiltrator(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now)
+	{
+		DCO_GroupUtilityComponent inf = p.FirstWithRole(1);
+		if (!inf || !inf.GetOwner() || p.m_iPhase != 0 || cmd.DCO_RelentlessCmd())
+			return false;
+		float d = vector.DistanceXZ(inf.GetOwner().GetOrigin(), p.m_vTarget);
+		if (d <= 40.0 || inf.HasState(DCO_EGroupState.IN_CONTACT))
+			return false;
+		if (p.m_fDCOHoldSince < 0)
+		{
+			p.m_fDCOHoldSince = now;
+			DCO_Perf.Count("tactic:infil_wait");
+			Event(string.Format("tactic_phase obj=%1 tactic=%2 phase=wait_infiltrator grp=%3 dist=%4", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic), inf.GetOwner().GetName(), Math.Round(d)));
+		}
+		if (now - p.m_fDCOHoldSince <= DCO_Ctx.TuneForCmd(cmd, "tac.infil_wait_s", 180.0))
+			return true;
+		if (!p.m_bDCOHoldLate)
+		{
+			p.m_bDCOHoldLate = true;
+			DCO_Perf.Count("tactic:infil_late");
+			Event(string.Format("tactic_phase obj=%1 tactic=%2 phase=infiltrator_late grp=%3 dist=%4 waited_s=%5", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic), inf.GetOwner().GetName(), Math.Round(d), Math.Round(now - p.m_fDCOHoldSince)));
+		}
+		return false;
 	}
 
 	DCO_TacticPlan Begin(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, float now, int mask = -1)
@@ -383,8 +420,59 @@ class DCO_CommanderTactics
 			s.m_fConfidence.ToString(-1, 2), s.m_bNight, s.m_bUrban, s.m_bForest) + string.Format(" retreat=%1 dir=%2 mask=%3 pick=%4", s.m_sRetreatSrc, s.m_vRetreat, usable, pick));
 		Event(string.Format("tactic_scores obj=%1 top=%2", obj.GetOwner().GetName(), TopScores(scores)));
 
+		Event(string.Format("tactic_forces obj=%1 groups=%2 committed=%3 free=%4", obj.GetOwner().GetName(), s.m_iGroups, s.m_iCommitted, s.m_iGroups - s.m_iCommitted));
+
 		Start(cmd, p, now);
+		if (p.m_eTactic == DCO_ETactic.MOVEMENT_TO_CONTACT && p.m_aGroups.IsEmpty() && s.m_iCommitted > 0)
+			AdoptLead(cmd, p, now);
+		if (ControlsObjective(obj) && p.m_aGroups.IsEmpty())
+		{
+			m_mPlans.Remove(obj);
+			DCO_Perf.Count("tactic:no_group");
+			Event(string.Format("tactic_none cmd=%1 obj=%2 why=no_group tactic=%3 groups=%4 committed=%5", cmd.GetCommanderUID(), obj.GetOwner().GetName(), Name(best), s.m_iGroups, s.m_iCommitted));
+			DCO_Briefing.AttackEnd(obj, "no_group");
+			return null;
+		}
+		DCO_Briefing.AttackBegin(cmd, p);
 		return p;
+	}
+
+	protected void AdoptLead(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now)
+	{
+		CMD_AICommanderObjectiveComponent obj = p.m_Obj;
+		vector objPos = obj.GetOwner().GetOrigin();
+		DCO_GroupUtilityComponent lead;
+		float leadD = float.MAX;
+		int inContact;
+		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
+		{
+			if (!IsCommittedTo(g, obj) || !g.GetOwner() || g.IsInTransport() || g.GetUnitCount() <= 0 || g.GetTask() == DCO_EGroupTask.SUPPORT_BY_FIRE)
+				continue;
+			if (g.HasState(DCO_EGroupState.IN_CONTACT))
+			{
+				inContact++;
+				continue;
+			}
+			float d = vector.DistanceSqXZ(g.GetOwner().GetOrigin(), objPos);
+			if (d < leadD)
+			{
+				leadD = d;
+				lead = g;
+			}
+		}
+		if (!lead)
+		{
+			DCO_Perf.Count("tactic:adopt_no_lead");
+			Event(string.Format("tactic_adopt_none obj=%1 tactic=%2 in_contact=%3", obj.GetOwner().GetName(), Name(p.m_eTactic), inContact));
+			return;
+		}
+		SCR_AIGroup lg = SCR_AIGroup.Cast(lead.GetOwner());
+		bool reorder = lg && !lg.GetCurrentWaypoint();
+		if (reorder)
+			cmd.TacticCommit(lead, obj, DCO_EGroupTask.ATTACK, objPos, now);
+		p.AddGroup(lead, 5, objPos);
+		DCO_Perf.Count("tactic:adopt_lead");
+		Event(string.Format("tactic_adopt obj=%1 tactic=%2 grp=%3 role=LEAD task=%4 obj_m=%5 reorder=%6 in_contact_others=%7", obj.GetOwner().GetName(), Name(p.m_eTactic), lead.GetOwner().GetName(), typename.EnumToString(DCO_EGroupTask, lead.GetTask()), Math.Round(Math.Sqrt(leadD)), DCO_Util.B01(reorder), inContact));
 	}
 
 	protected void LearnEnd(DCO_TacticPlan p, string result, float now)
@@ -399,6 +487,17 @@ class DCO_CommanderTactics
 				start += p.m_aStartUnits[i];
 			if (g)
 				alive += g.GetUnitCount();
+		}
+		if (!p.m_aDCOForce.IsEmpty())
+		{
+			start = 0;
+			alive = 0;
+			foreach (int fi, DCO_GroupUtilityComponent fg : p.m_aDCOForce)
+			{
+				start += p.m_aDCOForce0[fi];
+				if (fg)
+					alive += fg.GetUnitCount();
+			}
 		}
 		int losses = Math.Max(start - alive, 0);
 		int kills = DCO_CmdLearn.DeathsNear(p.m_Obj.GetOwner().GetOrigin(), p.m_Obj.GetRadius() + 300.0, p.m_sLearnFk, p.m_fStart);
@@ -432,8 +531,11 @@ class DCO_CommanderTactics
 		float friendly = 0;
 		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
 		{
-			if (!IsUsable(cmd, g))
+			bool onObj = IsCommittedTo(g, obj);
+			if (!onObj && !IsUsable(cmd, g))
 				continue;
+			if (onObj)
+				s.m_iCommitted++;
 			s.m_iGroups++;
 			if (g.GetUnitCount() <= 6.0)
 				s.m_iSmallGroups++;
@@ -716,8 +818,26 @@ class DCO_CommanderTactics
 
 	protected bool IsUsable(AICommander_BaseComponent cmd, DCO_GroupUtilityComponent g)
 	{
-		return g && !g.IsPlayerGroup() && !g.IsDedicatedTransport() && !g.IsMortar() && !g.IsInTransport()
-			&& g.IsAvailableReserve() && g.CanItHaveOrder() && cmd.CanCommitGroup(g);
+		if (!g || g.IsPlayerGroup() || g.IsDedicatedTransport() || g.IsMortar() || g.IsInTransport())
+			return false;
+		if (!g.IsArmor() && g.GetUnitCount() < DCO_Ctx.TuneForCmd(cmd, "tac.min_attack_men", 3.0))
+		{
+			DCO_Perf.Count("tac:skip_single");
+			if (DCO_GroupJobs.LogDue(DCO_Log.IdGroup(SCR_AIGroup.Cast(g.GetOwner())) + "|tac_single", 120.0))
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(cmd), string.Format("cmd_small_skip cmd=%1 grp=%2 units=%3 task=TACTIC path=tac_pick min=%4", cmd.GetCommanderUID(), DCO_Log.IdGroup(SCR_AIGroup.Cast(g.GetOwner())), g.GetUnitCount(), Math.Round(DCO_Ctx.TuneForCmd(cmd, "tac.min_attack_men", 3.0))));
+			return false;
+		}
+		return g.IsAvailableReserve() && g.CanItHaveOrder() && cmd.DCO_AttackFit(g) && cmd.CanCommitGroup(g, true);
+	}
+
+	protected bool IsCommittedTo(DCO_GroupUtilityComponent g, CMD_AICommanderObjectiveComponent obj)
+	{
+		if (!g || !obj || g.IsPlayerGroup() || g.IsMortar())
+			return false;
+		if (g.GetGroupObjective() != obj)
+			return false;
+		DCO_EGroupTask t = g.GetTask();
+		return t == DCO_EGroupTask.ATTACK || t == DCO_EGroupTask.FLANK || t == DCO_EGroupTask.SUPPORT_BY_FIRE;
 	}
 
 	protected int RoleJob(int role)
@@ -738,6 +858,7 @@ class DCO_CommanderTactics
 			jm = DCO_GroupJobs.AnyCombat();
 		DCO_GroupUtilityComponent best;
 		float bestD = float.MAX;
+		bool pickStrength = DCO_Ctx.TuneForCmd(cmd, "tac.pick_strength", 1.0) > 0;
 		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
 		{
 			if (!IsUsable(cmd, g))
@@ -749,6 +870,11 @@ class DCO_CommanderTactics
 			if (fireSupport && !g.HasMG() && !g.IsArmor())
 				continue;
 			float d = vector.DistanceSqXZ(g.GetOwner().GetOrigin(), pos);
+			if (pickStrength && !g.IsArmor())
+			{
+				float men = Math.Clamp(g.GetUnitCount(), 3, 12);
+				d = d * 36.0 / (men * men);
+			}
 			if ((jm & 3) != 0 && g.IsFirstToFight() && cmd.DCO_FtfFit(g))
 				d = d / 2.25;
 			if (d < bestD)
@@ -934,6 +1060,15 @@ class DCO_CommanderTactics
 				DCO_GroupUtilityComponent lead = PickGroup(cmd, objPos, false, false, 1);
 				if (lead && cmd.TacticCommit(lead, obj, DCO_EGroupTask.ATTACK, objPos, now))
 					p.AddGroup(lead, 5, objPos);
+				int leadMax = DCO_Force.Max(cmd, "mtc_lead");
+				for (int li = 1; li < leadMax && lead; li++)
+				{
+					DCO_GroupUtilityComponent extraLead = PickGroup(cmd, objPos, false, false, 1);
+					if (!extraLead)
+						break;
+					if (cmd.TacticCommit(extraLead, obj, DCO_EGroupTask.ATTACK, objPos, now))
+						p.AddGroup(extraLead, 5, objPos);
+				}
 				DCO_GroupUtilityComponent follow = PickGroup(cmd, objPos, false, false, 1);
 				if (follow && lead)
 				{
@@ -950,8 +1085,15 @@ class DCO_CommanderTactics
 			case DCO_ETactic.RAID:
 			{
 				int count = 1;
-				if (p.m_eTactic == DCO_ETactic.RAID && p.m_fRatio > 0.5)
-					count = 2;
+				if (p.m_eTactic == DCO_ETactic.RAID)
+				{
+					count = DCO_Force.Min(cmd, "raid");
+					if (p.m_fRatio > 0.5)
+						count = DCO_Force.Max(cmd, "raid");
+					if (count < 1)
+						count = 1;
+					Event(string.Format("tactic_raid_size obj=%1 groups=%2 ratio=%3", obj.GetOwner().GetName(), count, p.m_fRatio.ToString(-1, 2)));
+				}
 				for (int i = 0; i < count; i++)
 				{
 					if (TryPlayerRole(cmd, p, ROLE_ASSAULT, objPos, false, false, now))
@@ -1018,7 +1160,7 @@ class DCO_CommanderTactics
 			case DCO_ETactic.BYPASS:
 			{
 				SendFix(cmd, p, 1, now);
-				cmd.SetObjectiveCooldown(obj, 600.0);
+				cmd.SetObjectiveCooldown(obj, DCO_Ctx.TuneForCmd(cmd, "tac.bypass_cd_s", 600.0));
 				p.m_iPhase = 1;
 				break;
 			}
@@ -1528,7 +1670,16 @@ class DCO_CommanderTactics
 				done.Insert(obj);
 		}
 		foreach (CMD_AICommanderObjectiveComponent o : done)
+		{
+			DCO_TacticPlan dp = m_mPlans.Get(o);
+			if (o && dp && !dp.m_bDCORechoose)
+				DCO_Briefing.AttackEnd(o, "plan_done");
+			if (o && dp && dp.m_bDCOCaptured)
+				ReleaseSupport(cmd, dp, "captured", now);
+			else if (o && dp)
+				ReleaseSupport(cmd, dp, "plan_done", now);
 			m_mPlans.Remove(o);
+		}
 
 		UpdatePursuits(cmd, now);
 	}
@@ -1545,6 +1696,7 @@ class DCO_CommanderTactics
 			DCO_Perf.Count("tactic:captured");
 			Event(string.Format("tactic_result obj=%1 tactic=%2 result=captured via=owner_flip after_s=%3", obj.GetOwner().GetName(), Name(p.m_eTactic), Math.Round(now - p.m_fStart)));
 			LearnEnd(p, "captured", now);
+			p.m_bDCOCaptured = true;
 			if (IsAllowed(cmd, DCO_ETactic.PURSUIT))
 				TryPursuit(cmd, obj, now);
 			return true;
@@ -1557,6 +1709,21 @@ class DCO_CommanderTactics
 		}
 
 		VehFixCheck(cmd, p, now);
+
+		foreach (int pgi, DCO_GroupUtilityComponent pg : p.m_aGroups)
+		{
+			if (!pg || p.m_aDCOForce.Contains(pg))
+				continue;
+			p.m_aDCOForce.Insert(pg);
+			p.m_aDCOForce0.Insert(p.m_aStartUnits[pgi]);
+		}
+		foreach (DCO_GroupUtilityComponent fg : cmd.GetOwnedGroups())
+		{
+			if (!IsCommittedTo(fg, obj) || p.m_aDCOForce.Contains(fg))
+				continue;
+			p.m_aDCOForce.Insert(fg);
+			p.m_aDCOForce0.Insert(fg.GetUnitCount());
+		}
 
 		if (!p.m_bReleaseLogged && !ControlsObjective(obj) && cmd.IsAssaultReleased(obj))
 		{
@@ -1588,6 +1755,8 @@ class DCO_CommanderTactics
 			case DCO_ETactic.BYPASS: return UpdateBypass(cmd, p, now);
 			case DCO_ETactic.FIRE_AND_MANEUVER: UpdateBounding(cmd, p, now); break;
 			case DCO_ETactic.INFILTRATION: UpdateInfiltration(cmd, p, now); break;
+			case DCO_ETactic.FLANKING: UpdateFlank(cmd, p, now); break;
+			case DCO_ETactic.PINCER: UpdateFlank(cmd, p, now); break;
 		}
 		return false;
 	}
@@ -1622,6 +1791,9 @@ class DCO_CommanderTactics
 			DCO_EGroupTask t = g.GetTask();
 			if (t != DCO_EGroupTask.ATTACK && t != DCO_EGroupTask.FLANK)
 				continue;
+			int fixIdx = p.m_aGroups.Find(g);
+			if (fixIdx >= 0 && p.m_aRoles[fixIdx] == ROLE_FIX)
+				continue;
 			float d = vector.DistanceXZ(g.GetOwner().GetOrigin(), objPos);
 			if (d <= obj.GetRadius() * 0.8)
 				continue;
@@ -1632,9 +1804,9 @@ class DCO_CommanderTactics
 				p.m_mProgressAt.Set(g, now);
 				continue;
 			}
-			float limit = AggWait(cmd, "tac.stall_s", 60.0, 30.0);
+			float limit = AggWait(cmd, "tac.stall_s", 60.0, DCO_Ctx.TuneForCmd(cmd, "agg.wait_floor_s", 30.0));
 			if (g.HasState(DCO_EGroupState.IN_CONTACT))
-				limit = AggWait(cmd, "tac.stall_contact_s", 120.0, 30.0);
+				limit = AggWait(cmd, "tac.stall_contact_s", 120.0, DCO_Ctx.TuneForCmd(cmd, "agg.wait_floor_s", 30.0));
 			if (now - p.m_mProgressAt.Get(g) < limit)
 				continue;
 			string how = "reroute";
@@ -1716,9 +1888,20 @@ class DCO_CommanderTactics
 			cmd.TacticRelease(g, p.m_Obj);
 			freed++;
 		}
-		MarkFailed(p.m_Obj, p.m_eTactic);
+		p.m_bDCORechoose = true;
+		bool handOff = why == "contact" || why == "intel" || why == "escalate" || why == "raid_again";
+		string learnResult = why;
+		if (why == "raid_again")
+			learnResult = "raid_done";
+		else if (handOff)
+			learnResult = "replanned";
+		LearnEnd(p, learnResult, DCO_CommanderOps.Now());
+		if (handOff)
+			DCO_Perf.Count("tactic:handoff_not_failed");
+		else
+			MarkFailed(p.m_Obj, p.m_eTactic);
 		DCO_TacticTest.NoteHandOff(cmd, p.m_Obj, why);
-		Event(string.Format("tactic_phase obj=%1 tactic=%2 phase=rechoose reason=%3 freed=%4", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic), why, freed));
+		Event(string.Format("tactic_phase obj=%1 tactic=%2 phase=rechoose reason=%3 freed=%4 marked_failed=%5", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic), why, freed, DCO_Util.B01(!handOff)));
 		cmd.TacticRestart(p.m_Obj);
 	}
 
@@ -1731,9 +1914,9 @@ class DCO_CommanderTactics
 			return false;
 		bool contact;
 		int units;
-		foreach (DCO_GroupUtilityComponent g : p.m_aGroups)
+		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
 		{
-			if (!g)
+			if (!IsCommittedTo(g, p.m_Obj))
 				continue;
 			units += g.GetUnitCount();
 			if (g.HasState(DCO_EGroupState.IN_CONTACT))
@@ -1756,6 +1939,12 @@ class DCO_CommanderTactics
 		if (now - p.m_fDCOContactSince < limit)
 			return false;
 		if (p.m_iDCOUnits0 > 0 && units <= p.m_iDCOUnits0 * 0.75)
+		{
+			p.m_fDCOContactSince = now;
+			p.m_iDCOUnits0 = units;
+			return false;
+		}
+		if (p.m_eTactic == DCO_ETactic.HAMMER_AND_ANVIL && AnvilIn(cmd, p, now))
 		{
 			p.m_fDCOContactSince = now;
 			p.m_iDCOUnits0 = units;
@@ -1880,7 +2069,7 @@ class DCO_CommanderTactics
 				cmd.TacticRelease(g3, p.m_Obj);
 		}
 		cmd.TacticAbort(p.m_Obj, now);
-		cmd.SetObjectiveCooldown(p.m_Obj, 300.0);
+		cmd.SetObjectiveCooldown(p.m_Obj, DCO_Ctx.TuneForCmd(cmd, "tac.raid_cd_s", 300.0));
 		Event(string.Format("tactic_result obj=%1 tactic=%2 result=raid_done", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic)));
 		LearnEnd(p, "raid_done", now);
 		return true;
@@ -2066,6 +2255,145 @@ class DCO_CommanderTactics
 		Event(string.Format("tactic_phase obj=%1 tactic=%2 phase=bound grp=%3 dist=%4", obj.GetOwner().GetName(), Name(p.m_eTactic), rear.GetOwner(), Math.Round(rearDist)));
 	}
 
+	protected bool AnvilIn(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now)
+	{
+		if (p.m_bDCOAnvilIn)
+			return false;
+		DCO_GroupUtilityComponent anvil = p.FirstWithRole(ROLE_BLOCK);
+		if (!anvil || !anvil.GetOwner() || anvil.IsInTransport())
+			return false;
+		cmd.TacticAssault(anvil, p.m_Obj, now);
+		if (anvil.GetTask() != DCO_EGroupTask.ATTACK)
+			return false;
+		p.m_bDCOAnvilIn = true;
+		p.m_aRoles[p.m_aGroups.Find(anvil)] = ROLE_ASSAULT;
+		DCO_Perf.Count("tactic:anvil_in");
+		Event(string.Format("tactic_phase obj=%1 tactic=%2 phase=anvil_in reason=stalemate grp=%3 dist=%4", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic), anvil.GetOwner().GetName(), Math.Round(vector.DistanceXZ(anvil.GetOwner().GetOrigin(), p.m_Obj.GetOwner().GetOrigin()))));
+		return true;
+	}
+
+	protected void ReleaseSupport(AICommander_BaseComponent cmd, DCO_TacticPlan p, string why, float now)
+	{
+		foreach (int i, DCO_GroupUtilityComponent g : p.m_aGroups)
+		{
+			if (!g || !g.GetOwner() || g.GetGroupObjective() != p.m_Obj)
+				continue;
+			DCO_EGroupTask t = g.GetTask();
+			if (t == DCO_EGroupTask.ATTACK || t == DCO_EGroupTask.FLANK)
+				continue;
+			cmd.TacticRelease(g, p.m_Obj);
+			float hold;
+			if (p.m_aRoles[i] == ROLE_BLOCK && why == "captured")
+			{
+				hold = DCO_Ctx.TuneForCmd(cmd, "tac.anvil_hold_s", 120.0);
+				if (hold > 0)
+					g.DCO_SetHold(now + hold);
+			}
+			DCO_Perf.Count("tactic:release_support");
+			Event(string.Format("tactic_release obj=%1 tactic=%2 grp=%3 role=%4 task=%5 why=%6 hold_s=%7", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic), g.GetOwner().GetName(), RoleName(p.m_aRoles[i]), typename.EnumToString(DCO_EGroupTask, t), why, Math.Round(hold)));
+		}
+	}
+
+	protected void FixByFire(AICommander_BaseComponent cmd, DCO_TacticPlan p, DCO_GroupUtilityComponent g, float now)
+	{
+		vector from = g.GetOwner().GetOrigin();
+		vector objPos = p.m_Obj.GetOwner().GetOrigin();
+		vector pos = cmd.GetOps().FindOverwatch(p.m_Obj, from);
+		if (pos != vector.Zero && DCO_Ctx.TuneForCmd(cmd, "tac.fix_los", 1) > 0)
+			pos = FixLosSite(p.m_Obj, from, pos);
+		if (pos != vector.Zero)
+			cmd.TacticMove(g, pos, now);
+		else
+			pos = from;
+		SCR_AIWaypoint sup = cmd.SpawnSuppressWP(objPos);
+		if (sup)
+			g.MoveTo(sup, now);
+		int gi = p.m_aGroups.Find(g);
+		if (gi < 0)
+			p.AddGroup(g, ROLE_FIX, pos);
+		else
+		{
+			p.m_aRoles[gi] = ROLE_FIX;
+			p.m_aGoals[gi] = pos;
+		}
+		Event(string.Format("tactic_fix obj=%1 tactic=%2 grp=%3 site=%4 move_m=%5 obj_m=%6", p.m_Obj.GetOwner().GetName(), Name(p.m_eTactic), g.GetOwner().GetName(), DCO_Util.XZ(pos), Math.Round(vector.DistanceXZ(from, pos)), Math.Round(vector.DistanceXZ(pos, objPos))));
+	}
+
+	protected void UpdateFlank(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now)
+	{
+		CMD_AICommanderObjectiveComponent obj = p.m_Obj;
+		if (p.m_bDCOMainGo || !cmd.IsAssaultReleased(obj))
+			return;
+		vector objPos = obj.GetOwner().GetOrigin();
+		array<DCO_GroupUtilityComponent> main = {};
+		array<DCO_GroupUtilityComponent> flank = {};
+		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
+		{
+			if (!g || !g.GetOwner() || g.GetGroupObjective() != obj || g.IsInTransport() || g.IsPlayerGroup())
+				continue;
+			if (g.GetTask() == DCO_EGroupTask.FLANK)
+				flank.Insert(g);
+			else if (g.GetTask() == DCO_EGroupTask.ATTACK && !g.IsArmor())
+				main.Insert(g);
+		}
+		if (p.m_eTactic == DCO_ETactic.PINCER && flank.Count() < 2)
+		{
+			p.m_eTactic = DCO_ETactic.FLANKING;
+			DCO_Perf.Count("tactic:pincer_one_arm");
+			Event(string.Format("tactic_phase obj=%1 tactic=PINCER phase=convert_flanking reason=one_arm arms=%2", obj.GetOwner().GetName(), flank.Count()));
+		}
+		float fixMax = DCO_Ctx.TuneForCmd(cmd, "tac.flank_fix_s", 180.0);
+		string go;
+		if (flank.IsEmpty())
+			go = "no_flank";
+		else if (main.IsEmpty())
+			go = "no_main";
+		else if (fixMax <= 0)
+			go = "fix_off";
+		else if (cmd.DCO_RelentlessCmd())
+			go = "relentless";
+		if (go.IsEmpty() && p.m_fDCOFixSince < 0)
+		{
+			p.m_fDCOFixSince = now;
+			foreach (DCO_GroupUtilityComponent m : main)
+				FixByFire(cmd, p, m, now);
+			DCO_Perf.Count("tactic:main_fix");
+			Event(string.Format("tactic_phase obj=%1 tactic=%2 phase=main_fix main=%3 flank=%4 max_s=%5", obj.GetOwner().GetName(), Name(p.m_eTactic), main.Count(), flank.Count(), Math.Round(fixMax)));
+			return;
+		}
+		if (go.IsEmpty())
+		{
+			float edge = obj.GetRadius() + 100.0;
+			foreach (DCO_GroupUtilityComponent fl : flank)
+			{
+				if (vector.DistanceXZ(fl.GetOwner().GetOrigin(), objPos) <= edge)
+					go = "flank_at_edge";
+				else if (go.IsEmpty() && fl.HasState(DCO_EGroupState.IN_CONTACT))
+					go = "flank_contact";
+			}
+			if (go.IsEmpty() && now - p.m_fDCOFixSince >= fixMax)
+				go = "timeout";
+		}
+		if (go.IsEmpty())
+			return;
+		p.m_bDCOMainGo = true;
+		p.m_fDCOContactSince = -1;
+		int sent;
+		foreach (int i, DCO_GroupUtilityComponent pg : p.m_aGroups)
+		{
+			if (!pg || p.m_aRoles[i] != ROLE_FIX || pg.GetTask() != DCO_EGroupTask.ATTACK)
+				continue;
+			p.m_aRoles[i] = ROLE_ASSAULT;
+			cmd.TacticAssault(pg, obj, now);
+			sent++;
+		}
+		float fixed = 0;
+		if (p.m_fDCOFixSince >= 0)
+			fixed = now - p.m_fDCOFixSince;
+		DCO_Perf.Count("tactic:main_go_" + go);
+		Event(string.Format("tactic_phase obj=%1 tactic=%2 phase=main_go reason=%3 groups=%4 fixed_s=%5 flank=%6", obj.GetOwner().GetName(), Name(p.m_eTactic), go, sent, Math.Round(fixed), flank.Count()));
+	}
+
 	protected void UpdateInfiltration(AICommander_BaseComponent cmd, DCO_TacticPlan p, float now)
 	{
 		if (p.m_iPhase != 0)
@@ -2098,12 +2426,14 @@ class DCO_CommanderTactics
 		{
 			tactic = Name(p.m_eTactic);
 			LearnEnd(p, "captured", now);
+			ReleaseSupport(cmd, p, "captured", now);
 		}
 		m_mPlans.Remove(obj);
 		m_mFailedMask.Remove(obj);
 		m_mFailedAt.Remove(obj);
 		DCO_Perf.Count("tactic:captured");
 		Event(string.Format("tactic_result obj=%1 tactic=%2 result=captured", obj.GetOwner().GetName(), tactic));
+		DCO_Briefing.AttackEnd(obj, "captured");
 
 		if (IsAllowed(cmd, DCO_ETactic.PURSUIT))
 			TryPursuit(cmd, obj, now);
@@ -2122,13 +2452,15 @@ class DCO_CommanderTactics
 			TryPursuit(cmd, obj, now);
 	}
 
-	void OnAborted(CMD_AICommanderObjectiveComponent obj, string reason)
+	void OnAborted(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, string reason)
 	{
+		DCO_Briefing.AttackEnd(obj, reason);
 		DCO_TacticPlan p = m_mPlans.Get(obj);
 		if (!p)
 			return;
 		MarkFailed(obj, p.m_eTactic);
 		LearnEnd(p, "abort", DCO_Util.NowS());
+		ReleaseSupport(cmd, p, reason, DCO_Util.NowS());
 		m_mPlans.Remove(obj);
 		Event(string.Format("tactic_abort obj=%1 tactic=%2 reason=%3", obj.GetOwner().GetName(), Name(p.m_eTactic), reason));
 	}
@@ -2189,7 +2521,7 @@ class DCO_CommanderTactics
 		float pr = DCO_Ctx.TuneForCmd(cmd, "tac.pursuit_ratio", 1.5);
 		float ptp = AggTempo(cmd);
 		if (ptp != 1.0)
-			pr = Math.Max(pr / ptp, Math.Min(pr, 1.2));
+			pr = Math.Max(pr / ptp, Math.Min(pr, DCO_Ctx.TuneForCmd(cmd, "agg.pursuit_ratio_floor", 1.2)));
 		if (!best || friendly < enemies * pr)
 			return;
 
@@ -2245,7 +2577,7 @@ class DCO_CommanderTactics
 		{
 			if (p.m_fArrivedAt < 0)
 				p.m_fArrivedAt = now;
-			if (now - p.m_fArrivedAt >= AggWait(cmd, "tac.lost_contact_s", 60.0, 30.0))
+			if (now - p.m_fArrivedAt >= AggWait(cmd, "tac.lost_contact_s", 60.0, DCO_Ctx.TuneForCmd(cmd, "agg.wait_floor_s", 30.0)))
 			{
 				why = "lost_contact";
 				return true;
@@ -2286,7 +2618,7 @@ class DCO_CommanderTactics
 				if (!TrackPursuit(cmd, p, g, now, why))
 					continue;
 			}
-			else if (!arrived && now - p.m_fStart < AggWait(cmd, "tac.pursuit_consol_s", 180.0, 120.0))
+			else if (!arrived && now - p.m_fStart < AggWait(cmd, "tac.pursuit_consol_s", 180.0, DCO_Ctx.TuneForCmd(cmd, "agg.pursuit_wait_floor_s", 120.0)))
 				continue;
 
 			cmd.TacticMove(g, p.m_Obj.GetOwner().GetOrigin(), now);

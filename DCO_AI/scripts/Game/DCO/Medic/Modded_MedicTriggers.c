@@ -22,6 +22,8 @@ modded class SCR_ChimeraAIAgent
 	{
 		super.OnLifeStateChanged(previousLifeState, newLifeState);
 
+		if (newLifeState == ECharacterLifeState.INCAPACITATED || newLifeState == ECharacterLifeState.DEAD)
+			DCO_MedicDispatcher.OnMedicDown(GetControlledEntity());
 		if (newLifeState == ECharacterLifeState.INCAPACITATED)
 			DCO_MedicDispatcher.Notify(GetControlledEntity(), true);
 		else if (newLifeState == ECharacterLifeState.DEAD)
@@ -31,6 +33,7 @@ modded class SCR_ChimeraAIAgent
 			DCO_Recovery.OnDeath(this);
 			DCO_MoraleEvents.OnDeath(GetControlledEntity());
 			DCO_IndLearn.OnDeath(GetControlledEntity());
+			DCO_Beaten.OnDeath(GetControlledEntity());
 			DCO_Events.Killed(GetControlledEntity());
 		}
 	}

@@ -1,4 +1,4 @@
-class SCR_AIGetCurrentWeaponComponent : AITaskScripted
+class DCO_AIGetCurrentWeaponComponent : AITaskScripted
 {
 
 	protected ResourceName m_sQueryResourceName;

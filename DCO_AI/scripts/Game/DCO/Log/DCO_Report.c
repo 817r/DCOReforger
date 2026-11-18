@@ -201,10 +201,11 @@ class DCO_Report
 		array<string> txt = {};
 		txt.Insert("DCO AI session report");
 		txt.Insert("=====================");
+		txt.Insert("DCO build: " + DCO_Log.BUILD);
 		txt.Insert("World: " + GetGame().GetWorldFile());
 		txt.Insert("Game time: " + Clock() + "   (this file is rewritten every 30 s and at the end of the session)");
 		if (DCO_Log.Mode() == DCO_ELogMode.FULL)
-			txt.Insert("Technical logs in this folder: dco.log (all events), perf.log (performance), battle.json (map data).");
+			txt.Insert("Technical logs in this folder: dco.log (all events), perf.log (performance), session.txt (mods and settings).");
 		else
 			txt.Insert("Technical logs are off (DCO Logging = Report only). For a bug report set DCO Logging to Full and send this whole folder.");
 		txt.Insert("");

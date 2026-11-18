@@ -45,6 +45,7 @@ class DCO_LogTimer : Managed
 
 class DCO_Log
 {
+	static const string BUILD = "source";
 	protected static ref array<int> s_aLevel;
 	protected static ref array<int> s_aRate;
 	protected static ref array<int> s_aDropped;
@@ -73,7 +74,7 @@ class DCO_Log
 
 	static int Mode()
 	{
-		if (DCO_TestCaseComponent.RunOn())
+		if (DCO_Dev.RunOn())
 			return DCO_ELogMode.FULL;
 		DCO_GlobalAIComponent g = DCO_GlobalAIComponent.GetInstance();
 		if (!g)
@@ -121,8 +122,8 @@ class DCO_Log
 
 	static void Write(DCO_ELogChannel ch, DCO_ELogLevel lvl, string subject, string text)
 	{
-		if (DCO_CmdViewStore.s_bOn)
-			DCO_CmdViewStore.Capture(text);
+		if (DCO_Dev.ViewOn())
+			DCO_Dev.ViewCapture(text);
 		if (!On(ch, lvl))
 			return;
 		int mode = Mode();
@@ -136,8 +137,8 @@ class DCO_Log
 		}
 		if (lvl == DCO_ELogLevel.ERROR || lvl == DCO_ELogLevel.WARN)
 			DCO_Report.Warn(ch, lvl, text);
-		DCO_TestCaseComponent.OnEvent(text);
-		DCO_Battle.Capture(text);
+		DCO_Dev.TestEvent(text);
+		DCO_Dev.BattleCapture(text);
 		if (subject.IsEmpty())
 			subject = "-";
 		Emit(ch, lvl, subject + " " + text, false);
@@ -227,6 +228,7 @@ class DCO_Log
 		{
 			s_iPart++;
 			s_iBytes = 0;
+			s_aMain.InsertAt(Stamp(System.GetTickCount()) + " " + LevelChar(DCO_ELogLevel.INFO) + " SYS - log_part part=" + s_iPart.ToString() + " build=" + BUILD, 0);
 		}
 		string main = s_sDir + "/dco.log";
 		if (s_iPart > 1)
@@ -448,6 +450,7 @@ class DCO_Log
 		GetGame().GetCallqueue().CallLater(s_Timer.Tick, 2000, true);
 
 		array<string> head = {};
+		head.Insert("dco_build=" + BUILD);
 		head.Insert("start=" + date + " " + h.ToString(2) + ":" + mi.ToString(2) + ":" + s.ToString(2));
 		head.Insert("game=" + GetGame().GetBuildVersion());
 		head.Insert("world=" + GetGame().GetWorldFile());
@@ -466,7 +469,7 @@ class DCO_Log
 		if (Mode() == DCO_ELogMode.FULL)
 			WriteLines(s_sDir + "/session.txt", head);
 
-		Emit(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "- session_start dir=" + s_sDir + " world=" + GetGame().GetWorldFile(), true);
+		Emit(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "- session_start dir=" + s_sDir + " world=" + GetGame().GetWorldFile() + " build=" + BUILD, true);
 	}
 
 	protected static bool Admit(DCO_ELogChannel ch, int now)
@@ -600,15 +603,16 @@ modded class SCR_BaseGameMode
 	protected override void OnGameStart()
 	{
 		super.OnGameStart();
+		Print("[DCO] build=" + DCO_Log.BUILD, LogLevel.NORMAL);
 		DCO_Util.SetTeardown(false);
 		DCO_Log.Start();
-		DCO_Battle.Start();
-		DCO_CmdViewStore.Refresh();
+		DCO_Dev.BattleStart();
+		DCO_Dev.ViewRefresh();
 	}
 
 	override void OnGameEnd()
 	{
-		DCO_Battle.End("world_end");
+		DCO_Dev.BattleEnd("world_end");
 		DCO_LearnDefense.SaveAll();
 		DCO_CmdLearn.SaveAll();
 		DCO_GarrisonRegistry.SaveAll();

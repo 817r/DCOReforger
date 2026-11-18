@@ -101,6 +101,25 @@ class DCO_Rearm
 		return combat.GetMagazineCount(well, false);
 	}
 
+	static bool MagRoom(IEntity me, out ResourceName prefab)
+	{
+		prefab = "";
+		if (!me)
+			return false;
+		BaseWeaponManagerComponent wm = BaseWeaponManagerComponent.Cast(me.FindComponent(BaseWeaponManagerComponent));
+		if (!wm || !wm.GetCurrent())
+			return false;
+		array<BaseMuzzleComponent> muzzles = {};
+		wm.GetCurrent().GetMuzzlesList(muzzles);
+		if (muzzles.IsEmpty() || !muzzles[0])
+			return false;
+		prefab = muzzles[0].GetDefaultMagazineOrProjectileName();
+		if (SCR_StringHelper.IsEmptyOrWhiteSpace(prefab))
+			return false;
+		SCR_InventoryStorageManagerComponent inv = SCR_InventoryStorageManagerComponent.Cast(me.FindComponent(SCR_InventoryStorageManagerComponent));
+		return inv && inv.FindStorageForResource(prefab, EStoragePurpose.PURPOSE_DEPOSIT) != null;
+	}
+
 	static void Tick(SCR_AIUtilityComponent u, SCR_AICombatComponent combat, DCO_RearmState st, float now)
 	{
 		ChimeraCharacter me = ChimeraCharacter.Cast(u.m_OwnerEntity);
@@ -148,6 +167,15 @@ class DCO_Rearm
 		if (spare > 0 && Tasked(u))
 		{
 			DCO_Perf.Count("rearm:skip_tasked");
+			return;
+		}
+
+		ResourceName roomPrefab;
+		if (!MagRoom(me, roomPrefab))
+		{
+			st.m_fNextSearch_ms = now + 120000.0;
+			DCO_Perf.Count("rearm:skip_no_room");
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("rearm_no_room who=%1 spare=%2 prefab=%3", DCO_Log.IdUnit(me), spare, roomPrefab));
 			return;
 		}
 
@@ -260,21 +288,21 @@ class DCO_Rearm
 		return false;
 	}
 
-	protected static bool TryShare(SCR_AIUtilityComponent u, ChimeraCharacter me, typename well, float now)
+	protected static IEntity FindDonor(SCR_AIUtilityComponent u, IEntity me, typename well, float radius, float now, out int donorSpare)
 	{
+		donorSpare = 0;
 		AIAgent agent = u.GetAIAgent();
 		if (!agent || !agent.GetParentGroup())
-			return false;
+			return null;
 		array<AIAgent> agents = {};
 		agent.GetParentGroup().GetAgents(agents);
 		IEntity donor;
-		int donorSpare;
 		foreach (AIAgent a : agents)
 		{
 			if (!a || a == agent)
 				continue;
 			IEntity e = a.GetControlledEntity();
-			if (!e || !DCO_Util.IsAlive(e) || vector.DistanceXZ(e.GetOrigin(), me.GetOrigin()) > 10.0)
+			if (!e || !DCO_Util.IsAlive(e) || vector.DistanceXZ(e.GetOrigin(), me.GetOrigin()) > radius)
 				continue;
 			SCR_AICombatComponent dc = SCR_AICombatComponent.Cast(e.FindComponent(SCR_AICombatComponent));
 			typename dw;
@@ -284,6 +312,38 @@ class DCO_Rearm
 			donor = e;
 			donorSpare = ds;
 		}
+		return donor;
+	}
+
+	static bool DonorNear(SCR_AIUtilityComponent u, typename well, float radius)
+	{
+		if (!u || !u.m_OwnerEntity)
+			return false;
+		int spare;
+		return FindDonor(u, u.m_OwnerEntity, well, radius, GetGame().GetWorld().GetWorldTime(), spare) != null;
+	}
+
+	static bool SourceNear(IEntity me, float radius)
+	{
+		if (!me)
+			return false;
+		vector p = me.GetOrigin();
+		if (StationDist(p, radius) >= 0)
+			return true;
+		if (!s_aCorpses)
+			return false;
+		foreach (IEntity c : s_aCorpses)
+		{
+			if (c && vector.DistanceXZ(c.GetOrigin(), p) <= radius)
+				return true;
+		}
+		return false;
+	}
+
+	protected static bool TryShare(SCR_AIUtilityComponent u, ChimeraCharacter me, typename well, float now)
+	{
+		int donorSpare;
+		IEntity donor = FindDonor(u, me, well, 10.0, now, donorSpare);
 		if (!donor)
 		{
 			DCO_Perf.Count("rearm:share_no_donor");
@@ -293,6 +353,11 @@ class DCO_Rearm
 		if (!MoveOneMag(donor, me, well, rounds))
 		{
 			DCO_Perf.Count("rearm:share_fail");
+			string why = "no_mag";
+			ResourceName shPrefab;
+			if (!MagRoom(me, shPrefab))
+				why = "no_room";
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("ammo_share_fail from=%1 to=%2 well=%3 donor_spare=%4 why=%5", DCO_Log.IdUnit(donor), DCO_Log.IdUnit(me), well.ToString(), donorSpare, why));
 			return false;
 		}
 		if (!s_mShareUntil)
@@ -806,10 +871,37 @@ class DCO_AIRearmBehavior : DCO_TakeBehavior
 		{
 			typename wb;
 			int before = DCO_Rearm.SpareMags(m_Utility.m_CombatComponent, me, wb);
-			myInv.ResupplyMagazines(4);
+			int spawned;
+			bool noRoomSt;
+			ResourceName magPrefab;
+			if (!DCO_Rearm.MagRoom(me, magPrefab))
+				noRoomSt = true;
+			while (!noRoomSt && before + spawned < 3)
+			{
+				BaseInventoryStorageComponent stStorage = myInv.FindStorageForResource(magPrefab, EStoragePurpose.PURPOSE_DEPOSIT);
+				if (!stStorage)
+				{
+					noRoomSt = true;
+					break;
+				}
+				if (!DCO_LogiSupply.PayMag(me, magPrefab, m_DCOSource))
+				{
+					m_sDCOResult = "no_supplies";
+					break;
+				}
+				if (!myInv.TrySpawnPrefabToStorage(magPrefab, stStorage, -1, EStoragePurpose.PURPOSE_DEPOSIT))
+					break;
+				spawned++;
+				DCO_Perf.Count("rearm:station_spawn");
+			}
 			int after = DCO_Rearm.SpareMags(m_Utility.m_CombatComponent, me, wb);
 			m_iDCORounds = -1;
-			if (after <= before)
+			int gain = after - before;
+			if (gain < spawned)
+				gain = spawned;
+			if (spawned > 0 || (noRoomSt && m_iDCOTaken <= 0))
+				DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("rearm_station who=%1 prefab=%2 before=%3 spawned=%4 after=%5 no_room=%6", DCO_Log.IdUnit(me), magPrefab, before, spawned, after, DCO_Util.B01(noRoomSt)));
+			if (gain <= 0)
 			{
 				if (m_iDCOTaken > 0)
 				{
@@ -817,13 +909,18 @@ class DCO_AIRearmBehavior : DCO_TakeBehavior
 					if (DCO_EndRel())
 						DCO_Finish("taken", true);
 				}
+				else if (noRoomSt)
+				{
+					DCO_Perf.Count("rearm:end_full");
+					m_sDCOResult = "no_space";
+				}
 				else
 					m_sDCOResult = "no_gain";
 				return 0;
 			}
-			m_iDCOTaken += after - before;
+			m_iDCOTaken += gain;
 			m_sDCOResult = "taken";
-			return after - before;
+			return gain;
 		}
 
 		SCR_InventoryStorageManagerComponent src = SCR_InventoryStorageManagerComponent.Cast(m_DCOSource.FindComponent(SCR_InventoryStorageManagerComponent));

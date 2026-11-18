@@ -1,5 +1,5 @@
 [ComponentEditorProps(category: "AI/Cover", description: "Static-instance cover manager. Register vector positions, forget on release.")]
-class SCR_CoverManagerComponentClass : ScriptComponentClass {}
+class DCO_CoverManagerComponentClass : ScriptComponentClass {}
 
 class DCO_BldEntCache
 {
@@ -18,7 +18,7 @@ class DCO_BldPosCache
 	string m_sMethod;
 }
 
-class SCR_CoverManagerComponent : ScriptComponent
+class DCO_CoverManagerComponent : ScriptComponent
 {
 	protected static ref map<IEntity, ref DCO_BldEntCache> s_mDCOEnt;
 	protected static map<IEntity, ref DCO_BldEntCache> GetDCOEnt()
@@ -54,9 +54,9 @@ class SCR_CoverManagerComponent : ScriptComponent
 		return c;
 	}
 
-	protected static SCR_CoverManagerComponent s_Instance;
+	protected static DCO_CoverManagerComponent s_Instance;
 
-	static SCR_CoverManagerComponent GetInstance()
+	static DCO_CoverManagerComponent GetInstance()
 	{
 		return s_Instance;
 	}
@@ -90,21 +90,47 @@ class SCR_CoverManagerComponent : ScriptComponent
 		super.OnDelete(owner);
 	}
 
+	protected float m_fDCOSweepAt;
+
 	override void EOnFrame(IEntity owner, float timeSlice)
 	{
-		array<IEntity> toRelease = new array<IEntity>();
+		float tick = System.GetTickCount();
+		if (tick < m_fDCOSweepAt && tick >= m_fDCOSweepAt - 1000.0)
+			return;
+		m_fDCOSweepAt = tick + 1000.0;
 
-		foreach (IEntity agent, float bookedAt : m_mBookTimes)
+		int orphans;
+		for (int b = m_mBookings.Count() - 1; b >= 0; b--)
 		{
-			float elapsed = (System.GetTickCount() - bookedAt) * 0.001;
+			if (!m_mBookings.GetKey(b))
+			{
+				m_mBookings.RemoveElement(b);
+				orphans++;
+			}
+		}
 
-			if (agent != null && elapsed >= m_fMaxBookingDuration)
+		array<IEntity> toRelease = new array<IEntity>();
+		for (int i = m_mBookTimes.Count() - 1; i >= 0; i--)
+		{
+			IEntity agent = m_mBookTimes.GetKey(i);
+			if (!agent)
+			{
+				m_mBookTimes.RemoveElement(i);
+				continue;
+			}
+			if ((tick - m_mBookTimes.GetElement(i)) * 0.001 >= m_fMaxBookingDuration)
 				toRelease.Insert(agent);
 		}
 
-		foreach (IEntity agent : toRelease)
+		foreach (IEntity expired : toRelease)
 		{
-			ForgetBooking(agent);
+			ForgetBooking(expired);
+		}
+
+		if (orphans > 0)
+		{
+			DCO_Perf.CountN("cm:booking_orphan", orphans);
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("booking_orphan removed=%1 left=%2", orphans, m_mBookings.Count()));
 		}
 	}
 
@@ -284,7 +310,7 @@ class SCR_CoverManagerComponent : ScriptComponent
 		if (traceDistance == 10.0)
 		{
 			c = DCO_EntEntry(entity, now);
-			if (c.m_fAt_ms >= 0 && now - c.m_fAt_ms < 1000.0 && vector.DistanceSq(c.m_vPos, origin) < 1.0)
+			if (c.m_fAt_ms >= 0 && now - c.m_fAt_ms < 1500.0 && vector.DistanceSq(c.m_vPos, origin) < 4.0)
 			{
 				DCO_Perf.Count("bld:hit");
 				return c.m_bInside;

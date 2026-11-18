@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalLODModeAttribute : SCR_BaseFloatValueHolderEditorAttribute
+class DCO_AIGlobalLODModeAttribute : SCR_BaseFloatValueHolderEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -72,7 +72,7 @@ class DCO_GlobalCensusAttribute : DCO_GlobalBoolAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		if (!DCO_TestCaseComponent.RunOn())
+		if (!DCO_Dev.RunOn())
 			return null;
 		return super.ReadVariable(item, manager);
 	}
@@ -86,7 +86,7 @@ class DCO_GlobalCensusIntervalAttribute : DCO_GlobalFloatAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		if (!DCO_TestCaseComponent.RunOn())
+		if (!DCO_Dev.RunOn())
 			return null;
 		return super.ReadVariable(item, manager);
 	}

@@ -180,7 +180,7 @@ class DCO_Strength
 				IEntity veh = DCO_VehicleCombat.GetVehicle(ent);
 				if (veh)
 					AddVehicle(veh, outInfo);
-				else if (SCR_CoverManagerComponent.DCO_GetBuildingAt(ent))
+				else if (DCO_CoverManagerComponent.DCO_GetBuildingAt(ent))
 					w *= 1.5;
 			}
 			outInfo.m_fStrength += w;

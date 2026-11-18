@@ -333,7 +333,25 @@ class DCO_CommanderStockAttribute : DCO_CommanderSupportBaseAttribute
 class DCO_GlobalCommanderStockAttribute : DCO_GlobalFloatAttribute
 {
 	override protected float Get(DCO_GlobalAIComponent cfg) { return cfg.GetCommanderStockDefault(); }
-	override protected void Set(DCO_GlobalAIComponent cfg, float value) { cfg.SetCommanderStockDefault(Math.Round(value)); }
+	override protected void Set(DCO_GlobalAIComponent cfg, float value)
+	{
+		int n = Math.Round(value);
+		bool changed = n != cfg.GetCommanderStockDefault();
+		cfg.SetCommanderStockDefault(n);
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (!changed || n < 0 || !mgr)
+			return;
+		int applied;
+		foreach (AICommander_BaseComponent c : mgr.m_aCommander)
+		{
+			if (!c || DCO_GlobalAIComponent.GetForCommander(c) != cfg)
+				continue;
+			c.SetReinforcementStock(n);
+			applied++;
+		}
+		DCO_Perf.Count("gm:stock_live_all");
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("gm_stock_live stock=%1 scope=all commanders=%2", n, applied));
+	}
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
@@ -635,6 +653,13 @@ class DCO_CommanderPointsStockAttribute : DCO_CommanderSupportBaseAttribute
 {
 	override protected bool Read(AICommander_BaseComponent cmd, out float value) { value = cmd.GetPointsStock(); return true; }
 	override protected void Write(AICommander_BaseComponent cmd, float value) { cmd.SetPointsStock(Math.Round(value)); }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_SpawnerVehicleChanceAttribute : DCO_SpawnerFloatAttribute
+{
+	override protected float Get(DCO_CommanderSpawnerComponent s) { return s.GetVehicleChance(); }
+	override protected void Set(DCO_CommanderSpawnerComponent s, float value) { s.SetVehicleChance(value); }
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]

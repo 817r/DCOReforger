@@ -215,7 +215,7 @@ class DCO_Designate
 				Post(grp, 2, p, e, me, now, "enemy_mg");
 				pointDone = true;
 			}
-			else if (SCR_CoverManagerComponent.IsEntityInsideBuilding(e))
+			else if (DCO_CoverManagerComponent.IsEntityInsideBuilding(e))
 			{
 				Post(grp, 2, p, e, me, now, "in_building");
 				pointDone = true;

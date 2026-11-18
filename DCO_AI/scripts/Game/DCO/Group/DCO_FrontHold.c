@@ -2,6 +2,8 @@ modded class SCR_AIUtilityComponent
 {
 	float m_fDCORearAt_ms;
 	float m_fDCOFrontLogAt_ms;
+	float m_fDCOFrontNearAt_ms;
+	bool m_bDCOFrontNear;
 }
 
 class DCO_FrontHold
@@ -74,8 +76,33 @@ class DCO_FrontHold
 		return true;
 	}
 
+	static bool NearContact(SCR_AIUtilityComponent u)
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now - u.m_fDCOFrontNearAt_ms < 1000.0)
+			return u.m_bDCOFrontNear;
+		u.m_fDCOFrontNearAt_ms = now;
+		u.m_bDCOFrontNear = false;
+		float freeM = DCO_Ctx.TuneForU(u, "front.free_m", 60.0);
+		if (freeM <= 0 || !u.m_PerceptionComponent)
+			return false;
+		if (u.m_ThreatSystem && u.m_ThreatSystem.GetState() == EAIThreatState.THREATENED)
+		{
+			u.m_bDCOFrontNear = true;
+			return true;
+		}
+		BaseTarget t = u.m_PerceptionComponent.GetClosestTarget(ETargetCategory.ENEMY, 10.0, 10.0);
+		if (!t)
+			t = u.m_PerceptionComponent.GetClosestTarget(ETargetCategory.DETECTED, 10.0, 10.0);
+		if (t && t.GetDistance() < freeM)
+			u.m_bDCOFrontNear = true;
+		return u.m_bDCOFrontNear;
+	}
+
 	static bool AllowDir(SCR_AIUtilityComponent u, vector pos, float prio, string src)
 	{
+		if (DCO_Attention.On())
+			return true;
 		bool on = FrontOn();
 		if ((!on && DCO_Ctx.TuneForU(u, "front.measure", 0.0) <= 0) || prio >= SCR_AILookAction.PRIO_UNKNOWN_TARGET || !u || !u.m_OwnerEntity)
 			return true;
@@ -85,6 +112,30 @@ class DCO_FrontHold
 		float off = OffDeg(u, front, pos);
 		if (off <= DCO_Ctx.TuneForU(u, "front.arc_deg", 60.0))
 			return true;
+		float closeM = DCO_Ctx.TuneForU(u, "front.close_m", 50.0);
+		float distM = vector.DistanceXZ(u.m_OwnerEntity.GetOrigin(), pos);
+		if (closeM > 0 && distM <= closeM)
+		{
+			DCO_Perf.Count("front:free_close_" + src);
+			float nowClose = GetGame().GetWorld().GetWorldTime();
+			if (nowClose >= u.m_fDCOFrontLogAt_ms)
+			{
+				u.m_fDCOFrontLogAt_ms = nowClose + 10000.0;
+				DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(u.m_OwnerEntity), string.Format("look_front_free unit=%1 src=%2 off_deg=%3 why=close dist=%4", DCO_Log.IdUnit(u.m_OwnerEntity), src, Math.Round(off), Math.Round(distM)));
+			}
+			return true;
+		}
+		if (NearContact(u))
+		{
+			DCO_Perf.Count("front:free_near_" + src);
+			float nowFree = GetGame().GetWorld().GetWorldTime();
+			if (nowFree >= u.m_fDCOFrontLogAt_ms)
+			{
+				u.m_fDCOFrontLogAt_ms = nowFree + 10000.0;
+				DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(u.m_OwnerEntity), string.Format("look_front_free unit=%1 src=%2 off_deg=%3 why=near_contact", DCO_Log.IdUnit(u.m_OwnerEntity), src, Math.Round(off)));
+			}
+			return true;
+		}
 		if (!on)
 		{
 			DCO_Perf.Count("front:would_clamp_" + src);
@@ -115,6 +166,8 @@ modded class SCR_AILookAction
 {
 	override void LookAt(vector pos, float priority, float duration = 0.8)
 	{
+		if (DCO_Attention.Intercept(m_Utility, pos, priority))
+			return;
 		if (!DCO_FrontHold.AllowDir(m_Utility, pos, priority, "look"))
 			return;
 		super.LookAt(pos, priority, duration);

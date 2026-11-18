@@ -1479,7 +1479,7 @@ class DCO_SaveGroupPresetContextAction : SCR_SelectedEntitiesContextAction
 		if (!selectedEntity || !selectedEntity.GetOwner())
 			return false;
 		SCR_AIGroup grp = SCR_AIGroup.Cast(selectedEntity.GetOwner());
-		return grp && !grp.IsPlayable() && grp.GetAgentsCount() > 0;
+		return grp && !grp.IsPlayable() && DCO_Dormant.Count(grp) > 0;
 	}
 
 	override bool CanBePerformed(SCR_EditableEntityComponent selectedEntity, vector cursorWorldPosition, int flags)

@@ -214,10 +214,87 @@ modded class SCR_AttributesManagerEditorComponent
 		return false;
 	}
 
+	protected ref array<Managed> m_aDCO_ScopeAll;
+	protected Managed m_DCO_ScopeItem;
+	protected Managed m_DCO_ScopeNext;
+	protected bool m_bDCO_ScopeOpen;
+	protected int m_iDCO_ScopeTries;
+
+	Managed DCO_ScopeItem()
+	{
+		return m_DCO_ScopeItem;
+	}
+
+	int DCO_ScopeGroups(notnull array<Managed> outGroups)
+	{
+		outGroups.Clear();
+		if (!m_aDCO_ScopeAll)
+			return 0;
+		foreach (Managed item : m_aDCO_ScopeAll)
+		{
+			SCR_EditableGroupComponent g = SCR_EditableGroupComponent.Cast(item);
+			if (g && !g.HasEntityState(EEditableEntityState.PLAYER))
+				outGroups.Insert(g);
+		}
+		return outGroups.Count();
+	}
+
+	void DCO_ScopeReopen(Managed target)
+	{
+		if (!m_aDCO_ScopeAll || !IsOwner())
+			return;
+		m_DCO_ScopeNext = target;
+		m_iDCO_ScopeTries = 0;
+		GetGame().GetCallqueue().CallLater(DCO_ScopeOpenTry, 0, false);
+	}
+
+	protected void DCO_ScopeOpenTry()
+	{
+		if (!m_aDCO_ScopeAll)
+			return;
+		if (m_aEditedItems || !DCO_CanUseNow())
+		{
+			m_iDCO_ScopeTries++;
+			if (m_iDCO_ScopeTries <= 40)
+				GetGame().GetCallqueue().CallLater(DCO_ScopeOpenTry, 50, false);
+			else
+				DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "dco_settings_scope_open result=busy tries=" + m_iDCO_ScopeTries.ToString());
+			return;
+		}
+		array<Managed> items = {};
+		if (m_DCO_ScopeNext)
+			items.Insert(m_DCO_ScopeNext);
+		else
+		{
+			foreach (Managed item : m_aDCO_ScopeAll)
+			{
+				if (item)
+					items.Insert(item);
+			}
+		}
+		m_DCO_ScopeItem = m_DCO_ScopeNext;
+		m_bDCO_ScopeOpen = true;
+		bool ok = !items.IsEmpty() && DCO_Open(items);
+		m_bDCO_ScopeOpen = false;
+		string res = "fail";
+		if (ok)
+			res = "ok";
+		string scope = "all";
+		if (m_DCO_ScopeItem)
+			scope = "one";
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "dco_settings_scope_open result=" + res + " scope=" + scope + " items=" + items.Count().ToString() + " tries=" + m_iDCO_ScopeTries.ToString());
+	}
+
 	bool DCO_Open(notnull array<Managed> items)
 	{
 		if (!m_PrefabData || !IsOwner() || m_aEditedItems || items.IsEmpty())
 			return false;
+		if (!m_bDCO_ScopeOpen)
+		{
+			m_aDCO_ScopeAll = {};
+			m_aDCO_ScopeAll.Copy(items);
+			m_DCO_ScopeItem = null;
+		}
 
 		array<int> itemIds = {};
 		foreach (Managed item : items)
@@ -261,7 +338,7 @@ modded class SCR_AttributesManagerEditorComponent
 		string target = "none";
 		if (!items.IsEmpty())
 			target = DCO_SettingsBaseline.LogText(DCO_SettingsBaseline.ItemName(items[0]));
-		DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_settings_open target=%2 items=%3 settings=%4", DCO_LogWho(), target, items.Count(), ids.Count()));
+		DCO_Dev.Event(string.Format("GM %1 dco_settings_open target=%2 items=%3 settings=%4", DCO_LogWho(), target, items.Count(), ids.Count()));
 	}
 
 	string DCO_LogWho()
@@ -296,8 +373,59 @@ modded class SCR_AttributesManagerEditorComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Owner)]
 	protected void DCO_RpcEvent(int kind, string a, string b)
 	{
+		DCO_PresetTrace("dir=recv kind=" + kind.ToString() + " a_len=" + a.Length().ToString() + " b_len=" + b.Length().ToString() + " listeners=" + DCO_Util.B01(m_DCO_OnEvent != null));
+		if (kind == 9)
+			DCO_AutoSaveHint(a, b);
 		if (m_DCO_OnEvent)
 			m_DCO_OnEvent.Invoke(kind, a, b);
+	}
+
+	protected void DCO_PresetTrace(string msg)
+	{
+		Print("[DCO] preset " + msg, LogLevel.NORMAL);
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "dco_preset_rpc " + msg);
+	}
+
+	protected string m_sDCO_PartName;
+	protected ref array<string> m_aDCO_Parts;
+	protected int m_iDCO_PartsGot;
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void DCO_RpcPresetPart(string name, int index, int total, string part)
+	{
+		if (total <= 0 || total > 256 || index < 0 || index >= total)
+			return;
+		if (m_sDCO_PartName != name || !m_aDCO_Parts || m_aDCO_Parts.Count() != total)
+		{
+			m_sDCO_PartName = name;
+			m_aDCO_Parts = new array<string>();
+			m_iDCO_PartsGot = 0;
+			for (int i = 0; i < total; i++)
+				m_aDCO_Parts.Insert(string.Empty);
+		}
+		if (m_aDCO_Parts[index].IsEmpty())
+			m_iDCO_PartsGot++;
+		m_aDCO_Parts[index] = part;
+		if (index == 0 || m_iDCO_PartsGot == total)
+			DCO_PresetTrace("dir=recv_server kind=part name=" + name + " index=" + index.ToString() + " total=" + total.ToString() + " got=" + m_iDCO_PartsGot.ToString());
+	}
+
+	protected void DCO_SendContent(string name, string content)
+	{
+		int chunk = DCO_SettingsPresets.ChunkSize();
+		if (content.Length() <= chunk)
+		{
+			DCO_PresetTrace("dir=send_server kind=2 name=" + name + " len=" + content.Length().ToString());
+			Rpc(DCO_RpcEvent, 2, name, content);
+			return;
+		}
+		array<string> parts = {};
+		DCO_SettingsPresets.SplitChunks(content, chunk, parts);
+		DCO_PresetTrace("dir=send_server kind=8 name=" + name + " len=" + content.Length().ToString() + " parts=" + parts.Count().ToString());
+		foreach (int i, string part : parts)
+		{
+			Rpc(DCO_RpcEvent, 8, name + "|" + i.ToString() + "|" + parts.Count().ToString(), part);
+		}
 	}
 
 	void DCO_BeginApply(notnull array<int> attributeIds, int resetAll, int warnings)
@@ -318,11 +446,12 @@ modded class SCR_AttributesManagerEditorComponent
 		string result = "fail";
 		if (ok)
 			result = "ok";
-		DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_settings_import result=%2 scope=%3 reason=%4 count=%5", DCO_LogWho(), result, DCO_SettingsBaseline.LogText(scope), DCO_SettingsBaseline.LogText(reason), count));
+		DCO_Dev.Event(string.Format("GM %1 dco_settings_import result=%2 scope=%3 reason=%4 count=%5", DCO_LogWho(), result, DCO_SettingsBaseline.LogText(scope), DCO_SettingsBaseline.LogText(reason), count));
 	}
 
 	void DCO_PresetList(string scope)
 	{
+		DCO_PresetTrace("dir=send kind=list scope=" + scope + " owner=" + DCO_Util.B01(IsOwner()));
 		if (IsOwner())
 			Rpc(DCO_RpcPresetList, scope);
 	}
@@ -330,6 +459,7 @@ modded class SCR_AttributesManagerEditorComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
 	protected void DCO_RpcPresetList(string scope)
 	{
+		DCO_PresetTrace("dir=recv_server kind=list scope=" + scope + " who=" + DCO_LogWho());
 		DCO_SendPresetList(scope);
 	}
 
@@ -344,11 +474,13 @@ modded class SCR_AttributesManagerEditorComponent
 				joined += ";";
 			joined += n;
 		}
+		DCO_PresetTrace("dir=send_server kind=1 scope=" + scope + " count=" + names.Count().ToString() + " len=" + joined.Length().ToString());
 		Rpc(DCO_RpcEvent, 1, scope, joined);
 	}
 
 	void DCO_PresetLoad(string scope, string name)
 	{
+		DCO_PresetTrace("dir=send kind=load scope=" + scope + " name=" + name + " owner=" + DCO_Util.B01(IsOwner()));
 		if (IsOwner())
 			Rpc(DCO_RpcPresetLoad, scope, name);
 	}
@@ -356,28 +488,64 @@ modded class SCR_AttributesManagerEditorComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
 	protected void DCO_RpcPresetLoad(string scope, string name)
 	{
-		name = DCO_CommanderPresets.Sanitize(name);
+		DCO_PresetTrace("dir=recv_server kind=load scope=" + scope + " name=" + name + " who=" + DCO_LogWho());
 		string content;
-		if (!DCO_SettingsPresets.Load(scope, name, content))
+		bool safe = DCO_SettingsPresets.SafeName(name);
+		if (!safe || !DCO_SettingsPresets.Load(scope, name, content))
 		{
-			DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_preset_load result=fail scope=%2 name=%3 reason=missing_or_invalid", DCO_LogWho(), scope, name));
+			string why = "missing_or_invalid";
+			if (!safe)
+				why = "unsafe_name";
+			DCO_Dev.Event(string.Format("GM %1 dco_preset_load result=fail scope=%2 name=%3 reason=%4", DCO_LogWho(), scope, name, why));
+			DCO_PresetTrace("dir=send_server kind=3 what=load_fail name=" + name);
 			Rpc(DCO_RpcEvent, 3, "load_fail", name);
 			return;
 		}
-		DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_preset_load result=ok scope=%2 name=%3 target=%4", DCO_LogWho(), scope, name, DCO_EditedTarget()));
+		DCO_Dev.Event(string.Format("GM %1 dco_preset_load result=ok scope=%2 name=%3 target=%4", DCO_LogWho(), scope, name, DCO_EditedTarget()));
 		DCO_SettingsChangeLog.Add(DCO_PlayerId(), DCO_EditedTarget(), "preset_load_" + scope, "-", name);
-		Rpc(DCO_RpcEvent, 2, name, content);
+		DCO_SendContent(name, content);
 	}
 
 	void DCO_PresetSave(string scope, string name, string content, bool overwrite)
 	{
-		if (IsOwner())
+		if (!IsOwner())
+		{
+			DCO_PresetTrace("dir=send kind=save scope=" + scope + " name=" + name + " owner=0");
+			return;
+		}
+		int chunk = DCO_SettingsPresets.ChunkSize();
+		if (content.Length() <= chunk)
+		{
+			DCO_PresetTrace("dir=send kind=save scope=" + scope + " name=" + name + " len=" + content.Length().ToString());
 			Rpc(DCO_RpcPresetSave, scope, name, content, overwrite);
+			return;
+		}
+		array<string> parts = {};
+		DCO_SettingsPresets.SplitChunks(content, chunk, parts);
+		DCO_PresetTrace("dir=send kind=save_parts scope=" + scope + " name=" + name + " len=" + content.Length().ToString() + " parts=" + parts.Count().ToString());
+		foreach (int i, string part : parts)
+		{
+			Rpc(DCO_RpcPresetPart, name, i, parts.Count(), part);
+		}
+		Rpc(DCO_RpcPresetSave, scope, name, string.Empty, overwrite);
 	}
 
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
 	protected void DCO_RpcPresetSave(string scope, string name, string content, bool overwrite)
 	{
+		if (DCO_GroupPresets.VerifiedGM(GetManager(), DCO_PlayerId(), "preset_save") < 0)
+			return;
+		if (content.IsEmpty() && m_aDCO_Parts && m_sDCO_PartName == name && m_iDCO_PartsGot == m_aDCO_Parts.Count())
+		{
+			foreach (string p : m_aDCO_Parts)
+				content += p;
+			DCO_PresetTrace("dir=recv_server kind=save_parts name=" + name + " parts=" + m_aDCO_Parts.Count().ToString() + " len=" + content.Length().ToString());
+		}
+		else
+			DCO_PresetTrace("dir=recv_server kind=save name=" + name + " len=" + content.Length().ToString() + " who=" + DCO_LogWho());
+		m_aDCO_Parts = null;
+		m_sDCO_PartName = string.Empty;
+		m_iDCO_PartsGot = 0;
 		name = DCO_CommanderPresets.Sanitize(name);
 		if (name.IsEmpty() || !DCO_SettingsPresets.ValidScope(scope))
 		{
@@ -395,7 +563,7 @@ modded class SCR_AttributesManagerEditorComponent
 		string result = "fail";
 		if (ok)
 			result = "ok";
-		DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_preset_save result=%2 scope=%3 name=%4 target=%5", DCO_LogWho(), result, scope, name, DCO_EditedTarget()));
+		DCO_Dev.Event(string.Format("GM %1 dco_preset_save result=%2 scope=%3 name=%4 target=%5", DCO_LogWho(), result, scope, name, DCO_EditedTarget()));
 		if (ok)
 		{
 			DCO_SettingsChangeLog.Add(DCO_PlayerId(), DCO_EditedTarget(), "preset_save_" + scope, "-", name);
@@ -433,7 +601,7 @@ modded class SCR_AttributesManagerEditorComponent
 		DCO_GlobalAIComponent g = DCO_GlobalAIComponent.GetInstance();
 		string path;
 		bool ok = g && g.DCO_SaveActiveConfig(pid, path);
-		DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_cfg_save result=%2 allowed_by=%3 path=%4", DCO_LogWho(), ok.ToString(), why, path));
+		DCO_Dev.Event(string.Format("GM %1 dco_cfg_save result=%2 allowed_by=%3 path=%4", DCO_LogWho(), ok.ToString(), why, path));
 		if (!ok)
 		{
 			Rpc(DCO_RpcEvent, 3, "cfgsave_fail", path);
@@ -519,12 +687,13 @@ modded class SCR_AttributesManagerEditorComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
 	protected void DCO_RpcPresetDelete(string scope, string name)
 	{
-		name = DCO_CommanderPresets.Sanitize(name);
-		bool ok = DCO_SettingsPresets.Delete(scope, name);
+		if (DCO_GroupPresets.VerifiedGM(GetManager(), DCO_PlayerId(), "preset_delete") < 0)
+			return;
+		bool ok = DCO_SettingsPresets.SafeName(name) && DCO_SettingsPresets.Delete(scope, name);
 		string result = "fail";
 		if (ok)
 			result = "ok";
-		DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_preset_delete result=%2 scope=%3 name=%4", DCO_LogWho(), result, scope, name));
+		DCO_Dev.Event(string.Format("GM %1 dco_preset_delete result=%2 scope=%3 name=%4", DCO_LogWho(), result, scope, name));
 		if (ok)
 			Rpc(DCO_RpcEvent, 3, "delete_ok", name);
 		else
@@ -584,6 +753,7 @@ modded class SCR_AttributesManagerEditorComponent
 	{
 		if (!m_PrefabData)
 			return null;
+		className = DCO_ClassAlias.Resolve(className);
 		for (int i = 0, count = m_PrefabData.GetAttributesCount(); i < count; i++)
 		{
 			SCR_BaseEditorAttribute attribute = m_PrefabData.GetAttribute(i);
@@ -694,6 +864,8 @@ modded class SCR_AttributesManagerEditorComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
 	protected void DCO_RpcApplyMemberOverride(int memberId, array<string> classes, array<float> values)
 	{
+		if (DCO_GroupPresets.VerifiedGM(GetManager(), DCO_PlayerId(), "apply_member_override") < 0)
+			return;
 		array<SCR_EditableEntityComponent> members = {};
 		array<int> groups = {};
 		int skipped;
@@ -772,6 +944,8 @@ modded class SCR_AttributesManagerEditorComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
 	protected void DCO_RpcFactionApply(string factionKey, string content)
 	{
+		if (DCO_GroupPresets.VerifiedGM(GetManager(), DCO_PlayerId(), "faction_apply") < 0)
+			return;
 		FactionManager fm = GetGame().GetFactionManager();
 		if (factionKey.IsEmpty() || !fm || !fm.GetFactionByKey(factionKey))
 		{
@@ -814,7 +988,7 @@ modded class SCR_AttributesManagerEditorComponent
 					continue;
 			}
 			changes++;
-			DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_settings_change target=%2 setting=%3 from=%4 to=%5 override=%6", DCO_LogWho(), target, DCO_SettingsBaseline.LogText(label), DCO_SettingsBaseline.LogText(before), DCO_SettingsBaseline.LogText(now), action));
+			DCO_Dev.Event(string.Format("GM %1 dco_settings_change target=%2 setting=%3 from=%4 to=%5 override=%6", DCO_LogWho(), target, DCO_SettingsBaseline.LogText(label), DCO_SettingsBaseline.LogText(before), DCO_SettingsBaseline.LogText(now), action));
 			if (DCO_SettingsHelp.IsBeta(className))
 				DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("dco_settings_beta_set setting=%1 value=%2 player=%3 target=%4", className, DCO_SettingsBaseline.LogText(now), playerId, target));
 			DCO_SettingsChangeLog.Add(playerId, target, label, before, now);
@@ -827,12 +1001,12 @@ modded class SCR_AttributesManagerEditorComponent
 			string label = DCO_LabelOf(className);
 			string before = DCO_SettingsBaseline.FormatValue(attribute, oldValues[i]);
 			changes++;
-			DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_settings_change target=%2 setting=%3 from=%4 to=global override=removed", DCO_LogWho(), target, DCO_SettingsBaseline.LogText(label), DCO_SettingsBaseline.LogText(before)));
+			DCO_Dev.Event(string.Format("GM %1 dco_settings_change target=%2 setting=%3 from=%4 to=global override=removed", DCO_LogWho(), target, DCO_SettingsBaseline.LogText(label), DCO_SettingsBaseline.LogText(before)));
 			DCO_SettingsChangeLog.Add(playerId, target, label, before, "global");
 		}
 
 		DCO_GlobalAIComponent.DCO_SetOverrides(factionKey, classes, accepted, this);
-		DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_settings_apply target=%2 overrides=%3 changed=%4", DCO_LogWho(), target, classes.Count(), changes));
+		DCO_Dev.Event(string.Format("GM %1 dco_settings_apply target=%2 overrides=%3 changed=%4", DCO_LogWho(), target, classes.Count(), changes));
 		Rpc(DCO_RpcEvent, 6, factionKey, "ok");
 	}
 
@@ -853,6 +1027,8 @@ modded class SCR_AttributesManagerEditorComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
 	protected void DCO_RpcApplyMembers(array<string> classes, array<float> values)
 	{
+		if (DCO_GroupPresets.VerifiedGM(GetManager(), DCO_PlayerId(), "apply_members") < 0)
+			return;
 		if (!m_aEditedItems || !m_PrefabData)
 			return;
 		int playerId = DCO_PlayerId();
@@ -899,7 +1075,7 @@ modded class SCR_AttributesManagerEditorComponent
 			DCO_SettingsChangeLog.Add(playerId, DCO_SettingsBaseline.LogText(DCO_SettingsBaseline.ItemName(item)), "members_all", "-", classes.Count().ToString() + "_settings");
 			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "dco_settings_members_apply group=" + DCO_SettingsBaseline.LogText(DCO_SettingsBaseline.ItemName(item)) + " members=" + groupMembers.ToString() + " skipped_players=" + groupPlayers.ToString() + " settings=" + classes.Count().ToString());
 		}
-		DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_settings_members target=%2 settings=%3 writes=%4", DCO_LogWho(), DCO_EditedTarget(), classes.Count(), written));
+		DCO_Dev.Event(string.Format("GM %1 dco_settings_members target=%2 settings=%3 writes=%4", DCO_LogWho(), DCO_EditedTarget(), classes.Count(), written));
 	}
 
 	void DCO_RequestChangeLog(string target)
@@ -919,7 +1095,7 @@ modded class SCR_AttributesManagerEditorComponent
 	{
 		if (!m_aEditedItems || !m_PrefabData)
 			return;
-		DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_settings_review_confirm target=%2 changes=%3 warnings=%4", DCO_LogWho(), DCO_EditedTarget(), attributeIds.Count(), warnings));
+		DCO_Dev.Event(string.Format("GM %1 dco_settings_review_confirm target=%2 changes=%3 warnings=%4", DCO_LogWho(), DCO_EditedTarget(), attributeIds.Count(), warnings));
 		m_aDCO_LogIds = {};
 		m_aDCO_LogItems = {};
 		m_aDCO_LogOld = {};
@@ -939,7 +1115,7 @@ modded class SCR_AttributesManagerEditorComponent
 			}
 		}
 		if (resetAll)
-			DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_settings_reset_all target=%2", DCO_LogWho(), DCO_EditedTarget()));
+			DCO_Dev.Event(string.Format("GM %1 dco_settings_reset_all target=%2", DCO_LogWho(), DCO_EditedTarget()));
 	}
 
 	protected void DCO_LogApplied()
@@ -965,12 +1141,12 @@ modded class SCR_AttributesManagerEditorComponent
 			if (attribute.GetUIInfo())
 				label = WidgetManager.Translate(attribute.GetUIInfo().GetName());
 			string target = DCO_SettingsBaseline.LogText(DCO_SettingsBaseline.ItemName(item));
-			DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_settings_change target=%2 setting=%3 from=%4 to=%5", DCO_LogWho(), target, DCO_SettingsBaseline.LogText(label), DCO_SettingsBaseline.LogText(m_aDCO_LogOld[i]), DCO_SettingsBaseline.LogText(now)));
+			DCO_Dev.Event(string.Format("GM %1 dco_settings_change target=%2 setting=%3 from=%4 to=%5", DCO_LogWho(), target, DCO_SettingsBaseline.LogText(label), DCO_SettingsBaseline.LogText(m_aDCO_LogOld[i]), DCO_SettingsBaseline.LogText(now)));
 			if (DCO_SettingsHelp.IsBeta(attribute.Type().ToString()))
 				DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("dco_settings_beta_set setting=%1 value=%2 player=%3 target=%4", attribute.Type().ToString(), DCO_SettingsBaseline.LogText(now), DCO_PlayerId(), target));
 			DCO_SettingsChangeLog.Add(DCO_PlayerId(), target, label, m_aDCO_LogOld[i], now);
 		}
-		DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_settings_apply target=%2 items=%3 changed=%4", DCO_LogWho(), DCO_EditedTarget(), m_aEditedItems.Count(), changed));
+		DCO_Dev.Event(string.Format("GM %1 dco_settings_apply target=%2 items=%3 changed=%4", DCO_LogWho(), DCO_EditedTarget(), m_aEditedItems.Count(), changed));
 		if (changed > 0 && (DCO_GlobalAIComponent.DCO_FactionActive() || DCO_GlobalAIComponent.DCO_CfgAnyFaction()))
 		{
 			foreach (Managed edited : m_aEditedItems)
@@ -978,13 +1154,16 @@ modded class SCR_AttributesManagerEditorComponent
 				if (BaseGameMode.Cast(edited))
 				{
 					DCO_GlobalAIComponent.DCO_RebuildAll(this);
-					DCO_BenchmarkLoggerComponent.Event(string.Format("GM %1 dco_faction_rebuild reason=global_changed", DCO_LogWho()));
+					DCO_Dev.Event(string.Format("GM %1 dco_faction_rebuild reason=global_changed", DCO_LogWho()));
 					break;
 				}
 			}
 		}
 		if (changed > 0)
+		{
+			DCO_GlobalAIComponent.DCO_BumpVerAll();
 			DCO_AutoSaveConfig();
+		}
 		m_aDCO_LogIds = null;
 		m_aDCO_LogItems = null;
 		m_aDCO_LogOld = null;
@@ -1012,6 +1191,7 @@ modded class SCR_AttributesManagerEditorComponent
 		{
 			DCO_Perf.Count("cfg:autosave_denied");
 			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("cfg_autosave result=denied player=%1 mode=%2 (changes apply to this session only; an admin can save them)", pid, why));
+			Rpc(DCO_RpcEvent, 9, "session_only", why);
 			return;
 		}
 		string path;
@@ -1022,7 +1202,22 @@ modded class SCR_AttributesManagerEditorComponent
 		{
 			DCO_SettingsChangeLog.Add(pid, "Global", "auto_save_server_config", "-", path);
 			DCO_Report.Gm("Saved to server config automatically", path);
+			Rpc(DCO_RpcEvent, 9, "saved", path);
 		}
+		else
+			Rpc(DCO_RpcEvent, 9, "save_fail", path);
+	}
+
+	protected void DCO_AutoSaveHint(string result, string detail)
+	{
+		string text = "Settings applied, but saving them to the server config failed. Check the server log.";
+		if (result == "saved")
+			text = "Settings applied and saved to the server config.";
+		else if (result == "session_only")
+			text = "Settings applied for this session only. Saving them to the server config needs an admin.";
+		DCO_Perf.Count("cfg:autosave_hint_" + result);
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "cfg_autosave_hint result=" + result + " detail=" + detail);
+		SCR_HintManagerComponent.ShowCustomHint(text, "DCO Settings", 8.0);
 	}
 
 	[RplRpc(RplChannel.Reliable, RplRcver.Owner)]
@@ -1103,6 +1298,22 @@ modded class SCR_AttributesManagerEditorComponent
 	override bool CanOpenAttributeDialog(notnull array<Managed> items)
 	{
 		return DCO_CanOpen(items, false);
+	}
+
+	void DCO_EndServer()
+	{
+		if (IsOwner())
+			Rpc(DCO_RpcEndServer);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void DCO_RpcEndServer()
+	{
+		if (!m_bDCO_Mode)
+			return;
+		DCO_Perf.Count("gm:end_server_clean");
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("dco_settings_end_server player=%1 reason=no_server_attributes", DCO_PlayerId()));
+		Clean();
 	}
 
 	override protected void Clean()

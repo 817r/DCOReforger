@@ -108,7 +108,7 @@ class DCO_CoverEval
 			s_aThreats.Remove(3);
 	}
 
-	protected static void CollectThreats(AIAgent owner, SCR_AIUtilityComponent u, CoverQueryProperties props, vector myPos, out vector threat, out string tsrc, out bool heavy)
+	protected static void CollectThreats(AIAgent owner, SCR_AIUtilityComponent u, CoverQueryProperties props, vector myPos, bool danger, out vector threat, out string tsrc, out bool heavy)
 	{
 		s_aThreats.Clear();
 		tsrc = "none";
@@ -137,6 +137,22 @@ class DCO_CoverEval
 					nearestEnt = t.m_Entity;
 				}
 			}
+		}
+		if (danger)
+		{
+			for (int k = s_aThreats.Count() - 1; k >= 0; k--)
+			{
+				if (vector.DistanceSqXZ(s_aThreats[k], props.m_vThreatPos) < 100.0)
+					s_aThreats.RemoveOrdered(k);
+			}
+			s_aThreats.InsertAt(props.m_vThreatPos, 0);
+			if (s_aThreats.Count() > 3)
+				s_aThreats.Remove(3);
+			threat = props.m_vThreatPos;
+			tsrc = "shot";
+			if (nearestEnt && Vehicle.Cast(nearestEnt))
+				heavy = true;
+			return;
 		}
 		if (s_aThreats.Count() > 0)
 		{
@@ -175,23 +191,66 @@ class DCO_CoverEval
 		}
 	}
 
-	protected static bool TerrainCover(IEntity me, vector myPos, vector threat, string tsrc, SCR_AIUtilityComponent u, out vector coverPos, out vector coverTallest, out int tx, out int ty, out int cid)
+	protected static string QueryTag(CoverQueryProperties props)
+	{
+		return string.Format(" window=%1 sector_deg=%2", Math.Round(props.m_fSectorDistMax), Math.Round(Math.Acos(Math.Clamp(props.m_fQuerySectorAngleCosMin, -1.0, 1.0)) * Math.RAD2DEG));
+	}
+
+	protected static bool TerrainCover(IEntity me, vector myPos, vector threat, string tsrc, SCR_AIUtilityComponent u, CoverQueryProperties props, out vector coverPos, out vector coverTallest, out int tx, out int ty, out int cid)
 	{
 		if (tsrc == "none")
 			return false;
 		vector toThreat = DCO_Specialist.Flat(threat - myPos);
 		if (toThreat == vector.Zero)
 			return false;
+		bool v2 = DCO_Ctx.TuneForU(u, "cov.terrain_v2", 1.0) > 0;
+		vector want = props.m_vSectorDir;
+		want[1] = 0;
+		bool directed = v2 && want.LengthSq() > 0.0001;
+		string dirTag = "old";
+		vector base = toThreat;
+		if (directed)
+		{
+			want.Normalize();
+			base = want;
+			dirTag = "req";
+		}
+		else if (v2)
+		{
+			want = toThreat * -1.0;
+			dirTag = "away";
+			IEntity hitHere;
+			float nowMs = GetGame().GetWorld().GetWorldTime();
+			bool shotAt = !u || nowMs - u.m_fDCONmLastAt < 5000.0 || nowMs - u.m_fDCOHitAt < 5000.0;
+			if (shotAt)
+				DCO_Perf.Count("cov:terrain_stay_skip_fire");
+			else if (DCO_CoverId.Blocked(myPos, toThreat, 0.35, me, hitHere) && DCO_Util.HitKind(hitHere) == "terrain")
+			{
+				coverPos = myPos;
+				coverTallest = myPos + Vector(0, 0.25, 0);
+				tx = -1;
+				ty = -1;
+				cid = -1;
+				DCO_Perf.Count("cov:terrain_stay");
+				if (u && DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO))
+					DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("cover_pick unit=%1 how=terrain move_d=0 tested=1 threat_src=%2 threat_d=%3 pos=%4 dir=stay", DCO_Log.IdUnit(me), tsrc, Math.Round(vector.DistanceXZ(myPos, threat)), DCO_Util.XZ(myPos)) + QueryTag(props));
+				return true;
+			}
+		}
 		NavmeshWorldComponent nav = GetGame().GetAIWorld().GetNavmeshWorldComponent("Soldiers");
 		vector best;
 		float bestD = float.MAX;
+		float bestDot = -2.0;
 		int tested;
 		float radius = 6.0;
 		for (int ring = 0; ring < 3; ring++)
 		{
 			for (int k = 0; k < 8; k++)
 			{
-				vector dir = DCO_CoverId.Rot(toThreat, k * 45.0);
+				vector dir = DCO_CoverId.Rot(base, k * 45.0);
+				float dot = vector.Dot(dir, want);
+				if (directed && dot < props.m_fQuerySectorAngleCosMin - 0.001)
+					continue;
 				vector p = DCO_Util.Surface(myPos + dir * radius);
 				vector reach;
 				if (nav && nav.IsTileLoaded(p) && nav.GetReachablePoint(p, 2.0, reach))
@@ -206,9 +265,13 @@ class DCO_CoverEval
 				if (DCO_Util.HitKind(hit) != "terrain")
 					continue;
 				float dd = vector.DistanceSqXZ(myPos, p);
-				if (dd < bestD)
+				bool better = dd < bestD;
+				if (v2)
+					better = dot > bestDot + 0.01 || (dot > bestDot - 0.01 && dd < bestD);
+				if (better)
 				{
 					bestD = dd;
+					bestDot = dot;
 					best = p;
 				}
 			}
@@ -228,7 +291,7 @@ class DCO_CoverEval
 		cid = -1;
 		DCO_Perf.Count("cov:terrain_pick");
 		if (u && DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO))
-			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("cover_pick unit=%1 how=terrain move_d=%2 tested=%3 threat_src=%4 threat_d=%5 pos=%6", DCO_Log.IdUnit(me), Math.Round(vector.Distance(myPos, best)), tested, tsrc, Math.Round(vector.DistanceXZ(best, threat)), DCO_Util.XZ(best)));
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("cover_pick unit=%1 how=terrain move_d=%2 tested=%3 threat_src=%4 threat_d=%5 pos=%6", DCO_Log.IdUnit(me), Math.Round(vector.Distance(myPos, best)), tested, tsrc, Math.Round(vector.DistanceXZ(best, threat)), DCO_Util.XZ(best)) + " dir=" + dirTag + QueryTag(props));
 		return true;
 	}
 
@@ -245,12 +308,22 @@ class DCO_CoverEval
 		vector myPos = me.GetOrigin();
 		bool threatened = u && u.m_ThreatSystem && u.m_ThreatSystem.GetState() == EAIThreatState.THREATENED;
 
+		bool danger;
+		if (u && u.m_CombatMoveState && props.m_vThreatPos != vector.Zero && DCO_Ctx.TuneForU(u, "cov.danger_safe", 1.0) > 0)
+		{
+			SCR_AICombatMoveRequest_Move drq = SCR_AICombatMoveRequest_Move.Cast(u.m_CombatMoveState.GetRequest());
+			danger = drq && drq.m_eReason == SCR_EAICombatMoveReason.MOVE_FROM_DANGER && vector.DistanceSq(props.m_vThreatPos, drq.m_vTargetPos) < 9.0;
+		}
+		if (danger)
+			DCO_Perf.Count("cov:danger");
+
 		vector threat;
 		string tsrc;
 		bool heavy;
-		CollectThreats(owner, u, props, myPos, threat, tsrc, heavy);
+		CollectThreats(owner, u, props, myPos, danger, threat, tsrc, heavy);
 
 		float origMax = props.m_fSectorDistMax;
+		float origCos = props.m_fQuerySectorAngleCosMin;
 		string how = "eval";
 		if (!Fetch(mgr, pf, props, 0))
 		{
@@ -274,11 +347,29 @@ class DCO_CoverEval
 			else
 			{
 				props.m_fSectorDistMax = origMax;
-				bool terr = TerrainCover(me, myPos, threat, tsrc, u, coverPos, coverTallest, tx, ty, cid);
-				if (!terr)
-					DCO_Perf.Count("cov:none");
-				DCO_Perf.End("cov_eval", perfT);
-				return terr;
+				if (origCos > 0.001 && props.m_vSectorDir != vector.Zero && DCO_Ctx.TuneForU(u, "cov.sector_retry", 1.0) > 0)
+				{
+					props.m_fQuerySectorAngleCosMin = 0;
+					got = Fetch(mgr, pf, props, 0);
+					if (got)
+					{
+						how = "wide_sector";
+						DCO_Perf.Count("cov:wide_sector_hit");
+					}
+					else
+					{
+						props.m_fQuerySectorAngleCosMin = origCos;
+						DCO_Perf.Count("cov:wide_sector_miss");
+					}
+				}
+				if (!got)
+				{
+					bool terr = TerrainCover(me, myPos, threat, tsrc, u, props, coverPos, coverTallest, tx, ty, cid);
+					if (!terr)
+						DCO_Perf.Count("cov:none");
+					DCO_Perf.End("cov_eval", perfT);
+					return terr;
+				}
 			}
 		}
 		int count = 1;
@@ -349,6 +440,11 @@ class DCO_CoverEval
 				if (spaceM > 0 && DCO_SquadSpacing.NearestDistance(c.m_vPos, s_aMates) < spaceM)
 				{
 					c.m_sWhy = "space";
+					continue;
+				}
+				if (DCO_Beaten.Check(u, c.m_vPos, threat, "cover"))
+				{
+					c.m_sWhy = "beaten";
 					continue;
 				}
 				float ad;
@@ -438,7 +534,7 @@ class DCO_CoverEval
 				if (c.m_bHard)
 					score = score + wHard;
 				score = score + 1.5 * c.m_iArc / 4.0 - 3.0 * c.m_iExposed;
-				if (c.m_bNoLos)
+				if (c.m_bNoLos && !danger)
 					score = score - 2.0;
 				if (defensive && anchorFwd != vector.Zero && LateralGap(c.m_vPos, anchorFwd) >= spaceM)
 				{
@@ -472,7 +568,7 @@ class DCO_CoverEval
 							bestH = 0.35;
 					}
 				}
-				bool clean = c.m_iProt >= 2 && c.m_bHard && c.m_iExposed == 0 && !c.m_bNoLos;
+				bool clean = c.m_iProt >= 2 && c.m_bHard && c.m_iExposed == 0 && (danger || !c.m_bNoLos);
 				if (!traced || clean)
 				{
 					early = true;
@@ -483,6 +579,7 @@ class DCO_CoverEval
 
 		Release(mgr, count);
 		props.m_fSectorDistMax = origMax;
+		props.m_fQuerySectorAngleCosMin = origCos;
 
 		string rej;
 		for (int r = 0; r < count; r++)
@@ -498,7 +595,7 @@ class DCO_CoverEval
 		{
 			for (int f = 0; f < count; f++)
 			{
-				if (s_aPool[f].m_sWhy != "anchor" && s_aPool[f].m_sWhy != "forward")
+				if (s_aPool[f].m_sWhy != "anchor" && s_aPool[f].m_sWhy != "forward" && s_aPool[f].m_sWhy != "beaten")
 				{
 					best = f;
 					break;
@@ -517,6 +614,12 @@ class DCO_CoverEval
 		else if (early && how == "eval")
 			how = "early";
 		DCO_CoverCand pick = s_aPool[best];
+		string fbWhy = "-";
+		if (how == "fallback_vanilla")
+		{
+			fbWhy = pick.m_sWhy;
+			DCO_Perf.Count("cov:fallback_" + fbWhy);
+		}
 		if (learnHit > 0)
 		{
 			DCO_Perf.Count("ilearn:cov_term");
@@ -566,7 +669,7 @@ class DCO_CoverEval
 					rej = "-";
 				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("cover_pick unit=%1 how=%2 idx=%3 n=%4 score=%5 kind=%6 hard=%7 protects=%8 arc=%9", DCO_Log.IdUnit(me), how, best, count, pick.m_fScore.ToString(-1, 2), pick.m_sKind, DCO_Util.B01(pick.m_bHard), DCO_CoverId.ProtName(pick.m_iProt), pick.m_iArc)
 					+ string.Format(" anchor_d=%1 move_d=%2 threat_src=%3 rejects=%4 pos=%5", ad2, Math.Round(vector.Distance(myPos, pick.m_vPos)), tsrc, rej, DCO_Util.XZ(pick.m_vPos))
-					+ string.Format(" threats=%1 exposed=%2 los=%3 heavy=%4 stance=%5 window=%6", s_aThreats.Count(), pick.m_iExposed, DCO_Util.B01(!pick.m_bNoLos), DCO_Util.B01(heavy), stance, Math.Round(origMax)) + string.Format(" prone_los=%1", proneLos));
+					+ string.Format(" threats=%1 exposed=%2 los=%3 heavy=%4 stance=%5 window=%6", s_aThreats.Count(), pick.m_iExposed, DCO_Util.B01(!pick.m_bNoLos), DCO_Util.B01(heavy), stance, Math.Round(origMax)) + string.Format(" prone_los=%1 fb_why=%2 danger=%3", proneLos, fbWhy, DCO_Util.B01(danger)));
 			}
 		}
 		DCO_Perf.End("cov_eval", perfT);

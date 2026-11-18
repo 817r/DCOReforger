@@ -59,6 +59,7 @@ class DCO_CounterAttack
 	float m_fDeadline;
 	bool m_bDoctrine;
 	int m_iBand;
+	float m_fWaitLogAt;
 }
 
 class DCO_CommanderDefense
@@ -180,7 +181,7 @@ class DCO_CommanderDefense
 
 	protected bool CanStartAmbush(AICommander_BaseComponent cmd, float now)
 	{
-		return cmd.IsAmbushEnabled() && now >= m_fNextAmbush && m_aAmbush.Count() < DCO_Force.Max(cmd, "ambush", cmd.GetMaxAmbushes());
+		return cmd.IsAmbushEnabled() && now >= m_fNextAmbush && m_aAmbush.Count() < DCO_Force.Max(cmd, "ambush");
 	}
 
 	void RequestApproachAmbush(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, vector threatPos, bool vehicle, float now, bool force = false)
@@ -208,7 +209,7 @@ class DCO_CommanderDefense
 
 	void RequestThreatOP(AICommander_BaseComponent cmd, vector watch, vector from, float now)
 	{
-		if (!cmd.IsOPEnabled() || HasOPPurpose("threat_nai") || m_aOP.Count() >= DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
+		if (!cmd.IsOPEnabled() || HasOPPurpose("threat_nai") || m_aOP.Count() >= DCO_Force.Max(cmd, "op"))
 			return;
 		vector dir = from - watch;
 		dir[1] = 0;
@@ -840,7 +841,7 @@ class DCO_CommanderDefense
 
 	protected void PlanOPs(AICommander_BaseComponent cmd, float now)
 	{
-		if (!cmd.IsOPEnabled() || m_aOP.Count() >= DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
+		if (!cmd.IsOPEnabled() || m_aOP.Count() >= DCO_Force.Max(cmd, "op"))
 			return;
 
 		DCO_CommanderOps ops = cmd.GetOps();
@@ -903,7 +904,7 @@ class DCO_CommanderDefense
 		p.m_sPurpose = purpose;
 		p.m_fStart = now;
 		vector opDir = watch - pos;
-		DCO_Battle.Place(cmd, null, AIGroup.Cast(parent.GetOwner()), "op", pos, Math.Atan2(opDir[0], opDir[2]) * Math.RAD2DEG, "-", "-", "-", purpose);
+		DCO_Dev.Place(cmd, null, AIGroup.Cast(parent.GetOwner()), "op", pos, Math.Atan2(opDir[0], opDir[2]) * Math.RAD2DEG, "-", "-", "-", purpose);
 
 		if (parent.GetUnitCount() <= 3 + 1)
 			p.m_Group = parent;
@@ -937,7 +938,7 @@ class DCO_CommanderDefense
 
 	bool ReserveOP(AICommander_BaseComponent cmd, vector pos, vector watch, string purpose, float now)
 	{
-		if (!cmd.IsOPEnabled() || HasOPPurpose(purpose) || m_aOP.Count() >= DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
+		if (!cmd.IsOPEnabled() || HasOPPurpose(purpose) || m_aOP.Count() >= DCO_Force.Max(cmd, "op"))
 			return false;
 		int before = m_aOP.Count();
 		OpenOP(cmd, pos, watch, purpose, now);
@@ -1083,9 +1084,9 @@ class DCO_CommanderDefense
 		Event(string.Format("def_counterattack_window obj=%1 window_s=%2 doctrine=%3", obj.GetLogName(), Math.Round(window), c.m_bDoctrine));
 	}
 
-	void RequestDoctrineOP(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, vector axis, float now)
+	void RequestDoctrineOP(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, vector axis, float now, int band = DCO_EForceBand.UNKNOWN)
 	{
-		if (!cmd.IsOPEnabled() || HasOPPurpose("doctrine_oplp") || m_aOP.Count() >= DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
+		if (!cmd.IsOPEnabled() || HasOPPurpose("doctrine_oplp") || m_aOP.Count() >= DCO_Force.Max(cmd, "op"))
 			return;
 		vector objPos = obj.GetOwner().GetOrigin();
 		vector watch = DCO_Util.Surface(objPos + axis * (obj.GetRadius() + 400.0));
@@ -1093,7 +1094,7 @@ class DCO_CommanderDefense
 		if (!FindSite(cmd, watch, -axis, site, "op"))
 			site = DCO_Util.Surface(objPos + axis * (obj.GetRadius() + 150.0));
 		OpenOP(cmd, site, watch, "doctrine_oplp", now);
-		DCO_DoctrineDefense.Log(cmd, obj, "oplp", DCO_EForceBand.UNKNOWN, 0, 0, " open=" + HasOPPurpose("doctrine_oplp").ToString());
+		DCO_DoctrineDefense.Log(cmd, obj, "oplp", band, 0, 0, " open=" + HasOPPurpose("doctrine_oplp").ToString());
 	}
 
 	protected void UpdateCounterAttacks(AICommander_BaseComponent cmd, float now)
@@ -1113,7 +1114,7 @@ class DCO_CommanderDefense
 				m_aCounter.Remove(i);
 				continue;
 			}
-			if (!c.m_Obj.CheckIsItLost(fk) || c.m_Obj.GetObjectiveState(fk) != CMD_EObjectiveState.PENDING)
+			if (c.m_Obj.GetObjectiveState(fk) == CMD_EObjectiveState.ASSIGNED)
 				continue;
 			if (TryCounterAttack(cmd, c, now))
 				m_aCounter.Remove(i);
@@ -1183,7 +1184,15 @@ class DCO_CommanderDefense
 				break;
 		}
 		if (strength < need || picks.Count() < DCO_Force.Min(cmd, "counter"))
+		{
+			if (now - ca.m_fWaitLogAt >= 60.0)
+			{
+				ca.m_fWaitLogAt = now;
+				DCO_Perf.Count("def:counterattack_wait");
+				Event(string.Format("def_counterattack_wait obj=%1 why=no_force cands=%2 late=%3 strength=%4 need=%5 left_s=%6", obj.GetLogName(), cands.Count(), late, Math.Round(strength), Math.Round(need), Math.Round(ca.m_fDeadline - now)));
+			}
 			return false;
+		}
 
 		FactionKey fk = cmd.GetCommanderFactionKey();
 		foreach (DCO_GroupUtilityComponent pg : picks)
@@ -1252,6 +1261,7 @@ class DCO_CommanderDefense
 	void OnIndirectFire(AICommander_BaseComponent cmd, IEntity source, vector truePos, float now)
 	{
 		m_fLastEnemyIDF = now;
+		cmd.DCO_WakeThink("idf");
 		if (!cmd.IsCounterBatteryEnabled())
 			return;
 
@@ -1320,9 +1330,9 @@ class DCO_CommanderDefense
 					CMD_ArtillerySupport.LogDenied(req, "friendly");
 					continue;
 				}
-				arty.RequestShellImpact(req, now, 4);
+				bool cbOk = arty.RequestShellImpact(req, now, 4);
 				t.m_fLastFire = now;
-				Event(string.Format("def_cb_fire unc=%1 error=%2 shells=%3", Math.Round(t.m_Entry.m_fBelievedUncertainty), Math.Round(vector.DistanceXZ(est, t.m_vTruePos)), 4));
+				Event(string.Format("def_cb_fire unc=%1 error=%2 shells=%3 accepted=%4", Math.Round(t.m_Entry.m_fBelievedUncertainty), Math.Round(vector.DistanceXZ(est, t.m_vTruePos)), 4, DCO_Util.B01(cbOk)));
 				continue;
 			}
 

@@ -46,6 +46,8 @@ class DCO_SettingsSubMenu : SCR_SettingsSubMenuBase
 		SetupSlider("OfferSize", 50, 150, 5);
 		SetupSlider("OfferOffX", 0, 800, 5);
 		SetupSlider("OfferOffY", 0, 800, 5);
+		SetupSlider("MapObjWidth", 1, 6, 1);
+		SetupSlider("MapObjFill", 0, 40, 5);
 		SetupSpin("OfferPos");
 		SetupSpin("OfferSound");
 		SetupSpin("OfferMarker");
@@ -114,6 +116,8 @@ class DCO_SettingsSubMenu : SCR_SettingsSubMenuBase
 		SetSpin("ContactShow", ToIndex(DCO_UISettings.GetContactShow()));
 		SetSpin("ContactSound", ToIndex(DCO_UISettings.GetContactSound()));
 		SetSpin("MapPalette", DCO_UISettings.GetMapPalette());
+		SetSlider("MapObjWidth", DCO_UISettings.GetObjWidth());
+		SetSlider("MapObjFill", DCO_UISettings.GetObjFill());
 		SetSlider("OfferSize", DCO_UISettings.GetOfferScale() * 100);
 		SetSlider("OfferOffX", DCO_UISettings.GetOfferOffX());
 		SetSlider("OfferOffY", DCO_UISettings.GetOfferOffY());
@@ -168,6 +172,8 @@ class DCO_SettingsSubMenu : SCR_SettingsSubMenuBase
 			case "OfferSize":	DCO_UISettings.SetOfferScale(value / 100); break;
 			case "OfferOffX":	DCO_UISettings.SetOfferOffset(value, DCO_UISettings.GetOfferOffY()); break;
 			case "OfferOffY":	DCO_UISettings.SetOfferOffset(DCO_UISettings.GetOfferOffX(), value); break;
+			case "MapObjWidth":	DCO_UISettings.SetObjWidth(value); return;
+			case "MapObjFill":	DCO_UISettings.SetObjFill(value); return;
 		}
 		m_bPreviewOffer = name.StartsWith("Offer");
 		QueuePreview(name.StartsWith("Contact"));

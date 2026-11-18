@@ -12,18 +12,51 @@ modded class SCR_AITargetClusterState
 	float m_fDCOErrAng = -1;
 	int m_iDCOInfoEvents;
 	float m_fDCOPrevInfoAge = -1;
+	int m_iDCOLogTo = -1;
+	float m_fDCOLogAt_ms;
 }
 
 modded class SCR_AIGroupTargetClusterProcessor
 {
 	protected ref map<SCR_AITargetClusterState, float> m_mDCOAttackSince = new map<SCR_AITargetClusterState, float>();
 
+	protected string m_sDCOStateWhy;
+
 	override EAITargetClusterState EvaluateNewDesiredState(SCR_AITargetClusterState s)
+	{
+		m_sDCOStateWhy = "vanilla";
+		EAITargetClusterState want = DCO_DesiredState(s);
+		if (want != s.m_eState)
+			DCO_StateLog(s, want);
+		return want;
+	}
+
+	protected void DCO_StateLog(SCR_AITargetClusterState s, EAITargetClusterState want)
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (s.m_iDCOLogTo == want && now < s.m_fDCOLogAt_ms)
+			return;
+		s.m_iDCOLogTo = want;
+		s.m_fDCOLogAt_ms = now + 30000.0;
+		string to = typename.EnumToString(EAITargetClusterState, want);
+		DCO_Perf.Count("cluster:want_" + to + "_" + m_sDCOStateWhy);
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("cluster_state grp=%1 from=%2 to=%3 why=%4 dist=%5 identified=%6 endangering=%7 alive=%8 info_age_s=%9", DCO_Log.IdGroup(m_Utility.m_Owner), typename.EnumToString(EAITargetClusterState, s.m_eState), to, m_sDCOStateWhy, Math.Round(s.m_fDistMin), s.m_iCountIdentified, s.m_iCountEndangering, s.m_iCountAlive, Math.Round(s.GetTimeSinceLastNewInformation())));
+	}
+
+	protected EAITargetClusterState DCO_DesiredState(SCR_AITargetClusterState s)
 	{
 		EAITargetClusterState desired = super.EvaluateNewDesiredState(s);
 		DCO_Track(s);
 		desired = DCO_BlindCheck(s, desired);
 		float dwellNow = GetGame().GetWorld().GetWorldTime();
+		if (m_mDCOAttackSince.Count() > 64)
+		{
+			for (int pi = m_mDCOAttackSince.Count() - 1; pi >= 0; pi--)
+			{
+				if (!m_mDCOAttackSince.GetKey(pi))
+					m_mDCOAttackSince.RemoveElement(pi);
+			}
+		}
 		if (desired == EAITargetClusterState.ATTACKING && s.m_eState != EAITargetClusterState.ATTACKING)
 			m_mDCOAttackSince.Set(s, dwellNow);
 		if (desired == EAITargetClusterState.INVESTIGATING && s.m_eState == EAITargetClusterState.ATTACKING)
@@ -32,6 +65,7 @@ modded class SCR_AIGroupTargetClusterProcessor
 			if (m_mDCOAttackSince.Find(s, attackSince) && dwellNow - attackSince < 10000.0)
 			{
 				DCO_Perf.Count("cluster:attack_dwell");
+				m_sDCOStateWhy = "attack_dwell";
 				desired = EAITargetClusterState.ATTACKING;
 			}
 		}
@@ -61,6 +95,7 @@ modded class SCR_AIGroupTargetClusterProcessor
 		{
 			if (superior && desired == EAITargetClusterState.ATTACKING && garrisonMode != DCO_EGarrisonMode.HOLD)
 				return desired;
+			m_sDCOStateWhy = "garrison";
 			return EAITargetClusterState.NONE;
 		}
 
@@ -94,6 +129,7 @@ modded class SCR_AIGroupTargetClusterProcessor
 					if (aware)
 						DCO_PlanPursuit(s, range);
 					DCO_Perf.Count("pursue_lost");
+					m_sDCOStateWhy = "pursue";
 					DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("pursue_lost grp=%1 dist=%2 range=%3 speed=%4", m_Utility.m_Owner.GetName(), Math.Round(s.m_fDistMin), range, s.m_vDCOVel.Length().ToString(1, 1)));
 				}
 				return desired;
@@ -101,7 +137,16 @@ modded class SCR_AIGroupTargetClusterProcessor
 			if (aware && m_Utility.m_fDCOBodySweep_ms > GetGame().GetWorld().GetWorldTime() && s.m_fDistMin <= 150.0)
 				return desired;
 			if (idle && !cfg.GetIdleLeaveToInvestigate())
-				return EAITargetClusterState.NONE;
+			{
+				float joinM = DCO_Ctx.TuneForGU(m_Utility, "idle.join_fight_m", 250.0);
+				if (joinM <= 0 || s.m_fDistMin > joinM)
+				{
+					m_sDCOStateWhy = "idle_stay";
+					return EAITargetClusterState.NONE;
+				}
+				DCO_Perf.Count("idle:join_fight");
+				m_sDCOStateWhy = "idle_join_fight";
+			}
 
 			float maxDist = cfg.GetInvestigateMaxDist();
 			float chance = cfg.GetInvestigateChance();
@@ -113,13 +158,19 @@ modded class SCR_AIGroupTargetClusterProcessor
 			}
 
 			if (s.m_fDistMin > maxDist)
+			{
+				m_sDCOStateWhy = "too_far";
 				return EAITargetClusterState.NONE;
+			}
 
 			if (s.m_iDCOInvestigateRoll < 0)
 				s.m_iDCOInvestigateRoll = Math.RandomFloat01() < chance;
 
 			if (s.m_iDCOInvestigateRoll == 0)
+			{
+				m_sDCOStateWhy = "chance_roll";
 				return EAITargetClusterState.NONE;
+			}
 
 			return desired;
 		}
@@ -128,7 +179,10 @@ modded class SCR_AIGroupTargetClusterProcessor
 			return desired;
 
 		if (s.m_iCountEndangering > 0 || !cfg.GetIdleLeaveToAssist())
+		{
+			m_sDCOStateWhy = "idle_no_assist";
 			return DCO_AirDefend(s, "idle");
+		}
 
 		return desired;
 	}
@@ -162,6 +216,7 @@ modded class SCR_AIGroupTargetClusterProcessor
 		if (d <= limit)
 			return false;
 		DCO_Perf.Count("def:cluster_hold");
+		m_sDCOStateWhy = "defender_leash";
 		float now = GetGame().GetWorld().GetWorldTime();
 		if (now >= m_fDCOLeashLogAt)
 		{
@@ -203,6 +258,7 @@ modded class SCR_AIGroupTargetClusterProcessor
 		if (armored == 0 || other > 0)
 			return false;
 		DCO_Perf.Count("investigate_skip:armor_no_at");
+		m_sDCOStateWhy = "armor_no_at";
 		float now = GetGame().GetWorld().GetWorldTime();
 		if (now >= m_fDCOArmorSkipLogAt)
 		{
@@ -225,6 +281,7 @@ modded class SCR_AIGroupTargetClusterProcessor
 			return false;
 		}
 		DCO_Perf.Count("assault:drive_drop");
+		m_sDCOStateWhy = "assault_drive";
 		if (DCO_Log.On(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG))
 			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("assault_drive_drop grp=%1 state=%2 dist=%3 info_age_s=%4", DCO_Log.IdGroup(m_Utility.m_Owner), typename.EnumToString(EAITargetClusterState, desired), Math.Round(s.m_fDistMin), Math.Round(s.GetTimeSinceLastNewInformation())));
 		return true;
@@ -243,6 +300,7 @@ modded class SCR_AIGroupTargetClusterProcessor
 		if (t != DCO_EGroupTask.ATTACK && t != DCO_EGroupTask.FLANK)
 			return false;
 		DCO_Perf.Count("assault:stale_cluster_drop");
+		m_sDCOStateWhy = "stale_assault";
 		if (DCO_Log.On(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG))
 			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("assault_stale_cluster grp=%1 state=%2 info_age_s=%3 dist=%4", DCO_Log.IdGroup(m_Utility.m_Owner), typename.EnumToString(EAITargetClusterState, desired), Math.Round(s.GetTimeSinceLastNewInformation()), Math.Round(s.m_fDistMin)));
 		return true;
@@ -278,6 +336,7 @@ modded class SCR_AIGroupTargetClusterProcessor
 			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("blind_investigate grp=%1 blind_s=%2 identified=%3 detected=%4 lost=%5 alive=%6 dist=%7 info_age_s=%8",
 				DCO_Log.IdGroup(m_Utility.m_Owner), Math.Round(blind), s.m_iCountIdentified, s.m_iCountDetected, s.m_iCountLost, s.m_iCountAlive, Math.Round(s.m_fDistMin), Math.Round(s.GetTimeSinceLastNewInformation())));
 		}
+		m_sDCOStateWhy = "blind";
 		return EAITargetClusterState.INVESTIGATING;
 	}
 
@@ -568,7 +627,7 @@ modded class SCR_AIGroupTargetClusterProcessor
 		int indoor = 0;
 		foreach (AIAgent agent : agents)
 		{
-			if (agent && SCR_CoverManagerComponent.DCO_GetBuildingAt(agent.GetControlledEntity()))
+			if (agent && DCO_CoverManagerComponent.DCO_GetBuildingAt(agent.GetControlledEntity()))
 				indoor++;
 		}
 

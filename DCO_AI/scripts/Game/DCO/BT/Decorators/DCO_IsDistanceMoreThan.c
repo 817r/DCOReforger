@@ -17,6 +17,7 @@ class DCO_IsAIDistanceMoreThan : DecoratorScripted
 
 	protected override bool TestFunction(AIAgent owner)
 	{
+		DCO_BtWatch.Mark("MoveAndInvestigate");
 		if (!m_InfoComponent)
 		{
 			return false;

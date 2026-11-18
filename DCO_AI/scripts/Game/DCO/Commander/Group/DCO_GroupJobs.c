@@ -46,6 +46,30 @@ class DCO_GroupJobs
 		return 511;
 	}
 
+	static const float DEDICATED_BONUS = 100.0;
+
+	static bool Dedicated(DCO_GroupUtilityComponent g, int job, int excluded)
+	{
+		if (!g)
+			return false;
+		int mask = g.GetAllowedJobs();
+		return (mask & job) != 0 && (mask & excluded) == 0;
+	}
+
+	static bool LogDue(string key, float seconds)
+	{
+		if (!s_mLogAt)
+			s_mLogAt = new map<string, float>();
+		float now = DCO_Util.NowS();
+		float last;
+		if (s_mLogAt.Find(key, last) && now - last < seconds)
+			return false;
+		if (s_mLogAt.Count() > 400)
+			s_mLogAt.Clear();
+		s_mLogAt.Set(key, now);
+		return true;
+	}
+
 	static int OfTask(DCO_EGroupTask t)
 	{
 		switch (t)
@@ -260,7 +284,7 @@ class DCO_GroupJobs
 		{
 			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("grp_flags_invalid grp=%1 reason=not_transport_team mask=%2 used=511 player=%3", DCO_Log.IdGroup(SCR_AIGroup.Cast(g.GetOwner())), mask, playerID));
 			if (Replication.IsServer())
-				DCO_PlayerComms.SendToGameMasters("DCO", string.Format("%1 is Transport only but is not a transport team (that needs an unarmed vehicle with free seats). The commander treats it as Any Task.", DCO_PlayerComms.GetCallsign(SCR_AIGroup.Cast(g.GetOwner()))));
+				DCO_PlayerComms.SendToGameMasters("DCO", string.Format("%1 is Transport only but is not a transport team (set Squad Role to Transport Team; it needs a vehicle with free cargo seats). The commander treats it as Any Task.", DCO_PlayerComms.GetCallsign(SCR_AIGroup.Cast(g.GetOwner()))));
 		}
 	}
 

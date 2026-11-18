@@ -171,7 +171,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 			existing.m_bArmorSeen           = existing.m_bArmorSeen || report.m_bArmorSeen;
 			existing.m_bATSeen              = existing.m_bATSeen || report.m_bATSeen;
 			ApplyReportIntel(existing, report, grp);
-			DCO_Battle.Intel(m_Commander, existing, false);
+			DCO_Dev.Intel(m_Commander, existing, false);
 			DCO_OnReportEvent(existing);
 			return;
 		}
@@ -185,7 +185,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		entry.DCO_NoteReporter(report.m_sReporterGroupName, worldTime);
 		ApplyReportIntel(entry, report, grp);
 		m_aThreats.Insert(entry);
-		DCO_Battle.Intel(m_Commander, entry, true);
+		DCO_Dev.Intel(m_Commander, entry, true);
 		DCO_OnReportEvent(entry);
 	}
 
@@ -340,6 +340,11 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 		if (!requestingGrp.GetOwner())
 			return;
+		if (m_Commander && m_Commander.DCO_IsPaused())
+		{
+			SquadReinfSkip(requestingGrp, "commander_paused", 0, 0);
+			return;
+		}
 		vector gpos = requestingGrp.GetOwner().GetOrigin();
 		CMD_ThreatEntry threat = FindNearbyThreat(gpos);
 		if (!threat)
@@ -381,7 +386,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		}
 
 		float combatFocusMod = Math.Lerp(1.8, 0.4, m_Commander.GetCombatFocus());
-		float effectiveThreshold = m_fReinforcementThreshold * combatFocusMod;
+		float effectiveThreshold = m_fEngageThreshold * combatFocusMod;
 
 		if (threat.m_fPriorityScore < effectiveThreshold)
 		{
@@ -390,10 +395,50 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		}
 
 		threat.m_sEngagingGroupName = requestingGrp;
-		bool emergency = threat.m_eThreatLevel == CMD_EThreatLevel.CRITICAL && IsNearOwnObjective(threat.m_vPosition);
+		bool emergency = threat.m_fPriorityScore >= m_fReinforcementThreshold && IsNearOwnObjective(threat.m_vPosition);
 		DCO_Perf.Count("threat:squad_reinf_go");
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), string.Format("squad_reinf cmd=%1 grp=%2 pos=%3 level=%4 score=%5 emergency=%6", m_Commander.GetCommanderUID(), requestingGrp.GetOwner().GetName(), DCO_Util.XZ(threat.m_vPosition), threat.m_eThreatLevel, threat.m_fPriorityScore.ToString(-1, 1), DCO_Util.B01(emergency)));
-		DispatchReinforcement(threat.m_vPosition, threat.m_eThreatLevel, threat, worldTime, emergency);
+		CMD_ThreatMission sq = new CMD_ThreatMission();
+		sq.m_eAction = CMD_EThreatAction.HOLD_DESTROY;
+		sq.m_vPos = threat.m_vPosition;
+		sq.m_fStart = worldTime;
+		DispatchReinforcement(threat.m_vPosition, threat.m_eThreatLevel, threat, worldTime, emergency, null, sq);
+		if (sq.m_aGroups.IsEmpty())
+			return;
+		if (!m_aDCOSquadMs)
+			m_aDCOSquadMs = {};
+		m_aDCOSquadMs.Insert(sq);
+	}
+
+	protected ref array<ref CMD_ThreatMission> m_aDCOSquadMs;
+
+	protected void DCO_SquadReinfTick(float now)
+	{
+		if (!m_aDCOSquadMs)
+			return;
+		for (int i = m_aDCOSquadMs.Count() - 1; i >= 0; i--)
+		{
+			CMD_ThreatMission ms = m_aDCOSquadMs[i];
+			bool busy;
+			for (int gi = ms.m_aGroups.Count() - 1; gi >= 0; gi--)
+			{
+				DCO_GroupUtilityComponent g = ms.m_aGroups[gi];
+				if (!g || !g.GetOwner() || g.GetUnitCount() <= 0)
+				{
+					ms.m_aGroups.Remove(gi);
+					continue;
+				}
+				if (g.IsMoving() || g.IsInTransport() || g.HasState(DCO_EGroupState.IN_CONTACT))
+					busy = true;
+			}
+			if (busy || FindThreatWithin(ms.m_vPos, m_fClusterRadius))
+				continue;
+			int n = ms.m_aGroups.Count();
+			RecallMission(ms, "squad_threat_gone");
+			m_aDCOSquadMs.Remove(i);
+			DCO_Perf.Count("threat:squad_reinf_release");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), string.Format("squad_reinf_release cmd=%1 groups=%2 pos=%3 held_s=%4 why=threat_gone", m_Commander.GetCommanderUID(), n, DCO_Util.XZ(ms.m_vPos), Math.Round(now - ms.m_fStart)));
+		}
 	}
 
 	protected void SquadReinfSkip(DCO_GroupUtilityComponent g, string why, float score, float need)
@@ -683,10 +728,19 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (gated > 0)
 			DCO_Perf.CountN("threat:tick_gated", gated);
 		DCO_QrfAdvance(worldTime);
+		DCO_SquadReinfTick(worldTime);
 		ReviewMissions(worldTime);
 		DCO_HuntTick(worldTime);
 		m_Book.Tick(worldTime);
-		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), string.Format("threat_tick cmd=%1 threats=%2 clusters=%3 missions=%4 evaluated=%5 debounced=%6 gated=%7 flankers=%8", m_Commander.GetCommanderUID(), m_aThreats.Count(), clusters.Count(), m_aMissions.Count(), evaluated, debounced, gated, m_aFlankers.Count()));
+		string tickLine = string.Format("threat_tick cmd=%1 threats=%2 clusters=%3 missions=%4 evaluated=%5 debounced=%6 gated=%7 flankers=%8", m_Commander.GetCommanderUID(), m_aThreats.Count(), clusters.Count(), m_aMissions.Count(), evaluated, debounced, gated, m_aFlankers.Count());
+		if (tickLine != m_sDCOTickLine || worldTime < m_fDCOTickLogAt || worldTime - m_fDCOTickLogAt >= 120.0)
+		{
+			m_sDCOTickLine = tickLine;
+			m_fDCOTickLogAt = worldTime;
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), tickLine);
+		}
+		else
+			DCO_Perf.Count("threat:tick_log_same");
 	}
 
 	protected bool IsLowPriorityOnly(CMD_ThreatCluster cluster, float gate)
@@ -773,7 +827,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		else
 			a.m_eType = CMD_EThreatType.INFANTRY;
 
-		a.m_bEmergency = cluster.m_eClusterLevel == CMD_EThreatLevel.CRITICAL && IsNearOwnObjective(center);
+		a.m_bEmergency = cluster.m_fCombinedScore >= m_fReinforcementThreshold && IsNearOwnObjective(center);
 
 		FindThreatenedAsset(a, cluster, center, speed);
 
@@ -1050,15 +1104,16 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 	protected void DecideAction(CMD_ThreatMission mission, CMD_ThreatAssessment a, float worldTime)
 	{
-		if (!mission.m_bTimedOut && worldTime > mission.m_fDeadline)
+		if (worldTime > mission.m_fDeadline)
 		{
 			mission.m_bTimedOut = true;
+			mission.m_fDeadline = worldTime + m_fMissionTimeout;
 			RecallMission(mission, "timeout");
 			SwitchAction(mission, CMD_EThreatAction.MONITOR, a, worldTime, "timeout");
+			DCO_Perf.Count("threat:mission_replan");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), string.Format("threat_mission_replan mission=%1 why=timeout next_deadline_s=%2 enemies=%3", mission.m_iId, Math.Round(m_fMissionTimeout), a.m_iEnemies));
 			return;
 		}
-		if (mission.m_bTimedOut)
-			return;
 
 		CMD_EThreatAction best = a.Best();
 		if (best == mission.m_eAction)
@@ -1100,6 +1155,8 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", line);
 		if (action != CMD_EThreatAction.MONITOR)
 			NotifyPlayers(mission, a);
+		if (m_Commander && action != CMD_EThreatAction.MONITOR && (old == CMD_EThreatAction.MONITOR || why == "escalate"))
+			m_Commander.DCO_WakeThink("threat");
 	}
 
 	protected void ExecuteAction(CMD_ThreatMission mission, CMD_ThreatCluster cluster, CMD_ThreatAssessment a, float worldTime)
@@ -1293,7 +1350,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 			m_Commander.DetachFromObjective(g);
 			if (!DCO_BreakContact.Start(g, c, fall, "threat_withdraw"))
 			{
-				ThrowSmoke(g, c);
+				ThrowSmoke(g, c, "withdraw");
 				g.SetRetreating(true);
 				g.CompleteAllWaypoints();
 				m_Commander.SpawnMoveRoute(g, gp, fall, worldTime);
@@ -1344,32 +1401,71 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		return p;
 	}
 
-	static void ThrowSmoke(DCO_GroupUtilityComponent g, vector threat)
+	static bool ThrowSmoke(DCO_GroupUtilityComponent g, vector threat, string why)
 	{
 		SCR_AIGroup grp = SCR_AIGroup.Cast(g.GetOwner());
 		if (!grp)
-			return;
+			return false;
 
 		array<AIAgent> agents = {};
 		grp.GetAgents(agents);
+		bool v2 = DCO_Ctx.TuneFor(grp, "smk.pos_v2", 1.0) > 0;
+		vector centre;
+		int alive;
+		foreach (AIAgent member : agents)
+		{
+			if (member && member.GetControlledEntity() && DCO_Util.IsAlive(member.GetControlledEntity()))
+			{
+				centre = centre + member.GetControlledEntity().GetOrigin();
+				alive++;
+			}
+		}
+		if (alive == 0)
+			return false;
+		centre = centre * (1.0 / alive);
+		vector cdir = threat - centre;
+		cdir[1] = 0;
+		cdir.Normalize();
+		vector point = centre + cdir * 15;
+
+		SCR_ChimeraAIAgent pick;
+		float best = float.MAX;
 		foreach (AIAgent agent : agents)
 		{
 			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(agent);
-			if (!ca || !ca.m_InfoComponent || !ca.m_InfoComponent.HasRole(EUnitRole.HAS_SMOKE_GRENADE) || !ca.GetCommunicationComponent() || !ca.GetControlledEntity())
+			if (!ca || !ca.m_InfoComponent || !ca.m_InfoComponent.HasRole(EUnitRole.HAS_SMOKE_GRENADE) || !ca.GetCommunicationComponent() || !ca.GetControlledEntity() || !DCO_Util.IsAlive(ca.GetControlledEntity()))
 				continue;
-			if (!DCO_SmokeUtility.Allowed(ca.m_UtilityComponent, "threat"))
-				continue;
-
-			vector from = ca.GetControlledEntity().GetOrigin();
+			float d = vector.DistanceXZ(ca.GetControlledEntity().GetOrigin(), point);
+			if (d < best)
+			{
+				best = d;
+				pick = ca;
+			}
+			if (!v2)
+				break;
+		}
+		if (!pick)
+		{
+			DCO_Perf.Count("smoke_group_skip:no_thrower");
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, "-", string.Format("smoke_group_skip grp=%1 why=%2 reason=no_thrower unit=-", DCO_Log.IdGroup(grp), why));
+			return false;
+		}
+		if (!v2 || best < 8.0 || best > 25.0)
+		{
+			vector from = pick.GetControlledEntity().GetOrigin();
 			vector dir = threat - from;
 			dir[1] = 0;
 			dir.Normalize();
-			SCR_AIMessage_ThrowGrenadeTo msg = SCR_AIMessage_ThrowGrenadeTo.Create(from + dir * 15, EWeaponType.WT_SMOKEGRENADE, 0);
-			msg.m_fPriorityLevel = SCR_AIActionBase.PRIORITY_BEHAVIOR_THROW_GRENADE;
-			msg.SetReceiver(ca);
-			ca.GetCommunicationComponent().RequestBroadcast(msg, ca);
-			return;
+			point = from + dir * 15;
 		}
+		if (!DCO_SmokeUtility.GroupOk(grp, pick.m_UtilityComponent, point, why))
+			return false;
+
+		SCR_AIMessage_ThrowGrenadeTo msg = SCR_AIMessage_ThrowGrenadeTo.Create(point, EWeaponType.WT_SMOKEGRENADE, 0);
+		msg.m_fPriorityLevel = SCR_AIActionBase.PRIORITY_BEHAVIOR_THROW_GRENADE;
+		msg.SetReceiver(pick);
+		pick.GetCommunicationComponent().RequestBroadcast(msg, pick);
+		return true;
 	}
 
 	protected void SupportOperation(CMD_ThreatMission mission, CMD_ThreatCluster cluster, CMD_ThreatAssessment a, float worldTime)
@@ -1442,35 +1538,50 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", line);
 	}
 
+	protected float DCO_BearingDeg(vector center, vector p)
+	{
+		return Math.Atan2(p[2] - center[2], p[0] - center[0]) * Math.RAD2DEG;
+	}
+
+	protected void DCO_SortByBearing(vector center, notnull array<DCO_GroupUtilityComponent> groups)
+	{
+		for (int a = 1; a < groups.Count(); a++)
+		{
+			for (int b = a; b > 0 && DCO_BearingDeg(center, groups[b].GetOwner().GetOrigin()) < DCO_BearingDeg(center, groups[b - 1].GetOwner().GetOrigin()); b--)
+				groups.SwapItems(b, b - 1);
+		}
+	}
+
 	protected int SweepLost(CMD_ThreatMission ms, float now)
 	{
-		int n;
-		foreach (DCO_GroupUtilityComponent g : ms.m_aGroups)
+		array<DCO_GroupUtilityComponent> sweepers = {};
+		foreach (DCO_GroupUtilityComponent cand : ms.m_aGroups)
 		{
-			if (!g || !g.GetOwner() || g.GetUnitCount() <= 0 || g.HasState(DCO_EGroupState.IN_CONTACT))
+			if (!cand || !cand.GetOwner() || cand.GetUnitCount() <= 0 || cand.HasState(DCO_EGroupState.IN_CONTACT))
 				continue;
-			DCO_EGroupTask t = g.GetTask();
-			if (t != DCO_EGroupTask.REINFORCE && t != DCO_EGroupTask.FLANK)
-				continue;
+			DCO_EGroupTask t = cand.GetTask();
+			if (t == DCO_EGroupTask.REINFORCE || t == DCO_EGroupTask.FLANK)
+				sweepers.Insert(cand);
+		}
+		if (sweepers.IsEmpty())
+			return 0;
+		DCO_SortByBearing(ms.m_vLkp, sweepers);
+		float span = 360.0 / sweepers.Count();
+		float offset = DCO_BearingDeg(ms.m_vLkp, sweepers[0].GetOwner().GetOrigin()) - span * 0.5;
+		int n;
+		foreach (int si, DCO_GroupUtilityComponent g : sweepers)
+		{
 			vector gp = g.GetOwner().GetOrigin();
-			vector axis = ms.m_vLkp - gp;
-			axis[1] = 0;
-			if (axis.Length() < 1.0)
-				axis = vector.Forward;
-			axis.Normalize();
-			vector side = Vector(-axis[2], 0, axis[0]);
 			g.CompleteAllWaypoints();
 			if (!m_Commander.SpawnMoveRoute(g, gp, ms.m_vLkp, now))
 				continue;
-			SCR_AIWaypoint w1 = m_Commander.SpawnMoveWP(DCO_Util.Surface(ms.m_vLkp + side * 150.0));
-			if (w1)
-				g.MoveTo(w1, now);
-			SCR_AIWaypoint w2 = m_Commander.SpawnMoveWP(DCO_Util.Surface(ms.m_vLkp - side * 150.0));
-			if (w2)
-				g.MoveTo(w2, now);
+			array<SCR_AIWaypoint> sweepWps = {};
+			m_Commander.DCO_SearchWaypoints(ms.m_vLkp, 120.0, sweepWps, offset + span * si, span);
+			if (!sweepWps.IsEmpty())
+				g.MoveToRoute(sweepWps, now);
 			n++;
 			DCO_Perf.Count("threat:sweep");
-			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("threat_sweep mission=%1 grp=%2 lkp=%3 legs=3 d=%4", ms.m_iId, DCO_Log.IdGroup(AIGroup.Cast(g.GetOwner())), DCO_Util.XZ(ms.m_vLkp), Math.Round(vector.DistanceXZ(gp, ms.m_vLkp))));
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("threat_sweep mission=%1 grp=%2 lkp=%3 points=%4 radius=120 d=%5 groups=%6 slice_deg=%7 span_deg=%8", ms.m_iId, DCO_Log.IdGroup(AIGroup.Cast(g.GetOwner())), DCO_Util.XZ(ms.m_vLkp), sweepWps.Count(), Math.Round(vector.DistanceXZ(gp, ms.m_vLkp)), sweepers.Count(), Math.Round(offset + span * si), Math.Round(span)));
 		}
 		return n;
 	}
@@ -1548,7 +1659,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 	protected void NotifyPlayers(CMD_ThreatMission mission, CMD_ThreatAssessment a)
 	{
-		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetForCommander(m_Commander);
 		float radius = 800;
 		if (cfg)
 			radius = cfg.GetRadioRadius();
@@ -1637,7 +1748,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 			return;
 		}
 
-		float distToBase  = vector.Distance(threat.m_vPosition, m_Commander.GetOwner().GetOrigin());
+		float distToBase  = DCO_OwnAnchorDist(threat.m_vPosition);
 		float distPenalty = Math.Clamp(distToBase * 0.05, 0.0, 25.0);
 		score             = Math.Max(0.0, score - distPenalty);
 
@@ -1653,6 +1764,31 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		}
 
 		threat.m_fPriorityScore = score;
+	}
+
+	protected float DCO_OwnAnchorDist(vector pos)
+	{
+		float best = float.MAX;
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		FactionKey fk = m_Commander.GetCommanderFactionKey();
+		if (mgr)
+		{
+			foreach (CMD_AICommanderObjectiveComponent o : mgr.m_aObjective)
+			{
+				if (!o || !o.GetOwner() || !o.IsCapturedBy(fk))
+					continue;
+				float d = vector.Distance(o.GetOwner().GetOrigin(), pos);
+				if (d < best)
+					best = d;
+			}
+		}
+		if (best == float.MAX)
+		{
+			DCO_Perf.Count("threat:dist_from_commander");
+			return vector.Distance(pos, m_Commander.GetOwner().GetOrigin());
+		}
+		DCO_Perf.Count("threat:dist_from_own_obj");
+		return best;
 	}
 
 	protected float ComputeObjectiveProximityBonus(vector threatPos)
@@ -1684,7 +1820,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	{
 		if (score < 20.0)
 			return CMD_EThreatLevel.NEGLIGIBLE;
-		else if (score < m_fEngageThreshold)
+		else if (score < 30.0)
 			return CMD_EThreatLevel.LOW;
 		else if (score < 55.0)
 			return CMD_EThreatLevel.MEDIUM;
@@ -1857,6 +1993,8 @@ class CMD_ThreatResponseComponent : ScriptComponent
 					a.m_fLastUpdateTime = b.m_fLastUpdateTime;
 				}
 
+				a.DCO_TakeReporters(b);
+
 				if (b.m_iReporterPid > 0 && a.m_iReporterPid <= 0)
 				{
 					a.m_iReporterPid = b.m_iReporterPid;
@@ -1877,6 +2015,8 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	}
 
 	protected float m_fDCOReconCapLogAt = -1000;
+	protected string m_sDCOTickLine;
+	protected float m_fDCOTickLogAt = -1000;
 
 	protected void TrySendReconForThreat(CMD_ThreatEntry threat, float worldTime)
 	{
@@ -2153,6 +2293,8 @@ class CMD_ThreatResponseComponent : ScriptComponent
 			t.m_iMission, t.m_Group.GetOwner().GetName(), Math.Round(bestD), DCO_Util.XZ(old), DCO_Util.XZ(t.m_vTarget), t.m_iRetargets));
 	}
 
+	protected float m_fDCOEngageLogAt;
+
 	protected void TrySendClusterReinforcement(CMD_ThreatCluster cluster, float worldTime, bool emergency, CMD_ThreatAssessment a = null, CMD_ThreatMission mission = null)
 	{
 		if (!m_Commander)
@@ -2161,6 +2303,17 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		CMD_ThreatEntry primary = cluster.GetPrimaryMember();
 		if (!primary)
 			return;
+
+		if (!emergency && cluster.m_fCombinedScore < m_fEngageThreshold)
+		{
+			DCO_Perf.Count("threat:reinf_below_engage");
+			if (worldTime - m_fDCOEngageLogAt >= 30.0)
+			{
+				m_fDCOEngageLogAt = worldTime;
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), string.Format("threat_reinf_gate cmd=%1 score=%2 engage=%3 priority=%4 pos=%5 action=no_reinforcement", m_Commander.GetCommanderUID(), cluster.m_fCombinedScore.ToString(-1, 1), m_fEngageThreshold.ToString(-1, 1), m_fReinforcementThreshold.ToString(-1, 1), DCO_Util.XZ(cluster.m_vCenterPos)));
+			}
+			return;
+		}
 
 		CMD_ResponseLedgerEntry ledger = GetLedger(cluster.m_vCenterPos, worldTime);
 		if (worldTime - ledger.m_fLastReinforcementTime < m_fReinforcementCooldown)
@@ -2473,8 +2626,11 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	protected ref array<vector> m_aSightPos = {};
 	protected ref array<float> m_aSightAt = {};
 	protected float m_fHuntAt = -1000;
-	protected DCO_GroupUtilityComponent m_HuntGroup;
+	protected ref array<DCO_GroupUtilityComponent> m_aHuntGroups = {};
 	protected float m_fHuntUntil;
+	protected float m_fHuntStart;
+	protected float m_fHuntSeenAt;
+	protected vector m_vHuntCenter;
 
 	protected void NoteSighting(vector pos, float now)
 	{
@@ -2505,21 +2661,40 @@ class CMD_ThreatResponseComponent : ScriptComponent
 
 	protected void DCO_HuntTick(float now)
 	{
-		if (m_HuntGroup)
+		if (!m_aHuntGroups.IsEmpty())
 		{
-			bool gone = !m_HuntGroup.GetOwner() || m_HuntGroup.GetUnitCount() <= 0;
-			bool done = gone || now >= m_fHuntUntil || m_HuntGroup.GetTask() != DCO_EGroupTask.PATROL;
-			if (!done)
-				return;
-			if (!gone && m_HuntGroup.GetTask() == DCO_EGroupTask.PATROL)
+			for (int hi = m_aHuntGroups.Count() - 1; hi >= 0; hi--)
 			{
-				m_HuntGroup.CompleteAllWaypoints();
-				m_HuntGroup.SetTask(DCO_EGroupTask.NONE, "CommanderThreatResponse:hunt_end");
-				m_HuntGroup.DCO_SetHold(0);
+				DCO_GroupUtilityComponent hg = m_aHuntGroups[hi];
+				if (!hg || !hg.GetOwner() || hg.GetUnitCount() <= 0 || hg.GetTask() != DCO_EGroupTask.PATROL)
+					m_aHuntGroups.Remove(hi);
+			}
+			if (!m_aHuntGroups.IsEmpty() && m_fHuntUntil - m_fHuntStart < 900.0)
+			{
+				for (int si = m_aSightPos.Count() - 1; si >= 0; si--)
+				{
+					if (m_aSightAt[si] <= m_fHuntSeenAt || vector.DistanceXZ(m_aSightPos[si], m_vHuntCenter) > 400.0)
+						continue;
+					m_fHuntSeenAt = m_aSightAt[si];
+					m_fHuntUntil = Math.Min(m_fHuntUntil + 120.0, m_fHuntStart + 900.0);
+					foreach (DCO_GroupUtilityComponent xg : m_aHuntGroups)
+						xg.DCO_SetHold(m_fHuntUntil);
+					DCO_Perf.Count("threat:hunt_extend");
+					DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), string.Format("threat_hunt_extend cmd=%1 sighting=%2 d=%3 left_s=%4", m_Commander.GetCommanderUID(), DCO_Util.XZ(m_aSightPos[si]), Math.Round(vector.DistanceXZ(m_aSightPos[si], m_vHuntCenter)), Math.Round(m_fHuntUntil - now)));
+					break;
+				}
+			}
+			if (!m_aHuntGroups.IsEmpty() && now < m_fHuntUntil)
+				return;
+			foreach (DCO_GroupUtilityComponent eg : m_aHuntGroups)
+			{
+				eg.CompleteAllWaypoints();
+				eg.SetTask(DCO_EGroupTask.NONE, "CommanderThreatResponse:hunt_end");
+				eg.DCO_SetHold(0);
 			}
 			DCO_Perf.Count("threat:hunt_end");
-			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), string.Format("threat_hunt_end cmd=%1 gone=%2", m_Commander.GetCommanderUID(), DCO_Util.B01(gone)));
-			m_HuntGroup = null;
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), string.Format("threat_hunt_end cmd=%1 groups_left=%2 gone=%3", m_Commander.GetCommanderUID(), m_aHuntGroups.Count(), DCO_Util.B01(m_aHuntGroups.IsEmpty())));
+			m_aHuntGroups.Clear();
 			return;
 		}
 		if (now - m_fHuntAt < 60.0)
@@ -2545,43 +2720,56 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		if (seed < 0)
 			return;
 		vector first = m_aSightPos[seed];
-		DCO_GroupUtilityComponent g = m_Commander.FindBestIdleGroupForTask_Public(DCO_EGroupTask.PATROL, first);
-		if (!g || !g.GetOwner() || g.IsPlayerGroup() || g.IsArmor() || !m_Commander.CanCommitGroup(g))
+		float huntRad = Math.Clamp(60.0 + (now - m_aSightAt[seed]) * m_fUncertaintyGrowth, 60.0, 300.0);
+		int want = 1;
+		if (huntRad > 200.0)
+			want = 3;
+		else if (huntRad > 100.0)
+			want = 2;
+		want = Math.Min(want, Math.Max(1, m_Commander.DCO_IdleCommittable() / 2));
+		array<DCO_GroupUtilityComponent> picks = {};
+		for (int pk = 0; pk < want; pk++)
+		{
+			DCO_GroupUtilityComponent cand = m_Commander.FindBestIdleGroupForTask_Public(DCO_EGroupTask.PATROL, first);
+			if (!cand || !cand.GetOwner() || cand.IsPlayerGroup() || cand.IsArmor() || !m_Commander.CanCommitGroup(cand) || picks.Contains(cand))
+				break;
+			cand.DCO_SetHold(now + 450.0);
+			picks.Insert(cand);
+		}
+		if (picks.IsEmpty())
 		{
 			DCO_Perf.Count("threat:hunt_no_group");
 			return;
 		}
-		array<vector> pts = {};
-		pts.Insert(first);
-		for (int k = m_aSightPos.Count() - 1; k >= 0 && pts.Count() < 3; k--)
+		DCO_SortByBearing(first, picks);
+		float span = 360.0 / picks.Count();
+		float offset = DCO_BearingDeg(first, picks[0].GetOwner().GetOrigin()) - span * 0.5;
+		foreach (int gi, DCO_GroupUtilityComponent g : picks)
 		{
-			vector cand = m_aSightPos[k];
-			if (k == seed || vector.DistanceXZ(cand, first) > 400.0)
-				continue;
-			bool far = true;
-			foreach (vector p : pts)
+			float mid = (offset + span * (gi + 0.5)) * Math.DEG2RAD;
+			vector entry = DCO_Util.Surface(first + Vector(Math.Cos(mid), 0, Math.Sin(mid)) * huntRad);
+			float gd = vector.DistanceXZ(g.GetOwner().GetOrigin(), first);
+			g.CompleteAllWaypoints();
+			if (!m_Commander.SpawnMoveRoute(g, g.GetOwner().GetOrigin(), entry, now))
 			{
-				if (vector.DistanceXZ(p, cand) < 50.0)
-					far = false;
+				g.DCO_SetHold(0);
+				continue;
 			}
-			if (far)
-				pts.Insert(cand);
+			array<SCR_AIWaypoint> huntWps = {};
+			m_Commander.DCO_SearchWaypoints(first, huntRad, huntWps, offset + span * gi, span);
+			if (!huntWps.IsEmpty())
+				g.MoveToRoute(huntWps, now);
+			g.SetTask(DCO_EGroupTask.PATROL, "CommanderThreatResponse:hunt");
+			m_aHuntGroups.Insert(g);
+			DCO_Perf.Count("threat:hunt");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), string.Format("threat_hunt cmd=%1 grp=%2 points=%3 first=%4 age_s=%5 d=%6 radius=%7 groups=%8 slice_deg=%9", m_Commander.GetCommanderUID(), DCO_Log.IdGroup(AIGroup.Cast(g.GetOwner())), huntWps.Count(), DCO_Util.XZ(first), Math.Round(now - m_aSightAt[seed]), Math.Round(gd), Math.Round(huntRad), picks.Count(), Math.Round(offset + span * gi)) + " span_deg=" + Math.Round(span).ToString());
 		}
-		g.CompleteAllWaypoints();
-		if (!m_Commander.SpawnMoveRoute(g, g.GetOwner().GetOrigin(), pts[0], now))
+		if (m_aHuntGroups.IsEmpty())
 			return;
-		for (int q = 1; q < pts.Count(); q++)
-		{
-			SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(pts[q]);
-			if (wp)
-				g.MoveTo(wp, now);
-		}
-		g.SetTask(DCO_EGroupTask.PATROL, "CommanderThreatResponse:hunt");
-		g.DCO_SetHold(now + 300.0);
-		m_HuntGroup = g;
-		m_fHuntUntil = now + 300.0;
-		DCO_Perf.Count("threat:hunt");
-		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(m_Commander), string.Format("threat_hunt cmd=%1 grp=%2 points=%3 first=%4 age_s=%5 d=%6", m_Commander.GetCommanderUID(), DCO_Log.IdGroup(AIGroup.Cast(g.GetOwner())), pts.Count(), DCO_Util.XZ(first), Math.Round(now - m_aSightAt[seed]), Math.Round(vector.DistanceXZ(g.GetOwner().GetOrigin(), first))));
+		m_fHuntStart = now;
+		m_fHuntUntil = now + 450.0;
+		m_fHuntSeenAt = m_aSightAt[seed];
+		m_vHuntCenter = first;
 	}
 
 	protected void DCO_OnReportEvent(CMD_ThreatEntry e)
@@ -2599,7 +2787,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		CMD_ThreatMission mission = FindMission(cluster.m_vCenterPos);
 		CMD_ResponseLedgerEntry led = GetLedger(cluster.m_vCenterPos, now);
 		bool rose = cluster.m_eClusterLevel > led.m_iLastLevel;
-		bool emergency = cluster.m_eClusterLevel == CMD_EThreatLevel.CRITICAL && IsNearOwnObjective(cluster.m_vCenterPos);
+		bool emergency = cluster.m_fCombinedScore >= m_fReinforcementThreshold && IsNearOwnObjective(cluster.m_vCenterPos);
 		if (!rose && !emergency && now - led.m_fLastEvalAt < 10.0)
 		{
 			DCO_Perf.Count("threat:event_debounce");
@@ -2818,7 +3006,7 @@ class CMD_ThreatResponseComponent : ScriptComponent
 	float GetClusterMinResponseScore()         { return m_fClusterMinResponseScore; }
 	void  SetClusterMinResponseScore(float v)  { m_fClusterMinResponseScore = Math.Max(v, 0); }
 	int   GetMaxReinforcementSent()            { return m_iMaxReinforcementSent; }
-	protected int DCO_QrfMax()                 { return DCO_Force.Max(m_Commander, "qrf", m_iMaxReinforcementSent); }
+	protected int DCO_QrfMax()                 { return DCO_Force.Max(m_Commander, "qrf"); }
 	void  SetMaxReinforcementSent(int v)       { m_iMaxReinforcementSent = Math.Max(v, 0); }
 	float GetReinforcementCooldown()           { return m_fReinforcementCooldown; }
 	void  SetReinforcementCooldown(float v)    { m_fReinforcementCooldown = Math.Max(v, 0); }
@@ -2843,6 +3031,8 @@ class CMD_ThreatResponseComponent : ScriptComponent
 		UpdateThreatDebug(timeSlice);
 
 		if (!Replication.IsServer())
+			return;
+		if (m_Commander && m_Commander.DCO_IsPaused())
 			return;
 
 		m_fThinkTimer += timeSlice;

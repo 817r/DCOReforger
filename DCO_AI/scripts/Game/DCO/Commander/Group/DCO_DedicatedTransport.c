@@ -34,7 +34,7 @@ class DCO_TransportTeamComponent : ScriptComponent
 			flag = DCO_ELogiJobFlag.EXTRACT;
 		else if (kind == DCO_ELogiJob.MEDEVAC)
 			flag = DCO_ELogiJobFlag.MEDEVAC;
-		else if (kind == DCO_ELogiJob.RESUPPLY)
+		else if (kind == DCO_ELogiJob.RESUPPLY || kind == DCO_ELogiJob.SUPPLY_RUN)
 			flag = DCO_ELogiJobFlag.RESUPPLY;
 		return (m_iAllowedJobs & flag) != 0;
 	}
@@ -293,7 +293,10 @@ class DCO_TransportTeamComponent : ScriptComponent
 
 	protected bool PassengersInContact()
 	{
-		if (!m_Job || !m_Job.IsTransportKind())
+		if (!m_Job)
+			return false;
+		bool squadResupply = m_Job.m_eKind == DCO_ELogiJob.RESUPPLY && !m_Job.m_MortarEnt;
+		if (!squadResupply && !m_Job.IsTransportKind())
 			return false;
 		foreach (DCO_GroupUtilityComponent g : m_Job.m_aGroups)
 		{
@@ -507,8 +510,40 @@ class DCO_TransportTeamComponent : ScriptComponent
 				m_fNextAction = worldTime + m_fLoadTime;
 				return;
 
+			case DCO_ELogiJob.SUPPLY_RUN:
+				m_fNextAction = worldTime + 2.0;
+				m_fStateTimeout = DCO_Ctx.TuneG("logi.transfer_timeout_s", 120.0);
+				DCO_Logistics.Log(m_Job, "load_start", "depot=" + DCO_Util.XZ(m_Job.m_vPickup));
+				return;
+
 			case DCO_ELogiJob.RESUPPLY:
 				m_fNextAction = worldTime + m_fResupplyTime;
+				if (m_Job.m_MortarEnt)
+				{
+					float hold = DCO_Ctx.TuneG("logi.mortar_hold_s", 600.0);
+					m_fNextAction = worldTime + hold;
+					m_fStateTimeout = hold + 120.0;
+					DCO_Perf.Count("logi:mortar_resupply_arrive");
+					DCO_Logistics.Log(m_Job, "mortar_arrive", string.Format("mortar=%1 hold_s=%2", m_Job.m_MortarEnt.GetName(), Math.Round(hold)));
+				}
+				else if (m_Job.m_bFromPlayer && m_Job.m_aGroups.IsEmpty())
+				{
+					float phold = DCO_Ctx.TuneG("logi.player_resupply_hold_s", 180.0);
+					m_fNextAction = worldTime + phold;
+					m_fStateTimeout = phold + 120.0;
+					DCO_Perf.Count("logi:player_resupply_arrive");
+					DCO_Logistics.Log(m_Job, "player_resupply_arrive", string.Format("requester=%1 hold_s=%2", m_Job.m_iRequester, Math.Round(phold)));
+					foreach (SCR_AIGroup rpg : m_Job.m_aPlayerGroups)
+					{
+						if (rpg)
+							DCO_Radio.Group(rpg.GetGroupID(), "LOGISTICS", "logi_resupply_here");
+					}
+				}
+				else
+				{
+					m_fStateTimeout = DCO_Ctx.TuneG("logi.resupply_wait_s", 90.0);
+					CallToTruck();
+				}
 				return;
 		}
 
@@ -545,14 +580,70 @@ class DCO_TransportTeamComponent : ScriptComponent
 			return;
 		}
 
+		if (m_Job.m_eKind == DCO_ELogiJob.SUPPLY_RUN)
+		{
+			if (worldTime < m_fNextAction)
+				return;
+			m_fNextAction = worldTime + 2.0;
+			SCR_ResourceContainer tc = DCO_LogiSupply.TruckContainer(veh);
+			SCR_ResourceContainer dc = DCO_LogiSupply.EntityContainer(m_Job.m_DepotEnt);
+			if (!tc || !dc)
+			{
+				Finish(false, "no_container", worldTime);
+				return;
+			}
+			float moved = DCO_LogiSupply.Transfer(dc, tc, DCO_Ctx.TuneG("logi.transfer_amount", 500.0));
+			m_Job.m_fCarried += moved;
+			bool full = tc.GetResourceValue() >= tc.GetMaxResourceValue() - 0.5;
+			bool timeout = (worldTime - m_fStateStartTime) > m_fStateTimeout;
+			if (moved > 0 && !full && !timeout)
+				return;
+			DCO_Perf.Count("logi:supply_run_loaded");
+			DCO_Logistics.Log(m_Job, "loaded", string.Format("carried=%1 depot_left=%2 full=%3 timeout=%4", m_Job.m_fCarried.ToString(-1, 1), dc.GetResourceValue().ToString(-1, 1), DCO_Util.B01(full), DCO_Util.B01(timeout)));
+			if (m_Job.m_fCarried <= 0.5)
+			{
+				Finish(false, "depot_empty", worldTime);
+				return;
+			}
+			Depart(worldTime, veh);
+			return;
+		}
+
+		if (m_Job.m_eKind == DCO_ELogiJob.RESUPPLY && m_Job.m_MortarEnt)
+		{
+			SCR_AIVehicleUsageComponent mu = SCR_AIVehicleUsageComponent.Cast(m_Job.m_MortarEnt.FindComponent(SCR_AIVehicleUsageComponent));
+			bool gone = !mu || mu.GetDamageState() == EDamageState.DESTROYED;
+			if (gone || worldTime >= m_fNextAction)
+			{
+				string why = "mortar_hold_done";
+				if (gone)
+					why = "mortar_gone";
+				Finish(true, why, worldTime);
+			}
+			return;
+		}
 		if (m_Job.m_eKind == DCO_ELogiJob.RESUPPLY)
 		{
-			if (worldTime >= m_fNextAction)
+			if (worldTime < m_fNextAction)
+				return;
+			if (m_Job.m_bFromPlayer && m_Job.m_aGroups.IsEmpty())
 			{
-				int n = Deliver(veh);
-				m_Job.m_iBoarded = n;
-				Finish(n > 0, "delivered", worldTime);
+				Finish(true, "player_hold_done", worldTime);
+				return;
 			}
+			bool rsTimeout = (worldTime - m_fStateStartTime) > m_fStateTimeout;
+			int rsNear, rsAlive;
+			CountNear(veh, rsNear, rsAlive);
+			if (!rsTimeout && rsNear * 2 < rsAlive)
+				return;
+			m_sDCODeliverFail = "no_one_near";
+			int rsN = Deliver(veh);
+			m_Job.m_iBoarded = rsN;
+			string rsWhy = "delivered";
+			if (rsN <= 0)
+				rsWhy = m_sDCODeliverFail;
+			DCO_Logistics.Log(m_Job, "resupply_result", string.Format("served=%1 near=%2 alive=%3 timeout=%4 why=%5", rsN, rsNear, rsAlive, rsTimeout, rsWhy));
+			Finish(rsN > 0, rsWhy, worldTime);
 			return;
 		}
 
@@ -698,6 +789,59 @@ class DCO_TransportTeamComponent : ScriptComponent
 		return acc && acc.MoveInVehicle(veh, ECompartmentType.CARGO, false, slot);
 	}
 
+	protected string m_sDCODeliverFail;
+
+	protected void CountNear(IEntity veh, out int near, out int alive)
+	{
+		near = 0;
+		alive = 0;
+		foreach (DCO_GroupUtilityComponent g : m_Job.m_aGroups)
+		{
+			SCR_AIGroup grp;
+			if (g)
+				grp = SCR_AIGroup.Cast(g.GetOwner());
+			if (!grp)
+				continue;
+			array<AIAgent> agents = {};
+			grp.GetAgents(agents);
+			foreach (AIAgent a : agents)
+			{
+				IEntity ent = a.GetControlledEntity();
+				if (!DCO_Util.IsAlive(ent))
+					continue;
+				alive++;
+				if (vector.DistanceXZ(ent.GetOrigin(), veh.GetOrigin()) <= 50.0)
+					near++;
+			}
+		}
+	}
+
+	protected void CallToTruck()
+	{
+		vector at = GetTeamPos();
+		foreach (DCO_GroupUtilityComponent g : m_Job.m_aGroups)
+		{
+			SCR_AIGroup grp;
+			if (g)
+				grp = SCR_AIGroup.Cast(g.GetOwner());
+			if (!grp || !m_Commander)
+				continue;
+			string result = "in_contact";
+			if (!g.IsInContact())
+			{
+				result = "no_waypoint";
+				SCR_AIWaypoint wp = m_Commander.SpawnMoveWP(at);
+				if (wp)
+				{
+					grp.AddWaypointAt(wp, 0);
+					result = "called";
+				}
+			}
+			DCO_Perf.Count("logi:resupply_call_" + result);
+			DCO_Logistics.Log(m_Job, "resupply_call", string.Format("group=%1 result=%2 truck=%3 dist=%4", grp.GetName(), result, DCO_Util.XZ(at), Math.Round(vector.DistanceXZ(g.GetOwner().GetOrigin(), at))));
+		}
+	}
+
 	protected int Deliver(IEntity veh)
 	{
 		int n;
@@ -720,6 +864,15 @@ class DCO_TransportTeamComponent : ScriptComponent
 				SCR_InventoryStorageManagerComponent inv = SCR_InventoryStorageManagerComponent.Cast(ent.FindComponent(SCR_InventoryStorageManagerComponent));
 				if (!inv)
 					continue;
+				ResourceName magPrefab;
+				float cost;
+				if (DCO_Rearm.MagRoom(ent, magPrefab))
+					cost = DCO_LogiSupply.ItemCost(magPrefab) * m_iResupplyMags * DCO_Ctx.TuneG("logi.mag_cost_mul", 1.0);
+				if (!DCO_LogiSupply.Pay(m_Commander, cost, veh, "resupply"))
+				{
+					m_sDCODeliverFail = "no_supplies";
+					return n;
+				}
 				inv.ResupplyMagazines(m_iResupplyMags);
 				n++;
 			}
@@ -914,6 +1067,10 @@ class DCO_TransportTeamComponent : ScriptComponent
 					m_Commander.GetLogistics().AddHubCasualty(c, worldTime);
 			}
 		}
+		else if (m_Job.m_eKind == DCO_ELogiJob.SUPPLY_RUN)
+		{
+			m_fNextAction = worldTime + 2.0;
+		}
 		else
 		{
 			DisembarkPassengers();
@@ -925,6 +1082,30 @@ class DCO_TransportTeamComponent : ScriptComponent
 
 	protected void TickWaitingForDisembark(float worldTime)
 	{
+		if (m_Job && m_Job.m_eKind == DCO_ELogiJob.SUPPLY_RUN)
+		{
+			if (worldTime < m_fNextAction)
+				return;
+			m_fNextAction = worldTime + 2.0;
+			SCR_ResourceContainer tc = DCO_LogiSupply.TruckContainer(ResolveVehicle());
+			float moved;
+			if (tc)
+				moved = DCO_LogiSupply.UnloadToHub(m_Commander, tc, DCO_Ctx.TuneG("logi.transfer_amount", 500.0));
+			bool empty = !tc || tc.GetResourceValue() <= 0.5;
+			bool timeout = (worldTime - m_fStateStartTime) > DCO_Ctx.TuneG("logi.transfer_timeout_s", 120.0);
+			if (moved > 0 && !empty && !timeout)
+				return;
+			int n;
+			float stock = DCO_LogiSupply.HubStock(m_Commander, n);
+			DCO_Perf.Count("logi:supply_run_unloaded");
+			DCO_Logistics.Log(m_Job, "unloaded", string.Format("carried=%1 hub_stock=%2 truck_left=%3 timeout=%4", m_Job.m_fCarried.ToString(-1, 1), stock.ToString(-1, 1), DCO_LogiSupply.ContainerValue(tc).ToString(-1, 1), DCO_Util.B01(timeout)));
+			string why = "unloaded";
+			if (!empty)
+				why = "hub_full";
+			Finish(true, why, worldTime);
+			return;
+		}
+
 		if ((worldTime - m_fStateStartTime) < m_fDisembarkTimeout)
 			return;
 

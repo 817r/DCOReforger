@@ -205,8 +205,8 @@ class DCO_Hearing
 			if (bestD > sure)
 				p = 1.0 - (bestD - sure) / Math.Max(far - sure, 0.1);
 
-			IEntity bldSpk = SCR_CoverManagerComponent.DCO_GetBuildingAt(spk);
-			IEntity bldMe = SCR_CoverManagerComponent.DCO_GetBuildingAt(best);
+			IEntity bldSpk = DCO_CoverManagerComponent.DCO_GetBuildingAt(spk);
+			IEntity bldMe = DCO_CoverManagerComponent.DCO_GetBuildingAt(best);
 			bool sameBuilding = bldSpk && bldSpk == bldMe;
 			if (sameBuilding && Math.AbsFloat(sp[1] - best.GetOrigin()[1]) < 2.5)
 				p = 1.0;

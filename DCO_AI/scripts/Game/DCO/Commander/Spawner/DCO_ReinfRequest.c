@@ -26,6 +26,11 @@ class DCO_ReinfRequest
 	int m_iGap;
 	int m_iGapOrig;
 
+	static bool IsTruck(string type)
+	{
+		return type == "AMMO_TRUCK" || type == "TROOP_TRUCK";
+	}
+
 	static string PrioName(int p)
 	{
 		if (p >= 2)
@@ -94,6 +99,9 @@ class DCO_ReinfBoard
 	bool m_bRatioActive;
 	float m_fCulminatedAt = -1000;
 	float m_fFilledAt = -1000;
+	float m_fReconFilledAt = -100000;
+	float m_fTruckFilledAt = -100000;
+	float m_fTruckToldAt = -100000;
 	ref DCO_ReinfRequest m_Strength;
 	ref DCO_ReinfRequest m_Capability;
 	float m_fCapSince = -1;
@@ -405,6 +413,10 @@ class DCO_ReinfBoard
 		m_iFilled++;
 		if (r.m_iKind == 1)
 			m_fFilledAt = now;
+		if (r.m_iKind == 2 && r.m_sType == "RECON")
+			m_fReconFilledAt = now;
+		if (r.m_iKind == 2 && DCO_ReinfRequest.IsTruck(r.m_sType))
+			m_fTruckFilledAt = now;
 		DCO_Perf.Count("reinf:filled");
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("reinf_filled cmd=%1 id=%2 kind=%3 spawner=%4 groups=%5 waited_s=%6", m_sUID, r.m_iId, r.KindName(), r.m_sSpawner, r.m_iArrived, Math.Round(now - r.m_fCreated)));
 		r.m_bCancelled = true;
@@ -568,7 +580,7 @@ class DCO_ReinfBoard
 		}
 	}
 
-	DCO_ReinfRequest Claimable(string spawner)
+	DCO_ReinfRequest Claimable(string spawner, AICommander_BaseComponent cmd = null)
 	{
 		DCO_ReinfRequest best;
 		array<DCO_ReinfRequest> list = {m_Strength, m_Capability};
@@ -582,7 +594,18 @@ class DCO_ReinfBoard
 			if (!r || r.m_bCancelled || r.m_iOrdered >= r.m_iGroups)
 				continue;
 			if (!r.m_sSpawner.IsEmpty() && r.m_sSpawner != spawner)
-				continue;
+			{
+				string why = "holder_cannot_fill";
+				if (!cmd || DCO_CommanderSpawnerComponent.DCO_KeyCanFill(r.m_sSpawner, cmd))
+				{
+					if (r.m_iOrdered > 0 || !DCO_CommanderSpawnerComponent.DCO_KeyCloser(spawner, r.m_sSpawner, r.m_vPos, r))
+						continue;
+					why = "closer_spawner";
+				}
+				DCO_Perf.Count("reinf:rebind_" + why);
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("reinf_rebind cmd=%1 id=%2 kind=%3 from=%4 asked_by=%5 why=%6 ordered=%7 arrived=%8 groups=%9", m_sUID, r.m_iId, r.KindName(), r.m_sSpawner, spawner, why, r.m_iOrdered, r.m_iArrived, r.m_iGroups));
+				r.m_sSpawner = string.Empty;
+			}
 			if (r.m_iPrio == 0)
 			{
 				DCO_ReinfRequest other = m_Capability;
@@ -896,13 +919,21 @@ class DCO_ReinfBoard
 			}
 		}
 
-		bool want = attPrio >= 0 || m_bRatioActive;
+		bool ratioOn = m_bRatioActive;
+		float idleBlock = T(cmd, "reinf.idle_block", 2.0);
+		if (ratioOn && !overrun && idleBlock > 0 && cmd.GetReserveManpower() - cmd.GetReserveFloor() >= 8.0 * idleBlock)
+		{
+			ratioOn = false;
+			missionGone = "idle_unused";
+			Suppress("idle_unused", now);
+		}
+		bool want = attPrio >= 0 || ratioOn;
 		float size = attSize;
 		int prioAll = attPrio;
 		string why = "attrition";
 		if (attPrio < 0)
 			why = "ratio";
-		if (m_bRatioActive)
+		if (ratioOn)
 		{
 			if (attPrio >= 0)
 				why = "attrition+ratio";
@@ -1002,9 +1033,25 @@ class DCO_ReinfBoard
 		}
 		else if (unclear > 0 || recon)
 		{
-			capType = "RECON";
-			capPrio = 0;
-			capGroups = 1;
+			if (!recon && cmd.DCO_ThreatReconCount() >= 2)
+				Suppress("recon_cap", now);
+			else if (!m_Capability && now - m_fReconFilledAt < T(cmd, "reinf.recon_gap_s", 900.0))
+				Suppress("recon_gap", now);
+			else
+			{
+				capType = "RECON";
+				capPrio = 0;
+				capGroups = 1;
+			}
+		}
+		if (capType.IsEmpty() && cmd.GetLogistics() && (m_Capability || now - m_fTruckFilledAt >= T(cmd, "reinf.truck_gap_s", 300.0)))
+		{
+			capType = cmd.GetLogistics().WantVehicle(cmd, now);
+			if (!capType.IsEmpty())
+			{
+				capPrio = 0;
+				capGroups = 1;
+			}
 		}
 		if (!capType.IsEmpty() && !m_Capability && NoSource(capType, now))
 			capType = string.Empty;
@@ -1029,6 +1076,14 @@ class DCO_ReinfBoard
 				if (capType == "AT" && !armorList.IsEmpty())
 					m_Capability.m_vPos = armorList[0].m_vBelievedPos;
 				LogRequest(m_Capability);
+				if (DCO_ReinfRequest.IsTruck(capType) && now - m_fTruckToldAt >= 1800.0)
+				{
+					m_fTruckToldAt = now;
+					string truckName = "a transport truck";
+					if (capType == "AMMO_TRUCK")
+						truckName = "an ammo truck";
+					DCO_PlayerComms.SendToGameMasters("DCO", string.Format("%1 has no fitting transport team and asked its spawners for %2 with a crew.", cmd.GetCommanderUID(), truckName));
+				}
 			}
 			else if (m_Capability)
 				Update(m_Capability, capPrio, capGroups * 8.0, capGroups, "capability", armorClose, now);

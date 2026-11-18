@@ -117,7 +117,7 @@ class DCO_GarrisonWaypoint : SCR_DefendWaypoint
 	void SetAllowRoof(bool v) { m_bAllowRoof = v; }
 	bool GetPullLoneToMain() { return m_bPullLoneToMain; }
 	void SetPullLoneToMain(bool v) { m_bPullLoneToMain = v; }
-	bool GetDebugDraw() { return m_bDebugDraw && DCO_TestCaseComponent.RunOn(); }
+	bool GetDebugDraw() { return m_bDebugDraw && DCO_Dev.RunOn(); }
 	void SetDebugDraw(bool v) { m_bDebugDraw = v; }
 	float GetDefendLeashExtra() { return m_fDefendLeashExtra; }
 	void SetDefendLeashExtra(float v) { m_fDefendLeashExtra = Math.Clamp(v, 0, 300); }

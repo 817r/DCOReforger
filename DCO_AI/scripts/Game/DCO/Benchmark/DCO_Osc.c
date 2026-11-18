@@ -100,6 +100,15 @@ class DCO_Osc
 				if (net < 8.0)
 				{
 					DCO_Perf.Count("osc:detect");
+					float fmAge = -1;
+					AIAgent oscAgent = u.GetAIAgent();
+					DCO_GroupUtilityComponent oscGrp;
+					if (oscAgent && oscAgent.GetParentGroup())
+						oscGrp = DCO_GroupUtilityComponent.Cast(oscAgent.GetParentGroup().FindComponent(DCO_GroupUtilityComponent));
+					if (oscGrp)
+						fmAge = oscGrp.DCO_FormAge();
+					string cause = Cause(u.m_sDCOOscTrail, fmAge, span);
+					DCO_Perf.Count("osc:cause_" + cause);
 					if (now >= u.m_fDCOOscLogAt_ms && DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO))
 					{
 						u.m_fDCOOscLogAt_ms = now + 10000.0;
@@ -107,7 +116,7 @@ class DCO_Osc
 						if (u.m_ThreatSystem)
 							supp = u.m_ThreatSystem.GetSuppressionMeasure();
 						DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(u.m_OwnerEntity), string.Format("osc_detect unit=%1 rev=%2 span_s=%3 net=%4 leg=%5 supp=%6 pos=%7 trail=%8",
-							DCO_Log.IdUnit(u.m_OwnerEntity), u.m_iDCOOscRev, span.ToString(-1, 1), net.ToString(-1, 1), Math.Round(len), supp.ToString(-1, 2), DCO_Log.Pos(p), u.m_sDCOOscTrail));
+							DCO_Log.IdUnit(u.m_OwnerEntity), u.m_iDCOOscRev, span.ToString(-1, 1), net.ToString(-1, 1), Math.Round(len), supp.ToString(-1, 2), DCO_Log.Pos(p), u.m_sDCOOscTrail) + " cause=" + cause + " fm_age_s=" + fmAge.ToString(-1, 0));
 					}
 				}
 				u.m_fDCOOscWinStart_ms = -1;
@@ -116,6 +125,21 @@ class DCO_Osc
 		u.m_vDCOOscLegDir = d;
 		u.m_vDCOOscLegStart = p;
 		u.m_sDCOOscLastTag = tag;
+	}
+
+	static string Cause(string trail, float fmAge, float span)
+	{
+		if (fmAge >= 0 && fmAge < span + 5.0)
+			return "formation_change";
+		if (trail.Contains("Relocate"))
+			return "relocate";
+		if (trail.Contains("/"))
+			return "cover_move";
+		if (trail.Contains("MoveInFormation"))
+			return "formation_slot";
+		if (trail.Contains("Move"))
+			return "waypoint";
+		return "other";
 	}
 
 	static string Tag(SCR_AIUtilityComponent u)

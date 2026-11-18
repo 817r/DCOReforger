@@ -7,7 +7,7 @@ GameEntity {
    m_fStalemateSeconds 1800
    m_fStalemateThreshold 1800
   }
-  Comamnder_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
+  DCO_AreaBaseMeshComponent "{68F8849A261C8DDA}" {
    m_vResolution 32
    m_Material "{E65E61D1541003E2}Assets/Editor/VirtualArea/VirtualArea.emat"
   }

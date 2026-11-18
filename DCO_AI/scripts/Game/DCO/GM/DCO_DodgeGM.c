@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalDodgeShotThresholdAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalDodgeShotThresholdAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -30,7 +30,7 @@ class SCR_AIGlobalDodgeShotThresholdAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalDodgeShotWindowAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalDodgeShotWindowAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -61,7 +61,7 @@ class SCR_AIGlobalDodgeShotWindowAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualDodgeShotThresholdAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualDodgeShotThresholdAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -106,7 +106,7 @@ class SCR_AIIndividualDodgeShotThresholdAttribute : SCR_ValidTypeBaseValueListEd
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualDodgeShotWindowAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualDodgeShotWindowAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{

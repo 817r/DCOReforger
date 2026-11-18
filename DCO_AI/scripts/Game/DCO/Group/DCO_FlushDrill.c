@@ -181,7 +181,7 @@ class DCO_FlushDrill
 	protected static bool Grenade(SCR_AIGroupUtilityComponent u, SCR_AIGroup grp, DCO_FlushState st, SCR_AIUtilityComponent tu, float d, IEntity enemy, vector pos, float hidden_ms, float now_ms)
 	{
 		IEntity me = tu.m_OwnerEntity;
-		bool inBuilding = SCR_CoverManagerComponent.DCO_GetBuildingAt(enemy) != null;
+		bool inBuilding = DCO_CoverManagerComponent.DCO_GetBuildingAt(enemy) != null;
 		if (d <= 30.0)
 		{
 			st.m_mGrenNext.Set(enemy, now_ms + 6000.0);
@@ -287,11 +287,11 @@ class DCO_FlushDrill
 
 		vector back = DCO_Specialist.Flat(center - pos);
 		float dist = Math.Clamp(vector.DistanceXZ(center, pos), 20.0, 60.0);
-		st.m_fSide = -st.m_fSide;
-		float ang = Math.RandomFloat(35.0, 55.0) * Math.DEG2RAD * st.m_fSide;
-		float cs = Math.Cos(ang);
-		float sn = Math.Sin(ang);
-		vector dir = Vector(back[0] * cs - back[2] * sn, 0, back[0] * sn + back[2] * cs);
+		float angDeg = Math.RandomFloat(60.0, 90.0);
+		string sideWhy;
+		st.m_fSide = PickSide(pos, pos + Rot(back, angDeg) * dist, pos + Rot(back, -angDeg) * dist, -st.m_fSide, sideWhy);
+		float ang = angDeg * Math.DEG2RAD * st.m_fSide;
+		vector dir = Rot(back, angDeg * st.m_fSide);
 		vector fp;
 		st.m_mFlankNext.Set(enemy, now_ms + 10000.0);
 		if (!Reachable(pos + dir * dist, fp))
@@ -299,13 +299,17 @@ class DCO_FlushDrill
 			DCO_Perf.Count("flush:flank_no_nav");
 			return false;
 		}
-		DCO_RelocateBehavior.Start(flanker, fp, pos, false, ECharacterStance.CROUCH, 30.0, "flush_flank");
+		DCO_RelocateBehavior frb = DCO_RelocateBehavior.Start(flanker, fp, pos, true, ECharacterStance.CROUCH, 30.0, "flush_flank");
+		if (frb)
+			frb.DCO_SetYieldM(30.0);
 
+		float suppS = Math.Clamp(vector.DistanceXZ(flanker.m_OwnerEntity.GetOrigin(), fp) / 3.5 + 2.0, 8.0, 25.0);
 		vector bbMin, bbMax;
 		SCR_AISuppressionVolumeBase.CreateSuppressionBox(pos, 3.0, 3, bbMin, bbMax);
 		SCR_AISuppressionObjectVolumeBox vol = new SCR_AISuppressionObjectVolumeBox(bbMin, bbMax);
 		if (DCO_SuppressGate.Allowed(supp, pos, "flush"))
-			supp.AddAction(new SCR_AISuppressBehavior(supp, null, vol, 8.0, 1.5));
+			supp.AddAction(new SCR_AISuppressBehavior(supp, null, vol, suppS, 1.5));
+		DCO_Perf.Count("flush:flank_side_" + sideWhy);
 
 		st.m_mFlankNext.Set(enemy, now_ms + 45000.0);
 		st.m_fFlankGroupNext_ms = now_ms + 45000.0;
@@ -315,6 +319,35 @@ class DCO_FlushDrill
 			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(grp), string.Format("flush_flank grp=%1 flanker=%2 suppressor=%3 enemy=%4 angle=%5 flank_dist=%6 hidden_s=%7",
 				DCO_Log.IdGroup(grp), DCO_Log.IdUnit(flanker.m_OwnerEntity), DCO_Log.IdUnit(supp.m_OwnerEntity), DCO_Log.IdUnit(enemy), Math.Round(ang * Math.RAD2DEG), Math.Round(dist), Math.Round(hidden_ms / 1000.0)));
 		return true;
+	}
+
+	static vector Rot(vector v, float deg)
+	{
+		float cs = Math.Cos(deg * Math.DEG2RAD);
+		float sn = Math.Sin(deg * Math.DEG2RAD);
+		return Vector(v[0] * cs - v[2] * sn, 0, v[0] * sn + v[2] * cs);
+	}
+
+	static bool HiddenFrom(vector enemyPos, vector p)
+	{
+		return DCO_Util.TraceFrac(enemyPos + Vector(0, 1.5, 0), DCO_Util.Surface(p) + Vector(0, 1.0, 0), null, TraceFlags.WORLD | TraceFlags.ENTS, EPhysicsLayerPresets.Projectile, "t:flank_side") < 0.95;
+	}
+
+	static float PickSide(vector enemyPos, vector plusPos, vector minusPos, float fallback, out string why)
+	{
+		bool plusHidden = HiddenFrom(enemyPos, plusPos);
+		bool minusHidden = HiddenFrom(enemyPos, minusPos);
+		why = "fallback";
+		if (plusHidden == minusHidden)
+		{
+			if (fallback < 0)
+				return -1.0;
+			return 1.0;
+		}
+		why = "hidden";
+		if (plusHidden)
+			return 1.0;
+		return -1.0;
 	}
 
 	protected static bool FlankCapable(SCR_AIUtilityComponent m)

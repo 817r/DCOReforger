@@ -58,7 +58,8 @@ enum DCO_EAILODMode
 {
 	VANILLA,
 	PREVENT_MAX_LOD,
-	FULL_DETAIL
+	FULL_DETAIL,
+	SMART
 }
 
 class DCO_GlobalAIComponent: ScriptComponent
@@ -163,16 +164,16 @@ class DCO_GlobalAIComponent: ScriptComponent
 	[Attribute("0.5", UIWidgets.Slider, "How often AI throw smoke to cover movement. 0 = never, 0.5 = default, 1 = very often (chance x2).", params: "0 1 0.01", category: "Weapon Usage")]
 	protected float m_fSmokeUsage;
 
-	[Attribute("0", UIWidgets.ComboBox, "AI simulation LOD for groups owned by an AI Commander. Groups without a commander are always vanilla (unless overridden per group). VANILLA = engine decides, PREVENT_MAX_LOD = commander groups keep running far from players, FULL_DETAIL = commander groups at full detail (heaviest).", "", ParamEnumArray.FromEnum(DCO_EAILODMode), category: "Performance")]
+	[Attribute("0", UIWidgets.ComboBox, "AI simulation LOD for groups owned by an AI Commander. Groups without a commander are always vanilla (unless overridden per group). VANILLA = engine decides, PREVENT_MAX_LOD = commander groups keep running far from players, FULL_DETAIL = commander groups at full detail (heaviest), SMART = only commander groups that move, fight or sit near enemies or players keep running; idle groups follow the engine.", "", ParamEnumArray.FromEnum(DCO_EAILODMode), category: "Performance")]
 	protected DCO_EAILODMode m_eLODMode;
 
 	[Attribute("0", UIWidgets.CheckBox, "Performance profiling: logs time per DCO part, queries and raycasts per second, FPS and frame spikes every 30 s to dco.log (PERF channel) + perf.log in the session folder $profile:DCO/Logs. OFF = almost no cost.", category: "Performance")]
 	protected bool m_bPerfProfiling;
 
-	[Attribute("1", UIWidgets.ComboBox, "DCO log files in $profile:DCO/Logs. Off = no files (errors still go to the game console). Report only = just report.txt, a short readable summary of settings, problems and performance. Full = all technical logs (dco.log, battle.json) for bug reports. Test worlds and Workbench always log in full.", enums: ParamEnumArray.FromEnum(DCO_ELogMode), category: "Performance")]
+	[Attribute("1", UIWidgets.ComboBox, "DCO log files in $profile:DCO/Logs. Off = no files (errors still go to the game console). Report only = just report.txt, a short readable summary of settings, problems and performance. Full = all technical logs (dco.log, perf.log, session.txt) for bug reports. Test worlds and Workbench always log in full.", enums: ParamEnumArray.FromEnum(DCO_ELogMode), category: "Performance")]
 	protected int m_iLogMode;
 
-	[Attribute("0", UIWidgets.CheckBox, "Commander intent map overlay (Dev/GM): plans, decision reasons, group roles, the commander's picture of the enemy. Off = none; on = Game Master only. Always allowed in Workbench.", category: "Performance")]
+	[Attribute("0", UIWidgets.CheckBox, "Commander intent map overlay (developer tool): plans, decision reasons, group roles, the commander's picture of the enemy. Only works with the TestAI addon loaded, Game Master only. Not part of the public build.", category: "Performance")]
 	protected bool m_bIntentOverlay;
 
 	[Attribute("2147483647", UIWidgets.Flags, "Active DCO individual and squad behaviors.", "", ParamEnumArray.FromEnum(DCO_EBehavior), category: "Behavior")]
@@ -299,7 +300,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 	protected int m_iCommanderStockDefault;
 	protected int m_iMaxAttackGroupsDefault = -1;
 
-	[Attribute("0", UIWidgets.EditBox, "Total AI cap per faction for Commander Spawners. When reached, spawning is delayed. 0 = unlimited.", category: "Commander Spawner")]
+	[Attribute("0", UIWidgets.EditBox, "Max AI per faction for Commander Spawners. A group spawns only when it fits under this limit, otherwise it waits. Counts every AI soldier of the faction. 0 = unlimited.", category: "Commander Spawner")]
 	protected int m_iSpawnerFactionAICap;
 
 	[Attribute("0", UIWidgets.CheckBox, "Allow several groups to share one building (indoor defend, idle or garrison positions). OFF = one group per building.", category: "Combat")]
@@ -425,10 +426,10 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	protected void ApplyWorkbenchDefaults()
 	{
-		if (!GetGame().InPlayMode() || !Replication.IsServer() || !DCO_TestCaseComponent.RunOn())
+		if (!GetGame().InPlayMode() || !Replication.IsServer() || !DCO_Dev.RunOn())
 			return;
 		m_bPerfProfiling = true;
-		DCO_Census.SetEnabled(true);
+		DCO_Dev.SetCensus(true);
 	}
 
 	override void EOnFrame(IEntity owner, float timeSlice)
@@ -441,7 +442,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 		if (GetGame())
 			GetGame().GetCallqueue().Remove(PushShareToPlayers);
 		DCO_Perf.WriteSummary("end");
-		DCO_Census.OnShutdown();
+		DCO_Dev.CensusShutdown();
 		DCO_Perf.SetCensus(false);
 		super.OnDelete(owner);
 	}
@@ -481,22 +482,22 @@ class DCO_GlobalAIComponent: ScriptComponent
 		ApplyPerfProfiling();
 	}
 
-	bool GetIntentOverlay()						{ return m_bIntentOverlay && DCO_TestCaseComponent.RunOn(); }
+	bool GetIntentOverlay()						{ return m_bIntentOverlay; }
 
 	void SetIntentOverlay(bool b)
 	{
 		m_bIntentOverlay = b;
-		DCO_CmdViewStore.Refresh();
+		DCO_Dev.ViewRefresh();
 		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "gm_set_intent_overlay on=" + DCO_Util.B01(b).ToString());
 	}
 
-	bool GetCensus()							{ return DCO_Census.IsOn(); }
-	float GetCensusInterval()					{ return DCO_Census.GetInterval(); }
-	void SetCensusInterval(float s)				{ DCO_Census.SetInterval(s); }
+	bool GetCensus()							{ return DCO_Dev.CensusOn(); }
+	float GetCensusInterval()					{ return DCO_Dev.CensusInterval(); }
+	void SetCensusInterval(float s)				{ DCO_Dev.SetCensusInterval(s); }
 
 	void SetCensus(bool b)
 	{
-		DCO_Census.SetEnabled(b && Replication.IsServer());
+		DCO_Dev.SetCensus(b && Replication.IsServer());
 		ApplyPerfProfiling();
 	}
 
@@ -504,7 +505,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 	{
 		bool on = m_bPerfProfiling && Replication.IsServer();
 		DCO_Perf.SetEnabled(on);
-		if (on || DCO_Census.IsOn())
+		if (on || DCO_Dev.CensusOn())
 			SetEventMask(GetOwner(), EntityEvent.FRAME);
 		else
 			ClearEventMask(GetOwner(), EntityEvent.FRAME);
@@ -521,6 +522,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 		{
 			GetGame().GetCallqueue().CallLater(PushShareToPlayers, 5000, true);
 			GetGame().GetCallqueue().CallLater(ReapplyCommanderLOD, 30000, false, "startup");
+			DCO_BtWatch.Arm();
 		}
 	}
 
@@ -746,10 +748,9 @@ class DCO_GlobalAIComponent: ScriptComponent
 		m_fSmokeUsage = CfgF("smokeUsage", m_fSmokeUsage, 0.0, 1.0);
 
 		CfgCat("Performance");
-		m_eLODMode = CfgI("lodMode", m_eLODMode, DCO_EAILODMode.VANILLA, DCO_EAILODMode.FULL_DETAIL);
+		m_eLODMode = CfgI("lodMode", m_eLODMode, DCO_EAILODMode.VANILLA, DCO_EAILODMode.SMART);
 		m_bPerfProfiling = CfgB("perfProfiling", m_bPerfProfiling);
 		m_iLogMode = CfgI("logMode", m_iLogMode, DCO_ELogMode.OFF, DCO_ELogMode.FULL);
-		m_bIntentOverlay = CfgB("intentOverlay", m_bIntentOverlay);
 
 		CfgCat("Idle");
 		m_fIdleEnterTime = CfgF("idleEnterTime", m_fIdleEnterTime, 5.0, 300.0);
@@ -1223,6 +1224,33 @@ class DCO_GlobalAIComponent: ScriptComponent
 			DCO_Perf.Count("cfg:factions_not_object");
 			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.WARN, "-", "cfg_factions_not_object file=" + m_sServerConfigPath + " (\"factions\" must be an object like {\"USSR\": {...}}; ignored, and the file is not rewritten or saved from GM so it is not lost)");
 		}
+		array<string> ovTop = {};
+		int os;
+		int oe;
+		if (CfgObjAt(text, "gmFactionOverrides", ovTop, os, oe))
+		{
+			string ovSub;
+			for (int oi = os; oi <= oe; oi++)
+				ovSub += text.Get(oi);
+			JsonLoadContext ovCtx = new JsonLoadContext();
+			array<string> ovKeys = {};
+			int oks;
+			int oke;
+			CfgObjAt(ovSub, string.Empty, ovKeys, oks, oke);
+			int ovCount;
+			if (ovCtx.LoadFromString(ovSub))
+			{
+				foreach (string ovFaction : ovKeys)
+				{
+					string ovContent;
+					if (!ovCtx.ReadValue(ovFaction, ovContent) || ovContent.IsEmpty())
+						continue;
+					GetGame().GetCallqueue().CallLater(DCO_GmFactionCfg.Apply, 1000, false, ovFaction, ovContent);
+					ovCount++;
+				}
+			}
+			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", string.Format("cfg_gm_factions_found n=%1 file=%2", ovCount, m_sServerConfigPath));
+		}
 		CfgJsonKeys(text, m_aCfgFileKeys, s, e);
 		foreach (string key : m_aCfgFileKeys)
 			m_CfgFileKeySet.Insert(key);
@@ -1507,6 +1535,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 		m_CfgSeen.Insert("aimModel");
 		m_CfgSeen.Insert("_comment");
 		m_CfgSeen.Insert("factions");
+		m_CfgSeen.Insert("gmFactionOverrides");
 		array<string> keys = m_aCfgFileKeys;
 		if (!keys)
 			keys = {};
@@ -1859,6 +1888,13 @@ class DCO_GlobalAIComponent: ScriptComponent
 		{
 			extra = ",\"factions\":" + m_sCfgFactions;
 			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", "cfg_factions_kept file=" + m_sServerConfigPath + " (the factions block is written back unchanged)");
+		}
+		int ovCount;
+		string ovJson = DCO_GmFactionCfg.Json(ovCount);
+		if (ovCount > 0 && last > 0)
+		{
+			extra += ",\"gmFactionOverrides\":{" + ovJson + "}";
+			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", string.Format("cfg_gm_factions_written n=%1 file=%2", ovCount, m_sServerConfigPath));
 		}
 		bool ok = CfgWritePretty(m_sServerConfigPath, raw, extra, last);
 
@@ -2361,7 +2397,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 	void SetAIMapMarkers(int mode)				{ m_iAIMapMarkers = Math.ClampInt(mode, 0, 2); }
 	bool GetShareToPlayers()					{ return m_bShareToPlayers; }
 	void SetShareToPlayers(bool b)				{ m_bShareToPlayers = b; PushShareToPlayers(); }
-	bool GetShareDebug()						{ return m_bShareDebug && DCO_TestCaseComponent.RunOn(); }
+	bool GetShareDebug()						{ return m_bShareDebug && DCO_Dev.RunOn(); }
 	void SetShareDebug(bool b)					{ m_bShareDebug = b; }
 
 	bool GetMedicCrossGroup()					{ return m_bMedicCrossGroup; }
@@ -2391,7 +2427,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 
 	void SetLODMode(DCO_EAILODMode mode)
 	{
-		mode = Math.ClampInt(mode, DCO_EAILODMode.VANILLA, DCO_EAILODMode.FULL_DETAIL);
+		mode = Math.ClampInt(mode, DCO_EAILODMode.VANILLA, DCO_EAILODMode.SMART);
 		if (mode == m_eLODMode || !Replication.IsServer())
 			return;
 
@@ -2464,11 +2500,18 @@ class DCO_GlobalAIComponent: ScriptComponent
 		int countVanilla = 0;
 		int countPrevent = 0;
 		int countFull = 0;
+		int countSimOff = 0;
 		foreach (AIAgent agent : agents)
 		{
 			SCR_AIUtilityComponent util = SCR_AIUtilityComponent.Cast(agent.FindComponent(SCR_AIUtilityComponent));
 			if (!util)
 				continue;
+			AIGroup simGrp = agent.GetParentGroup();
+			DCO_GroupUtilityComponent simGu;
+			if (simGrp)
+				simGu = DCO_GroupUtilityComponent.Cast(simGrp.FindComponent(DCO_GroupUtilityComponent));
+			if (simGu && simGu.IsSimOff())
+				countSimOff++;
 			if (util.m_iDCO_LOD == DCO_EAILODMode.PREVENT_MAX_LOD)
 				countPrevent++;
 			else if (util.m_iDCO_LOD == DCO_EAILODMode.FULL_DETAIL)
@@ -2477,7 +2520,7 @@ class DCO_GlobalAIComponent: ScriptComponent
 				countVanilla++;
 		}
 
-		string line = string.Format("lod_summary reason=%1 global=%2 vanilla=%3 prevent=%4 full=%5", reason, typename.EnumToString(DCO_EAILODMode, GlobalLODMode()), countVanilla, countPrevent, countFull);
+		string line = string.Format("lod_summary reason=%1 global=%2 vanilla=%3 prevent=%4 full=%5 sim_off=%6 agents=%7", reason, typename.EnumToString(DCO_EAILODMode, GlobalLODMode()), countVanilla, countPrevent, countFull, countSimOff, agents.Count());
 		DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", line);
 	}
 

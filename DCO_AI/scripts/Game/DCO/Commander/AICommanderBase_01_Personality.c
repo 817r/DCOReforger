@@ -192,9 +192,29 @@ modded class AICommander_BaseComponent
 		m_ePreBattleIntel = Math.ClampInt(level, 0, 3);
 	}
 
+	protected void DCO_JitterTraits()
+	{
+		m_fTraitIntel = Tenth(m_fTraitIntel + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
+		m_fTraitStrategy = Tenth(m_fTraitStrategy + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
+		m_fTraitAggression = Tenth(m_fTraitAggression + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
+		m_fTraitLogistics = Tenth(m_fTraitLogistics + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
+		m_fTraitSupport = Tenth(m_fTraitSupport + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
+		m_fTraitLeadership = Tenth(m_fTraitLeadership + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
+		m_iCourage = Math.ClampInt(m_iCourage + Math.RandomIntInclusive(-1, 1), 0, 4);
+		m_iDecision = Math.ClampInt(m_iDecision + Math.RandomIntInclusive(-1, 1), 0, 2);
+	}
+
 	void DCO_SetRandomPersonality(bool random)
 	{
+		bool was = m_bRandomPersonality;
 		m_bRandomPersonality = random;
+		if (!random || was || m_fBaseThinkInterval <= 0)
+			return;
+		DCO_JitterTraits();
+		SyncLegacyTraits();
+		ScaleTimingsByPersonality();
+		DCO_Perf.Count("gm:personality_reroll");
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("gm_personality_reroll cmd=%1 traits=%2", m_sCommanderUID, TraitText()));
 	}
 
 	float GetDoctrineShift()
@@ -299,16 +319,7 @@ modded class AICommander_BaseComponent
 		m_iDecision = Math.ClampInt(m_iDecision, 0, 2);
 
 		if (m_bRandomPersonality)
-		{
-			m_fTraitIntel = Tenth(m_fTraitIntel + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
-			m_fTraitStrategy = Tenth(m_fTraitStrategy + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
-			m_fTraitAggression = Tenth(m_fTraitAggression + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
-			m_fTraitLogistics = Tenth(m_fTraitLogistics + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
-			m_fTraitSupport = Tenth(m_fTraitSupport + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
-			m_fTraitLeadership = Tenth(m_fTraitLeadership + Math.RandomFloat(-m_fRandomTraitJitter, m_fRandomTraitJitter));
-			m_iCourage = Math.ClampInt(m_iCourage + Math.RandomIntInclusive(-1, 1), 0, 4);
-			m_iDecision = Math.ClampInt(m_iDecision + Math.RandomIntInclusive(-1, 1), 0, 2);
-		}
+			DCO_JitterTraits();
 		SyncLegacyTraits();
 		if (legacy)
 		{

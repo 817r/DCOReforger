@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualAIMAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualAIMAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{

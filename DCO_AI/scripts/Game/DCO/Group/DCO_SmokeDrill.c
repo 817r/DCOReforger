@@ -177,6 +177,14 @@ class DCO_SmokeDrill
 				continue;
 			if (e.GetPhysics() && e.GetPhysics().GetVelocity().Length() > 0.5)
 				continue;
+			if (st.m_mExitNext.Count() > 128)
+			{
+				for (int pi = st.m_mExitNext.Count() - 1; pi >= 0; pi--)
+				{
+					if (!st.m_mExitNext.GetKey(pi))
+						st.m_mExitNext.RemoveElement(pi);
+				}
+			}
 			st.m_mExitNext.Set(e, now_ms + 10000.0);
 			vector away = DCO_Specialist.Flat(p - cloud.m_vPos);
 			if (away.LengthSq() < 0.01)

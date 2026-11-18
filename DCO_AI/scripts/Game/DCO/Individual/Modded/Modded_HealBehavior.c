@@ -50,7 +50,7 @@ modded class SCR_AIHealBehavior : SCR_AIBehaviorBase
 		if (state && state.IsInValidCover())
 			return true;
 
-		return m_Utility.m_OwnerEntity && SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity);
+		return m_Utility.m_OwnerEntity && DCO_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity);
 	}
 
 	protected void DCO_RequestCover()

@@ -87,6 +87,11 @@ modded class AICommander_BaseComponent
 	    }
 	}
 
+	void DCO_SearchWaypoints(vector center, float radius, notnull array<SCR_AIWaypoint> outWaypoints, float angleOffset = 0.0, float angleSpan = 360.0)
+	{
+		GenerateSearchWaypoints(center, radius, outWaypoints, m_fSearchWpSpacing, angleOffset, angleSpan);
+	}
+
 	float DCO_DestRadius(DCO_GroupUtilityComponent grp)
 	{
 		float r = m_fMoveWpRadius;
@@ -133,26 +138,62 @@ modded class AICommander_BaseComponent
 		if (m_fWaypointLegDistance > 0.0 && total > m_fWaypointLegDistance)
 		{
 			int legs = Math.Floor(total / m_fWaypointLegDistance);
+			float coverM = DCO_Ctx.TuneForCmd(this, "route.cover_m", 600.0);
+			bool coverOn = coverM > 0 && DCO_TerrainCache.IsReady() && !grp.IsArmor() && !grp.IsInTransport() && !DCO_MountedOps.HasOwnVehicle(grp);
+			bool dense = total / legs > 1.5 * DCO_Ctx.TuneForCmd(this, "route.cover_leg_m", 100.0);
+			int coverLegs;
+			int openLegs;
+			vector lastCover;
 
-			for (int i = 1; i < legs; i++)
+			for (int k = 2; k < legs * 2; k++)
 			{
-				float t = i / (float)legs;
+				float t = k / (2.0 * legs);
 
 				vector leg = from + ((to - from) * t);
 
-				vector safeLeg;
-				if (!FindSafeRoutePoint(leg, to, safeLeg))
+				vector dangerRef;
+				bool danger = coverOn && DCO_RouteDanger(leg, coverM, dangerRef);
+				if (k % 2 == 1 && !(danger && dense))
 					continue;
 
-				SCR_AIWaypoint legWp = SpawnMoveWP(DCO_Util.Surface(safeLeg + Vector(Math.RandomFloat(-m_fRouteLegJitter, m_fRouteLegJitter), 0.0, Math.RandomFloat(-m_fRouteLegJitter, m_fRouteLegJitter))));
-				if (!legWp)
-					legWp = SpawnMoveWP(safeLeg);
+				vector safeLeg;
+				bool covered;
+				if (danger)
+				{
+					vector edge = DCO_TerrainCache.QueryBest(DCO_ETerrainFlag.FOREST_EDGE, leg, m_fWaypointNudgeRadius, string.Empty, leg, dangerRef);
+					if (edge != vector.Zero && IsRoutePointUsable(edge) && (lastCover == vector.Zero || vector.DistanceXZ(edge, lastCover) > 30.0))
+					{
+						safeLeg = edge;
+						lastCover = edge;
+						covered = true;
+						coverLegs++;
+					}
+					else
+						openLegs++;
+				}
+				if (!covered)
+				{
+					if (k % 2 == 1 || !FindSafeRoutePoint(leg, to, safeLeg))
+						continue;
+					safeLeg = DCO_Util.Surface(safeLeg + Vector(Math.RandomFloat(-m_fRouteLegJitter, m_fRouteLegJitter), 0.0, Math.RandomFloat(-m_fRouteLegJitter, m_fRouteLegJitter)));
+				}
+
+				SCR_AIWaypoint legWp = SpawnMoveWP(safeLeg);
+				if (!legWp && !covered)
+					legWp = SpawnMoveWP(leg);
 				if (legWp)
 				{
 					DCO_SetupMoveWP(legWp, grp, true);
 					grp.MoveTo(legWp, worldTime);
 					addedLegs.Insert(legWp);
 				}
+			}
+
+			if (coverLegs + openLegs > 0)
+			{
+				DCO_Perf.CountN("route:cover_legs", coverLegs);
+				DCO_Perf.CountN("route:open_legs", openLegs);
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("route_cover cmd=%1 grp=%2 total_m=%3 legs=%4 cover=%5 open=%6 range_m=%7", m_sCommanderUID, DCO_Log.IdGroup(AIGroup.Cast(grp.GetOwner())), Math.Round(total), addedLegs.Count(), coverLegs, openLegs, Math.Round(coverM)));
 			}
 		}
 
@@ -180,6 +221,46 @@ modded class AICommander_BaseComponent
 		DCO_SetupMoveWP(destWp, grp, false);
 		grp.MoveTo(destWp, worldTime);
 		return true;
+	}
+
+	protected bool DCO_RouteDanger(vector pos, float range, out vector refPos)
+	{
+		float best = range;
+		bool found;
+		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
+		if (mgr)
+		{
+			foreach (CMD_AICommanderObjectiveComponent o : mgr.m_aObjective)
+			{
+				if (!o || !o.GetOwner() || o.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
+					continue;
+				float d = vector.DistanceXZ(pos, o.GetOwner().GetOrigin());
+				if (d < best)
+				{
+					best = d;
+					refPos = o.GetOwner().GetOrigin();
+					found = true;
+				}
+			}
+		}
+		CMD_ThreatResponseComponent tr = GetThreatResponseComponent();
+		if (tr)
+		{
+			float now = DCO_Util.NowS();
+			foreach (CMD_ThreatEntry t : tr.GetThreats())
+			{
+				if (!t || now - t.m_fLastUpdateTime > 300.0)
+					continue;
+				float td = vector.DistanceXZ(pos, t.m_vBelievedPos);
+				if (td < best)
+				{
+					best = td;
+					refPos = t.m_vBelievedPos;
+					found = true;
+				}
+			}
+		}
+		return found;
 	}
 
 	protected bool FindSafeRoutePoint(vector candidate, vector heading, out vector result)

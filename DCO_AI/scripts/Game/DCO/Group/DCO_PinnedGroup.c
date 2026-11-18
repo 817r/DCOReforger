@@ -2,7 +2,7 @@ class DCO_PinnedGroup
 {
 	static void Tick(SCR_AIGroupUtilityComponent u, SCR_AIGroup grp, DCO_GroupUtilityComponent g, float now_ms)
 	{
-		if (!DCO_GlobalAIComponent.BehaviorOnFor(grp, DCO_EBehavior.PINNED))
+		if (!DCO_GlobalAIComponent.BehaviorOnFor(grp, DCO_EBehavior.PINNED) || DCO_Util.IsPlayerGroup(grp))
 		{
 			u.m_bDCOPinGroup = false;
 			return;
@@ -98,7 +98,7 @@ class DCO_PinnedGroup
 				cmd.GetThreatResponseComponent().ReceiveContactReport(report, g);
 				DCO_Perf.Count("pin_group_support");
 			}
-			CMD_ThreatResponseComponent.ThrowSmoke(g, shooter);
+			CMD_ThreatResponseComponent.ThrowSmoke(g, shooter, "pinned");
 			DCO_Perf.Count("pin_group_smoke");
 		}
 
@@ -119,7 +119,9 @@ class DCO_PinnedGroup
 			if (i % 2 == 1 && free.Count() > 2)
 				continue;
 			vector p = DCO_Util.Surface(flank + Vector(Math.RandomFloat(-4, 4), 0, Math.RandomFloat(-4, 4)));
-			DCO_RelocateBehavior.Start(fu2, p, shooter, true, ECharacterStance.CROUCH, vector.Distance(fu2.GetOrigin(), p) / 3.5 + 2.0, "pin_flank");
+			DCO_RelocateBehavior prb = DCO_RelocateBehavior.Start(fu2, p, shooter, true, ECharacterStance.CROUCH, vector.Distance(fu2.GetOrigin(), p) / 3.5 + 2.0, "pin_flank");
+			if (prb)
+				prb.DCO_SetYieldM(30.0);
 			sent++;
 		}
 		DCO_Perf.Count("pin_group_flank");
@@ -130,10 +132,15 @@ class DCO_PinnedGroup
 	{
 		vector to = DCO_Specialist.Flat(shooter - center);
 		vector side = Vector(to[2], 0, -to[0]);
-		if (Math.RandomIntInclusive(0, 1) == 1)
-			side = side * -1.0;
 		float along = Math.Min(vector.DistanceXZ(center, shooter) * 0.4, 60.0);
-		vector p = center + side * Math.RandomFloat(60.0, 150.0) + to * along;
+		float lateral = Math.RandomFloat(60.0, 150.0);
+		float coin = 1.0;
+		if (Math.RandomIntInclusive(0, 1) == 1)
+			coin = -1.0;
+		string sideWhy;
+		float pick = DCO_FlushDrill.PickSide(shooter, center + side * lateral + to * along, center - side * lateral + to * along, coin, sideWhy);
+		DCO_Perf.Count("pin_group_flank_side_" + sideWhy);
+		vector p = center + side * (lateral * pick) + to * along;
 		AIWaypoint wp = grp.GetCurrentWaypoint();
 		if (wp)
 		{
@@ -159,7 +166,7 @@ class DCO_PinnedGroup
 		return nav.GetReachablePoint(p, 10.0, outPos);
 	}
 
-	protected static void Suppress(SCR_AIUtilityComponent fu, vector shooter)
+	static void Suppress(SCR_AIUtilityComponent fu, vector shooter)
 	{
 		if (!fu || !fu.m_CombatComponent || shooter == vector.Zero)
 			return;

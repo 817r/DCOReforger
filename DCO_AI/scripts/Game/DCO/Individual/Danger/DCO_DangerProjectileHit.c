@@ -195,13 +195,20 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 		vector impactPos = dangerEvent.GetPosition();
 		float distanceToDangerSq = vector.DistanceSq(utility.GetOrigin(), impactPos);
 
-		if (distanceToDangerSq > 9.0)
-			return false;
-
 		IEntity hitShooter = dangerEvent.GetObject();
 		vector hitFrom;
 		if (hitShooter && hitShooter.GetRootParent())
 			hitFrom = hitShooter.GetRootParent().GetOrigin();
+
+		if (distanceToDangerSq > 9.0)
+		{
+			float farM = DCO_Stress.T(utility, "tm.impact_m", 6.0);
+			if (distanceToDangerSq > farM * farM)
+				return false;
+			DCO_Perf.Count("tm:impact_far");
+			threatSystem.DCO_ThreatImpact(dangerEventCount, Math.Map(Math.Sqrt(distanceToDangerSq), 3.0, farM, 0.8, 0.0), hitFrom, hitShooter, false);
+			return false;
+		}
 
 		if (utility.m_CombatComponent)
 		{
@@ -362,16 +369,29 @@ modded class SCR_AIDangerReaction_ProjectileHit : SCR_AIDangerReaction
 			return true;
 		}
 
-		if (shooterDistance > 100.0)
+		bool farShooter = shooterDistance > 100.0;
+		if (farShooter && (!veryClose || inCover || DCO_Stress.T(utility, "dodge.cover_run", 1.0) <= 0))
 		{
 			LowerStance(charCon, allowProne);
 			return true;
 		}
 
-		return PushCoverMove(utility, state, shooterPos,
+		bool fled = PushCoverMove(utility, state, shooterPos,
 			ECharacterStance.STAND, ECharacterStance.CROUCH,
 			EMovementType.SPRINT, SCR_AICombatMoveUtils.CHARACTER_SPEED_STAND_SPRINT,
 			m_fFleeSearchDist, false, false, true, false, m_bDeploySmokeOnFlee);
+		if (!farShooter)
+			return fled;
+		if (!fled)
+		{
+			DCO_Perf.Count("hit:far_cover_skip");
+			LowerStance(charCon, allowProne);
+			return true;
+		}
+		DCO_Perf.Count("hit:far_cover");
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(ownerEnt), string.Format("hit_far_cover unit=%1 shooter_d=%2 impact_d=%3 rounds=%4 search_m=%5",
+			DCO_Log.IdUnit(ownerEnt), Math.Round(shooterDistance), distanceToDanger.ToString(-1, 1), bulletCount, Math.Round(m_fFleeSearchDist)));
+		return true;
 	}
 
 	protected bool PushCoverMove(

@@ -67,6 +67,8 @@ class DCO_MountedOps
 
 	static void Tick(DCO_GroupUtilityComponent g, SCR_AIGroup grp, SCR_AIGroupUtilityComponent u)
 	{
+		if (g.DCO_AdoptOrphanCrew())
+			return;
 		AICommander_BaseComponent cmd = g.GetMyCommander();
 		if (!cmd || g.IsPlayerGroup() || g.IsDedicatedTransport() || g.IsInTransport() || g.m_DCOSupportOf)
 			return;
@@ -123,12 +125,12 @@ class DCO_MountedOps
 		{
 			if (!DCO_VehicleCombat.GetVehicle(leader))
 				return;
-			float dismountDist = 400.0;
+			float dismountDist = DCO_Ctx.TuneFor(grp, "mo.dismount_m", 400.0);
 			if (st.m_bMech)
-				dismountDist = 175.0;
+				dismountDist = DCO_Ctx.TuneFor(grp, "mo.dismount_mech_m", 175.0);
 			bool mountedAssault = MountedAssault(g, grp, cmd, st, target, hasTarget);
 			if (mountedAssault)
-				dismountDist = 50.0;
+				dismountDist = DCO_Ctx.TuneFor(grp, "mo.dismount_assault_m", 50.0);
 			float d = float.MAX;
 			if (hasTarget)
 				d = vector.DistanceXZ(lp, target);
@@ -147,6 +149,25 @@ class DCO_MountedOps
 
 		if (st.m_iMode == 5)
 			return;
+
+		if (st.m_iMode == 6)
+		{
+			if (now - st.m_fDismountAt_ms > 20000.0 && DCO_VehicleCombat.GetVehicle(leader) == st.m_Vehicle)
+			{
+				st.m_iMode = 0;
+				DCO_Perf.Count("veh:park_reboard");
+				DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_park_reboard grp=%1", DCO_Log.IdGroup(grp)));
+				return;
+			}
+			if (vector.DistanceXZ(st.m_Vehicle.GetOrigin(), lp) > DCO_Ctx.TuneFor(grp, "mo.park_leave_m", 400.0))
+			{
+				DCO_TransportMissionComponent parkMission = DCO_TransportMissionComponent.Cast(st.m_Vehicle.FindComponent(DCO_TransportMissionComponent));
+				if (parkMission && parkMission.IsOwnedBy(g))
+					parkMission.ReleaseOwnership();
+				VehicleLost(g, grp, st, cmd, "left_behind");
+			}
+			return;
+		}
 
 		SCR_AIGroup crewGrp = st.m_CrewGroup;
 		int crewAlive = CountAlive(crewGrp);
@@ -313,13 +334,31 @@ class DCO_MountedOps
 			dismounts.Remove(dismounts.Count() - 1);
 		}
 
+		int minFoot = DCO_Ctx.TuneFor(grp, "mo.split_min_foot", 4.0);
+		if (!st.m_bMech && minFoot > 0 && dismounts.Count() < minFoot)
+		{
+			IEntity parkLeader = grp.GetLeaderEntity();
+			if (parkLeader)
+			{
+				SCR_AIWaypoint parkOut = cmd.SpawnGetOutWP(parkLeader.GetOrigin());
+				if (parkOut)
+					grp.AddWaypointAt(parkOut, 0);
+			}
+			st.m_iMode = 6;
+			st.m_fDismountAt_ms = GetGame().GetWorld().GetWorldTime();
+			g.SetOwnedVehicle(veh);
+			DCO_Perf.Count("veh:dismount_park");
+			DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_dismount grp=%1 mech=%2 why=%3 crew=0 dismounts=%4 parked=1 min_foot=%5", DCO_Log.IdGroup(grp), st.m_bMech, why, crew.Count() + dismounts.Count(), minFoot));
+			return;
+		}
+
 		SCR_AIGroup crewGrp = DCO_Logistics.SplitIntoNewGroup(grp, crew, null);
 		if (!crewGrp)
 			return;
 		DCO_GroupUtilityComponent cu = DCO_GroupUtilityComponent.Cast(crewGrp.FindComponent(DCO_GroupUtilityComponent));
 		if (cu)
 		{
-			cu.m_DCOSupportOf = g;
+			cu.DCO_MakeSupportOf(g, cmd);
 			cu.SetOwnedVehicle(veh);
 		}
 		st.m_CrewGroup = crewGrp;

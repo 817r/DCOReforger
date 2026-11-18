@@ -24,7 +24,7 @@ modded class SCR_AIGroupUtilityComponent
 		string task = "-";
 		if (utilDco)
 			task = typename.EnumToString(DCO_EGroupTask, utilDco.GetTask());
-		DCO_TestCaseComponent.TraceGroup(m_Owner, m_DCOTraceAct, act, wp, task);
+		DCO_Dev.TraceGroup(m_Owner, m_DCOTraceAct, act, wp, task);
 	}
 
 	protected string DCO_TaskPhaseName()
@@ -104,6 +104,8 @@ modded class SCR_AIGroupUtilityComponent
 
 
 	protected DCO_GroupTactics m_eDCOPostureOverride = DCO_GroupTactics.AUTOMATIC;
+	protected DCO_GroupTactics m_eDCOTacDef = DCO_GroupTactics.AUTOMATIC;
+	protected int m_iDCOTacDefVer = -1;
 	protected DCO_GroupTactics m_eDCOPosture = DCO_GroupTactics.BALANCE;
 	protected float m_fDCONextPostureEval_ms;
 	protected float m_fDCOPostureChanged_ms = -1;
@@ -128,6 +130,7 @@ modded class SCR_AIGroupUtilityComponent
 	int m_iDCODefFallbacks;
 	bool m_bDCOAmbSet;
 	float m_fDCOAmbSprung_ms = -1;
+	float m_fDCOAmbRangeM = 60;
 	float m_fDCOAmbDecide_ms;
 	float m_fDCOSneakSpotted_ms = -1;
 	protected float m_fDCOPostureOpsTick_ms;
@@ -144,6 +147,8 @@ modded class SCR_AIGroupUtilityComponent
 	float m_fDCOBodySweep_ms;
 	protected bool m_bDCORatioLow;
 	protected bool m_bDCORatioVeryLow;
+	protected bool m_bDCORatioRangeSkip;
+	protected bool m_bDCORatioFloor;
 	protected bool m_bDCOLadderGmLogged;
 	protected bool m_bDCOConverging;
 	protected int m_iDCOLastTask = -1;
@@ -243,12 +248,37 @@ modded class SCR_AIGroupUtilityComponent
 
 	DCO_GroupTactics DCO_GetPosture()
 	{
-		if (m_eDCOPostureOverride != DCO_GroupTactics.AUTOMATIC)
-			return m_eDCOPostureOverride;
+		DCO_GroupTactics gm = DCO_PostureGm();
+		if (gm != DCO_GroupTactics.AUTOMATIC)
+			return gm;
 		if (m_eDCOForced != DCO_GroupTactics.AUTOMATIC)
 			return m_eDCOForced;
 
 		return m_eDCOPosture;
+	}
+
+	DCO_GroupTactics DCO_PostureGm()
+	{
+		if (m_eDCOPostureOverride != DCO_GroupTactics.AUTOMATIC)
+			return m_eDCOPostureOverride;
+		int ver = DCO_GlobalAIComponent.DCO_TuneVerAll();
+		if (ver != m_iDCOTacDefVer)
+			DCO_TacDefRefresh(ver);
+		return m_eDCOTacDef;
+	}
+
+	protected void DCO_TacDefRefresh(int ver)
+	{
+		m_iDCOTacDefVer = ver;
+		int raw = 0;
+		if (m_Owner && !DCO_Util.IsPlayerGroup(m_Owner))
+			raw = Math.Round(DCO_Ctx.TuneFor(m_Owner, "sq.tactics_def", 0.0));
+		DCO_GroupTactics def = raw;
+		if (def == m_eDCOTacDef)
+			return;
+		DCO_Perf.Count("pos:faction_default");
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("posture_default grp=%1 from=%2 to=%3 own=%4 reason=faction_default", DCO_Log.IdGroup(m_Owner), typename.EnumToString(DCO_GroupTactics, m_eDCOTacDef), typename.EnumToString(DCO_GroupTactics, def), typename.EnumToString(DCO_GroupTactics, m_eDCOPostureOverride)));
+		m_eDCOTacDef = def;
 	}
 
 	DCO_GroupTactics DCO_GetPostureOverride()
@@ -272,7 +302,7 @@ modded class SCR_AIGroupUtilityComponent
 	{
 		DCO_Perf.Count("pos:gm_wins");
 		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("posture_gm_wins grp=%1 gm=%2 forced=%3", DCO_Log.IdGroup(m_Owner),
-			typename.EnumToString(DCO_GroupTactics, m_eDCOPostureOverride), typename.EnumToString(DCO_GroupTactics, m_eDCOForced)));
+			typename.EnumToString(DCO_GroupTactics, DCO_PostureGm()), typename.EnumToString(DCO_GroupTactics, m_eDCOForced)));
 	}
 
 	void DCO_ForcePosture(DCO_GroupTactics posture, float now_ms, float dur_ms, bool untilContact, string why)
@@ -281,7 +311,7 @@ modded class SCR_AIGroupUtilityComponent
 		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("posture_change grp=%1 from=%2 to=%3 reason=forced:%4", DCO_Log.IdGroup(m_Owner),
 			typename.EnumToString(DCO_GroupTactics, DCO_GetPosture()), typename.EnumToString(DCO_GroupTactics, posture), why));
 		m_eDCOForced = posture;
-		if (m_eDCOPostureOverride != DCO_GroupTactics.AUTOMATIC)
+		if (DCO_PostureGm() != DCO_GroupTactics.AUTOMATIC)
 			DCO_GmWinsLog();
 		m_fDCOForcedUntil_ms = now_ms + dur_ms;
 		m_bDCOForcedUntilContact = untilContact;
@@ -302,9 +332,47 @@ modded class SCR_AIGroupUtilityComponent
 		return IsDirectlyThreatened();
 	}
 
+	protected int m_iDCOChurnN;
+	protected int m_iDCOChurnNew;
+	protected int m_iDCOChurnSame;
+	protected float m_fDCOChurnWin_ms = -100000;
+	protected float m_fDCOChurnLog_ms;
+
+	protected void DCO_ActivityChurn(SCR_AIActionBase prev, SCR_AIActionBase cur, bool newMember)
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now - m_fDCOChurnWin_ms > 10000.0)
+		{
+			m_fDCOChurnWin_ms = now;
+			m_iDCOChurnN = 0;
+			m_iDCOChurnNew = 0;
+			m_iDCOChurnSame = 0;
+		}
+		m_iDCOChurnN++;
+		if (newMember)
+			m_iDCOChurnNew++;
+		if (prev == cur)
+			m_iDCOChurnSame++;
+		if (m_iDCOChurnN < 5 || now < m_fDCOChurnLog_ms)
+			return;
+		m_fDCOChurnLog_ms = now + 10000.0;
+		DCO_Perf.Count("grp:activity_churn");
+		string from = "-";
+		if (prev)
+			from = prev.ClassName();
+		string to = "-";
+		if (cur)
+			to = cur.ClassName();
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Owner), string.Format("activity_churn grp=%1 restarts=%2 window_s=%3 from=%4 to=%5 same=%6 new_member=%7 agents=%8", DCO_Log.IdGroup(m_Owner), m_iDCOChurnN, Math.Round((now - m_fDCOChurnWin_ms) / 1000.0), from, to, m_iDCOChurnSame, m_iDCOChurnNew, m_Owner.GetAgentsCount()));
+	}
+
 	override SCR_AIActionBase EvaluateActivity(out bool restartActivity)
 	{
+		bool dcoNewMember = m_bNewGroupMemberAdded;
+		SCR_AIActionBase dcoPrevActivity = m_CurrentActivity;
 		SCR_AIActionBase activity = super.EvaluateActivity(restartActivity);
+		if (restartActivity)
+			DCO_ActivityChurn(dcoPrevActivity, activity, dcoNewMember);
 		if (!m_Perception)
 			return activity;
 		if (DCO_CivMode.CivGroup(m_Owner))
@@ -364,6 +432,7 @@ modded class SCR_AIGroupUtilityComponent
 			m_fDCOPinTick_ms = now_ms + 1500.0;
 			int pinT = DCO_Perf.Begin();
 			DCO_PinnedGroup.Tick(this, m_Owner, utilDco, now_ms);
+			DCO_FireteamFlank.Tick(this, m_Owner, utilDco, now_ms);
 			DCO_Perf.End("grp_pinned", pinT);
 		}
 		DCO_TickFlush(now_ms);
@@ -710,6 +779,7 @@ modded class SCR_AIGroupUtilityComponent
 			m_fDCOHearGapMin = Math.Min(m_fDCOHearGapMin, gap);
 			if (!got)
 				continue;
+			DCO_Attention.Feed(ca.m_UtilityComponent, p + Vector(0, 1.2, 0), 0.6, "heard");
 			if (contact && DCO_HearKnown(s, pmNow))
 			{
 				m_iDCOHearSkipKnown++;
@@ -823,6 +893,13 @@ modded class SCR_AIGroupUtilityComponent
 				m_fDCOContactStart_ms = now_ms;
 			m_iDCOUnitsAtContact = units;
 			m_bDCOMovingAtContact = (st & (DCO_EGroupState.EN_ROUTE | DCO_EGroupState.MOUNTED)) != 0;
+			AIWaypoint ambWp = m_Owner.GetCurrentWaypoint();
+			IEntity ambLead = m_Owner.GetLeaderEntity();
+			if (!m_bDCOMovingAtContact && !utilDco.GetMyCommander() && ambWp && ambLead && !SCR_EntityWaypoint.Cast(ambWp) && vector.DistanceXZ(ambLead.GetOrigin(), ambWp.GetOrigin()) > ambWp.GetCompletionRadius())
+			{
+				m_bDCOMovingAtContact = true;
+				DCO_Perf.Count("amb:moving_waypoint");
+			}
 		}
 		m_fDCOLastContact_ms = now_ms;
 
@@ -831,11 +908,11 @@ modded class SCR_AIGroupUtilityComponent
 		if (!DCO_GlobalAIComponent.BehaviorOnFor(m_Owner, DCO_EBehavior.AMBUSH_DRILL) || utilDco.IsPlayerGroup() || utilDco.IsBreakingContact() || utilDco.m_DCOAmbush)
 			return;
 		DCO_EGroupTask ambTask = utilDco.GetTask();
-		if (utilDco.m_iDCOTRPhase >= 0 || ambTask == DCO_EGroupTask.ATTACK || ambTask == DCO_EGroupTask.SUPPORT_BY_FIRE)
+		if (utilDco.m_iDCOTRPhase >= 0)
 		{
 			m_fDCOContactStart_ms = 0;
-			DCO_Perf.Count("amb:skip_attack_task");
-			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG, "-", string.Format("ambush_skip grp=%1 reason=attack_task task=%2 tr_phase=%3", m_Owner.GetName(), typename.EnumToString(DCO_EGroupTask, ambTask), utilDco.m_iDCOTRPhase));
+			DCO_Perf.Count("amb:skip_threat_response");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG, "-", string.Format("ambush_skip grp=%1 reason=threat_response task=%2 tr_phase=%3", m_Owner.GetName(), typename.EnumToString(DCO_EGroupTask, ambTask), utilDco.m_iDCOTRPhase));
 			return;
 		}
 		if (m_fDCOSharedAt >= 0 && DCO_Util.NowS() - m_fDCOSharedAt < 60.0)
@@ -888,7 +965,14 @@ modded class SCR_AIGroupUtilityComponent
 			return;
 
 		m_fDCOContactStart_ms = 0;
-		DCO_AmbushDrill.Start(utilDco, sum * (1.0 / n), maxYaw - minYaw > 70.0, n);
+		vector ambThreat = sum * (1.0 / n);
+		if ((ambTask == DCO_EGroupTask.ATTACK || ambTask == DCO_EGroupTask.SUPPORT_BY_FIRE) && DCO_ContactSOP.OnObjectiveAxis(utilDco, lp, ambThreat))
+		{
+			DCO_Perf.Count("amb:skip_attack_on_axis");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG, "-", string.Format("ambush_skip grp=%1 reason=attack_on_axis task=%2 dist=%3", m_Owner.GetName(), typename.EnumToString(DCO_EGroupTask, ambTask), Math.Round(vector.DistanceXZ(lp, ambThreat))));
+			return;
+		}
+		DCO_AmbushDrill.Start(utilDco, ambThreat, maxYaw - minYaw > 70.0, n);
 	}
 
 	protected float m_fDCORetreatCheck_ms;
@@ -1641,7 +1725,7 @@ modded class SCR_AIGroupUtilityComponent
 		if (now_ms < m_fDCOAntiCampTick_ms || !Replication.IsServer())
 			return;
 		m_fDCOAntiCampTick_ms = now_ms + 5000.0;
-		if (!DCO_AssaultTask())
+		if (!DCO_AssaultTask() || (utilDco && utilDco.IsPlayerGroup()))
 		{
 			DCO_ResetAntiCamp();
 			return;
@@ -1675,6 +1759,22 @@ modded class SCR_AIGroupUtilityComponent
 			m_mDCOCoverSince = new map<AIAgent, float>();
 		if (!m_mDCOCampLimit)
 			m_mDCOCampLimit = new map<AIAgent, float>();
+		if (m_mDCOCampLimit.Count() > 64)
+		{
+			for (int pi = m_mDCOCampLimit.Count() - 1; pi >= 0; pi--)
+			{
+				if (!m_mDCOCampLimit.GetKey(pi))
+					m_mDCOCampLimit.RemoveElement(pi);
+			}
+		}
+		if (m_mDCOCoverSince.Count() > 64)
+		{
+			for (int pi = m_mDCOCoverSince.Count() - 1; pi >= 0; pi--)
+			{
+				if (!m_mDCOCoverSince.GetKey(pi))
+					m_mDCOCoverSince.RemoveElement(pi);
+			}
+		}
 
 		array<AIAgent> agents = {};
 		m_Owner.GetAgents(agents);
@@ -1857,7 +1957,7 @@ modded class SCR_AIGroupUtilityComponent
 			}
 
 			string method;
-			IEntity building = SCR_CoverManagerComponent.DCO_GetBuildingAtPos(tgt.m_vWorldPos, leader, method);
+			IEntity building = DCO_CoverManagerComponent.DCO_GetBuildingAtPos(tgt.m_vWorldPos, leader, method);
 			if (!building)
 				continue;
 
@@ -1972,11 +2072,6 @@ modded class SCR_AIGroupUtilityComponent
 			cooldown = cfg.GetNightFlareCooldown();
 		m_fDCONextFlare_ms = now_ms + cooldown * 1000;
 
-		AIAgent shooter;
-		IEntity item;
-		if (DCO_Night.FindFlare(grp, shooter, item) && DCO_Night.FireFlare(shooter, item, center, now_ms))
-			return;
-
 		if (!utilDco || now_ms < m_fDCONextIllum_ms)
 			return;
 
@@ -1990,6 +2085,8 @@ modded class SCR_AIGroupUtilityComponent
 		req.m_sTier = "illum";
 		req.m_Requester = utilDco;
 		tr.ReceiveArtillerySupport(req, utilDco);
+		DCO_Night.NoteFlare(center, now_ms);
+		DCO_Perf.Count("night:illum_request");
 		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("night_illum_request grp=%1 dist=%2", grp, Math.Round(bestDist)));
 	}
 
@@ -2021,12 +2118,20 @@ modded class SCR_AIGroupUtilityComponent
 
 		m_DCOEnemyTotal.Reset();
 		float nearestEnemy = 99999;
+		float ratioRange = DCO_Ctx.TuneFor(m_Owner, "posture.ratio_range_m", 400.0);
+		int ratioCounted, ratioSkipped;
 		foreach (SCR_AIGroupTargetCluster c : m_Perception.m_aTargetClusters)
 		{
 			if (c.m_State && c.m_State.m_iCountAlive > 0)
 			{
-				m_DCOEnemyTotal.Add(DCO_GetClusterStrength(c.m_State));
 				nearestEnemy = Math.Min(nearestEnemy, c.m_State.m_fDistMin);
+				if (ratioRange > 0 && c.m_State.m_fDistMin > ratioRange)
+				{
+					ratioSkipped++;
+					continue;
+				}
+				ratioCounted++;
+				m_DCOEnemyTotal.Add(DCO_GetClusterStrength(c.m_State));
 			}
 		}
 		int enemies = m_DCOEnemyTotal.m_iCount;
@@ -2057,6 +2162,13 @@ modded class SCR_AIGroupUtilityComponent
 		if (enemies > 0)
 			ratio = mine.m_fStrength / Math.Max(m_DCOEnemyTotal.m_fStrength, 0.1);
 		m_fDCOLastRatio = ratio;
+		if (ratioSkipped > 0)
+			DCO_Perf.Count("pos:ratio_range_skip");
+		if ((ratioSkipped > 0) != m_bDCORatioRangeSkip)
+		{
+			m_bDCORatioRangeSkip = ratioSkipped > 0;
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("posture_ratio_range grp=%1 range=%2 counted=%3 skipped=%4 ratio=%5 nearest=%6", DCO_Log.IdGroup(m_Owner), Math.Round(ratioRange), ratioCounted, ratioSkipped, ratio.ToString(-1, 2), Math.Round(nearestEnemy)));
+		}
 
 		if (m_eDCOForced != DCO_GroupTactics.AUTOMATIC && !m_bDCOForcedUntilContact && now_ms >= m_fDCOForcedUntil_ms)
 			DCO_ClearForced("expired");
@@ -2094,13 +2206,13 @@ modded class SCR_AIGroupUtilityComponent
 			}
 			return;
 		}
-		if (m_eDCOPostureOverride != DCO_GroupTactics.AUTOMATIC)
+		if (DCO_PostureGm() != DCO_GroupTactics.AUTOMATIC)
 		{
 			DCO_Perf.Count("pos:ladder_gm_skip");
 			if (!m_bDCOLadderGmLogged)
 			{
 				m_bDCOLadderGmLogged = true;
-				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("posture_ladder_skip grp=%1 reason=gm_override gm=%2", DCO_Log.IdGroup(m_Owner), typename.EnumToString(DCO_GroupTactics, m_eDCOPostureOverride)));
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("posture_ladder_skip grp=%1 reason=gm_override gm=%2", DCO_Log.IdGroup(m_Owner), typename.EnumToString(DCO_GroupTactics, DCO_PostureGm())));
 			}
 			return;
 		}
@@ -2139,6 +2251,7 @@ modded class SCR_AIGroupUtilityComponent
 		{
 			int step = 0;
 			bool evasive = false;
+			bool ratioStep, ratioFloor;
 			float aggr = 1;
 			DCO_GlobalAIComponent aggrCfg = DCO_GlobalAIComponent.GetFor(m_Owner);
 			if (aggrCfg)
@@ -2195,6 +2308,7 @@ modded class SCR_AIGroupUtilityComponent
 			else if ((m_bDCORatioVeryLow || m_bDCORatioLow) && (losses > 0.01 || suppressedGrp || nearestEnemy < 250.0))
 			{
 				step--;
+				ratioStep = true;
 				why = "ratio05";
 			}
 			else if (m_bDCORatioVeryLow || m_bDCORatioLow)
@@ -2269,7 +2383,18 @@ modded class SCR_AIGroupUtilityComponent
 			else if (step != 0)
 			{
 				int idx = DCO_LadderIndex(next) + step;
+				if (ratioStep && idx == 0 && DCO_Ctx.TuneFor(m_Owner, "posture.ratio_floor", 1.0) > 0)
+				{
+					idx = 1;
+					ratioFloor = true;
+					DCO_Perf.Count("pos:ratio_floor");
+				}
 				next = DCO_LadderPosture(Math.ClampInt(idx, 0, 3));
+			}
+			if (ratioFloor != m_bDCORatioFloor)
+			{
+				m_bDCORatioFloor = ratioFloor;
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("posture_ratio_floor grp=%1 on=%2 posture=%3 step=%4 ratio=%5", DCO_Log.IdGroup(m_Owner), DCO_Util.B01(ratioFloor), typename.EnumToString(DCO_GroupTactics, next), step, ratio.ToString(-1, 2)));
 			}
 		}
 
@@ -2380,6 +2505,8 @@ modded class SCR_AIGroupUtilityComponent
 	{
 		if (!utilDco || utilDco.m_bDCOAssaultCommitted || utilDco.m_iDCOPosStage != 1 || utilDco.m_eDCOTablePosture != DCO_GroupTactics.AGGRESIVE)
 			return;
+		if (utilDco.IsPlayerGroup())
+			return;
 		IEntity leader = m_Owner.GetLeaderEntity();
 		if (!leader)
 			return;
@@ -2395,10 +2522,11 @@ modded class SCR_AIGroupUtilityComponent
 		vector enemy = DCO_NearestTargetPos(lp);
 		float dist = vector.DistanceXZ(lp, enemy);
 		string trigger;
-		if (IsTargetNear(lp, 40.0) && DCO_AssaultCommit.Ready(dist, true, DCO_AssaultCommit.NearMisses(agents, now_ms, 6500.0), now_ms - utilDco.m_fDCOPrepAt_ms, utilDco.m_sDCOPrepKind, trigger))
+		float leadMax = 40.0 * DCO_Stress.ReachFor(m_Owner);
+		if (IsTargetNear(lp, leadMax) && DCO_AssaultCommit.Ready(dist, leadMax, true, DCO_AssaultCommit.NearMisses(agents, now_ms, 6500.0), now_ms - utilDco.m_fDCOPrepAt_ms, utilDco.m_sDCOPrepKind, trigger))
 		{
 			utilDco.m_bDCOAssaultCommitted = true;
-			DCO_AssaultCommit.Log(m_Owner, utilDco.m_sDCOPosTactic, dist, trigger);
+			DCO_AssaultCommit.Log(m_Owner, utilDco.m_sDCOPosTactic, dist, leadMax, trigger);
 			return;
 		}
 		if (!IsTargetNear(lp, 66.0) || IsTargetNear(lp, 35.0))
@@ -2440,7 +2568,7 @@ modded class SCR_AIGroupUtilityComponent
 			utilDco.m_iDCOCommitStep = 3;
 			utilDco.m_bDCOAssaultCommitted = true;
 			DCO_AssaultStuckLog(dist, "commit", 0);
-			DCO_AssaultCommit.Log(m_Owner, utilDco.m_sDCOPosTactic, dist, "volley");
+			DCO_AssaultCommit.Log(m_Owner, utilDco.m_sDCOPosTactic, dist, 40.0 * DCO_Stress.ReachFor(m_Owner), "volley");
 		}
 	}
 
@@ -2567,15 +2695,76 @@ modded class SCR_AIGroupUtilityComponent
 
 	protected string m_sDCOROEReason = "-";
 	protected string m_sDCOROESource = "commander";
+	protected bool m_bDCOForcedHold;
+	protected bool m_bDCOForcedWas;
+
+	bool DCO_IsForcedHold()
+	{
+		return m_bDCOForcedHold;
+	}
+
+	protected bool DCO_ForcedHoldEntry(DCO_GroupUtilityComponent g)
+	{
+		AICommander_BaseComponent cmd;
+		if (g)
+			cmd = g.GetMyCommander();
+		if (!cmd || !cmd.GetROETable())
+			return false;
+		DCO_ROEEntry e = cmd.GetROETable().Get(DCO_ROETask(g));
+		return e && e.m_eMode == DCO_EROEMode.FORCED_HOLD;
+	}
+
+	protected void DCO_PushForcedHold(bool on)
+	{
+		if (!on && !m_bDCOForcedWas)
+			return;
+		m_bDCOForcedWas = on;
+		array<AIAgent> agents = {};
+		m_Owner.GetAgents(agents);
+		foreach (AIAgent a : agents)
+		{
+			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
+			if (ca && ca.m_UtilityComponent && ca.m_UtilityComponent.m_CombatComponent)
+				ca.m_UtilityComponent.m_CombatComponent.DCO_SetForcedHold(on);
+		}
+	}
 	protected EAIGroupCombatMode m_eDCOROELogged = -1;
 
 	string DCO_GetROEReason() { return m_sDCOROEReason; }
+
+	protected float m_fDCOUnderFireAt = -1000;
+
+	void DCO_NoteUnderFire()
+	{
+		m_fDCOUnderFireAt = DCO_Util.NowS();
+	}
+
+	float DCO_UnderFireAgeS()
+	{
+		return DCO_Util.NowS() - m_fDCOUnderFireAt;
+	}
+
+	protected void DCO_UnderFireROE()
+	{
+		if (m_eCombatModeActual == EAIGroupCombatMode.FIRE_AT_WILL && m_sDCOROEReason == "threatened")
+			m_fDCOUnderFireAt = DCO_Util.NowS();
+		if (m_eCombatModeActual != EAIGroupCombatMode.HOLD_FIRE || m_bDCOForcedHold || m_eCombatModeExternal == EAIGroupCombatMode.HOLD_FIRE)
+			return;
+		float latch = DCO_Ctx.TuneFor(m_Owner, "roe.under_fire_s", 30.0);
+		if (latch <= 0 || DCO_Util.NowS() - m_fDCOUnderFireAt >= latch)
+			return;
+		m_sDCOROEReason = "under_fire";
+		m_sDCOROESource = "dco";
+		m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
+	}
 
 	override void EvaluateCombatMode()
 	{
 		m_sDCOROEReason = "vanilla";
 		m_sDCOROESource = "vanilla";
 		DCO_EvaluateCombatModeInner();
+		DCO_UnderFireROE();
+		DCO_StareTick();
 		if (m_eCombatModeActual == m_eDCOROELogged)
 			return;
 		m_eDCOROELogged = m_eCombatModeActual;
@@ -2584,8 +2773,105 @@ modded class SCR_AIGroupUtilityComponent
 			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("roe_mode grp=%1 mode=%2 reason=%3 source=%4", DCO_Log.IdGroup(m_Owner), typename.EnumToString(EAIGroupCombatMode, m_eCombatModeActual), m_sDCOROEReason, m_sDCOROESource));
 	}
 
+	protected float m_fDCOStareAt_ms = -1;
+	protected float m_fDCOStareSeen_ms;
+	protected float m_fDCOStareNext_ms;
+	protected float m_fDCOStareLog_ms;
+	protected float m_fDCOStareDist;
+	protected bool m_bDCOStareFired;
+
+	protected bool DCO_GroupFiredSince(float since_ms)
+	{
+		array<AIAgent> agents = {};
+		m_Owner.GetAgents(agents);
+		foreach (AIAgent a : agents)
+		{
+			if (a && a.GetControlledEntity() && DCO_ShotCounter.LastShotAt(a.GetControlledEntity()) >= since_ms)
+				return true;
+		}
+		return false;
+	}
+
+	protected void DCO_StareTick()
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now < m_fDCOStareNext_ms)
+			return;
+		m_fDCOStareNext_ms = now + 1000.0;
+		IEntity leader = m_Owner.GetLeaderEntity();
+		PerceptionManager pm = GetGame().GetPerceptionManager();
+		if (!leader || !pm || !m_Perception || m_Owner.IsSlave())
+			return;
+		float pmNow = pm.GetTime();
+		float limit = DCO_Ctx.TuneG("diag.stare_m", 300.0);
+		vector lp = leader.GetOrigin();
+		int seen;
+		float nearest = limit;
+		foreach (SCR_AITargetInfo t : m_Perception.m_aTargets)
+		{
+			if (!t || t.m_eCategory != EAITargetInfoCategory.IDENTIFIED || pmNow - t.m_fTimestamp > 3.0)
+				continue;
+			float d = vector.DistanceXZ(lp, t.m_vWorldPos);
+			if (d > limit)
+				continue;
+			seen++;
+			nearest = Math.Min(nearest, d);
+		}
+		if (seen > 0)
+		{
+			m_fDCOStareSeen_ms = now;
+			m_fDCOStareDist = nearest;
+		}
+		if (m_fDCOStareAt_ms < 0)
+		{
+			if (seen == 0)
+				return;
+			m_fDCOStareAt_ms = now;
+			m_fDCOStareLog_ms = now + 10000.0;
+			m_bDCOStareFired = false;
+			return;
+		}
+		if (now - m_fDCOStareSeen_ms > 10000.0)
+		{
+			m_fDCOStareAt_ms = -1;
+			return;
+		}
+		if (m_bDCOStareFired)
+			return;
+		float waited = (now - m_fDCOStareAt_ms) / 1000.0;
+		string task = "-";
+		if (utilDco)
+			task = typename.EnumToString(DCO_EGroupTask, utilDco.GetTask());
+		string info = string.Format("dist=%1 enemies=%2 mode=%3 reason=%4 source=%5 task=%6 posture=%7", Math.Round(m_fDCOStareDist), seen, typename.EnumToString(EAIGroupCombatMode, m_eCombatModeActual), m_sDCOROEReason, m_sDCOROESource, task, typename.EnumToString(DCO_GroupTactics, DCO_GetPosture()));
+		if (DCO_GroupFiredSince(m_fDCOStareAt_ms))
+		{
+			m_bDCOStareFired = true;
+			DCO_Perf.Count("stare:first_shot");
+			if (waited >= 10.0)
+				DCO_Perf.Count("stare:first_shot_slow");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Owner), string.Format("engage_delay grp=%1 delay_s=%2 ", DCO_Log.IdGroup(m_Owner), waited.ToString(-1, 1)) + info);
+			return;
+		}
+		if (now < m_fDCOStareLog_ms || seen == 0)
+			return;
+		m_fDCOStareLog_ms = now + 30000.0;
+		DCO_Perf.Count("stare:no_fire_" + m_sDCOROEReason);
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Owner), string.Format("stare grp=%1 secs=%2 ", DCO_Log.IdGroup(m_Owner), Math.Round(waited)) + info);
+	}
+
 	protected void DCO_EvaluateCombatModeInner()
 	{
+		if (!utilDco)
+			utilDco = DCO_GroupUtilityComponent.Cast(m_Owner.FindComponent(DCO_GroupUtilityComponent));
+		m_bDCOForcedHold = DCO_ForcedHoldEntry(utilDco);
+		DCO_PushForcedHold(m_bDCOForcedHold);
+		if (m_bDCOForcedHold)
+		{
+			m_sDCOROEReason = "forced_hold";
+			m_sDCOROESource = "commander";
+			m_eCombatModeActual = EAIGroupCombatMode.HOLD_FIRE;
+			return;
+		}
 		EAIGroupCombatMode postureMode;
 		if (DCO_PostureOps.ROE(this, utilDco, postureMode))
 		{
@@ -2600,7 +2886,7 @@ modded class SCR_AIGroupUtilityComponent
 
 		if (!AICommander_ManagerComponent.GetInstance() || !utilDco || !utilDco.GetMyCommander())
 		{
-			if (!utilDco || utilDco.GetTask() == DCO_EGroupTask.NONE)
+			if (!utilDco || (utilDco.GetTask() == DCO_EGroupTask.NONE && utilDco.m_eSOPAction == DCO_ESOPAction.DYNAMIC))
 			{
 				super.EvaluateCombatMode();
 				return;
@@ -2622,7 +2908,7 @@ modded class SCR_AIGroupUtilityComponent
 			return;
 
 	    int targetCount = m_Perception.m_aTargetEntities.Count();
-	    if (targetCount == 0)
+	    if (targetCount == 0 && !DCO_MemberSeesWithin(DCO_Ctx.TuneG("ind.yield_m", 150.0)))
 	    {
 	        DCO_UpdateContact(groupUtil, false);
 	        m_sDCOROEReason = "no_targets";
@@ -2654,8 +2940,15 @@ modded class SCR_AIGroupUtilityComponent
 		bool threatened = m_Perception.m_aTargetEntities.Count() > 0 && IsDirectlyThreatened();
 		DCO_UpdateContact(utilDco, threatened);
 		string block;
+		EAIGroupCombatMode sopMode;
 		if (threatened)
 			m_sDCOROEReason = "threatened";
+		else if (DCO_SOPMode(utilDco, sopMode))
+		{
+			m_sDCOROESource = "no_commander_sop";
+			m_eCombatModeActual = sopMode;
+			return;
+		}
 		else if (DCO_InContact())
 			m_sDCOROEReason = "contact_active";
 		else if (m_Perception.m_aTargetEntities.Count() > 0 && IsAnyTargetRelevant(DCO_OpenFireRange(utilDco, false, false, block), false))
@@ -2667,6 +2960,39 @@ modded class SCR_AIGroupUtilityComponent
 			return;
 		}
 		m_eCombatModeActual = EAIGroupCombatMode.FIRE_AT_WILL;
+	}
+
+	protected bool DCO_SOPMode(DCO_GroupUtilityComponent g, out EAIGroupCombatMode mode)
+	{
+		switch (g.m_eSOPAction)
+		{
+			case DCO_ESOPAction.ENGAGE:
+			{
+				m_sDCOROEReason = "sop_engage";
+				mode = EAIGroupCombatMode.FIRE_AT_WILL;
+				return true;
+			}
+			case DCO_ESOPAction.OBSERVE:
+			case DCO_ESOPAction.BYPASS:
+			{
+				m_sDCOROEReason = "sop_observe_bypass";
+				mode = EAIGroupCombatMode.HOLD_FIRE;
+				return true;
+			}
+			case DCO_ESOPAction.AMBUSH:
+			{
+				if (g.m_bSOPSprung)
+				{
+					m_sDCOROEReason = "sop_ambush_sprung";
+					mode = EAIGroupCombatMode.FIRE_AT_WILL;
+					return true;
+				}
+				m_sDCOROEReason = "sop_ambush_wait";
+				mode = EAIGroupCombatMode.HOLD_FIRE;
+				return true;
+			}
+		}
+		return false;
 	}
 
 	protected EAIGroupCombatMode DCO_ResolveROE(DCO_GroupUtilityComponent groupUtil)
@@ -2709,30 +3035,9 @@ modded class SCR_AIGroupUtilityComponent
 			m_sDCOROEReason = "voice_ambush_sprung";
 			return EAIGroupCombatMode.FIRE_AT_WILL;
 		}
-		switch (groupUtil.m_eSOPAction)
-		{
-			case DCO_ESOPAction.ENGAGE:
-			{
-				m_sDCOROEReason = "sop_engage";
-				return EAIGroupCombatMode.FIRE_AT_WILL;
-			}
-			case DCO_ESOPAction.OBSERVE:
-			case DCO_ESOPAction.BYPASS:
-			{
-				m_sDCOROEReason = "sop_observe_bypass";
-				return EAIGroupCombatMode.HOLD_FIRE;
-			}
-			case DCO_ESOPAction.AMBUSH:
-			{
-				if (groupUtil.m_bSOPSprung)
-				{
-					m_sDCOROEReason = "sop_ambush_sprung";
-					return EAIGroupCombatMode.FIRE_AT_WILL;
-				}
-				m_sDCOROEReason = "sop_ambush_wait";
-				return EAIGroupCombatMode.HOLD_FIRE;
-			}
-		}
+		EAIGroupCombatMode sopMode;
+		if (DCO_SOPMode(groupUtil, sopMode))
+			return sopMode;
 		if (state & DCO_EGroupState.RETREATING)
 		{
 			m_sDCOROEReason = "retreating";
@@ -2817,6 +3122,12 @@ modded class SCR_AIGroupUtilityComponent
 					&& IsTargetNear(obj.GetOwner().GetOrigin(), obj.GetRadius() + cmd.GetDefendObjectiveMargin()))
 				{
 					m_sDCOROEReason = "roe_tight_defend_near";
+					return EAIGroupCombatMode.FIRE_AT_WILL;
+				}
+				if (DCO_MemberSeesWithin(DCO_Ctx.TuneG("ind.yield_m", 150.0)))
+				{
+					DCO_Perf.Count("roe:member_sees");
+					m_sDCOROEReason = "member_sees";
 					return EAIGroupCombatMode.FIRE_AT_WILL;
 				}
 				break;
@@ -3056,6 +3367,8 @@ modded class SCR_AIGroupUtilityComponent
 		if (!active)
 		{
 			DCO_Perf.Count("roe_contact_start:" + cause);
+			if (g && g.GetMyCommander())
+				g.GetMyCommander().DCO_WakeThink("contact");
 			if (DCO_Log.On(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO))
 			{
 				float d = nearest;
@@ -3122,6 +3435,21 @@ modded class SCR_AIGroupUtilityComponent
 		return false;
 	}
 
+	protected bool DCO_MemberSeesWithin(float maxM)
+	{
+		if (maxM <= 0)
+			return false;
+		array<AIAgent> agents = {};
+		m_Owner.GetAgents(agents);
+		foreach (AIAgent a : agents)
+		{
+			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
+			if (ca && DCO_AimedYield.TargetVisible(ca.m_UtilityComponent, maxM))
+				return true;
+		}
+		return false;
+	}
+
 	protected bool IsAnyTargetRelevant(float maxRelevanceDistance = 150.0, bool identifiedOnly = false)
 	{
 		foreach (SCR_AIGroupTargetCluster c : m_Perception.m_aTargetClusters)
@@ -3168,7 +3496,7 @@ modded class SCR_AIGroupUtilityComponent
 	override void EOnInit(IEntity owner)
 	{
 		super.EOnInit(owner);
-		SCR_AIGroupTacticsComponent tacticsComp = SCR_AIGroupTacticsComponent.Cast(owner.FindComponent(SCR_AIGroupTacticsComponent));
+		DCO_GroupTacticsComponent tacticsComp = DCO_GroupTacticsComponent.Cast(owner.FindComponent(DCO_GroupTacticsComponent));
 		if (tacticsComp)
 			m_eDCOPostureOverride = tacticsComp.GetGroupTactics();
 		utilDco = DCO_GroupUtilityComponent.Cast(owner.FindComponent(DCO_GroupUtilityComponent));

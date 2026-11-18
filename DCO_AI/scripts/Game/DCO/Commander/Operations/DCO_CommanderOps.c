@@ -166,6 +166,13 @@ class DCO_CommanderOps
 		if (m_fLastIntelDecay > 0)
 			decay = Math.Pow(0.5, (now - m_fLastIntelDecay) / 300.0);
 		m_fLastIntelDecay = now;
+		m_sLearnFk = cmd.GetCommanderFactionKey();
+		bool asleep = !cmd.DCO_HasThought();
+		if (asleep)
+		{
+			decay = 1;
+			DCO_Perf.Count("intel:decay_wait_first_think");
+		}
 
 		FactionKey fk = cmd.GetCommanderFactionKey();
 		foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
@@ -175,6 +182,8 @@ class DCO_CommanderOps
 
 			DCO_ObjectiveIntel intel = GetIntel(obj);
 			intel.m_fConfidence *= decay;
+			if (asleep && intel.m_bEverSeen)
+				intel.m_fUpdated = now;
 
 			vector p = obj.GetOwner().GetOrigin();
 			float r = obj.GetRadius() + 150;
@@ -283,7 +292,90 @@ class DCO_CommanderOps
 					Event(string.Format("est_update obj=%1 old=%2 new=%3 count=0 perceived=0 conf=%4 how=decay half_life_s=600 floor=%5", obj.GetLogName(), oldD.ToString(-1, 1), newD.ToString(-1, 1), intel.m_fConfidence.ToString(-1, 2), floorD.ToString(-1, 1)));
 				}
 			}
+
+			float eyes = DCO_Ctx.TuneForCmd(cmd, "intel.own_eyes_conf", 0.7);
+			if (eyes > 0 && OwnGroupInside(cmd, p, obj.GetRadius()))
+			{
+				bool rose = intel.m_fConfidence < eyes || seen > intel.m_fDefenders;
+				intel.m_bEverSeen = true;
+				intel.m_fUpdated = now;
+				intel.m_fConfidence = Math.Max(intel.m_fConfidence, eyes);
+				if (seen > intel.m_fDefenders)
+					intel.m_fDefenders = seen;
+				DCO_Perf.Count("intel:own_eyes");
+				if (rose)
+					Event(string.Format("intel_own_eyes obj=%1 conf=%2 est=%3 perceived=%4", obj.GetLogName(), intel.m_fConfidence.ToString(-1, 2), intel.m_fDefenders.ToString(-1, 1), seen));
+			}
+
+			float contactConf = DCO_Ctx.TuneForCmd(cmd, "intel.contact_conf", 0.5);
+			if (contactConf <= 0)
+				continue;
+			string eyesSrc;
+			bool contactEyes = cmd.DCO_FriendContactAtObj(obj, eyesSrc) && !eyesSrc.StartsWith("report:");
+			if (!contactEyes)
+			{
+				DCO_GroupUtilityComponent recon = obj.GetReconGroup(fk);
+				if (recon && recon.GetOwner() && recon.GetUnitCount() > 0 && recon.GetTask() == DCO_EGroupTask.RECON && recon.GetGroupObjective() == obj && recon.DCO_NearOrderTarget(40.0))
+				{
+					contactEyes = true;
+					eyesSrc = "recon_at_spot";
+				}
+			}
+			if (!contactEyes)
+				continue;
+			bool contactRose = intel.m_fConfidence < contactConf;
+			intel.m_bEverSeen = true;
+			intel.m_fUpdated = now;
+			intel.m_fConfidence = Math.Max(intel.m_fConfidence, contactConf);
+			DCO_Perf.Count("intel:contact_eyes");
+			if (contactRose)
+				Event(string.Format("intel_contact_eyes obj=%1 conf=%2 est=%3 src=%4", obj.GetLogName(), intel.m_fConfidence.ToString(-1, 2), intel.m_fDefenders.ToString(-1, 1), eyesSrc));
 		}
+	}
+
+	protected DCO_GroupUtilityComponent PullGarrison(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, vector objPos)
+	{
+		DCO_GroupUtilityComponent best;
+		float bestD = float.MAX;
+		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
+		{
+			if (!g || !g.GetOwner() || g.IsPlayerGroup() || g.IsDedicatedTransport() || g.IsMortar())
+				continue;
+			if (g.IsArmor() || g.IsInTransport() || !g.CanItHaveOrder() || !g.CanCommanderOverrideRole())
+				continue;
+			DCO_EGroupTask t = g.GetTask();
+			if (t == DCO_EGroupTask.DEFEND || t == DCO_EGroupTask.GARRISON)
+				continue;
+			if (!DCO_GroupJobs.Allows(g, DCO_EGroupJob.GARRISON) || cmd.DCO_PlanGuard(g, "ops_garrison_pull", obj))
+				continue;
+			float d = vector.DistanceXZ(g.GetOwner().GetOrigin(), objPos);
+			if (d < bestD)
+			{
+				bestD = d;
+				best = g;
+			}
+		}
+		if (!best)
+		{
+			DCO_Perf.Count("ops:garrison_pull_none");
+			Event(string.Format("ops_garrison_pulled obj=%1 grp=none why=no_eligible_group", obj.GetLogName()));
+			return null;
+		}
+		DCO_Perf.Count("ops:garrison_pull");
+		Event(string.Format("ops_garrison_pulled obj=%1 grp=%2 dist=%3 task=%4", obj.GetLogName(), best.GetOwner().GetName(), Math.Round(bestD), typename.EnumToString(DCO_EGroupTask, best.GetTask())));
+		return best;
+	}
+
+	protected bool OwnGroupInside(AICommander_BaseComponent cmd, vector p, float radius)
+	{
+		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
+		{
+			if (!g || !g.GetOwner() || g.IsInTransport())
+				continue;
+			if (vector.DistanceXZ(g.GetOwner().GetOrigin(), p) <= radius)
+				return true;
+		}
+		return false;
 	}
 
 	protected void BuildPerceived(AICommander_BaseComponent cmd)
@@ -634,7 +726,15 @@ class DCO_CommanderOps
 			return true;
 		}
 
-		arty.RequestShellImpact(req, now, 6);
+		if (!arty.RequestShellImpact(req, now, 6))
+		{
+			string prepDeny = req.m_sDeny;
+			if (prepDeny.IsEmpty())
+				prepDeny = "denied";
+			DCO_Perf.Count("ops:prep_skip");
+			Event(string.Format("ops_prep_skip obj=%1 why=%2 (no wait, assault released)", obj.GetLogName(), prepDeny));
+			return true;
+		}
 		prep = new DCO_PrepFire();
 		prep.m_bFired = true;
 		prep.m_fUntil = now + 45.0;
@@ -698,8 +798,8 @@ class DCO_CommanderOps
 		smokePos = DCO_Util.Surface(smokePos);
 		CMD_FireMissionRequest req = new CMD_FireMissionRequest(smokePos, SCR_EAIArtilleryAmmoType.SMOKE, now, 3);
 		req.m_sSource = "smoke";
-		arty.RequestShellImpact(req, now, 3);
-		Event(string.Format("ops_smoke obj=%1 open_samples=%2 pos=%3", obj.GetLogName(), open, smokePos));
+		bool smokeOk = arty.RequestShellImpact(req, now, 3);
+		Event(string.Format("ops_smoke obj=%1 open_samples=%2 pos=%3 accepted=%4", obj.GetLogName(), open, smokePos, DCO_Util.B01(smokeOk)));
 	}
 
 	protected void UpdateLift(AICommander_BaseComponent cmd, float now)
@@ -720,6 +820,7 @@ class DCO_CommanderOps
 				if (arty)
 					lifted = arty.LiftFiresNear(prep.m_vImpact, prep.m_fSafeRadius);
 				Event(string.Format("ops_lift obj=%1 group=%2 cancelled=%3", obj.GetLogName(), g.GetOwner().GetName(), lifted));
+				DCO_Briefing.AttackFlag(cmd, cmd.GetTactics().GetPlan(obj), DCO_EBriefFlag.LIFT, "brief_phase_lift");
 				break;
 			}
 		}
@@ -875,6 +976,8 @@ class DCO_CommanderOps
 			bool was = false;
 			bool known = m_mOwned.Find(obj, was);
 			m_mOwned.Set(obj, isOwned);
+			if (known && isOwned != was)
+				cmd.DCO_WakeThink("obj_owner");
 			if (known && isOwned && !was)
 				BeginConsolidation(cmd, obj, now);
 			else if (known && was && !isOwned && cmd.GetDefense())
@@ -914,7 +1017,7 @@ class DCO_CommanderOps
 		if (cdoc)
 			c.m_fHold = cdoc.Number(8);
 		if (cmd.DCO_AggProfile())
-			c.m_fHold = Math.Max(c.m_fHold / Math.Pow(cmd.DCO_AggrA(), 0.5), Math.Min(c.m_fHold, 120.0));
+			c.m_fHold = Math.Max(c.m_fHold / Math.Pow(cmd.DCO_AggrA(), 0.5), Math.Min(c.m_fHold, DCO_Ctx.TuneForCmd(cmd, "agg.consolidate_floor_s", 120.0)));
 		c.m_vAxis = ConsolidateAxis(cmd, obj);
 		int slot;
 		foreach (DCO_GroupUtilityComponent g2 : c.m_aGroups)
@@ -935,17 +1038,21 @@ class DCO_CommanderOps
 			if (wp)
 				g2.MoveTo(wp, now);
 		}
+		if (!garrison)
+			garrison = PullGarrison(cmd, obj, objPos);
 		string gname = "none";
 		if (garrison)
 		{
 			cmd.StartObjectiveGarrison(garrison, obj, now);
+			if (c.m_aGroups.Contains(garrison))
+				c.m_fStrengthStart -= garrison.GetUnitCount();
 			c.m_aGroups.RemoveItem(garrison);
 			c.m_Garrison = garrison;
 			gname = garrison.GetOwner().GetName();
 		}
 
 		DCO_CommanderDefense cdef = cmd.GetDefense();
-		if (cdef && cmd.IsOPEnabled() && cdef.OPCount() < DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
+		if (cdef && cmd.IsOPEnabled() && cdef.OPCount() < DCO_Force.Max(cmd, "op"))
 			cdef.OpenOP(cmd, DCO_Util.Surface(objPos + c.m_vAxis * (obj.GetRadius() + 150.0)), objPos + c.m_vAxis * (obj.GetRadius() + 500.0), "consolidate", now);
 		c.m_iStep = 1;
 		Event(string.Format("consolidate_step obj=%1 step=1 name=security t_s=0 groups=%2 axis=%3 op=%4 garrison_first=%5", obj.GetLogName(), c.m_aGroups.Count(), DCO_Util.XZ(objPos + c.m_vAxis * 100.0), DCO_Util.B01(cdef != null), gname));
@@ -1389,13 +1496,18 @@ class DCO_CommanderOps
 		return false;
 	}
 
+	protected string m_sLearnFk;
+
 	DCO_ObjectiveMemory GetMemory(CMD_AICommanderObjectiveComponent obj)
 	{
 		DCO_ObjectiveMemory m = m_mMemory.Get(obj);
 		if (!m)
 		{
 			m = new DCO_ObjectiveMemory();
-			DCO_CmdLearn.LoadFailBearings(obj, m.m_aFailedBearings);
+			if (m_sLearnFk.IsEmpty())
+				DCO_Perf.Count("learn:fail_load_no_faction");
+			else
+				DCO_CmdLearn.LoadFailBearings(obj, m.m_aFailedBearings, m_sLearnFk);
 			m_mMemory.Set(obj, m);
 		}
 		return m;
@@ -1416,7 +1528,7 @@ class DCO_CommanderOps
 
 			float casualties = mem.m_Active.m_fStrength - cmd.GetAttackStrength(obj);
 			mem.m_aFailedBearings.Insert(mem.m_Active.m_fBearing);
-			DCO_CmdLearn.NoteFailBearing(obj, mem.m_Active.m_fBearing);
+			DCO_CmdLearn.NoteFailBearing(obj, mem.m_Active.m_fBearing, fk);
 			Event(string.Format("ops_attempt obj=%1 result=fail why=%2 bearing=%3 groups=%4 casualties=%5 fails=%6", obj.GetLogName(),
 				exhausted, Math.Round(mem.m_Active.m_fBearing), mem.m_Active.m_iGroups, Math.Round(casualties), mem.m_iFails + 1));
 			mem.m_Active = null;
@@ -2119,8 +2231,8 @@ class DCO_CommanderOps
 			smokePos = DCO_Util.Surface(smokePos);
 			CMD_FireMissionRequest req = new CMD_FireMissionRequest(smokePos, SCR_EAIArtilleryAmmoType.SMOKE, now, 3);
 			req.m_sSource = "smoke";
-			arty.RequestShellImpact(req, now, 3);
-			how = how + " smoke_far_side";
+			if (arty.RequestShellImpact(req, now, 3))
+				how = how + " smoke_far_side";
 		}
 		if (how == "")
 			return false;

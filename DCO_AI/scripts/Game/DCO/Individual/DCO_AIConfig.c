@@ -79,6 +79,8 @@ class DCO_AIConfigComponent : ScriptComponent
 	protected DCO_GlobalAIComponent m_DCOSet;
 	protected float m_fDCOGrenRaw = -1;
 	protected float m_fDCOGLRaw = -1;
+	protected int m_iDCOOwn;
+	protected string m_sDCORollSig;
 
 	static float UsageMap(float raw, float aggr)
 	{
@@ -94,9 +96,175 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	void DCO_CheckVer()
 	{
-		if (!m_DCOSet || DCO_GlobalAIComponent.DCO_TuneVerAll() == m_iDCOVer)
+		int ver = DCO_GlobalAIComponent.DCO_TuneVerAll();
+		if (!m_DCOSet || ver == m_iDCOVer)
 			return;
-		m_iDCOVer = DCO_GlobalAIComponent.DCO_TuneVerAll();
+		m_iDCOVer = ver;
+		DCO_GlobalAIComponent cur = DCO_GlobalAIComponent.GetFor(GetOwner());
+		if (cur)
+			m_DCOSet = cur;
+		DCO_Rescale();
+		int copied = DCO_CopyGlobal(m_DCOSet, false);
+		DCO_Reroll();
+		DCO_Perf.Count("unit_cfg:refresh");
+		DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG, "-", string.Format("unit_cfg_refresh unit=%1 copied=%2 own=%3 aggr=%4", DCO_Log.IdUnit(GetOwner()), copied, m_iDCOOwn, m_fDCOAggrApplied.ToString(-1, 2)));
+	}
+
+	protected void DCO_Reroll()
+	{
+		string sig = m_DCOSet.DCO_RollSig();
+		if (sig == m_sDCORollSig || m_DCOSet.DCO_TuneF("ga.reroll_live", 0.0) < 0.5)
+			return;
+		m_sDCORollSig = sig;
+		DCO_EAIPersonality p = m_ePersonality;
+		DCO_ELeadership l = m_eLeadership;
+		if ((m_iDCOOwn & 32768) == 0)
+			m_ePersonality = m_DCOSet.RollWeightedPersonality();
+		if ((m_iDCOOwn & 65536) == 0)
+			m_eLeadership = m_DCOSet.RollWeightedLeadership();
+		DCO_Perf.Count("ga:reroll");
+		DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, "-", string.Format("unit_reroll unit=%1 personality_from=%2 personality_to=%3 leadership_from=%4 leadership_to=%5 own=%6", DCO_Log.IdUnit(GetOwner()), typename.EnumToString(DCO_EAIPersonality, p), typename.EnumToString(DCO_EAIPersonality, m_ePersonality), DCO_Leadership.Name(l), DCO_Leadership.Name(m_eLeadership), m_iDCOOwn));
+	}
+
+	protected bool DCO_Free(int bit, bool all)
+	{
+		return all || (m_iDCOOwn & bit) == 0;
+	}
+
+	protected float DCO_MapUse(float raw, out float rawStore)
+	{
+		raw = Math.Clamp(raw, 0, 1);
+		rawStore = -1;
+		if (m_DCOSet && m_DCOSet.DCO_TuneF("agg.usage_map", 1.0) > 0)
+		{
+			rawStore = raw;
+			return UsageMap(raw, m_fDCOAggrApplied);
+		}
+		return Math.Clamp(raw * m_fDCOAggrApplied, 0, 1);
+	}
+
+	protected int DCO_CopyGlobal(DCO_GlobalAIComponent s, bool all)
+	{
+		if (!s)
+			return 0;
+		int n;
+		float calm = Calm(m_fDCOAggrApplied);
+		if (all)
+		{
+			m_fAiPerception = s.GetUnitPerception();
+			m_fSmokeUsage = s.GetSmokeUsage();
+		}
+		if (DCO_Free(1, all))
+		{
+			m_fAimAccuracy = s.GetUnitSkill();
+			n++;
+		}
+		if (DCO_Free(2, all))
+		{
+			m_bIsMagicallyResupplied = s.GetUnitMagicMagazine();
+			n++;
+		}
+		if (DCO_Free(4, all))
+		{
+			m_fAimSpeed = s.GetAimSpeed();
+			n++;
+		}
+		if (DCO_Free(8, all))
+		{
+			m_fAimShake = s.GetAimShake();
+			n++;
+		}
+		if (DCO_Free(16, all))
+		{
+			m_eAISkillDefault = s.GetAISkill();
+			n++;
+		}
+		if (DCO_Free(32, all))
+		{
+			m_fVehicleDismountDanger = s.GetDismountDistance();
+			n++;
+		}
+		if (DCO_Free(64, all))
+		{
+			m_eDisembarkRule = s.GetDisembarkRule();
+			n++;
+		}
+		if (DCO_Free(128, all))
+		{
+			m_fSuppressionEffect = s.GetSuppressionEffect() * calm;
+			n++;
+		}
+		if (DCO_Free(256, all))
+		{
+			m_fTakeCoverChance = Math.Clamp(s.GetTakeCoverChance() * calm, 0, 1);
+			n++;
+		}
+		if (DCO_Free(512, all))
+		{
+			m_fDodgeChance = Math.Clamp(s.GetDodgeChance() * calm, 0, 1);
+			n++;
+		}
+		if (DCO_Free(1024, all))
+		{
+			m_fDodgeCooldown = s.GetDodgeCooldown();
+			m_fDodgeMaxDist = s.GetDodgeMaxDist();
+			m_fDodgeSearchDist = s.GetDodgeSearchDist();
+			m_bDodgeScaleByPersonality = s.GetDodgeScaleByPersonality();
+			n++;
+		}
+		float rawStore;
+		if (DCO_Free(2048, all))
+		{
+			m_fGrenadeUsage = DCO_MapUse(s.GetGrenadeUsage(), rawStore);
+			m_fDCOGrenRaw = rawStore;
+			n++;
+		}
+		if (DCO_Free(4096, all))
+		{
+			m_fGLUsage = DCO_MapUse(s.GetGLUsage(), rawStore);
+			m_fDCOGLRaw = rawStore;
+			n++;
+		}
+		if (DCO_Free(16384, all))
+		{
+			m_fGLAccuracy = s.GetGLAccuracy();
+			n++;
+		}
+		if (DCO_Free(8192, all))
+		{
+			m_iDodgeShotThreshold = s.GetDodgeShotThreshold();
+			m_fDodgeShotWindow = s.GetDodgeShotWindow();
+			n++;
+		}
+		return n;
+	}
+
+	float DCO_SuppRaw()
+	{
+		return m_fSuppressionEffect / Math.Max(Calm(m_fDCOAggrApplied), 0.01);
+	}
+
+	float DCO_DodgeRaw()
+	{
+		return Math.Clamp(m_fDodgeChance / Math.Max(Calm(m_fDCOAggrApplied), 0.01), 0, 1);
+	}
+
+	float DCO_GrenRaw()
+	{
+		if (m_fDCOGrenRaw >= 0)
+			return m_fDCOGrenRaw;
+		return Math.Clamp(m_fGrenadeUsage / Math.Max(m_fDCOAggrApplied, 0.01), 0, 1);
+	}
+
+	float DCO_GLRaw()
+	{
+		if (m_fDCOGLRaw >= 0)
+			return m_fDCOGLRaw;
+		return Math.Clamp(m_fGLUsage / Math.Max(m_fDCOAggrApplied, 0.01), 0, 1);
+	}
+
+	protected void DCO_Rescale()
+	{
 		float na = m_DCOSet.DCO_Aggression();
 		float old = m_fDCOAggrApplied;
 		if (na == old || old <= 0 || na <= 0)
@@ -138,56 +306,18 @@ class DCO_AIConfigComponent : ScriptComponent
 		if (!settings)
 			return;
 
-		m_fAimAccuracy = settings.GetUnitSkill();
-		m_fAiPerception = settings.GetUnitPerception();
-		m_bIsMagicallyResupplied = settings.GetUnitMagicMagazine();
-		m_fAimSpeed = settings.GetAimSpeed();
-		m_fAimShake = settings.GetAimShake();
-		m_eAISkillDefault = settings.GetAISkill();
-		m_fVehicleDismountDanger = settings.GetDismountDistance();
-		m_eDisembarkRule = settings.GetDisembarkRule();
-		m_fSuppressionEffect = settings.GetSuppressionEffect();
-		m_fTakeCoverChance = settings.GetTakeCoverChance();
 		m_ePersonality = settings.RollWeightedPersonality();
 		m_eLeadership = settings.RollWeightedLeadership();
-		m_fDodgeChance             = settings.GetDodgeChance();
-		m_fDodgeCooldown           = settings.GetDodgeCooldown();
-		m_fDodgeMaxDist            = settings.GetDodgeMaxDist();
-		m_fDodgeSearchDist         = settings.GetDodgeSearchDist();
-		m_bDodgeScaleByPersonality = settings.GetDodgeScaleByPersonality();
-		m_fGrenadeUsage            = settings.GetGrenadeUsage();
-		m_fGLUsage                 = settings.GetGLUsage();
+		m_sDCORollSig = settings.DCO_RollSig();
 		float aggr = settings.DCO_Aggression();
 		m_DCOSet = settings;
 		m_fDCOAggrApplied = aggr;
 		m_iDCOVer = DCO_GlobalAIComponent.DCO_TuneVerAll();
+		DCO_CopyGlobal(settings, true);
 		if (aggr != 1)
 		{
-			float calm = Math.Clamp(2.0 - aggr, 0, 2);
-			if (aggr > 1)
-				calm = 1.0 / aggr;
-			m_fSuppressionEffect = m_fSuppressionEffect * calm;
-			m_fTakeCoverChance = Math.Clamp(m_fTakeCoverChance * calm, 0, 1);
-			m_fDodgeChance = Math.Clamp(m_fDodgeChance * calm, 0, 1);
-			if (settings.DCO_TuneF("agg.usage_map", 1.0) > 0)
-			{
-				m_fDCOGrenRaw = m_fGrenadeUsage;
-				m_fDCOGLRaw = m_fGLUsage;
-				m_fGrenadeUsage = UsageMap(m_fDCOGrenRaw, aggr);
-				m_fGLUsage = UsageMap(m_fDCOGLRaw, aggr);
-				DCO_Perf.Count("agg:usage_map");
-			}
-			else
-			{
-				m_fGrenadeUsage = Math.Clamp(m_fGrenadeUsage * aggr, 0, 1);
-				m_fGLUsage = Math.Clamp(m_fGLUsage * aggr, 0, 1);
-			}
 			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG, "-", string.Format("aggr_unit unit=%1 aggr=%2 supp=%3 cover=%4 dodge=%5 frag=%6 gl=%7", DCO_Log.IdUnit(owner), aggr.ToString(-1, 2), m_fSuppressionEffect.ToString(-1, 2), m_fTakeCoverChance.ToString(-1, 2), m_fDodgeChance.ToString(-1, 2), m_fGrenadeUsage.ToString(-1, 2), m_fGLUsage.ToString(-1, 2)));
 		}
-		m_fGLAccuracy              = settings.GetGLAccuracy();
-		m_fSmokeUsage              = settings.GetSmokeUsage();
-		m_iDodgeShotThreshold      = settings.GetDodgeShotThreshold();
-		m_fDodgeShotWindow         = settings.GetDodgeShotWindow();
 	}
 
 	float GetDodgeChance()
@@ -197,7 +327,8 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetDodgeChance(float f)
 	{
-		m_fDodgeChance = f;
+		m_iDCOOwn |= 512;
+		m_fDodgeChance = Math.Clamp(f * Calm(m_fDCOAggrApplied), 0, 1);
 		return m_fDodgeChance;
 	}
 
@@ -208,6 +339,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetDodgeCooldown(float f)
 	{
+		m_iDCOOwn |= 1024;
 		m_fDodgeCooldown = f;
 		return m_fDodgeCooldown;
 	}
@@ -219,6 +351,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetDodgeMaxDist(float f)
 	{
+		m_iDCOOwn |= 1024;
 		m_fDodgeMaxDist = f;
 		return m_fDodgeMaxDist;
 	}
@@ -230,6 +363,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetDodgeSearchDist(float f)
 	{
+		m_iDCOOwn |= 1024;
 		m_fDodgeSearchDist = f;
 		return m_fDodgeSearchDist;
 	}
@@ -241,12 +375,14 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	bool SetDodgeScaleByPersonality(bool b)
 	{
+		m_iDCOOwn |= 1024;
 		m_bDodgeScaleByPersonality = b;
 		return m_bDodgeScaleByPersonality;
 	}
 
 	DCO_AISKILL SetAISkill(DCO_AISKILL ski)
 	{
+		m_iDCOOwn |= 16;
 		m_eAISkillDefault = ski;
 		return m_eAISkillDefault;
 	}
@@ -263,6 +399,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	void SetDisembarkRule(int rule)
 	{
+		m_iDCOOwn |= 64;
 		m_eDisembarkRule = Math.ClampInt(rule, DCO_EDisembarkRule.AUTO, DCO_EDisembarkRule.NEVER);
 	}
 
@@ -273,6 +410,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetDismountDistance(float acc)
 	{
+		m_iDCOOwn |= 32;
 		m_fVehicleDismountDanger = acc;
 		return m_fVehicleDismountDanger;
 	}
@@ -284,6 +422,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	void SetAimSpeed(float v)
 	{
+		m_iDCOOwn |= 4;
 		m_fAimSpeed = Math.Clamp(v, 0.25, 4.0);
 		LogAimCfg();
 	}
@@ -295,6 +434,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	void SetAimShake(float v)
 	{
+		m_iDCOOwn |= 8;
 		m_fAimShake = Math.Clamp(v, 0.25, 4.0);
 		LogAimCfg();
 	}
@@ -306,6 +446,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetAccuracy(float acc)
 	{
+		m_iDCOOwn |= 1;
 		m_fAimAccuracy = acc;
 		LogAimCfg();
 		return acc;
@@ -351,6 +492,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	bool SetMagicMag(bool s)
 	{
+		m_iDCOOwn |= 2;
 		m_bIsMagicallyResupplied = s;
 		return m_bIsMagicallyResupplied;
 	}
@@ -362,7 +504,8 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetSuppressionEffect(float f)
 	{
-		m_fSuppressionEffect = f;
+		m_iDCOOwn |= 128;
+		m_fSuppressionEffect = f * Calm(m_fDCOAggrApplied);
 		return m_fSuppressionEffect;
 	}
 
@@ -373,7 +516,8 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetTakeCoverChance(float f)
 	{
-		m_fTakeCoverChance = f;
+		m_iDCOOwn |= 256;
+		m_fTakeCoverChance = Math.Clamp(f * Calm(m_fDCOAggrApplied), 0, 1);
 		return m_fTakeCoverChance;
 	}
 
@@ -384,6 +528,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	DCO_EAIPersonality SetPersonality(DCO_EAIPersonality p)
 	{
+		m_iDCOOwn |= 32768;
 		m_ePersonality = p;
 		return m_ePersonality;
 	}
@@ -395,6 +540,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	DCO_ELeadership SetLeadership(DCO_ELeadership l)
 	{
+		m_iDCOOwn |= 65536;
 		m_eLeadership = l;
 		return m_eLeadership;
 	}
@@ -406,7 +552,10 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetGrenadeUsage(float f)
 	{
-		m_fGrenadeUsage = Math.Clamp(f, 0.0, 1.0);
+		m_iDCOOwn |= 2048;
+		float rawStore;
+		m_fGrenadeUsage = DCO_MapUse(f, rawStore);
+		m_fDCOGrenRaw = rawStore;
 		return m_fGrenadeUsage;
 	}
 
@@ -417,7 +566,10 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetGLUsage(float f)
 	{
-		m_fGLUsage = Math.Clamp(f, 0.0, 1.0);
+		m_iDCOOwn |= 4096;
+		float rawStore;
+		m_fGLUsage = DCO_MapUse(f, rawStore);
+		m_fDCOGLRaw = rawStore;
 		return m_fGLUsage;
 	}
 
@@ -428,6 +580,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetGLAccuracy(float f)
 	{
+		m_iDCOOwn |= 16384;
 		m_fGLAccuracy = Math.Clamp(f, 0.1, 5.0);
 		return m_fGLAccuracy;
 	}
@@ -456,6 +609,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	int SetDodgeShotThreshold(int i)
 	{
+		m_iDCOOwn |= 8192;
 		m_iDodgeShotThreshold = Math.ClampInt(i, 1, 20);
 		return m_iDodgeShotThreshold;
 	}
@@ -467,6 +621,7 @@ class DCO_AIConfigComponent : ScriptComponent
 
 	float SetDodgeShotWindow(float f)
 	{
+		m_iDCOOwn |= 8192;
 		m_fDodgeShotWindow = Math.Clamp(f, 1.0, 30.0);
 		return m_fDodgeShotWindow;
 	}

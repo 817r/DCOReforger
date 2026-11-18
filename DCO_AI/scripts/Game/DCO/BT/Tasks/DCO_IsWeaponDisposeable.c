@@ -9,6 +9,7 @@ class DCO_IsWeaponDisposeable : AITaskScripted
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
+		DCO_BtWatch.Mark("Attack_Default");
 		BaseWeaponComponent weaponComp;
 		GetVariableIn("WeaponComponent", weaponComp);
 

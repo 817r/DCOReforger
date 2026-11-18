@@ -7,6 +7,7 @@ modded class SCR_CharacterControllerComponent
 	vector m_vDCONavPos;
 	int m_iDCONavRetry;
 	bool m_bDCONavStallLogged;
+	bool m_bDCONavSlowLogged;
 	int m_iDCONavCmd;
 	float m_fDCONavCmdStart_ms;
 	vector m_vDCONavCmdFrom;
@@ -247,16 +248,41 @@ class DCO_Nav
 				blocked = DCO_Util.TraceFrac(knee, knee + dir * Math.Min(dist + 1.5, 4.0), me, -1, -1, "trace:navlink") < 1.0;
 			}
 		}
+		bool doorAhead;
+		if (blocked)
+		{
+			IEntity hitEnt = DCO_Util.LastTraceEnt();
+			if (hitEnt && (hitEnt.FindComponent(BaseDoorComponent) || (hitEnt.GetParent() && hitEnt.GetParent().FindComponent(BaseDoorComponent))))
+				doorAhead = true;
+		}
 
 		if ((blocked || ladder) && next != vector.Zero)
 			Face(u, ctrl, next, dir, ladder, blocked, now);
+
+		if (!stillNow && dist > 0 && dist < 3.0 && (ladder || doorAhead) && ctrl.GetStance() != ECharacterStance.STAND && now >= ctrl.m_fDCONavHold_ms)
+		{
+			ctrl.m_fDCONavHold_ms = now + 3000.0;
+			DCO_Stance.Set(ctrl, ECharacterStance.STAND, "navguard_pre");
+			DCO_Perf.Count("navlink:pre_stand");
+			if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG))
+				DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(me), string.Format("navlink_pre_stand unit=%1 door=%2 ladder=%3 next_dist=%4 beh=%5", DCO_Log.IdUnit(me), DCO_Util.B01(doorAhead), DCO_Util.B01(ladder), Math.Round(dist * 10) / 10, BehName(u)));
+		}
 
 		if (!stillNow)
 		{
 			ctrl.m_vDCONavPos = pos;
 			ctrl.m_fDCONavStill_ms = now;
 			ctrl.m_bDCONavStallLogged = false;
+			ctrl.m_bDCONavSlowLogged = false;
 			return;
+		}
+
+		if (still >= 1000.0 && !ctrl.m_bDCONavSlowLogged && !s_aPath.IsEmpty())
+		{
+			ctrl.m_bDCONavSlowLogged = true;
+			DCO_Perf.Count("navlink:slow");
+			if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG))
+				DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(me), string.Format("navlink_slow unit=%1 still_s=%2 stance=%3 blocked=%4 door=%5 ladder=%6 next_dist=%7 beh=%8", DCO_Log.IdUnit(me), (still / 1000.0).ToString(-1, 1), typename.EnumToString(ECharacterStance, ctrl.GetStance()), DCO_Util.B01(blocked), DCO_Util.B01(doorAhead), DCO_Util.B01(ladder), Math.Round(dist * 10) / 10, BehName(u)));
 		}
 
 		if (still < 2000.0 || s_aPath.IsEmpty())

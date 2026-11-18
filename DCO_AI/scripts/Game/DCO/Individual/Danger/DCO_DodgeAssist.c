@@ -299,16 +299,16 @@ class DCO_DodgeAssist
 		}
 	}
 
-	static void SetMove(SCR_AICombatMoveRequest_Move rq, vector my, vector cand, bool crawl)
+	static void SetMove(SCR_AICombatMoveRequest_Move rq, vector my, vector cand, bool crawl, bool cover)
 	{
 		float d = vector.DistanceXZ(my, cand);
 		rq.m_eType = SCR_EAICombatMoveRequestType.MOVE;
 		rq.m_eDirection = SCR_EAICombatMoveDirection.CUSTOM_POS;
 		rq.m_vMovePos = cand;
-		rq.m_bTryFindCover = false;
+		rq.m_bTryFindCover = cover;
 		rq.m_bFailIfNoCover = false;
 		rq.m_bUseCoverSearchDirectivity = false;
-		rq.m_bCheckCoverVisibility = false;
+		rq.m_bCheckCoverVisibility = cover;
 		rq.m_fCoverSearchSectorHalfAngleRad = -1.0;
 		rq.m_fCoverSearchDistMin = 0;
 		rq.m_fCoverSearchDistMax = d + 2.0;
@@ -468,6 +468,14 @@ class DCO_DodgeAssist
 			LogDir(me, pick, sp.Count(), openBefore, bestOpen, 0, 0);
 			return 0;
 		}
+		bool coverRun = DCO_Stress.T(u, "dodge.cover_run", 1.0) > 0;
+		if (!found && coverRun && !(u.m_ThreatSystem && u.m_ThreatSystem.GetSuppressionMeasure() >= DCO_Stress.T(u, "tm.supp_s1", 0.6)))
+		{
+			pick = "cover_run";
+			DCO_Perf.Count("dodge:cover_run");
+			LogDir(me, pick, sp.Count(), openBefore, -1, 0, 0);
+			return 0;
+		}
 		if (bestOpen == 999)
 		{
 			pick = "no_spot";
@@ -483,7 +491,7 @@ class DCO_DodgeAssist
 		if (found)
 		{
 			pick = "los_break";
-			SetMove(rq, my, best, false);
+			SetMove(rq, my, best, false, coverRun);
 		}
 		else
 		{
@@ -496,7 +504,7 @@ class DCO_DodgeAssist
 				best = my + cd * (crawlMax / cl);
 				best[1] = GetGame().GetWorld().GetSurfaceY(best[0], best[2]);
 			}
-			SetMove(rq, my, best, true);
+			SetMove(rq, my, best, true, coverRun);
 		}
 		LogDir(me, pick, sp.Count(), openBefore, bestOpen, bestAng, vector.DistanceXZ(my, best));
 		return 1;

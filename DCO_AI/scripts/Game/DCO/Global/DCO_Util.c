@@ -172,7 +172,7 @@ class DCO_Util
 
 	static float CombatCohesionDist(AIGroup group, IEntity me, IEntity leader, out bool urban)
 	{
-		urban = SCR_CoverManagerComponent.IsEntityInsideBuilding(me) || SCR_CoverManagerComponent.IsEntityInsideBuilding(leader);
+		urban = DCO_CoverManagerComponent.IsEntityInsideBuilding(me) || DCO_CoverManagerComponent.IsEntityInsideBuilding(leader);
 		float d = 30.0;
 		if (urban)
 			d = 15.0;
@@ -302,7 +302,53 @@ class DCO_Util
 		return 0;
 	}
 
+	protected static ref map<IEntity, float> s_mLaneCacheAt;
+	protected static ref map<IEntity, vector> s_mLaneCacheTgt;
+	protected static ref map<IEntity, float> s_mLaneCacheW;
+	protected static ref map<IEntity, int> s_mLaneCacheRes;
+	protected static ref map<IEntity, IEntity> s_mLaneCacheBlk;
+
 	static int FireLaneCheck(IEntity self, vector target, float minWidth, out IEntity blocker)
+	{
+		blocker = null;
+		if (!self)
+			return 0;
+		if (!s_mLaneCacheAt)
+		{
+			s_mLaneCacheAt = new map<IEntity, float>();
+			s_mLaneCacheTgt = new map<IEntity, vector>();
+			s_mLaneCacheW = new map<IEntity, float>();
+			s_mLaneCacheRes = new map<IEntity, int>();
+			s_mLaneCacheBlk = new map<IEntity, IEntity>();
+		}
+		float lnNow = GetGame().GetWorld().GetWorldTime();
+		float lnAt;
+		vector lnTgt;
+		float lnW;
+		if (s_mLaneCacheAt.Find(self, lnAt) && lnNow - lnAt < 250.0 && s_mLaneCacheTgt.Find(self, lnTgt) && vector.DistanceSq(lnTgt, target) < 4.0 && s_mLaneCacheW.Find(self, lnW) && Math.AbsFloat(lnW - minWidth) < 0.5)
+		{
+			DCO_Perf.Count("ff_lane:cache_hit");
+			blocker = s_mLaneCacheBlk.Get(self);
+			return s_mLaneCacheRes.Get(self);
+		}
+		if (s_mLaneCacheAt.Count() > 512)
+		{
+			s_mLaneCacheAt.Clear();
+			s_mLaneCacheTgt.Clear();
+			s_mLaneCacheW.Clear();
+			s_mLaneCacheRes.Clear();
+			s_mLaneCacheBlk.Clear();
+		}
+		int lnRes = FireLaneCheckRaw(self, target, minWidth, blocker);
+		s_mLaneCacheAt.Set(self, lnNow);
+		s_mLaneCacheTgt.Set(self, target);
+		s_mLaneCacheW.Set(self, minWidth);
+		s_mLaneCacheRes.Set(self, lnRes);
+		s_mLaneCacheBlk.Set(self, blocker);
+		return lnRes;
+	}
+
+	protected static int FireLaneCheckRaw(IEntity self, vector target, float minWidth, out IEntity blocker)
 	{
 		blocker = null;
 		if (!self)
@@ -315,6 +361,9 @@ class DCO_Util
 		AIGroup grp = ctrl.GetControlAIAgent().GetParentGroup();
 		if (!grp)
 			return 0;
+		SCR_ChimeraAIAgent fhAgent = SCR_ChimeraAIAgent.Cast(ctrl.GetControlAIAgent());
+		if (fhAgent && fhAgent.m_UtilityComponent && fhAgent.m_UtilityComponent.m_CombatComponent && fhAgent.m_UtilityComponent.m_CombatComponent.DCO_ForcedHold())
+			return 5;
 
 		float muzzleY = -10000;
 		ChimeraCharacter selfCh = ChimeraCharacter.Cast(self);
@@ -365,10 +414,27 @@ class DCO_Util
 			tanA = 0.06;
 		float volR = Math.Max(minWidth, 0);
 		float reach = len + 20.0;
-		if (len < DCO_Ctx.TuneFor(self, "rt.close_m", 30.0))
+		s_bLaneNear = false;
+		if (len < DCO_Stress.CloseMFor(self))
 		{
 			reach = len + 5.0;
 			DCO_Perf.Count("ff_lane:near_reach");
+			if (DCO_Ctx.TuneFor(self, "ff.near", 1.0) > 0)
+			{
+				s_bLaneNear = true;
+				DCO_Perf.Count("ff_lane:near_rule");
+				if (!s_mNearLog)
+					s_mNearLog = new map<IEntity, float>();
+				float nowNear = NowS();
+				float atNear;
+				if (!s_mNearLog.Find(self, atNear) || nowNear - atNear >= 10.0)
+				{
+					s_mNearLog.Set(self, nowNear);
+					if (s_mNearLog.Count() > 600)
+						s_mNearLog.Clear();
+					DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(self), string.Format("ff_lane_near unit=%1 dist=%2 rule=between_0.6m", DCO_Log.IdUnit(self), Math.Round(len)));
+				}
+			}
 		}
 
 		array<AIAgent> agents = {};
@@ -435,6 +501,8 @@ class DCO_Util
 	}
 
 	protected static ref array<IEntity> s_aLaneNear;
+	protected static bool s_bLaneNear;
+	protected static ref map<IEntity, float> s_mNearLog;
 
 	protected static bool OnLaneNear(IEntity e)
 	{
@@ -495,6 +563,11 @@ class DCO_Util
 		float side = (rel - dir * along).Length();
 		bool mgZone = mg && along <= 30.0 && side <= 1.0 + along * 0.08;
 		bool lane = along >= 0.5 && along <= reach && side < LaneHalfWidth(along, len, volR, tanA);
+		if (s_bLaneNear)
+		{
+			lane = along >= 0.5 && along < len && side < 0.6;
+			mgZone = mg && along < len && side <= 0.6 + along * 0.04;
+		}
 		if (!mgZone && !lane)
 			return 0;
 		if (LineClearsHead(e, along, len, muzzleY, aimY))
@@ -559,6 +632,8 @@ class DCO_Util
 			return "mg_zone";
 		if (r == 4)
 			return "nofire_area";
+		if (r == 5)
+			return "forced_hold";
 		return "none";
 	}
 
@@ -915,11 +990,24 @@ class DCO_Util
 	{
 		if (!grp)
 			return false;
+		if (grp.IsSlave())
+			return true;
 		IEntity leader = grp.GetLeaderEntity();
 		if (grp.GetLeaderID() > 0 || SCR_CharacterHelper.IsPlayer(leader) || (!leader && grp.GetTotalPlayerCount() > 0))
 			return true;
 		array<int> ids = grp.GetPlayerIDs();
 		return ids && !ids.IsEmpty();
+	}
+
+	static bool PlayerOrderActive(SCR_AIUtilityComponent u)
+	{
+		if (!u || !u.GetAIAgent())
+			return false;
+		SCR_AIGroup grp = SCR_AIGroup.Cast(u.GetAIAgent().GetParentGroup());
+		if (!grp || !grp.IsSlave() || !grp.GetCurrentWaypoint())
+			return false;
+		SCR_AIGroup master = grp.GetMaster();
+		return !master || (master.DCO_GetPlayerRoles() & 16) == 0;
 	}
 
 	static FactionKey FactionKeyOf(IEntity ent, bool useDefault)

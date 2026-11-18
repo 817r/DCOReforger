@@ -56,14 +56,14 @@ class DCO_LearnStore
 		return (s[1] + prior * 4.0) / (s[0] + 4.0);
 	}
 
-	static float MultOf(float post, float prior)
+	static float MultOf(float post, float prior, float cap = 0.25)
 	{
-		return 1.0 + 0.25 * Math.Clamp((post - prior) * 2.0, -1.0, 1.0);
+		return 1.0 + cap * Math.Clamp((post - prior) * 2.0, -1.0, 1.0);
 	}
 
-	float Mult(string k, float prior, out float n)
+	float Mult(string k, float prior, out float n, float cap = 0.25)
 	{
-		return MultOf(Post(k, prior, n), prior);
+		return MultOf(Post(k, prior, n), prior, cap);
 	}
 
 	void Add(string k, float value, float weight = 1.0)
@@ -241,18 +241,48 @@ class DCO_LearnStore
 			sessions = 0;
 		m_iSessions = sessions + 1;
 		bool decay = m_iSessions % 10 == 0;
+		int maxEntries = Math.Round(DCO_Ctx.TuneG("learn.max_entries", 4000.0));
+		float minN = 0;
+		int kept = 0;
+		int pruned = 0;
+		if (maxEntries > 0 && keys.Count() > maxEntries)
+		{
+			minN = 0.5;
+			for (int pass = 0; pass < 14; pass++)
+			{
+				kept = 0;
+				foreach (float cn : ns)
+				{
+					if (cn >= minN)
+						kept++;
+				}
+				if (kept <= maxEntries)
+					break;
+				minN = minN * 2;
+			}
+		}
 		foreach (int i, string k : keys)
 		{
 			float n = ns[i];
 			float v = vs[i];
 			if (n < 0.05 && v <= 0)
 				continue;
+			if (minN > 0 && n < minN)
+			{
+				pruned++;
+				continue;
+			}
 			if (decay)
 			{
 				n = n * 0.5;
 				v = v * 0.5;
 			}
 			m_mStat.Set(k, Vector(n, v, 0));
+		}
+		if (pruned > 0)
+		{
+			DCO_Perf.Count("learn:pruned");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("learn_prune file=%1 max=%2 min_n=%3 pruned=%4 kept=%5", m_sFile, maxEntries, minN.ToString(-1, 1), pruned, m_mStat.Count()));
 		}
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("learn_load file=%1 entries=%2 version=1 sessions=%3 decay=%4", m_sFile, keys.Count(), m_iSessions, DCO_Util.B01(decay)));
 	}

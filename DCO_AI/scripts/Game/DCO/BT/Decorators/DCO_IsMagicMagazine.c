@@ -12,6 +12,7 @@ class DCO_IsAIMagicMagazine : DecoratorScripted
 
 	protected override bool TestFunction(AIAgent owner)
 	{
+		DCO_BtWatch.Mark("HandleAmmo");
 		if (!m_InfoComponent)
 		{
 			return false;

@@ -65,7 +65,8 @@ enum DCO_EROEMode
 {
 	HOLD,
 	TIGHT,
-	FREE
+	FREE,
+	FORCED_HOLD
 }
 
 [BaseContainerProps()]

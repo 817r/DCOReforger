@@ -28,8 +28,8 @@ class DCO_CQC
 		if (!target || !target.GetTargetEntity())
 			return false;
 
-		IEntity myBuilding = SCR_CoverManagerComponent.DCO_GetBuildingAt(utility.m_OwnerEntity);
-		return myBuilding && SCR_CoverManagerComponent.DCO_GetBuildingAt(target.GetTargetEntity()) == myBuilding;
+		IEntity myBuilding = DCO_CoverManagerComponent.DCO_GetBuildingAt(utility.m_OwnerEntity);
+		return myBuilding && DCO_CoverManagerComponent.DCO_GetBuildingAt(target.GetTargetEntity()) == myBuilding;
 	}
 
 	static bool IsCloseFight(SCR_AIUtilityComponent utility)
@@ -41,7 +41,7 @@ class DCO_CQC
 	{
 		if (DCO_AssaultLock.CheckBlock(DCO_BldLearn.UtilOf(me), "prone"))
 			return false;
-		if (threatDist >= SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST && !SCR_CoverManagerComponent.IsEntityInsideBuilding(me))
+		if (threatDist >= SCR_AICombatMoveUtils.CLOSE_RANGE_COMBAT_DIST && !DCO_CoverManagerComponent.IsEntityInsideBuilding(me))
 			return ProneRoll(me);
 		return CQBProneRoll(me);
 	}
@@ -303,6 +303,11 @@ class DCO_CQC
 		}
 		corner = ahead - right * 2.5;
 		return -1;
+	}
+
+	static bool LineFrom(ChimeraCharacter self, IEntity target, vector from, vector dir, float dist, vector targetPos)
+	{
+		return IsSideOpen(self, target, from, dir, targetPos, dist);
 	}
 
 	protected static bool IsSideOpen(ChimeraCharacter self, IEntity target, vector eye, vector side, vector targetPos, float offset)

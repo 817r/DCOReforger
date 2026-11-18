@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualMagicAmmoAttribute : SCR_ValidTypeBaseEditorAttribute
+class DCO_AIIndividualMagicAmmoAttribute : SCR_ValidTypeBaseEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{

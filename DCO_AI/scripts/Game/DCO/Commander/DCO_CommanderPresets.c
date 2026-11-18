@@ -1,5 +1,23 @@
 class DCO_CommanderPresets
 {
+	protected static ref array<string> s_aAttrs;
+
+	static array<string> Attrs()
+	{
+		if (s_aAttrs)
+			return s_aAttrs;
+		s_aAttrs = {};
+		foreach (string className : DCO_SettingsPersist.Classes())
+		{
+			typename t = className.ToType();
+			if (!t)
+				continue;
+			if (t.IsInherited(DCO_ThreatTuneFloatAttribute) || t.IsInherited(DCO_ThreatTuneBoolAttribute) || t.IsInherited(DCO_ArtyTuneFloatAttribute) || t.IsInherited(DCO_ArtyTuneBoolAttribute))
+				s_aAttrs.Insert(className);
+		}
+		return s_aAttrs;
+	}
+
 	static string Dir()
 	{
 		return "$profile:DCO/CommanderPresets/";
@@ -238,6 +256,50 @@ modded class AICommander_BaseComponent
 		return true;
 	}
 
+	void DCO_SavePresetState(SaveContext context)
+	{
+		context.WriteValue("active_preset", m_sDCOActivePreset);
+		m_DCOPSave = new JsonSaveContext();
+		m_iDCOPMode = 1;
+		DCO_PresetSyncAll(false);
+		m_iDCOPMode = 0;
+		string json = m_DCOPSave.SaveToString();
+		m_DCOPSave = null;
+		DCO_SettingsPersist.WriteParts(context, "preset_json", json);
+	}
+
+	void DCO_LoadPresetState(LoadContext context)
+	{
+		string active;
+		context.ReadValue("active_preset", active);
+		string json = DCO_SettingsPersist.ReadParts(context, "preset_json");
+		bool ok;
+		if (!json.IsEmpty())
+		{
+			m_DCOPLoad = new JsonLoadContext();
+			ok = m_DCOPLoad.LoadFromString(json);
+			if (ok)
+			{
+				m_iDCOPMode = 0;
+				m_iDCOPApplied = 0;
+				DCO_PresetSyncAll(true);
+			}
+			m_DCOPLoad = null;
+			m_iAllowedTactics = m_iAllowedTactics & 8191;
+			m_iAllowedDefenseTactics = m_iAllowedDefenseTactics & 255;
+			if (ok)
+			{
+				m_eCommanderMode = m_eCommanderModeExternal;
+				ApplyPersonalityDerived();
+			}
+		}
+		m_sDCOActivePreset = active;
+		m_sDCOPresetSig = string.Empty;
+		m_bDCOPresetDirty = false;
+		DCO_Perf.Count("persist:cmd_preset");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("persist_cmd_preset cmd=%1 active=%2 ok=%3 applied=%4 len=%5", m_sCommanderUID, active, DCO_Util.B01(ok), m_iDCOPApplied, json.Length()));
+	}
+
 	bool DCO_SavePreset(string name)
 	{
 		FileIO.MakeDirectory("$profile:DCO");
@@ -398,6 +460,10 @@ modded class AICommander_BaseComponent
 		int maxGroups = DCO_PI("MaxAttackGroups", m_iMaxAttackGroups, 1, 20);
 		bool maxRead = m_iDCOPApplied > before;
 
+		before = m_iDCOPApplied;
+		int pts = DCO_PI("PointsStock", m_iPointsStock, -1, 5000);
+		bool ptsRead = m_iDCOPApplied > before;
+
 		if (m_iDCOPMode == 1)
 			return;
 
@@ -423,6 +489,8 @@ modded class AICommander_BaseComponent
 		m_iMaxAttackGroups = maxGroups;
 		if (maxRead && runtime)
 			m_bMaxAttackInit = true;
+		if (ptsRead)
+			SetPointsStock(pts);
 	}
 
 	protected void DCO_PresetSync0()
@@ -434,6 +502,9 @@ modded class AICommander_BaseComponent
 		m_bUseSynchronizedAttack = DCO_PB("UseSynchronizedAttack", m_bUseSynchronizedAttack);
 		m_fSyncAttackMaxWaitTime = DCO_PF("SyncAttackMaxWaitTime", m_fSyncAttackMaxWaitTime, 0, 100000);
 		m_fReconWaitTimeout = DCO_PF("ReconWaitTimeout", m_fReconWaitTimeout, 0, 100000);
+		m_fDCOOpStallS = DCO_PF("OpStallS", m_fDCOOpStallS, 60, 900);
+		m_fDCOOpIntelPct = DCO_PF("OpIntelPct", m_fDCOOpIntelPct, 10, 100);
+		m_fDCOOpLossPct = DCO_PF("OpLossPct", m_fDCOOpLossPct, 5, 75);
 	}
 
 	protected void DCO_PresetSync1()
@@ -442,7 +513,6 @@ modded class AICommander_BaseComponent
 		m_fCaptureCheckInterval = DCO_PF("CaptureCheckInterval", m_fCaptureCheckInterval, 0, 100000);
 		m_fFrontlineReconRadius = DCO_PF("FrontlineReconRadius", m_fFrontlineReconRadius, 0, 100000);
 		m_fFrontlineReconDuration = DCO_PF("FrontlineReconDuration", m_fFrontlineReconDuration, 0, 100000);
-		m_iGarrisonGroupsPerObjective = DCO_PI("GarrisonGroupsPerObjective", m_iGarrisonGroupsPerObjective, 0, 100000);
 		m_sDCOGarrisonWpOverride = DCO_PS("GarrisonWaypointPrefab", GetGarrisonWaypointPrefab());
 		m_eGarrisonMode = DCO_PI("GarrisonMode", m_eGarrisonMode, 0, 2);
 		m_fDefendEngageDist = DCO_PF("DefendEngageDist", m_fDefendEngageDist, 0, 1000);
@@ -451,9 +521,6 @@ modded class AICommander_BaseComponent
 		m_fVehiclePatrolRadiusMul = DCO_PF("VehiclePatrolRadiusMul", m_fVehiclePatrolRadiusMul, 1, 5);
 		m_iMaxFrontlineRecon = DCO_PI("MaxFrontlineRecon", m_iMaxFrontlineRecon, 0, 100000);
 		m_fMaxPatrolPullDistance = DCO_PF("MaxPatrolPullDistance", m_fMaxPatrolPullDistance, 0, 100000);
-		m_fAssaultSuppressDuration = DCO_PF("AssaultSuppressDuration", m_fAssaultSuppressDuration, 0, 100000);
-		m_fRetreatCoverDuration = DCO_PF("RetreatCoverDuration", m_fRetreatCoverDuration, 0, 100000);
-		m_fRetreatCoverRadius = DCO_PF("RetreatCoverRadius", m_fRetreatCoverRadius, 0, 100000);
 		m_fTransportDistanceThreshold = DCO_PF("TransportDistanceThreshold", m_fTransportDistanceThreshold, 0, 100000);
 		m_fVehicleSearchRadius = DCO_PF("VehicleSearchRadius", m_fVehicleSearchRadius, 25, 1000);
 		m_fBaseRadius = DCO_PF("BaseRadius", m_fBaseRadius, 0, 100000);
@@ -501,8 +568,6 @@ modded class AICommander_BaseComponent
 
 	protected void DCO_PresetSync6()
 	{
-		m_bEnableKeyDefendSpotEvaluation = DCO_PB("EnableKeyDefendSpotEvaluation", m_bEnableKeyDefendSpotEvaluation);
-		m_iMaxKeyDefendPositions = DCO_PI("MaxKeyDefendPositions", m_iMaxKeyDefendPositions, 0, 100000);
 		m_iMinSector = DCO_PI("MinSector", m_iMinSector, 0, 100000);
 		m_iMaxSector = DCO_PI("MaxSector", m_iMaxSector, 0, 100000);
 		m_fArcPerSector = DCO_PF("ArcPerSector", m_fArcPerSector, 0, 100000);
@@ -558,8 +623,6 @@ modded class AICommander_BaseComponent
 
 	protected void DCO_PresetSync10()
 	{
-		m_fPatrolLinkRadius = DCO_PF("PatrolLinkRadius", m_fPatrolLinkRadius, 0, 100000);
-		m_fLinkPatrolChance = DCO_PF("LinkPatrolChance", m_fLinkPatrolChance, 0, 1);
 	}
 
 	protected void DCO_PresetSync11()
@@ -587,6 +650,7 @@ modded class AICommander_BaseComponent
 		m_bPlayerEarlyRelease = DCO_PB("PlayerEarlyRelease", m_bPlayerEarlyRelease);
 		m_iPlayerFailLimit = DCO_PI("PlayerFailLimit", m_iPlayerFailLimit, 0, 100000);
 		m_fPlayerBonusMinutes = DCO_PF("PlayerBonusMinutes", m_fPlayerBonusMinutes, 0, 100000);
+		m_bDCOPlayersAcceptAtStart = DCO_PB("PlayersAcceptAtStart", m_bDCOPlayersAcceptAtStart);
 	}
 
 	protected void DCO_PresetSync14()
@@ -640,6 +704,30 @@ modded class AICommander_BaseComponent
 		m_bDCORelentless = DCO_PB("Relentless", m_bDCORelentless);
 	}
 
+	protected void DCO_PresetSyncAttrs()
+	{
+		SCR_EditableEntityComponent ed = DCO_SettingsPersist.Editable(GetOwner());
+		if (!ed)
+		{
+			DCO_Perf.Count("preset:no_editable");
+			return;
+		}
+		foreach (string className : DCO_CommanderPresets.Attrs())
+		{
+			SCR_BaseEditorAttribute a = DCO_SettingsPersist.Attr(className);
+			if (!a)
+				continue;
+			SCR_BaseEditorAttributeVar cur = a.ReadVariable(ed, null);
+			if (!cur)
+				continue;
+			float c = cur.GetVector()[0];
+			float v = DCO_PF(className, c, -1000000, 1000000);
+			if (m_iDCOPMode == 1 || Math.AbsFloat(v - c) < 0.0001)
+				continue;
+			a.WriteVariable(ed, SCR_BaseEditorAttributeVar.CreateVector(Vector(v, 0, 0)), null, -1);
+		}
+	}
+
 	protected void DCO_PresetSyncAll(bool runtime)
 	{
 		DCO_PresetSync0();
@@ -659,6 +747,7 @@ modded class AICommander_BaseComponent
 		DCO_PresetSync14();
 		DCO_PresetSync15();
 		DCO_PresetSync16();
+		DCO_PresetSyncAttrs();
 		DCO_PresetSyncManual(runtime);
 	}
 }

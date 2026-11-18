@@ -98,6 +98,7 @@ modded class SCR_AICombatComponent
 modded class SCR_AIAttackBehavior
 {
 	protected bool m_bDCONearFloorLogged;
+	protected bool m_bDCOPointBlankLogged;
 
 	override float CustomEvaluate()
 	{
@@ -111,7 +112,19 @@ modded class SCR_AIAttackBehavior
 		{
 			bool holdFire = p <= PRIORITY_BEHAVIOR_ATTACK_DISREGARD_THREATS;
 			float nd = vector.Distance(t.GetTargetEntity().GetOrigin(), m_Utility.m_OwnerEntity.GetOrigin());
-			bool nearSeen = t.GetTimeSinceSeen() < 1.5 && nd < DCO_Stress.T(m_Utility, "rt.close_m", 30.0);
+			float closeM = DCO_Stress.CloseM(m_Utility);
+			float pbM = DCO_Stress.T(m_Utility, "rt.pointblank_m", 15.0);
+			bool nearSeen = t.GetTimeSinceSeen() < 1.5 && nd < closeM;
+			if (!holdFire && nearSeen && nd < pbM)
+			{
+				DCO_Perf.Count("atk:point_blank");
+				if (!m_bDCOPointBlankLogged)
+				{
+					m_bDCOPointBlankLogged = true;
+					DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("attack_point_blank unit=%1 tgt=%2 dist=%3 from_p=%4 to_p=%5", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), DCO_Log.IdUnit(t.GetTargetEntity()), Math.Round(nd), Math.Round(p), Math.Round(PRIORITY_BEHAVIOR_ATTACK_HIGH_PRIORITY)));
+				}
+				return PRIORITY_BEHAVIOR_ATTACK_HIGH_PRIORITY;
+			}
 			if ((!holdFire && nearSeen) || (holdFire && closeMatch))
 			{
 				if (holdFire)
@@ -124,7 +137,7 @@ modded class SCR_AIAttackBehavior
 					string fb = "-";
 					if (m_Utility.GetCurrentBehavior())
 						fb = m_Utility.GetCurrentBehavior().ClassName();
-					DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("attack_near_floor unit=%1 tgt=%2 dist=%3 from_p=%4 to_p=%5 hold_fire=%6 beh=%7", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), DCO_Log.IdUnit(t.GetTargetEntity()), Math.Round(nd), Math.Round(p), Math.Round(PRIORITY_BEHAVIOR_ATTACK_SELECTED), DCO_Util.B01(holdFire), fb));
+					DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("attack_near_floor unit=%1 tgt=%2 dist=%3 from_p=%4 to_p=%5 hold_fire=%6 beh=%7 close_m=%8", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), DCO_Log.IdUnit(t.GetTargetEntity()), Math.Round(nd), Math.Round(p), Math.Round(PRIORITY_BEHAVIOR_ATTACK_SELECTED), DCO_Util.B01(holdFire), fb, Math.Round(closeM)));
 				}
 				p = PRIORITY_BEHAVIOR_ATTACK_SELECTED;
 				if (holdFire)
@@ -156,7 +169,7 @@ modded class SCR_AICombatMoveLogic_Attack
 			return false;
 		m_fDCODuckNext_ms = now + 6000.0;
 		vector threat = close.GetTargetEntity().GetOrigin();
-		IEntity building = SCR_CoverManagerComponent.DCO_GetBuildingAt(m_MyEntity);
+		IEntity building = DCO_CoverManagerComponent.DCO_GetBuildingAt(m_MyEntity);
 		string where = "outdoor";
 		if (building)
 		{

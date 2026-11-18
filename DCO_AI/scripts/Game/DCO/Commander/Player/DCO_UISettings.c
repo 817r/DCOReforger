@@ -22,6 +22,8 @@ class DCO_UISettings
 	protected static float s_fContactHold;
 	protected static bool s_bContactSound;
 	protected static int s_iMapPalette;
+	protected static float s_fObjWidth;
+	protected static float s_fObjFill;
 	protected static float s_fOfferScale;
 	protected static string s_sOfferPos;
 	protected static float s_fOfferOffX;
@@ -155,6 +157,8 @@ class DCO_UISettings
 	static float GetContactHold()		{ Load(); return s_fContactHold; }
 	static bool GetContactSound()		{ Load(); return s_bContactSound; }
 	static int GetMapPalette()			{ Load(); return s_iMapPalette; }
+	static float GetObjWidth()			{ Load(); return s_fObjWidth; }
+	static float GetObjFill()			{ Load(); return s_fObjFill; }
 
 	static void SetScale(float v)			{ Load(); s_fScale = Math.Clamp(v, 0.5, 1.5); Save(); }
 	static void SetPos(string p)			{ Load(); if (Positions().Contains(p)) s_sPos = p; Save(); }
@@ -166,6 +170,8 @@ class DCO_UISettings
 	static void SetContactHold(float v)		{ Load(); s_fContactHold = Math.Clamp(v, 2, 15); Save(); }
 	static void SetContactSound(bool b)		{ Load(); s_bContactSound = b; Save(); }
 	static void SetMapPalette(int i)		{ Load(); s_iMapPalette = Math.ClampInt(i, 0, 2); Save(); }
+	static void SetObjWidth(float v)		{ Load(); s_fObjWidth = Math.Clamp(v, 1, 6); Save(); }
+	static void SetObjFill(float v)			{ Load(); s_fObjFill = Math.Clamp(v, 0, 40); Save(); }
 
 	static void ResetAll()
 	{
@@ -188,6 +194,8 @@ class DCO_UISettings
 		s_fContactHold = 5.0;
 		s_bContactSound = true;
 		s_iMapPalette = 0;
+		s_fObjWidth = 3.0;
+		s_fObjFill = 10.0;
 		s_fOfferScale = 0.9;
 		s_sOfferPos = "topright";
 		s_fOfferOffX = 40.0;
@@ -338,6 +346,10 @@ class DCO_UISettings
 			s_bContactSound = b;
 		if (ctx.ReadValue("mapPalette", i))
 			s_iMapPalette = Math.ClampInt(i, 0, 2);
+		if (ctx.ReadValue("mapObjWidth", f))
+			s_fObjWidth = Math.Clamp(f, 1, 6);
+		if (ctx.ReadValue("mapObjFill", f))
+			s_fObjFill = Math.Clamp(f, 0, 40);
 		if (ctx.ReadValue("offerScale", f))
 			s_fOfferScale = Math.Clamp(f, 0.5, 1.5);
 		if (ctx.ReadValue("offerPosition", s) && Positions().Contains(s))
@@ -371,6 +383,8 @@ class DCO_UISettings
 		ctx.WriteValue("contactHold", s_fContactHold);
 		ctx.WriteValue("contactSound", s_bContactSound);
 		ctx.WriteValue("mapPalette", s_iMapPalette);
+		ctx.WriteValue("mapObjWidth", s_fObjWidth);
+		ctx.WriteValue("mapObjFill", s_fObjFill);
 		ctx.WriteValue("offerScale", s_fOfferScale);
 		ctx.WriteValue("offerPosition", s_sOfferPos);
 		ctx.WriteValue("offerOffsetX", s_fOfferOffX);

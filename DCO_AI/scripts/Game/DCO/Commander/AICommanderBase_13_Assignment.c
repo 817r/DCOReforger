@@ -303,22 +303,11 @@ modded class AICommander_BaseComponent
 	                    syncBand = m_DoctrineRt.GetBand(obj);
 	                bool ratioOverride = timedOut && !ratioOk && !fxGo.IsEmpty() && (syncBand == DCO_EForceBand.STRONG || syncBand == DCO_EForceBand.FAVORABLE);
 
-	                if (timedOut && !ratioOk && DCO_RelentlessCmd())
+	                if (timedOut && !ratioOk && !ratioOverride)
 	                {
-	                    DCO_Perf.Count("relentless_cmd:release_undermanned");
-	                    if (DCO_RoleOnce(obj.GetLogName() + "|relentless_release", 60.0))
-	                        DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("relentless_cmd cmd=%1 obj=%2 action=release_undermanned here=%3/%4", m_sCommanderUID, obj.GetLogName(), stagedHere, stagedTotal));
-	                }
-	                if (timedOut && !ratioOk && !ratioOverride && !DCO_RelentlessCmd())
-	                {
-	                    string fxText = fxGo;
-	                    if (fxText.IsEmpty())
-	                        fxText = "none";
-	                    m_sDCOAbortExtra = " band=" + DCO_Doctrine.BandName(syncBand) + " fix_go=" + fxText;
-	                    DCO_DoctrineStaging(obj, stagedHere, stagedTotal, worldTime, "replan");
-	                    AbortUndermannedAttack(obj, worldTime);
-	                    m_sDCOAbortExtra = "";
-	                    return;
+	                    DCO_Perf.Count("sync:release_undermanned");
+	                    if (DCO_RoleOnce(obj.GetLogName() + "|undermanned_release", 60.0))
+	                        DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("sync_release_undermanned cmd=%1 obj=%2 here=%3/%4 relentless=%5 (deadline reached, attacking with what arrived)", m_sCommanderUID, obj.GetLogName(), stagedHere, stagedTotal, DCO_Util.B01(DCO_RelentlessCmd())));
 	                }
 
 	                bool tacticReady = !isFull && arrived && ratioOk && m_mFirstArrivalTime.Contains(obj) && worldTime - m_mFirstArrivalTime.Get(obj) > 30.0 && DCO_FlanksReady(obj);
@@ -355,6 +344,7 @@ modded class AICommander_BaseComponent
 	                    DCO_Perf.Count("sync_release:" + relWhy);
 	                    DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("sync_release cmd=%1 obj=%2 timeout=%3 reason=%4 here=%5/%6", m_sCommanderUID, obj.GetLogName(), timedOut, relWhy, stagedHere, stagedTotal));
 	                    DCO_DoctrineStaging(obj, stagedHere, stagedTotal, worldTime, "go");
+	                    DCO_Briefing.AttackFlag(this, m_Tactics.GetPlan(obj), 0, "brief_phase_go");
 	                    m_bDCOReleaseAll = DCO_RelentlessCmd() || relWhy == "fix_ready" || relWhy == "fix_contact" || relWhy == "ratio_override" || m_iDCOStageContactFwd > 0;
 	                    ReleaseSynchronizedAssault(obj, worldTime);
 	                    m_bDCOReleaseAll = false;
@@ -477,7 +467,7 @@ modded class AICommander_BaseComponent
 		bool priority = m_Ops && m_Ops.GetMainEffort() == obj && GetDoctrineRuntime() && GetDoctrineRuntime().GetBand(obj) == DCO_EForceBand.UNKNOWN;
 		int reconN;
 		if (obj.GetObjectiveType() == CMD_EObjectiveType.RECON)
-			reconN = DCO_Force.Max(this, "recon", 1);
+			reconN = DCO_Force.Max(this, "recon");
 		else
 			reconN = DCO_Force.Count(this, "recon", 1);
 		if (reconN < 1 && priority)
@@ -502,6 +492,8 @@ modded class AICommander_BaseComponent
 					continue;
 				DCO_EGroupTask ct = cand.GetTask();
 				if (ct != DCO_EGroupTask.NONE && ct != DCO_EGroupTask.PATROL)
+					continue;
+				if (!DCO_GroupJobs.Gate(this, cand, DCO_EGroupJob.RECON, "recon_priority"))
 					continue;
 				float cd = vector.DistanceXZ(cand.GetOwner().GetOrigin(), obj.GetOwner().GetOrigin());
 				if (cd < bd)
@@ -569,6 +561,43 @@ modded class AICommander_BaseComponent
 		SpawnMoveRoute(reconGrp, reconGrp.GetOwner().GetOrigin(), reconPos, worldTime);
 		DCO_Perf.Count("recon:obj_send");
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("recon_obj_send cmd=%1 grp=%2 obj=%3 spot_from_center=%4 radius=%5 spot_deg=%6 avoid_deg=%7", m_sCommanderUID, DCO_Log.IdGroup(AIGroup.Cast(reconGrp.GetOwner())), obj.GetLogName(), Math.Round(vector.DistanceXZ(reconPos, objCenter)), Math.Round(obj.GetRadius()), Math.Round(DCO_CommanderOps.BearingOfDir(reconPos - objCenter)), Math.Round(DCO_CommanderOps.BearingOfDir(avoidDir))));
+	}
+
+	bool DCO_ReconRelocate(DCO_GroupUtilityComponent g, vector enemy)
+	{
+		if (!g || !g.GetOwner() || g.IsPlayerGroup())
+			return false;
+		SCR_AIGroup grp = SCR_AIGroup.Cast(g.GetOwner());
+		vector from = g.GetOwner().GetOrigin();
+		if (grp && grp.GetLeaderEntity())
+			from = grp.GetLeaderEntity().GetOrigin();
+		vector center = enemy;
+		float minDist = m_fReconMinStandoff;
+		string objName = "-";
+		CMD_AICommanderObjectiveComponent obj = g.GetGroupObjective();
+		if (obj && obj.GetOwner())
+		{
+			center = obj.GetOwner().GetOrigin();
+			minDist = obj.GetRadius() + m_fReconMinStandoff;
+			objName = obj.GetLogName();
+		}
+		vector avoid = from - center;
+		avoid[1] = 0;
+		if (avoid.Length() > 1.0)
+			avoid.Normalize();
+		else
+			avoid = vector.Zero;
+		vector spot = CMD_ReconSpotFinder.FindBestReconSpot(from, center, minDist, minDist + m_fReconBand, m_iReconSpotSamples, avoid, 1.0);
+		float move = vector.DistanceXZ(from, spot);
+		bool ok = spot != vector.Zero && move >= 40.0;
+		if (ok)
+		{
+			g.CompleteAllWaypoints();
+			SpawnMoveRoute(g, from, spot, DCO_Util.NowS());
+		}
+		DCO_Perf.Count("recon:relocate");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("recon_relocate cmd=%1 grp=%2 obj=%3 ok=%4 move_m=%5 spot_from_center=%6 why=observe_limit", m_sCommanderUID, DCO_Log.IdGroup(grp), objName, DCO_Util.B01(ok), Math.Round(move), Math.Round(vector.DistanceXZ(spot, center))));
+		return ok;
 	}
 
 	protected vector GetNearestSafePosition(vector fromPos)

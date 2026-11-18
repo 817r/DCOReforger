@@ -1154,7 +1154,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 		BaseTarget dnT;
 		if (utility.m_CombatComponent)
 			dnT = utility.m_CombatComponent.GetCurrentTarget();
-		if (dnT && dnT.GetTargetEntity() && utility.m_CombatComponent.IsTargetVisible(dnT) && vector.Distance(dnT.GetTargetEntity().GetOrigin(), utility.m_OwnerEntity.GetOrigin()) < DCO_Stress.T(utility, "rt.close_m", 30.0))
+		if (dnT && dnT.GetTargetEntity() && utility.m_CombatComponent.IsTargetVisible(dnT) && vector.Distance(dnT.GetTargetEntity().GetOrigin(), utility.m_OwnerEntity.GetOrigin()) < DCO_Stress.CloseM(utility))
 		{
 			if (!utility.m_CombatMoveState || utility.m_CombatMoveState.IsInValidCover())
 			{
@@ -1207,6 +1207,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 			DCO_Perf.Count("tm:dodge_stressed");
 		}
 		string gateWhy = DCO_DodgeAssist.GateBypass(utility);
+		bool dcoForced = gateWhy == "hit" || gateWhy == "nearmiss2";
 		if (gate > 0 && !gateWhy.IsEmpty())
 		{
 			gate = 0;
@@ -1285,7 +1286,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
-		if (!compromised && !DCO_CoverMoveBudget.CanMove(ownerEnt, m_fSharedMoveCooldown))
+		if (!compromised && !dcoForced && !DCO_CoverMoveBudget.CanMove(ownerEnt, m_fSharedMoveCooldown))
 		{
 			DCO_DodgeNote("cov_budget", false);
 			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: move budget (last move %1s ago, minimum %2s)",
@@ -1293,14 +1294,14 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(ownerEnt))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(ownerEnt))
 		{
 			DCO_DodgeNote("cov_in_building", false);
 			if (dbg) DebugCover(ownerEnt, "COVER STOP: inside a building");
 			return;
 		}
 
-		if (shotCount < shotThreshold)
+		if (!dcoForced && shotCount < shotThreshold)
 		{
 			DCO_DodgeNote("cov_shots", false);
 			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: shots %1/%2 (window %3s)", shotCount, shotThreshold, shotWindow_s));
@@ -1309,7 +1310,9 @@ modded class SCR_AIDangerReaction_WeaponFired
 
 		if (compromised)
 			DCO_DodgeNote("compromised_go", true);
-		if (!compromised && !CanDodgeNow(ownerEnt, cooldown_s))
+		if (dcoForced)
+			DCO_DodgeNote("forced_" + gateWhy, true);
+		if (!compromised && !dcoForced && !CanDodgeNow(ownerEnt, cooldown_s))
 		{
 			DCO_DodgeNote("cov_cooldown", false);
 			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: cooldown active (%1s)", cooldown_s));
@@ -1334,7 +1337,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 			chance = 1.0;
 
 		float coverRoll = Math.RandomFloat01();
-		if (coverRoll >= chance)
+		if (!dcoForced && coverRoll >= chance)
 		{
 			DCO_DodgeNote("cov_roll", false);
 			if (dbg) DebugCover(ownerEnt, string.Format("COVER STOP: roll failed roll=%1 chance=%2 (base=%3 pers=%4 threat=%5) -> cooldown still runs",
@@ -1722,7 +1725,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 			return;
 		}
 
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(utility.m_OwnerEntity))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(utility.m_OwnerEntity))
 		{
 			DCO_DodgeNote("dg_in_building", false);
 			return;

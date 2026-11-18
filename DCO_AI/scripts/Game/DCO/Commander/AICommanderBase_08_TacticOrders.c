@@ -83,6 +83,7 @@ modded class AICommander_BaseComponent
 		if (!DCO_OrderAllowed(g, "assault"))
 			return;
 
+		bool heldSlot = g.GetGroupObjective() == obj && TaskCountsSlot(g.GetTask());
 		g.CompleteAllWaypoints();
 		vector center = obj.GetOwner().GetOrigin();
 		vector from = g.GetOwner().GetOrigin();
@@ -97,10 +98,9 @@ modded class AICommander_BaseComponent
 		DCO_MarkRelentless(g);
 
 		if (g.GetGroupObjective() != obj)
-		{
 			g.SetGroupObjective(obj);
+		if (!heldSlot)
 			obj.SetObjectiveGroup(m_sFactionKey, 1);
-		}
 	}
 
 	void DCO_MarkRelentless(DCO_GroupUtilityComponent g)

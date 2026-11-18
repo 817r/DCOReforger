@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalDodgeChanceAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalDodgeChanceAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -83,7 +83,7 @@ class DCO_GlobalArmorFearScaleAttribute : DCO_GlobalFloatAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalDodgeCooldownAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalDodgeCooldownAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -117,7 +117,7 @@ class SCR_AIGlobalDodgeCooldownAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalDodgeMaxDistAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalDodgeMaxDistAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -151,7 +151,7 @@ class SCR_AIGlobalDodgeMaxDistAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalDodgeSearchDistAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalDodgeSearchDistAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -185,7 +185,7 @@ class SCR_AIGlobalDodgeSearchDistAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalTakeCoverChanceAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalTakeCoverChanceAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -219,7 +219,7 @@ class SCR_AIGlobalTakeCoverChanceAttribute : SCR_BaseValueListEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalDodgeScaleByPersonalityAttribute : SCR_BaseEditorAttribute
+class DCO_AIGlobalDodgeScaleByPersonalityAttribute : SCR_BaseEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -253,7 +253,7 @@ class SCR_AIGlobalDodgeScaleByPersonalityAttribute : SCR_BaseEditorAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualDodgeChanceAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualDodgeChanceAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -280,7 +280,7 @@ class SCR_AIIndividualDodgeChanceAttribute : SCR_ValidTypeBaseValueListEditorAtt
 		if (!aiConf)
 			return null;
 
-		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.GetDodgeChance());
+		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.DCO_DodgeRaw());
 	}
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
@@ -310,7 +310,7 @@ class SCR_AIIndividualDodgeChanceAttribute : SCR_ValidTypeBaseValueListEditorAtt
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualDodgeCooldownAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualDodgeCooldownAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -367,7 +367,7 @@ class SCR_AIIndividualDodgeCooldownAttribute : SCR_ValidTypeBaseValueListEditorA
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualDodgeMaxDistAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualDodgeMaxDistAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -424,7 +424,7 @@ class SCR_AIIndividualDodgeMaxDistAttribute : SCR_ValidTypeBaseValueListEditorAt
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualDodgeSearchDistAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualDodgeSearchDistAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -481,7 +481,7 @@ class SCR_AIIndividualDodgeSearchDistAttribute : SCR_ValidTypeBaseValueListEdito
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualTakeCoverChanceAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualTakeCoverChanceAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -508,7 +508,7 @@ class SCR_AIIndividualTakeCoverChanceAttribute : SCR_ValidTypeBaseValueListEdito
 		if (!aiConf)
 			return null;
 
-		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.GetTakeCoverChance());
+		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.DCO_TakeCoverRaw());
 	}
 
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
@@ -538,7 +538,7 @@ class SCR_AIIndividualTakeCoverChanceAttribute : SCR_ValidTypeBaseValueListEdito
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualDodgeScaleByPersonalityAttribute : SCR_ValidTypeBaseEditorAttribute
+class DCO_AIIndividualDodgeScaleByPersonalityAttribute : SCR_ValidTypeBaseEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{

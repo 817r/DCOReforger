@@ -24,6 +24,38 @@ class DCO_Stress
 		return Math.Clamp(g.DCO_AggressionSlider(), 0.5, 4.0);
 	}
 
+	static float Reach(SCR_AIUtilityComponent u)
+	{
+		if (T(u, "agg.reach", 1.0) <= 0)
+			return 1.0;
+		return AggrRel(u);
+	}
+
+	static float ReachFor(IEntity e)
+	{
+		DCO_GlobalAIComponent g = DCO_GlobalAIComponent.GetFor(e);
+		if (!g || g.DCO_TuneF("agg.reach", 1.0) <= 0 || g.DCO_TuneF("agg.profile", 1.0) <= 0)
+			return 1.0;
+		return Math.Clamp(g.DCO_AggressionSlider(), 0.5, 4.0);
+	}
+
+	static float ReachCmd(AICommander_BaseComponent cmd)
+	{
+		if (!cmd || DCO_Ctx.TuneForCmd(cmd, "agg.reach", 1.0) <= 0)
+			return 1.0;
+		return Math.Clamp(DCO_MettTable.Slider(cmd), 0.5, 4.0);
+	}
+
+	static float CloseM(SCR_AIUtilityComponent u)
+	{
+		return T(u, "rt.close_m", 30.0) * Reach(u);
+	}
+
+	static float CloseMFor(IEntity e)
+	{
+		return DCO_Ctx.TuneFor(e, "rt.close_m", 30.0) * ReachFor(e);
+	}
+
 	static float TA(SCR_AIUtilityComponent u, string key, float def, float e, float lo, float hi)
 	{
 		float v = T(u, key, def);
@@ -178,8 +210,29 @@ class DCO_Stress
 				distMin = 0.5;
 			distMax = Math.Max(hi, distMin + 2.0);
 		}
+		bool farSprint;
+		float farM = T(u, "tm.nocover_sprint_m", 30.0);
+		if (tier == 1 && !inCover && !close && rq.m_eType == SCR_EAICombatMoveRequestType.MOVE && farM > distMax && u.m_OwnerEntity)
+		{
+			float stam = DCO_AIMoraleSystem.Stamina(u.m_OwnerEntity);
+			vector nearCover;
+			if (stam >= 0 && stam <= 0.3)
+				DCO_Perf.Count("tm:nocover_tired");
+			else if (!FindCover(u.m_OwnerEntity, rq.m_vTargetPos, distMax, nearCover))
+			{
+				farSprint = true;
+				DCO_Perf.Count("tm:nocover_sprint");
+				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(u.m_OwnerEntity), string.Format("nocover_sprint unit=%1 src=%2 dist=%3 near_m=%4 stam=%5",
+					DCO_Log.IdUnit(u.m_OwnerEntity), src, Math.Round(farM), Math.Round(distMax), stam.ToString(-1, 2)));
+				distMax = farM;
+				rq.m_eStanceMoving = ECharacterStance.STAND;
+				rq.m_eMovementType = EMovementType.SPRINT;
+				rq.m_bAimAtTarget = false;
+				speed = Speed(rq);
+			}
+		}
 		float dur = distMax / Math.Max(speed, 0.5) + 1.0;
-		if (tier <= 1 && limitDist)
+		if (tier <= 1 && limitDist && !farSprint)
 			dur = rush;
 		rq.m_fMoveDuration_s = dur;
 		if (tier >= 1)
@@ -301,6 +354,11 @@ class DCO_Stress
 		if (d > maxDist + 2.0)
 		{
 			DCO_Perf.Count("tm:cover_q_far");
+			return false;
+		}
+		if (DCO_Beaten.Check(DCO_BldLearn.UtilOf(me), coverPos, threat, "find_cover"))
+		{
+			DCO_Perf.Count("tm:cover_q_beaten");
 			return false;
 		}
 		DCO_Perf.Count("tm:cover_q_" + pass);

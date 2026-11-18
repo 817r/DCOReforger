@@ -22,6 +22,7 @@ class DCO_AICalculateCoverQueryProps_Indoor : AITaskScripted
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
+		DCO_BtWatch.Mark("CombatMoveRequest_Move");
 		int pt = DCO_Perf.Begin();
 		ENodeResult r = DCO_SimulateCalcCoverIndoor(owner, dt);
 		DCO_Perf.End("bt_calc_cover_indoor", pt);

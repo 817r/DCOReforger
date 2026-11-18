@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalSkillAttribute : SCR_BaseFloatValueHolderEditorAttribute
+class DCO_AIGlobalSkillAttribute : SCR_BaseFloatValueHolderEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{

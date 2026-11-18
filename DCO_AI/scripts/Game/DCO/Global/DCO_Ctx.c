@@ -298,7 +298,7 @@ class DCO_Ctx
 	static int EnvAtPos(vector pos)
 	{
 		string method;
-		if (SCR_CoverManagerComponent.DCO_GetBuildingAtPos(pos, null, method))
+		if (DCO_CoverManagerComponent.DCO_GetBuildingAtPos(pos, null, method))
 			return DCO_EEnv.INDOOR;
 		return CellEnv(pos, true);
 	}
@@ -307,7 +307,7 @@ class DCO_Ctx
 	{
 		if (!ent)
 			return DCO_EEnv.OPEN;
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(ent))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(ent))
 			return DCO_EEnv.INDOOR;
 		return CellEnv(ent.GetOrigin(), true);
 	}
@@ -535,12 +535,12 @@ class DCO_Ctx
 		{
 			tgtEnv = EnvOf(te);
 			if (tgtEnv == DCO_EEnv.INDOOR)
-				tgtBld = SCR_CoverManagerComponent.DCO_GetBuildingAt(te);
+				tgtBld = DCO_CoverManagerComponent.DCO_GetBuildingAt(te);
 		}
 		else
 		{
 			string method;
-			tgtBld = SCR_CoverManagerComponent.DCO_GetBuildingAtPos(tpos, null, method);
+			tgtBld = DCO_CoverManagerComponent.DCO_GetBuildingAtPos(tpos, null, method);
 			if (tgtBld)
 				tgtEnv = DCO_EEnv.INDOOR;
 			else
@@ -548,7 +548,7 @@ class DCO_Ctx
 		}
 		bool same;
 		if (meEnv == DCO_EEnv.INDOOR && tgtEnv == DCO_EEnv.INDOOR && tgtBld)
-			same = SCR_CoverManagerComponent.DCO_GetBuildingAt(me) == tgtBld;
+			same = DCO_CoverManagerComponent.DCO_GetBuildingAt(me) == tgtBld;
 
 		int rel = Rel(meEnv, tgtEnv);
 		int kind = Kind(band, meEnv, tgtEnv, same);
@@ -756,7 +756,7 @@ class DCO_Ctx
 		if (!me)
 			return false;
 		string method;
-		IEntity b = SCR_CoverManagerComponent.DCO_GetBuildingAtPos(target, null, method);
+		IEntity b = DCO_CoverManagerComponent.DCO_GetBuildingAtPos(target, null, method);
 		if (!b)
 			return false;
 		vector p = me.GetOrigin();

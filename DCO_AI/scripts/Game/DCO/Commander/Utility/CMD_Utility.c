@@ -149,6 +149,21 @@ class CMD_ThreatEntry
 		return n;
 	}
 
+	bool DCO_OnlyReporter(string name)
+	{
+		return m_mDCOReporterAt.Count() == 1 && m_mDCOReporterAt.Contains(name);
+	}
+
+	void DCO_TakeReporters(CMD_ThreatEntry other)
+	{
+		foreach (string k, float at : other.m_mDCOReporterAt)
+		{
+			float cur;
+			if (!m_mDCOReporterAt.Find(k, cur) || at > cur)
+				m_mDCOReporterAt.Set(k, at);
+		}
+	}
+
 	void MergeReport(CMD_ContactReport r)
 	{
 		m_iMG = Math.Max(m_iMG, r.m_iMG);

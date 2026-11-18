@@ -1138,7 +1138,7 @@ modded class DCO_SettingsDialogUI
 		}
 		int baseCost = Math.Round(raw);
 		int vehCost = DCO_CommanderSpawnerComponent.VehicleCost(m_sPBVeh);
-		string costText = string.Format("%1 = %2 → %3", mods, raw.ToString(-1, 1), baseCost);
+		string costText = string.Format("%1 = %2 -> %3", mods, raw.ToString(-1, 1), baseCost);
 		if (vehicle)
 			costText += string.Format("\n+ vehicle %1 (%2)", vehCost, PBVehClass(m_sPBVeh));
 		costText += string.Format("\n= %1 points", baseCost + vehCost);

@@ -21,6 +21,11 @@ class DCO_GarrisonAssignment
 	float m_fSeen_ms;
 	float m_fSupp_ms = -1;
 	float m_fRotateCd_ms;
+	int m_iFails;
+	bool m_bInterior;
+	DCO_GarrisonBuilding m_HomeBuilding;
+	int m_iHomeSlot;
+	int m_iHomeRank;
 }
 
 class DCO_GarrisonVacancy
@@ -56,6 +61,12 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 	protected float m_fReleasedAt_ms;
 	protected float m_fLastThreat_ms;
 	protected float m_fSuppressedSince_ms = -1;
+	protected DCO_GarrisonBuilding m_DCOBreachB;
+	protected vector m_vDCOBreach;
+	protected float m_fDCOBreachAt_ms = -1;
+	protected float m_fDCOInteriorAt_ms = -1;
+	protected float m_fDCOInteriorNext_ms;
+	protected string m_sDCOBreachWhy = "-";
 
 	void DCO_AIGarrisonActivity(SCR_AIGroupUtilityComponent utility, AIWaypoint relatedWaypoint)
 	{
@@ -215,7 +226,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 			SCR_AIUtilityComponent utility;
 			if (a.m_Agent)
 				utility = SCR_AIUtilityComponent.Cast(a.m_Agent.FindComponent(SCR_AIUtilityComponent));
-			if (utility && utility.m_ThreatSystem && utility.m_ThreatSystem.GetState() == EAIThreatState.THREATENED)
+			if (DCO_Suppressed(utility))
 				threatened++;
 		}
 
@@ -247,6 +258,9 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		m_aAssigned.Clear();
 		m_aVacancies.Clear();
 		m_fFlankUntil_ms = 0;
+		m_fDCOInteriorAt_ms = -1;
+		m_fDCOBreachAt_ms = -1;
+		m_DCOBreachB = null;
 
 		SendCancelMessagesToAllAgents();
 		SetPriority(1);
@@ -281,7 +295,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 			DCO_GarrisonAssignment worst;
 			foreach (DCO_GarrisonAssignment a : m_aAssigned)
 			{
-				if (!a.m_bFlanking && !team.Contains(a) && (!worst || a.m_iRank > worst.m_iRank))
+				if (!a.m_bFlanking && !a.m_bInterior && !team.Contains(a) && (!worst || a.m_iRank > worst.m_iRank))
 					worst = a;
 			}
 			if (worst)
@@ -590,6 +604,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		}
 
 		BuildOrder();
+		DCO_DoorGuards(agents.Count());
 		foreach (DCO_GarrisonBuilding cb : m_aClaimed)
 		{
 			int unreach;
@@ -628,6 +643,104 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("garrison_start grp=%1 buildings=%2 slots=%3 assigned=%4 leftover=%5",
 			DCO_Log.IdGroup(m_Utility.m_Owner), m_aClaimed.Count(), m_aOrderBuilding.Count(), m_aAssigned.Count(), agents.Count()));
 		LogFloors();
+	}
+
+	protected void DCO_Promote(DCO_GarrisonBuilding b, int slot)
+	{
+		foreach (int rank, DCO_GarrisonBuilding ob : m_aOrderBuilding)
+		{
+			if (ob != b || m_aOrderSlot[rank] != slot)
+				continue;
+			m_aOrderBuilding.RemoveOrdered(rank);
+			m_aOrderSlot.RemoveOrdered(rank);
+			break;
+		}
+		m_aOrderBuilding.InsertAt(b, 0);
+		m_aOrderSlot.InsertAt(slot, 0);
+	}
+
+	protected int DCO_GuardSlot(DCO_GarrisonBuilding b, vector doorW, notnull array<int> taken)
+	{
+		int best = -1;
+		float bestScore = -1;
+		foreach (int si, DCO_GarrisonSlot s : b.m_aSlots)
+		{
+			if (s.m_eType != DCO_EGarrisonSlotType.DOOR_GUARD || s.m_bUnreachable || taken.Contains(si))
+				continue;
+			vector to = doorW - s.m_vWorldPos;
+			if (Math.AbsFloat(to[1]) > 1.5)
+				continue;
+			to[1] = 0;
+			float dist = to.Length();
+			if (dist < 2.0 || dist > 9.0)
+				continue;
+			float facing = vector.Dot(s.m_vWorldDir, to.Normalized());
+			if (facing < 0.8)
+				continue;
+			float sc = facing + s.m_fScore;
+			if (sc > bestScore)
+			{
+				bestScore = sc;
+				best = si;
+			}
+		}
+		return best;
+	}
+
+	protected void DCO_DoorGuards(int men)
+	{
+		int want = men / 3;
+		if (want <= 0 || DCO_Ctx.TuneG("garrison.door_guards", 1.0) <= 0)
+			return;
+		int placed = 0;
+		int doors = 0;
+		bool built = false;
+		foreach (DCO_GarrisonBuilding b : m_aClaimed)
+		{
+			if (placed >= want || !b || !b.m_Entity)
+				continue;
+			DCO_INavGraph g = DCO_IndoorNav.Get(b.m_Entity, false);
+			if (!g && !built)
+			{
+				built = true;
+				g = DCO_IndoorNav.Get(b.m_Entity, true);
+			}
+			if (!g)
+				continue;
+			array<vector> doorW = {};
+			array<float> doorScore = {};
+			foreach (DCO_INavDoor d : g.m_aDoors)
+			{
+				if (d.m_iRoomA != -1 && d.m_iRoomB != -1)
+					continue;
+				vector dw = g.W(d.m_vL);
+				doorW.Insert(dw);
+				doorScore.Insert(vector.Dot(dw - b.m_Entity.GetOrigin(), m_vThreatDir));
+			}
+			doors += doorW.Count();
+			array<int> taken = {};
+			while (placed < want && !doorW.IsEmpty())
+			{
+				int top = 0;
+				foreach (int di, float ds : doorScore)
+				{
+					if (ds > doorScore[top])
+						top = di;
+				}
+				vector at = doorW[top];
+				doorW.RemoveOrdered(top);
+				doorScore.RemoveOrdered(top);
+				int slot = DCO_GuardSlot(b, at, taken);
+				if (slot < 0)
+					continue;
+				taken.Insert(slot);
+				DCO_Promote(b, slot);
+				placed++;
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("garrison_door_guard grp=%1 building=%2 slot=%3 door=%4 floor=%5", DCO_Log.IdGroup(m_Utility.m_Owner), DCO_BldCache.Name(b.m_sPrefab), slot, DCO_Util.XZ(at), b.m_aSlots[slot].m_iFloor));
+			}
+		}
+		DCO_Perf.Count("garrison:door_guards_" + placed.ToString());
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("garrison_door_guards grp=%1 men=%2 want=%3 outside_doors=%4 placed=%5", DCO_Log.IdGroup(m_Utility.m_Owner), men, want, doors, placed));
 	}
 
 	protected bool DCO_FieldClaim(notnull array<AIAgent> agents)
@@ -926,6 +1039,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 	{
 		CheckUnreachable(registry, now_ms);
 		CheckRotate(registry, now_ms);
+		DCO_InteriorTick(registry, now_ms);
 
 		for (int i = m_aAssigned.Count() - 1; i >= 0; i--)
 		{
@@ -935,8 +1049,18 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 
 			SetAgentLeash(a.m_Agent, null);
 			if (IsAgentDead(a.m_Agent))
+			{
 				m_iCasualties++;
+				DCO_NoteDeath(a, now_ms);
+			}
 			registry.Book(a.m_Building, a.m_iSlot, null);
+			if (a.m_bInterior && a.m_HomeBuilding)
+			{
+				a.m_Building = a.m_HomeBuilding;
+				a.m_iSlot = a.m_iHomeSlot;
+				a.m_iRank = a.m_iHomeRank;
+				registry.Book(a.m_Building, a.m_iSlot, null);
+			}
 			DCO_GarrisonVacancy v = new DCO_GarrisonVacancy();
 			v.m_Building = a.m_Building;
 			v.m_iSlot = a.m_iSlot;
@@ -1010,14 +1134,20 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 			float timeout_ms = 20000.0;
 			if (stair)
 				timeout_ms = 35000.0;
+			if (a.m_iFails > 0 && stair)
+				timeout_ms = 25000.0;
+			else if (a.m_iFails > 0)
+				timeout_ms = 12000.0;
 			if (now_ms - a.m_fProgress_ms < timeout_ms)
 				continue;
 
 			DCO_Perf.Count("garrison:reach_timeout_stair_" + DCO_Util.B01(stair).ToString());
 			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdUnit(ent), string.Format("garrison_reach_timeout grp=%1 unit=%2 slot=%3 floor=%4 dist=%5 dy=%6 stair=%7 timeout_s=%8",
 				DCO_Log.IdGroup(m_Utility.m_Owner), DCO_Log.IdUnit(ent), a.m_iSlot, a.m_Building.m_aSlots[a.m_iSlot].m_iFloor, d.ToString(-1, 1), dy.ToString(-1, 1), DCO_Util.B01(stair), Math.Round(timeout_ms / 1000.0)));
+			a.m_iFails++;
+			ReachWhy(a, ent, utility, slotPos);
 			registry.MarkUnreachable(a.m_Building, a.m_iSlot, false);
-			int rank = FindFreeRank(registry);
+			int rank = NearestFreeRank(ent.GetOrigin());
 			if (rank < 0)
 			{
 				if (hold)
@@ -1027,12 +1157,81 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 				continue;
 			}
 
+			int failed = a.m_iSlot;
 			a.m_Building = m_aOrderBuilding[rank];
 			a.m_iSlot = m_aOrderSlot[rank];
 			a.m_iRank = rank;
 			registry.Book(a.m_Building, a.m_iSlot, a.m_Agent);
 			SendSlot(a);
+			DCO_Perf.Count("garrison:reslot_nearest");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdUnit(ent), string.Format("garrison_reslot grp=%1 unit=%2 from_slot=%3 to_slot=%4 to_floor=%5 dist=%6 fails=%7 pick=nearest",
+				DCO_Log.IdGroup(m_Utility.m_Owner), DCO_Log.IdUnit(ent), failed, a.m_iSlot, a.m_Building.m_aSlots[a.m_iSlot].m_iFloor, vector.Distance(ent.GetOrigin(), a.m_Building.m_aSlots[a.m_iSlot].m_vWorldPos).ToString(-1, 1), a.m_iFails));
 		}
+	}
+
+	protected bool DCO_Suppressed(SCR_AIUtilityComponent u)
+	{
+		if (!u || !u.m_ThreatSystem)
+			return false;
+		if (u.m_ThreatSystem.GetState() == EAIThreatState.THREATENED)
+			return true;
+		return u.m_ThreatSystem.GetSuppressionMeasure() >= DCO_Stress.T(u, "tm.supp_s1", 0.6);
+	}
+
+	protected int NearestFreeRank(vector from)
+	{
+		int best = -1;
+		float bestCost = float.MAX;
+		foreach (int rank, DCO_GarrisonBuilding b : m_aOrderBuilding)
+		{
+			if (!b)
+				continue;
+			int si = m_aOrderSlot[rank];
+			if (b.m_aBookedBy[si] || b.m_aSlots[si].m_bUnreachable)
+				continue;
+			vector sp = b.m_aSlots[si].m_vWorldPos;
+			float cost = vector.Distance(from, sp);
+			if (Math.AbsFloat(sp[1] - from[1]) > 1.5)
+				cost += 8.0;
+			if (cost < bestCost)
+			{
+				bestCost = cost;
+				best = rank;
+			}
+		}
+		return best;
+	}
+
+	protected void ReachWhy(DCO_GarrisonAssignment a, IEntity ent, SCR_AIUtilityComponent utility, vector slotPos)
+	{
+		float speed = -1;
+		ChimeraCharacter ch = ChimeraCharacter.Cast(ent);
+		if (ch && ch.GetCharacterController())
+			speed = DCO_Stance.Speed(ch.GetCharacterController());
+		string threat = "-";
+		int cm = 0;
+		int cover = 0;
+		int target = 0;
+		if (utility && utility.m_ThreatSystem)
+			threat = typename.EnumToString(EAIThreatState, utility.m_ThreatSystem.GetState());
+		if (utility && utility.m_CombatMoveState && utility.m_CombatMoveState.IsExecutingRequest())
+			cm = 1;
+		if (utility && utility.m_CombatMoveState && utility.m_CombatMoveState.IsInValidCover())
+			cover = 1;
+		if (utility && DCO_AimedYield.TargetVisible(utility, 500.0))
+			target = 1;
+		int nav = -1;
+		NavmeshWorldComponent nw = GetGame().GetAIWorld().GetNavmeshWorldComponent("Soldiers");
+		vector got;
+		if (nw && nw.IsTileLoaded(slotPos))
+		{
+			nav = 0;
+			if (nw.GetReachablePoint(slotPos, 1.0, got))
+				nav = 1;
+		}
+		DCO_Perf.Count("garrison:reach_why_nav_" + nav.ToString());
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdUnit(ent), string.Format("garrison_reach_why unit=%1 slot=%2 fails=%3 speed=%4 indoor=%5 threat=%6 target=%7 combat_move=%8 in_cover=%9",
+			DCO_Log.IdUnit(ent), a.m_iSlot, a.m_iFails, speed.ToString(-1, 1), DCO_Util.B01(DCO_CoverManagerComponent.IsEntityInsideBuilding(ent)), threat, target, cm, cover) + string.Format(" slot_nav=%1 type=%2", nav, typename.EnumToString(DCO_EGarrisonSlotType, a.m_Building.m_aSlots[a.m_iSlot].m_eType)));
 	}
 
 	protected void CheckRotate(DCO_GarrisonRegistry registry, float now_ms)
@@ -1047,7 +1246,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 
 		foreach (DCO_GarrisonAssignment a : m_aAssigned)
 		{
-			if (!a.m_Agent || a.m_bFlanking)
+			if (!a.m_Agent || a.m_bFlanking || a.m_bInterior)
 				continue;
 			IEntity ent = a.m_Agent.GetControlledEntity();
 			SCR_AIUtilityComponent utility = SCR_AIUtilityComponent.Cast(a.m_Agent.FindComponent(SCR_AIUtilityComponent));
@@ -1070,7 +1269,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 			if (DCO_AimedYield.TargetVisible(utility, 500.0))
 				a.m_fSeen_ms = now_ms;
 
-			if (utility.m_ThreatSystem && utility.m_ThreatSystem.GetState() == EAIThreatState.THREATENED)
+			if (DCO_Suppressed(utility))
 			{
 				if (a.m_fSupp_ms < 0)
 					a.m_fSupp_ms = now_ms;
@@ -1149,6 +1348,212 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		}
 	}
 
+	protected bool DCO_NearBuilding(IEntity b, vector pos, float margin)
+	{
+		if (!b)
+			return false;
+		vector mins, maxs;
+		b.GetBounds(mins, maxs);
+		vector local = b.CoordToLocal(pos);
+		if (local[1] < mins[1] - 2.0 || local[1] > maxs[1] + 2.0)
+			return false;
+		if (local[0] < mins[0] - margin || local[0] > maxs[0] + margin)
+			return false;
+		return local[2] >= mins[2] - margin && local[2] <= maxs[2] + margin;
+	}
+
+	protected bool DCO_EnemyNear(DCO_GarrisonBuilding b, float margin, float maxAge_s, out vector where)
+	{
+		SCR_AIGroupPerception perc = m_Utility.GetPercGroupComp();
+		PerceptionManager pm = GetGame().GetPerceptionManager();
+		if (!perc || !pm || !b)
+			return false;
+		float pmNow = pm.GetTime();
+		foreach (SCR_AITargetInfo t : perc.m_aTargets)
+		{
+			if (!t || pmNow - t.m_fTimestamp > maxAge_s)
+				continue;
+			if (t.m_eCategory != EAITargetInfoCategory.DETECTED && t.m_eCategory != EAITargetInfoCategory.IDENTIFIED)
+				continue;
+			if (!DCO_NearBuilding(b.m_Entity, t.m_vWorldPos, margin))
+				continue;
+			where = t.m_vWorldPos;
+			return true;
+		}
+		return false;
+	}
+
+	protected void DCO_NoteDeath(DCO_GarrisonAssignment a, float now_ms)
+	{
+		vector at;
+		if (!a.m_Building || DCO_Ctx.TuneG("garrison.interior_m", 10.0) <= 0 || !DCO_EnemyNear(a.m_Building, 40.0, 30.0, at))
+			return;
+		m_DCOBreachB = a.m_Building;
+		m_vDCOBreach = a.m_Building.m_aSlots[a.m_iSlot].m_vWorldPos;
+		m_fDCOBreachAt_ms = now_ms;
+		m_sDCOBreachWhy = "death";
+	}
+
+	protected void DCO_InteriorTick(DCO_GarrisonRegistry registry, float now_ms)
+	{
+		float margin = DCO_Ctx.TuneG("garrison.interior_m", 10.0);
+		if (margin <= 0)
+			return;
+		bool on = m_fDCOInteriorAt_ms >= 0;
+		foreach (DCO_GarrisonBuilding b : m_aClaimed)
+		{
+			if (on && b != m_DCOBreachB)
+				continue;
+			vector at;
+			if (!DCO_EnemyNear(b, margin, 10.0, at))
+				continue;
+			m_DCOBreachB = b;
+			m_vDCOBreach = at;
+			m_fDCOBreachAt_ms = now_ms;
+			m_sDCOBreachWhy = "enemy_near";
+			if (DCO_NearBuilding(b.m_Entity, at, 0))
+				m_sDCOBreachWhy = "enemy_inside";
+			break;
+		}
+		bool fresh = m_fDCOBreachAt_ms >= 0 && now_ms - m_fDCOBreachAt_ms < 30000.0;
+		if (on && !fresh)
+		{
+			DCO_InteriorEnd(registry, now_ms);
+			return;
+		}
+		if (on || !fresh || now_ms < m_fDCOInteriorNext_ms)
+			return;
+		DCO_InteriorStart(registry, now_ms);
+	}
+
+	protected int DCO_InteriorSlot(DCO_GarrisonBuilding b)
+	{
+		int best = -1;
+		float bestCost = float.MAX;
+		foreach (int i, DCO_GarrisonSlot s : b.m_aSlots)
+		{
+			if (b.m_aBookedBy[i] || s.m_bUnreachable)
+				continue;
+			if (s.m_eType != DCO_EGarrisonSlotType.DOOR_GUARD && s.m_eType != DCO_EGarrisonSlotType.INTERIOR)
+				continue;
+			float cost = vector.Distance(s.m_vWorldPos, m_vDCOBreach);
+			if (s.m_eType == DCO_EGarrisonSlotType.INTERIOR)
+				cost += 15.0;
+			if (Math.AbsFloat(s.m_vWorldPos[1] - m_vDCOBreach[1]) > 1.5)
+				cost += 8.0;
+			if (cost < bestCost)
+			{
+				bestCost = cost;
+				best = i;
+			}
+		}
+		return best;
+	}
+
+	protected int DCO_RankOf(DCO_GarrisonBuilding b, int slot)
+	{
+		foreach (int rank, DCO_GarrisonBuilding ob : m_aOrderBuilding)
+		{
+			if (ob == b && m_aOrderSlot[rank] == slot)
+				return rank;
+		}
+		m_aOrderBuilding.Insert(b);
+		m_aOrderSlot.Insert(slot);
+		return m_aOrderSlot.Count() - 1;
+	}
+
+	protected void DCO_InteriorStart(DCO_GarrisonRegistry registry, float now_ms)
+	{
+		DCO_GarrisonBuilding b = m_DCOBreachB;
+		m_fDCOInteriorNext_ms = now_ms + 15000.0;
+		if (!b || !b.m_Entity)
+			return;
+		array<DCO_GarrisonAssignment> men = {};
+		foreach (DCO_GarrisonAssignment a : m_aAssigned)
+		{
+			if (a.m_Building == b && a.m_Agent && !a.m_bFlanking && IsAgentUsable(a.m_Agent))
+				men.Insert(a);
+		}
+		int inBuilding = men.Count();
+		int want = 1;
+		if (inBuilding > 3)
+			want = 2;
+		int moved = 0;
+		for (int n = 0; n < want; n++)
+		{
+			int slot = DCO_InteriorSlot(b);
+			if (slot < 0 || men.IsEmpty())
+				break;
+			vector sp = b.m_aSlots[slot].m_vWorldPos;
+			int bestI = -1;
+			float bestCost = float.MAX;
+			foreach (int i, DCO_GarrisonAssignment m : men)
+			{
+				IEntity me = m.m_Agent.GetControlledEntity();
+				if (!me)
+					continue;
+				vector mp = me.GetOrigin();
+				float cost = vector.Distance(mp, sp);
+				if (Math.AbsFloat(mp[1] - sp[1]) > 1.5)
+					cost += 8.0;
+				if (cost < bestCost)
+				{
+					bestCost = cost;
+					bestI = i;
+				}
+			}
+			if (bestI < 0)
+				break;
+			DCO_GarrisonAssignment pick = men[bestI];
+			men.Remove(bestI);
+			pick.m_bInterior = true;
+			pick.m_HomeBuilding = pick.m_Building;
+			pick.m_iHomeSlot = pick.m_iSlot;
+			pick.m_iHomeRank = pick.m_iRank;
+			pick.m_iSlot = slot;
+			pick.m_iRank = DCO_RankOf(b, slot);
+			registry.Book(b, slot, pick.m_Agent);
+			SendSlot(pick);
+			moved++;
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("garrison_interior_move grp=%1 unit=%2 from_slot=%3 to_slot=%4 type=%5 floor=%6 dist=%7", DCO_Log.IdGroup(m_Utility.m_Owner), DCO_Log.IdUnit(pick.m_Agent.GetControlledEntity()), pick.m_iHomeSlot, slot, typename.EnumToString(DCO_EGarrisonSlotType, b.m_aSlots[slot].m_eType), b.m_aSlots[slot].m_iFloor, Math.Round(bestCost)));
+		}
+		if (moved == 0)
+		{
+			DCO_Perf.Count("garrison:interior_none");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("garrison_interior_none grp=%1 building=%2 why=%3 men=%4 reason=no_free_door_or_interior_slot", DCO_Log.IdGroup(m_Utility.m_Owner), DCO_BldCache.Name(b.m_sPrefab), m_sDCOBreachWhy, inBuilding));
+			return;
+		}
+		m_fDCOInteriorAt_ms = now_ms;
+		DCO_Perf.Count("garrison:interior_" + m_sDCOBreachWhy);
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("garrison_interior grp=%1 building=%2 why=%3 men=%4 moved=%5 at=%6", DCO_Log.IdGroup(m_Utility.m_Owner), DCO_BldCache.Name(b.m_sPrefab), m_sDCOBreachWhy, inBuilding, moved, DCO_Util.XZ(m_vDCOBreach)));
+	}
+
+	protected void DCO_InteriorEnd(DCO_GarrisonRegistry registry, float now_ms)
+	{
+		int back = 0;
+		foreach (DCO_GarrisonAssignment a : m_aAssigned)
+		{
+			if (!a.m_bInterior)
+				continue;
+			a.m_bInterior = false;
+			if (!a.m_HomeBuilding)
+				continue;
+			registry.Book(a.m_Building, a.m_iSlot, null);
+			a.m_Building = a.m_HomeBuilding;
+			a.m_iSlot = a.m_iHomeSlot;
+			a.m_iRank = a.m_iHomeRank;
+			registry.Book(a.m_Building, a.m_iSlot, a.m_Agent);
+			if (IsAgentUsable(a.m_Agent))
+				SendSlot(a);
+			back++;
+		}
+		DCO_Perf.Count("garrison:interior_end");
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("garrison_interior_end grp=%1 secs=%2 back=%3 why=quiet_30s", DCO_Log.IdGroup(m_Utility.m_Owner), Math.Round((now_ms - m_fDCOInteriorAt_ms) * 0.001), back));
+		m_fDCOInteriorAt_ms = -1;
+		m_fDCOBreachAt_ms = -1;
+		m_DCOBreachB = null;
+	}
+
 	protected float SlotAlign(DCO_GarrisonSlot s, vector threatPos)
 	{
 		vector to = threatPos - s.m_vWorldPos;
@@ -1166,7 +1571,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 
 		foreach (DCO_GarrisonAssignment a : m_aAssigned)
 		{
-			if (a.m_iRank <= vac.m_iRank || !a.m_Agent || a.m_bFlanking)
+			if (a.m_iRank <= vac.m_iRank || !a.m_Agent || a.m_bFlanking || a.m_bInterior)
 				continue;
 
 			IEntity ent = a.m_Agent.GetControlledEntity();
@@ -1277,7 +1682,7 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 
 		SetAgentLeash(a.m_Agent, a.m_Building.m_Entity);
 
-		SCR_CoverManagerComponent coverMgr = SCR_CoverManagerComponent.GetInstance();
+		DCO_CoverManagerComponent coverMgr = DCO_CoverManagerComponent.GetInstance();
 		if (coverMgr && a.m_Agent.GetControlledEntity())
 			coverMgr.RegisterPosition(a.m_Agent.GetControlledEntity(), a.m_Building.m_aSlots[a.m_iSlot].m_vWorldPos);
 

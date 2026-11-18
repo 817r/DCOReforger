@@ -50,7 +50,7 @@ modded class SCR_AIFindCover
 		DCO_SquadSpacing.CollectMatePositions(owner, m_aDCOMatePos);
 		if (DCO_IndLearn.PickOn() && !DCO_IndLearn.Explore())
 			return DCO_PickLearnedCover(queryProps, coverPos, coverTallestPos, tilex, tiley, coverId);
-		if (DCO_SquadSpacing.NearestDistance(coverPos, m_aDCOMatePos) >= 5.0 && DCO_IndLearn.CoverOk(m_DCOUtil, coverPos))
+		if (DCO_SquadSpacing.NearestDistance(coverPos, m_aDCOMatePos) >= 5.0 && DCO_IndLearn.CoverOk(m_DCOUtil, coverPos) && !DCO_Beaten.Check(m_DCOUtil, coverPos, queryProps.m_vThreatPos, "cover_v"))
 			return true;
 
 		vector firstPos = coverPos;
@@ -71,7 +71,7 @@ modded class SCR_AIFindCover
 			if (!m_CoverMgr.GetBestCover("Soldiers", m_PathfindingComp, queryProps, coverPos, coverTallestPos, tilex, tiley, coverId))
 				break;
 
-			if (DCO_SquadSpacing.NearestDistance(coverPos, m_aDCOMatePos) >= 5.0 && DCO_IndLearn.CoverOk(m_DCOUtil, coverPos))
+			if (DCO_SquadSpacing.NearestDistance(coverPos, m_aDCOMatePos) >= 5.0 && DCO_IndLearn.CoverOk(m_DCOUtil, coverPos) && !DCO_Beaten.Check(m_DCOUtil, coverPos, queryProps.m_vThreatPos, "cover_v"))
 			{
 				spaced = true;
 				break;

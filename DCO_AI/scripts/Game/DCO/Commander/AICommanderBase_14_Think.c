@@ -25,6 +25,9 @@ modded class AICommander_BaseComponent
 
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("commander_init cmd=%1", m_sCommanderUID));
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("think_init cmd=%1 first_think_in=%2 interval=%3", m_sCommanderUID, (m_fThinkInterval - m_fThinkTimer).ToString(-1, 1), m_fThinkInterval));
+		if (m_bDCOPaused)
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("cmd_paused cmd=%1 by=prefab", m_sCommanderUID));
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("cmd_relentless cmd=%1 trait=%2 from=%3 by_trait=%4 by_attr=%5", m_sCommanderUID, m_fTraitAggression.ToString(-1, 1), DCO_Ctx.TuneForCmd(this, "agg.relentless_from", 1.5).ToString(-1, 1), DCO_Util.B01(DCO_AggressiveCmd()), DCO_Util.B01(DCO_RelentlessAttr())));
 	}
 
 	protected FactionKey DCO_PickFactionForNewCommander(AICommander_ManagerComponent mgr)
@@ -39,7 +42,7 @@ modded class AICommander_BaseComponent
 		foreach (AIAgent a : agents)
 		{
 			SCR_AIGroup grp = SCR_AIGroup.Cast(a);
-			if (!grp || !grp.GetFaction() || grp.GetAgentsCount() <= 0)
+			if (!grp || !grp.GetFaction() || DCO_Dormant.Count(grp) <= 0)
 				continue;
 			DCO_GroupUtilityComponent gu = DCO_GroupUtilityComponent.Cast(grp.FindComponent(DCO_GroupUtilityComponent));
 			if (!gu || gu.IsPlayerGroup() || gu.GetMyCommander())
@@ -183,6 +186,43 @@ modded class AICommander_BaseComponent
 			ThinkOffensive(mgr, worldTime);
 	}
 
+	protected bool m_bDCOThought;
+	protected bool m_bDCONoGroupsWarned;
+
+	bool DCO_HasThought()
+	{
+		return m_bDCOThought;
+	}
+
+	protected bool DCO_NoGroupsIdle(AICommander_ManagerComponent mgr, float worldTime)
+	{
+		int n;
+		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
+		{
+			if (g && g.GetOwner())
+				n++;
+		}
+		if (n > 0)
+		{
+			if (m_bDCONoGroupsWarned)
+			{
+				m_bDCONoGroupsWarned = false;
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("cmd_groups_back cmd=%1 groups=%2", m_sCommanderUID, n));
+			}
+			return false;
+		}
+		DCO_Perf.Count("cmd:no_groups_idle");
+		if (!m_bDCONoGroupsWarned)
+		{
+			m_bDCONoGroupsWarned = true;
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, DCO_Log.IdCmd(this), string.Format("cmd_no_groups cmd=%1 faction=%2 mode=%3 action=idle (the commander has no groups, so it plans nothing until it gets one)", m_sCommanderUID, m_sFactionKey, typename.EnumToString(CMD_ECommanderMode, m_eCommanderMode)));
+			DCO_PlayerComms.SendToGameMasters("DCO", string.Format("AI Commander %1 has no groups, so it stays idle. Give it groups with the group attribute Commander, or place an AI Commander Spawner.", m_sCommanderUID));
+		}
+		m_eCommanderState = CMD_ECommanderState.COMMANDING;
+		DCO_PublishStatus(mgr);
+		return true;
+	}
+
 	protected void Think(float worldTime)
 	{
 		DCO_ReleaseStaleSbf(worldTime);
@@ -193,6 +233,12 @@ modded class AICommander_BaseComponent
 
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
 		if (!mgr)
+			return;
+
+		if (!m_bDCOThought)
+			DCO_SetupCheck.CommanderNav(this);
+		m_bDCOThought = true;
+		if (DCO_NoGroupsIdle(mgr, worldTime))
 			return;
 
 		DCO_TaskNoWpWatch(worldTime);
@@ -616,7 +662,7 @@ modded class AICommander_BaseComponent
 				if (DCO_RoleOnce(cand.GetLogName() + "|release"))
 					DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, DCO_Log.IdCmd(this), string.Format("obj_assign_release cmd=%1 obj=%2 reason=not_assigned_anymore", m_sCommanderUID, cand.GetLogName()));
 				if (m_Tactics && m_Tactics.GetPlan(cand))
-					m_Tactics.OnAborted(cand, "not_assigned");
+					m_Tactics.OnAborted(this, cand, "not_assigned");
 				ReleaseGroupsFromObjective(cand);
 				continue;
 			}
@@ -645,7 +691,7 @@ modded class AICommander_BaseComponent
 			}
 
 			DCO_RoleForget(own);
-			if (!own.CheckIsItLost(m_sFactionKey) || !HandleLostObjective(own) || committed.Contains(own))
+			if (!own.CheckIsItLost(m_sFactionKey) || committed.Contains(own) || !HandleLostObjective(own))
 				continue;
 			if (DCO_AssignSkip(own, "recapture") || DCO_PhaseSkip(own, "recapture"))
 				continue;
@@ -793,7 +839,8 @@ modded class AICommander_BaseComponent
 		{
 			m_aDCOLostAt.Insert(DCO_Util.NowS());
 			DCO_Perf.Count("balanced:lost_note");
-			ReleaseGroupsFromObjective(obj);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("obj_lost_reset cmd=%1 obj=%2 state=%3 lost_recent=%4", m_sCommanderUID, obj.GetLogName(), typename.EnumToString(CMD_EObjectiveState, obj.GetObjectiveState(m_sFactionKey)), m_aDCOLostAt.Count()));
+			ReleaseGroupsFromObjective(obj, true);
 			obj.ResetAssignedGroupCount(m_sFactionKey);
 			obj.SetObjectiveState(m_sFactionKey, CMD_EObjectiveState.PENDING);
 		}

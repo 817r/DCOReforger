@@ -15,14 +15,6 @@ class DCO_Night
 			s_aFlareTime = {};
 		return s_aFlareTime;
 	}
-	protected static ref array<IEntity> s_aItems;
-	protected static array<IEntity> GetItemsStore()
-	{
-		if (!s_aItems)
-			s_aItems = {};
-		return s_aItems;
-	}
-
 	static bool IsActive()
 	{
 		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetInstance();
@@ -53,92 +45,10 @@ class DCO_Night
 		return false;
 	}
 
-	static bool IsFlareItem(IEntity item)
+	static void NoteFlare(vector pos, float now_ms)
 	{
-		if (!item || !item.GetPrefabData())
-			return false;
-
-		string prefab = item.GetPrefabData().GetPrefabName();
-		if (!prefab.Contains("Flare"))
-			return false;
-		return prefab.Contains("Ammo_Flare_40mm") || prefab.Contains("Flare_RSP30");
-	}
-
-	static bool FindFlare(notnull SCR_AIGroup grp, out AIAgent outAgent, out IEntity outItem)
-	{
-		array<AIAgent> agents = {};
-		grp.GetAgents(agents);
-		foreach (AIAgent a : agents)
-		{
-			ChimeraCharacter ch = ChimeraCharacter.Cast(a.GetControlledEntity());
-			if (!ch || ch.IsInVehicle())
-				continue;
-			if (!DCO_Util.IsAlive(ch))
-				continue;
-
-			SCR_InventoryStorageManagerComponent inv = SCR_InventoryStorageManagerComponent.Cast(ch.FindComponent(SCR_InventoryStorageManagerComponent));
-			if (!inv)
-				continue;
-
-			GetItemsStore().Clear();
-			GetItemsStore();
-			inv.GetItems(s_aItems);
-			foreach (IEntity item : GetItemsStore())
-			{
-				if (IsFlareItem(item))
-				{
-					outAgent = a;
-					outItem = item;
-					GetItemsStore().Clear();
-					return true;
-				}
-			}
-		}
-		GetItemsStore().Clear();
-		return false;
-	}
-
-	static bool FireFlare(AIAgent shooter, IEntity item, vector clusterPos, float now_ms)
-	{
-		IEntity ent = shooter.GetControlledEntity();
-		if (!ent)
-			return false;
-
-		SCR_InventoryStorageManagerComponent inv = SCR_InventoryStorageManagerComponent.Cast(ent.FindComponent(SCR_InventoryStorageManagerComponent));
-		if (!inv)
-			return false;
-
-		vector dir = clusterPos - ent.GetOrigin();
-		dir[1] = 0;
-		float dist = dir.Length();
-		if (dist > 1)
-			dir = dir * (1.0 / dist);
-
-		vector burst = clusterPos + dir * 20.0;
-		burst[1] = GetGame().GetWorld().GetSurfaceY(burst[0], burst[2]) + 120.0;
-
-		Resource res = Resource.Load("{A090D9A11955DF54}Prefabs/Weapons/Ammo/FlareEffect_30mm_RSP30_White.et");
-		if (!res || !res.IsValid())
-			return false;
-
-		string type = "rsp30";
-		if (item.GetPrefabData() && item.GetPrefabData().GetPrefabName().Contains("40mm"))
-			type = "40mm";
-		inv.TryDeleteItem(item);
-
-		EntitySpawnParams params = new EntitySpawnParams();
-		params.TransformMode = ETransformMode.WORLD;
-		Math3D.MatrixIdentity4(params.Transform);
-		params.Transform[3] = burst;
-		DCO_Perf.Count("sp:flare");
-		GetGame().SpawnEntityPrefab(res, GetGame().GetWorld(), params);
-
-		GetFlarePos().Insert(clusterPos);
+		GetFlarePos().Insert(pos);
 		GetFlareTime().Insert(now_ms);
-
-		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("night_flare grp=%1 shooter=%2 type=%3 dist=%4",
-			shooter.GetParentGroup(), ent, type, Math.Round(dist)));
-		return true;
 	}
 
 	static bool IsDark(SCR_AIGroupTargetCluster c)
@@ -181,7 +91,7 @@ class DCO_Night
 			if (!fl)
 				continue;
 
-			bool want = !stealth && cqb && cqb.IsEntry(a) && SCR_CoverManagerComponent.DCO_GetBuildingAt(ent) != null;
+			bool want = !stealth && cqb && cqb.IsEntry(a) && DCO_CoverManagerComponent.DCO_GetBuildingAt(ent) != null;
 			if (fl.IsToggledOn() == want)
 				continue;
 

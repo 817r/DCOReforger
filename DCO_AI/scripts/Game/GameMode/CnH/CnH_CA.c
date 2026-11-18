@@ -1,7 +1,7 @@
 [EntityEditorProps(category: "GameCNHipted/Capture", description: "Zone/area to capture (AI and multi-faction).")]
-class CNH_CaptureAreaClass : ScriptComponentClass {}
+class DCO_CNH_CaptureAreaClass : ScriptComponentClass {}
 
-class CNH_CaptureArea : ScriptComponent
+class DCO_CNH_CaptureArea : ScriptComponent
 {
     [Attribute("50", UIWidgets.EditBox, desc: "Radius Area Capture (meter)")]
     float m_fRadius;
@@ -24,7 +24,7 @@ class CNH_CaptureArea : ScriptComponent
 
     ref map<string, int> m_mFactionCounts = new map<string, int>();
 
-    CNH_CaptureManager m_Manager;
+    DCO_CNH_CaptureManager m_Manager;
 
     override void EOnInit(IEntity owner)
     {
@@ -32,7 +32,7 @@ class CNH_CaptureArea : ScriptComponent
 
         IEntity managerEnt = GetGame().GetWorld().FindEntityByName("CaptureManager");
         if (managerEnt)
-            m_Manager = CNH_CaptureManager.Cast(managerEnt.FindComponent(CNH_CaptureManager));
+            m_Manager = DCO_CNH_CaptureManager.Cast(managerEnt.FindComponent(DCO_CNH_CaptureManager));
 
         GetGame().GetCallqueue().CallLater(CaptureTick, m_fTickInterval * 1000, true);
     }
@@ -131,7 +131,7 @@ class CNH_CaptureArea : ScriptComponent
         return true;
     }
 
-    void ~CNH_CaptureArea()
+    void ~DCO_CNH_CaptureArea()
     {
         if (GetGame() && GetGame().GetCallqueue())
             GetGame().GetCallqueue().Remove(CaptureTick);

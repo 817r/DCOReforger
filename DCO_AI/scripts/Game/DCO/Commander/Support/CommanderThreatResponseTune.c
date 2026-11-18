@@ -1,9 +1,9 @@
 modded class CMD_ThreatResponseComponent
 {
 	float DCO_GT_MergeRadius()			{ return m_fMergeRadius; }
-	void DCO_ST_MergeRadius(float v)		{ m_fMergeRadius = v; }
+	void DCO_ST_MergeRadius(float v)		{ m_fMergeRadius = v; m_fMergeSQ = v * v; }
 	float DCO_GT_ClusterRadius()			{ return m_fClusterRadius; }
-	void DCO_ST_ClusterRadius(float v)		{ m_fClusterRadius = v; }
+	void DCO_ST_ClusterRadius(float v)		{ m_fClusterRadius = v; m_fClusterSQ = v * v; }
 	float DCO_GT_EnemyIncrementedScore()			{ return m_iEnemyIncrementedScore; }
 	void DCO_ST_EnemyIncrementedScore(float v)		{ m_iEnemyIncrementedScore = Math.Round(v); }
 	float DCO_GT_StalenessThreshold()			{ return m_fStalenessThreshold; }

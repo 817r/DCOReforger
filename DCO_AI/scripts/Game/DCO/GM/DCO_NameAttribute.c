@@ -216,6 +216,11 @@ modded class SCR_AttributesManagerEditorComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
 	protected void DCO_RpcSetName(int itemId, string newName, int kind)
 	{
+		int claimed = -1;
+		if (GetManager())
+			claimed = GetManager().GetPlayerID();
+		if (DCO_GroupPresets.VerifiedGM(GetManager(), claimed, "set_name") < 0)
+			return;
 		SCR_EditableEntityComponent editable = SCR_EditableEntityComponent.Cast(Replication.FindItem(itemId));
 		if (editable)
 			DCO_NameEditorAttribute.ApplyName(editable.GetOwner(), newName, kind);

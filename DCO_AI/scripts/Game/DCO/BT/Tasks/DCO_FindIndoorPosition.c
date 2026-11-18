@@ -112,7 +112,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 		back.Normalize();
 		vector side = Vector(-back[2], 0, back[0]);
 
-		SCR_CoverManagerComponent coverMgr = SCR_CoverManagerComponent.GetInstance();
+		DCO_CoverManagerComponent coverMgr = DCO_CoverManagerComponent.GetInstance();
 		array<float> offsets = {0, 2, -2, 4, -4};
 		foreach (float o : offsets)
 		{
@@ -468,6 +468,8 @@ class DCO_FindIndoorPosition: AITaskScripted
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
+		if (Type() == DCO_FindIndoorPosition)
+			DCO_BtWatch.Mark("Defend");
 		int pt = DCO_Perf.Begin();
 		ENodeResult r = DCO_SimulateFindIndoor(owner, dt);
 		DCO_Perf.End("bt_find_indoor", pt);
@@ -576,7 +578,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 				SetVariableOut(PORT_VECTOR_BOOL, false);
 				return ENodeResult.FAIL;
 			}
-			SCR_CoverManagerComponent fortCoverMgr = SCR_CoverManagerComponent.GetInstance();
+			DCO_CoverManagerComponent fortCoverMgr = DCO_CoverManagerComponent.GetInstance();
 			if (fortCoverMgr)
 				fortCoverMgr.RegisterPosition(owner.GetControlledEntity(), fortPos);
 			SetVariableOut("Position Found", fortPos);
@@ -584,7 +586,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 			return ENodeResult.SUCCESS;
 		}
 
-		SCR_CoverManagerComponent coverMgr = SCR_CoverManagerComponent.GetInstance();
+		DCO_CoverManagerComponent coverMgr = DCO_CoverManagerComponent.GetInstance();
 		if (coverMgr)
 			coverMgr.RegisterPosition(owner.GetControlledEntity(), m_vBestPos);
 
@@ -693,7 +695,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 		BuildCells(searchPos, searchRad);
 		SnapshotOccupants();
 
-		SCR_CoverManagerComponent coverMgr = SCR_CoverManagerComponent.GetInstance();
+		DCO_CoverManagerComponent coverMgr = DCO_CoverManagerComponent.GetInstance();
 		if (!coverMgr || !m_OwnerEntity)
 			return;
 
@@ -1307,7 +1309,7 @@ class DCO_FindIndoorPosition: AITaskScripted
 		if (GetNearestDoorDistXZ(pos) < m_fDoorBlockRadius)
 			return true;
 
-		SCR_CoverManagerComponent coverMgr = SCR_CoverManagerComponent.GetInstance();
+		DCO_CoverManagerComponent coverMgr = DCO_CoverManagerComponent.GetInstance();
 		if (coverMgr)
 		{
 			nearestBooked = coverMgr.GetNearestBookedDistanceXZ(pos);

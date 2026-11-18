@@ -38,7 +38,7 @@ modded class AICommander_BaseComponent
 			m_aROEBase.Insert(e);
 		}
 		if (mode >= 0)
-			e.m_eMode = Math.ClampInt(mode, 0, 2);
+			e.m_eMode = Math.ClampInt(mode, 0, 3);
 		if (dist >= 0)
 			e.m_fEngageDist = dist;
 		if (distEnRoute >= 0)

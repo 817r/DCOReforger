@@ -5,6 +5,7 @@ class DCO_MapOverlay
 
 	protected ref array<float> m_aGroups = {};
 	protected ref array<float> m_aObjectives = {};
+	protected ref array<string> m_aObjNames = {};
 	protected ref array<float> m_aTransport = {};
 	protected Widget m_wRoot;
 	protected CanvasWidget m_wCanvas;
@@ -24,13 +25,15 @@ class DCO_MapOverlay
 		return s_Instance;
 	}
 
-	static void SetData(array<float> groups, array<float> objectives)
+	static void SetData(array<float> groups, array<float> objectives, string objNames)
 	{
 		if (System.IsConsoleApp())
 			return;
 
 		Get().m_aGroups.Copy(groups);
 		Get().m_aObjectives.Copy(objectives);
+		Get().m_aObjNames.Clear();
+		objNames.Split("|", Get().m_aObjNames, false);
 	}
 
 	static void EnsureHooked()
@@ -259,6 +262,7 @@ class DCO_MapOverlay
 		FrameSlot.SetAnchorMax(m_wRoot, 1, 1);
 		FrameSlot.SetOffsets(m_wRoot, 0, 0, 0, 0);
 		m_wCanvas = CanvasWidget.Cast(m_wRoot.FindAnyWidget("Canvas"));
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("map_overlay_open objectives=%1 names=%2 obj_width=%3 obj_fill=%4 palette=%5", m_aObjectives.Count() / 4, m_aObjNames.Count(), DCO_UISettings.GetObjWidth(), DCO_UISettings.GetObjFill(), DCO_UISettings.GetMapPalette()));
 		GetGame().GetCallqueue().CallLater(Draw, 0, true);
 	}
 
@@ -287,12 +291,17 @@ class DCO_MapOverlay
 		int label;
 		WorkspaceWidget ws = GetGame().GetWorkspace();
 
+		float objWidth = DCO_UISettings.GetObjWidth();
+		int objAlpha = Math.Round(DCO_UISettings.GetObjFill() * 2.55);
 		int stride = 4;
 		for (int i = 0; i + stride <= m_aObjectives.Count(); i += stride)
 		{
 			int sx, sy;
 			mapEnt.WorldToScreen(m_aObjectives[i], m_aObjectives[i + 1], sx, sy, true);
 			int rel = m_aObjectives[i + 3];
+			string objName;
+			if (i / stride < m_aObjNames.Count())
+				objName = m_aObjNames[i / stride];
 			if (rel == 4)
 			{
 				AddSymbol(Triangle(sx, sy, 9.0 + 2, -1), Triangle(sx, sy, 9.0, -1), StagingColor(m_iPalette));
@@ -300,8 +309,13 @@ class DCO_MapOverlay
 				continue;
 			}
 
-			float r = m_aObjectives[i + 2] * mapEnt.GetCurrentZoom();
-			AddCircle(sx, sy, Math.Max(r, 6), RelationColor(rel, m_iPalette));
+			float r = Math.Max(m_aObjectives[i + 2] * mapEnt.GetCurrentZoom(), 6);
+			int relCol = RelationColor(rel, m_iPalette);
+			if (objAlpha > 0)
+				AddPolygon(CircleVerts(sx, sy, r), (relCol & 0x00FFFFFF) | (objAlpha << 24));
+			AddCircle(sx, sy, r, relCol, objWidth);
+			if (!objName.IsEmpty())
+				label = SetLabel(label, ws, sx - 24.0, sy - r - 22.0, objName, relCol);
 		}
 
 		stride = 7;
@@ -418,7 +432,7 @@ class DCO_MapOverlay
 		m_aCommands.Insert(l);
 	}
 
-	protected void AddCircle(float cx, float cy, float r, int color)
+	protected static array<float> CircleVerts(float cx, float cy, float r)
 	{
 		array<float> verts = {};
 		for (int i = 0; i < 28; i++)
@@ -427,7 +441,12 @@ class DCO_MapOverlay
 			verts.Insert(cx + Math.Cos(a) * r);
 			verts.Insert(cy + Math.Sin(a) * r);
 		}
-		AddLine(verts, color, 2, true);
+		return verts;
+	}
+
+	protected void AddCircle(float cx, float cy, float r, int color, float width = 2)
+	{
+		AddLine(CircleVerts(cx, cy, r), color, width, true);
 	}
 
 	protected void AddArrow(float x0, float y0, float x1, float y1, int color)

@@ -4,7 +4,7 @@ class DCO_AIResupplyConfigComponentClass: ScriptComponentClass
 
 class DCO_AIResupplyConfigComponent: ScriptComponent
 {
-	ref array<ref ResupplyConfig> MagPrefab = {};
+	ref array<ref DCO_ResupplyConfig> MagPrefab = {};
 
 	override void OnPostInit(IEntity owner)
 	{
@@ -23,12 +23,12 @@ class DCO_AIResupplyConfigComponent: ScriptComponent
 	}
 }
 
-class ResupplyConfig : Managed
+class DCO_ResupplyConfig : Managed
 {
 	int weaponType = 0;
 	ref array<string> MagazinePrefab = {};
 
-	void ResupplyConfig(int t, array<string> str)
+	void DCO_ResupplyConfig(int t, array<string> str)
 	{
 		weaponType = t;
 		MagazinePrefab = str;

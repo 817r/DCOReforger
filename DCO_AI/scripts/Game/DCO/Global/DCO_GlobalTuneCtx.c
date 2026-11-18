@@ -69,6 +69,7 @@ modded class DCO_GlobalAIComponent
 		DCO_SyncCtxRows();
 		CfgCat("HealUnderFire");
 		DCO_TuneCfg("heal.unseen_gate", "heal_unseen_gate", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("med.full_on", "med_full_on", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("heal.unseen_m", "heal_unseen_m", 25.0, 5.0, 100.0);
 		DCO_TuneCfg("heal.unseen_s", "heal_unseen_s", 6.0, 1.0, 30.0);
 		CfgCat("DodgeAssist");

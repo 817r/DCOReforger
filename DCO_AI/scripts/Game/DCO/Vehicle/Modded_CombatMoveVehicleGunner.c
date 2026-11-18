@@ -180,7 +180,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 	{
 		return m_eThreatState == EAIThreatState.THREATENED
 			&& !m_DriverState.IsExecutingRequest()
-			&& m_DriverState.m_fTimerStopped_s > 6.0;
+			&& m_DriverState.m_fTimerStopped_s > 12.0;
 	}
 
 	protected float DCO_ChaseExtra()
@@ -224,6 +224,8 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 	protected void DCO_RelocateUnderFire()
 	{
 		vector threatPos = m_Target.GetLastSeenPosition();
+		DCO_Perf.Count("veh:relocate_under_fire");
+		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, DCO_Log.IdVeh(m_MyVehicle), string.Format("veh_relocate veh=%1 stopped_s=%2 tgt_d=%3", DCO_Log.IdVeh(m_MyVehicle), Math.Round(m_DriverState.m_fTimerStopped_s), Math.Round(m_fTargetDist)));
 		vector wpPos, pos;
 		float wpRadius;
 		if (DCO_GetMoveBounds(wpPos, wpRadius))
@@ -437,11 +439,28 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		return m_bDCOATKnown;
 	}
 
+	protected float m_fDCOBackLog_ms = -100000;
+
 	override protected bool MoveFromTargetCondition()
 	{
-		if (!DCO_IsATKnown() && m_fTargetDist > 25.0)
+		if (DCO_Relentless.Unit(m_Utility) && !DCO_IsATKnown() && m_fTargetDist > 25.0)
 			return false;
-		return super.MoveFromTargetCondition();
+		if (!super.MoveFromTargetCondition())
+			return false;
+		bool close = m_fTargetDist < ResolveStandoffDistance();
+		if (!close && TargetWithinTurretSafeHorizontalLimits(m_Target.GetLastSeenPosition()))
+			return false;
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now - m_fDCOBackLog_ms > 5000.0)
+		{
+			m_fDCOBackLog_ms = now;
+			string why = "turret_limit";
+			if (close)
+				why = "close";
+			DCO_Perf.Count("veh:backoff_" + why);
+			DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, DCO_Log.IdVeh(m_MyVehicle), string.Format("veh_backoff veh=%1 why=%2 tgt_d=%3", DCO_Log.IdVeh(m_MyVehicle), why, Math.Round(m_fTargetDist)));
+		}
+		return true;
 	}
 
 	protected float ResolveStandoffDistance()
@@ -451,9 +470,9 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		float dist = ResolveOptimalDistance(m_fWeaponMinDist);
 		if (!DCO_IsATKnown())
 		{
-			dist = 60.0;
+			dist = DCO_Stress.T(m_Utility, "veh.standoff_m", 200.0);
 			if (DCO_VehiclePositioning.Aggr(m_Utility))
-				dist = 50.0;
+				dist = dist * 0.6;
 		}
 		else
 		{
@@ -471,7 +490,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 	override protected bool MoveToNextPosCondition()
 	{
 		float optimalDist = ResolveStandoffDistance();
-		if (m_fTargetDist < optimalDist && m_Target.GetTimeSinceSeen() < 5)
+		if (m_fTargetDist < optimalDist && m_Target.GetTimeSinceSeen() < 15)
 			return false;
 
 		if (m_DriverState.IsExecutingRequest())

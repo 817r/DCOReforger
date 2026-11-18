@@ -14,6 +14,7 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 	protected NavmeshWorldComponent  m_pNavmesh;
 
 	protected float m_fNextUpdate_ms = -1;
+	protected float m_fDCODirLogAt_ms;
 
 	[Attribute("500", UIWidgets.EditBox, "Push re-evaluation interval (ms)", category: "Timing")]
 	protected float m_fUpdateInterval_ms;
@@ -231,7 +232,25 @@ class SCR_AIDCO_AttackPush: AITaskScripted
 		rq.m_bFailIfNoCover             = false;
 		rq.m_fCoverSearchSectorHalfAngleRad = COVER_QUERY_SECTOR_ANGLE_RAD();
 
-		rq.m_bUseCoverSearchDirectivity = !DCO_ConcealmentUtility.IsPositionExposed(myEntity.GetOrigin(), myEntity);
+		bool exposed = DCO_ConcealmentUtility.IsPositionExposed(myEntity.GetOrigin(), myEntity);
+		rq.m_bUseCoverSearchDirectivity = !exposed;
+		if (exposed && DCO_Stress.T(m_Utility, "inv.cover_dir", 1.0) > 0)
+		{
+			bool underFire = m_Utility.m_ThreatSystem.GetState() == EAIThreatState.THREATENED || m_Utility.m_ThreatSystem.GetSuppressionMeasure() >= 0.35 || DCO_Beaten.HitRecent(myEntity, 5.0);
+			if (underFire)
+				DCO_Perf.Count("inv:move_any_cover");
+			else
+			{
+				rq.m_bUseCoverSearchDirectivity = true;
+				DCO_Perf.Count("inv:move_directed");
+				float dirNow = GetGame().GetWorld().GetWorldTime();
+				if (dirNow >= m_fDCODirLogAt_ms)
+				{
+					m_fDCODirLogAt_ms = dirNow + 10000.0;
+					DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(myEntity), string.Format("inv_cover_dir unit=%1 directed=1 exposed=1 goal_d=%2 threat_d=%3", DCO_Log.IdUnit(myEntity), Math.Round(vector.DistanceXZ(myEntity.GetOrigin(), movePos)), Math.Round(distToThreat)));
+				}
+			}
+		}
 
 		float coverMin = 10.0;
 		float coverMax = COVER_SEARCH_DIST_MAX();

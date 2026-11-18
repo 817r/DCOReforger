@@ -91,10 +91,29 @@ class DCO_UGLUtility
 			s_mGLSmokeLoaded.Set(self, LoadedIsSmoke(weap));
 	}
 
+	protected static ref map<BaseWeaponComponent, int> s_mUglIdx;
+
 	static int GetUGLMuzzleIndex(BaseWeaponComponent weap)
 	{
 		if (!weap)
 			return -1;
+		if (!s_mUglIdx)
+			s_mUglIdx = new map<BaseWeaponComponent, int>();
+		int cached;
+		if (s_mUglIdx.Find(weap, cached))
+		{
+			DCO_Perf.Count("gl_cache_hit");
+			return cached;
+		}
+		if (s_mUglIdx.Count() > 256)
+			s_mUglIdx.Clear();
+		int idx = GetUGLMuzzleIndexRaw(weap);
+		s_mUglIdx.Set(weap, idx);
+		return idx;
+	}
+
+	protected static int GetUGLMuzzleIndexRaw(BaseWeaponComponent weap)
+	{
 
 		GetMuzzleBuffer().Clear();
 		GetMuzzleBuffer();
@@ -361,7 +380,7 @@ class DCO_UGLUtility
 		return false;
 	}
 
-	static bool IsPointTarget(BaseTarget t)
+	static bool IsPointTarget(BaseTarget t, SCR_AIUtilityComponent u = null)
 	{
 		if (!t)
 			return false;
@@ -370,7 +389,14 @@ class DCO_UGLUtility
 			return true;
 		if (tc.IsInVehicle() || t.IsEndangering() || t.GetTimeSinceEndangered() < 5.0)
 			return true;
-		return SCR_CoverManagerComponent.IsEntityInsideBuilding(tc);
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(tc))
+			return true;
+		if (u && DCO_Stress.T(u, "gl.group", 1.0) > 0 && DCO_RpgUnseen.NearTargets(u, t.GetLastSeenPosition(), 10.0) >= 2)
+		{
+			DCO_Perf.Count("spec:gl_target_group");
+			return true;
+		}
+		return false;
 	}
 
 	protected static bool IsPreferredGLTarget(SCR_AIUtilityComponent utility, vector targetPos)
@@ -402,7 +428,7 @@ class DCO_UGLUtility
 		ChimeraCharacter cc = ChimeraCharacter.Cast(closest);
 		if (cc && cc.IsInVehicle())
 			return true;
-		return closest && SCR_CoverManagerComponent.IsEntityInsideBuilding(closest);
+		return closest && DCO_CoverManagerComponent.IsEntityInsideBuilding(closest);
 	}
 
 	protected static int GetVolleySize(SCR_AIUtilityComponent utility)
@@ -493,7 +519,7 @@ class DCO_UGLUtility
 			return true;
 
 		float impactDist = vector.Distance(start, end) * frac;
-		return impactDist >= 35.0;
+		return impactDist >= DCO_Ctx.TuneFor(self, "gl.safe_m", 25.0);
 	}
 
 }

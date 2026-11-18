@@ -428,7 +428,7 @@ class DCO_LearnDefense
 		}
 		if (gp == vector.Zero && grp)
 			gp = grp.GetOrigin();
-		DCO_Battle.Place(null, obj, grp, role, gp, Math.Atan2(dir[0], dir[2]) * Math.RAD2DEG, "-", slot, "-", source);
+		DCO_Dev.Place(null, obj, grp, role, gp, Math.Atan2(dir[0], dir[2]) * Math.RAD2DEG, "-", slot, "-", source);
 	}
 
 	static vector ReservePos(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, vector basePos)
@@ -855,7 +855,7 @@ class DCO_LearnDefense
 		foreach (string ch : bad)
 			world.Replace(ch, "_");
 		string defDir = "$profile:DCO/CommanderLearn/Defense/";
-		if (DCO_TestCaseComponent.Active())
+		if (DCO_Dev.TestActive())
 			defDir = "$profile:DCO/CommanderLearn/Defense/_test/";
 		m_sFile = defDir + world + ".json";
 		m_fNextSave = DCO_Util.NowS() + 300.0;

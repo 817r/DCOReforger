@@ -30,14 +30,15 @@ class DCO_ObjectiveSerializer : ScriptedComponentSerializer
 		string objectiveName = obj.GetObjectiveName();
 		float radius = obj.GetRadius();
 		string ownerUid = obj.GetOwnerCommanderUID();
-		if (objectiveName == defName && Math.AbsFloat(radius - defRadius) < 0.01 && ownerUid == defOwner)
-			return ESerializeResult.DEFAULT;
 
-		context.WriteValue("version", 1);
+		context.WriteValue("version", 3);
 		context.WriteValueDefault("name", objectiveName, defName);
 		context.WriteValueDefault("radius", radius, defRadius);
 		context.WriteValueDefault("owner", ownerUid, defOwner);
 		DCO_Perf.Count("obj_persist:save");
+		obj.DCO_SaveState(context);
+		int attrCount;
+		DCO_SettingsPersist.WriteParts(context, "attrs", DCO_SettingsPersist.Dump(DCO_SettingsPersist.Editable(owner), attrCount));
 		return ESerializeResult.OK;
 	}
 
@@ -62,6 +63,14 @@ class DCO_ObjectiveSerializer : ScriptedComponentSerializer
 		context.ReadValueDefault("owner", ownerUid, defOwner);
 
 		obj.DCO_ApplyPersisted(objectiveName, radius, ownerUid);
+		if (version >= 2)
+			obj.DCO_LoadState(context);
+		if (version >= 3)
+		{
+			int skipped;
+			int applied = DCO_SettingsPersist.Apply(DCO_SettingsPersist.Editable(owner), DCO_SettingsPersist.ReadParts(context, "attrs"), skipped);
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("persist_load_settings target=objective name=%1 applied=%2 skipped=%3", objectiveName, applied, skipped));
+		}
 		return true;
 	}
 }

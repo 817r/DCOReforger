@@ -1,7 +1,7 @@
 GenericEntity {
  ID "690E9871DF6FFEE8"
  components {
-  SCR_PlayerScaledGroupSpawner "{690E987F784D1AAE}" {
+  DCO_PlayerScaledGroupSpawner "{690E987F784D1AAE}" {
    m_aGroupPrefabs {
    }
    m_iMinGroups 3

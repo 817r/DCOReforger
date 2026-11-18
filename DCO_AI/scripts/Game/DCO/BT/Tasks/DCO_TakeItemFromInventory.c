@@ -1,4 +1,4 @@
-class SCR_AITakeItemFromInventory_InventoryCallback : ScriptedInventoryOperationCallback
+class DCO_AITakeItemFromInventory_InventoryCallback : ScriptedInventoryOperationCallback
 {
 	protected IEntity m_ItemEntity;
 
@@ -16,7 +16,7 @@ class SCR_AITakeItemFromInventory_InventoryCallback : ScriptedInventoryOperation
 	}
 }
 
-class SCR_AIRemoveItemItemFromInventory_InventoryCallback : ScriptedInventoryOperationCallback
+class DCO_AIRemoveItemFromInventory_InventoryCallback : ScriptedInventoryOperationCallback
 {
 	protected IEntity m_ItemEntity;
 
@@ -34,7 +34,7 @@ class SCR_AIRemoveItemItemFromInventory_InventoryCallback : ScriptedInventoryOpe
 	}
 }
 
-class SCR_AITakeItemFromInventory : AITaskScripted
+class DCO_AITakeItemFromInventory : AITaskScripted
 {
 
 
@@ -75,7 +75,7 @@ class SCR_AITakeItemFromInventory : AITaskScripted
 
 		int nItemsTaken = 0;
 		IEntity lastTakenItem = null;
-		SCR_AITakeItemFromInventory_InventoryCallback invCallback = new SCR_AITakeItemFromInventory_InventoryCallback();
+		DCO_AITakeItemFromInventory_InventoryCallback invCallback = new DCO_AITakeItemFromInventory_InventoryCallback();
 
 		while (true)
 		{
@@ -120,7 +120,7 @@ class SCR_AITakeItemFromInventory : AITaskScripted
 			}
 		}
 
-		SCR_AIRemoveItemItemFromInventory_InventoryCallback invCB = new SCR_AIRemoveItemItemFromInventory_InventoryCallback();
+		DCO_AIRemoveItemFromInventory_InventoryCallback invCB = new DCO_AIRemoveItemFromInventory_InventoryCallback();
 
 		InventoryItemComponent pInvComp = InventoryItemComponent.Cast(foundItems[0].FindComponent(InventoryItemComponent));
 		InventoryStorageSlot parentSlot = pInvComp.GetParentSlot();

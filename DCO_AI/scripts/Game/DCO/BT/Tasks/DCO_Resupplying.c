@@ -103,7 +103,8 @@ class SCR_AIDCO_Ressuplying: AITaskScripted
 		if (m_Utility.m_ThreatSystem.GetSuppressionMeasure() > 0.6)
 			return false;
 
-		if (m_State.GetRequest().m_eType != SCR_EAICombatMoveRequestType.RESUPPLYING)
+		SCR_AICombatMoveRequestBase rq = m_State.GetRequest();
+		if (!rq || rq.m_eType != SCR_EAICombatMoveRequestType.RESUPPLYING)
 		{
 			return true;
 		}

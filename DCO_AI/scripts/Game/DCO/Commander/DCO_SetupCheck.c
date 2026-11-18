@@ -98,6 +98,7 @@ class DCO_SetupCheck
 		NavmeshWorldComponent nav = world.GetNavmeshWorldComponent("Soldiers");
 		if (!nav)
 			return;
+		int bad;
 		foreach (CMD_AICommanderObjectiveComponent obj : mgr.m_aObjective)
 		{
 			if (!obj || !obj.GetOwner() || !names.Contains(obj.GetLogName()))
@@ -110,13 +111,67 @@ class DCO_SetupCheck
 			else if (!nav.GetReachablePoint(p, 30.0, got))
 				result = "none";
 			DCO_ELogLevel lvl = DCO_ELogLevel.INFO;
-			if (result == "none")
+			if (result != "ok")
 			{
 				lvl = DCO_ELogLevel.WARN;
+				bad++;
 				DCO_Perf.Count("setup_check:warn");
 			}
 			DCO_Log.Write(DCO_ELogChannel.CMD, lvl, "-", string.Format("setup_check obj=%1 navmesh=%2 recheck=1", obj.GetLogName(), result));
 		}
+		if (bad > 0)
+			DCO_PlayerComms.SendToGameMasters("DCO setup check", string.Format("No navmesh at %1 %2. AI cannot move there. The mission world may have no navmesh files on its SCR_AIWorld entity.", bad, DCO_CommanderSpawnerComponent.Plural(bad, "objective", "objectives")));
+	}
+
+	static void CommanderNav(AICommander_BaseComponent cmd)
+	{
+		if (!cmd || !cmd.GetOwner() || !Replication.IsServer() || !GetGame().GetAIWorld())
+			return;
+		NavmeshWorldComponent nav = GetGame().GetAIWorld().GetNavmeshWorldComponent("Soldiers");
+		if (!nav)
+			return;
+		vector p = cmd.GetOwner().GetOrigin();
+		if (nav.IsTileLoaded(p))
+			return;
+		nav.LoadTileIn(p);
+		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
+		{
+			if (g && g.GetOwner() && !nav.IsTileLoaded(g.GetOwner().GetOrigin()))
+				nav.LoadTileIn(g.GetOwner().GetOrigin());
+		}
+		GetGame().GetCallqueue().CallLater(CommanderNavRecheck, 30000, false, cmd);
+	}
+
+	static void CommanderNavRecheck(AICommander_BaseComponent cmd)
+	{
+		if (!cmd || !cmd.GetOwner() || !GetGame().GetAIWorld())
+			return;
+		NavmeshWorldComponent nav = GetGame().GetAIWorld().GetNavmeshWorldComponent("Soldiers");
+		if (!nav)
+			return;
+		array<vector> pts = {};
+		pts.Insert(cmd.GetOwner().GetOrigin());
+		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
+		{
+			if (g && g.GetOwner())
+				pts.Insert(g.GetOwner().GetOrigin());
+		}
+		int bad;
+		foreach (vector p : pts)
+		{
+			vector got;
+			if (!nav.IsTileLoaded(p) || !nav.GetReachablePoint(p, 30.0, got))
+				bad++;
+		}
+		if (bad < pts.Count())
+		{
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("setup_check cmd=%1 navmesh=ok points=%2 missing=%3", cmd.GetCommanderUID(), pts.Count(), bad));
+			return;
+		}
+		DCO_Perf.Count("setup_check:warn");
+		DCO_Perf.Count("setup_check:empty_world");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("setup_check cmd=%1 navmesh=empty_world points=%2 (no navmesh at the commander or any of its groups: AI cannot move; the mission world may have no navmesh files on its SCR_AIWorld entity)", cmd.GetCommanderUID(), pts.Count()));
+		DCO_PlayerComms.SendToGameMasters("DCO setup check", string.Format("AI Commander %1: no navmesh at the commander or any of its groups. AI cannot move. The mission world may have no navmesh files on its SCR_AIWorld entity.", cmd.GetCommanderUID()));
 	}
 }
 

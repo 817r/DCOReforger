@@ -69,6 +69,20 @@ class DCO_T_PC_NightMinAttribute : DCO_TuneFloatAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_PC_NightMinBlackAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "pc.night_min_black"; }
+	override protected float Def() { return 0.1; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_PC_DarkGateAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "pc.dark_gate"; }
+	override protected bool Def() { return true; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_T_HEAR_ShotErrAttribute : DCO_TuneFloatAttribute
 {
 	override protected string Key() { return "hear.shot_err"; }

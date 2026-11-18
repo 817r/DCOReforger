@@ -65,9 +65,30 @@ modded class SCR_AIDangerReaction_DamageTaken
 		vector shooterPos    = shooter.GetOrigin();
 		float  distToShooter = vector.Distance(utility.GetOrigin(), shooterPos);
 		bool   isLongRange   = distToShooter > 60.0;
-		DCO_Flinch(utility, combat, state);
+		int zone;
+		string zoneName = "-";
+		ChimeraCharacter hitCh = ChimeraCharacter.Cast(utility.m_OwnerEntity);
+		SCR_CharacterDamageManagerComponent hitDm;
+		if (hitCh)
+			hitDm = SCR_CharacterDamageManagerComponent.Cast(hitCh.GetDamageManager());
+		if (hitDm && DCO_Stress.T(utility, "hit.by_zone", 1.0) > 0)
+		{
+			zone = 2;
+			zoneName = hitDm.DCO_LastHitZone();
+			if (hitDm.DCO_LastHitLeg())
+				hitDm.DCO_SetLegDown();
+			if (hitDm.DCO_LegDown())
+				zone = 1;
+		}
+		DCO_Flinch(utility, combat, state, zone, zoneName);
 
 		TrySuppressShooter(utility, combat, shooterRoot);
+
+		if (zone == 1)
+		{
+			DCO_Perf.Count("hit:leg_prone");
+			return true;
+		}
 
 		SCR_CharacterControllerComponent charCon = combat.GetCharacterController();
 
@@ -92,15 +113,20 @@ modded class SCR_AIDangerReaction_DamageTaken
 		if (state.IsExecutingRequest() && (state.IsInValidCover() || state.DCO_IsCoverProtected()))
 			return true;
 
+		if (!isLongRange && known && charCon && charCon.GetStance() == ECharacterStance.PRONE && DCO_Stress.T(utility, "hit.stay_prone", 1.0) > 0)
+		{
+			DCO_Perf.Count("hit:stay_prone");
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(utility.m_OwnerEntity), string.Format("hit_stay unit=%1 why=prone_close shooter_dist=%2 moving=%3", DCO_Log.IdUnit(utility.m_OwnerEntity), Math.Round(distToShooter), DCO_Util.B01(state.IsExecutingRequest())));
+			return true;
+		}
+
 		PushRetreatToCover(state, shooterPos, isLongRange);
 
 		return true;
 	}
 
-	protected void DCO_Flinch(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatComponent combat, notnull SCR_AICombatMoveState state)
+	protected void DCO_Flinch(notnull SCR_AIUtilityComponent utility, notnull SCR_AICombatComponent combat, notnull SCR_AICombatMoveState state, int zone, string zoneName)
 	{
-		float freeze = Math.RandomFloat(0.3, 0.6);
-		combat.DCO_FlinchNoFire(freeze);
 		string from = "-";
 		string to = "keep";
 		SCR_CharacterControllerComponent cc = combat.GetCharacterController();
@@ -108,22 +134,35 @@ modded class SCR_AIDangerReaction_DamageTaken
 		{
 			int st = cc.GetStance();
 			from = typename.EnumToString(ECharacterStance, st);
-			if (st == ECharacterStance.STAND)
+			if (zone == 1)
+			{
+				if (st != ECharacterStance.PRONE)
+				{
+					DCO_Stance.Request(cc, 3, "hit");
+					to = "PRONE";
+				}
+			}
+			else if (st == ECharacterStance.STAND)
 			{
 				DCO_Stance.Request(cc, 2, "hit");
 				to = "CROUCH";
 			}
 			else if (st == ECharacterStance.CROUCH && !state.IsInValidCover())
 			{
-				DCO_Stance.Request(cc, 3, "hit");
-				to = "PRONE";
+				if (zone == 2)
+					DCO_Perf.Count("hit:no_prone_zone");
+				else
+				{
+					DCO_Stance.Request(cc, 3, "hit");
+					to = "PRONE";
+				}
 			}
 		}
 		DCO_Perf.Count("flinch:hit");
 		DCO_AIMoraleSystem hitMs = utility.GetMoraleSystem();
 		if (hitMs)
 			hitMs.DCO_NoteHit();
-		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(utility.m_OwnerEntity), string.Format("flinch unit=%1 cause=hit stance_from=%2 stance_to=%3 freeze_s=%4 in_cover=%5", DCO_Log.IdUnit(utility.m_OwnerEntity), from, to, freeze.ToString(-1, 1), DCO_Util.B01(state.IsInValidCover())));
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(utility.m_OwnerEntity), string.Format("flinch unit=%1 cause=hit stance_from=%2 stance_to=%3 in_cover=%4 zone=%5 leg_down=%6", DCO_Log.IdUnit(utility.m_OwnerEntity), from, to, DCO_Util.B01(state.IsInValidCover()), zoneName, DCO_Util.B01(zone == 1)));
 	}
 
 	protected void PushRetreatToCover(notnull SCR_AICombatMoveState state, vector shooterPos, bool longRange)
@@ -293,7 +332,7 @@ modded class SCR_AIDangerReaction_DamageTaken
 			return false;
 		s_mDCOPierceNext.Set(me, now + 8000.0);
 
-		IEntity building = SCR_CoverManagerComponent.DCO_GetBuildingAt(me);
+		IEntity building = DCO_CoverManagerComponent.DCO_GetBuildingAt(me);
 		string where = "outdoor";
 		if (building)
 		{

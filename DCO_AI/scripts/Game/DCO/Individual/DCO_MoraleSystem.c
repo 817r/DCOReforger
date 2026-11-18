@@ -369,7 +369,7 @@ class DCO_AIMoraleSystem
 			case moraleState.TENSE: return 0.4 * scale;
 			case moraleState.SHAKEN: return 1.5 * scale;
 			case moraleState.PANIC: return DCO_Stress.T(m_Utility, "tm.morale_panic_th", 2.4) * scale;
-			case moraleState.BREAK: return 3.7 * scale;
+			case moraleState.BREAK: return DCO_Stress.T(m_Utility, "tm.morale_break_th", 3.7) * scale;
 		}
 		return 0;
 	}
@@ -806,6 +806,11 @@ class DCO_AIMoraleSystem
 					break;
 				}
 			}
+		}
+		if (cmd && cmd.GetTraitLeadership() >= 0 && cmd.GetTraitLeadership() != 1.0)
+		{
+			relief = relief * Math.Clamp(cmd.GetTraitLeadership(), 0, 2);
+			DCO_Perf.Count("morale:cmd_leadership");
 		}
 		float bonus = m_fBoost + relief;
 		m_fDCOBonusRaw = bonus;

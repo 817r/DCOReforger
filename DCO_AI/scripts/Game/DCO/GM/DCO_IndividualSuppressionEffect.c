@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIIndividualSuppressionEffectAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AIIndividualSuppressionEffectAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -26,7 +26,7 @@ class SCR_AIIndividualSuppressionEffectAttribute : SCR_ValidTypeBaseValueListEdi
 		if (!aiConf)
 			return null;
 
-		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.GetSuppressionEffect());
+		return SCR_BaseEditorAttributeVar.CreateFloat(aiConf.DCO_SuppRaw());
 	}
 	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
 	{

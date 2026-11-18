@@ -49,8 +49,6 @@ class SCR_AIFindArsenalWithMagazineWell : AITaskScripted
 			}
 		}
 
-		if (nearestEntity)
-
 		if (!nearestEntity)
 			return ENodeResult.FAIL;
 

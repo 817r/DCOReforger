@@ -88,7 +88,6 @@ class CMD_ArtillerySupport : ScriptComponent
 	[Attribute("5.0", UIWidgets.EditBox, "Processing time per queued request (s) before the next request can be processed.", category: "Cooldown")]
 	protected float m_fQueueProcessTime;
 
-	protected float m_fGlobalCooldownUntil  = 0.0;
 	protected float m_fNextProcessTime      = 0.0;
 	protected int   m_iTotalShellsFired     = 0;
 
@@ -102,7 +101,6 @@ class CMD_ArtillerySupport : ScriptComponent
 	protected string m_sFriendlyFaction = string.Empty;
 	protected Faction m_FriendlyFaction;
 
-	float GetGlobalCooldownUntil()     { return m_fGlobalCooldownUntil; }
 	int   GetTotalShellsFired()        { return m_iTotalShellsFired; }
 
 	float GetRejectionChance()               { return m_fBaseRejectionChance; }
@@ -161,7 +159,10 @@ class CMD_ArtillerySupport : ScriptComponent
 		{
 			req.m_sDeny = reason;
 			if (req.m_iPlayerGroup >= 0 && req.m_bQueued)
+			{
 				DCO_Radio.Group(req.m_iPlayerGroup, "FIRE SUPPORT", "fire_dropped", DCO_ERadioKind.WARNING, DCO_Radio.P("reason", DenyKey(reason)));
+				DCO_PlayerRequests.RefundFire(req.m_iPlayerGroup, reason);
+			}
 		}
 	}
 
@@ -211,17 +212,30 @@ class CMD_ArtillerySupport : ScriptComponent
 		denyReason = "no_unit";
 		DCO_GroupUtilityComponent best;
 		float bestDist = float.MAX;
+		bool waiting;
+		float now = DCO_Util.NowS();
 		foreach (DCO_GroupUtilityComponent unit : m_aUnits)
 		{
 			if (!unit || !unit.GetOwner())
-				continue;
-			if (idleOnly && unit.IsMoving())
 				continue;
 
 			float d = vector.DistanceXZ(unit.GetOwner().GetOrigin(), target);
 			if (d < m_fMinRange || d > m_fMaxRange)
 			{
-				denyReason = "out_of_range";
+				if (!waiting)
+					denyReason = "out_of_range";
+				continue;
+			}
+			if (idleOnly && unit.IsMoving())
+			{
+				waiting = true;
+				denyReason = "unit_busy";
+				continue;
+			}
+			if (idleOnly && now < unit.m_fDCOArtyReadyAt)
+			{
+				waiting = true;
+				denyReason = "unit_cooldown";
 				continue;
 			}
 
@@ -243,15 +257,6 @@ class CMD_ArtillerySupport : ScriptComponent
 		if (m_Commander)
 			return m_Commander.GetOwner().GetOrigin();
 		return target;
-	}
-
-	void AddGlobalCooldown(float worldTime, float penalty)
-	{
-	    m_fGlobalCooldownUntil = Math.Clamp(
-	        Math.Max(m_fGlobalCooldownUntil, worldTime) + penalty,
-	        worldTime,
-	        worldTime + m_fMaxGlobalCooldown
-	    );
 	}
 
 	void RegisterArtilleryGroup(DCO_GroupUtilityComponent grp)
@@ -315,7 +320,7 @@ class CMD_ArtillerySupport : ScriptComponent
 			CMD_FireMissionRequest r = m_aQueue[i];
 			if (r && IsLethal(r) && vector.DistanceXZ(r.m_vImpactPos, pos) <= radius)
 			{
-				m_aQueue.Remove(i);
+				m_aQueue.RemoveOrdered(i);
 				n++;
 			}
 		}
@@ -389,15 +394,12 @@ class CMD_ArtillerySupport : ScriptComponent
 
 	    if (m_aQueue.Count() >= m_iMaxQueueSize)
 	    {
-	        LogDenied(req, "queue_full");
-	        int overflow       = m_aQueue.Count() - m_iMaxQueueSize + 1;
-	        float penalty      = m_fQueueOverloadPenalty * overflow;
-	        m_fGlobalCooldownUntil = Math.Clamp(
-	            Math.Max(m_fGlobalCooldownUntil, worldTime) + penalty,
-	            worldTime,
-	            worldTime + m_fMaxGlobalCooldown
-	        );
-	        return false;
+	        if (req.m_iPlayerGroup < 0)
+	        {
+	            LogDenied(req, "queue_full");
+	            return false;
+	        }
+	        DCO_DisplaceForPlayer(req);
 	    }
 
 	    if (req.m_sTier == "area" && req.m_iPlayerGroup < 0)
@@ -421,6 +423,22 @@ class CMD_ArtillerySupport : ScriptComponent
 	    DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", line);
 	    DCO_Events.FireMission(line);
 	    return true;
+	}
+
+	protected void DCO_DisplaceForPlayer(CMD_FireMissionRequest req)
+	{
+		for (int i = m_aQueue.Count() - 1; i >= 0; i--)
+		{
+			CMD_FireMissionRequest r = m_aQueue[i];
+			if (!r || r.m_iPlayerGroup >= 0)
+				continue;
+			DCO_Perf.Count("arty:displaced_for_player");
+			DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_displaced req=%1@%2 prio=%3 by_player_group=%4 queue=%5", r.m_sSource, DCO_Util.XZ(r.m_vImpactPos), QueuePrio(r), req.m_iPlayerGroup, m_aQueue.Count()));
+			m_aQueue.RemoveOrdered(i);
+			return;
+		}
+		DCO_Perf.Count("arty:queue_over_for_player");
+		DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_queue_over player_group=%1 queue=%2 max=%3 why=only_player_requests_waiting", req.m_iPlayerGroup, m_aQueue.Count(), m_iMaxQueueSize));
 	}
 
 	static int QueuePrio(CMD_FireMissionRequest r)
@@ -473,7 +491,7 @@ class CMD_ArtillerySupport : ScriptComponent
 			CMD_FireMissionRequest req = m_aQueue[i];
 			if (req && req.m_iPlayerGroup == groupID)
 			{
-				m_aQueue.Remove(i);
+				m_aQueue.RemoveOrdered(i);
 				n++;
 			}
 		}
@@ -633,9 +651,6 @@ class CMD_ArtillerySupport : ScriptComponent
 	    if (m_aUnits.IsEmpty())
 	        return;
 
-	    if (worldTime < m_fGlobalCooldownUntil)
-	        return;
-
 	    if (worldTime < m_fNextProcessTime)
 	        return;
 
@@ -647,13 +662,13 @@ class CMD_ArtillerySupport : ScriptComponent
 		    CMD_FireMissionRequest req = m_aQueue[qi];
 		    if (!req)
 	    	{
-		    	m_aQueue.Remove(qi);
+		    	m_aQueue.RemoveOrdered(qi);
 		    	continue;
 	    	}
 
 		    if (DCO_CQBSmokeBlocked(req))
 		    {
-		        m_aQueue.Remove(qi);
+		        m_aQueue.RemoveOrdered(qi);
 		        continue;
 		    }
 
@@ -664,8 +679,11 @@ class CMD_ArtillerySupport : ScriptComponent
 		        if (!req.m_bDCORejectLogged)
 		        {
 		            req.m_bDCORejectLogged = true;
-		            DCO_Perf.Count("arty_reject:" + deny);
-		            DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_reject req=%1@%2 reason=%3 units=%4 queue=%5", req.m_sSource, DCO_Util.XZ(req.m_vImpactPos), deny, m_aUnits.Count(), m_aQueue.Count()));
+		            string ev = "arty_reject";
+		            if (deny == "unit_busy" || deny == "unit_cooldown")
+		                ev = "arty_wait";
+		            DCO_Perf.Count(ev + ":" + deny);
+		            DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("%1 req=%2@%3 reason=%4 units=%5 queue=%6", ev, req.m_sSource, DCO_Util.XZ(req.m_vImpactPos), deny, m_aUnits.Count(), m_aQueue.Count()));
 		        }
 		        qi++;
 		        continue;
@@ -676,7 +694,7 @@ class CMD_ArtillerySupport : ScriptComponent
 		    {
 		        LogDenied(req, "civilian");
 		        DCO_Perf.Count("arty_reject:civilian");
-		        m_aQueue.Remove(qi);
+		        m_aQueue.RemoveOrdered(qi);
 		        continue;
 		    }
 		    if (IsLethal(req) && HasFriendlyNearFire(req))
@@ -684,7 +702,7 @@ class CMD_ArtillerySupport : ScriptComponent
 		        LogDenied(req, "friendly");
 		        DCO_Perf.Count("arty_reject:friendly");
 		        DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_reject req=%1@%2 reason=friendly safe_r=%3", req.m_sSource, DCO_Util.XZ(req.m_vImpactPos), Math.Round(req.m_fSafeRadius)));
-		        m_aQueue.Remove(qi);
+		        m_aQueue.RemoveOrdered(qi);
 		        continue;
 		    }
 
@@ -694,6 +712,8 @@ class CMD_ArtillerySupport : ScriptComponent
 
 		    array<vector> artyPoint = GenerateArtilleryImpactPoints(req, unit.GetOwner().GetOrigin(), worldTime, req.m_iShellCount);
 
+		    int firedBefore = shellsFired;
+		    string emptyWhy = "no_unit";
 		    foreach (vector v : artyPoint)
 		    {
 		        SCR_AIWaypoint wp = m_Commander.SpawnArtilleryWP(v);
@@ -714,8 +734,25 @@ class CMD_ArtillerySupport : ScriptComponent
 		        wps.SetTargetShotCount(1);
 		        wps.SetActive(true);
 
+		        if (!DCO_LogiSupply.PayShell(m_Commander))
+		        {
+		            SCR_EntityHelper.DeleteEntityAndChildren(wp);
+		            DCO_Perf.Count("arty:no_supplies");
+		            DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_reject req=%1@%2 reason=no_supplies fired=%3 of=%4", req.m_sSource, DCO_Util.XZ(req.m_vImpactPos), shellsFired, req.m_iShellCount));
+		            emptyWhy = "no_supplies";
+		            break;
+		        }
 		        unit.ShootMortar(wps, worldTime);
 		        shellsFired++;
+		    }
+
+		    if (shellsFired == firedBefore)
+		    {
+		        DCO_Perf.Count("arty:mission_no_shell");
+		        DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_mission_empty req=%1@%2 shells=%3 why=no_shell_fired", req.m_sSource, DCO_Util.XZ(req.m_vImpactPos), req.m_iShellCount));
+		        LogDenied(req, emptyWhy);
+		        m_aQueue.RemoveOrdered(qi);
+		        continue;
 		    }
 
 		    if (IsLethal(req))
@@ -725,25 +762,22 @@ class CMD_ArtillerySupport : ScriptComponent
 		    }
 		    if (req.m_iPlayerGroup >= 0)
 		    	AnnouncePlayerShot(req, unit);
-		    m_aQueue.Remove(qi);
+		    int missionShells = shellsFired - firedBefore;
+		    float unitCd = Math.Clamp(m_fGlobalCooldown + (1.0 * missionShells * m_fCooldownPerShell), m_fMinGlobalCooldown, m_fMaxGlobalCooldown);
+		    if (m_iMaxQueueSize > 0)
+		    	unitCd = Math.Lerp(unitCd, m_fMinGlobalCooldown, Math.Clamp(m_aQueue.Count() / (m_iMaxQueueSize * 1.0), 0.0, 1.0) * 0.5);
+		    unit.m_fDCOArtyReadyAt = worldTime + unitCd;
+		    DCO_Perf.Count("arty:unit_cooldown");
+		    DCO_Log.Write(DCO_ELogChannel.ARTY, DCO_ELogLevel.INFO, "-", string.Format("arty_unit_cooldown mortar=%1 shells=%2 cooldown_s=%3 queue=%4", unit.GetOwner().GetName(), missionShells, Math.Round(unitCd), m_aQueue.Count()));
+		    m_aQueue.RemoveOrdered(qi);
 		}
 
 	    m_iTotalShellsFired = m_iTotalShellsFired + shellsFired;
 
 	    m_fNextProcessTime = worldTime + m_fQueueProcessTime;
 
-	    float shellCooldown = Math.Clamp(
-	        m_fGlobalCooldown + (1.0 * shellsFired * m_fCooldownPerShell),
-	        m_fMinGlobalCooldown,
-	        m_fMaxGlobalCooldown
-	    );
-
-	    float queueRatio = 0.0;
-	    if (m_iMaxQueueSize > 0)
-	        queueRatio = Math.Clamp(m_aQueue.Count() / (m_iMaxQueueSize * 1.0), 0.0, 1.0);
-
-	    float finalCooldown = Math.Lerp(shellCooldown, m_fMinGlobalCooldown, queueRatio * 0.5);
-	    m_fGlobalCooldownUntil = worldTime + finalCooldown;
+	    if (shellsFired <= 0)
+	        DCO_Perf.Count("arty:pass_no_shot");
 	}
 
 	array<vector> GenerateArtilleryImpactPoints(CMD_FireMissionRequest request, vector commanderPos, float worldTime, int shells = 1)
@@ -892,11 +926,12 @@ class CMD_ArtillerySupport : ScriptComponent
 		while (i < m_aQueue.Count())
 		{
 			CMD_FireMissionRequest req = m_aQueue[i];
-			if (!req || worldTime - req.m_fRequestedTime > m_fQueueExpiry)
+			string why = "stale";
+			if (!req || (worldTime - req.m_fRequestedTime > m_fQueueExpiry && !FindUnitInRange(req.m_vImpactPos, false, why)))
 			{
 				if (req)
-					LogDenied(req, "stale");
-				m_aQueue.Remove(i);
+					LogDenied(req, why);
+				m_aQueue.RemoveOrdered(i);
 				continue;
 			}
 			i++;

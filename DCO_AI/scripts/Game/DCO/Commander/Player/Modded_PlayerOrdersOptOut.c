@@ -3,7 +3,7 @@ modded class SCR_AIGroup
 	override void OnWaypointAdded(AIWaypoint wp)
 	{
 		super.OnWaypointAdded(wp);
-		DCO_Battle.OnWaypoint(this, wp);
+		DCO_Dev.OnWaypoint(this, wp);
 	}
 
 	[RplProp()]
@@ -79,8 +79,23 @@ modded class SCR_AIGroup
 		return m_sDCO_Commander;
 	}
 
+	protected bool m_bDCO_OrdersTouched;
+
+	void DCO_OrdersDefault(string commanderUID)
+	{
+		if (m_bDCO_OrdersTouched || !Replication.IsServer())
+			return;
+		m_bDCO_OrdersTouched = true;
+		if (!m_bDCO_DeclineOrders)
+			return;
+		DCO_SetOrders(false, commanderUID);
+		DCO_Perf.Count("player:orders_default_accept");
+		DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_orders_default grp=%1 cmd=%2 accept=1", GetGroupID(), commanderUID));
+	}
+
 	void DCO_SetOrders(bool decline, string commanderUID)
 	{
+		m_bDCO_OrdersTouched = true;
 		m_bDCO_DeclineOrders = decline;
 		m_sDCO_Commander = commanderUID;
 		Replication.BumpMe();
@@ -272,17 +287,17 @@ modded class SCR_PlayerControllerGroupComponent
 		DCO_ContactToast.Show(callsign, text, radio);
 	}
 
-	void DCO_SendOverlay(array<float> groups, array<float> objectives)
+	void DCO_SendOverlay(array<float> groups, array<float> objectives, string objNames)
 	{
 		DCO_Perf.Count("rpc:overlay");
 		DCO_Perf.CountN("rpc:floats", groups.Count() + objectives.Count());
-		Rpc(RPC_DCO_Overlay, groups, objectives);
+		Rpc(RPC_DCO_Overlay, groups, objectives, objNames);
 	}
 
 	[RplRpc(RplChannel.Reliable, RplRcver.Owner)]
-	protected void RPC_DCO_Overlay(array<float> groups, array<float> objectives)
+	protected void RPC_DCO_Overlay(array<float> groups, array<float> objectives, string objNames)
 	{
-		DCO_MapOverlay.SetData(groups, objectives);
+		DCO_MapOverlay.SetData(groups, objectives, objNames);
 	}
 
 	void DCO_SendTransportMarks(array<float> marks)

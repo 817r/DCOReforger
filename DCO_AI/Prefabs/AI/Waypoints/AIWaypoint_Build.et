@@ -1,0 +1,10 @@
+DCO_BuildWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et" {
+ ID "6A1F3C9B2D4E5A70"
+ Type "Defend"
+ Title "Build waypoint"
+ AIBehaviorTree "{5B9E2D47C1A83F6E}AI/BehaviorTrees/Waypoints/DCO_WP_Build.bt"
+ AIBehaviorTreeMoveTo "{A3755C1F88DED8D6}AI/BehaviorTrees/Waypoints/WP_Move.bt"
+ CompletionRadius 8
+ Autocomplete 0
+ CompletionType Any
+}

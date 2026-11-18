@@ -116,8 +116,8 @@ class DCO_API
 			case "aimAccuracy": return c.GetAccuracy();
 			case "aimSpeed": return c.GetAimSpeed();
 			case "aiPerception": return c.GetPerception();
-			case "suppressionEffect": return c.GetSuppressionEffect();
-			case "takeCoverChance": return c.GetTakeCoverChance();
+			case "suppressionEffect": return c.DCO_SuppRaw();
+			case "takeCoverChance": return c.DCO_TakeCoverRaw();
 			case "personality": return c.GetPersonality();
 			case "leadership": return c.GetLeadership();
 		}
@@ -186,7 +186,7 @@ class DCO_API
 		SCR_AIUtilityComponent u = DCO_BldLearn.UtilOf(soldier);
 		if (!u)
 			return false;
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(soldier))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(soldier))
 			return true;
 		return u.m_CombatMoveState && u.m_CombatMoveState.IsInValidCover();
 	}
@@ -276,6 +276,19 @@ class DCO_API
 			}
 		}
 		return outList.Count();
+	}
+
+	static bool CommanderIsPaused(AICommander_BaseComponent commander)
+	{
+		return commander && commander.DCO_IsPaused();
+	}
+
+	static bool CommanderSetPaused(string mod, AICommander_BaseComponent commander, bool paused)
+	{
+		if (!commander || !Replication.IsServer())
+			return false;
+		commander.DCO_SetPaused(paused, "api:" + mod);
+		return true;
 	}
 
 	static int Objectives(notnull array<CMD_AICommanderObjectiveComponent> outList)

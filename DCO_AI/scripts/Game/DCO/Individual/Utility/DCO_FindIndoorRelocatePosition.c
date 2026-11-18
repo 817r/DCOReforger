@@ -30,6 +30,7 @@ class DCO_FindIndoorRelocatePosition : DCO_FindIndoorPosition
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
+		DCO_BtWatch.Mark("HandleCombatMove");
 		if (!owner)
 			return ENodeResult.FAIL;
 

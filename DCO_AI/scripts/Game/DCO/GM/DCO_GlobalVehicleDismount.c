@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalVehicleDismountAttribute : SCR_BaseValueListEditorAttribute
+class DCO_AIGlobalVehicleDismountAttribute : SCR_BaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -32,7 +32,7 @@ class SCR_AIGlobalVehicleDismountAttribute : SCR_BaseValueListEditorAttribute
 	}
 }
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AIGlobalDisembarkRuleAttribute : DCO_CommanderBaseAttribute
+class DCO_AIGlobalDisembarkRuleAttribute : DCO_CommanderBaseAttribute
 {
 	override protected void GetPresetLabels(notnull out array<string> outLabels)
 	{

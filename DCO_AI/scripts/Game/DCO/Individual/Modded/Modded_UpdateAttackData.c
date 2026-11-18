@@ -12,6 +12,30 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 	protected float m_fDCOLaneAt_ms = -100000;
 	protected int m_iDCOLane;
 	protected float m_fDCOGateLogAt_ms = -100000;
+	protected string m_sDCOGateLast;
+
+	protected int DCO_Look(string why, BaseTarget target, bool visible)
+	{
+		DCO_Perf.Count("atk:gate_" + why);
+		if (!visible || !target || !target.GetTargetEntity())
+			return FIRE_TREE_LOOK;
+		float now = GetGame().GetWorld().GetWorldTime();
+		bool fresh = why != m_sDCOGateLast || now - m_fDCOGateLogAt_ms >= 5000.0;
+		if (!fresh || !DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO))
+			return FIRE_TREE_LOOK;
+		m_fDCOGateLogAt_ms = now;
+		m_sDCOGateLast = why;
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_UtilityComponent.m_OwnerEntity), string.Format("fire_gate unit=%1 tgt=%2 dist=%3 why=%4", DCO_Log.IdUnit(m_UtilityComponent.m_OwnerEntity), DCO_Log.IdUnit(target.GetTargetEntity()), Math.Round(target.GetDistance()), why));
+		return FIRE_TREE_LOOK;
+	}
+
+	protected bool DCO_MoveNoAim()
+	{
+		SCR_AICombatMoveRequest_Move mv = SCR_AICombatMoveRequest_Move.Cast(m_UtilityComponent.m_CombatMoveState.GetRequest());
+		if (!mv)
+			return false;
+		return mv.m_eMovementType == EMovementType.SPRINT || mv.m_eStanceMoving == ECharacterStance.PRONE;
+	}
 
 	override protected void OnThreatSectorEscalation(SCR_AISectorThreatFilter ts, int sectorId, float dangerValue)
 	{
@@ -43,6 +67,12 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		m_iDCOLane = DCO_Util.FireLaneCheck(m_UtilityComponent.m_OwnerEntity, target, width, blocker);
 		if (m_iDCOLane != 0)
 			DCO_Util.LaneEvent(m_UtilityComponent.m_OwnerEntity, target, m_iDCOLane, blocker, "cease");
+		IEntity laneMe = m_UtilityComponent.m_OwnerEntity;
+		bool own = m_iDCOLane == 1 && blocker && vector.DistanceXZ(blocker.GetOrigin(), laneMe.GetOrigin()) <= 30.0 && !DCO_Util.IsMGShooter(laneMe);
+		vector ownPos = vector.Zero;
+		if (own)
+			ownPos = blocker.GetOrigin();
+		m_CombatComponent.DCO_NoteLaneOwn(own, now, ownPos);
 		return m_iDCOLane != 0;
 	}
 
@@ -52,22 +82,12 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		SCR_AIBehaviorBase executedBehavior = SCR_AIBehaviorBase.Cast(m_UtilityComponent.GetExecutedAction());
 		if (executedBehavior && executedBehavior.m_bUseCombatMove && !m_UtilityComponent.m_CombatMoveState.m_bAimAtTarget)
 		{
-			if (!visible || !target || target.GetDistance() >= DCO_Stress.T(m_UtilityComponent, "rt.close_m", 30.0))
+			float closeM = DCO_Stress.CloseM(m_UtilityComponent);
+			float moveFire = Math.Max(closeM, DCO_Stress.T(m_UtilityComponent, "rt.move_fire_m", 150.0));
+			bool farMove = target && target.GetDistance() >= closeM && DCO_MoveNoAim();
+			if (!visible || !target || target.GetDistance() >= moveFire || farMove)
 			{
-				if (visible && target && target.GetDistance() < 50.0)
-				{
-					DCO_Perf.Count("atk:fire_block_aim_off");
-					float gNow = GetGame().GetWorld().GetWorldTime();
-					if (gNow - m_fDCOGateLogAt_ms > 2000.0 && DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
-					{
-						m_fDCOGateLogAt_ms = gNow;
-						string gRq = "-";
-						SCR_AICombatMoveRequest_Move gMv = SCR_AICombatMoveRequest_Move.Cast(m_UtilityComponent.m_CombatMoveState.GetRequest());
-						if (gMv)
-							gRq = typename.EnumToString(SCR_EAICombatMoveReason, gMv.m_eReason) + "/" + typename.EnumToString(EMovementType, gMv.m_eMovementType);
-						DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(m_UtilityComponent.m_OwnerEntity), string.Format("fire_gate unit=%1 tgt=%2 dist=%3 reason=aim_off rq=%4 beh=%5", DCO_Log.IdUnit(m_UtilityComponent.m_OwnerEntity), DCO_Log.IdUnit(target.GetTargetEntity()), Math.Round(target.GetDistance()), gRq, executedBehavior.ClassName()));
-					}
-				}
+				DCO_Look("aim_off", target, visible);
 				return FIRE_TREE_INVALID;
 			}
 			if (target.GetDistance() >= 15.0)
@@ -77,19 +97,22 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		if (m_bLookAtThreats)
 			return FIRE_TREE_LOOK_THREATS;
 
+		if (m_CombatComponent.DCO_ForcedHold())
+			return DCO_Look("forced_hold", target, visible);
+
 		if (m_CombatComponent.DCO_ReactionBlocked())
-			return FIRE_TREE_LOOK;
+			return DCO_Look("react", target, visible);
 
 		BaseTarget dcoCloseT = m_CombatComponent.DCO_GetCloseTarget();
 		bool dcoClose = target && dcoCloseT && target.GetTargetEntity() == dcoCloseT.GetTargetEntity();
 		if (m_CombatComponent.DCO_CEHold() && !dcoClose)
-			return FIRE_TREE_LOOK;
+			return DCO_Look("ce_hold", target, visible);
 
 		if (dcoClose && weaponReady && visible && (m_CombatComponent.DCO_IsPinned() || m_CombatComponent.DCO_IsPinRecovering() || m_CombatComponent.DCO_CEHold()))
 		{
 			DCO_Perf.Count("reflex:fire_override");
 			if (m_PerceptionComponent.GetFriendlyInLineOfFire())
-				return FIRE_TREE_LOOK;
+				return DCO_Look("friendly_lof", target, visible);
 			if (m_bWeaponHasBurstOrAuto)
 				return FIRE_TREE_BURST;
 			return FIRE_TREE_SINGLE;
@@ -98,26 +121,41 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		if (target && m_CombatComponent.DCO_StressNoFire(target.GetDistance()))
 		{
 			DCO_Perf.Count("tm:no_fire");
-			return FIRE_TREE_LOOK;
+			return DCO_Look("panic", target, visible);
 		}
 
-		if (m_CombatComponent.DCO_IsPinned())
+		bool pinnedNow = m_CombatComponent.DCO_IsPinned();
+		if (pinnedNow || m_CombatComponent.DCO_IsPinRecovering())
 		{
+			string pinWhy = "pin_recover";
+			if (pinnedNow)
+				pinWhy = "pinned";
 			if (weaponReady && m_CombatComponent.DCO_PinFireAllowed())
 			{
 				if (target && (m_PerceptionComponent.GetFriendlyInLineOfFire() || DCO_LaneBlocked(target.GetLastSeenPosition(), 1.5)))
 				{
 					DCO_Perf.Count("pin_burst_lane_block");
-					return FIRE_TREE_LOOK;
+					return DCO_Look("lane", target, visible);
 				}
 				if (m_bWeaponHasBurstOrAuto)
 					return FIRE_TREE_BURST;
 				return FIRE_TREE_SINGLE;
 			}
-			return FIRE_TREE_LOOK;
+			return DCO_Look(pinWhy, target, visible);
 		}
-		if (m_CombatComponent.DCO_IsPinRecovering())
-			return FIRE_TREE_LOOK;
+
+		string darkWhy;
+		if (target && DCO_DarkGate.Block(m_UtilityComponent, target, darkWhy))
+		{
+			DCO_Perf.Count("atk:dark_gate");
+			float dNow = GetGame().GetWorld().GetWorldTime();
+			if (dNow - m_fDCOGateLogAt_ms > 5000.0 && DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO))
+			{
+				m_fDCOGateLogAt_ms = dNow;
+				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_UtilityComponent.m_OwnerEntity), string.Format("dark_gate unit=%1 tgt=%2 %3 why=too_dark", DCO_Log.IdUnit(m_UtilityComponent.m_OwnerEntity), DCO_Log.IdUnit(target.GetTargetEntity()), darkWhy));
+			}
+			return DCO_Look("dark", target, visible);
+		}
 
 		if (!weaponReady)
 			return FIRE_TREE_LOOK;
@@ -147,7 +185,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			if (!IsCloseDirectThreat(target, visible) || (!ShouldReturnFireWhenEndangered() && !DCO_DisciplineBreak(target, visible)))
 			{
 				DCO_Perf.Count("hold_fire_look");
-				return FIRE_TREE_LOOK;
+				return DCO_Look("hold_fire", target, visible);
 			}
 			DCO_Perf.Count("hold_fire_break");
 		}
@@ -162,12 +200,10 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		}
 
 		if (m_PerceptionComponent.GetFriendlyInLineOfFire() || DCO_LaneBlocked(target.GetLastSeenPosition(), 1.5))
-		{
-			return FIRE_TREE_LOOK;
-		}
+			return DCO_Look("lane", target, visible);
 
 		if (DCO_Opp.PatientHold(m_UtilityComponent, target, visible, weaponType, targetDistance))
-			return FIRE_TREE_LOOK;
+			return DCO_Look("patient", target, visible);
 
 		float threat =Math.Min(m_UtilityComponent.m_ThreatSystem.GetThreatMeasure(), 1.0);
 		float mgRaw = threat;
@@ -193,10 +229,11 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 					fireRate *= DCO_Specialist.RateMul(m_CombatComponent.DCO_GetSpec());
 
 				fireRate *= DCO_AmmoUtility.GetAmmoConservationScale(m_UtilityComponent, selectedWeaponComp);
+				fireRate *= DCO_AmmoUtility.SuppressRateMulQ(m_UtilityComponent, selectedWeaponComp);
 
 				return FIRE_TREE_SUPPRESSIVE;
 			}
-			return FIRE_TREE_LOOK;
+			return DCO_Look("range", target, visible);
 		}
 
 		DCO_CtxState ctx = DCO_Ctx.Get(m_UtilityComponent);
@@ -207,7 +244,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 		ChimeraCharacter atTc = ChimeraCharacter.Cast(target.GetTargetEntity());
 		if (atTc && atTc.IsInVehicle() && target.GetTimeSinceSeen() < 5.0 && m_CombatComponent.HasWeaponOfType(EWeaponType.WT_ROCKETLAUNCHER)
 			&& DCO_GlobalAIComponent.BehaviorOnUtility(m_UtilityComponent, DCO_EBehavior.AT_SPECIALIST)
-			&& DCO_RpgUnseen.Allowed(m_UtilityComponent, atTc, target.GetLastSeenPosition()))
+			&& DCO_RpgUnseen.AllowedSeen(m_UtilityComponent, atTc, target.GetLastSeenPosition(), target.GetTimeSinceSeen()))
 			return 7;
 
 		if (ctx && visible && target.GetTargetEntity())
@@ -225,7 +262,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			if (reactNow - m_fDCOCtxReactAt_ms < m_fDCOCtxReactDelay_s * 1000.0)
 			{
 				DCO_Perf.Count("ctx:react_wait");
-				return FIRE_TREE_LOOK;
+				return DCO_Look("react_ctx", target, visible);
 			}
 		}
 		if (ctx && !visible && target.GetTimeSinceSeen() > 3.0)
@@ -236,7 +273,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			if (ctxFrag &&m_CombatComponent.HasWeaponOfType(EWeaponType.WT_FRAGGRENADE) && DCO_GrenadeUtility.TryCloseFrag(m_UtilityComponent, target, targetDistance, true))
 				return FIRE_TREE_LOOK;
 
-			if (targetDistance >= 50.0 && DCO_UGLUtility.IsPointTarget(target) && DCO_UGLUtility.ShouldUseGL(m_UtilityComponent, selectedWeaponComp, target.GetLastSeenPosition()))
+			if (targetDistance >= 50.0 && DCO_UGLUtility.IsPointTarget(target, m_UtilityComponent) && DCO_UGLUtility.ShouldUseGL(m_UtilityComponent, selectedWeaponComp, target.GetLastSeenPosition()))
 			{
 				DCO_Perf.Count("spec:gl_visible_point");
 				return 8;
@@ -256,7 +293,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			else if (farRifle)
 			{
 				if (!DCO_LongRange.IsShotWindow(m_UtilityComponent.m_OwnerEntity))
-					return FIRE_TREE_LOOK;
+					return DCO_Look("long_window", target, visible);
 				return FIRE_TREE_SINGLE;
 			}
 			else if (ctx && weaponType != EWeaponType.WT_SNIPERRIFLE)
@@ -278,6 +315,8 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 				if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
 					DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(m_UtilityComponent.m_OwnerEntity), string.Format("fire unit=%1 mode=%2 dist=%3 ctx=%4 src=profile",
 						DCO_Log.IdUnit(m_UtilityComponent.m_OwnerEntity), mode, Math.Round(targetDistance), DCO_Ctx.Tag(ctx)));
+				if (tree == FIRE_TREE_LOOK)
+					return DCO_Look("ctx_hold", target, visible);
 				return tree;
 			}
 			else if (targetDistance < effectiveBurstMaxDist && m_bWeaponHasBurstOrAuto)
@@ -311,9 +350,9 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			}
 			if (!lkOn && weaponType == EWeaponType.WT_MACHINEGUN && DCO_GlobalAIComponent.BehaviorOnUtility(m_UtilityComponent, DCO_EBehavior.MG_GUNNER))
 				lastSeenThreshold = Math.Max(lastSeenThreshold, 8.0);
-			if (target.GetTimeSinceSeen() > lastSeenThreshold && target.GetTimeSinceSeen() < 30.0 && DCO_Stress.T(m_UtilityComponent, "tb.ow_sup", 1.0) > 0 && DCO_TeamBound.OverwatchFor(m_UtilityComponent))
+			if (target.GetTimeSinceSeen() > lastSeenThreshold && target.GetTimeSinceSeen() < DCO_Stress.T(m_UtilityComponent, "tb.ow_sup_s", 15.0) && DCO_Stress.T(m_UtilityComponent, "tb.ow_sup", 1.0) > 0 && DCO_TeamBound.OverwatchFor(m_UtilityComponent))
 			{
-				lastSeenThreshold = Math.Max(lastSeenThreshold, 30.0);
+				lastSeenThreshold = Math.Max(lastSeenThreshold, DCO_Stress.T(m_UtilityComponent, "tb.ow_sup_s", 15.0));
 				DCO_Perf.Count("tb:ow_suppress");
 			}
 			if ((weaponType == EWeaponType.WT_MACHINEGUN || weaponType == EWeaponType.WT_AUTOCANNON) && DCO_SquadMovingInVehicleSupport())
@@ -379,7 +418,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 
 			if ((!directDamage || weaponType != EWeaponType.WT_ROCKETLAUNCHER) &&
 				target.GetTimeSinceSeen() < lastSeenThreshold &&
-				target.GetTraceFraction() > 0.4)
+				DCO_SuppressGate.FracOk(target.GetTraceFraction(), targetDistance, 0.4))
 			{
 				if (DCO_AmmoUtility.ShouldAvoidSuppressiveFire(m_UtilityComponent, selectedWeaponComp))
 					return FIRE_TREE_LOOK;
@@ -394,6 +433,7 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 					fireRate *= DCO_Specialist.RateMul(m_CombatComponent.DCO_GetSpec());
 
 				fireRate *= DCO_AmmoUtility.GetAmmoConservationScale(m_UtilityComponent, selectedWeaponComp);
+				fireRate *= DCO_AmmoUtility.SuppressRateMulQ(m_UtilityComponent, selectedWeaponComp);
 				if (ctxSupMul != 1.0)
 				{
 					fireRate *= ctxSupMul;
@@ -419,8 +459,8 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 			}
 			else if ((!directDamage || weaponType == EWeaponType.WT_ROCKETLAUNCHER) &&
 				target.GetTimeSinceSeen() < lastSeenThreshold &&
-				target.GetTraceFraction() > 0.4 &&
-				(weaponType != EWeaponType.WT_ROCKETLAUNCHER || DCO_RpgUnseen.Allowed(m_UtilityComponent, target.GetTargetEntity(), target.GetLastSeenPosition())))
+				DCO_SuppressGate.FracOk(target.GetTraceFraction(), targetDistance, 0.4) &&
+				(weaponType != EWeaponType.WT_ROCKETLAUNCHER || DCO_RpgUnseen.AllowedSeen(m_UtilityComponent, target.GetTargetEntity(), target.GetLastSeenPosition(), target.GetTimeSinceSeen())))
 			{
 				return 7;
 			}
@@ -550,10 +590,10 @@ modded class SCR_AIUpdateTargetAttackData : AITaskScripted
 
 	protected bool IsCloseDirectThreat(BaseTarget target, bool visible)
 	{
-		if (!target || !visible)
+		if (!target || !visible || target.GetTargetCategory() != ETargetCategory.ENEMY)
 			return false;
 
-		return target.GetDistance() < 80.0;
+		return target.GetDistance() < DCO_Stress.T(m_UtilityComponent, "roe.self_defence_m", 150.0);
 	}
 
 	protected bool ShouldReturnFireWhenEndangered()

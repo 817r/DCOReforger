@@ -114,7 +114,7 @@ modded class AICommander_BaseComponent
 		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
 		{
 			if (g && !g.IsPlayerGroup() && !g.IsDedicatedTransport() && !g.IsMortar() && !g.IsInTransport()
-				&& g.IsAvailableReserve() && g.CanItHaveOrder() && CanCommitGroup(g))
+				&& g.IsAvailableReserve() && g.CanItHaveOrder() && CanCommitGroup(g, true))
 				idle++;
 		}
 
@@ -141,6 +141,36 @@ modded class AICommander_BaseComponent
 			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), line);
 			return;
 		}
+	}
+
+	int DCO_ReleaseAttackers(CMD_AICommanderObjectiveComponent obj, string why)
+	{
+		int released;
+		int kept;
+		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
+		{
+			if (!g || g.IsPlayerGroup() || g.GetGroupObjective() != obj || !TaskCountsSlot(g.GetTask()))
+				continue;
+			if (g.IsInContact())
+			{
+				kept++;
+				continue;
+			}
+			if (obj.GetCurrentAssignedGroupCount(m_sFactionKey) > 0)
+				obj.SetObjectiveGroup(m_sFactionKey, -1);
+			if (!g.IsInTransport())
+				g.CompleteAllWaypoints();
+			g.SetTask(DCO_EGroupTask.NONE, "DCO_ReleaseAttackers");
+			g.SetGroupObjective(null);
+			released++;
+		}
+		if (released <= 0)
+			return 0;
+		if (kept <= 0)
+			ResetSyncState(obj);
+		DCO_Perf.Count("op:fix_release");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("op_fix_release cmd=%1 obj=%2 released=%3 kept_in_contact=%4 why=%5", m_sCommanderUID, obj.GetLogName(), released, kept, why));
+		return released;
 	}
 
 	bool DCO_HasReinforcement(CMD_AICommanderObjectiveComponent obj)
@@ -177,7 +207,7 @@ modded class AICommander_BaseComponent
 		ResetSyncState(obj);
 		SetObjectiveCooldown(obj, m_fAttackAbortCooldown);
 		if (!m_bTacticAborting)
-			m_Tactics.OnAborted(obj, "undermanned");
+			m_Tactics.OnAborted(this, obj, "undermanned");
 
 		string line = string.Format("attack_abort cmd=%1 obj=%2 strength=%3 enemy_est=%4 ratio_needed=%5 groups_released=%6",
 			m_sCommanderUID, obj.GetLogName(), strengthBefore, EstimateEnemyAt(obj), GetMinAttackRatio().ToString(-1, 1), released) + m_sDCOAbortExtra;

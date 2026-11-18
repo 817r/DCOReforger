@@ -105,6 +105,19 @@ class DCO_PlayerTasking
 		if (!grp.DCO_IsDecliningOrders())
 			cmd = grp.DCO_GetOrdersCommander();
 
+		if (bit == 16)
+		{
+			int modeMask = grp.DCO_GetPlayerRoles() ^ bit;
+			grp.DCO_SetPlayerRoles(modeMask);
+			string modeKey = "squad_manual";
+			if ((modeMask & bit) != 0)
+				modeKey = "squad_auto";
+			DCO_Radio.Group(grp.GetGroupID(), "COMMANDER", modeKey, DCO_ERadioKind.INFO);
+			DCO_Perf.Count("player:" + modeKey);
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_squad_mode grp=%1 pid=%2 mode=%3", grp.GetGroupID(), pid, modeKey));
+			return;
+		}
+
 		if (bit != 0)
 		{
 			int mask = grp.DCO_GetPlayerRoles() ^ bit;
@@ -362,7 +375,7 @@ class DCO_PlayerTasking
 				continue;
 			SCR_AIGroup grp = groups.FindGroup(id);
 			if (grp)
-				total += grp.GetPlayerCount() + grp.GetAgentsCount();
+				total += grp.GetPlayerCount() + DCO_Dormant.Count(grp);
 		}
 		return total;
 	}
@@ -660,7 +673,7 @@ class DCO_PlayerTasking
 		bool flank;
 		bool has = FindTarget(cmd, grp, id, from, obj, type, pos, flank);
 
-		if (e && has && e.m_Objective == obj && e.m_eType == type)
+		if (e && has && e.m_Objective == obj && (e.m_eType == type || e.m_bLate))
 		{
 			if (!e.m_bDone && e.m_Task && IsAccomplished(e, cmd, grp))
 			{
@@ -1126,6 +1139,8 @@ class DCO_PlayerTasking
 
 		foreach (SCR_AIGroup grp : playable)
 		{
+			if (grp && grp.GetLeaderID() > 0 && cmd.DCO_PlayersAcceptAtStart())
+				grp.DCO_OrdersDefault(cmd.GetCommanderUID());
 			if (grp && grp.GetLeaderID() > 0 && !grp.DCO_IsDecliningOrders() && grp.DCO_GetOrdersCommander() == cmd)
 				outGroups.Insert(grp);
 		}

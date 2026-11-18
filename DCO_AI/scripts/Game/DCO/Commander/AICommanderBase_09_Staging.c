@@ -42,25 +42,12 @@ modded class AICommander_BaseComponent
 	        if (assaultGrp.IsPlayerGroup())
 	            return;
 	        bool tacticMin = sendIdx < 2 && DCO_TacticTest.Forces(this, obj);
-	        if (!tacticMin && !CanCommitGroup(assaultGrp))
+	        if (!tacticMin && !CanCommitGroup(assaultGrp, true))
 	            break;
 	        if (tacticMin)
 	            DCO_Perf.Count("staging_sizing:tactic_min");
 
-	        int alreadyStaged = 0;
-	        foreach (DCO_GroupUtilityComponent staged : m_aOwnedGroup)
-	        {
-	            if (staged && staged != assaultGrp && staged.GetGroupObjective() == obj && staged.GetTask() == DCO_EGroupTask.ATTACK)
-	                alreadyStaged++;
-	        }
-	        vector toObj = objPos - stagingPos;
-	        toObj[1] = 0;
-	        toObj.Normalize();
-	        vector slotSide = Vector(-toObj[2], 0.0, toObj[0]);
-	        float slotOffset = m_fStagingSlotSpacing * ((alreadyStaged + 1) / 2);
-	        if (alreadyStaged % 2 == 1)
-	            slotOffset = -slotOffset;
-	        vector groupStaging = DCO_Util.Surface(stagingPos + slotSide * slotOffset);
+	        vector groupStaging = DCO_StageSlot(assaultGrp, obj, stagingPos);
 
 	        assaultGrp.CompleteAllWaypoints();
 	        bool viaTransport = TryAssignTransport(assaultGrp, groupStaging, worldTime, DCO_EGroupTask.ATTACK);
@@ -79,7 +66,7 @@ modded class AICommander_BaseComponent
 	            break;
 	    }
 
-	    if (fireManeuver)
+	    if (fireManeuver && !DCO_IdleDedicated(DCO_EGroupJob.SBF, 3, false))
 	        return;
 
 	    if (DCO_GroupsOnObj(obj) >= forceMax)
@@ -89,14 +76,21 @@ modded class AICommander_BaseComponent
 	        return;
 	    }
 
-	    if (obj.GetRequiredGroupCount() >= 2 && !ObjectiveHasSuppressGroup(obj) && DCO_SbfAllowed(obj))
+	    if (obj.GetRequiredGroupCount() >= 2 && DCO_SbfCount(obj) < DCO_SbfWanted(obj) && DCO_SbfAllowed(obj))
 	    {
 	        DCO_GroupUtilityComponent sbf = FindBestIdleGroupForTask(DCO_EGroupTask.SUPPORT_BY_FIRE, objPos, false, obj);
+	        if (sbf && fireManeuver && !DCO_GroupJobs.Dedicated(sbf, DCO_EGroupJob.SBF, 3))
+	            sbf = null;
 	        if (sbf && !sbf.IsPlayerGroup() && CanCommitGroup(sbf))
 	        {
 	            vector sbfPos = m_Ops.FindOverwatch(obj, sbf.GetOwner().GetOrigin(), -1, -1, -1, GetCommanderFactionKey());
 	            if (sbfPos != vector.Zero)
 	            {
+	                if (fireManeuver)
+	                {
+	                    DCO_Perf.Count("sbf:fm_dedicated");
+	                    DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("fm_sbf_dedicated cmd=%1 obj=%2 grp=%3 units=%4 mg=%5", m_sCommanderUID, obj.GetLogName(), DCO_Log.IdGroup(SCR_AIGroup.Cast(sbf.GetOwner())), sbf.GetUnitCount(), DCO_Util.B01(sbf.HasMG())));
+	                }
 	                sbf.CompleteAllWaypoints();
 	                sbf.SetGroupObjective(obj);
 	                if (!TryAssignTransport(sbf, sbfPos, worldTime, DCO_EGroupTask.SUPPORT_BY_FIRE))
@@ -111,8 +105,13 @@ modded class AICommander_BaseComponent
 	        }
 	    }
 
+	    if (fireManeuver)
+	        return;
+
 	    int flankSends = 1;
 	    if (plan && plan.m_eTactic == DCO_ETactic.PINCER)
+	        flankSends = 2;
+	    else if (plan && plan.m_eTactic == DCO_ETactic.FLANKING && requiredGroups >= 4)
 	        flankSends = 2;
 	    for (int flankIdx = 0; flankIdx < flankSends; flankIdx++)
 	    {
@@ -164,6 +163,74 @@ modded class AICommander_BaseComponent
 	    }
 	}
 
+	protected ref map<DCO_GroupUtilityComponent, vector> m_mDCOStageSlot = new map<DCO_GroupUtilityComponent, vector>();
+
+	protected bool DCO_StageSlotOf(DCO_GroupUtilityComponent g, vector stagingPos, out vector slot)
+	{
+		return m_mDCOStageSlot.Find(g, slot) && vector.DistanceXZ(slot, stagingPos) <= m_fStagingSlotSpacing * 7.0;
+	}
+
+	protected float DCO_StageDist(DCO_GroupUtilityComponent g, vector stagingPos)
+	{
+		vector slot;
+		if (DCO_StageSlotOf(g, stagingPos, slot))
+			return vector.Distance(g.GetOwner().GetOrigin(), slot);
+		return vector.Distance(g.GetOwner().GetOrigin(), stagingPos);
+	}
+
+	protected vector DCO_StageSlot(DCO_GroupUtilityComponent g, CMD_AICommanderObjectiveComponent obj, vector stagingPos)
+	{
+		vector slot;
+		if (DCO_StageSlotOf(g, stagingPos, slot))
+			return slot;
+
+		if (m_mDCOStageSlot.Count() > 64)
+		{
+			for (int pi = m_mDCOStageSlot.Count() - 1; pi >= 0; pi--)
+			{
+				if (!m_mDCOStageSlot.GetKey(pi))
+					m_mDCOStageSlot.RemoveElement(pi);
+			}
+		}
+
+		array<vector> taken = {};
+		foreach (DCO_GroupUtilityComponent o : m_aOwnedGroup)
+		{
+			vector os;
+			if (o && o != g && o.GetGroupObjective() == obj && DCO_StageSlotOf(o, stagingPos, os))
+				taken.Insert(os);
+		}
+
+		vector toObj = obj.GetOwner().GetOrigin() - stagingPos;
+		toObj[1] = 0;
+		toObj.Normalize();
+		vector side = Vector(-toObj[2], 0.0, toObj[0]);
+		slot = stagingPos;
+		for (int i = 0; i < 12; i++)
+		{
+			int rank = (i + 1) / 2;
+			float lateral = m_fStagingSlotSpacing * rank;
+			if ((i & 1) == 0)
+				lateral = -lateral;
+			float back = 0;
+			if ((rank & 1) == 1)
+				back = m_fStagingSlotSpacing * 0.8;
+			slot = DCO_Util.Surface(stagingPos + side * lateral - toObj * back);
+			bool slotFree = true;
+			foreach (vector takenPos : taken)
+			{
+				if (vector.DistanceXZ(takenPos, slot) < m_fStagingSlotSpacing * 0.5)
+					slotFree = false;
+			}
+			if (slotFree)
+				break;
+		}
+		m_mDCOStageSlot.Set(g, slot);
+		DCO_Perf.Count("staging:slot");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("staging_slot cmd=%1 obj=%2 grp=%3 slot=%4 off_m=%5 taken=%6", m_sCommanderUID, obj.GetLogName(), g.GetOwner().GetName(), DCO_Util.XZ(slot), Math.Round(vector.DistanceXZ(slot, stagingPos)), taken.Count()));
+		return slot;
+	}
+
 	protected bool DCO_SbfAllowed(CMD_AICommanderObjectiveComponent obj)
 	{
 		bool allowed = m_bUseSynchronizedAttack;
@@ -187,6 +254,25 @@ modded class AICommander_BaseComponent
 			g.CompleteAllWaypoints();
 			g.SetTask(DCO_EGroupTask.NONE, "AICommanderBase:sbf_no_obj");
 		}
+	}
+
+	protected int DCO_SbfCount(CMD_AICommanderObjectiveComponent obj)
+	{
+		int n;
+		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
+		{
+			if (grp && grp.GetTask() == DCO_EGroupTask.SUPPORT_BY_FIRE && grp.GetGroupObjective() == obj)
+				n++;
+		}
+		return n;
+	}
+
+	protected int DCO_SbfWanted(CMD_AICommanderObjectiveComponent obj)
+	{
+		int want = DCO_Force.Count(this, "sbf", GetRequiredAttackGroups(obj));
+		if (want < 0)
+			return 0;
+		return want;
 	}
 
 	protected bool ObjectiveHasSuppressGroup(CMD_AICommanderObjectiveComponent obj)
@@ -216,11 +302,12 @@ modded class AICommander_BaseComponent
 			if (staged.IsMoving() || staged.IsGroupHaveWaypoint())
 				continue;
 
-			if (vector.Distance(staged.GetOwner().GetOrigin(), stagingPos) <= m_fStagingArriveRadius)
+			if (DCO_StageDist(staged, stagingPos) <= m_fStagingArriveRadius)
 				continue;
 
-			if (!TryAssignTransport(staged, stagingPos, worldTime, DCO_EGroupTask.ATTACK))
-				SpawnMoveRoute(staged, staged.GetOwner().GetOrigin(), stagingPos, worldTime);
+			vector stagedSlot = DCO_StageSlot(staged, obj, stagingPos);
+			if (!TryAssignTransport(staged, stagedSlot, worldTime, DCO_EGroupTask.ATTACK))
+				SpawnMoveRoute(staged, staged.GetOwner().GetOrigin(), stagedSlot, worldTime);
 		}
 
 		int required = GetRequiredAttackGroups(obj);
@@ -234,12 +321,13 @@ modded class AICommander_BaseComponent
 			if (assaultGrp.IsPlayerGroup())
 				break;
 
-			if (!CanCommitGroup(assaultGrp))
+			if (!CanCommitGroup(assaultGrp, true))
 				break;
 
 			assaultGrp.CompleteAllWaypoints();
+			vector assaultSlot = DCO_StageSlot(assaultGrp, obj, stagingPos);
 
-			if (TryAssignTransport(assaultGrp, stagingPos, worldTime, DCO_EGroupTask.ATTACK))
+			if (TryAssignTransport(assaultGrp, assaultSlot, worldTime, DCO_EGroupTask.ATTACK))
 			{
 				if (assaultGrp.GetGroupObjective() != obj)
 				{
@@ -249,7 +337,7 @@ modded class AICommander_BaseComponent
 				continue;
 			}
 
-			if (!SpawnMoveRoute(assaultGrp, assaultGrp.GetOwner().GetOrigin(), stagingPos, worldTime))
+			if (!SpawnMoveRoute(assaultGrp, assaultGrp.GetOwner().GetOrigin(), assaultSlot, worldTime))
 				break;
 
 			assaultGrp.SetTask(DCO_EGroupTask.ATTACK, "AICommanderBase:6229");
@@ -357,7 +445,6 @@ modded class AICommander_BaseComponent
 
 		armor.SetTask(DCO_EGroupTask.SUPPORT_BY_FIRE, "AICommanderBase:6298");
 		armor.SetGroupObjective(obj);
-		obj.SetObjectiveGroup(m_sFactionKey, 1);
 		m_Ops.RegisterArmor(this, armor, obj, overwatch);
 	}
 
@@ -433,6 +520,7 @@ modded class AICommander_BaseComponent
 			g.SetTask(DCO_EGroupTask.SUPPORT_BY_FIRE, "AICommanderBase:scope_fix");
 			g.SetGroupObjective(obj);
 			result = "move_sbf";
+			DCO_Briefing.AttackFlag(this, m_Tactics.GetPlan(obj), 0, "brief_phase_commit");
 		}
 		DCO_Perf.Count("op_fix_role:" + result);
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("op_fix_role cmd=%1 grp=%2 obj=%3 site=%4 result=%5", m_sCommanderUID, g.GetOwner().GetName(), obj.GetLogName(), DCO_Util.XZ(site), result));
@@ -443,9 +531,12 @@ modded class AICommander_BaseComponent
 		float goAt;
 		if (!m_mDCOScopeGoAt.Find(g, goAt))
 		{
-			if (!g.m_bDCOTRReady)
-				return;
 			m_mDCOScopeGoAt.Set(g, worldTime);
+			SCR_AIWaypoint openWp = SpawnSuppressWP(obj.GetOwner().GetOrigin());
+			if (openWp)
+				g.MoveTo(openWp, worldTime);
+			else
+				DCO_Perf.Count("op_fix_open:no_waypoint");
 			g.DCO_TRSignal(DCO_ETRSignal.GO);
 			DCO_Perf.Count("op_fix_open");
 			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("op_fix_open cmd=%1 grp=%2 obj=%3 signal=GO", m_sCommanderUID, g.GetOwner().GetName(), obj.GetLogName()));
@@ -499,9 +590,6 @@ modded class AICommander_BaseComponent
 		string act = "-";
 		if (gu && gu.GetCurrentAction())
 			act = gu.GetCurrentAction().ClassName();
-		g.CompleteAllWaypoints();
-		SpawnMoveRoute(g, g.GetOwner().GetOrigin(), site, worldTime);
-		g.SetTask(DCO_EGroupTask.SUPPORT_BY_FIRE, "AICommanderBase:scope_fix_stall");
 		DCO_ScopeFixRole(g, obj, site, worldTime);
 		DCO_Perf.Count("op_fix_stall_reissue");
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("op_fix_stall_reissue cmd=%1 grp=%2 obj=%3 dist_site=%4 stalled_s=%5 cause=%6", m_sCommanderUID, g.GetOwner().GetName(), obj.GetLogName(), Math.Round(d), Math.Round(worldTime - bestAt), act));
@@ -768,7 +856,7 @@ modded class AICommander_BaseComponent
 				continue;
 
 			total++;
-			float d = vector.Distance(grp.GetOwner().GetOrigin(), stagingPos);
+			float d = DCO_StageDist(grp, stagingPos);
 			maxDist = Math.Max(maxDist, d);
 			if (grp.IsInTransport())
 				continue;
@@ -864,7 +952,7 @@ modded class AICommander_BaseComponent
 
 			found++;
 
-			float sd = vector.Distance(grp.GetOwner().GetOrigin(), stagingPos);
+			float sd = DCO_StageDist(grp, stagingPos);
 			if (StageContactHere(grp, obj, sd) || StageContactForward(grp, obj, stagingPos))
 				continue;
 
@@ -928,7 +1016,7 @@ modded class AICommander_BaseComponent
 				continue;
 
 			vector gp = grp.GetOwner().GetOrigin();
-			if (grp.GetTask() == DCO_EGroupTask.ATTACK && (m_bDCOReleaseAll || vector.Distance(gp, stagingPos) <= m_fStagingArriveRadius || vector.DistanceXZ(gp, obj.GetOwner().GetOrigin()) < stagingToObj))
+			if (grp.GetTask() == DCO_EGroupTask.ATTACK && (m_bDCOReleaseAll || DCO_StageDist(grp, stagingPos) <= m_fStagingArriveRadius ||vector.DistanceXZ(gp, obj.GetOwner().GetOrigin()) < stagingToObj))
 				toRelease.Insert(grp);
 			else if (grp.GetTask() == DCO_EGroupTask.FLANK)
 				toFlank.Insert(grp);
@@ -1081,7 +1169,7 @@ modded class AICommander_BaseComponent
 		if (slotsLeft > 0)
 		{
 			DCO_GroupUtilityComponent assaultGrp = FindBestIdleGroupForTask(DCO_EGroupTask.ATTACK, objCenter, false, obj);
-			if (assaultGrp && !assaultGrp.IsPlayerGroup() && CanCommitGroup(assaultGrp))
+			if (assaultGrp && !assaultGrp.IsPlayerGroup() && CanCommitGroup(assaultGrp, true))
 			{
 				assaultGrp.CompleteAllWaypoints();
 

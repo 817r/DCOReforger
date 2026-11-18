@@ -1,0 +1,9 @@
+DCO_TacticWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et" {
+ ID "58BAEE2466157764"
+ Type "Move"
+ Title "Convoy waypoint"
+ AIBehaviorTreeMoveTo "{A3755C1F88DED8D6}AI/BehaviorTrees/Waypoints/WP_Move.bt"
+ CompletionRadius 15
+ CompletionType Any
+ m_eMode CONVOY
+}

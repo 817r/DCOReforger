@@ -597,7 +597,7 @@ class AICommander_ManagerComponent : ScriptComponent
 
 		chosen.RegisterGroup(grp);
 		grp.RegisterCommanderToGroup(chosen);
-		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("Group '%1' → Commander '%2'",
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("Group '%1' -> Commander '%2'",
 			grp.GetOwner().GetName(), chosen.GetCommanderUID()));
 	}
 

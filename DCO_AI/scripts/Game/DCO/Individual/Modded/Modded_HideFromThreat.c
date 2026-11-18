@@ -54,7 +54,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 				}
 				else
 				{
-					if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
+					if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !DCO_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
 					{
 						PushRequestMoveDanger(threatPos, sectorDanger, sectorFlags);
 					}
@@ -73,7 +73,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 			}
 			else if (distToThreat < DCO_Ctx.HideFarM(m_Utility))
 			{
-				if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
+				if (((threatState == EAIThreatState.THREATENED) || causedDamage) && !DCO_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
 				{
 					PushRequestMove(threatPos, sectorDanger, sectorFlags);
 				}
@@ -107,7 +107,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		if (danger <= DANGER_MEDIUM)
 			return SCR_EAICombatMoveRequestType.MOVE;
 
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
 			return SCR_EAICombatMoveRequestType.MOVE;
 
 		return SCR_EAICombatMoveRequestType.BUILDING;

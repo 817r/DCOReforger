@@ -9,20 +9,30 @@ modded class SCR_AIAttackBehavior
 	override protected void InitWaitTime(SCR_AIUtilityComponent utility)
 	{
 		super.InitWaitTime(utility);
-		if (!utility || !utility.m_OwnerEntity || !m_Target.m_Value || DCO_Stress.T(utility, "rt.fast", 1.0) <= 0)
+		if (!utility || !utility.m_OwnerEntity || !m_Target.m_Value)
 			return;
 		BaseTarget t = m_Target.m_Value;
 		IEntity me = utility.m_OwnerEntity;
 		float dist = vector.Distance(me.GetOrigin(), t.GetLastSeenPosition());
-		float now = GetGame().GetWorld().GetWorldTime();
 		float before = m_fWaitTime.m_Value;
+		if (DCO_Stress.T(utility, "rt.vanilla_wait", 0.0) <= 0 && DCO_GlobalAIComponent.BehaviorOnFor(me, DCO_EBehavior.REACTION_TIME))
+		{
+			m_fWaitTime.m_Value = 0;
+			DCO_Perf.Count("rt:wait_zero");
+			if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
+				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(me), string.Format("attack_wait unit=%1 tgt=%2 dist=%3 why=dco_reaction vanilla_s=%4 dco_s=0", DCO_Log.IdUnit(me), DCO_Log.IdUnit(t.GetTargetEntity()), Math.Round(dist), before.ToString(-1, 2)));
+			return;
+		}
+		if (DCO_Stress.T(utility, "rt.fast", 1.0) <= 0)
+			return;
+		float now = GetGame().GetWorld().GetWorldTime();
 		string why = "";
 		if (t.GetTargetEntity() && t.GetTargetEntity() == utility.m_DCOLastAtkEnt && now - utility.m_fDCOLastAtkAt_ms < DCO_Stress.T(utility, "rt.reacquire_s", 10.0) * 1000.0)
 		{
 			m_fWaitTime.m_Value = 0;
 			why = "reacquire";
 		}
-		else if (dist < DCO_Stress.T(utility, "rt.close_m", 30.0) && utility.m_ThreatSystem)
+		else if (dist < DCO_Stress.CloseM(utility) && utility.m_ThreatSystem)
 		{
 			float threat = utility.m_ThreatSystem.GetThreatMeasure();
 			float w = 0;

@@ -1,0 +1,26 @@
+BehaviorTree "{5EACADC95599A2F1}AI/BehaviorTrees/Waypoints/DCO_WP_Tactic.bt" {
+ Name "AI/BehaviorTrees/Waypoints/DCO_WP_Tactic.bt"
+ Nodes {
+  RootNode Root {
+   Name "Root"
+   EditorPos 0 -300
+   Nodes {
+    Sequence Sequence {
+     Name "Sequence"
+     EditorPos 0 -150
+     Nodes {
+      DCO_AITacticWaypoint "DCO_AI Tactic Waypoint" {
+       Name "DCO_AI Tactic Waypoint"
+       EditorPos -200 50
+      }
+      AITaskIdle Idle {
+       Name "Idle"
+       EditorPos 100 50
+       Period 2
+      }
+     }
+    }
+   }
+  }
+ }
+}

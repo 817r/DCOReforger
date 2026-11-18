@@ -10,6 +10,65 @@ modded class SCR_AIUtilityComponent
 	float m_fDCORolesAt_ms;
 	protected float m_fDCOMoraleAcc;
 	protected float m_fDCOMoraleNext_ms;
+	protected float m_fDCOLiteAt_ms = -1;
+	protected bool m_bDCOLite;
+	protected int m_iDCOEvalN;
+
+	bool DCO_IsLite()
+	{
+		return m_bDCOLite;
+	}
+
+	protected bool DCO_LiteNow(float time)
+	{
+		if (m_fDCOLiteAt_ms >= 0 && time < m_fDCOLiteAt_ms)
+			return m_bDCOLite;
+		m_fDCOLiteAt_ms = time + 5000.0 + Math.RandomFloat(0, 1000.0);
+		bool was = m_bDCOLite;
+		m_bDCOLite = false;
+		if (m_OwnerEntity && m_ThreatSystem && m_CombatComponent && DCO_Stress.T(this, "perf.lite_on", 1.0) > 0)
+		{
+			bool quiet = m_ThreatSystem.GetState() == EAIThreatState.SAFE && !m_CombatComponent.GetCurrentTarget();
+			if (quiet && !DCO_PlayerProx.Within(m_OwnerEntity.GetOrigin(), DCO_Stress.T(this, "perf.lite_m", 1000.0)))
+				m_bDCOLite = true;
+		}
+		if (m_bDCOLite != was)
+		{
+			DCO_Perf.Count("perf:lite_" + DCO_Util.B01(m_bDCOLite).ToString());
+			if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG))
+				DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(m_OwnerEntity), string.Format("perf_lite unit=%1 on=%2 players=%3", DCO_Log.IdUnit(m_OwnerEntity), DCO_Util.B01(m_bDCOLite), DCO_PlayerProx.Count()));
+		}
+		return m_bDCOLite;
+	}
+
+	protected void DCO_UnknownPause(BaseTarget t, float now)
+	{
+		if (DCO_Util.PlayerOrderActive(this))
+			return;
+		float maxM = DCO_Stress.T(this, "ind.unk_pause_m", 100.0);
+		if (maxM <= 0 || !t || !m_OwnerEntity || !m_CombatComponent || m_CombatComponent.GetCurrentTarget())
+			return;
+		if (m_AIInfo && m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE))
+			return;
+		SCR_AIBehaviorBase cur = m_CurrentBehavior;
+		if (!SCR_AIMoveInFormationBehavior.Cast(cur) && !SCR_AIMoveIndividuallyBehavior.Cast(cur))
+			return;
+		float d = vector.Distance(m_OwnerEntity.GetOrigin(), t.GetLastSeenPosition());
+		if (d > maxM || FindActionOfType(DCO_ContactPauseBehavior))
+			return;
+		float dur_s = DCO_Stress.T(this, "ind.unk_pause_s", 2.5);
+		if (dur_s <= 0)
+			return;
+		AddAction(new DCO_ContactPauseBehavior(this, null, dur_s * 1000.0, cur.EvaluatePriorityLevel()));
+		CharacterControllerComponent ctrl = GetCharacterController();
+		if (ctrl)
+			DCO_Stance.Set(ctrl, ECharacterStance.CROUCH, "unk_pause");
+		if (t.GetTargetEntity())
+			m_LookAction.LookAt(t.GetTargetEntity(), SCR_AILookAction.PRIO_UNKNOWN_TARGET, dur_s);
+		DCO_Perf.Count("unk:pause");
+		if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO))
+			DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_OwnerEntity), string.Format("unknown_pause unit=%1 dist=%2 beh=%3 dur_s=%4", DCO_Log.IdUnit(m_OwnerEntity), Math.Round(d), cur.ClassName(), dur_s.ToString(-1, 1)));
+	}
 
 	override SCR_AIBehaviorBase EvaluateBehavior(BaseTarget unknownTarget)
 	{
@@ -50,6 +109,11 @@ modded class SCR_AIUtilityComponent
 		int threatStart = DCO_Perf.Begin();
 		m_ThreatSystem.Update(this, deltaTime);
 		DCO_Perf.End("agent_threat", threatStart);
+		m_iDCOEvalN++;
+		bool dcoLite = DCO_LiteNow(time);
+		bool dcoHeavy = !dcoLite || (m_iDCOEvalN % 4 == 0);
+		if (dcoLite)
+			DCO_Perf.Count("perf:lite_eval");
 		int moT = DCO_Perf.Begin();
 		m_fDCOMoraleAcc += deltaTime;
 		if (time >= m_fDCOMoraleNext_ms || moraleSystem.m_bDCODirty)
@@ -61,7 +125,10 @@ modded class SCR_AIUtilityComponent
 			moraleSystem.Update(this, m_fDCOMoraleAcc);
 			moraleSystem.m_bDCODirty = false;
 			m_fDCOMoraleAcc = 0;
-			m_fDCOMoraleNext_ms = time + 400.0 + Math.RandomFloat(0, 200.0);
+			float moraleStep = 400.0;
+			if (dcoLite)
+				moraleStep = 2000.0;
+			m_fDCOMoraleNext_ms = time + moraleStep + Math.RandomFloat(0, 200.0);
 		}
 		m_SectorThreatFilter.Update(0.001 * deltaTime);
 		DCO_Perf.End("ag_morale", moT);
@@ -134,6 +201,7 @@ modded class SCR_AIUtilityComponent
 
 			m_ConfigComponent.m_Reaction_UnknownTarget.PerformReaction(this, m_ThreatSystem, unknownTarget, unknownTarget.GetLastSeenPosition());
 			m_fReactionUnknownTargetTime_ms = GetGame().GetWorld().GetWorldTime();
+			DCO_UnknownPause(unknownTarget, time);
 		}
 		m_UnknownTarget = unknownTarget;
 		DCO_Perf.End("ag_msg", msgT);
@@ -194,7 +262,7 @@ modded class SCR_AIUtilityComponent
 			SetCurrentAction(selectedAction);
 			m_CurrentBehavior = SCR_AIBehaviorBase.Cast(selectedAction);
 			if (DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.TRACE))
-				DCO_TestCaseComponent.TraceUnit(this, dcoPrevBehavior, m_CurrentBehavior);
+				DCO_Dev.TraceUnit(this, dcoPrevBehavior, m_CurrentBehavior);
 #ifdef WORKBENCH
 			SCR_AIDebugVisualization.VisualizeMessage(m_OwnerEntity, SCR_AIDebug.GetBehaviorName(m_CurrentBehavior), EAIDebugCategory.BEHAVIOR, 5);
 #endif
@@ -211,29 +279,43 @@ modded class SCR_AIUtilityComponent
 		DCO_Perf.End("ag_exec", exT);
 
 		int cidT = DCO_Perf.Begin();
-		DCO_CoverId.Tick(this);
+		if (dcoHeavy)
+			DCO_CoverId.Tick(this);
 		DCO_Perf.End("ag_cid", cidT);
 
 		int oscT = DCO_Perf.Begin();
-		DCO_Osc.Tick(this);
+		if (dcoHeavy)
+			DCO_Osc.Tick(this);
 		DCO_Perf.End("ag_osc", oscT);
 
 		int nvT = DCO_Perf.Begin();
 		DCO_Nav.Tick(this, time);
 		DCO_Perf.End("ag_nav", nvT);
 
+		int attT = DCO_Perf.Begin();
+		if (dcoHeavy)
+			DCO_Attention.Tick(this, time);
+		DCO_Perf.End("ag_att", attT);
+
 		int opT = DCO_Perf.Begin();
-		DCO_Opp.Tick(this, time);
+		if (dcoHeavy)
+			DCO_Opp.Tick(this, time);
 		DCO_Perf.End("ag_opp", opT);
 
 		int puT = DCO_Perf.Begin();
-		DCO_Pursue.Tick(this, time);
+		if (dcoHeavy)
+			DCO_Pursue.Tick(this, time);
 		DCO_Perf.End("ag_pursue", puT);
 
 		int ilT = DCO_Perf.Begin();
-		DCO_IndLearn.Tick(this, time);
-		DCO_PlyLearn.Tick(this, time);
-		DCO_SquadChatter.Tick(this, time);
+		if (dcoHeavy)
+		{
+			DCO_IndLearn.Tick(this, time);
+			DCO_PlyLearn.Tick(this, time);
+			DCO_SquadChatter.Tick(this, time);
+		}
+		else
+			DCO_Perf.Count("perf:lite_skip");
 		DCO_Perf.End("ag_ilearn", ilT);
 
 		#ifdef AI_DEBUG

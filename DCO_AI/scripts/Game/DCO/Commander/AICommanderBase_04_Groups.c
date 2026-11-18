@@ -316,7 +316,25 @@ modded class AICommander_BaseComponent
 		return true;
 	}
 
-	bool CanCommitGroup(DCO_GroupUtilityComponent grp)
+	protected bool DCO_ReserveWaived(DCO_GroupUtilityComponent grp, float reserveAfter)
+	{
+		if (m_eCommanderMode == CMD_ECommanderMode.DEFENSIVE || DCO_Ctx.TuneForCmd(this, "tac.reserve_waive", 1.0) <= 0)
+			return false;
+		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
+		{
+			if (!g)
+				continue;
+			DCO_EGroupTask t = g.GetTask();
+			if (t == DCO_EGroupTask.ATTACK || t == DCO_EGroupTask.FLANK || t == DCO_EGroupTask.SUPPORT_BY_FIRE)
+				return false;
+		}
+		DCO_Perf.Count("commit:reserve_floor_waived");
+		if (DCO_GroupJobs.LogDue(DCO_Log.IdGroup(SCR_AIGroup.Cast(grp.GetOwner())) + "|rsv_waive", 60.0))
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("reserve_floor_waived cmd=%1 grp=%2 units=%3 reserve_after=%4 floor=%5 reserve_pct=%6 why=no_attacker", m_sCommanderUID, grp.GetOwner().GetName(), grp.GetUnitCount(), Math.Round(reserveAfter), Math.Round(GetReserveFloor()), m_fReservePercent));
+		return true;
+	}
+
+	bool CanCommitGroup(DCO_GroupUtilityComponent grp, bool attack = false)
 	{
 		if (grp && grp.IsSimOff())
 		{
@@ -336,7 +354,9 @@ modded class AICommander_BaseComponent
 			return false;
 
 		float reserveAfterCommit = GetReserveManpower() - grp.GetUnitCount();
-		return reserveAfterCommit >= GetReserveFloor();
+		if (reserveAfterCommit >= GetReserveFloor())
+			return true;
+		return attack && DCO_ReserveWaived(grp, reserveAfterCommit);
 	}
 
 	bool RegisterGroup(DCO_GroupUtilityComponent grp)
@@ -375,7 +395,10 @@ modded class AICommander_BaseComponent
 	bool UnregisterGroup(DCO_GroupUtilityComponent grp)
 	{
 		if (m_aOwnedGroup.Contains(grp))
+		{
 			m_aOwnedGroup.RemoveItem(grp);
+			DCO_WakeThink("squad_lost");
+		}
 
 		if (m_mLastPreemptTime.Contains(grp))
 			m_mLastPreemptTime.Remove(grp);
@@ -391,6 +414,13 @@ modded class AICommander_BaseComponent
 			return false;
 
 		grp.EnsureDormantInit();
+
+		if (grp.IsPlayerGroup())
+		{
+			DCO_Perf.Count("cmd:skip_player_led");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("group_skip cmd=%1 grp=%2 reason=player_led", m_sCommanderUID, grp.GetOwner().GetName()));
+			return false;
+		}
 
 		if (grp.GetFactionKey().IsEmpty() || grp.GetFactionKey() != m_sFactionKey)
 			return false;
@@ -804,8 +834,11 @@ modded class AICommander_BaseComponent
 		int n = 0;
 		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
 		{
-			if (g && g.GetTask() == DCO_EGroupTask.RECON && !g.GetGroupObjective())
-				n++;
+			if (!g || g.GetTask() != DCO_EGroupTask.RECON || g.GetGroupObjective())
+				continue;
+			if (m_Frontline && m_Frontline.IsReconGroup(g))
+				continue;
+			n++;
 		}
 		return n;
 	}

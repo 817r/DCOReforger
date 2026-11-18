@@ -22,6 +22,7 @@ class DCO_BreakContact
 	float m_fLegStart;
 	ref array<ref array<AIAgent>> m_aElements = {};
 	bool m_bFast;
+	float m_fSmokeHold;
 
 	static int ActiveCount()
 	{
@@ -39,6 +40,8 @@ class DCO_BreakContact
 			return false;
 		DCO_EGroupTask bcTask = g.GetTask();
 		bool cmdOrder = why.StartsWith("def_") || why.StartsWith("op_") || why == "threat_withdraw" || why.EndsWith("_depleted") || why.EndsWith("_shaken");
+		if (why == "wp_withdraw")
+			cmdOrder = true;
 		if (!cmdOrder && (g.m_iDCOTRPhase >= 0 || bcTask == DCO_EGroupTask.ATTACK || bcTask == DCO_EGroupTask.SUPPORT_BY_FIRE || bcTask == DCO_EGroupTask.FLANK))
 		{
 			DCO_Perf.Count("break_contact_skip:attack_task");
@@ -99,9 +102,18 @@ class DCO_BreakContact
 			bc.m_aElements.Clear();
 			bc.m_aElements.Insert(all);
 		}
+		bool smoked;
 		if (!bc.m_bFast || DCO_ConcealmentUtility.IsPositionExposed(lp, grp.GetLeaderEntity()))
-			CMD_ThreatResponseComponent.ThrowSmoke(g, threat);
-		bc.NextStep(now);
+			smoked = CMD_ThreatResponseComponent.ThrowSmoke(g, threat, "break_contact");
+		float smokeWait = DCO_Ctx.TuneFor(grp, "smk.bc_wait_s", 5.0);
+		if (smoked && smokeWait > 0)
+		{
+			bc.m_fSmokeHold = now + smokeWait;
+			DCO_Perf.Count("bc:smoke_wait");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("break_contact_smoke_wait grp=%1 why=%2 wait_s=%3", DCO_Log.IdGroup(grp), why, Math.Round(smokeWait)));
+		}
+		else
+			bc.NextStep(now);
 
 		if (!s_aActive)
 		{
@@ -133,6 +145,12 @@ class DCO_BreakContact
 			{
 				if (bc.m_Group && bc.m_Group.m_DCOBreak == bc)
 					bc.m_Group.m_DCOBreak = null;
+				if (bc.m_Group && bc.m_Group.HasState(DCO_EGroupState.RETREATING))
+				{
+					bc.m_Group.SetRetreating(false);
+					DCO_Perf.Count("bc:retreat_cleared_on_end");
+					DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(SCR_AIGroup.Cast(bc.m_Group.GetOwner())), string.Format("break_contact_end_clear grp=%1 why=update_false", DCO_Log.IdGroup(SCR_AIGroup.Cast(bc.m_Group.GetOwner()))));
+				}
 				s_aActive.Remove(i);
 			}
 		}
@@ -279,6 +297,21 @@ class DCO_BreakContact
 			return true;
 		}
 
+		if (m_fSmokeHold > 0)
+		{
+			bool cloud = DCO_SmokeField.OnLine(m_vThreat, lp) != null;
+			if (!cloud && now < m_fSmokeHold)
+				return true;
+			string goWhy = "timeout";
+			if (cloud)
+				goWhy = "cloud";
+			DCO_Perf.Count("bc:smoke_go_" + goWhy);
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("break_contact_smoke_go grp=%1 why=%2", DCO_Log.IdGroup(grp), goWhy));
+			m_fSmokeHold = 0;
+			NextStep(now);
+			return true;
+		}
+
 		if (m_aElements.IsEmpty())
 			return true;
 		array<AIAgent> mover = m_aElements[m_iMover];
@@ -359,7 +392,7 @@ class DCO_BreakContact
 		MoveElement(mover, m_vGoal, m_vThreat, m_bFast);
 
 		if (DCO_ConcealmentUtility.IsPositionExposed(from, first))
-			CMD_ThreatResponseComponent.ThrowSmoke(m_Group, m_vThreat);
+			CMD_ThreatResponseComponent.ThrowSmoke(m_Group, m_vThreat, "break_contact_leg");
 	}
 
 	protected bool PlanDogleg(SCR_AIGroup grp, vector lp)

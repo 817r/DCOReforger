@@ -127,3 +127,109 @@ modded class SCR_EditableWaypointComponent
 			mesh.GenerateAreaMesh();
 	}
 }
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_TacticWPValueAttribute : SCR_BaseValueListEditorAttribute
+{
+	protected int Slot() { return -1; }
+
+	static DCO_TacticWaypoint Wp(Managed item, int slot)
+	{
+		SCR_EditableWaypointComponent editable = SCR_EditableWaypointComponent.Cast(item);
+		if (!editable)
+			return null;
+		DCO_TacticWaypoint wp = DCO_TacticWaypoint.Cast(editable.GetOwner());
+		if (!wp || !wp.DCO_UsesVal(slot))
+			return null;
+		return wp;
+	}
+
+	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
+	{
+		DCO_TacticWaypoint wp = Wp(item, Slot());
+		if (!wp)
+			return null;
+		return SCR_BaseEditorAttributeVar.CreateFloat(wp.DCO_Val(Slot()));
+	}
+
+	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
+	{
+		DCO_TacticWaypoint wp = Wp(item, Slot());
+		if (wp && var)
+			wp.DCO_SetVal(Slot(), var.GetFloat());
+	}
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_TacticWPClearTimeAttribute : DCO_TacticWPValueAttribute
+{
+	override protected int Slot() { return DCO_ETacticWPVal.CLEAR_S; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_TacticWPHoldTimeAttribute : DCO_TacticWPValueAttribute
+{
+	override protected int Slot() { return DCO_ETacticWPVal.HOLD_S; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_TacticWPSuppressDistAttribute : DCO_TacticWPValueAttribute
+{
+	override protected int Slot() { return DCO_ETacticWPVal.TARGET_M; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_TacticWPAmbushRangeAttribute : DCO_TacticWPValueAttribute
+{
+	override protected int Slot() { return DCO_ETacticWPVal.AMBUSH_M; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_TacticWPAmbushDoneAttribute : DCO_TacticWPValueAttribute
+{
+	override protected int Slot() { return DCO_ETacticWPVal.DONE_S; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_TacticWPLineSpacingAttribute : DCO_TacticWPValueAttribute
+{
+	override protected int Slot() { return DCO_ETacticWPVal.SPACING_M; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_TacticWPConvoySpeedAttribute : DCO_TacticWPValueAttribute
+{
+	override protected int Slot() { return DCO_ETacticWPVal.SPEED_KMH; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_TacticWPConvoyGapAttribute : DCO_TacticWPValueAttribute
+{
+	override protected int Slot() { return DCO_ETacticWPVal.GAP_M; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_TacticWPConvoyContactAttribute : DCO_CommanderBaseAttribute
+{
+	override protected void GetPresetLabels(notnull out array<string> outLabels)
+	{
+		outLabels.Clear();
+		outLabels.Insert("Push through");
+		outLabels.Insert("Halt");
+	}
+
+	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
+	{
+		DCO_TacticWaypoint wp = DCO_TacticWPValueAttribute.Wp(item, DCO_ETacticWPVal.CONTACT);
+		if (!wp)
+			return null;
+		return SCR_BaseEditorAttributeVar.CreateInt(Math.Round(wp.DCO_Val(DCO_ETacticWPVal.CONTACT)));
+	}
+
+	override void WriteVariable(Managed item, SCR_BaseEditorAttributeVar var, SCR_AttributesManagerEditorComponent manager, int playerID)
+	{
+		DCO_TacticWaypoint wp = DCO_TacticWPValueAttribute.Wp(item, DCO_ETacticWPVal.CONTACT);
+		if (wp && var)
+			wp.DCO_SetVal(DCO_ETacticWPVal.CONTACT, Math.ClampInt(var.GetInt(), 0, 1));
+	}
+}

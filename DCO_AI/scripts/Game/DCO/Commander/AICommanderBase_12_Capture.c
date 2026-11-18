@@ -116,10 +116,11 @@ modded class AICommander_BaseComponent
 		int freeGroups = CountFreeGroups(obj);
 		string action = "clear";
 		float timeout_s = cfg.GetCQBContactTimeout();
-		if (freeGroups < 1)
+		float noFreeCap = DCO_Ctx.TuneForCmd(this, "cap.cqb_nofree_s", 90.0);
+		if (freeGroups < 1 && noFreeCap > 0)
 		{
-			action = "timeout90";
-			timeout_s = Math.Min(90.0, timeout_s);
+			action = "timeout_nofree";
+			timeout_s = Math.Min(noFreeCap, timeout_s);
 		}
 		array<IEntity> contact = {};
 		DCO_BuildingClear.FindContactBuildings(objPos, obj.GetRadius(), m_sFactionKey, timeout_s * 1000, now_ms, contact);

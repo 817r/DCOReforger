@@ -43,6 +43,27 @@ class DCO_SettingsMembers
 		s_Manager = manager;
 	}
 
+	static void Restore(int key, string content)
+	{
+		if (key == 0 || content.IsEmpty())
+			return;
+		if (!s_mStore)
+			s_mStore = new map<int, ref map<string, vector>>();
+		map<string, vector> stored = new map<string, vector>();
+		array<string> keys = {};
+		array<vector> values = {};
+		DCO_SettingsCodec.Decode(content, keys, values);
+		foreach (int i, string className : keys)
+			stored.Set(className, values[i]);
+		s_mStore.Set(key, stored);
+		DCO_Perf.Count("persist:members_restore");
+	}
+
+	static void ApplyStoredStatic(SCR_AIGroup group, AIAgent agent)
+	{
+		ApplyStored(group, agent, null);
+	}
+
 	static string StoredContent(int key)
 	{
 		map<string, vector> stored;
@@ -60,16 +81,19 @@ class DCO_SettingsMembers
 
 	static void OnJoin(SCR_AIGroup group, AIAgent agent)
 	{
-		if (!s_mStore || !s_Manager || !group || !agent || !Replication.IsServer())
+		if (!s_mStore || !group || !agent || !Replication.IsServer())
 			return;
 		if (!s_mStore.Contains(GroupKey(group)))
 			return;
-		GetGame().GetCallqueue().CallLater(s_Manager.DCO_ApplyStored, 1500, false, group, agent);
+		if (s_Manager)
+			GetGame().GetCallqueue().CallLater(s_Manager.DCO_ApplyStored, 1500, false, group, agent);
+		else
+			GetGame().GetCallqueue().CallLater(ApplyStoredStatic, 1500, false, group, agent);
 	}
 
 	static void ApplyStored(SCR_AIGroup group, AIAgent agent, SCR_AttributesManagerEditorComponent manager)
 	{
-		if (!group || !agent || !manager || !s_mStore)
+		if (!group || !agent || !s_mStore)
 			return;
 		IEntity entity = agent.GetControlledEntity();
 		if (!entity || IsPlayer(entity))
@@ -83,7 +107,11 @@ class DCO_SettingsMembers
 		int written = 0;
 		foreach (string className, vector value : stored)
 		{
-			SCR_BaseEditorAttribute attribute = manager.DCO_AttributeByClass(className);
+			SCR_BaseEditorAttribute attribute;
+			if (manager)
+				attribute = manager.DCO_AttributeByClass(className);
+			else
+				attribute = DCO_SettingsPersist.Attr(className);
 			if (!attribute || !attribute.ReadVariable(member, manager))
 				continue;
 			attribute.WriteVariable(member, SCR_BaseEditorAttributeVar.CreateVector(value), manager, -1);

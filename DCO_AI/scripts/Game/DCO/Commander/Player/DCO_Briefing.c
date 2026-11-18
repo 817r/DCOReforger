@@ -59,6 +59,7 @@ class DCO_Briefing
 	protected static ref map<string, string> s_mCode;
 	protected static ref map<string, float> s_mHHour;
 	protected static ref map<string, int> s_mFlags;
+	protected static ref map<string, int> s_mTactic;
 	protected static ref map<string, string> s_mLastHead;
 	protected static ref map<string, ref array<int>> s_mActive;
 	protected static bool s_bFlushQueued;
@@ -80,6 +81,7 @@ class DCO_Briefing
 		s_mCode = new map<string, string>();
 		s_mHHour = new map<string, float>();
 		s_mFlags = new map<string, int>();
+		s_mTactic = new map<string, int>();
 		s_mLastHead = new map<string, string>();
 		s_mActive = new map<string, ref array<int>>();
 	}
@@ -197,6 +199,39 @@ class DCO_Briefing
 		DCO_TacticPlan p = cmd.GetTactics().GetPlan(obj);
 		if (p)
 			Attack(cmd, p, DCO_EBriefKind.PHASE, "brief_phase_hhour", DCO_Radio.P("obj", obj.GetDisplayName(), "sec", DCO_Radio.N(sec)));
+	}
+
+	static void AttackBegin(AICommander_BaseComponent cmd, DCO_TacticPlan p)
+	{
+		if (!Enabled() || !cmd || !p || !p.m_Obj)
+			return;
+		Init();
+		string objKey = p.m_Obj.GetLogName();
+		int last;
+		if (s_mTactic.Find(objKey, last) && last == p.m_eTactic)
+			return;
+		s_mTactic.Set(objKey, p.m_eTactic);
+		if (s_mActive.Contains(objKey))
+			Attack(cmd, p, DCO_EBriefKind.FRAGO, "brief_frago_switch", DCO_Radio.P("tactic", T("brief_tac_" + Low(DCO_CommanderTactics.Name(p.m_eTactic))), "obj", p.m_Obj.GetDisplayName()));
+		else
+			Attack(cmd, p, DCO_EBriefKind.OPORD);
+	}
+
+	static void AttackEnd(CMD_AICommanderObjectiveComponent obj, string result)
+	{
+		if (!Enabled() || !obj)
+			return;
+		Init();
+		bool open = s_mActive.Contains(obj.GetLogName());
+		array<string> params = DCO_Radio.P("obj", obj.GetDisplayName());
+		if (result == "captured")
+			Close(obj, DCO_EBriefKind.END, "brief_phase_taken", params);
+		else if (result == "undermanned")
+			Close(obj, DCO_EBriefKind.ABORT, "brief_abort_back", params);
+		else
+			Close(obj, DCO_EBriefKind.END, "brief_phase_end", params);
+		if (open)
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("brief_attack_end obj=%1 result=%2", obj.GetLogName(), result));
 	}
 
 	static void AttackFlag(AICommander_BaseComponent cmd, DCO_TacticPlan p, int flag, string headKey)
@@ -608,6 +643,7 @@ class DCO_Briefing
 		array<int> ids = s_mActive.Get(objKey);
 		s_mHHour.Remove(objKey);
 		s_mFlags.Remove(objKey);
+		s_mTactic.Remove(objKey);
 		s_mLastHead.Remove(objKey);
 		s_mCode.Remove(objKey);
 		if (!ids)

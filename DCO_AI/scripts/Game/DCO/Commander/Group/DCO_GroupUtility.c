@@ -97,7 +97,12 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	int m_iDCODefRole;
 	float m_fDCODefHoldLog;
 	bool m_bSOPReturnFire;
+	float m_fSOPShotAt = -1000;
+	float m_fSOPFreeLogAt = -1000;
 	float m_fSOPDetourAt = -1000;
+	float m_fSOPObserveSince = -1;
+	float m_fSOPObserveSeen = -1000;
+	float m_fSOPEngageAt = -1000;
 
 	DCO_ESOPAction GetSOPOverride()			{ return m_eSOPOverride; }
 	void SetSOPOverride(DCO_ESOPAction v)	{ m_eSOPOverride = v; }
@@ -163,7 +168,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		if (!lodGroup)
 			return;
 
-		DCO_EAILODMode mode = EffectiveLOD();
+		DCO_EAILODMode mode = DCO_LodResolve(EffectiveLOD(), "apply");
 		array<AIAgent> lodAgents = {};
 		lodGroup.GetAgents(lodAgents);
 		foreach (AIAgent a : lodAgents)
@@ -178,9 +183,142 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	{
 		if (!agent || !Replication.IsServer())
 			return;
-		DCO_EAILODMode mode = EffectiveLOD();
+		DCO_EAILODMode mode = DCO_LodResolve(EffectiveLOD(), "agent");
 		DCO_GlobalAIComponent.ApplyLOD(agent, mode);
 		PublishLOD(SCR_AIGroup.Cast(GetOwner()), mode);
+	}
+
+	protected float m_fDCOLodAt_s = -100;
+	protected float m_fDCOLodWakeAt_s = -1000;
+	protected float m_fDCOLodEventAt_s = -1000;
+	protected string m_sDCOLodEvent;
+	protected bool m_bDCOLodAwake = true;
+	protected bool m_bDCOLodDecided;
+
+	protected float DCO_LodTune(string key, float def)
+	{
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetFor(GetOwner());
+		if (!cfg)
+			return def;
+		return cfg.DCO_TuneF(key, def);
+	}
+
+	protected bool DCO_LodTaskBusy()
+	{
+		if (m_Task.m_ePhase != DCO_ETaskPhase.HOLDING)
+			return true;
+		DCO_EGroupTask t = m_Task.m_eType;
+		if (t == DCO_EGroupTask.PATROL || t == DCO_EGroupTask.RECON || t == DCO_EGroupTask.TRANSPORT)
+			return true;
+		return t == DCO_EGroupTask.REINFORCE || t == DCO_EGroupTask.FIRE_MISSION;
+	}
+
+	protected bool DCO_LodEnemyNear(float dist)
+	{
+		PerceptionManager pm = GetGame().GetPerceptionManager();
+		if (!pm || !m_UtilityComp || !m_UtilityComp.GetPercGroupComp())
+			return false;
+		float pmNow = pm.GetTime();
+		vector pos = GetOwner().GetOrigin();
+		foreach (SCR_AITargetInfo t : m_UtilityComp.GetPercGroupComp().m_aTargets)
+		{
+			if (t && pmNow - t.m_fTimestamp <= 30 && vector.DistanceXZ(t.m_vWorldPos, pos) < dist)
+				return true;
+		}
+		return false;
+	}
+
+	protected bool DCO_LodWantAwake(float now, out string why)
+	{
+		if (now - m_fDCOLodEventAt_s < DCO_LodTune("lod.smart_hold_s", 60.0))
+		{
+			why = "event_" + m_sDCOLodEvent;
+			return true;
+		}
+		if (DCO_LodTaskBusy())
+		{
+			why = "task_" + typename.EnumToString(DCO_EGroupTask, m_Task.m_eType) + "_" + typename.EnumToString(DCO_ETaskPhase, m_Task.m_ePhase);
+			return true;
+		}
+		if (IsInContact())
+		{
+			why = "contact";
+			return true;
+		}
+		if (DCO_LodEnemyNear(DCO_LodTune("lod.smart_enemy_m", 800.0)))
+		{
+			why = "enemy_near";
+			return true;
+		}
+		if (DCO_PlayerProx.Within(GetOwner().GetOrigin(), DCO_LodTune("lod.smart_player_m", 1000.0)))
+		{
+			why = "player_near";
+			return true;
+		}
+		why = "idle";
+		return false;
+	}
+
+	protected DCO_EAILODMode DCO_LodResolve(DCO_EAILODMode mode, string src)
+	{
+		if (mode != DCO_EAILODMode.SMART)
+			return mode;
+		float now = DCO_Util.NowS();
+		string why;
+		bool want = DCO_LodWantAwake(now, why);
+		if (!want && m_bDCOLodAwake && now - m_fDCOLodWakeAt_s < DCO_LodTune("lod.smart_hold_s", 60.0))
+		{
+			want = true;
+			why = "hold";
+		}
+		if (want && (!m_bDCOLodAwake || !m_bDCOLodDecided))
+			m_fDCOLodWakeAt_s = now;
+		if (want != m_bDCOLodAwake || !m_bDCOLodDecided)
+		{
+			string state = "sleep";
+			if (want)
+				state = "wake";
+			DCO_Perf.Count("lod_smart:" + state);
+			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", string.Format("lod_smart grp=%1 state=%2 why=%3 src=%4 units=%5", GetOwner().GetName(), state, why, src, GetUnitCount()));
+		}
+		m_bDCOLodAwake = want;
+		m_bDCOLodDecided = true;
+		if (want)
+			return DCO_EAILODMode.PREVENT_MAX_LOD;
+		return DCO_EAILODMode.VANILLA;
+	}
+
+	void DCO_LodTick()
+	{
+		if (EffectiveLOD() != DCO_EAILODMode.SMART)
+			return;
+		float now = DCO_Util.NowS();
+		if (now - m_fDCOLodAt_s < 5.0)
+			return;
+		m_fDCOLodAt_s = now;
+		DCO_ApplyLOD();
+	}
+
+	void DCO_LodWake(string why)
+	{
+		if (EffectiveLOD() != DCO_EAILODMode.SMART || !Replication.IsServer())
+			return;
+		m_fDCOLodEventAt_s = DCO_Util.NowS();
+		m_sDCOLodEvent = why;
+		if (!m_bDCOLodAwake)
+			DCO_ApplyLOD();
+	}
+
+	static void DCO_LodWakeFor(IEntity character, string why)
+	{
+		if (!character)
+			return;
+		AIControlComponent ctrl = AIControlComponent.Cast(character.FindComponent(AIControlComponent));
+		if (!ctrl || !ctrl.GetAIAgent() || !ctrl.GetAIAgent().GetParentGroup())
+			return;
+		DCO_GroupUtilityComponent g = DCO_GroupUtilityComponent.Cast(ctrl.GetAIAgent().GetParentGroup().FindComponent(DCO_GroupUtilityComponent));
+		if (g)
+			g.DCO_LodWake(why);
 	}
 
 	protected void PublishLOD(SCR_AIGroup lodGroup, DCO_EAILODMode mode)
@@ -386,9 +524,44 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			eff = m_fDCOCruiseGM;
 			src = "squad";
 		}
+		bool convoyLower = eff <= 0 || m_fDCOCruiseConvoy < eff;
+		if (m_fDCOCruiseConvoy > 0 && convoyLower)
+		{
+			eff = m_fDCOCruiseConvoy;
+			src = "convoy";
+		}
 		if (eff <= 0)
 			src = "vanilla";
 		return eff;
+	}
+
+	protected float m_fDCOCruiseConvoy;
+
+	void DCO_SetConvoyCruise(float kmh)
+	{
+		if (kmh == m_fDCOCruiseConvoy)
+			return;
+		m_fDCOCruiseConvoy = kmh;
+		DCO_ApplyCruise("convoy");
+	}
+
+	void DCO_ConvoyCruiseExtra(IEntity veh, float kmh)
+	{
+		if (!veh)
+			return;
+		AICarMovementComponent car = AICarMovementComponent.Cast(veh.FindComponent(AICarMovementComponent));
+		if (!car)
+			return;
+		float keep = m_fDCOCruiseConvoy;
+		m_fDCOCruiseConvoy = kmh;
+		string src;
+		float eff = DCO_ResolveCruise(src);
+		m_fDCOCruiseConvoy = keep;
+		if (eff > 0)
+			car.SetCruiseSpeed(eff);
+		else
+			car.ResetCruiseSpeed();
+		DCO_Perf.Count("veh:cruise_convoy_extra");
 	}
 
 	void DCO_ApplyCruise(string by)
@@ -414,6 +587,11 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		m_bCruiseLimited = eff > 0;
 		m_DCOCruiseVeh = veh;
 		m_fDCOCruiseApplied = eff;
+		if (by == "convoy")
+		{
+			DCO_Perf.Count("veh:cruise_convoy");
+			return;
+		}
 		DCO_Perf.Count("veh:cruise_set");
 		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("cruise_set grp=%1 kmh=%2 src=%3 by=%4 veh=%5", DCO_Log.IdGroup(m_Group), Math.Round(eff), src, by, DCO_Util.PrefabShort(veh)));
 	}
@@ -646,11 +824,17 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			TryAutoAssign();
 	}
 
-	void DCO_AddSpawnVehicle(IEntity vehicle)
+	protected IEntity m_DCOSpawnVeh;
+
+	void DCO_AddSpawnVehicle(IEntity vehicle, bool mount = false)
 	{
 		SCR_AIVehicleUsageComponent usage = FindVehicleUsage(vehicle, 3);
 		if (usage && m_UtilityComp)
 			m_UtilityComp.AddUsableVehicle(usage);
+		if (!mount || !vehicle)
+			return;
+		m_OwnedVehicle = vehicle;
+		m_DCOSpawnVeh = vehicle;
 	}
 
 	void EnsureDormantInit()
@@ -718,6 +902,13 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	    return m_bOrderActive;
 	}
 
+	bool DCO_NearOrderTarget(float within)
+	{
+		if (!m_bOrderActive)
+			return true;
+		return vector.DistanceXZ(GetOwner().GetOrigin(), m_vOrderTarget) <= within;
+	}
+
 	bool IsDedicatedTransport()
 	{
 		return m_bIsDedicatedTransport;
@@ -747,7 +938,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	{
 		if (!m_Group)
 			return 0;
-		return m_Group.GetAgentsCount();
+		return DCO_Dormant.Count(m_Group);
 	}
 
 	void MoveTo(SCR_AIWaypoint wp, float worldTime)
@@ -785,7 +976,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			{
 				DCO_Perf.Count("veh:board_owned_skip_has_boarding");
 				if (DCO_Log.On(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG))
-					DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG, "-", string.Format("veh_board_owned_skip grp=%1 reason=has_boarding_wp wp=%2", m_Group.GetName(), w.ClassName()));
+					DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.DEBUG, DCO_Log.IdGroup(m_Group), string.Format("veh_board_owned_skip grp=%1 reason=has_boarding_wp wp=%2", m_Group.GetName(), w.ClassName()));
 				return false;
 			}
 		}
@@ -805,7 +996,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		board.SetCompletionType(EAIWaypointCompletionType.All);
 		m_Group.AddWaypointAt(board, 0);
 		DCO_Perf.Count("veh:board_owned");
-		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("veh_board_owned grp=%1 veh=%2", m_Group.GetName(), m_OwnedVehicle));
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("veh_board_owned grp=%1 veh=%2", m_Group.GetName(), m_OwnedVehicle));
 		return true;
 	}
 
@@ -888,6 +1079,8 @@ class DCO_GroupUtilityComponent : ScriptComponent
 
 		if (task != m_Task.m_eType)
 			DCO_Events.SquadTask(AIGroup.Cast(GetOwner()), m_Task.m_eType, task, DCO_TaskByText(by));
+		if (task != m_Task.m_eType)
+			DCO_LodWake("task");
 		m_Task.m_eType = task;
 		m_Task.m_fStart_s = DCO_Util.NowS();
 		m_Task.m_Issuer = myCommander;
@@ -902,12 +1095,20 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		if (task != DCO_EGroupTask.NONE)
 			m_bRetreating = false;
 		ApplyTaskStance();
-		DCO_Battle.OnTask(AIGroup.Cast(GetOwner()), task);
+		DCO_Dev.OnTask(AIGroup.Cast(GetOwner()), task);
 	}
 
 	protected string m_sDCOForm;
 	protected string m_sDCOFormPend;
 	protected bool m_bDCOFormContact;
+	protected float m_fDCOFormAt_s = -1;
+
+	float DCO_FormAge()
+	{
+		if (m_fDCOFormAt_s < 0)
+			return -1;
+		return DCO_Util.NowS() - m_fDCOFormAt_s;
+	}
 
 	protected int m_iDCOFormShape;
 	protected int m_iDCOFormSp;
@@ -1095,12 +1296,21 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		string f = DCO_Formation.Pick(m_Group, DCO_TaskFormation(), m_bRetreating, contact, m_Task.m_eType == DCO_EGroupTask.RECON, m_iDCOFormShape, m_iDCOFormSp, why);
 		if (contact != m_bDCOFormContact)
 		{
-			now = true;
+			if (contact)
+				now = true;
+			else
+				DCO_Perf.Count("fm:contact_out_wait");
 			m_bDCOFormContact = contact;
 		}
 		if (f == "" || f == m_sDCOForm)
 		{
 			m_sDCOFormPend = "";
+			return;
+		}
+		float held = DCO_FormAge();
+		if (!now && m_sDCOForm != "" && held >= 0 && held < DCO_Ctx.TuneFor(GetOwner(), "fm.hold_s", 20.0))
+		{
+			DCO_Perf.Count("fm:hold");
 			return;
 		}
 		if (!now && m_sDCOForm != "" && f != m_sDCOFormPend)
@@ -1119,9 +1329,10 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			DCO_Formation.Apply(m_Group, f);
 		}
 		m_sDCOForm = f;
+		m_fDCOFormAt_s = DCO_Util.NowS();
 		DCO_Perf.Count("fm:set");
 		DCO_Perf.Count("fm:set_" + f);
-		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("formation_set grp=%1 from=%2 to=%3 by=%4 task=%5 ", DCO_Log.IdGroup(m_Group), from, f, by, typename.EnumToString(DCO_EGroupTask, m_Task.m_eType)) + why);
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("formation_set grp=%1 from=%2 to=%3 by=%4 task=%5 ", DCO_Log.IdGroup(m_Group), from, f, by, typename.EnumToString(DCO_EGroupTask, m_Task.m_eType)) + why + " held_s=" + held.ToString(-1, 0));
 	}
 
 	protected void ApplyTaskStance()
@@ -1135,7 +1346,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			m_FormationComponent.SetFormation(DCO_TaskFormation());
 
 		EAIGroupCombatMode mode = EAIGroupCombatMode.RETURN_FIRE;
-		if (IsMortar() || (m_bRetreating && !m_DCOBreak))
+		if (m_bRetreating && !m_DCOBreak)
 			mode = EAIGroupCombatMode.HOLD_FIRE;
 		else if (m_DCOBreak)
 			mode = EAIGroupCombatMode.FIRE_AT_WILL;
@@ -1149,11 +1360,14 @@ class DCO_GroupUtilityComponent : ScriptComponent
 
 	void SetPhase(DCO_ETaskPhase phase)
 	{
+		if (phase != m_Task.m_ePhase && phase != DCO_ETaskPhase.HOLDING)
+			DCO_LodWake("phase");
 		m_Task.m_ePhase = phase;
 		m_fStateCheck_ms = -1;
 	}
 
 	protected float m_fDCOHoldUntil;
+	float m_fDCOArtyReadyAt;
 	bool m_bDCOManStatics;
 	int m_iDCOTRPhase = -1;
 	bool m_bDCOTRReady;
@@ -1346,6 +1560,12 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			}
 		}
 
+		if (myCommander && (m_iDCOWantedRole == 1 || m_iDCOWantedRole == 2) && now - m_fDCORoleTick_ms >= 15000.0)
+		{
+			m_fDCORoleTick_ms = now;
+			DCO_RoleTick();
+		}
+
 		if (myCommander && m_bAutoMortar && m_eGroupRoleExternal == DCO_EGroupPreset.MORTAR)
 		{
 			if (GetUnitCount() <= 0)
@@ -1441,6 +1661,39 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		grp.DCO_SetRoleInfo(role, caps);
 	}
 
+	protected float m_fDCOContactAt_ms = -1;
+	protected bool m_bDCOFirstShot;
+
+	protected void DCO_FirstShotCheck(float now)
+	{
+		if (m_fDCOContactAt_ms < 0)
+		{
+			m_fDCOContactAt_ms = now;
+			return;
+		}
+		if (m_bDCOFirstShot || !m_Group)
+			return;
+		array<AIAgent> agents = {};
+		m_Group.GetAgents(agents);
+		foreach (AIAgent a : agents)
+		{
+			if (!a || !a.GetControlledEntity() || DCO_ShotCounter.LastShotAt(a.GetControlledEntity()) < m_fDCOContactAt_ms - 2000.0)
+				continue;
+			m_bDCOFirstShot = true;
+			string roe = "-";
+			IEntity leader = m_Group.GetLeaderEntity();
+			SCR_AICombatComponent lcc;
+			if (leader)
+				lcc = SCR_AICombatComponent.Cast(leader.FindComponent(SCR_AICombatComponent));
+			if (lcc)
+				roe = typename.EnumToString(EAIGroupCombatMode, lcc.GetCombatMode());
+			float delay = (now - m_fDCOContactAt_ms) / 1000.0;
+			DCO_Perf.Count("contact:first_shot");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("first_shot grp=%1 delay_s=%2 roe=%3", DCO_Log.IdGroup(m_Group), delay.ToString(-1, 1), roe));
+			return;
+		}
+	}
+
 	int GetState()
 	{
 		float now = GetGame().GetWorld().GetWorldTime();
@@ -1452,7 +1705,15 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		if (IsMoving() || m_bOrderActive)
 			s |= DCO_EGroupState.EN_ROUTE;
 		if (IsInContact())
+		{
 			s |= DCO_EGroupState.IN_CONTACT;
+			DCO_FirstShotCheck(now);
+		}
+		else
+		{
+			m_fDCOContactAt_ms = -1;
+			m_bDCOFirstShot = false;
+		}
 		if (IsSuppressed())
 			s |= DCO_EGroupState.SUPPRESSED;
 		if (m_bRetreating)
@@ -1746,6 +2007,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			DCO_CruiseTick();
 			DCO_SimTick();
 			DCO_WpTick();
+			DCO_LodTick();
 		}
 		UpdateGroupDebug(timeSlice);
 	}
@@ -1839,10 +2101,46 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		DCO_ApplyLOD();
 	}
 
+	protected bool m_bDCOSupportLink;
+
+	void DCO_MakeSupportOf(DCO_GroupUtilityComponent parent, AICommander_BaseComponent cmd)
+	{
+		m_DCOSupportOf = parent;
+		if (!parent || !cmd)
+			return;
+		m_bDCOSupportLink = true;
+		m_bAutoDetectDone = true;
+		RegisterCommanderToGroup(cmd);
+		DCO_Perf.Count("veh:crew_link");
+		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_crew_link grp=%1 parent=%2 cmd=%3", DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), DCO_Log.IdGroup(AIGroup.Cast(parent.GetOwner())), cmd.GetCommanderUID()));
+	}
+
+	bool DCO_AdoptOrphanCrew()
+	{
+		if (!m_bDCOSupportLink || m_DCOSupportOf)
+			return false;
+		m_bDCOSupportLink = false;
+		AICommander_BaseComponent cmd = myCommander;
+		myCommander = null;
+		bool ok = cmd && cmd.AssignGroup(this);
+		DCO_Perf.Count("veh:crew_adopt");
+		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_crew_adopt grp=%1 ok=%2 units=%3 why=parent_gone", DCO_Log.IdGroup(AIGroup.Cast(GetOwner())), ok, GetUnitCount()));
+		return true;
+	}
+
 	void SetDedicatedTransport(bool tf)
 	{
 		DedicatedTransport = DCO_TransportTeamComponent.Cast(GetOwner().FindComponent(DCO_TransportTeamComponent));
-		if (!DedicatedTransport || tf == m_bIsDedicatedTransport)
+		if (!DedicatedTransport)
+			return;
+		if (tf)
+			m_iDCOWantedRole = 2;
+		else if (m_iDCOWantedRole == 2)
+		{
+			m_iDCOWantedRole = 0;
+			m_iDCORoleState = 0;
+		}
+		if (tf == m_bIsDedicatedTransport)
 			return;
 
 		m_bAutoTransport = false;
@@ -1858,6 +2156,278 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		cmd.AssignGroup(this);
 		m_bAutoDetectDone = true;
 		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("transport_team_set grp=%1 dedicated=%2 by=GM", GetOwner().GetName(), tf));
+	}
+
+	protected int m_iDCOWantedRole;
+	protected int m_iDCORoleState;
+	protected float m_fDCORoleTick_ms = -100000;
+	protected float m_fDCORoleBoard_ms = -100000;
+	protected IEntity m_DCORoleVeh;
+	protected IEntity m_DCORoleFound;
+	protected float m_fDCORoleFoundD;
+	protected vector m_vDCORoleFrom;
+
+	int DCO_GetWantedRole()			{ return m_iDCOWantedRole; }
+
+	static string DCO_RoleName(int role)
+	{
+		if (role == 1)
+			return "MORTAR";
+		if (role == 2)
+			return "TRANSPORT";
+		if (role == 3)
+			return "ARMOR";
+		if (role == 4)
+			return "MECHANIZED";
+		if (role == 5)
+			return "MOTORIZED";
+		return "AUTO";
+	}
+
+	protected static string DCO_RoleWhyText(string why)
+	{
+		if (why == "no_free_mortar_40m")
+			return "no free mortar within 40 m";
+		if (why == "no_free_vehicle_40m")
+			return "no free vehicle with cargo seats within 40 m";
+		if (why == "no_free_cargo_seat")
+			return "its vehicle has no free cargo seat";
+		if (why == "boarding")
+			return "it is boarding its vehicle";
+		if (why == "busy")
+			return "it boards when it has no task and no contact";
+		return why;
+	}
+
+	void DCO_SetWantedRole(int role, int playerID)
+	{
+		role = Math.ClampInt(role, 0, 5);
+		if (role == m_iDCOWantedRole)
+			return;
+		int old = m_iDCOWantedRole;
+		if (role != 1 && IsMortar())
+			DemoteMortar("role_change");
+		if (role != 2 && m_bIsDedicatedTransport)
+			SetDedicatedTransport(false);
+		m_iDCOWantedRole = role;
+		m_iDCORoleState = 0;
+		m_DCORoleVeh = null;
+		m_fDCORoleBoard_ms = -100000;
+		m_fDCORoleTick_ms = -100000;
+		m_bAutoDetectDone = role != 0;
+		if (role == 3)
+			m_eGroupRoleExternal = DCO_EGroupPreset.ARMOR;
+		else if (role == 4)
+			m_eGroupRoleExternal = DCO_EGroupPreset.MECHANIZED;
+		else if (role == 5)
+			m_eGroupRoleExternal = DCO_EGroupPreset.MOTORIZED;
+		else if (!IsMortar())
+			m_eGroupRoleExternal = DCO_EGroupPreset.AUTO;
+		if (role == 0)
+			m_fAssignedAt_ms = GetGame().GetWorld().GetWorldTime();
+		m_fCapabilityCheck_ms = -1;
+		string id = DCO_Log.IdGroup(AIGroup.Cast(GetOwner()));
+		DCO_Perf.Count("role:set");
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, id, string.Format("role_set grp=%1 role=%2 old=%3 player=%4", id, DCO_RoleName(role), DCO_RoleName(old), playerID));
+		if (role == 1 || role == 2)
+			DCO_RoleTick();
+	}
+
+	protected void DCO_RoleTick()
+	{
+		if (!myCommander || !m_Group || IsPlayerGroup() || GetUnitCount() <= 0)
+			return;
+		int state = 2;
+		string why;
+		IEntity veh;
+		if (m_iDCOWantedRole == 1)
+		{
+			if (!IsMortar())
+				DetectMortar();
+			if (IsMortar())
+				state = 1;
+			else
+				why = "no_free_mortar_40m";
+		}
+		else
+			state = DCO_RoleTransport(why, veh);
+
+		if (state == m_iDCORoleState)
+			return;
+		m_iDCORoleState = state;
+		string id = DCO_Log.IdGroup(AIGroup.Cast(GetOwner()));
+		string call = DCO_PlayerComms.GetCallsign(m_Group);
+		if (state == 1)
+		{
+			DCO_Perf.Count("role:active");
+			DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, id, string.Format("role_active grp=%1 role=%2 veh=%3", id, DCO_RoleName(m_iDCOWantedRole), DCO_Log.IdVeh(veh)));
+			if (m_iDCOWantedRole == 2)
+				DCO_PlayerComms.SendToGameMasters("DCO", call + " is now a transport team.");
+			return;
+		}
+		string label = "Mortar Team";
+		if (m_iDCOWantedRole == 2)
+			label = "Transport Team";
+		DCO_Perf.Count("role:pending");
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, id, string.Format("role_pending grp=%1 role=%2 why=%3 veh=%4", id, DCO_RoleName(m_iDCOWantedRole), why, DCO_Log.IdVeh(veh)));
+		DCO_PlayerComms.SendToGameMasters("DCO", string.Format("%1 is set to %2 but is not ready: %3.", call, label, DCO_RoleWhyText(why)));
+	}
+
+	protected int DCO_RoleTransport(out string why, out IEntity veh)
+	{
+		DCO_TransportTeamComponent team = DCO_TransportTeamComponent.Cast(GetOwner().FindComponent(DCO_TransportTeamComponent));
+		if (!team)
+		{
+			why = "no_team_component";
+			return 2;
+		}
+		if (m_bIsDedicatedTransport)
+		{
+			veh = team.ResolveVehicle();
+			return 1;
+		}
+
+		veh = DCO_RoleDrivenVehicle();
+		if (veh)
+		{
+			if (DCO_TransportTeamComponent.CountFreeCargo(veh) <= 0 && !DCO_Logistics.HasResupplyStation(veh))
+			{
+				why = "no_free_cargo_seat";
+				return 2;
+			}
+			SetDedicatedTransport(true);
+			if (m_bIsDedicatedTransport)
+				return 1;
+			why = "set_failed";
+			return 2;
+		}
+
+		if (m_bInTransport || HasState(DCO_EGroupState.IN_CONTACT) || (m_Task.m_eType != DCO_EGroupTask.NONE && m_Task.m_eType != DCO_EGroupTask.PATROL))
+		{
+			why = "busy";
+			return 4;
+		}
+
+		veh = GetGroupVehicle();
+		if (!veh)
+			veh = DCO_RoleClaimVehicle();
+		if (!veh)
+		{
+			why = "no_free_vehicle_40m";
+			return 2;
+		}
+		why = "boarding";
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now - m_fDCORoleBoard_ms >= 60000.0 && DCO_RoleBoard(veh))
+			m_fDCORoleBoard_ms = now;
+		return 3;
+	}
+
+	protected IEntity DCO_RoleDrivenVehicle()
+	{
+		array<AIAgent> agents = {};
+		m_Group.GetAgents(agents);
+		foreach (AIAgent a : agents)
+		{
+			if (!a)
+				continue;
+			ChimeraCharacter ch = ChimeraCharacter.Cast(a.GetControlledEntity());
+			if (!ch || !ch.IsInVehicle())
+				continue;
+			CompartmentAccessComponent acc = ch.GetCompartmentAccessComponent();
+			if (acc && PilotCompartmentSlot.Cast(acc.GetCompartment()))
+				return acc.GetCompartment().GetOwner().GetRootParent();
+		}
+		return null;
+	}
+
+	protected IEntity DCO_RoleClaimVehicle()
+	{
+		if (m_DCORoleVeh)
+		{
+			DamageManagerComponent dmg = DamageManagerComponent.Cast(m_DCORoleVeh.FindComponent(DamageManagerComponent));
+			if (!dmg || dmg.GetState() != EDamageState.DESTROYED)
+				return m_DCORoleVeh;
+			m_DCORoleVeh = null;
+		}
+		IEntity leader = m_Group.GetLeaderEntity();
+		if (!leader || !m_UtilityComp)
+			return null;
+		m_DCORoleFound = null;
+		m_fDCORoleFoundD = float.MAX;
+		m_vDCORoleFrom = leader.GetOrigin();
+		DCO_Perf.Count("q:DCO_GroupUtility");
+		GetGame().GetWorld().QueryEntitiesBySphere(m_vDCORoleFrom, 40.0, DCO_RoleVehCb, null, EQueryEntitiesFlags.ALL);
+		if (!m_DCORoleFound)
+			return null;
+		m_DCORoleVeh = m_DCORoleFound;
+		m_DCORoleFound = null;
+		SCR_AIVehicleUsageComponent usage = SCR_AIVehicleUsageComponent.Cast(m_DCORoleVeh.FindComponent(SCR_AIVehicleUsageComponent));
+		if (usage)
+			m_UtilityComp.AddUsableVehicle(usage);
+		string id = DCO_Log.IdGroup(AIGroup.Cast(GetOwner()));
+		DCO_Perf.Count("role:claim_vehicle");
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, id, string.Format("role_claim grp=%1 veh=%2 dist=%3 armed=%4", id, DCO_Log.IdVeh(m_DCORoleVeh), Math.Round(Math.Sqrt(m_fDCORoleFoundD)), DCO_Util.B01(DCO_VehicleCombat.HasTurret(m_DCORoleVeh))));
+		return m_DCORoleVeh;
+	}
+
+	protected bool DCO_RoleVehCb(IEntity e)
+	{
+		if (!Vehicle.Cast(e))
+			return true;
+		SCR_AIVehicleUsageComponent usage = SCR_AIVehicleUsageComponent.Cast(e.FindComponent(SCR_AIVehicleUsageComponent));
+		if (!usage || usage.GetDamageState() == EDamageState.DESTROYED)
+			return true;
+		if (usage.m_DCOOwnerGroup && usage.m_DCOOwnerGroup != m_Group && usage.DCO_OwnerAlive())
+			return true;
+		BaseCompartmentManagerComponent mgr = BaseCompartmentManagerComponent.Cast(e.FindComponent(BaseCompartmentManagerComponent));
+		if (!mgr)
+			return true;
+		array<BaseCompartmentSlot> slots = {};
+		mgr.GetCompartments(slots);
+		bool pilot;
+		int cargo;
+		foreach (BaseCompartmentSlot slot : slots)
+		{
+			if (slot.GetOccupant())
+				return true;
+			if (PilotCompartmentSlot.Cast(slot))
+				pilot = true;
+			else if (CargoCompartmentSlot.Cast(slot))
+				cargo++;
+		}
+		if (!pilot || cargo <= 0)
+			return true;
+		float d = vector.DistanceSq(e.GetOrigin(), m_vDCORoleFrom);
+		if (d < m_fDCORoleFoundD)
+		{
+			m_fDCORoleFoundD = d;
+			m_DCORoleFound = e;
+		}
+		return true;
+	}
+
+	protected bool DCO_RoleBoard(IEntity veh)
+	{
+		SCR_AIWaypoint wp = myCommander.SpawnGetInWP(veh.GetOrigin());
+		SCR_BoardingEntityWaypoint board = SCR_BoardingEntityWaypoint.Cast(wp);
+		if (!board)
+		{
+			if (wp)
+				SCR_EntityHelper.DeleteEntityAndChildren(wp);
+			return false;
+		}
+		SetTask(DCO_EGroupTask.NONE, "role_board");
+		m_Group.CompleteAllWaypoints();
+		board.SetEntity(veh);
+		board.SetAllowance(true, true, true);
+		board.SetCompletionType(EAIWaypointCompletionType.All);
+		m_Group.AddWaypoint(wp);
+		DCO_SetHold(DCO_Util.NowS() + 60.0);
+		string id = DCO_Log.IdGroup(AIGroup.Cast(GetOwner()));
+		DCO_Perf.Count("role:board");
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, id, string.Format("role_board grp=%1 veh=%2 armed=%3", id, DCO_Log.IdVeh(veh), DCO_Util.B01(DCO_VehicleCombat.HasTurret(veh))));
+		return true;
 	}
 
 	bool IsAutoTransport()			{ return m_bAutoTransport; }
@@ -2107,6 +2677,15 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			s_mMortarCrew = new map<IEntity, DCO_GroupUtilityComponent>();
 		return s_mMortarCrew;
 	}
+	static void F_DCO_MortarsOf(AICommander_BaseComponent cmd, notnull array<IEntity> outMortars)
+	{
+		foreach (IEntity m, DCO_GroupUtilityComponent g : GetMortarCrew())
+		{
+			if (m && g && g.GetMyCommander() == cmd)
+				outMortars.Insert(m);
+		}
+	}
+
 	protected SCR_AIVehicleUsageComponent m_FoundMortar;
 	protected SCR_AIVehicleUsageComponent m_AutoMortarUsage;
 	protected bool m_bAutoMortar;
@@ -2149,7 +2728,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			return;
 		if (m_eGroupRoleExternal != DCO_EGroupPreset.AUTO && m_eGroupRoleExternal != DCO_EGroupPreset.MORTAR)
 			return;
-		if (m_eGroupRoleExternal == DCO_EGroupPreset.AUTO && AutoDetectSize() > 4)
+		if (m_eGroupRoleExternal == DCO_EGroupPreset.AUTO && m_iDCOWantedRole != 1 && AutoDetectSize() > 4)
 			return;
 
 		array<ref SCR_AIGroupVehicle> vehicles = {};
@@ -2360,6 +2939,15 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			GetGame().GetCallqueue().CallLater(CheckGroupIsHaveOrder, 10000, true);
 
 		SetEventMask(GetOwner(), EntityEvent.FRAME);
+
+		if (m_DCOSpawnVeh && myCommander && m_Group)
+		{
+			string id = DCO_Log.IdGroup(AIGroup.Cast(GetOwner()));
+			bool mounted = DCO_RoleBoard(m_DCOSpawnVeh);
+			DCO_Perf.Count("spawner:mount");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, id, string.Format("spawner_mount grp=%1 veh=%2 ok=%3", id, DCO_Log.IdVeh(m_DCOSpawnVeh), DCO_Util.B01(mounted)));
+			m_DCOSpawnVeh = null;
+		}
 	}
 
 	void ReleaseFromCommander()

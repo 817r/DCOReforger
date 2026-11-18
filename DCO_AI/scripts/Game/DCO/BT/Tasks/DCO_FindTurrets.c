@@ -86,6 +86,7 @@ class SCR_DCOAIFindTurrets: AITaskScripted
 
 	override ENodeResult EOnTaskSimulate(AIAgent owner, float dt)
 	{
+		DCO_BtWatch.Mark("ActivityIdle");
 		ClearVariable("TurretNumber");
 		SetVariableOut("TurretsFound", false);
 		if (!m_tagSystem || !m_groupOwner)
@@ -206,6 +207,6 @@ modded class SCR_AIVehicleUsageComponent
 
 	bool DCO_OwnerAlive()
 	{
-		return m_DCOOwnerGroup && m_DCOOwnerGroup.GetAgentsCount() > 0;
+		return m_DCOOwnerGroup && DCO_Dormant.Count(m_DCOOwnerGroup) > 0;
 	}
 }

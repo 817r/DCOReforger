@@ -1,7 +1,7 @@
 [EntityEditorProps(category: "GameScripted/Capture", description: "Central manager for area capture scores (multi-faction).")]
-class CNH_CaptureManagerClass : ScriptComponentClass {}
+class DCO_CNH_CaptureManagerClass : ScriptComponentClass {}
 
-class CNH_CaptureManager : ScriptComponent
+class DCO_CNH_CaptureManager : ScriptComponent
 {
     [Attribute("1000", UIWidgets.EditBox, desc: "Maximum score needed to win.")]
     int m_iMaxScore;

@@ -6,6 +6,8 @@ class DCO_LiveSuppressVolume : SCR_AISuppressionVolumeBox
 	protected string m_sState = "init";
 	protected float m_fStartMs;
 	protected int m_iRetargets;
+	protected bool m_bBriefShift;
+	protected bool m_bBriefLift;
 	bool m_bLifted;
 
 	void ~DCO_LiveSuppressVolume()
@@ -21,13 +23,17 @@ class DCO_LiveSuppressVolume : SCR_AISuppressionVolumeBox
 
 	void Init(SCR_AIGroupUtilityComponent gu, AIWaypoint wp, float height)
 	{
+		InitAt(gu, wp.GetOrigin(), Math.Clamp(wp.GetCompletionRadius(), 8.0, 30.0), height);
+	}
+
+	void InitAt(SCR_AIGroupUtilityComponent gu, vector anchor, float half, float height)
+	{
 		m_Gu = gu;
-		m_vAnchor = wp.GetOrigin();
-		float half = Math.Clamp(wp.GetCompletionRadius(), 8.0, 30.0);
+		m_vAnchor = anchor;
 		SetBox(m_vAnchor, half, Math.Max(height, DCO_Ctx.TuneForGU(gu, "sbf.height", 4.0)));
 		m_fStartMs = GetGame().GetWorld().GetWorldTime();
 		DCO_Perf.Count("sbf:live_start");
-		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(gu.m_Owner), string.Format("sbf_live_start grp=%1 anchor=%2 half=%3", DCO_Log.IdGroup(gu.m_Owner), DCO_Util.XZ(m_vAnchor), Math.Round(half)));
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(gu.m_Owner), string.Format("sbf_live_start grp=%1 anchor=%2 half=%3 commander=%4", DCO_Log.IdGroup(gu.m_Owner), DCO_Util.XZ(m_vAnchor), Math.Round(half), DCO_Util.B01(Commander() != null)));
 	}
 
 	protected void SetBox(vector c, float half, float h)
@@ -71,6 +77,26 @@ class DCO_LiveSuppressVolume : SCR_AISuppressionVolumeBox
 			}
 		}
 		return false;
+	}
+
+	protected void Brief(string state)
+	{
+		if (state == "aim" || (state == "shift" && m_bBriefShift) || (state == "lift" && m_bBriefLift))
+			return;
+		AICommander_BaseComponent bc = Commander();
+		if (!bc || !bc.GetTactics())
+			return;
+		CMD_AICommanderObjectiveComponent bo = m_Gu.DCO_GetUtil().GetGroupObjective();
+		if (!bo)
+			return;
+		if (state == "lift")
+		{
+			m_bBriefLift = true;
+			DCO_Briefing.AttackFlag(bc, bc.GetTactics().GetPlan(bo), DCO_EBriefFlag.LIFT, "brief_phase_lift");
+			return;
+		}
+		m_bBriefShift = true;
+		DCO_Briefing.AttackFlag(bc, bc.GetTactics().GetPlan(bo), 0, "brief_phase_shift");
 	}
 
 	protected void Refresh()
@@ -164,6 +190,7 @@ class DCO_LiveSuppressVolume : SCR_AISuppressionVolumeBox
 		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Gu.m_Owner), string.Format("sbf_retarget grp=%1 state=%2 src=%3 moved_m=%4 half=%5 to=%6 anchor_d=%7", DCO_Log.IdGroup(m_Gu.m_Owner), state, src, Math.Round(moved), Math.Round(half), DCO_Util.XZ(best), Math.Round(vector.DistanceXZ(best, m_vAnchor))));
 		m_sState = state;
 		m_iRetargets++;
+		Brief(state);
 	}
 }
 
@@ -174,7 +201,7 @@ modded class SCR_SuppressWaypointState
 		DCO_GroupUtilityComponent g;
 		if (m_Utility)
 			g = m_Utility.DCO_GetUtil();
-		if (!g || !g.GetMyCommander() || DCO_Ctx.TuneG("sbf.live", 1.0) <= 0)
+		if (!g || g.IsPlayerGroup() || DCO_Ctx.TuneG("sbf.live", 1.0) <= 0)
 		{
 			super.AddSuppressActivity();
 			return;

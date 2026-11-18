@@ -265,8 +265,33 @@ class DCO_CommanderAssignVehicleAttribute : DCO_CommanderAssignBaseAttribute
 		return fk;
 	}
 
+	protected DCO_GroupUtilityComponent GetCrewGroup(SCR_EditableEntityComponent editable)
+	{
+		SCR_EditableVehicleComponent editableVehicle = SCR_EditableVehicleComponent.Cast(editable);
+		if (!editableVehicle)
+			return null;
+
+		SCR_EditableEntityComponent editableGroup = editableVehicle.GetAIGroup();
+		if (!editableGroup)
+			return null;
+
+		SCR_AIGroup aiGroup = SCR_AIGroup.Cast(editableGroup.GetOwner());
+		if (!aiGroup)
+			return null;
+
+		DCO_GroupUtilityComponent crew = DCO_GroupUtilityComponent.Cast(aiGroup.FindComponent(DCO_GroupUtilityComponent));
+		if (!crew || crew.IsPlayerGroup() || !crew.IsCommanderEligible())
+			return null;
+
+		return crew;
+	}
+
 	override protected AICommander_BaseComponent GetCurrentCommander(SCR_EditableEntityComponent editable)
 	{
+		DCO_GroupUtilityComponent crew = GetCrewGroup(editable);
+		if (crew)
+			return crew.GetMyCommander();
+
 		DCO_TransportMissionComponent mission = GetMission(editable);
 		if (!mission)
 			return null;
@@ -279,6 +304,25 @@ class DCO_CommanderAssignVehicleAttribute : DCO_CommanderAssignBaseAttribute
 		IEntity veh = editable.GetOwner();
 		if (!veh)
 			return;
+
+		DCO_GroupUtilityComponent crew = GetCrewGroup(editable);
+		if (crew)
+		{
+			string crewName = DCO_Log.IdGroup(SCR_AIGroup.Cast(crew.GetOwner()));
+			if (newCmd)
+			{
+				bool crewOk = newCmd.AssignGroup(crew);
+				DCO_Perf.Count("cmd:assign_vehicle_crew");
+				DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("assign_vehicle_crew veh=%1 crew=%2 cmd=%3 ok=%4 units=%5", veh.GetName(), crewName, newCmd.GetCommanderUID(), DCO_Util.B01(crewOk), crew.GetUnitCount()));
+				return;
+			}
+			if (current)
+			{
+				current.ReleaseGroup(crew);
+				DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("release_vehicle_crew veh=%1 crew=%2 cmd=%3", veh.GetName(), crewName, current.GetCommanderUID()));
+			}
+			return;
+		}
 
 		if (newCmd)
 		{

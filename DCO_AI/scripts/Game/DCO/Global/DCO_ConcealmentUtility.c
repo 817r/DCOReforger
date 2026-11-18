@@ -1,6 +1,37 @@
 class DCO_ConcealmentUtility
 {
+	protected static ref map<string, float> s_mExposeAt;
+	protected static ref map<string, bool> s_mExposeVal;
+
 	static bool IsPositionExposed(vector pos, IEntity excludeEntity, float checkRadius = 15.0)
+	{
+		if (!s_mExposeAt)
+		{
+			s_mExposeAt = new map<string, float>();
+			s_mExposeVal = new map<string, bool>();
+		}
+		float exNow = GetGame().GetWorld().GetWorldTime();
+		string exKey = DCO_LearnStore.PosKey(pos, 2.0) + "|" + Math.Round(checkRadius).ToString();
+		float exAt;
+		bool exVal;
+		if (s_mExposeAt.Find(exKey, exAt) && exNow - exAt < 3000.0 && s_mExposeVal.Find(exKey, exVal))
+		{
+			DCO_Perf.Count("expose:hit");
+			return exVal;
+		}
+		DCO_Perf.Count("expose:miss");
+		if (s_mExposeAt.Count() > 512)
+		{
+			s_mExposeAt.Clear();
+			s_mExposeVal.Clear();
+		}
+		bool exposed = TraceExposed(pos, excludeEntity, checkRadius);
+		s_mExposeAt.Set(exKey, exNow);
+		s_mExposeVal.Set(exKey, exposed);
+		return exposed;
+	}
+
+	protected static bool TraceExposed(vector pos, IEntity excludeEntity, float checkRadius)
 	{
 		int perfStart = DCO_Perf.Begin();
 		vector center = pos;

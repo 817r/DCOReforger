@@ -66,13 +66,18 @@ class DCO_CmdLearn
 			s_Inst = new DCO_CmdLearn();
 			s_Inst.m_World = GetGame().GetWorld();
 			string dir = "$profile:DCO/CommanderLearn/";
-			if (DCO_TestCaseComponent.Active())
+			if (DCO_Dev.TestActive())
 				dir = "$profile:DCO/CommanderLearn/_test/";
 			s_Inst.m_Tactics = new DCO_LearnStore(dir + "Tactics.json");
 			s_Inst.m_Terrain = new DCO_LearnStore(dir + "Terrain/" + DCO_LearnStore.WorldName() + ".json");
 			s_Inst.m_fNextSave = DCO_Util.NowS() + 300.0;
 		}
 		return s_Inst;
+	}
+
+	static bool On()
+	{
+		return DCO_Ctx.TuneG("learn.cmd_on", 1.0) > 0;
 	}
 
 	static int ResetAll()
@@ -181,22 +186,29 @@ class DCO_CmdLearn
 		ctx = string.Format("%1_%2_m%3a%4M%5V%6n%7i%8", type, band, DCO_Util.B01(s.m_bEnemyMG), DCO_Util.B01(eat), DCO_Util.B01(omg), DCO_Util.B01(oveh), DCO_Util.B01(s.m_bNight), DCO_Util.B01(s.m_bUrban && inside));
 	}
 
+	static float Cap()
+	{
+		return DCO_Ctx.TuneG("learn.cmd_cap", 0.25);
+	}
+
 	protected float TacticMult(string vs, string ctx, string ctxTR, string name, out float n, out string level)
 	{
-		float m = m_Tactics.Mult("tactic|" + vs + "|x|" + ctx + "|" + name, 0.5, n);
-		if (n >= 5)
+		float cap = Cap();
+		float minN = DCO_Ctx.TuneG("learn.cmd_min_n", 5.0);
+		float m = m_Tactics.Mult("tactic|" + vs + "|x|" + ctx + "|" + name, 0.5, n, cap);
+		if (n >= minN)
 		{
 			level = "exact";
 			return m;
 		}
-		m = m_Tactics.Mult("tactic|" + vs + "|t|" + ctxTR + "|" + name, 0.5, n);
-		if (n >= 5)
+		m = m_Tactics.Mult("tactic|" + vs + "|t|" + ctxTR + "|" + name, 0.5, n, cap);
+		if (n >= minN)
 		{
 			level = "type_ratio";
 			return m;
 		}
-		m = m_Tactics.Mult("tactic|" + vs + "|g|" + name, 0.5, n);
-		if (n >= 5)
+		m = m_Tactics.Mult("tactic|" + vs + "|g|" + name, 0.5, n, cap);
+		if (n >= minN)
 		{
 			level = "global";
 			return m;
@@ -207,6 +219,11 @@ class DCO_CmdLearn
 
 	static int ApplyTactics(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, DCO_TacticSituation s, notnull array<float> scores, out string ctx, out string ctxTR, out string vs)
 	{
+		if (!On())
+		{
+			DCO_Perf.Count("learn:off");
+			return -1;
+		}
 		DCO_CmdLearn L = Get();
 		vs = DCO_LearnDefense.VsKey(cmd, obj);
 		Context(cmd, obj, s, ctx, ctxTR);
@@ -268,6 +285,8 @@ class DCO_CmdLearn
 
 	static void TacticEpisode(CMD_AICommanderObjectiveComponent obj, int tactic, string ctx, string ctxTR, string vs, string result, float duration, int losses, int kills, bool control)
 	{
+		if (!On())
+			return;
 		DCO_CmdLearn L = Get();
 		if (!L || ctx.IsEmpty() || result == "replanned" || result == "bypass_end")
 			return;
@@ -293,6 +312,8 @@ class DCO_CmdLearn
 
 	static void Terrain(string kind, vector pos, float cell, float value, string reason, string objName)
 	{
+		if (!On())
+			return;
 		DCO_CmdLearn L = Get();
 		if (!L)
 			return;
@@ -305,11 +326,16 @@ class DCO_CmdLearn
 
 	static float TerrainMult(string kind, vector pos, float cell, out float n)
 	{
+		if (!On())
+		{
+			n = 0;
+			return 1;
+		}
 		n = 0;
 		DCO_CmdLearn L = Get();
 		if (!L)
 			return 1.0;
-		return L.m_Terrain.Mult(kind + "|" + VsAt(pos, 800.0) + "|" + DCO_LearnStore.PosKey(pos, cell), 0.5, n);
+		return L.m_Terrain.Mult(kind + "|" + VsAt(pos, 800.0) + "|" + DCO_LearnStore.PosKey(pos, cell), 0.5, n, Cap());
 	}
 
 	static float ApplyScore(float score, float mult)
@@ -338,6 +364,11 @@ class DCO_CmdLearn
 
 	static float ApproachMult(CMD_AICommanderObjectiveComponent obj, float bearingDeg, out float n)
 	{
+		if (!On())
+		{
+			n = 0;
+			return 1;
+		}
 		n = 0;
 		DCO_CmdLearn L = Get();
 		if (!L || !obj)
@@ -345,32 +376,36 @@ class DCO_CmdLearn
 		vector objPos = obj.GetOwner().GetOrigin();
 		float a = bearingDeg * Math.DEG2RAD;
 		int s = Sector16(objPos, objPos + Vector(Math.Sin(a), 0, Math.Cos(a)));
-		return L.m_Terrain.Mult("approach|" + VsAt(objPos, obj.GetRadius() + 1000.0) + "|" + obj.GetLogName() + "|" + s.ToString(), 0.5, n);
+		return L.m_Terrain.Mult("approach|" + VsAt(objPos, obj.GetRadius() + 1000.0) + "|" + obj.GetLogName() + "|" + s.ToString(), 0.5, n, Cap());
 	}
 
-	static void NoteFailBearing(CMD_AICommanderObjectiveComponent obj, float bearing)
+	static void NoteFailBearing(CMD_AICommanderObjectiveComponent obj, float bearing, string faction)
 	{
+		if (!On())
+			return;
 		DCO_CmdLearn L = Get();
 		if (!L || !obj)
 			return;
 		int b = Math.Round(bearing / 22.5);
-		L.m_Terrain.Add("fail|" + obj.GetLogName() + "|" + (b % 16).ToString(), 1.0);
+		L.m_Terrain.Add("fail|" + faction + "|" + obj.GetLogName() + "|" + (b % 16).ToString(), 1.0);
 	}
 
-	static void LoadFailBearings(CMD_AICommanderObjectiveComponent obj, notnull array<float> outBearings)
+	static void LoadFailBearings(CMD_AICommanderObjectiveComponent obj, notnull array<float> outBearings, string faction)
 	{
+		if (!On())
+			return;
 		DCO_CmdLearn L = Get();
 		if (!L || !obj)
 			return;
 		for (int s = 0; s < 16; s++)
 		{
 			float n = 0;
-			L.m_Terrain.Post("fail|" + obj.GetLogName() + "|" + s.ToString(), 0.0, n);
+			L.m_Terrain.Post("fail|" + faction + "|" + obj.GetLogName() + "|" + s.ToString(), 0.0, n);
 			if (n >= 1.0)
 				outBearings.Insert(1.0 * s * 22.5);
 		}
 		if (!outBearings.IsEmpty())
-			Event(string.Format("learn_use kind=fail key=%1 base=0 mult=1 samples=%2 level=exact", obj.GetLogName(), outBearings.Count()));
+			Event(string.Format("learn_use kind=fail key=%1 base=0 mult=1 samples=%2 level=exact faction=%3", obj.GetLogName(), outBearings.Count(), faction));
 	}
 
 	static int OwnDeathsNear(vector pos, float radius, string faction, float since)
@@ -389,6 +424,8 @@ class DCO_CmdLearn
 
 	static void StagingEpisode(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, vector st, float since, string why)
 	{
+		if (!On())
+			return;
 		if (!cmd || !obj || st == vector.Zero)
 			return;
 		int dn = OwnDeathsNear(st, 150.0, cmd.GetCommanderFactionKey(), since);

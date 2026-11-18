@@ -37,11 +37,11 @@ class DCO_MoraleCombatUtility
 		switch (utility.m_DCOConfig.GetPersonality())
 		{
 			case DCO_EAIPersonality.CAUTIOUS:
-				return 1.4;
+				return 0.8;
 			case DCO_EAIPersonality.AGGRESSIVE:
-				return 0.7;
+				return 1.5;
 			case DCO_EAIPersonality.RECKLESS:
-				return 0.5;
+				return 1.8;
 			default:
 				return 1.0;
 		}

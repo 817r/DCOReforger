@@ -289,11 +289,11 @@ class DCO_BoundBehavior : SCR_AIBehaviorBase
 		}
 		if (DCO_UnseenYield())
 			return 60;
-		float yieldDist = 40.0;
+		float yieldDist = DCO_Stress.T(m_Utility, "ind.yield_m", 150.0);
 		string yieldWhat = "bound_close_yield";
 		if (m_sDCOTech == "assault_through")
 		{
-			yieldDist = 150.0;
+			yieldDist = Math.Max(yieldDist, 150.0);
 			yieldWhat = "assault_fire_yield";
 		}
 		bool y = DCO_AimedYield.TargetVisible(m_Utility, yieldDist);

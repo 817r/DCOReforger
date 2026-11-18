@@ -7,7 +7,17 @@ modded class AICommander_BaseComponent
 	float DCO_GT_ReserveEmployment()			{ return m_iReserveEmployment; }
 	void DCO_ST_ReserveEmployment(float v)		{ m_iReserveEmployment = Math.Clamp(Math.Round(v), 0, 2); }
 	float DCO_GT_DelayFirstIteration()			{ return m_fDelayFirstIteration; }
-	void DCO_ST_DelayFirstIteration(float v)		{ m_fDelayFirstIteration = v; }
+	void DCO_ST_DelayFirstIteration(float v)
+	{
+		if (v == m_fDelayFirstIteration)
+			return;
+		m_fDelayFirstIteration = v;
+		if (m_fBaseThinkInterval <= 0)
+			return;
+		m_fThinkTimer = m_fThinkInterval - v;
+		DCO_Perf.Count("gm:think_delay_live");
+		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", string.Format("gm_think_delay_live cmd=%1 next_think_in_s=%2", m_sCommanderUID, Math.Round(v)));
+	}
 	float DCO_GT_CaptureCheckInterval()			{ return m_fCaptureCheckInterval; }
 	void DCO_ST_CaptureCheckInterval(float v)		{ m_fCaptureCheckInterval = v; }
 	float DCO_GT_StalemateResponseCooldown()
@@ -66,8 +76,6 @@ modded class AICommander_BaseComponent
 	void DCO_ST_AttackRatioCautious(float v)		{ m_fAttackRatioCautious = v; }
 	float DCO_GT_AttackAbortCooldown()			{ return m_fAttackAbortCooldown; }
 	void DCO_ST_AttackAbortCooldown(float v)		{ m_fAttackAbortCooldown = v; }
-	float DCO_GT_AssaultSuppressDuration()			{ return m_fAssaultSuppressDuration; }
-	void DCO_ST_AssaultSuppressDuration(float v)		{ m_fAssaultSuppressDuration = v; }
 	float DCO_GT_StagingLegFraction()			{ return m_fStagingLegFraction; }
 	void DCO_ST_StagingLegFraction(float v)		{ m_fStagingLegFraction = v; }
 	float DCO_GT_StagingMinDistance()			{ return m_fStagingMinDistance; }
@@ -84,10 +92,6 @@ modded class AICommander_BaseComponent
 	void DCO_ST_MaxSearchWaypoints(float v)		{ m_iMaxSearchWaypoints = Math.Round(v); }
 	float DCO_GT_RetreatThreshold()			{ return m_iRetreatThreshold; }
 	void DCO_ST_RetreatThreshold(float v)		{ m_iRetreatThreshold = Math.Round(v); }
-	float DCO_GT_RetreatCoverDuration()			{ return m_fRetreatCoverDuration; }
-	void DCO_ST_RetreatCoverDuration(float v)		{ m_fRetreatCoverDuration = v; }
-	float DCO_GT_RetreatCoverRadius()			{ return m_fRetreatCoverRadius; }
-	void DCO_ST_RetreatCoverRadius(float v)		{ m_fRetreatCoverRadius = v; }
 	float DCO_GT_FrontlineReconRadius()			{ return m_fFrontlineReconRadius; }
 	void DCO_ST_FrontlineReconRadius(float v)		{ m_fFrontlineReconRadius = v; }
 	float DCO_GT_FrontlineReconDuration()			{ return m_fFrontlineReconDuration; }
@@ -106,8 +110,6 @@ modded class AICommander_BaseComponent
 	void DCO_ST_EnvelopeNodes(float v)		{ m_iEnvelopeNodes = Math.Round(v); }
 	float DCO_GT_MinGroupClusterDistance()			{ return m_fMinGroupClusterDistance; }
 	void DCO_ST_MinGroupClusterDistance(float v)		{ m_fMinGroupClusterDistance = v; }
-	float DCO_GT_GarrisonGroupsPerObjective()			{ return m_iGarrisonGroupsPerObjective; }
-	void DCO_ST_GarrisonGroupsPerObjective(float v)		{ m_iGarrisonGroupsPerObjective = Math.Round(v); }
 	float DCO_GT_DefendEngageDist()			{ return m_fDefendEngageDist; }
 	void DCO_ST_DefendEngageDist(float v)
 	{
@@ -119,10 +121,6 @@ modded class AICommander_BaseComponent
 	void DCO_ST_DefendObjectiveMargin(float v)		{ m_fDefendObjectiveMargin = v; }
 	float DCO_GT_BaseRadius()			{ return m_fBaseRadius; }
 	void DCO_ST_BaseRadius(float v)		{ m_fBaseRadius = v; }
-	bool DCO_GT_EnableKeyDefendSpotEvaluation()			{ return m_bEnableKeyDefendSpotEvaluation; }
-	void DCO_ST_EnableKeyDefendSpotEvaluation(bool v)		{ m_bEnableKeyDefendSpotEvaluation = v; }
-	float DCO_GT_MaxKeyDefendPositions()			{ return m_iMaxKeyDefendPositions; }
-	void DCO_ST_MaxKeyDefendPositions(float v)		{ m_iMaxKeyDefendPositions = Math.Round(v); }
 	float DCO_GT_MinSector()			{ return m_iMinSector; }
 	void DCO_ST_MinSector(float v)		{ m_iMinSector = Math.Round(v); }
 	float DCO_GT_MaxSector()			{ return m_iMaxSector; }
@@ -161,10 +159,6 @@ modded class AICommander_BaseComponent
 	void DCO_ST_PatrolRadiusMulMin(float v)		{ m_fPatrolRadiusMulMin = v; }
 	float DCO_GT_PatrolRadiusMulMax()			{ return m_fPatrolRadiusMulMax; }
 	void DCO_ST_PatrolRadiusMulMax(float v)		{ m_fPatrolRadiusMulMax = v; }
-	float DCO_GT_PatrolLinkRadius()			{ return m_fPatrolLinkRadius; }
-	void DCO_ST_PatrolLinkRadius(float v)		{ m_fPatrolLinkRadius = v; }
-	float DCO_GT_LinkPatrolChance()			{ return m_fLinkPatrolChance; }
-	void DCO_ST_LinkPatrolChance(float v)		{ m_fLinkPatrolChance = v; }
 	float DCO_GT_TransportDistanceThreshold()			{ return m_fTransportDistanceThreshold; }
 	void DCO_ST_TransportDistanceThreshold(float v)		{ m_fTransportDistanceThreshold = v; }
 	float DCO_GT_LogiPrioMedevac()			{ return m_iLogiPrioMedevac; }

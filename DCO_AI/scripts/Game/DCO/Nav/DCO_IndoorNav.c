@@ -8,6 +8,7 @@ class DCO_INavSample
 	int m_iDist = -1;
 	int m_iDirAll;
 	int m_iDirRoom;
+	bool m_bLow;
 }
 
 class DCO_INavDoor
@@ -30,6 +31,7 @@ class DCO_INavRoom
 	int m_iCenter = -1;
 	int m_iAccess;
 	int m_iWindows;
+	bool m_bOutside;
 	vector m_vMin;
 	vector m_vMax;
 	ref array<int> m_aSamples = {};
@@ -223,9 +225,12 @@ class DCO_IndoorNav
 			g.m_fStep = 0.5;
 
 		CollectDoors(g);
-		Sample(g, nav);
+		AIPathfindingComponent pf = Pathfinder(nav);
+		Sample(g, nav, pf);
 		Floors(g);
-		Links(g);
+		StairRescue(g);
+		LowRescue(g, pf);
+		Links(g, pf);
 		Rooms(g);
 		Centers(g);
 		DoorPoints(g, nav);
@@ -314,13 +319,39 @@ class DCO_IndoorNav
 		return true;
 	}
 
-	protected static void Sample(DCO_INavGraph g, NavmeshWorldComponent nav)
+	protected static AIPathfindingComponent Pathfinder(NavmeshWorldComponent nav)
+	{
+		AIWorld aiWorld = GetGame().GetAIWorld();
+		if (!aiWorld)
+			return null;
+		array<AIAgent> agents = {};
+		aiWorld.GetAIAgents(agents);
+		foreach (AIAgent a : agents)
+		{
+			if (!a)
+				continue;
+			IEntity e = a.GetControlledEntity();
+			if (!e)
+				continue;
+			AIPathfindingComponent pf = AIPathfindingComponent.Cast(e.FindComponent(AIPathfindingComponent));
+			if (pf && pf.GetNavmeshComponent() == nav)
+				return pf;
+		}
+		return null;
+	}
+
+	protected static void Sample(DCO_INavGraph g, NavmeshWorldComponent nav, AIPathfindingComponent pf)
 	{
 		float step = g.m_fStep;
+		vector ext = Vector(0.5 * step, 0.45, 0.5 * step);
+		string sampler = "random";
+		if (pf)
+			sampler = "closest";
 		int nx = Math.Ceil((g.m_vMaxs[0] - g.m_vMins[0]) / step);
 		int nz = Math.Ceil((g.m_vMaxs[2] - g.m_vMins[2]) / step);
 		int ny = Math.Floor((g.m_vMaxs[1] - g.m_vMins[1] - 1.0) / 0.8) + 1;
 		ny = Math.Max(ny, 1);
+		int rebinned;
 		for (int ix = 0; ix < nx; ix++)
 		{
 			for (int iz = 0; iz < nz; iz++)
@@ -332,13 +363,18 @@ class DCO_IndoorNav
 					p[1] = g.m_vMins[1] + 0.3 + 0.8 * iy;
 					p[2] = g.m_vMins[2] + (iz + 0.5) * step;
 					vector snapped;
-					if (!nav.GetReachablePoint(g.W(p), 1.0, snapped))
+					bool got;
+					if (pf)
+						got = pf.GetClosestPositionOnNavmesh(g.W(p), ext, snapped);
+					else
+						got = nav.GetReachablePoint(g.W(p), 1.0, snapped);
+					if (!got)
 					{
 						g.Rej(0, p, false);
 						continue;
 					}
 					vector sl = g.m_Building.CoordToLocal(snapped);
-					if (Math.AbsFloat(sl[0] - p[0]) > 0.75 * step || Math.AbsFloat(sl[2] - p[2]) > 0.75 * step || Math.AbsFloat(sl[1] - p[1]) > 0.6)
+					if (Math.AbsFloat(sl[1] - p[1]) > 0.6)
 					{
 						g.Rej(1, sl, true);
 						continue;
@@ -348,9 +384,11 @@ class DCO_IndoorNav
 						g.Rej(2, sl, true);
 						continue;
 					}
-					int key = CellKey(ix, iz);
-					array<int> cell;
-					if (g.m_mCell.Find(key, cell))
+					int cx = Math.Floor((sl[0] - g.m_vMins[0]) / step);
+					int cz = Math.Floor((sl[2] - g.m_vMins[2]) / step);
+					int key = CellKey(cx, cz);
+					array<int> cell = g.m_mCell.Get(key);
+					if (cell)
 					{
 						bool dup = false;
 						foreach (int ci : cell)
@@ -391,8 +429,10 @@ class DCO_IndoorNav
 					}
 					DCO_INavSample s = new DCO_INavSample();
 					s.m_vL = sl;
-					s.m_iX = ix;
-					s.m_iZ = iz;
+					s.m_iX = cx;
+					s.m_iZ = cz;
+					if (cx != ix || cz != iz)
+						rebinned++;
 					if (!cell)
 					{
 						cell = {};
@@ -403,6 +443,8 @@ class DCO_IndoorNav
 				}
 			}
 		}
+		DCO_Perf.CountN("inav:rebin", rebinned);
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("inav_sample prefab=%1 step=%2 samples=%3 rebinned=%4 sampler=%5", g.m_sPrefab, step, g.m_aSamples.Count(), rebinned, sampler));
 	}
 
 	protected static void Floors(DCO_INavGraph g)
@@ -444,6 +486,139 @@ class DCO_IndoorNav
 		}
 	}
 
+	protected static bool MidFloor(DCO_INavGraph g, float y)
+	{
+		foreach (float fy : g.m_aFloors)
+		{
+			if (Math.AbsFloat(y - fy) <= 0.6)
+				return false;
+		}
+		return true;
+	}
+
+	protected static void StairRescue(DCO_INavGraph g)
+	{
+		if (g.m_aFloors.Count() < 2)
+			return;
+		foreach (DCO_INavSample s : g.m_aSamples)
+		{
+			if (s.m_iFloor < 0)
+				return;
+		}
+		int snapOff, notBld, noCeil, lowCeil, addedBld, addedSnap;
+		foreach (int ri, vector p : g.m_aRejP)
+		{
+			if (!MidFloor(g, p[1]))
+				continue;
+			int why = g.m_aRejWhy[ri];
+			if (why == 1)
+				snapOff++;
+			else if (why == 5)
+				notBld++;
+			else if (why == 6)
+				noCeil++;
+			else if (why == 7)
+				lowCeil++;
+			if (why != 1 && why != 5)
+				continue;
+			if (why == 1)
+			{
+				if (p[0] < g.m_vMins[0] + 0.2 || p[0] > g.m_vMaxs[0] - 0.2 || p[2] < g.m_vMins[2] + 0.2 || p[2] > g.m_vMaxs[2] - 0.2)
+					continue;
+				if (Trace(g, g.W(p + 0.3 * vector.Up), g.W(p - 0.5 * vector.Up)) >= 0.999)
+					continue;
+			}
+			float up = Trace(g, g.W(p + 0.1 * vector.Up), g.W(p + 20.1 * vector.Up));
+			if (up >= 0.999 || up * 20.0 < 1.6)
+				continue;
+			int ix = Math.Floor((p[0] - g.m_vMins[0]) / g.m_fStep);
+			int iz = Math.Floor((p[2] - g.m_vMins[2]) / g.m_fStep);
+			int key = CellKey(ix, iz);
+			array<int> cell;
+			bool dup = false;
+			if (g.m_mCell.Find(key, cell))
+			{
+				foreach (int ci : cell)
+				{
+					if (Math.AbsFloat(g.m_aSamples[ci].m_vL[1] - p[1]) < 0.5)
+						dup = true;
+				}
+			}
+			if (dup)
+				continue;
+			DCO_INavSample ns = new DCO_INavSample();
+			ns.m_vL = p;
+			ns.m_iX = ix;
+			ns.m_iZ = iz;
+			if (!cell)
+			{
+				cell = {};
+				g.m_mCell.Set(key, cell);
+			}
+			cell.Insert(g.m_aSamples.Count());
+			g.m_aSamples.Insert(ns);
+			if (why == 5)
+				addedBld++;
+			else
+				addedSnap++;
+		}
+		DCO_Perf.Count("inav:stairs_rescue");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("inav_stairs_rescue prefab=%1 floors=%2 added_bld=%3 added_snap=%4 mid_rejects=snap_off:%5,floor_not_bld:%6,no_ceiling:%7,low_ceiling:%8",
+			g.m_sPrefab, g.m_aFloors.Count(), addedBld, addedSnap, snapOff, notBld, noCeil, lowCeil));
+	}
+
+	protected static void LowRescue(DCO_INavGraph g, AIPathfindingComponent pf)
+	{
+		if (!pf || g.m_aFloors.IsEmpty())
+			return;
+		float lowY = g.m_aFloors[0] - 0.3;
+		float highY = g.m_aFloors[g.m_aFloors.Count() - 1] + 0.3;
+		int added;
+		foreach (int ri, vector p : g.m_aRejP)
+		{
+			if (g.m_aRejWhy[ri] != 7 || p[1] < lowY || p[1] > highY)
+				continue;
+			int cx = Math.Floor((p[0] - g.m_vMins[0]) / g.m_fStep);
+			int cz = Math.Floor((p[2] - g.m_vMins[2]) / g.m_fStep);
+			int key = CellKey(cx, cz);
+			array<int> cell = g.m_mCell.Get(key);
+			bool dup = false;
+			if (cell)
+			{
+				foreach (int ci : cell)
+				{
+					if (Math.AbsFloat(g.m_aSamples[ci].m_vL[1] - p[1]) < 0.5)
+						dup = true;
+				}
+			}
+			if (dup)
+				continue;
+			DCO_INavSample ns = new DCO_INavSample();
+			ns.m_vL = p;
+			ns.m_iX = cx;
+			ns.m_iZ = cz;
+			ns.m_bLow = true;
+			foreach (int fi, float fy : g.m_aFloors)
+			{
+				if (Math.AbsFloat(p[1] - fy) <= 0.3)
+				{
+					ns.m_iFloor = fi;
+					break;
+				}
+			}
+			if (!cell)
+			{
+				cell = {};
+				g.m_mCell.Set(key, cell);
+			}
+			cell.Insert(g.m_aSamples.Count());
+			g.m_aSamples.Insert(ns);
+			added++;
+		}
+		DCO_Perf.CountN("inav:low_rescue", added);
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("inav_low_rescue prefab=%1 added=%2 floors=%3", g.m_sPrefab, added, g.m_aFloors.Count()));
+	}
+
 	protected static int DirBit(int dx, int dz)
 	{
 		if (dx > 0)
@@ -455,8 +630,9 @@ class DCO_IndoorNav
 		return 8;
 	}
 
-	protected static void Links(DCO_INavGraph g)
+	protected static void Links(DCO_INavGraph g, AIPathfindingComponent pf)
 	{
+		int navLinks;
 		foreach (int i, DCO_INavSample a : g.m_aSamples)
 		{
 			for (int n = 0; n < 2; n++)
@@ -475,7 +651,14 @@ class DCO_IndoorNav
 					if (a.m_iFloor >= 0 && b.m_iFloor >= 0 && a.m_iFloor != b.m_iFloor)
 						continue;
 					if (!Clear(g, a.m_vL, b.m_vL, 0.5) || !Clear(g, a.m_vL, b.m_vL, 1.3))
-						continue;
+					{
+						if (!pf || (a.m_iFloor >= 0 && b.m_iFloor >= 0 && !a.m_bLow && !b.m_bLow))
+							continue;
+						vector navHit;
+						if (!pf.RayTrace(g.W(a.m_vL), g.W(b.m_vL), navHit))
+							continue;
+						navLinks++;
+					}
 					int kind = 0;
 					int door = -1;
 					if (a.m_iFloor < 0 || b.m_iFloor < 0)
@@ -497,6 +680,8 @@ class DCO_IndoorNav
 				}
 			}
 		}
+		DCO_Perf.CountN("inav:nav_link", navLinks);
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("inav_links prefab=%1 links=%2 nav_rescued=%3", g.m_sPrefab, g.m_aLinkA.Count(), navLinks));
 	}
 
 	protected static int DoorCrossed(DCO_INavGraph g, vector a, vector b)
@@ -798,6 +983,7 @@ class DCO_IndoorNav
 			d.m_bReal = false;
 			g.m_aDoors.Insert(d);
 		}
+		int reassigned;
 		foreach (int di, DCO_INavDoor door : g.m_aDoors)
 		{
 			for (int side = -1; side <= 1; side += 2)
@@ -814,6 +1000,12 @@ class DCO_IndoorNav
 					p.m_iDoor = di;
 					p.m_iRoom = room;
 					g.m_aPoints.Insert(p);
+				}
+				else
+				{
+					room = RoomAtSide(g, want, door, side);
+					if (room >= 0)
+						reassigned++;
 				}
 				if (side < 0)
 					door.m_iRoomA = room;
@@ -845,6 +1037,108 @@ class DCO_IndoorNav
 			if (door.m_iRoomB >= 0 && door.m_iRoomB != door.m_iRoomA)
 				g.m_aRooms[door.m_iRoomB].m_iAccess++;
 		}
+		array<int> cands = {};
+		foreach (DCO_INavRoom candRoom : g.m_aRooms)
+		{
+			if (StepCandidate(g, candRoom))
+				cands.Insert(candRoom.m_iId);
+		}
+		array<int> steps = {};
+		foreach (int cand : cands)
+		{
+			if (!IsDoorstep(g, cand, cands))
+				continue;
+			steps.Insert(cand);
+			g.m_aRooms[cand].m_bOutside = true;
+		}
+		int doorstep;
+		int outside;
+		foreach (DCO_INavDoor sd : g.m_aDoors)
+		{
+			if (steps.Contains(sd.m_iRoomA) && sd.m_iRoomB >= 0 && !steps.Contains(sd.m_iRoomB))
+			{
+				sd.m_iRoomA = -1;
+				doorstep++;
+			}
+			else if (steps.Contains(sd.m_iRoomB) && sd.m_iRoomA >= 0 && !steps.Contains(sd.m_iRoomA))
+			{
+				sd.m_iRoomB = -1;
+				doorstep++;
+			}
+			if ((sd.m_iRoomA < 0) != (sd.m_iRoomB < 0))
+				outside++;
+		}
+		DCO_Perf.CountN("inav:door_reassign", reassigned);
+		DCO_Perf.CountN("inav:doorstep", doorstep);
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, "-", string.Format("inav_doors prefab=%1 doors=%2 outside=%3 reassigned=%4 doorstep=%5", g.m_sPrefab, g.m_aDoors.Count(), outside, reassigned, doorstep));
+	}
+
+	protected static bool StepCandidate(DCO_INavGraph g, DCO_INavRoom r)
+	{
+		if (g.m_aFloors.IsEmpty() || r.m_aSamples.IsEmpty() || r.m_aSamples.Count() > 6)
+			return false;
+		float lowY = float.MAX;
+		float edge = float.MAX;
+		foreach (int si : r.m_aSamples)
+		{
+			vector p = g.m_aSamples[si].m_vL;
+			lowY = Math.Min(lowY, p[1]);
+			edge = Math.Min(edge, Math.Min(Math.Min(p[0] - g.m_vMins[0], g.m_vMaxs[0] - p[0]), Math.Min(p[2] - g.m_vMins[2], g.m_vMaxs[2] - p[2])));
+		}
+		float ground = g.m_aFloors[0];
+		return lowY <= ground + 1.0 && edge <= 2.5;
+	}
+
+	protected static bool OpenBeyond(DCO_INavGraph g, DCO_INavRoom r, vector dir)
+	{
+		foreach (int si : r.m_aSamples)
+		{
+			vector from = g.m_aSamples[si].m_vL + 1.5 * vector.Up;
+			if (Trace(g, g.W(from), g.W(from + dir * 3.0)) >= 0.999)
+				return true;
+		}
+		return false;
+	}
+
+	protected static bool IsDoorstep(DCO_INavGraph g, int room, array<int> cands)
+	{
+		array<int> inside = {};
+		bool open = false;
+		foreach (DCO_INavDoor d : g.m_aDoors)
+		{
+			if (d.m_iRoomA != room && d.m_iRoomB != room)
+				continue;
+			int other = d.m_iRoomB;
+			float sign = -1.0;
+			if (d.m_iRoomB == room)
+			{
+				other = d.m_iRoomA;
+				sign = 1.0;
+			}
+			if (other == room)
+				continue;
+			if (other < 0)
+				return false;
+			inside.Insert(other);
+			if (!open)
+				open = OpenBeyond(g, g.m_aRooms[room], d.m_vN * sign);
+		}
+		if (inside.IsEmpty() || !open)
+			return false;
+		foreach (int li, int kind : g.m_aLinkKind)
+		{
+			if (kind != 2)
+				continue;
+			int ra = g.m_aSamples[g.m_aLinkA[li]].m_iRoom;
+			int rb = g.m_aSamples[g.m_aLinkB[li]].m_iRoom;
+			if (ra == rb)
+				continue;
+			if (ra == room && !inside.Contains(rb) && !cands.Contains(rb))
+				return false;
+			if (rb == room && !inside.Contains(ra) && !cands.Contains(ra))
+				return false;
+		}
+		return true;
 	}
 
 	protected static bool Visible(DCO_INavGraph g, vector a, vector b)

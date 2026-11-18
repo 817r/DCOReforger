@@ -221,7 +221,7 @@ class DCO_PostureOps
 			return;
 		if (u.m_iDCOLurkPhase == 1)
 		{
-			if (u.DCO_GetPostureOverride() != DCO_GroupTactics.EVASIVE)
+			if (u.DCO_PostureGm() != DCO_GroupTactics.EVASIVE)
 			{
 				u.m_iDCOLurkPhase = 3;
 				DCO_Perf.Count("pos:evasive_stay_hidden");
@@ -361,7 +361,7 @@ class DCO_PostureOps
 		}
 
 		string why;
-		if (nearest < 60.0)
+		if (nearest < u.m_fDCOAmbRangeM)
 			why = "killzone";
 		else if (u.DCO_IsDirectlyThreatened() || g.HasState(DCO_EGroupState.SUPPRESSED))
 			why = "detected";
@@ -370,6 +370,6 @@ class DCO_PostureOps
 		u.m_fDCOAmbSprung_ms = now_ms;
 		u.m_fDCOAmbDecide_ms = now_ms + Math.RandomFloat(20000.0, 40000.0);
 		DCO_Perf.Count("pos:ambush_sprung");
-		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("posture_ambush_sprung grp=%1 why=%2 dist=%3 enemies=%4", grp, why, Math.Round(nearest), n));
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("posture_ambush_sprung grp=%1 why=%2 dist=%3 enemies=%4 range_m=%5", grp, why, Math.Round(nearest), n, Math.Round(u.m_fDCOAmbRangeM)));
 	}
 }

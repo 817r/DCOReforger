@@ -15,6 +15,8 @@ class DCO_OppState
 	float m_fSideNext_ms;
 	float m_fPushNext_ms;
 	float m_fReloadNext_ms;
+	float m_fStaleNext_ms;
+	float m_fStaticSince_ms = -1;
 	IEntity m_PatientTgt;
 	float m_fPatientFrom_ms = -1;
 	float m_fPatientFreeUntil_ms = -1;
@@ -37,6 +39,8 @@ class DCO_Opp
 
 	static float DefOf(string item)
 	{
+		if (item == "stalemate")
+			return 1.0;
 		if (item == "exposed" || item == "suppressed_push" || item == "distracted" || item == "patient" || item == "reload" || item == "loot" || item == "cluster_scan")
 			return 1.0;
 		return 0.0;
@@ -66,6 +70,8 @@ class DCO_Opp
 			f |= 32;
 		if (On(u, "reload"))
 			f |= 64;
+		if (On(u, "stalemate"))
+			f |= 128;
 		st.m_iFlags = f;
 		return f;
 	}
@@ -282,7 +288,7 @@ class DCO_Opp
 			return "";
 		if (SCR_DefendWaypoint.Cast(grp.GetCurrentWaypoint()))
 			return "defend";
-		if (SCR_CoverManagerComponent.DCO_GetBuildingAt(u.m_OwnerEntity))
+		if (DCO_CoverManagerComponent.DCO_GetBuildingAt(u.m_OwnerEntity))
 			return "indoor";
 		SCR_AIGroupUtilityComponent gu = grp.GetGroupUtilityComponent();
 		if (gu && gu.DCO_IsClearingBuilding())
@@ -481,7 +487,7 @@ class DCO_Opp
 			return;
 		st.m_fNextTick_ms = now + 1000.0;
 		int fl = Flags(u);
-		bool anyMove = (fl & 70) != 0;
+		bool anyMove = (fl & 198) != 0;
 		bool cluster = (fl & 8) != 0;
 		if (!anyMove && !cluster)
 			return;
@@ -520,7 +526,11 @@ class DCO_Opp
 		IEntity me = u.m_OwnerEntity;
 		vector ep = t.GetLastSeenPosition();
 		float d = vector.Distance(me.GetOrigin(), ep);
+		if (Speed(me) > 0.3 || st.m_fStaticSince_ms < 0)
+			st.m_fStaticSince_ms = now;
 		if ((fl & 64) && now >= st.m_fReloadNext_ms && TryReload(u, st, grp, t, tc, d, now))
+			return;
+		if ((fl & 128) && now >= st.m_fStaleNext_ms && TryStalemate(u, st, grp, t, tc, d, now))
 			return;
 		if ((fl & 4) && now >= st.m_fPushNext_ms && TryPush(u, st, grp, t, tc, d, now))
 			return;
@@ -595,6 +605,76 @@ class DCO_Opp
 		Callout(u, grp, tc);
 		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("opp_push unit=%1 tgt=%2 dist_before=%3 dist_after=%4 quiet_s=%5 team_firing=%6 mg=%7 movers=%8 aggr=%9",
 			DCO_Log.IdUnit(me), DCO_Log.IdUnit(tc), Math.Round(d), Math.Round(d - step), Math.Round(quiet), firing, DCO_Util.B01(mgFiring), (movers + 1).ToString() + "/" + alive.ToString(), af.ToString(-1, 2)));
+		return true;
+	}
+
+	static bool CoverFire(SCR_AIUtilityComponent u)
+	{
+		if (!u || !u.m_OwnerEntity || !u.m_CombatComponent || !u.GetAIAgent())
+			return false;
+		SCR_AIGroup grp = SCR_AIGroup.Cast(u.GetAIAgent().GetParentGroup());
+		BaseTarget t = u.m_CombatComponent.GetCurrentTarget();
+		if (!grp || !t || !t.GetTargetEntity())
+			return false;
+		bool mg;
+		int n = TeamFiring(grp, u.m_OwnerEntity, t.GetTargetEntity(), GetGame().GetWorld().GetWorldTime(), mg);
+		return mg || n >= 2;
+	}
+
+	protected static bool TryStalemate(SCR_AIUtilityComponent u, DCO_OppState st, SCR_AIGroup grp, BaseTarget t, ChimeraCharacter tc, float d, float now)
+	{
+		if (d < 20.0 || d > 200.0 || t.GetTimeSinceSeen() > 3.0 || st.m_fStaticSince_ms < 0)
+			return false;
+		IEntity me = u.m_OwnerEntity;
+		float af = AggrF(u);
+		float staticS = 0.001 * (now - st.m_fStaticSince_ms);
+		float needS = DCO_Stress.T(u, "opp.stalemate_s", 20.0) / af;
+		if (staticS < needS || !InOpen(me))
+			return false;
+		if (now - DCO_ShotCounter.LastShotAt(me) > 8000.0 && !t.IsEndangering())
+			return false;
+		if (u.m_ThreatSystem && u.m_ThreatSystem.GetSuppressionMeasure() >= DCO_Stress.T(u, "tm.supp_s1", 0.6))
+		{
+			DCO_Perf.Count("opp:stalemate_skip_suppressed");
+			return false;
+		}
+		int alive;
+		int movers = OppMovers(grp, alive);
+		int cap = Math.Max(1, Math.Floor(alive * Math.Min(0.5 * af, 0.75)));
+		if (movers >= cap)
+		{
+			DCO_Perf.Count("opp:stalemate_skip_movers");
+			return false;
+		}
+		st.m_fStaleNext_ms = now + 1000.0 * DCO_Stress.T(u, "opp.stalemate_cd_s", 20.0) / af;
+		vector ep = t.GetLastSeenPosition();
+		vector cov;
+		bool found = DCO_Stress.FindCover(me, ep, 30.0, cov);
+		if (found && vector.DistanceXZ(cov, ep) > d)
+			found = false;
+		vector pos = cov;
+		if (!found)
+		{
+			vector dir = ep - me.GetOrigin();
+			dir[1] = 0;
+			dir.Normalize();
+			pos = DCO_Util.Surface(me.GetOrigin() + dir * Math.Clamp(d * 0.3, 10.0, 25.0));
+		}
+		DCO_RelocateBehavior rb = DCO_RelocateBehavior.Start(u, pos, ep, true, ECharacterStance.CROUCH, 12.0, "opp_stalemate");
+		if (!rb)
+		{
+			DCO_Perf.Count("opp:stalemate_skip_blocked");
+			return false;
+		}
+		if (found)
+			rb.DCO_SetRequireCover(true);
+		st.m_fStaticSince_ms = -1;
+		bool mg;
+		int firing = TeamFiring(grp, me, tc, now, mg);
+		DCO_Perf.Count("opp:stalemate_break");
+		Callout(u, grp, tc);
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("opp_stalemate unit=%1 tgt=%2 dist=%3 static_s=%4 cover=%5 move_m=%6 team_firing=%7 mg=%8 movers=%9",
+			DCO_Log.IdUnit(me), DCO_Log.IdUnit(tc), Math.Round(d), Math.Round(staticS), DCO_Util.B01(found), Math.Round(vector.Distance(me.GetOrigin(), pos)), firing, DCO_Util.B01(mg), (movers + 1).ToString() + "/" + alive.ToString()));
 		return true;
 	}
 

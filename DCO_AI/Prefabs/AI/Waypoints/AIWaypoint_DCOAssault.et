@@ -1,0 +1,11 @@
+DCO_TacticWaypoint : "{49CED34BBCD060F0}Prefabs/AI/Waypoints/AIWaypoint_Base.et" {
+ ID "FFC54A05720A30E2"
+ Type "SearchAndDestroy"
+ Title "Assault waypoint"
+ AIBehaviorTree "{5EACADC95599A2F1}AI/BehaviorTrees/Waypoints/DCO_WP_Tactic.bt"
+ AIBehaviorTreeMoveTo "{A3755C1F88DED8D6}AI/BehaviorTrees/Waypoints/WP_Move.bt"
+ CompletionRadius 30
+ Autocomplete 0
+ CompletionType Any
+ m_eMode ASSAULT
+}

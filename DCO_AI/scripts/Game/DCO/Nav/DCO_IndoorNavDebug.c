@@ -48,7 +48,7 @@ class DCO_IndoorNavDebug
 			return;
 		}
 		int mode = Math.Round(gai.DCO_TuneF("nav.debug", 0));
-		if (!DCO_TestCaseComponent.RunOn())
+		if (!DCO_Dev.RunOn())
 			mode = 0;
 		if (mode <= 0)
 		{

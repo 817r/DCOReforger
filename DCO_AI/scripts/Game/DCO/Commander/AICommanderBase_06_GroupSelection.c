@@ -1,5 +1,23 @@
 modded class AICommander_BaseComponent
 {
+	bool DCO_IdleDedicated(int job, int excluded, bool recon)
+	{
+		foreach (DCO_GroupUtilityComponent g : m_aOwnedGroup)
+		{
+			if (!g || !g.GetOwner() || g.IsPlayerGroup() || !g.CanItHaveOrder() || IsGroupBusy(g))
+				continue;
+			DCO_EGroupTask t = g.GetTask();
+			if (t != DCO_EGroupTask.NONE && t != DCO_EGroupTask.PATROL)
+				continue;
+			if (!DCO_GroupJobs.Dedicated(g, job, excluded))
+				continue;
+			if (recon && !DCO_ReconExclude(g).IsEmpty())
+				continue;
+			return true;
+		}
+		return false;
+	}
+
 	protected DCO_GroupUtilityComponent FindBestIdleGroupForTask(DCO_EGroupTask task, vector targetPos, bool canTakeDefend = false, CMD_AICommanderObjectiveComponent targetObj = null, int wantedCaps = -1, bool armor = false, int purpose = 0, int jobOverride = 0)
 	{
 		if (wantedCaps < 0)
@@ -88,7 +106,7 @@ modded class AICommander_BaseComponent
 			if (purpose == 2 && !grp.CanSupportPlayers())
 				continue;
 
-			if ((task == DCO_EGroupTask.ATTACK || task == DCO_EGroupTask.FLANK) && !IsMoraleFitForAttack(grp))
+			if ((task == DCO_EGroupTask.ATTACK || task == DCO_EGroupTask.FLANK) && !DCO_AttackFit(grp))
 				continue;
 
 			int tierIdx = tiers.Find(grp.GetTask());
@@ -96,6 +114,18 @@ modded class AICommander_BaseComponent
 				continue;
 
 			int unitCount = grp.GetUnitCount();
+			if ((task == DCO_EGroupTask.ATTACK || task == DCO_EGroupTask.FLANK) && !armor && unitCount < DCO_Ctx.TuneForCmd(this, "tac.min_attack_men", 3.0))
+			{
+				DCO_Perf.Count("cmd:skip_single");
+				if (DCO_GroupJobs.LogDue(DCO_Log.IdGroup(SCR_AIGroup.Cast(grp.GetOwner())) + "|single", 120.0))
+					DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("cmd_small_skip cmd=%1 grp=%2 units=%3 task=%4 path=idle_pick min=%5", m_sCommanderUID, DCO_Log.IdGroup(SCR_AIGroup.Cast(grp.GetOwner())), unitCount, typename.EnumToString(DCO_EGroupTask, task), Math.Round(DCO_Ctx.TuneForCmd(this, "tac.min_attack_men", 3.0))));
+				continue;
+			}
+			if (task == DCO_EGroupTask.SUPPORT_BY_FIRE && !armor && unitCount <= 6 && !grp.HasMG())
+			{
+				DCO_Perf.Count("sbf:skip_small_no_mg");
+				continue;
+			}
 			float strengthPct = Math.Clamp(1.0 * unitCount / m_fFullSquadSize * 100.0, 0.0, 100.0);
 
 			float score = 0.0;
@@ -113,6 +143,23 @@ modded class AICommander_BaseComponent
 						score += m_fLightInfBonus;
 					else if (rk == "armed_vehicle")
 						score += m_fArmedVehicleBonus;
+					if (DCO_GroupJobs.Dedicated(grp, DCO_EGroupJob.RECON, 7))
+					{
+						score += DCO_GroupJobs.DEDICATED_BONUS;
+						DCO_Perf.Count("recon:dedicated_bonus");
+					}
+					break;
+				}
+				case DCO_EGroupTask.SUPPORT_BY_FIRE:
+				{
+					score = strengthPct;
+					if (grp.HasMG())
+						score += 30.0;
+					if (DCO_GroupJobs.Dedicated(grp, DCO_EGroupJob.SBF, 3))
+					{
+						score += DCO_GroupJobs.DEDICATED_BONUS;
+						DCO_Perf.Count("sbf:dedicated_bonus");
+					}
 					break;
 				}
 				case DCO_EGroupTask.ATTACK:
@@ -160,7 +207,7 @@ modded class AICommander_BaseComponent
 			{
 				bestScorePerTier[tierIdx]  = score;
 				bestDistSqPerTier[tierIdx] = distSq;
-				bestPerTier[tierIdx]       = grp;
+				bestPerTier[tierIdx] = grp;
 			}
 		}
 
@@ -355,17 +402,23 @@ modded class AICommander_BaseComponent
 			{
 				if (!o || !o.GetOwner() || o.IsCapturedBy(m_sFactionKey, m_sCommanderUID))
 					continue;
-				if (vector.DistanceXZ(o.GetOwner().GetOrigin(), op) < 1500.0)
+				if (vector.DistanceXZ(o.GetOwner().GetOrigin(), op) < DCO_Ctx.TuneForCmd(this, "def.bal_front_m", 1500.0))
 					front = true;
 			}
 		}
 		if (front)
 		{
 			DCO_Perf.Count("balanced:need_front");
-			return Math.Min(cap, 2);
+			int frontCap = Math.Round(DCO_Ctx.TuneForCmd(this, "def.bal_cap_front", 2.0));
+			if (frontCap <= 0)
+				return cap;
+			return Math.Min(cap, frontCap);
 		}
 		DCO_Perf.Count("balanced:need_rear");
-		return 1;
+		int rearCap = Math.Round(DCO_Ctx.TuneForCmd(this, "def.bal_cap_rear", 1.0));
+		if (rearCap <= 0)
+			return cap;
+		return Math.Min(cap, rearCap);
 	}
 
 	protected int CountDefendDemand()
@@ -449,9 +502,34 @@ modded class AICommander_BaseComponent
 		return count;
 	}
 
+	int DCO_IdleCommittable()
+	{
+		return CountIdleCommittableGroups();
+	}
+
 	DCO_GroupUtilityComponent FindBestIdleGroupForTask_Public(DCO_EGroupTask task, vector pos, int wantedCaps = -1, bool armor = false, int purpose = 1)
 	{
 	    return FindBestIdleGroupForTask(task, pos, false, null, wantedCaps, armor, purpose);
+	}
+
+	bool DCO_AttackFit(DCO_GroupUtilityComponent g)
+	{
+		string why;
+		int units = g.GetUnitCount();
+		int peak = g.DCO_GetPeakStrength();
+		float minPct = DCO_Ctx.TuneForCmd(this, "tac.min_strength_pct", 60.0);
+		if (g.HasState(DCO_EGroupState.COMBAT_INEFFECTIVE))
+			why = "ineffective";
+		else if (!IsMoraleFitForAttack(g))
+			why = "morale";
+		else if (!g.IsArmor() && peak > 0 && units * 100 < peak * minPct)
+			why = "understrength";
+		else
+			return true;
+		DCO_Perf.Count("tac_unfit:" + why);
+		if (DCO_GroupJobs.LogDue(DCO_Log.IdGroup(SCR_AIGroup.Cast(g.GetOwner())) + "|unfit", 120.0))
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("tac_unfit cmd=%1 grp=%2 why=%3 units=%4 peak=%5 min_pct=%6 morale=%7 morale_max=%8", m_sCommanderUID, g.GetOwner().GetName(), why, units, peak, Math.Round(minPct), g.GetGroupMorale().ToString(-1, 2), GetMoraleAttackThreshold().ToString(-1, 2)));
+		return false;
 	}
 
 	bool DCO_FtfFit(DCO_GroupUtilityComponent g)

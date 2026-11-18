@@ -81,9 +81,19 @@ class DCO_PlayerContactReports
 
 			m_Seen.Remove(i);
 			CMD_ThreatEntry t = m_mMarkerThreat.Get(mid);
+			string result = "no_threat";
 			if (t)
-				t.m_fLastUpdateTime = -100000;
+			{
+				result = "kept_other_sources";
+				if (t.DCO_OnlyReporter("player " + t.m_iReporterPid))
+				{
+					t.m_fLastUpdateTime = -100000;
+					result = "threat_expired";
+				}
+			}
 			m_mMarkerThreat.Remove(mid);
+			DCO_Perf.Count("player_marker:" + result);
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_marker_removed marker=%1 result=%2", mid, result));
 		}
 	}
 
@@ -180,7 +190,7 @@ class DCO_PlayerContactReports
 		t.ToLower();
 		if (t.Contains("platoon") || t.Contains("peleton"))
 			return 24;
-		if (t.Contains("team") || t.Contains("tim"))
+		if (t.Contains("team") || (" " + t + " ").Contains(" tim "))
 			return 4;
 
 		int n = t.ToInt();
@@ -195,11 +205,18 @@ class DCO_PlayerContactReports
 			return false;
 
 		EMilitarySymbolIdentity own = EMilitarySymbolIdentity.BLUFOR;
-		string key = reporter.GetFactionKey();
-		if (key == "USSR")
-			own = EMilitarySymbolIdentity.OPFOR;
-		else if (key == "FIA")
-			own = EMilitarySymbolIdentity.INDFOR;
+		SCR_GroupIdentityCore core = SCR_GroupIdentityCore.Cast(SCR_GroupIdentityCore.GetInstance(SCR_GroupIdentityCore));
+		SCR_Faction sf = SCR_Faction.Cast(reporter);
+		SCR_MilitarySymbol sym = new SCR_MilitarySymbol();
+		if (core && core.GetSymbolRuleSet() && sf)
+			core.GetSymbolRuleSet().UpdateSymbol(sym, sf);
+		if (sym.GetIdentity() != EMilitarySymbolIdentity.UNKNOWN)
+			own = sym.GetIdentity();
+		else
+		{
+			DCO_Perf.Count("player_marker:faction_no_rule");
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.WARN, "-", string.Format("player_marker_identity faction=%1 result=no_rule used=BLUFOR", reporter.GetFactionKey()));
+		}
 
 		switch (own)
 		{

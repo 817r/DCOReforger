@@ -31,6 +31,13 @@ class DCO_RelocateBehavior : SCR_AIBehaviorBase
 		m_bDCORequireCover = req;
 	}
 
+	protected float m_fDCOYieldM = -1;
+
+	void DCO_SetYieldM(float m)
+	{
+		m_fDCOYieldM = m;
+	}
+
 	protected bool DCO_StuckWithTarget(float now)
 	{
 		IEntity e = m_Utility.m_OwnerEntity;
@@ -103,6 +110,25 @@ class DCO_RelocateBehavior : SCR_AIBehaviorBase
 	{
 		if (!u || !u.m_OwnerEntity || !u.m_CombatMoveState || (u.m_AIInfo && u.m_AIInfo.HasUnitState(EUnitState.IN_VEHICLE)))
 			return null;
+		if (DCO_Beaten.Check(u, pos, threat, "relocate_" + why))
+			return null;
+		if (DCO_Util.PlayerOrderActive(u))
+		{
+			DCO_Perf.Count("reloc_bhv:player_order_" + why);
+			return null;
+		}
+		int ctrlReq = DCO_ECtrlReq.RELOC;
+		if (why.StartsWith("idf_"))
+			ctrlReq = DCO_ECtrlReq.DANGER;
+		else if (why == "stress_panic" || why == "stress_break")
+			ctrlReq = DCO_ECtrlReq.MORALE;
+		string ctrlLim;
+		if (DCO_CtrlLock.AskUtil(u, ctrlReq, ctrlLim) == DCO_ECtrlAns.DENY)
+		{
+			DCO_Perf.Count("reloc_bhv:ctrl_deny_" + why);
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(u.m_OwnerEntity), string.Format("relocate_skip unit=%1 why=%2 reason=ctrl_deny lim=%3", DCO_Log.IdUnit(u.m_OwnerEntity), why, ctrlLim));
+			return null;
+		}
 		DCO_RelocateBehavior old = DCO_RelocateBehavior.Cast(u.FindActionOfType(DCO_RelocateBehavior));
 		if (old && old.DCO_SameJob(pos, why))
 		{
@@ -195,7 +221,15 @@ class DCO_RelocateBehavior : SCR_AIBehaviorBase
 					DCO_Perf.Count("reloc_bhv:dur_extend");
 				}
 			}
+			st.m_bDCOOrdered = m_sDCOWhy.StartsWith("flush_") || m_sDCOWhy == "at_hunt" || m_sDCOWhy == "wire_exit" || m_sDCOWhy == "pin_flank" || m_sDCOWhy == "ft_flank";
 			st.ApplyNewRequest(rq);
+			st.m_bDCOOrdered = false;
+			if (st.m_DCODroppedRq == rq)
+			{
+				DCO_Perf.Count("reloc_bhv:dropped_" + st.m_sDCODropGate);
+				DCO_Finish("dropped_" + st.m_sDCODropGate);
+				return ENodeResult.FAIL;
+			}
 			m_DCORq = rq;
 			m_bDCOSent = true;
 			m_fDCOSent_ms = now;
@@ -324,11 +358,19 @@ class DCO_RelocateBehavior : SCR_AIBehaviorBase
 			DCO_Finish("timeout");
 			return 0;
 		}
+		if (DCO_Util.PlayerOrderActive(m_Utility))
+		{
+			DCO_Finish("player_order");
+			return 0;
+		}
 		if (m_sDCOWhy == "stress_panic")
 			return 1130;
 		if (m_bDCONoYield)
 			return 91;
-		bool y = DCO_AimedYield.TargetVisible(m_Utility, 40.0);
+		float yieldM = m_fDCOYieldM;
+		if (yieldM < 0)
+			yieldM = DCO_Stress.T(m_Utility, "ind.yield_m", 150.0);
+		bool y = DCO_AimedYield.TargetVisible(m_Utility, yieldM);
 		if (y != m_bDCOYield)
 		{
 			m_bDCOYield = y;

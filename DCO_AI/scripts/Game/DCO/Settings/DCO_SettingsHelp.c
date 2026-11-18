@@ -32,7 +32,7 @@ class DCO_SettingsHelpConfig
 [BaseContainerProps(), BaseContainerCustomTitleField("m_sAttribute")]
 class DCO_SettingHelp
 {
-	[Attribute("", UIWidgets.EditBox, "Attribute class name of the GM setting this help belongs to, e.g. SCR_AIGlobalLODModeAttribute")]
+	[Attribute("", UIWidgets.EditBox, "Attribute class name of the GM setting this help belongs to, e.g. DCO_AIGlobalLODModeAttribute")]
 	string m_sAttribute;
 
 	[Attribute("", UIWidgets.EditBoxMultiline, "What the setting does, one or two plain sentences")]
@@ -174,7 +174,7 @@ class DCO_SettingsMetersConfig
 [BaseContainerProps(), BaseContainerCustomTitleField("m_sAttribute")]
 class DCO_MeterWeight
 {
-	[Attribute("", UIWidgets.EditBox, "Attribute class name of the GM setting, e.g. SCR_AIGlobalLODModeAttribute")]
+	[Attribute("", UIWidgets.EditBox, "Attribute class name of the GM setting, e.g. DCO_AIGlobalLODModeAttribute")]
 	string m_sAttribute;
 
 	[Attribute("0", UIWidgets.ComboBox, "Which meter this setting adds points to", "", ParamEnumArray.FromEnum(DCO_EMeter))]
@@ -300,6 +300,18 @@ class DCO_SettingsHelp
 			}
 		}
 		DCO_Log.Write(DCO_ELogChannel.GM, DCO_ELogLevel.INFO, "-", "settings_help_loaded settings=" + s_mHelp.Count().ToString() + " subs=" + s_mSub.Count().ToString());
+	}
+
+	static void AllAttributes(notnull array<string> outClasses)
+	{
+		Load();
+		if (!s_Config || !s_Config.m_aHelp)
+			return;
+		foreach (DCO_SettingHelp help : s_Config.m_aHelp)
+		{
+			if (help && !help.m_sAttribute.IsEmpty() && outClasses.Find(help.m_sAttribute) < 0)
+				outClasses.Insert(help.m_sAttribute);
+		}
 	}
 
 	static DCO_SettingHelp Get(string attributeClass)

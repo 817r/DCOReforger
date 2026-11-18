@@ -63,7 +63,12 @@ class DCO_ShotLocate
 		else if (Seen(u, shooter))
 			why = "seen";
 		else if (!suppressed && dist <= 800.0 && DCO_Util.IsNight() && FlashVisible(u, shooter, shotPos))
-			why = "flash";
+		{
+			if (dist <= DCO_Stress.T(u, "hear.flash_exact_m", 300.0))
+				why = "flash";
+			else
+				DCO_Perf.Count("hear:shot_flash_far");
+		}
 		if (!why.IsEmpty())
 		{
 			DCO_Perf.Count("hear:shot_exact_" + why);
@@ -109,7 +114,7 @@ class DCO_ShotLocate
 		if (snapM > 0)
 		{
 			string bm;
-			if (SCR_CoverManagerComponent.DCO_GetBuildingAtPos(est, null, bm))
+			if (DCO_CoverManagerComponent.DCO_GetBuildingAtPos(est, null, bm))
 				snap = "inside";
 			else
 			{

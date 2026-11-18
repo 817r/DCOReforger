@@ -1,6 +1,8 @@
 GameEntity : "{46702BA1D8E33B2A}Prefabs/Commander/CommanderSpawner.et" {
  ID "137CE4A935CB92EA"
  components {
+  Persistence "{6B7C2E91D4A35F08}" {
+  }
   SCR_EditableEntityComponent "{E7CE39C4C4E231AA}" {
    m_EntityType SYSTEM
    m_UIInfo SCR_EditableEntityUIInfo "{B6064FFFCC04EFF7}" {

@@ -5,6 +5,7 @@ modded class DCO_GlobalAIComponent
 		super.SyncConfig();
 		CfgCat("Realism");
 		DCO_TuneCfg("tm.morale_panic_th", "morale_panic_threshold", 2.4, 1.5, 4.0);
+		DCO_TuneCfg("tm.morale_break_th", "morale_break_threshold", 3.7, 2.5, 6.0);
 		DCO_TuneCfg("tm.panic_max_s", "morale_panic_max_s", 30.0, 0.0, 300.0);
 		DCO_TuneCfg("tm.panic_refract_s", "morale_panic_refract_s", 20.0, 0.0, 120.0);
 		DCO_TuneCfg("tm.morale_supp_s1", "morale_suppressed_per_s", 0.04, 0.0, 0.3);
@@ -19,6 +20,7 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("tm.morale_rec_friend_s", "morale_recover_per_friend_s", 0.001, 0.0, 0.01);
 		DCO_TuneCfg("tm.morale_event_half_s", "morale_event_half_life_s", 90.0, 10.0, 600.0);
 		DCO_TuneCfg("tm.supp_drop_s", "suppression_decay_per_s", 0.06, 0.02, 0.2);
+		DCO_TuneCfg("tm.impact_m", "suppression_impact_radius_m", 6.0, 3.0, 30.0);
 		DCO_TuneCfg("tm.heard_floor_s", "alert_after_gunfire_s", 45.0, 0.0, 180.0);
 		DCO_TuneCfg("tm.heard_floor_m", "alert_gunfire_radius_m", 300.0, 0.0, 1000.0);
 		DCO_TuneCfg("tm.cover_hold_mul", "cover_hold_mul", 2.0, 0.5, 5.0);
@@ -35,7 +37,7 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("tm.min_dist_def_m", "advance_stop_dist_defensive_m", 80.0, 0.0, 300.0);
 		DCO_TuneCfg("tm.atk_close_in", "attacker_close_in", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("tm.atk_min_dist_mul", "attacker_stop_dist_mul", 0.4, 0.1, 1.0);
-		DCO_TuneCfg("tm.retfire_chance", "return_fire_unseen_chance", 0.0, 0.0, 1.0);
+		DCO_TuneCfg("tm.retfire_chance", "return_fire_unseen_chance", 0.3, 0.0, 1.0);
 		DCO_TuneCfg("tm.retfire_cooldown_s", "return_fire_unseen_cooldown_s", 12.0, 2.0, 120.0);
 		DCO_TuneCfg("tm.retfire_max_m", "return_fire_unseen_max_m", 400.0, 50.0, 1000.0);
 		DCO_TuneCfg("tm.retfire_unseen_s", "return_fire_unseen_after_s", 5.0, 0.0, 30.0);
@@ -46,6 +48,10 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("tm.open_still_s", "open_ground_still_s", 2.0, 0.5, 20.0);
 		DCO_TuneCfg("tm.open_kneel_s", "open_ground_kneel_s", 3.0, 0.5, 20.0);
 		DCO_TuneCfg("tm.open_wait_mul", "open_ground_wait_mul", 2.0, 0.5, 5.0);
+		DCO_TuneCfg("tm.open_crawl_gap_s", "open_ground_crawl_gap_s", 30.0, 0.0, 300.0);
+		DCO_TuneCfg("tm.cover_keep_stress", "cover_keep_under_stress", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("tm.nocover_sprint_m", "no_cover_sprint_m", 30.0, 0.0, 100.0);
+		DCO_TuneCfg("hit.by_zone", "hit_reaction_by_zone", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("tm.open_cover_max_m", "open_ground_cover_max_m", 15.0, 3.0, 60.0);
 		DCO_TuneCfg("tm.rush_cover_max_m", "rush_cover_max_m", 15.0, 3.0, 60.0);
 		DCO_TuneCfg("tm.rush_crawl_m", "rush_crawl_m", 6.0, 0.0, 30.0);
@@ -82,6 +88,7 @@ modded class DCO_GlobalAIComponent
 		CfgFlush();
 		CfgCat("Realism Suppression");
 		DCO_TuneCfg("tm.supp_s1", "suppressed_threshold", 0.6, 0.1, 0.9);
+		DCO_TuneCfg("tm.threatened_th", "threatened_threshold", 1.8, 1.1, 2.5);
 		DCO_TuneCfg("tm.supp_s2_open", "pinned_threshold_open", 2.0, 0.5, 10.0);
 		DCO_TuneCfg("tm.supp_s2_cover", "pinned_threshold_cover", 3.0, 0.5, 10.0);
 		DCO_TuneCfg("tm.supp_hold_s", "suppressed_hold_s", 3.0, 0.0, 20.0);
@@ -114,6 +121,16 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("air.lane_skip_deg", "air_threat_lane_skip_deg", 10.0, 0.0, 45.0);
 		DCO_TuneCfg("tactic.consol_ring_m", "tactic_consolidate_ring_m", 150.0, 30.0, 500.0);
 		DCO_TuneCfg("tactic.consol_enemy_max", "tactic_consolidate_enemy_max", 1.0, 0.0, 20.0);
+		DCO_TuneCfg("tactic.drive_s", "tune_tactic_drive_s", 90.0, 10.0, 600.0);
+		DCO_TuneCfg("tactic.drive_close_m", "tune_tactic_drive_close_m", 60.0, 10.0, 300.0);
+		DCO_TuneCfg("air.open_m", "tune_air_open_m", 750.0, 0.0, 3000.0);
+		DCO_TuneCfg("air.turret_score", "tune_air_turret_score", 60.0, 0.0, 500.0);
+		DCO_TuneCfg("air.inf_bonus", "tune_air_inf_bonus", 3.0, 0.0, 20.0);
+		DCO_TuneCfg("sbf.live", "tune_sbf_live", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("sbf.height", "tune_sbf_height", 4.0, 0.5, 20.0);
+		DCO_TuneCfg("sbf.retarget_s", "tune_sbf_retarget_s", 10.0, 1.0, 60.0);
+		DCO_TuneCfg("sbf.search_m", "tune_sbf_search_m", 200.0, 0.0, 1000.0);
+		DCO_TuneCfg("sbf.lift_m", "tune_sbf_lift_m", 40.0, 0.0, 200.0);
 		CfgFlush();
 		if (m_iCfgMode == 0)
 			DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", string.Format("realism_cfg panic_th=%1 panic_max_s=%2 cover_hold=%3 identify=%4 supp_drop=%5 alert_heard_s=%6 area_fire=%7 cqb_retry_s=%8 event_half_s=%9",

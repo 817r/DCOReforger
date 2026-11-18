@@ -1,7 +1,7 @@
 GenericEntity {
  ID "690EFE033AD1CD6D"
  components {
-  CNH_CaptureArea "{690EFE03291B2817}" {
+  DCO_CNH_CaptureArea "{690EFE03291B2817}" {
   }
   RplComponent "{690EFE032CD2837F}" {
   }

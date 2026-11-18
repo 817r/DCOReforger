@@ -133,11 +133,12 @@ modded class AICommander_BaseComponent
 	    }
 	}
 
-	protected void ReleaseGroupsFromObjective(CMD_AICommanderObjectiveComponent obj)
+	protected void ReleaseGroupsFromObjective(CMD_AICommanderObjectiveComponent obj, bool keepDefenders = false)
 	{
 		if (!obj)
 			return;
 
+		int kept;
 		foreach (DCO_GroupUtilityComponent grp : m_aOwnedGroup)
 		{
 			if (!grp || grp.IsPlayerGroup())
@@ -146,12 +147,25 @@ modded class AICommander_BaseComponent
 			if (grp.GetGroupObjective() != obj)
 				continue;
 
+			DCO_EGroupTask heldTask = grp.GetTask();
+			if (keepDefenders && (heldTask == DCO_EGroupTask.DEFEND || heldTask == DCO_EGroupTask.GARRISON))
+			{
+				kept++;
+				continue;
+			}
+
 			if (!grp.CanCommanderOverrideRole() || grp.IsDedicatedTransport())
 				continue;
 
 			grp.CompleteAllWaypoints();
 			grp.SetGroupObjective(null);
 			grp.SetTask(DCO_EGroupTask.NONE, "AICommanderBase:5268");
+		}
+
+		if (kept > 0)
+		{
+			DCO_Perf.Count("def:contested_defenders_hold");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("def_hold_contested cmd=%1 obj=%2 defenders_kept=%3", m_sCommanderUID, obj.GetLogName(), kept));
 		}
 
 		ResetSyncState(obj);
@@ -186,6 +200,11 @@ modded class AICommander_BaseComponent
 				continue;
 
 			CMD_AICommanderObjectiveComponent obj = grp.GetGroupObjective();
+			if (task == DCO_EGroupTask.REINFORCE && !obj)
+			{
+				DCO_Perf.Count("cmd:reclaim_skip_reinforce");
+				continue;
+			}
 
 			bool stale;
 			if (task == DCO_EGroupTask.DEFEND)
@@ -366,7 +385,7 @@ modded class AICommander_BaseComponent
 			secRange = Math.Round(a0).ToString() + "-" + Math.Round(a0 + step).ToString();
 		}
 		vector secDir = sec.m_vPosition - obj.GetOwner().GetOrigin();
-		DCO_Battle.Place(this, obj, AIGroup.Cast(grp.GetOwner()), "sector", sec.m_vPosition, Math.Atan2(secDir[0], secDir[2]) * Math.RAD2DEG, "-", "-", secRange, "-");
+		DCO_Dev.Place(this, obj, AIGroup.Cast(grp.GetOwner()), "sector", sec.m_vPosition, Math.Atan2(secDir[0], secDir[2]) * Math.RAD2DEG, "-", "-", secRange, "-");
 	}
 
 	protected void UpdateObjectiveGarrison(CMD_AICommanderObjectiveComponent obj, float worldTime)
@@ -448,7 +467,7 @@ modded class AICommander_BaseComponent
 		grp.SetGroupObjective(obj);
 		grp.MoveTo(wp, worldTime);
 		garrison.Insert(grp);
-		DCO_Battle.Place(this, obj, AIGroup.Cast(grp.GetOwner()), "garrison_building", objPos, 90.0 - ComputeThreatAngle(obj) * Math.RAD2DEG, "-", "-", "-", "-");
+		DCO_Dev.Place(this, obj, AIGroup.Cast(grp.GetOwner()), "garrison_building", objPos, 90.0 - ComputeThreatAngle(obj) * Math.RAD2DEG, "-", "-", "-", "-");
 	}
 
 	protected void AssignDefendToObjective(CMD_AICommanderObjectiveComponent obj, float worldTime)
@@ -506,9 +525,9 @@ modded class AICommander_BaseComponent
 			AssignGroupToSector(grp, obj, sec, worldTime);
 		}
 
-		int garrisonCap = obj.GetDefendGroupCount();
-		if (garrisonCap <= 0)
-			garrisonCap = 1;
+		int garrisonCap = DCO_DefShortfall.Need(this, obj, 0);
+		if (garrisonCap > Math.Max(obj.GetDefendGroupCount(), 1))
+			DCO_Perf.Count("def:floor_raises_cap");
 		garrisonCap = DCO_DefendNeedCap(obj, garrisonCap);
 
 		int staffedNow = obj.GetStaffedSectorCount(m_sFactionKey);
@@ -600,6 +619,33 @@ modded class AICommander_BaseComponent
 
 	protected DCO_GroupUtilityComponent m_DCOQrf;
 	protected float m_fDCOQrfAt = -1000;
+	protected ref array<DCO_GroupUtilityComponent> m_aDCOQrfOut = new array<DCO_GroupUtilityComponent>();
+	protected ref array<CMD_AICommanderObjectiveComponent> m_aDCOQrfObj = new array<CMD_AICommanderObjectiveComponent>();
+	protected ref array<float> m_aDCOQrfQuietAt = new array<float>();
+
+	protected void DCO_QrfReleaseQuiet(float worldTime)
+	{
+		for (int i = m_aDCOQrfOut.Count() - 1; i >= 0; i--)
+		{
+			DCO_GroupUtilityComponent g = m_aDCOQrfOut[i];
+			CMD_AICommanderObjectiveComponent o = m_aDCOQrfObj[i];
+			bool gone = !g || !g.GetOwner() || !o || g.GetGroupObjective() != o || g.GetTask() != DCO_EGroupTask.DEFEND;
+			if (!gone && worldTime - m_aDCOQrfQuietAt[i] < 120.0)
+				continue;
+			if (!gone)
+			{
+				float quiet = worldTime - m_aDCOQrfQuietAt[i];
+				g.CompleteAllWaypoints();
+				g.SetGroupObjective(null);
+				g.SetTask(DCO_EGroupTask.NONE, "DCO_QrfRelease");
+				DCO_Perf.Count("relentless_cmd:qrf_release");
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("def_qrf cmd=%1 action=release grp=%2 obj=%3 quiet_s=%4", m_sCommanderUID, g.GetOwner().GetName(), o.GetLogName(), Math.Round(quiet)));
+			}
+			m_aDCOQrfOut.Remove(i);
+			m_aDCOQrfObj.Remove(i);
+			m_aDCOQrfQuietAt.Remove(i);
+		}
+	}
 
 	protected void DCO_QrfTick(notnull array<CMD_AICommanderObjectiveComponent> objs, float worldTime)
 	{
@@ -628,12 +674,20 @@ modded class AICommander_BaseComponent
 			DCO_DefensePlan dp = GetDefenseTactics().GetPlan(obj);
 			if (dp && dp.m_iBand >= 0 && dp.m_iBand <= 1)
 				score += 40;
+			int outAt = m_aDCOQrfObj.Find(obj);
+			if (outAt >= 0)
+			{
+				if (score > 0)
+					m_aDCOQrfQuietAt[outAt] = worldTime;
+				continue;
+			}
 			if (score > bestScore)
 			{
 				bestScore = score;
 				target = obj;
 			}
 		}
+		DCO_QrfReleaseQuiet(worldTime);
 		if (n == 0)
 			return;
 		centroid = centroid * (1.0 / n);
@@ -662,6 +716,9 @@ modded class AICommander_BaseComponent
 		q.CompleteAllWaypoints();
 		q.SetTask(DCO_EGroupTask.DEFEND, "DCO_Qrf");
 		q.SetGroupObjective(target);
+		m_aDCOQrfOut.Insert(q);
+		m_aDCOQrfObj.Insert(target);
+		m_aDCOQrfQuietAt.Insert(worldTime);
 		SpawnMoveRoute(q, q.GetOwner().GetOrigin(), target.GetOwner().GetOrigin(), worldTime);
 		DCO_Perf.Count("relentless_cmd:qrf_dispatch");
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("def_qrf cmd=%1 action=dispatch grp=%2 obj=%3 score=%4 dist=%5", m_sCommanderUID, q.GetOwner().GetName(), target.GetLogName(), Math.Round(bestScore), Math.Round(vector.DistanceXZ(q.GetOwner().GetOrigin(), target.GetOwner().GetOrigin()))));

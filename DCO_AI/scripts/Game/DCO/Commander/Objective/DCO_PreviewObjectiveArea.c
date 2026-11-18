@@ -1,9 +1,9 @@
 [ComponentEditorProps(category: "GameScripted/Area Mesh", description: "")]
-class Comamnder_AreaBaseMeshComponentClass : SCR_BaseAreaMeshComponentClass
+class DCO_AreaBaseMeshComponentClass : SCR_BaseAreaMeshComponentClass
 {
 }
 
-class Comamnder_AreaBaseMeshComponent : SCR_BaseAreaMeshComponent
+class DCO_AreaBaseMeshComponent : SCR_BaseAreaMeshComponent
 {
 	CMD_AICommanderObjectiveComponent m_MilitaryBaseComponent;
 

@@ -28,13 +28,15 @@ modded class AICommander_BaseComponent
 			m_DoctrineRt.Tick(this, timeSlice);
 			DCO_Perf.End("cmd_doctrine", pt);
 			pt = DCO_Perf.Begin();
-			DCO_Reinf().Tick(this);
+			if (!m_bDCOPaused)
+				DCO_Reinf().Tick(this);
 			DCO_Perf.End("cmd_reinf", pt);
 		}
 
-		if (m_fThinkTimer >= m_fThinkInterval)
+		if (!m_bDCOPaused && m_fThinkTimer >= m_fThinkInterval)
 		{
 			m_fThinkTimer = 0.0;
+			m_bDCOWakeArmed = true;
 			float worldTime = DCO_Util.NowS();
 			int tt = DCO_Perf.Begin();
 			Think(worldTime);

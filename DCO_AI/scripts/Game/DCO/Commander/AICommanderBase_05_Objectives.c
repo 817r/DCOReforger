@@ -2,17 +2,18 @@ modded class AICommander_BaseComponent
 {
 	void SetObjectiveCooldown(CMD_AICommanderObjectiveComponent obj, float seconds)
 	{
-		if (DCO_RelentlessCmd() && seconds > 60.0)
+		float cdCap = DCO_Ctx.TuneForCmd(this, "agg.relentless_cd_s", 60.0);
+		if (DCO_RelentlessCmd() && cdCap > 0 && seconds > cdCap)
 		{
 			DCO_Perf.Count("relentless_cmd:cooldown_cap");
-			seconds = 60.0;
+			seconds = cdCap;
 		}
 		m_mAttackCooldown.Set(obj, DCO_Util.NowS() + seconds);
 	}
 
 	bool DCO_AggressiveCmd()
 	{
-		return DCO_EffTraitAggression() >= 1.5;
+		return m_fTraitAggression >= DCO_Ctx.TuneForCmd(this, "agg.relentless_from", 1.5);
 	}
 
 	bool DCO_RelentlessCmd()
@@ -28,17 +29,18 @@ modded class AICommander_BaseComponent
 			r = Math.Max(1, d.m_fAttackRatio * Math.Lerp(m_fRatioScaleCautious, m_fRatioScaleAggressive, Math.Clamp(DCO_EffTraitAggression() / 2, 0, 1)));
 		else
 			r = Math.Max(1, Math.Lerp(m_fAttackRatioCautious, m_fAttackRatioAggressive, DCO_EffAggression()));
-		if (DCO_AggressiveCmd() && r > 1.3)
+		float aggRatio = DCO_Ctx.TuneForCmd(this, "agg.k2_ratio_floor", 1.3);
+		if (DCO_AggressiveCmd() && r > aggRatio)
 		{
-			r = 1.3;
+			r = aggRatio;
 			DCO_Perf.Count("doctrine:aggr_ratio_floor");
 		}
 		if (!DCO_AggProfile())
 			return r;
-		float floorR = Math.Min(r, DCO_Ctx.TuneForCmd(this, "agg.k2_ratio_floor", 1.3));
+		float floorR = Math.Min(r, aggRatio);
 		if (DCO_K2())
 			return Math.Max(r * Math.Pow(DCO_K2Slider(), -0.3), floorR);
-		return Math.Max(r * Math.Pow(DCO_AggrA(), -0.3), Math.Min(r, 1.3));
+		return Math.Max(r * Math.Pow(DCO_AggrA(), -0.3), floorR);
 	}
 
 	int EstimateEnemyAt(CMD_AICommanderObjectiveComponent obj)

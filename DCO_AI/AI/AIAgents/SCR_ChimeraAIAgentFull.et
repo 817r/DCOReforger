@@ -14,7 +14,7 @@ SCR_ChimeraAIAgent {
     }
     SCR_AIDangerReaction_WeaponFired "{5464DCF38FDA35C3}" {
     }
-    SCR_AIDangerReaction_Killzone "{68CB4305748A0BF6}" {
+    DCO_AIDangerReaction_Killzone "{68CB4305748A0BF6}" {
      m_eType Danger_Killzone
     }
    }

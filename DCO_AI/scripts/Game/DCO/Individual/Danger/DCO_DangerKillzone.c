@@ -1,5 +1,5 @@
 [BaseContainerProps()]
-class SCR_AIDangerEvent_Killzone : AIDangerEvent
+class DCO_AIDangerEvent_Killzone : AIDangerEvent
 {
 	protected float m_fRadius;
 
@@ -17,11 +17,11 @@ class SCR_AIDangerEvent_Killzone : AIDangerEvent
 }
 
 [BaseContainerProps()]
-class SCR_AIDangerReaction_Killzone : SCR_AIDangerReaction
+class DCO_AIDangerReaction_Killzone : SCR_AIDangerReaction
 {
 	override bool PerformReaction(notnull SCR_AIUtilityComponent utility, notnull SCR_AIThreatSystem threatSystem, AIDangerEvent dangerEvent, int dangerEventCount)
 	{
-		SCR_AIDangerEvent_Killzone unsafeAreaEvent = SCR_AIDangerEvent_Killzone.Cast(dangerEvent);
+		DCO_AIDangerEvent_Killzone unsafeAreaEvent = DCO_AIDangerEvent_Killzone.Cast(dangerEvent);
 		if (!unsafeAreaEvent)
 			return false;
 

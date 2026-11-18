@@ -30,7 +30,7 @@ modded class SCR_AIThreatSystem
 	protected float DCO_CoverDamp()
 	{
 		IEntity me = m_Utility.m_OwnerEntity;
-		if (me && SCR_CoverManagerComponent.IsEntityInsideBuilding(me))
+		if (me && DCO_CoverManagerComponent.IsEntityInsideBuilding(me))
 			return DCO_Stress.T(m_Utility, "tm.supp_building_mul", 0.6);
 		if (m_Utility.m_CombatMoveState && m_Utility.m_CombatMoveState.IsInValidCover())
 			return DCO_Stress.T(m_Utility, "tm.supp_cover_mul", 0.65);
@@ -172,13 +172,18 @@ modded class SCR_AIThreatSystem
 
 	protected bool DCO_RetfireOn()
 	{
-		return DCO_Stress.T(m_Utility, "tm.retfire_chance", 0.0) > 0 || DCO_Stress.T(m_Utility, "agg.retfire", 1.0) > 0;
+		return DCO_Stress.T(m_Utility, "tm.retfire_chance", 0.3) > 0 && DCO_Stress.T(m_Utility, "agg.retfire", 1.0) > 0;
 	}
 
 	protected bool DCO_UnseenForRetfire(IEntity shooter)
 	{
 		if (!shooter)
 			return false;
+		if (!DCO_Beaten.Hostile(m_Utility.m_OwnerEntity, shooter) && !DCO_Beaten.Hostile(m_Utility.m_OwnerEntity, shooter.GetRootParent()))
+		{
+			DCO_Perf.Count("tm:retfire_skip_not_hostile");
+			return false;
+		}
 		IEntity root = shooter.GetRootParent();
 		if (m_Combat && m_Combat.GetCurrentTarget() && m_Combat.GetCurrentTarget().GetTargetEntity() == root)
 			return false;
@@ -199,16 +204,37 @@ modded class SCR_AIThreatSystem
 		return false;
 	}
 
-	void DCO_ThreatImpact(int count, float w, vector shooterPos, IEntity shooter)
+	protected float m_fDCOUnderFireNote_ms = -10000;
+
+	protected void DCO_NoteUnderFire(vector shooterPos, IEntity shooter)
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (shooterPos == vector.Zero || !m_Utility.m_OwnerEntity || now - m_fDCOUnderFireNote_ms < 1000.0)
+			return;
+		if (shooter && !DCO_Beaten.Hostile(m_Utility.m_OwnerEntity, shooter) && !DCO_Beaten.Hostile(m_Utility.m_OwnerEntity, shooter.GetRootParent()))
+			return;
+		AIAgent agent = m_Utility.GetAIAgent();
+		if (!agent)
+			return;
+		SCR_AIGroup grp = SCR_AIGroup.Cast(agent.GetParentGroup());
+		if (!grp || !grp.GetGroupUtilityComponent())
+			return;
+		m_fDCOUnderFireNote_ms = now;
+		grp.GetGroupUtilityComponent().DCO_NoteUnderFire();
+	}
+
+	void DCO_ThreatImpact(int count, float w, vector shooterPos, IEntity shooter, bool aim = true)
 	{
 		if (w <= 0 || DCO_VehicleCombat.IsProtectedFromBullets(m_Utility.m_OwnerEntity))
 			return;
+		DCO_NoteUnderFire(shooterPos, shooter);
 		w *= DCO_Ctx.ThreatW(m_Utility, shooterPos);
 		float cf = DCO_Crossfire(shooterPos);
 		if (m_Combat)
 			m_Combat.DCO_PinNearMiss(w, shooterPos);
 		m_fThreatSuppression =Math.Clamp(m_fThreatSuppression + SUPPRESSION_BULLET_INCREMENT * count * w * cf * DCO_CoverDamp() * DCO_MoraleMul(false), 0, 2.5);
-		m_Combat.DangerSuppressedDecreaseAIM(count);
+		if (aim)
+			m_Combat.DangerSuppressedDecreaseAIM(count);
 		DCO_AIMoraleSystem ms = m_Utility.GetMoraleSystem();
 		if (m_Combat && shooterPos != vector.Zero && DCO_RetfireOn() && DCO_UnseenForRetfire(shooter))
 			m_Combat.DCO_ReturnFireUnseen(shooterPos);
@@ -227,6 +253,7 @@ modded class SCR_AIThreatSystem
 	{
 		if (w <= 0 || DCO_VehicleCombat.IsProtectedFromBullets(m_Utility.m_OwnerEntity))
 			return;
+		DCO_NoteUnderFire(shooterPos, shooter);
 		w *= DCO_Ctx.ThreatW(m_Utility, shooterPos);
 		float cf = DCO_Crossfire(shooterPos);
 		if (m_Combat)
@@ -300,7 +327,7 @@ modded class SCR_AIThreatSystem
 	protected void DCO_UpdateState()
 	{
 		EAIThreatState raw = EAIThreatState.SAFE;
-		if (m_fThreatTotal > THREATENED_THRESHOLD)
+		if (m_fThreatTotal > DCO_Stress.T(m_Utility, "tm.threatened_th", 1.8))
 			raw = EAIThreatState.THREATENED;
 		else if (m_fThreatTotal > ALERTED_THRESHOLD)
 			raw = EAIThreatState.ALERTED;

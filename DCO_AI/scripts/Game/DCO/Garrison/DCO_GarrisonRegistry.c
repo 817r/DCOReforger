@@ -236,7 +236,7 @@ class DCO_GarrisonRegistry
 		AIGroup soft;
 		if (!m_mSoftOwner.Find(building, soft))
 			return false;
-		if (!soft || soft.GetAgentsCount() == 0 || GetGame().GetWorld().GetWorldTime() - m_mSoftTime.Get(building) > 180000.0)
+		if (!soft || DCO_Dormant.Count(soft) == 0 || GetGame().GetWorld().GetWorldTime() - m_mSoftTime.Get(building) > 180000.0)
 		{
 			m_mSoftOwner.Remove(building);
 			m_mSoftTime.Remove(building);

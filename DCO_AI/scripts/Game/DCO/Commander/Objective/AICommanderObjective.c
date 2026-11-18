@@ -1209,6 +1209,45 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		return m_aAllowedFactions.Contains(fk);
 	}
 
+	void DCO_SaveState(SaveContext context)
+	{
+		array<string> keys = {};
+		array<float> vals = {};
+		foreach (FactionKey k, float v : m_mControl)
+		{
+			keys.Insert(k);
+			vals.Insert(v);
+		}
+		context.WriteValue("owner_faction", m_sOwnerFaction);
+		context.WriteValue("owner_uid", m_sOwnerCommanderUID);
+		context.WriteValue("ctrl_keys", keys);
+		context.WriteValue("ctrl_vals", vals);
+		DCO_Perf.Count("persist:save_obj");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("persist_save_obj obj=%1 owner=%2 owner_uid=%3 factions=%4", GetLogName(), m_sOwnerFaction, m_sOwnerCommanderUID, keys.Count()));
+	}
+
+	void DCO_LoadState(LoadContext context)
+	{
+		string owner;
+		string uid;
+		array<string> keys = {};
+		array<float> vals = {};
+		if (!context.ReadValue("owner_faction", owner))
+			return;
+		context.ReadValue("owner_uid", uid);
+		context.ReadValue("ctrl_keys", keys);
+		context.ReadValue("ctrl_vals", vals);
+		m_mControl.Clear();
+		for (int i = 0; i < keys.Count() && i < vals.Count(); i++)
+			m_mControl.Set(keys[i], vals[i]);
+		m_sOwnerFaction = owner;
+		m_sLastOwnerFaction = owner;
+		m_sOwnerCommanderUID = uid;
+		m_bInitialOwnerResolved = true;
+		DCO_Perf.Count("persist:load_obj");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("persist_load_obj obj=%1 owner=%2 owner_uid=%3 factions=%4", GetLogName(), owner, uid, keys.Count()));
+	}
+
 	void GetControlSnapshot(out array<FactionKey> outKeys, out array<float> outValues)
 	{
 		outKeys.Clear();
@@ -2093,8 +2132,16 @@ class CMD_AICommanderObjectiveComponent : ScriptComponent
 		int n = 0;
 		foreach (DCO_SectorGarrison sec : sectors)
 		{
-			if (sec && sec.m_Group)
-				n++;
+			if (!sec || !sec.m_Group)
+				continue;
+			if (sec.m_Group.GetGroupObjective() != this || sec.m_Group.GetTask() != DCO_EGroupTask.DEFEND)
+			{
+				DCO_Perf.Count("def:sector_freed_stale");
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("def_sector_freed obj=%1 faction=%2 task=%3 why=group_left", GetLogName(), fk, typename.EnumToString(DCO_EGroupTask, sec.m_Group.GetTask())));
+				sec.m_Group = null;
+				continue;
+			}
+			n++;
 		}
 
 		return n;

@@ -1,0 +1,26 @@
+DCO_TacticWaypoint : "{A7DE38E29F5F1CE1}Prefabs/AI/Waypoints/AIWaypoint_DCOAmbush.et" {
+ ID "E0FFCF9971137984"
+ components {
+  SCR_EditableEntityVisibilityChildComponent "{9D05BBD25EC7BA40}" : "{CA7D13FC9D385E8F}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityVisibilityChildComponent.ct" {
+  }
+  SCR_EditableWaypointComponent "{1D14DA756A60A8B1}" : "{89CF6086B34A8800}Prefabs/Editor/Components/Waypoint_SCR_EditableEntityComponent.ct" {
+   m_UIInfo SCR_EditableEntityUIInfo "{6C4C8AB7ED3B38D7}" {
+    Name "Ambush (DCO)"
+    Icon "{6FAED0D746483096}UI/Textures/Editor/Toolbar/Commanding/Toolbar_Commanding_Waypoint_Defend.edds"
+    IconSetName "Waypoint_Defend"
+    m_aAutoLabels {
+     ENTITYTYPE_SYSTEM SIZE_XL
+    }
+   }
+   m_EntityInteraction SCR_EditableAttachableEntityInteraction "{113DA6342D94298C}" {
+    m_aAttachableTypes {
+     GROUP
+    }
+   }
+  }
+  SCR_WaypointAreaMeshComponent "{D213F3F03341FA06}" : "{3CE012874EA1DC23}Prefabs/Editor/Components/Waypoint_SCR_WaypointAreaMeshComponent.ct" {
+  }
+  RplComponent "{7102AF866F43A268}" : "{B193E926C1935A4C}Prefabs/Editor/Components/Default_RplComponent.ct" {
+  }
+ }
+}

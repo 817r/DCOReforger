@@ -643,8 +643,8 @@ class DCO_DefenseTactics : Managed
 			}
 			else
 				scores[DCO_EDefTactic.DELAY] = 0;
-			if (docBand == DCO_EForceBand.UNKNOWN && DCO_DoctrineDefense.Allows(cmd, docBand, DCO_EDefenseCol.OPLP) && cmd.GetDefense())
-				cmd.GetDefense().RequestDoctrineOP(cmd, p.m_Obj, p.m_vAxis, now);
+			if (DCO_DoctrineDefense.Allows(cmd, docBand, DCO_EDefenseCol.OPLP) && cmd.GetDefense())
+				cmd.GetDefense().RequestDoctrineOP(cmd, p.m_Obj, p.m_vAxis, now, docBand);
 		}
 
 		float sum = 0;
@@ -795,7 +795,7 @@ class DCO_DefenseTactics : Managed
 			CMD_ThreatEntry nt;
 			if (EnemyDistTo(near, g.GetOwner().GetOrigin(), nt) < 400.0 && nt)
 			{
-				CMD_ThreatResponseComponent.ThrowSmoke(g, nt.m_vBelievedPos);
+				CMD_ThreatResponseComponent.ThrowSmoke(g, nt.m_vBelievedPos, "defense");
 				smoked++;
 			}
 			g.DCO_SetHold(0);
@@ -837,7 +837,7 @@ class DCO_DefenseTactics : Managed
 		DCO_DefensePlan dp = m_mPlans.Get(g.GetGroupObjective());
 		if (dp)
 			defName = Name(dp.m_eTactic);
-		DCO_Battle.Place(cmd, g.GetGroupObjective(), AIGroup.Cast(g.GetOwner()), kind, pos, Math.Atan2(face[0], face[2]) * Math.RAD2DEG, "-", "-", RoleName(g.m_iDCODefRole), defName);
+		DCO_Dev.Place(cmd, g.GetGroupObjective(), AIGroup.Cast(g.GetOwner()), kind, pos, Math.Atan2(face[0], face[2]) * Math.RAD2DEG, "-", "-", RoleName(g.m_iDCODefRole), defName);
 	}
 
 	protected void SetRole(DCO_DefensePlan p, DCO_GroupUtilityComponent g, int role)
@@ -1133,7 +1133,7 @@ class DCO_DefenseTactics : Managed
 			Place(cmd, g, objPos + dir * rad, objPos + dir * (R + 300.0), true, now);
 		}
 		DCO_CommanderDefense def = cmd.GetDefense();
-		if (def && cmd.IsOPEnabled() && def.OPCount() < DCO_Force.Max(cmd, "op", cmd.GetMaxOP()))
+		if (def && cmd.IsOPEnabled() && def.OPCount() < DCO_Force.Max(cmd, "op"))
 		{
 			vector opPos = DCO_Util.Surface(objPos + p.m_vAxis * Math.Min(R + 300.0, rad + 450.0));
 			def.OpenOP(cmd, opPos, objPos + p.m_vAxis * (R + 700.0), "perimeter", now);
@@ -1543,8 +1543,7 @@ class DCO_DefenseTactics : Managed
 			CMD_ArtillerySupport.LogDenied(req, "friendly");
 			return false;
 		}
-		arty.RequestShellImpact(req, DCO_Util.NowS(), rounds);
-		return true;
+		return arty.RequestShellImpact(req, DCO_Util.NowS(), rounds);
 	}
 
 	protected void UpdateEA(AICommander_BaseComponent cmd, DCO_DefensePlan p, array<DCO_GroupUtilityComponent> defs, array<CMD_ThreatEntry> near, float now)
@@ -1571,7 +1570,7 @@ class DCO_DefenseTactics : Managed
 				return;
 			p.m_bEA = true;
 			p.m_vEACenter = probe;
-			DCO_Battle.Place(cmd, p.m_Obj, null, "engagement_area", p.m_vEACenter, Math.Atan2(-p.m_vAxis[0], -p.m_vAxis[2]) * Math.RAD2DEG, "-", "-", "-", Name(p.m_eTactic));
+			DCO_Dev.Place(cmd, p.m_Obj, null, "engagement_area", p.m_vEACenter, Math.Atan2(-p.m_vAxis[0], -p.m_vAxis[2]) * Math.RAD2DEG, "-", "-", "-", Name(p.m_eTactic));
 			if (p.m_eTactic != DCO_EDefTactic.REVERSE)
 				p.m_fTrigger = R + DCO_Ctx.TuneForCmd(cmd, "def.trigger_extra", 150.0);
 			int mg = 0;

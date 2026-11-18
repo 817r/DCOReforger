@@ -11,6 +11,7 @@ class DCO_SpecState
 	float m_fNextShift_ms;
 	float m_fNextWorthy_ms;
 	bool m_bLauncherAllowed = true;
+	float m_fHoldLogAt_ms;
 	vector m_vOverwatch;
 	float m_fNextOverwatch_ms;
 	float m_fBofAt_ms = -1;
@@ -490,11 +491,18 @@ class DCO_Specialist
 			DCO_Perf.Count("spec:mg_bof_reseat_seen");
 		}
 		st.m_bBofUnseen = false;
-		if (!st.m_bBaseOfFire && leader && enemyDist >= 60.0 && enemyDist <= 600.0)
+		bool hold = u.m_CombatComponent.GetCombatMode() == EAIGroupCombatMode.HOLD_FIRE;
+		if (hold && now >= st.m_fHoldLogAt_ms)
+		{
+			st.m_fHoldLogAt_ms = now + 30000.0;
+			DCO_Perf.Count("spec:mg_hold_no_move");
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_hold_no_move unit=%1 role=%2 enemy_dist=%3 base_of_fire=%4", DCO_Log.IdUnit(me), DCO_Roles.MGRole(mgRoles), Math.Round(enemyDist), DCO_Util.B01(st.m_bBaseOfFire)));
+		}
+		if (!hold && !st.m_bBaseOfFire && leader && enemyDist >= 60.0 && enemyDist <= 600.0)
 		{
 			st.m_bBaseOfFire = true;
 			st.m_fBofAt_ms = now;
-			if (SCR_CoverManagerComponent.IsEntityInsideBuilding(me))
+			if (DCO_CoverManagerComponent.IsEntityInsideBuilding(me))
 			{
 				DCO_Perf.Count("spec:mg_bof_skip_indoor");
 				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_base_of_fire unit=%1 result=skip_indoor enemy_dist=%2", DCO_Log.IdUnit(me), Math.Round(enemyDist)));
@@ -559,8 +567,8 @@ class DCO_Specialist
 		SCR_CharacterDamageManagerComponent dm = SCR_CharacterDamageManagerComponent.Cast(me.FindComponent(SCR_CharacterDamageManagerComponent));
 		bool hit = dm && dm.DCO_HitsWithin(4.0) > 0;
 		bool accurate = st.m_fNearImpact_ms > 0 && now - st.m_fNearImpact_ms < 3000.0;
-		bool longHere = now - st.m_fSpotAt_ms > 20000.0 && u.m_CombatComponent.GetCurrentTarget().GetTimeSinceSeen() < 3.0;
-		if ((accurate || longHere || hit) && now > st.m_fSpotAt_ms && !SCR_CoverManagerComponent.IsEntityInsideBuilding(me))
+		bool longHere = !hold && now - st.m_fSpotAt_ms > 20000.0 && u.m_CombatComponent.GetCurrentTarget().GetTimeSinceSeen() < 3.0;
+		if ((accurate || longHere || hit) && now > st.m_fSpotAt_ms && !DCO_CoverManagerComponent.IsEntityInsideBuilding(me))
 		{
 			vector toEnemy = Flat(enemyPos - myPos);
 			vector lateral = Vector(toEnemy[2], 0, -toEnemy[0]);
@@ -634,14 +642,19 @@ class DCO_Specialist
 		{
 			if (!ti || !ti.m_Entity || pmNow - ti.m_fTimestamp > 15.0 || !DCO_Util.IsAlive(ti.m_Entity))
 				continue;
+			float injected = -1;
+			bool reported = gu.m_mDCOInjected.Find(ti.m_Entity, injected) && ti.m_fTimestamp <= injected + 0.01;
+			if (reported && pmNow - ti.m_fTimestamp > 8.0)
+			{
+				DCO_Perf.Count("spec:mg_group_target_stale_inject");
+				continue;
+			}
 			float d = vector.DistanceXZ(myPos, ti.m_vWorldPos);
 			if (d < 40.0 || d >= bestD)
 				continue;
 			bestD = d;
 			pos = ti.m_vWorldPos;
 			found = true;
-			float injected = -1;
-			bool reported = gu.m_mDCOInjected.Find(ti.m_Entity, injected) && ti.m_fTimestamp <= injected + 0.01;
 			rad = DCO_InfoQ.TargetRadius(pmNow - ti.m_fTimestamp, reported);
 		}
 		if (found)
@@ -824,6 +837,12 @@ class DCO_Specialist
 			return false;
 		}
 		float mv = vector.DistanceXZ(me.GetOrigin(), e.m_vBest);
+		if (contact && mv > 30.0 && e.m_sMode != "contact_seen")
+		{
+			DCO_Perf.Count("spec:mg_position_far_unseen");
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_position unit=%1 mode=%2 result=stay_far here=%3 best=%4 gain=%5 move=%6 why=unseen_contact", DCO_Log.IdUnit(me), e.m_sMode, e.m_fHere.ToString(-1, 2), e.m_fBest.ToString(-1, 2), gain.ToString(-1, 2), Math.Round(mv)));
+			return false;
+		}
 		if (contact && mv > 30.0 && !StartSortie(u, st, 1, "position_eval", null, now))
 		{
 			DCO_Perf.Count("spec:mg_position_no_sortie");
@@ -889,6 +908,12 @@ class DCO_Specialist
 		else
 			center = DCO_Util.Surface(lp + Flat(leader.GetWorldTransformAxis(2)) * 200.0);
 		st.m_fNextPre_ms = now + 45000.0;
+		SCR_AIGroupUtilityComponent preGu = SCR_AIGroupUtilityComponent.Cast(grp.FindComponent(SCR_AIGroupUtilityComponent));
+		if (preGu && preGu.DCO_IsIdle() && u.m_CombatMoveState && u.m_CombatMoveState.m_bInCover)
+		{
+			DCO_Perf.Count("spec:mg_precontact_skip_idle_cover");
+			return;
+		}
 		DCO_Perf.Count("spec:mg_precontact_" + why);
 		StartEval(u, st, now, center, lp, "precontact");
 	}
@@ -933,19 +958,24 @@ class DCO_Specialist
 		return 0.8;
 	}
 
-	protected static bool MGReady(SCR_AIUtilityComponent u)
+	protected static BaseWeaponComponent WeaponOf(SCR_AIUtilityComponent u, string role)
 	{
 		BaseWeaponComponent wc;
 		int muzzle;
 		u.m_CombatComponent.GetSelectedWeapon(wc, muzzle);
-		if (!wc)
-		{
-			CharacterControllerComponent ctrl = u.GetCharacterController();
-			if (ctrl && ctrl.GetWeaponManagerComponent())
-				wc = ctrl.GetWeaponManagerComponent().GetCurrentWeapon();
-			if (wc)
-				DCO_Perf.Count("spec:mg_ready_current_weapon");
-		}
+		if (wc)
+			return wc;
+		CharacterControllerComponent ctrl = u.GetCharacterController();
+		if (ctrl && ctrl.GetWeaponManagerComponent())
+			wc = ctrl.GetWeaponManagerComponent().GetCurrentWeapon();
+		if (wc)
+			DCO_Perf.Count("spec:" + role + "_ready_current_weapon");
+		return wc;
+	}
+
+	protected static bool MGReady(SCR_AIUtilityComponent u)
+	{
+		BaseWeaponComponent wc = WeaponOf(u, "mg");
 		if (!wc)
 		{
 			DCO_Perf.Count("spec:mg_ready_no_weapon");
@@ -973,6 +1003,12 @@ class DCO_Specialist
 		vector toT = Flat(center - me.GetOrigin());
 		vector lat = Vector(toT[2], 0, -toT[0]);
 		float w = Math.Clamp(radius * 2.0, 8.0, 30.0);
+		bool indoor = DCO_Ctx.EnvAtPos(center) == DCO_EEnv.INDOOR;
+		if (indoor)
+		{
+			w = Math.Min(w, 6.0);
+			DCO_Perf.Count("spec:traverse_indoor");
+		}
 		int step = st.m_iTravStep % 4;
 		float off = 0;
 		if (step == 0)
@@ -980,6 +1016,8 @@ class DCO_Specialist
 		else if (step == 2)
 			off = 0.5 * w;
 		vector c = DCO_Util.Surface(center + lat * off);
+		if (indoor)
+			c = center + lat * off;
 		if (!DCO_SuppressGate.Allowed(u, c, "traverse"))
 		{
 			st.m_fTravNext_ms = now + 3000.0;
@@ -1025,7 +1063,7 @@ class DCO_Specialist
 			phase = "rapid";
 		DCO_Perf.Count("spec:" + role + "_traverse_" + src);
 		if (step == 0)
-			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_traverse unit=%1 role=%2 src=%3 center=%4 dist=%5 width=%6 phase=%7 rate=%8 reports=%9", DCO_Log.IdUnit(me), role, src, DCO_Log.Pos(center), Math.Round(vector.DistanceXZ(me.GetOrigin(), center)), Math.Round(w), phase, rate, reports));
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_traverse unit=%1 role=%2 src=%3 center=%4 dist=%5 width=%6 phase=%7 rate=%8 reports=%9 indoor=" + DCO_Util.B01(indoor), DCO_Log.IdUnit(me), role, src, DCO_Log.Pos(center), Math.Round(vector.DistanceXZ(me.GetOrigin(), center)), Math.Round(w), phase, rate, reports));
 		else if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
 			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(me), string.Format("spec_mg_traverse_step unit=%1 step=%2 off=%3 dur_s=%4", DCO_Log.IdUnit(me), step, Math.Round(off), dur.ToString(-1, 1)));
 		return true;
@@ -1152,7 +1190,15 @@ class DCO_Specialist
 		bool ar = (roles & 64) != 0;
 		string role = DCO_Roles.MGRole(roles);
 		IEntity leader = grp.GetLeaderEntity();
-		if (!st.m_bBaseOfFire || (st.m_bBofUnseen && vector.DistanceXZ(st.m_vEstUsed, est) > 50.0))
+		bool estMoved = st.m_bBofUnseen && vector.DistanceXZ(st.m_vEstUsed, est) > 50.0;
+		if (estMoved && st.m_bBaseOfFire && now - st.m_fBofAt_ms < 1000.0 * DCO_Stress.T(u, "spec.bof_reaim_s", 20.0))
+		{
+			estMoved = false;
+			DCO_Perf.Count("spec:mg_bof_reaim_hold");
+			if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
+				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(me), string.Format("spec_mg_reaim_hold unit=%1 role=%2 src=" + estSrc + " est_dist=%3 est_shift=%4 since_s=%5", DCO_Log.IdUnit(me), role, Math.Round(d), Math.Round(vector.DistanceXZ(st.m_vEstUsed, est)), Math.Round((now - st.m_fBofAt_ms) / 1000.0)));
+		}
+		if (!st.m_bBaseOfFire || estMoved)
 		{
 			if (st.m_bBofUnseen && st.m_bBaseOfFire)
 				Rapid(u, st, now, 30000.0, "new_shooter");
@@ -1161,7 +1207,7 @@ class DCO_Specialist
 			st.m_fBofAt_ms = now;
 			st.m_vEstUsed = est;
 			st.m_fNextSupp_ms = now + 2500.0;
-			if (SCR_CoverManagerComponent.IsEntityInsideBuilding(me))
+			if (DCO_CoverManagerComponent.IsEntityInsideBuilding(me))
 			{
 				DCO_Perf.Count("spec:mg_bof_unseen_indoor");
 				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_base_of_fire unit=%1 role=%2 src=" + estSrc + " result=stay_indoor est_dist=%3 radius=%4 reports=%5", DCO_Log.IdUnit(me), role, Math.Round(d), Math.Round(rad), cnt));
@@ -1184,20 +1230,34 @@ class DCO_Specialist
 			vector pos = PickFireSpot(me, est, lp, side, axis, stance, tried, maxMove, Math.Max(4.0, rad));
 			if (pos == vector.Zero)
 			{
+				vector shiftPos = DCO_Util.Surface(myPos + side * 10.0);
 				if (DCO_GunnerBehavior.Get(u))
-					SpecMove(u, myPos, est, true, ECharacterStance.PRONE, 8.0, role + "_bof_cover", true);
+					SpecMove(u, shiftPos, est, true, ECharacterStance.PRONE, 8.0, role + "_bof_cover", true);
 				else
-					CombatMove(u, myPos, est, true, ECharacterStance.PRONE, 8.0);
+					CombatMove(u, shiftPos, est, true, ECharacterStance.PRONE, 8.0);
 				DCO_Perf.Count("spec:mg_bof_unseen");
 				DCO_Perf.Count("spec:mg_bof_unseen_cover");
-				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_base_of_fire unit=%1 role=%2 src=" + estSrc + " result=cover_fallback tried=%3 est_dist=%4 radius=%5 reports=%6", DCO_Log.IdUnit(me), role, tried, Math.Round(d), Math.Round(rad), cnt));
+				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_base_of_fire unit=%1 role=%2 src=" + estSrc + " result=side_shift tried=%3 est_dist=%4 radius=%5 reports=%6", DCO_Log.IdUnit(me), role, tried, Math.Round(d), Math.Round(rad), cnt));
 				return true;
 			}
+			if (ar && vector.Distance(myPos, pos) > 14.0)
+			{
+				DCO_GunnerBehavior sgb = DCO_GunnerBehavior.Get(u);
+				if (sgb)
+					sgb.Watch(est, 4.0, "stay_unseen");
+				st.m_vSpot = myPos;
+				DCO_Perf.Count("spec:ar_bof_unseen_stay");
+				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_base_of_fire unit=%1 role=%2 src=" + estSrc + " result=stay_far move_dist=%3 est_dist=%4 radius=%5 reports=%6", DCO_Log.IdUnit(me), role, Math.Round(vector.Distance(myPos, pos)), Math.Round(d), Math.Round(rad), cnt));
+				return true;
+			}
+			string spotRes = "move";
+			if (s_bSpotBestFrac)
+				spotRes = "best_frac";
 			SpecMove(u, pos, est, true, stance, vector.Distance(myPos, pos) / 3.0 + 3.0, role + "_bof_unseen", true);
 			st.m_vSpot = pos;
 			st.m_fSpotAt_ms = now + 5000.0;
 			DCO_Perf.Count("spec:mg_bof_unseen");
-			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_base_of_fire unit=%1 role=%2 src=" + estSrc + " result=move pos=%3 move_dist=%4 est_dist=%5 radius=%6 reports=%7 stance=%8 tried=%9", DCO_Log.IdUnit(me), role, DCO_Log.Pos(pos), Math.Round(vector.Distance(myPos, pos)), Math.Round(d), Math.Round(rad), cnt, typename.EnumToString(ECharacterStance, stance), tried));
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_mg_base_of_fire unit=%1 role=%2 src=" + estSrc + " result=" + spotRes + " pos=%3 move_dist=%4 est_dist=%5 radius=%6 reports=%7 stance=%8 tried=%9", DCO_Log.IdUnit(me), role, DCO_Log.Pos(pos), Math.Round(vector.Distance(myPos, pos)), Math.Round(d), Math.Round(rad), cnt, typename.EnumToString(ECharacterStance, stance), tried));
 			return true;
 		}
 		DCO_GunnerBehavior wgb = DCO_GunnerBehavior.Get(u);
@@ -1230,11 +1290,17 @@ class DCO_Specialist
 		return true;
 	}
 
+	static bool s_bSpotBestFrac;
+
 	protected static vector PickFireSpot(IEntity me, vector enemyPos, vector anchor, vector side, vector axis, out ECharacterStance stance, out int tried, float maxMove = 30.0, float tol = 4.0)
 	{
 		tried = 0;
 		stance = ECharacterStance.PRONE;
+		s_bSpotBestFrac = false;
 		vector tgt = enemyPos + Vector(0, 1.0, 0);
+		bool far = vector.DistanceXZ(anchor, enemyPos) >= 200.0;
+		vector bestP = vector.Zero;
+		float bestFrac = 0.6;
 		array<float> sides = {18.0, 12.0, 25.0, 8.0, -12.0};
 		array<float> backs = {8.0, 3.0, 12.0};
 		foreach (float s : sides)
@@ -1255,11 +1321,26 @@ class DCO_Specialist
 					stance = ECharacterStance.CROUCH;
 					return p;
 				}
-				if (tried >= 9)
-					return vector.Zero;
+				if (far && FireLine(p + Vector(0, 1.6, 0), tgt, me, tol))
+				{
+					stance = ECharacterStance.STAND;
+					return p;
+				}
+				float frac = DCO_Util.TraceFrac(p + Vector(0, 1.2, 0), tgt, me, TraceFlags.WORLD | TraceFlags.ENTS, EPhysicsLayerDefs.Projectile, "t:DCO_SpecFireSpot");
+				if (frac > bestFrac)
+				{
+					bestFrac = frac;
+					bestP = p;
+				}
 			}
 		}
-		return vector.Zero;
+		if (bestP != vector.Zero)
+		{
+			stance = ECharacterStance.CROUCH;
+			s_bSpotBestFrac = true;
+			DCO_Perf.Count("spec:mg_spot_best_frac");
+		}
+		return bestP;
 	}
 
 	protected static vector PickWideFireSpot(IEntity me, vector enemyPos, vector anchor, vector side, vector axis, out ECharacterStance stance, out int tried)
@@ -1427,7 +1508,10 @@ class DCO_Specialist
 		if (now >= st.m_fNextWorthy_ms)
 		{
 			st.m_fNextWorthy_ms = now + 2000.0;
-			st.m_bLauncherAllowed = HasLauncherTarget(u);
+			bool sortieKeep = st.m_iSortie == 2 && now - st.m_fSortieSeen_ms < 30000.0;
+			st.m_bLauncherAllowed = HasLauncherTarget(u) || sortieKeep;
+			if (sortieKeep)
+				DCO_Perf.Count("spec:at_launcher_keep_sortie");
 		}
 
 		IEntity me = u.m_OwnerEntity;
@@ -1569,7 +1653,7 @@ class DCO_Specialist
 		float dist = vector.DistanceXZ(myPos, vpos);
 		if (st.m_iSortie == 0)
 		{
-			if (seenAgo > 30.0 || dist < 200.0)
+			if (seenAgo > 30.0 || dist < 100.0)
 				return;
 			if (!StartSortie(u, st, 2, "vehicle_known", veh, now))
 				return;
@@ -1580,7 +1664,7 @@ class DCO_Specialist
 			st.m_fSortieSeen_ms = now;
 		float standoff = st.m_fSortieStandoff;
 		if (standoff <= 0)
-			standoff = 170.0;
+			standoff = Math.Clamp(DCO_RpgUnseen.MaxM(u) - 50.0, 60.0, 170.0);
 		bool closer;
 		if (st.m_vSortieGoal != vector.Zero && seenAgo > 20.0 && standoff > 90.0 && vector.DistanceXZ(myPos, st.m_vSortieGoal) < 15.0)
 		{
@@ -1618,7 +1702,7 @@ class DCO_Specialist
 		st.m_vSortieGoal = goal;
 		SortieMove(u, goal);
 		DCO_Perf.Count("spec:at_hunt_move");
-		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_at_hunt unit=%1 target=%2 armored=%3 veh_dist=%4 seen_ago_s=%5 goal=%6 move_dist=%7", DCO_Log.IdUnit(me), DCO_Log.IdUnit(veh), DCO_Util.B01(DCO_VehicleCombat.IsArmored(veh)), Math.Round(dist), Math.Round(seenAgo), DCO_Log.Pos(goal), Math.Round(vector.DistanceXZ(myPos, goal))) + " side=" + st.m_fSortieSide);
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_at_hunt unit=%1 target=%2 armored=%3 veh_dist=%4 seen_ago_s=%5 goal=%6 move_dist=%7", DCO_Log.IdUnit(me), DCO_Log.IdUnit(veh), DCO_Util.B01(DCO_VehicleCombat.IsArmored(veh)), Math.Round(dist), Math.Round(seenAgo), DCO_Log.Pos(goal), Math.Round(vector.DistanceXZ(myPos, goal))) + " side=" + st.m_fSortieSide + " standoff=" + Math.Round(standoff).ToString());
 	}
 
 	protected static void SortieMove(SCR_AIUtilityComponent u, vector pos)
@@ -1745,8 +1829,26 @@ class DCO_Specialist
 			if (t.GetTimeSinceSeen() < 5.0 && buildingChecks < 4)
 			{
 				buildingChecks++;
-				if (SCR_CoverManagerComponent.IsEntityInsideBuilding(e))
+				if (DCO_CoverManagerComponent.IsEntityInsideBuilding(e))
 					return true;
+				if (DCO_RpgUnseen.Fortified(u.m_OwnerEntity, e))
+				{
+					DCO_Perf.Count("spec:at_target_fortified");
+					if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
+						DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(u.m_OwnerEntity), string.Format("spec_at_launcher_ok unit=%1 tgt=%2 why=fortified dist=%3", DCO_Log.IdUnit(u.m_OwnerEntity), DCO_Log.IdUnit(tc), Math.Round(vector.Distance(u.m_OwnerEntity.GetOrigin(), tc.GetOrigin()))));
+					return true;
+				}
+			}
+			if (t.GetTimeSinceSeen() < 5.0 && DCO_Stress.T(u, "at.group", 1.0) > 0)
+			{
+				float gd = t.GetDistance();
+				if (gd >= 50.0 && gd <= DCO_RpgUnseen.MaxM(u) && DCO_RpgUnseen.NearTargets(u, t.GetLastSeenPosition(), 10.0) >= 2)
+				{
+					DCO_Perf.Count("spec:at_target_group");
+					if (DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG))
+						DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(u.m_OwnerEntity), string.Format("spec_at_launcher_ok unit=%1 tgt=%2 why=group dist=%3", DCO_Log.IdUnit(u.m_OwnerEntity), DCO_Log.IdUnit(tc), Math.Round(gd)));
+					return true;
+				}
 			}
 		}
 		return false;
@@ -1756,12 +1858,44 @@ class DCO_Specialist
 	{
 		IEntity a = NearestArmor(u, range);
 		if (a)
+		{
+			ArmorSeen(u, now);
 			return a;
+		}
 		DCO_Designation dz = DCO_Designate.Best(u.GetAIAgent().GetParentGroup(), 1, u.m_OwnerEntity.GetOrigin(), now, 15000.0, 0.0, range);
 		if (!dz || !dz.m_Target || VehicleDead(dz.m_Target))
 			return null;
 		DCO_Designate.Note(dz, u.m_OwnerEntity, "at", now);
+		ArmorSeen(u, now);
 		return dz.m_Target;
+	}
+
+	protected static SCR_AIGroupUtilityComponent GroupUtilOf(SCR_AIUtilityComponent u)
+	{
+		if (!u || !u.GetAIAgent() || !u.GetAIAgent().GetParentGroup())
+			return null;
+		return SCR_AIGroupUtilityComponent.Cast(u.GetAIAgent().GetParentGroup().FindComponent(SCR_AIGroupUtilityComponent));
+	}
+
+	protected static void ArmorSeen(SCR_AIUtilityComponent u, float now)
+	{
+		SCR_AIGroupUtilityComponent gu = GroupUtilOf(u);
+		if (gu)
+			gu.m_fDCOArmorAt_ms = now;
+	}
+
+	static bool ArmorKnown(SCR_AIUtilityComponent u)
+	{
+		if (!u || !u.m_OwnerEntity)
+			return false;
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (NearestArmor(u, 600.0))
+		{
+			ArmorSeen(u, now);
+			return true;
+		}
+		SCR_AIGroupUtilityComponent gu = GroupUtilOf(u);
+		return gu && gu.m_fDCOArmorAt_ms >= 0 && now - gu.m_fDCOArmorAt_ms < 600000.0;
 	}
 
 	protected static IEntity NearestArmor(SCR_AIUtilityComponent u, float range)
@@ -1881,11 +2015,12 @@ class DCO_Specialist
 		float d = vector.DistanceXZ(me.GetOrigin(), est);
 		if (d < 35.0 || d > 300.0)
 			return;
-		BaseWeaponComponent wc;
-		int muzzle;
-		u.m_CombatComponent.GetSelectedWeapon(wc, muzzle);
+		BaseWeaponComponent wc = WeaponOf(u, "gl");
 		if (!wc || !DCO_UGLUtility.HasUGL(wc))
+		{
+			DCO_Perf.Count("spec:gl_lob_no_ugl_weapon");
 			return;
+		}
 		if (!DCO_UGLUtility.ShouldUseGL(u, wc, est))
 			return;
 		DCO_GunnerBehavior gb = DCO_GunnerBehavior.Ensure(u, "gl", est, now);
@@ -1985,4 +2120,9 @@ class DCO_Specialist
 		DCO_Perf.Count("spec:marksman_overwatch");
 		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_marksman_overwatch unit=%1 spot=%2 leader_dist=%3 combat=%4", DCO_Log.IdUnit(me), DCO_Log.Pos(spot), Math.Round(vector.DistanceXZ(spot, lp)), DCO_Util.B01(combat)));
 	}
+}
+
+modded class SCR_AIGroupUtilityComponent
+{
+	float m_fDCOArmorAt_ms = -1;
 }

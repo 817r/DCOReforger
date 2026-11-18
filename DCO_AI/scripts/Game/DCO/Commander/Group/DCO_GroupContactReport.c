@@ -571,7 +571,7 @@ class DCO_GroupContactReporterComponent : ScriptComponent
 			}
 
 			cluster.m_bIdentified = true;
-			if (SCR_CoverManagerComponent.DCO_GetBuildingAt(t.m_Entity))
+			if (DCO_CoverManagerComponent.DCO_GetBuildingAt(t.m_Entity))
 				cluster.m_bInBuilding = true;
 
 			switch (ClassifyTarget(t.m_Entity, reporterPos))

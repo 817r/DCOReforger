@@ -4,7 +4,7 @@ GameEntity {
   AICommander_AlgorithmComponent "{68F8849956F58560}" {
    m_sCommanderUID ""
    m_sFactionKey ""
-   m_fObjectiveAtTheSameTime 4
+   m_fObjectiveAtTheSameTime -1
    m_fThinkInterval 150
    m_fTransportDistanceThreshold 15
   }

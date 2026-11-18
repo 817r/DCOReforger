@@ -209,7 +209,7 @@ class DCO_CivMode
 			}
 			return;
 		}
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(me))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(me))
 		{
 			SetStance(u, ECharacterStance.CROUCH);
 			SetState(u, c, DCO_ECivState.HIDE, now, kind, dist);
@@ -252,7 +252,7 @@ class DCO_CivMode
 		{
 			if (now >= c.m_fStateEnd)
 			{
-				if (SCR_CoverManagerComponent.IsEntityInsideBuilding(me))
+				if (DCO_CoverManagerComponent.IsEntityInsideBuilding(me))
 				{
 					SetStance(u, ECharacterStance.CROUCH);
 					SetState(u, c, DCO_ECivState.HIDE, now, "indoor", 0);
@@ -278,7 +278,7 @@ class DCO_CivMode
 			if (!mv || arrived || now - c.m_fStateAt > 90000.0)
 			{
 				EndMove(u);
-				if (SCR_CoverManagerComponent.IsEntityInsideBuilding(me))
+				if (DCO_CoverManagerComponent.IsEntityInsideBuilding(me))
 					SetStance(u, ECharacterStance.CROUCH);
 				string why = "arrived";
 				if (!arrived)

@@ -8,7 +8,7 @@ class DCO_Relentless
 		SCR_AIGroupUtilityComponent gu = SCR_AIGroupUtilityComponent.Cast(g.FindComponent(SCR_AIGroupUtilityComponent));
 		if (!gu)
 			return false;
-		if (gu.DCO_GetPostureOverride() == DCO_GroupTactics.AGGRESIVE)
+		if (gu.DCO_PostureGm() == DCO_GroupTactics.AGGRESIVE)
 			return true;
 		if (!gu.m_bDCOCmdRelentless)
 			return false;

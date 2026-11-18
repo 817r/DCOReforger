@@ -83,6 +83,26 @@ class DCO_DefShortfall
 		return need;
 	}
 
+	protected static ref map<string, string> s_mLogSig;
+	protected static ref map<string, float> s_mLogAt;
+
+	protected static bool LogDue(string key, string sig, float now)
+	{
+		if (!s_mLogSig)
+		{
+			s_mLogSig = new map<string, string>();
+			s_mLogAt = new map<string, float>();
+		}
+		string last;
+		float at;
+		bool known = s_mLogSig.Find(key, last) && s_mLogAt.Find(key, at);
+		if (known && last == sig && now >= at && now - at < 300.0)
+			return false;
+		s_mLogSig.Set(key, sig);
+		s_mLogAt.Set(key, now);
+		return true;
+	}
+
 	static void Report(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj, int need, int have, string why, int prio, float threatDist)
 	{
 		if (!On(cmd) || !obj || !obj.GetOwner())
@@ -107,7 +127,11 @@ class DCO_DefShortfall
 		if (floor > cap && need == floor)
 			DCO_Perf.Count("def:floor_raised_need");
 		string needText = need.ToString() + " cap=" + cap.ToString() + " floor=" + floor.ToString();
-		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("def_shortfall cmd=%1 obj=%2 need=%3 have=%4 why=%5 prio=%6 threat_m=%7 asked=%8 enemy=%9", cmd.GetCommanderUID(), obj.GetLogName(), needText, have, why, DCO_ReinfRequest.PrioName(prio), Math.Round(threatDist), asked, Math.Round(enemy)));
+		string sfLine = string.Format("def_shortfall cmd=%1 obj=%2 need=%3 have=%4 why=%5 prio=%6 threat_m=%7 asked=%8 enemy=%9", cmd.GetCommanderUID(), obj.GetLogName(), needText, have, why, DCO_ReinfRequest.PrioName(prio), Math.Round(threatDist), asked, Math.Round(enemy));
+		if (LogDue(cmd.GetCommanderUID() + "|" + obj.GetLogName(), needText + "|" + have.ToString() + "|" + why + "|" + prio.ToString(), DCO_Util.NowS()))
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", sfLine);
+		else
+			DCO_Perf.Count("def:shortfall_log_same");
 		DCO_ReinfBoard b = cmd.DCO_Reinf();
 		if (b)
 			b.DefenseNeed(cmd, obj, need, have, why, prio, threatDist, DCO_Util.NowS());

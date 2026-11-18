@@ -95,6 +95,15 @@ class DCO_Stance
 		DCO_Log.Write(DCO_ELogChannel.UNIT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("stance_clamp unit=%1 who=%2 want=%3 to=%4 why=%5", DCO_Log.IdUnit(me), who, Name(want), Name(to), why));
 	}
 
+	static bool LegDown(IEntity me)
+	{
+		ChimeraCharacter ch = ChimeraCharacter.Cast(me);
+		if (!ch)
+			return false;
+		SCR_CharacterDamageManagerComponent dm = SCR_CharacterDamageManagerComponent.Cast(ch.GetDamageManager());
+		return dm && dm.DCO_LegDown();
+	}
+
 	static bool Request(CharacterControllerComponent ctrl, int change, string who)
 	{
 		if (!ctrl || change < 1 || change > 3)
@@ -103,6 +112,11 @@ class DCO_Stance
 		if (!me)
 			return false;
 		int to = change - 1;
+		if (to < ECharacterStance.PRONE && SourcePrio(who) < 8 && LegDown(me))
+		{
+			to = ECharacterStance.PRONE;
+			DCO_Perf.Count("stance:leg_down");
+		}
 		int cur = ctrl.GetStance();
 		bool changing = ctrl.IsChangingStance();
 		string clampWhy;
@@ -134,6 +148,14 @@ class DCO_Stance
 		{
 			if (!hold)
 			{
+				if (s_mHold.Count() > 512)
+				{
+					for (int pi = s_mHold.Count() - 1; pi >= 0; pi--)
+					{
+						if (!s_mHold.GetKey(pi))
+							s_mHold.RemoveElement(pi);
+					}
+				}
 				hold = new DCO_StanceHold();
 				s_mHold.Set(me, hold);
 			}
@@ -199,6 +221,14 @@ class DCO_Stance
 		req.m_iTo = to;
 		req.m_sWho = who;
 		req.m_fAt_ms = now;
+		if (s_mReq.Count() > 512)
+		{
+			for (int pi = s_mReq.Count() - 1; pi >= 0; pi--)
+			{
+				if (!s_mReq.GetKey(pi))
+					s_mReq.RemoveElement(pi);
+			}
+		}
 		s_mReq.Set(me, req);
 
 		float spd = Speed(ctrl);

@@ -182,7 +182,7 @@ class AICommander_BaseComponent : ScriptComponent
 	protected int m_iStagingClearTries = 6;
 	protected float m_fHostileObjKeepOut = 30.0;
 	protected float m_fStagingClearStep = 80.0;
-	protected float m_fStagingSlotSpacing = 22.0;
+	protected float m_fStagingSlotSpacing = 50.0;
 	protected float m_fStagingArriveRadius = 80.0;
 	protected float m_fStageContactForward = 400.0;
 	protected float m_fStageContactRadius = 150.0;
@@ -278,6 +278,9 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("60.0", UIWidgets.EditBox, "Delay Before Start First Iteration", category: "Commander 02. Timing")]
 	protected float m_fDelayFirstIteration;
 
+	[Attribute("0", UIWidgets.CheckBox, "Start paused: the commander makes no new decisions until a script, the modder API or the Game Master starts it. Running operations are not stopped.", category: "Commander 02. Timing")]
+	protected bool m_bDCOPaused;
+
 	[Attribute("120.0", UIWidgets.EditBox, "Cooldown (s) before the stalemate response can trigger again per objective.", category: "Commander 02. Timing")]
 	protected float m_fStalemateResponseCooldown;
 
@@ -293,8 +296,6 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("180.0", UIWidgets.EditBox, "How long (s) a group stays on frontline recon before it returns to the pool (RESERVE).", category: "Commander 11. Frontline & Recon")]
 	protected float m_fFrontlineReconDuration;
 
-	[Attribute("1", UIWidgets.EditBox, "Defend groups per objective that enter buildings (garrison). The rest form the outdoor sector ring. 0 = no garrison.", category: "Commander 08. Defend & Garrison")]
-	protected int m_iGarrisonGroupsPerObjective;
 
 	[Attribute("1", UIWidgets.ComboBox, "Garrison mode used by the commander.", category: "Commander 08. Defend & Garrison", enums: ParamEnumArray.FromEnum(DCO_EGarrisonMode))]
 	protected DCO_EGarrisonMode m_eGarrisonMode;
@@ -382,14 +383,8 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("15", UIWidgets.EditBox, "Maximum sweep waypoints created per group inside an objective. Each waypoint is a spawned entity, so this stops large objectives creating hundreds of entities per attack. Density is reduced proportionally; the sweep shape stays the same.", category: "Commander 06. Staging & Routes")]
 	protected int m_iMaxSearchWaypoints;
 
-	[Attribute("90.0", UIWidgets.EditBox, "How long (s) a suppress support group covers the assault force after release before returning to the pool.", category: "Commander 04. Attack")]
-	protected float m_fAssaultSuppressDuration;
 
-	[Attribute("45.0", UIWidgets.EditBox, "How long (s) a suppress cover group covers the contact direction after another group retreats.", category: "Commander 07. Retreat")]
-	protected float m_fRetreatCoverDuration;
 
-	[Attribute("50.0", UIWidgets.EditBox, "Suppress radius used to cover a retreat.", category: "Commander 07. Retreat")]
-	protected float m_fRetreatCoverRadius;
 
 	[Attribute("400.0", UIWidgets.EditBox, "Minimum distance before looking for transport.", category: "Commander 13. Transport")]
 	protected float m_fTransportDistanceThreshold;
@@ -861,11 +856,7 @@ class AICommander_BaseComponent : ScriptComponent
 	bool IsAllInRearDefenders()				{ return m_bAllInRearDefenders; }
 	void SetAllInRearDefenders(bool value)	{ m_bAllInRearDefenders = value; }
 
-	[Attribute("1", UIWidgets.CheckBox, desc: "If true, defend group positions are evaluated (high ground and facing the enemy) instead of purely random.", category: "Commander 08. Defend & Garrison")]
-	protected bool m_bEnableKeyDefendSpotEvaluation;
 
-	[Attribute("2", UIWidgets.EditBox, "Maximum defend groups per objective sent to evaluated 'key positions' (the rest stay random or patrol as usual).", category: "Commander 08. Defend & Garrison")]
-	protected int m_iMaxKeyDefendPositions;
 
 	[Attribute("2", UIWidgets.ComboBox, "Commander Mode", "", ParamEnumArray.FromEnum(CMD_ECommanderMode), category: "Commander 03. Personality" )]
 	protected CMD_ECommanderMode m_eCommanderModeExternal;
@@ -959,7 +950,7 @@ class AICommander_BaseComponent : ScriptComponent
 
 	protected bool m_bDCODebugDraw;
 	protected int m_iDCODebugLayers = 127;
-	bool DCO_DebugDraw()						{ return m_bDCODebugDraw && DCO_TestCaseComponent.RunOn(); }
+	bool DCO_DebugDraw()						{ return m_bDCODebugDraw && DCO_Dev.RunOn(); }
 	void DCO_SetDebugDraw(bool on)				{ m_bDCODebugDraw = on; }
 	int DCO_DebugLayers()						{ return m_iDCODebugLayers; }
 	void DCO_SetDebugLayers(int layers)			{ m_iDCODebugLayers = layers; }
@@ -1064,11 +1055,7 @@ class AICommander_BaseComponent : ScriptComponent
 	[Attribute("30.0", UIWidgets.EditBox, "Interval (s) at which standing recon reveals nearby enemies to the threat response.", category: "Commander 11. Frontline & Recon")]
 	protected float m_fReconRevealInterval;
 
-	[Attribute("600.0", UIWidgets.EditBox, "Radius (m) to search for OTHER captured objectives that can be linked into one patrol route.", category: "Commander 10. Patrol")]
-	protected float m_fPatrolLinkRadius;
 
-	[Attribute("0.4", UIWidgets.Range, "Chance a defend group gets an Objective-Link Patrol (roaming between objectives) instead of a Perimeter Patrol (circling one objective).", params: "0 1 0.01", category: "Commander 10. Patrol")]
-	protected float m_fLinkPatrolChance;
 
     [Attribute("false", UIWidgets.CheckBox, desc: "Random Personality Every Playthough?", category: "Commander 03. Personality")]
     bool m_bRandomPersonality;
@@ -1155,6 +1142,9 @@ class AICommander_BaseComponent : ScriptComponent
 
 	[Attribute("1", UIWidgets.CheckBox, "Player groups of this faction get tasks (map + task list) for objectives the commander is attacking or defending.", category: "Commander 15. Player Tasking")]
 	protected bool m_bPlayerTasking;
+
+	[Attribute("0", UIWidgets.CheckBox, "Player squads of this faction start out accepting this commander's orders. Off: a squad leader must switch orders on in the group menu first.", category: "Commander 15. Player Tasking")]
+	protected bool m_bDCOPlayersAcceptAtStart;
 
 	[Attribute("1", UIWidgets.CheckBox, "Player groups count fully in the plan (they take objective slots and are waited for in synchronized attacks). OFF = bonus only.", category: "Commander 15. Player Tasking")]
 	protected bool m_bPlayerTaskingCounted;
@@ -1397,6 +1387,37 @@ class AICommander_BaseComponent : ScriptComponent
 
 	array<DCO_GroupUtilityComponent> GetOwnedGroups()	{ return m_aOwnedGroup; }
 	bool IsPlayerTaskingEnabled()		{ return m_bPlayerTasking; }
+	bool DCO_PlayersAcceptAtStart()		{ return m_bDCOPlayersAcceptAtStart; }
+	void DCO_SetPlayersAcceptAtStart(bool b)	{ m_bDCOPlayersAcceptAtStart = b; }
+	bool DCO_IsPaused()					{ return m_bDCOPaused; }
+	void DCO_SetPaused(bool paused, string by = "script")
+	{
+		if (paused == m_bDCOPaused)
+			return;
+		m_bDCOPaused = paused;
+		string ev = "cmd_started";
+		if (paused)
+			ev = "cmd_paused";
+		else
+			m_fThinkTimer = m_fThinkInterval;
+		DCO_Perf.Count("cmd:" + ev);
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("%1 cmd=%2 by=%3", ev, m_sCommanderUID, by));
+	}
+	void DCO_WakeThink(string why)
+	{
+		if (m_bDCOPaused || !m_bDCOWakeArmed)
+			return;
+		float gap = DCO_Ctx.TuneForCmd(this, "cmd.wake_gap_s", 30.0);
+		if (gap <= 0)
+			return;
+		float wait = Math.Max(DCO_Ctx.TuneForCmd(this, "cmd.wake_delay_s", 5.0), gap - m_fThinkTimer);
+		float left = m_fThinkInterval - m_fThinkTimer;
+		if (left <= wait)
+			return;
+		DCO_Perf.Count("think_wake:" + why);
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(this), string.Format("think_wake cmd=%1 why=%2 in_s=%3 since_think_s=%4 was_in_s=%5 interval=%6", m_sCommanderUID, why, Math.Round(wait), Math.Round(m_fThinkTimer), Math.Round(left), Math.Round(m_fThinkInterval)));
+		m_fThinkTimer = m_fThinkInterval - wait;
+	}
 	bool IsPlayerTaskingCounted()		{ return m_bPlayerTaskingCounted; }
 	int GetPlayerMaxPerObjective()		{ return m_iPlayerMaxPerObjective; }
 	float GetPlayerAcceptTime()			{ return m_fPlayerAcceptTime; }
@@ -1422,6 +1443,7 @@ class AICommander_BaseComponent : ScriptComponent
 	protected ref map<CMD_AICommanderObjectiveComponent, float> m_mLastReconRevealTime = new map<CMD_AICommanderObjectiveComponent, float>();
 
 	protected float m_fThinkTimer = 0 - m_fDelayFirstIteration;
+	protected bool m_bDCOWakeArmed;
 
 	int GetOwnedGroupCount() { return m_aOwnedGroup.Count(); }
 	CMD_ArtillerySupport GetArtySupport() { return artySupport; }

@@ -210,7 +210,7 @@ class DCO_Perf
 			if (s_bOn)
 				LogSpike(timeSlice);
 			if (s_bCensus)
-				DCO_Census.Spike(timeSlice, TopFrameSection(), s_iFrameShots, s_iFrameCallLater, s_iFrameQueries, s_iFrameTraces);
+				DCO_Dev.CensusSpike(timeSlice, TopFrameSection(), s_iFrameShots, s_iFrameCallLater, s_iFrameQueries, s_iFrameTraces);
 		}
 
 		foreach (string name, DCO_PerfSection s : GetSectionsStore())
@@ -221,7 +221,7 @@ class DCO_Perf
 		s_iFrameTraces = 0;
 
 		if (s_bCensus)
-			DCO_Census.Tick(timeSlice);
+			DCO_Dev.CensusTick(timeSlice);
 
 		if (!s_bOn)
 			return;
@@ -316,7 +316,7 @@ class DCO_Perf
 				sections += string.Format(" %1=%2/%3/%4/%5", name, s.m_iCalls, s.m_iTotal, s.m_iMax, Math.Round(s.m_iTotal * 1000.0 / s.m_iCalls));
 			if (s.m_iTotal <= 0)
 				continue;
-			if (DCO_Census.IsTopLevel(name))
+			if (DCO_Dev.CensusIsTopLevel(name))
 				dcoMs += s.m_iTotal;
 			if (name != "agent_eval")
 				InsertSorted(topNames, topTotals, name, s.m_iTotal);

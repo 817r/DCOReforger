@@ -486,10 +486,10 @@ class DCO_PostureTable
 
 class DCO_AssaultCommit
 {
-	static bool Ready(float lead, bool supportLifted, int nearMiss, float prepAge_ms, string prepKind, out string trigger)
+	static bool Ready(float lead, float leadMax, bool supportLifted, int nearMiss, float prepAge_ms, string prepKind, out string trigger)
 	{
 		trigger = "quiet";
-		if (lead > 40.0 || !supportLifted)
+		if (lead > leadMax || !supportLifted)
 			return false;
 		if (nearMiss == 0)
 			return true;
@@ -501,10 +501,10 @@ class DCO_AssaultCommit
 		return false;
 	}
 
-	static void Log(AIGroup grp, string tactic, float lead, string trigger)
+	static void Log(AIGroup grp, string tactic, float lead, float leadMax, string trigger)
 	{
 		DCO_Perf.Count("assault_commit:" + trigger);
-		DCO_Log.Write(DCO_ELogChannel.TACTIC, DCO_ELogLevel.INFO, DCO_Log.IdGroup(grp), string.Format("assault_commit grp=%1 tactic=%2 lead=%3 trigger=%4", DCO_Log.IdGroup(grp), tactic, Math.Round(lead), trigger));
+		DCO_Log.Write(DCO_ELogChannel.TACTIC, DCO_ELogLevel.INFO, DCO_Log.IdGroup(grp), string.Format("assault_commit grp=%1 tactic=%2 lead=%3 lead_max=%4 trigger=%5", DCO_Log.IdGroup(grp), tactic, Math.Round(lead), Math.Round(leadMax), trigger));
 	}
 
 	static int NearMisses(array<AIAgent> agents, float now, float window_ms)
@@ -566,10 +566,10 @@ class DCO_AssaultCommit
 			SCR_AIUtilityComponent u = ca.m_UtilityComponent;
 			if (!u || !u.m_CombatComponent || !u.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_SMOKEGRENADE))
 				continue;
-			if (!DCO_SmokeUtility.Allowed(u, "posture"))
-				continue;
 			vector me = ca.GetControlledEntity().GetOrigin();
 			vector sp = DCO_Util.Surface(me + DCO_Specialist.Flat(enemy - me) * Math.Min(15.0, vector.DistanceXZ(me, enemy) * 0.4));
+			if (!DCO_SmokeUtility.GroupOk(SCR_AIGroup.Cast(ca.GetParentGroup()), u, sp, "assault_stuck"))
+				return false;
 			u.AddAction(new SCR_AIThrowGrenadeToBehavior(u, null, sp, EWeaponType.WT_SMOKEGRENADE, 0, SCR_AIThrowGrenadeToBehavior.PRIORITY_BEHAVIOR_THROW_GRENADE + SCR_AIThrowGrenadeToBehavior.PRIORITY_LEVEL_PLAYER));
 			return true;
 		}

@@ -26,7 +26,9 @@ enum DCO_ERadialCommandType
 	CANCEL_FIRE,
 	CANCEL_TRANSPORT,
 	CANCEL_ALL,
-	SHOW_ORDERS
+	SHOW_ORDERS,
+	REQUEST_RESUPPLY,
+	SQUAD_AUTO
 }
 
 [BaseContainerProps(), SCR_BaseGroupCommandTitleField("m_sCommandName")]
@@ -49,6 +51,14 @@ class DCO_CommanderRadialCommand : SCR_BaseGroupCommand
 		if (isClient)
 			return true;
 
+		if (!m_bShowToMember && DCO_NotLeader(playerID))
+		{
+			DCO_Radio.Player(playerID, "COMMANDER", "only_leader", DCO_ERadioKind.WARNING);
+			DCO_Perf.Count("player:request_not_leader");
+			DCO_Log.Write(DCO_ELogChannel.PLAYER, DCO_ELogLevel.INFO, "-", string.Format("player_request_denied pid=%1 type=%2 why=not_leader", playerID, typename.EnumToString(DCO_ERadialCommandType, m_eType)));
+			return true;
+		}
+
 		switch (m_eType)
 		{
 			case DCO_ERadialCommandType.REPORT_INFANTRY_TEAM:		DCO_PlayerContactReports.ReportFromRadial(playerID, targetPosition, 4, false); break;
@@ -63,6 +73,7 @@ class DCO_CommanderRadialCommand : SCR_BaseGroupCommand
 			case DCO_ERadialCommandType.REQUEST_TRANSPORT:			DCO_Logistics.HandlePlayer(playerID, DCO_ELogiJob.DEPLOY, targetPosition); break;
 			case DCO_ERadialCommandType.REQUEST_EXTRACT:			DCO_Logistics.HandlePlayer(playerID, DCO_ELogiJob.EXTRACT, targetPosition); break;
 			case DCO_ERadialCommandType.REQUEST_MEDEVAC:			DCO_Logistics.HandlePlayer(playerID, DCO_ELogiJob.MEDEVAC, targetPosition); break;
+			case DCO_ERadialCommandType.REQUEST_RESUPPLY:			DCO_Logistics.HandlePlayer(playerID, DCO_ELogiJob.RESUPPLY, targetPosition); break;
 			case DCO_ERadialCommandType.ROLE_REQUEST_OTHER:			DCO_PlayerTasking.HandleRadial(playerID, 0, true); break;
 			case DCO_ERadialCommandType.ACCEPT_TRANSPORT:			DCO_PlayerTasking.HandleRadial(playerID, 0, false); break;
 			case DCO_ERadialCommandType.REQUEST_ARMOR:				DCO_PlayerRequests.Handle(playerID, DCO_EPlayerRequest.ARMOR, targetPosition); break;
@@ -78,6 +89,20 @@ class DCO_CommanderRadialCommand : SCR_BaseGroupCommand
 		return true;
 	}
 
+	override bool HasLocalEffectOnly()
+	{
+		return m_eType == DCO_ERadialCommandType.SHOW_ORDERS;
+	}
+
+	protected bool DCO_NotLeader(int playerID)
+	{
+		SCR_GroupsManagerComponent groups = SCR_GroupsManagerComponent.GetInstance();
+		if (!groups)
+			return false;
+		SCR_AIGroup grp = groups.GetPlayerGroup(playerID);
+		return grp && !grp.IsPlayerLeader(playerID);
+	}
+
 	protected int ToggleBit()
 	{
 		switch (m_eType)
@@ -86,6 +111,7 @@ class DCO_CommanderRadialCommand : SCR_BaseGroupCommand
 			case DCO_ERadialCommandType.ROLE_FIX:		return 2;
 			case DCO_ERadialCommandType.ROLE_BLOCK:		return 4;
 			case DCO_ERadialCommandType.ROLE_RECON:		return 8;
+			case DCO_ERadialCommandType.SQUAD_AUTO:		return 16;
 		}
 		return 0;
 	}
@@ -97,12 +123,18 @@ class DCO_CommanderRadialCommand : SCR_BaseGroupCommand
 			return super.GetCommandDisplayName();
 
 		string state = "ON";
+		string off = "OFF";
+		if (bit == 16)
+		{
+			state = "AUTO";
+			off = "MANUAL";
+		}
 		SCR_GroupsManagerComponent groups = SCR_GroupsManagerComponent.GetInstance();
 		if (groups && GetGame().GetPlayerController())
 		{
 			SCR_AIGroup grp = groups.GetPlayerGroup(GetGame().GetPlayerController().GetPlayerId());
 			if (grp && (grp.DCO_GetPlayerRoles() & bit) == 0)
-				state = "OFF";
+				state = off;
 		}
 		return m_sCommandDisplayName + ": " + state;
 	}

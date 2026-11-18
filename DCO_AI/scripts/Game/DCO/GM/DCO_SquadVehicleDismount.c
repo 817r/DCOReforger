@@ -1,5 +1,5 @@
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AISquadVehicleDismountAttribute : SCR_ValidTypeBaseValueListEditorAttribute
+class DCO_AISquadVehicleDismountAttribute : SCR_ValidTypeBaseValueListEditorAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
@@ -20,7 +20,10 @@ class SCR_AISquadVehicleDismountAttribute : SCR_ValidTypeBaseValueListEditorAttr
 		array<AIAgent> agents = {};
 		owner.GetAgents(agents);
 
-		DCO_AIConfigComponent aiConf = DCO_AIConfigComponent.Cast(owner.GetLeaderAgent().FindComponent(DCO_AIConfigComponent));
+		AIAgent leader = owner.GetLeaderAgent();
+		if (!leader)
+			return null;
+		DCO_AIConfigComponent aiConf = DCO_AIConfigComponent.Cast(leader.FindComponent(DCO_AIConfigComponent));
 
 		if (!aiConf)
 			return null;
@@ -51,14 +54,14 @@ class SCR_AISquadVehicleDismountAttribute : SCR_ValidTypeBaseValueListEditorAttr
 			DCO_AIConfigComponent aiConf = DCO_AIConfigComponent.Cast(a.FindComponent(DCO_AIConfigComponent));
 
 			if (!aiConf)
-				return;
+				continue;
 
 			aiConf.SetDismountDistance(var.GetFloat());
 		}
 	}
 }
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
-class SCR_AISquadDisembarkRuleAttribute : DCO_CommanderBaseAttribute
+class DCO_AISquadDisembarkRuleAttribute : DCO_CommanderBaseAttribute
 {
 	override protected void GetPresetLabels(notnull out array<string> outLabels)
 	{

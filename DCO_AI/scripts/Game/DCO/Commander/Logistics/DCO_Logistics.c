@@ -5,7 +5,8 @@ enum DCO_ELogiJob
 	REINFORCE,
 	DEPLOY,
 	REDEPLOY,
-	RESUPPLY
+	RESUPPLY,
+	SUPPLY_RUN
 }
 
 class DCO_LogiJob : Managed
@@ -29,11 +30,16 @@ class DCO_LogiJob : Managed
 	float m_fEta;
 	DCO_TransportTeamComponent m_Team;
 	DCO_GroupUtilityComponent m_Escort;
+	bool m_bEscortSkipLogged;
 	int m_iBoarded;
 	int m_iLeft;
 	float m_fPickupShift;
 	bool m_bMarked;
 	string m_sWait = "none";
+	IEntity m_MortarEnt;
+	ResourceName m_sMortarAmmo;
+	IEntity m_DepotEnt;
+	float m_fCarried;
 
 	bool IsTransportKind()
 	{
@@ -43,7 +49,7 @@ class DCO_LogiJob : Managed
 	int SeatsNeeded()
 	{
 		int n = m_aCasualties.Count() + m_aLoaded.Count();
-		if (m_eKind == DCO_ELogiJob.RESUPPLY)
+		if (m_eKind == DCO_ELogiJob.RESUPPLY || m_eKind == DCO_ELogiJob.SUPPLY_RUN)
 			return 0;
 		foreach (DCO_GroupUtilityComponent g : m_aGroups)
 		{
@@ -60,6 +66,8 @@ class DCO_LogiJob : Managed
 
 	bool IsEmpty()
 	{
+		if (m_eKind == DCO_ELogiJob.SUPPLY_RUN || m_MortarEnt)
+			return false;
 		if (m_eKind == DCO_ELogiJob.MEDEVAC)
 			return m_aCasualties.IsEmpty() && m_aLoaded.IsEmpty();
 		for (int i = m_aGroups.Count() - 1; i >= 0; i--)
@@ -98,6 +106,85 @@ class DCO_Logistics
 	protected static ref map<SCR_AIGroup, float> s_mExtractLogAt;
 
 
+	protected bool m_bNoTeam;
+	protected int m_iScanUnmet;
+	protected int m_iNoTeamPeak;
+	protected string m_sNoTeamKinds;
+	protected float m_fNoTeamNoticeAt = -100000;
+	int m_iSupplyState;
+	int m_iSupplyDenied;
+	float m_fSupplyDeniedToldAt = -100000;
+
+	protected bool m_bNoAmmoTeam;
+	protected bool m_bNoTroopTeam;
+	protected float m_fNeedAmmoAt = -100000;
+	protected float m_fNeedTroopAt = -100000;
+
+	protected bool HasTeam(AICommander_BaseComponent cmd, int kind = 0)
+	{
+		foreach (DCO_TransportTeamComponent t : cmd.GetTransportTeams())
+		{
+			if (!t)
+				continue;
+			if (kind == 0)
+				return true;
+			IEntity veh = t.ResolveVehicle();
+			if (veh && HasResupplyStation(veh) == (kind == 1))
+				return true;
+		}
+		return false;
+	}
+
+	string WantVehicle(AICommander_BaseComponent cmd, float now)
+	{
+		if (DCO_Ctx.TuneForCmd(cmd, "logi.truck_request", 1.0) <= 0)
+			return string.Empty;
+		if (now - m_fNeedAmmoAt < 120.0 && !HasTeam(cmd, 1))
+			return "AMMO_TRUCK";
+		if (now - m_fNeedTroopAt < 120.0 && !HasTeam(cmd, 2))
+			return "TROOP_TRUCK";
+		return string.Empty;
+	}
+
+	protected void AddNoTeamKind(string kind)
+	{
+		DCO_Perf.Count("logi:skip_no_team");
+		if (kind == "medevac")
+			m_fNeedTroopAt = DCO_Util.NowS();
+		else if (kind != "supply run")
+			m_fNeedAmmoAt = DCO_Util.NowS();
+		if (m_sNoTeamKinds.Contains(kind))
+			return;
+		if (!m_sNoTeamKinds.IsEmpty())
+			m_sNoTeamKinds += ", ";
+		m_sNoTeamKinds += kind;
+	}
+
+	bool NoTeam(AICommander_BaseComponent cmd, string kind)
+	{
+		int need;
+		if (kind == "mortar ammo")
+			need = 1;
+		if (HasTeam(cmd, need))
+			return false;
+		AddNoTeamKind(kind);
+		return true;
+	}
+
+	protected void NoTeamNotice(AICommander_BaseComponent cmd, float now)
+	{
+		if (m_sNoTeamKinds.IsEmpty() || now - m_fNoTeamNoticeAt < 600.0)
+			return;
+		m_fNoTeamNoticeAt = now;
+		string kinds = m_sNoTeamKinds;
+		kinds.Replace(", ", "+");
+		kinds.Replace(" ", "_");
+		DCO_Log.Write(DCO_ELogChannel.LOGI, DCO_ELogLevel.INFO, DCO_Log.IdCmd(cmd), string.Format("logi_no_team cmd=%1 needs=%2 kinds=%3", DCO_Log.IdCmd(cmd), m_iNoTeamPeak, kinds));
+		DCO_PlayerComms.SendToGameMasters("DCO", string.Format("%1 has no transport team. Not served: %2 (up to %3 squad needs at once). Set a crew's Squad Role to Transport Team.", cmd.GetCommanderUID(), m_sNoTeamKinds, m_iNoTeamPeak));
+		m_iNoTeamPeak = 0;
+		m_sNoTeamKinds = string.Empty;
+	}
+
 	vector GetHub()				{ return m_vHub; }
 	void ForceScan()			{ m_fScanTimer = 10.0; }
 	array<ref DCO_LogiJob> GetJobs()	{ return m_aJobs; }
@@ -110,6 +197,9 @@ class DCO_Logistics
 		m_fTimer = 0;
 
 		float now = DCO_Util.NowS();
+		DCO_LogiSupply.Tick(cmd, now);
+		DCO_LogiSupply.MortarCheck(cmd, this, now);
+		DCO_LogiSupply.SupplyRunCheck(cmd, this, now);
 		m_vHub = cmd.GetHubFor(cmd.GetOwner().GetOrigin(), m_sHubSource);
 		foreach (DCO_TransportTeamComponent team : cmd.GetTransportTeams())
 		{
@@ -127,6 +217,7 @@ class DCO_Logistics
 		Prune(cmd, now);
 		Dispatch(cmd, now);
 		UpdateHubCasualties(cmd, now);
+		NoTeamNotice(cmd, now);
 	}
 
 	void Clear()
@@ -143,6 +234,47 @@ class DCO_Logistics
 		if (job.m_bRolePriority)
 			p++;
 		return p;
+	}
+
+	bool HasSupplyRun()
+	{
+		foreach (DCO_LogiJob j : m_aJobs)
+		{
+			if (j && j.m_eKind == DCO_ELogiJob.SUPPLY_RUN)
+				return true;
+		}
+		return false;
+	}
+
+	void QueueSupplyRun(AICommander_BaseComponent cmd, IEntity depot, vector depotPos, vector hub, float now)
+	{
+		if (!depot || HasSupplyRun())
+			return;
+		DCO_LogiJob job = NewJob(DCO_ELogiJob.SUPPLY_RUN, depotPos, hub, now);
+		job.m_DepotEnt = depot;
+		DCO_Perf.Count("logi:supply_run_queue");
+		Log(job, "queue", string.Format("depot=%1 depot_pos=%2 hub=%3", depot.GetName(), DCO_Util.XZ(depotPos), DCO_Util.XZ(hub)));
+	}
+
+	bool HasMortarJob(IEntity mortar)
+	{
+		foreach (DCO_LogiJob j : m_aJobs)
+		{
+			if (j && j.m_MortarEnt == mortar)
+				return true;
+		}
+		return false;
+	}
+
+	void QueueMortarResupply(AICommander_BaseComponent cmd, IEntity mortar, ResourceName ammo, vector dest, float now)
+	{
+		if (!mortar || HasMortarJob(mortar))
+			return;
+		DCO_LogiJob job = NewJob(DCO_ELogiJob.RESUPPLY, dest, dest, now);
+		job.m_MortarEnt = mortar;
+		job.m_sMortarAmmo = ammo;
+		DCO_Perf.Count("logi:mortar_resupply_queue");
+		Log(job, "queue", string.Format("mortar=%1 why=no_arsenal dest=%2", mortar.GetName(), DCO_Util.XZ(dest)));
 	}
 
 	bool HasJobFor(DCO_GroupUtilityComponent grp)
@@ -283,9 +415,19 @@ class DCO_Logistics
 			if (!veh)
 				continue;
 
-			if (job.m_eKind == DCO_ELogiJob.RESUPPLY)
+			if (job.m_eKind == DCO_ELogiJob.RESUPPLY && job.m_MortarEnt)
+			{
+				if (!DCO_LogiSupply.HasArsenalFor(veh, job.m_sMortarAmmo))
+					continue;
+			}
+			else if (job.m_eKind == DCO_ELogiJob.RESUPPLY)
 			{
 				if (!HasResupplyStation(veh))
+					continue;
+			}
+			else if (job.m_eKind == DCO_ELogiJob.SUPPLY_RUN)
+			{
+				if (!DCO_LogiSupply.TruckContainer(veh))
 					continue;
 			}
 			else if (DCO_TransportTeamComponent.CountFreeCargo(veh) <= 0 || (job.m_eKind == DCO_ELogiJob.MEDEVAC && seats <= 0))
@@ -588,6 +730,10 @@ class DCO_Logistics
 		DCO_DoctrineSupport doctrineSupport;
 		if (cmd.GetDoctrine() && cmd.GetDoctrineRuntime())
 			doctrineSupport = cmd.GetDoctrineRuntime().GetSupport();
+		m_bNoTeam = !HasTeam(cmd);
+		m_bNoAmmoTeam = m_bNoTeam || !HasTeam(cmd, 1);
+		m_bNoTroopTeam = m_bNoTeam || !HasTeam(cmd, 2);
+		m_iScanUnmet = 0;
 
 		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
 		{
@@ -620,13 +766,19 @@ class DCO_Logistics
 				wantSupply = doctrineSupport.WantsSupplies(cmd, g, m_sHubSource, now);
 			else if (resupply)
 				wantSupply = IsLowAmmo(grp, cmd.GetLogiLowAmmoMags()) || g.m_bDCOLowAmmo;
-			if (wantSupply)
+			if (wantSupply && m_bNoAmmoTeam)
+			{
+				m_iScanUnmet++;
+				AddNoTeamKind("resupply");
+			}
+			else if (wantSupply)
 			{
 				DCO_LogiJob job = NewJob(DCO_ELogiJob.RESUPPLY, pos, pos, now);
 				job.m_aGroups.Insert(g);
 				Log(job, "queue", "group=" + grp.GetName());
 			}
 		}
+		m_iNoTeamPeak = Math.Max(m_iNoTeamPeak, m_iScanUnmet);
 
 		array<IEntity> stale = {};
 		foreach (IEntity ent, float t : m_mDownSince)
@@ -690,6 +842,15 @@ class DCO_Logistics
 
 			if (now - since < 45.0 || DCO_MedicDispatcher.IsBooked(ent))
 				continue;
+
+			if (m_bNoTeam)
+			{
+				m_iScanUnmet++;
+				AddNoTeamKind("medevac");
+				continue;
+			}
+			if (m_bNoTroopTeam)
+				m_fNeedTroopAt = now;
 
 			AddCasualty(cmd, ent, now, -1);
 		}
@@ -875,7 +1036,7 @@ class DCO_Logistics
 			recovered.Insert(agent);
 		}
 
-		if (recovered.IsEmpty() || !template)
+		if (recovered.IsEmpty())
 			return;
 
 		foreach (DCO_GroupUtilityComponent g : cmd.GetOwnedGroups())
@@ -887,6 +1048,8 @@ class DCO_Logistics
 			SCR_AIGroup grp = SCR_AIGroup.Cast(g.GetOwner());
 			if (!grp || vector.DistanceXZ(grp.GetOrigin(), m_vHub) > 400)
 				continue;
+			if (!template)
+				template = grp;
 			int missing = g.DCO_GetPeakStrength() - g.GetUnitCount();
 			while (missing > 0 && !recovered.IsEmpty())
 			{
@@ -952,6 +1115,21 @@ class DCO_Logistics
 				old.RemoveAgent(a);
 			newGrp.AddAgent(a);
 		}
+
+		float inheritT0 = System.GetTickCount();
+		SCR_EditableEntityComponent inheritFrom = DCO_SettingsPersist.Editable(template);
+		SCR_EditableEntityComponent inheritTo = DCO_SettingsPersist.Editable(newGrp);
+		int inheritRead;
+		int inheritSkipped;
+		int inheritApplied = -1;
+		if (inheritFrom && inheritTo)
+		{
+			array<string> inheritSkip = {"DCO_CommanderAssignGroupAttribute", "DCO_SquadDedicatedTransportAttribute", "DCO_SquadRoleAttribute"};
+			string inheritContent = DCO_SettingsPersist.Dump(inheritFrom, inheritRead);
+			inheritApplied = DCO_SettingsPersist.Apply(inheritTo, inheritContent, inheritSkipped, inheritSkip);
+		}
+		DCO_Perf.Count("grp:inherit");
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, "-", string.Format("grp_inherit from=%1 to=%2 read=%3 applied=%4 skipped=%5 ms=%6", DCO_Log.IdGroup(template), DCO_Log.IdGroup(newGrp), inheritRead, inheritApplied, inheritSkipped, Math.Round(System.GetTickCount() - inheritT0)));
 
 		DCO_GroupUtilityComponent util = DCO_GroupUtilityComponent.Cast(newGrp.FindComponent(DCO_GroupUtilityComponent));
 		if (util && cmd)
@@ -1020,7 +1198,7 @@ class DCO_Logistics
 			job.m_vAltLZ = job.m_vDest;
 			return;
 		}
-		if (job.m_eKind == DCO_ELogiJob.RESUPPLY)
+		if (job.m_eKind == DCO_ELogiJob.RESUPPLY || job.m_eKind == DCO_ELogiJob.SUPPLY_RUN)
 		{
 			job.m_vLZ = job.m_vDest;
 			job.m_vAltLZ = job.m_vDest;
@@ -1212,6 +1390,19 @@ class DCO_Logistics
 			return;
 		if (!risky && job.m_eKind != DCO_ELogiJob.MEDEVAC && job.m_eKind != DCO_ELogiJob.EXTRACT)
 			return;
+		IEntity teamVeh;
+		if (job.m_Team)
+			teamVeh = job.m_Team.ResolveVehicle();
+		if (teamVeh && DCO_VehicleCombat.HasTurret(teamVeh))
+		{
+			DCO_Perf.Count("logi:escort_skip_armed");
+			if (!job.m_bEscortSkipLogged)
+			{
+				job.m_bEscortSkipLogged = true;
+				Log(job, "escort_skip", "why=armed_team veh=" + DCO_Log.IdVeh(teamVeh));
+			}
+			return;
+		}
 
 		DCO_GroupUtilityComponent esc = cmd.FindBestIdleGroupForTask_Public(DCO_EGroupTask.SUPPORT_BY_FIRE, pos, -1, true, 1);
 		if (!esc)
@@ -1348,6 +1539,11 @@ class DCO_Logistics
 		{
 			dest = cmd.GetHubFor(ppos, m_sHubSource);
 		}
+		else if (kind == DCO_ELogiJob.RESUPPLY)
+		{
+			dest = ppos;
+			DCO_Perf.Count("logi:player_resupply_queue");
+		}
 		else if (!IsValidDest(ppos, target))
 		{
 			DCO_Radio.Player(pid, "LOGISTICS", "logi_no_dest", DCO_ERadioKind.WARNING);
@@ -1403,6 +1599,7 @@ class DCO_Logistics
 			case DCO_ELogiJob.DEPLOY:		return "@kind_transport";
 			case DCO_ELogiJob.REDEPLOY:		return "@kind_redeploy";
 			case DCO_ELogiJob.RESUPPLY:		return "@kind_resupply";
+			case DCO_ELogiJob.SUPPLY_RUN:	return "@kind_supply_run";
 		}
 		return "@kind_logistics";
 	}
@@ -1417,6 +1614,7 @@ class DCO_Logistics
 			case DCO_ELogiJob.DEPLOY:		return "Transport";
 			case DCO_ELogiJob.REDEPLOY:		return "Redeploy lift";
 			case DCO_ELogiJob.RESUPPLY:		return "Resupply";
+			case DCO_ELogiJob.SUPPLY_RUN:	return "Supply run";
 		}
 		return "Logistics";
 	}

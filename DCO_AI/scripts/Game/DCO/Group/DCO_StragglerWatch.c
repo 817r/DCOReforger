@@ -8,6 +8,7 @@ class DCO_StragglerEntry
 	bool m_bStuckLogged;
 	vector m_vAnchor;
 	float m_fStillSince_ms;
+	float m_fNextPull_ms;
 	SCR_AIMoveIndividuallyBehavior m_Regroup;
 }
 
@@ -61,6 +62,8 @@ class DCO_StragglerWatch
 		float moveCohesion = cohesion;
 		DCO_GroupUtilityComponent dgu = DCO_GroupUtilityComponent.Cast(group.FindComponent(DCO_GroupUtilityComponent));
 		bool grpContact = dgu && dgu.HasState(DCO_EGroupState.IN_CONTACT);
+		bool skipFighting = DCO_Ctx.TuneFor(group, "strag.skip_fighting", 1.0) > 0;
+		float repeat_ms = DCO_Ctx.TuneFor(group, "strag.repeat_s", 45.0) * 1000.0;
 		if (dgu)
 		{
 			float span = DCO_Formation.FormationSpan(dgu.DCO_GetFormation(), group.GetAgentsCount());
@@ -168,6 +171,13 @@ class DCO_StragglerWatch
 			if (util.m_ThreatSystem && util.m_ThreatSystem.GetState() == EAIThreatState.THREATENED)
 				continue;
 
+			if (grpContact && skipFighting && ((util.m_CombatComponent && util.m_CombatComponent.GetCurrentTarget()) || (util.m_CombatMoveState && util.m_CombatMoveState.IsInValidCover())))
+			{
+				e.m_fBestTime_ms = now_ms;
+				DCO_Perf.Count("straggler:skip_fighting");
+				continue;
+			}
+
 			bool regrouping = e.m_Regroup && e.m_Regroup.GetActionState() != EAIActionState.COMPLETED
 				&& e.m_Regroup.GetActionState() != EAIActionState.FAILED;
 
@@ -184,6 +194,7 @@ class DCO_StragglerWatch
 
 				e.m_iRetries++;
 				e.m_fBestTime_ms = now_ms;
+				e.m_fNextPull_ms = now_ms + repeat_ms;
 				ActionLog(group, c, dist, "regroup_alt", now_ms - e.m_fFarSince_ms, DCO_ELogLevel.INFO, "");
 				PushRegroup(util, e, AltPoint(leaderPos, c.GetOrigin()), null, limit);
 				continue;
@@ -191,6 +202,13 @@ class DCO_StragglerWatch
 
 			if (regrouping)
 				continue;
+
+			if (now_ms < e.m_fNextPull_ms)
+			{
+				DCO_Perf.Count("straggler:repeat_wait");
+				continue;
+			}
+			e.m_fNextPull_ms = now_ms + repeat_ms;
 
 			if (log)
 				LogStraggler(c, util, dist, group);
@@ -300,7 +318,7 @@ class DCO_StragglerWatch
 	protected bool CanWatch(AIGroup group)
 	{
 		ChimeraCharacter leader = ChimeraCharacter.Cast(group.GetLeaderEntity());
-		if (!leader || leader.IsInVehicle() || SCR_CharacterHelper.IsPlayer(leader))
+		if (!leader || leader.IsInVehicle() || SCR_CharacterHelper.IsPlayer(leader) || DCO_Util.IsPlayerGroup(SCR_AIGroup.Cast(group)))
 			return false;
 
 		if (!DCO_Util.IsAlive(leader))

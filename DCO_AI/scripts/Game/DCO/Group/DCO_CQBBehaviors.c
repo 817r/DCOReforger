@@ -42,6 +42,9 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 	protected float m_fProgAt_ms;
 	protected float m_fUnblockAt_ms;
 	protected int m_iUnblocks;
+	protected IEntity m_Asker;
+	protected float m_fDetourMax_ms;
+	protected bool m_bExtLogged;
 
 	protected int m_iRaised;
 
@@ -65,12 +68,31 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 		m_vDetour = pos;
 		m_fDetourUntil_ms = now + ms;
 		m_bDetourShove = true;
+		m_Asker = asker;
+		m_fDetourMax_ms = now + ms + 8000.0;
+		m_bExtLogged = false;
 		m_bRedirect = true;
 		m_bMoving = false;
 		m_bArrived = false;
 		m_fYieldUntil_ms = 0;
 		DCO_Perf.Count("cqb:make_way");
 		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("cqb_make_way unit=%1 role=%2 for=%3 to=%4 ms=%5", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), m_sRole, DCO_Log.IdUnit(asker), DCO_Util.XZ(pos), Math.Round(ms)));
+		return true;
+	}
+
+	protected bool AskerNear(float now)
+	{
+		if (!m_Asker || now > m_fDetourMax_ms || !DCO_Util.IsAlive(m_Asker))
+			return false;
+		float d = vector.Distance(m_Asker.GetOrigin(), m_vGoal);
+		if (d > 2.5)
+			return false;
+		DCO_Perf.Count("cqb:make_way_extend");
+		if (!m_bExtLogged)
+		{
+			m_bExtLogged = true;
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("cqb_make_way_extend unit=%1 role=%2 for=%3 asker_dist=%4 max_s=8", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), m_sRole, DCO_Log.IdUnit(m_Asker), d.ToString(-1, 1)));
+		}
 		return true;
 	}
 
@@ -158,6 +180,59 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 		return mode != "none";
 	}
 
+	protected int m_iResnap;
+	protected vector m_vNext;
+	protected vector m_vNextLook;
+	protected bool m_bHasNext;
+
+	protected float m_fStartAfter_ms;
+
+	void SetStartDelay(float ms)
+	{
+		m_fStartAfter_ms = GetGame().GetWorld().GetWorldTime() + ms;
+	}
+
+	void SetNext(vector goal, vector look)
+	{
+		m_vNext = goal;
+		m_vNextLook = look;
+		m_bHasNext = true;
+	}
+
+	protected ENodeResult Advance(IEntity e, SCR_AICombatMoveState st, float now)
+	{
+		m_bHasNext = false;
+		m_vGoal = SnapGoal(m_vNext, 1.5, m_sRole, "next");
+		m_vLook = m_vNextLook;
+		m_bMoving = false;
+		m_iStuck = 0;
+		m_iResnap = 0;
+		DCO_Perf.Count("cqb:flow_hop");
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, DCO_Log.IdUnit(e), string.Format("cqb_flow_hop unit=%1 role=%2 at=%3 to=%4", DCO_Log.IdUnit(e), m_sRole, DCO_Util.XZ(e.GetOrigin()), DCO_Util.XZ(m_vGoal)));
+		return IssueMove(e, st, now);
+	}
+
+	protected vector SnapGoal(vector goal, float r, string role, string why)
+	{
+		NavmeshWorldComponent nav = GetGame().GetAIWorld().GetNavmeshWorldComponent("Soldiers");
+		if (!nav || !nav.IsTileLoaded(goal))
+			return goal;
+		vector got;
+		bool ok = nav.GetReachablePoint(goal, r, got);
+		if (ok && Math.AbsFloat(got[1] - goal[1]) > 1.2)
+			ok = false;
+		if (ok && vector.Distance(got, goal) > 0.3)
+			ok = DCO_Util.TraceFrac(goal + 0.5 * vector.Up, got + 0.5 * vector.Up, null, -1, -1, "trace:cqb_snap") >= 0.999;
+		if (ok)
+			return got;
+		DCO_Perf.Count("cqb:goal_offnav");
+		string unit = "-";
+		if (m_Utility)
+			unit = DCO_Log.IdUnit(m_Utility.m_OwnerEntity);
+		DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, unit, string.Format("cqb_goal_offnav unit=%1 role=%2 pos=%3 r=%4 why=%5", unit, role, DCO_Util.XZ(goal), r, why));
+		return goal;
+	}
+
 	void SetCharge()
 	{
 		m_bCharge = true;
@@ -170,9 +245,11 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 	{
 		m_sBehaviorTree = "AI/BehaviorTrees/Chimera/Soldier/DCO_CQBMember.bt";
 		SetPriority(95);
+		if (groupActivity)
+			m_fPriorityLevel.m_Value = groupActivity.EvaluatePriorityLevel();
 		m_bUseCombatMove = true;
 		m_bAllowLook = true;
-		m_vGoal = goal;
+		m_vGoal = SnapGoal(goal, 1.5, role, "init");
 		m_vLook = look;
 		m_eStance = stance;
 		m_ePace = pace;
@@ -245,7 +322,7 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 		BaseTarget t = m_Utility.m_CombatComponent.GetCurrentTarget();
 		if (!t || !t.GetTargetEntity())
 			return false;
-		return SCR_CoverManagerComponent.DCO_GetBuildingAt(t.GetTargetEntity()) == pa.m_Building;
+		return DCO_CoverManagerComponent.DCO_GetBuildingAt(t.GetTargetEntity()) == pa.m_Building;
 	}
 
 	protected float YieldTo(float nowEv)
@@ -347,6 +424,8 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 			return ENodeResult.FAIL;
 		float now = GetGame().GetWorld().GetWorldTime();
 		bool detour = m_fDetourUntil_ms > 0;
+		if (detour && m_bDetourShove && now > m_fDetourUntil_ms && AskerNear(now))
+			return ENodeResult.RUNNING;
 		if (detour && (now > m_fDetourUntil_ms || (!m_bDetourShove && vector.Distance(e.GetOrigin(), m_vDetour) <= 0.7)))
 		{
 			DCO_Perf.Count("cqb:detour_end");
@@ -359,6 +438,8 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 		}
 		if (detour && m_bDetourShove && vector.Distance(e.GetOrigin(), m_vDetour) <= 0.7)
 			return ENodeResult.RUNNING;
+		if (!detour && m_bHasNext && vector.Distance(e.GetOrigin(), m_vGoal) <= 2.0)
+			return Advance(e, st, now);
 		if (!detour && vector.Distance(e.GetOrigin(), m_vGoal) <= m_fArrive)
 		{
 			m_bArrived = true;
@@ -399,11 +480,22 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 					DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(e), string.Format("cqb_move_preempted unit=%1 role=%2 rq_state=%3 by=%4 stuck=%5", DCO_Log.IdUnit(e), m_sRole, typename.EnumToString(SCR_EAICombatMoveRequestState, rs), stRq.ClassName(), m_iStuck));
 				}
 			}
+			else if (rs == SCR_EAICombatMoveRequestState.FAIL && m_Rq.m_eFailReason == SCR_EAICombatMoveRequestFailReason.MOVEMENT_FAILED && m_iResnap < 2)
+			{
+				m_iResnap++;
+				vector before = m_vGoal;
+				m_vGoal = SnapGoal(before, 3.0 * m_iResnap, m_sRole, "fail");
+				DCO_Perf.Count("cqb:goal_resnap");
+				DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.INFO, DCO_Log.IdUnit(e), string.Format("cqb_goal_resnap unit=%1 role=%2 try=%3 from=%4 to=%5 moved_m=%6", DCO_Log.IdUnit(e), m_sRole, m_iResnap, DCO_Util.XZ(before), DCO_Util.XZ(m_vGoal), vector.Distance(before, m_vGoal).ToString(-1, 1)));
+				return IssueMove(e, st, now);
+			}
 			else if (vector.Distance(m_vMoveFrom, e.GetOrigin()) < 0.8)
 			{
 				float sGoal = vector.Distance(e.GetOrigin(), m_vGoal);
 				if (rs == SCR_EAICombatMoveRequestState.SUCCESS && (sGoal <= Math.Max(m_fArrive, 3.0) || !m_bBound || sGoal <= 25.0))
 				{
+					if (m_bHasNext)
+						return Advance(e, st, now);
 					m_bArrived = true;
 					m_bReached = true;
 					m_bLeash = false;
@@ -521,6 +613,8 @@ class DCO_CQBMemberBehavior : SCR_AIBehaviorBase
 	{
 		if (m_bDone)
 			return ENodeResult.SUCCESS;
+		if (GetGame().GetWorld().GetWorldTime() < m_fStartAfter_ms)
+			return ENodeResult.RUNNING;
 		RaiseWeapon();
 		if (m_bArrived && m_bHoldAfter && m_Utility.m_OwnerEntity && vector.Distance(m_Utility.m_OwnerEntity.GetOrigin(), m_vGoal) > m_fArrive + 3.0)
 		{
@@ -705,6 +799,59 @@ class DCO_CQBHoldBehavior : DCO_CQBMemberBehavior
 		m_bHoldAfter = true;
 		m_fYieldDist = 60.0;
 		m_fMaxYield_ms = 8000.0;
+	}
+}
+
+class DCO_CQBFollowBehavior : DCO_CQBMemberBehavior
+{
+	protected IEntity m_Lead;
+	protected float m_fTrail = 3.0;
+	protected float m_fFollowAt_ms;
+
+	void DCO_CQBFollowBehavior(SCR_AIUtilityComponent utility, SCR_AIActivityBase groupActivity, vector goal, vector look, ECharacterStance stance, EMovementType pace, float timeout_s, string role)
+	{
+		m_fArrive = 1.5;
+		m_bHoldAfter = true;
+		m_fYieldDist = 60.0;
+		m_fMaxYield_ms = 8000.0;
+	}
+
+	void SetLead(IEntity lead, float trail)
+	{
+		m_Lead = lead;
+		m_fTrail = trail;
+	}
+
+	override ENodeResult DCO_Step()
+	{
+		IEntity me = m_Utility.m_OwnerEntity;
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (m_Lead && me && !m_bDone && now >= m_fFollowAt_ms)
+		{
+			m_fFollowAt_ms = now + 1000.0;
+			vector lp = m_Lead.GetOrigin();
+			vector dir = me.GetOrigin() - lp;
+			dir[1] = 0;
+			float d = dir.Length();
+			vector want = lp + dir * (m_fTrail / Math.Max(d, 0.1));
+			DCO_CQBActivity act = DCO_CQBActivity.Cast(GetRelatedGroupActivity());
+			vector ws;
+			if (d > m_fTrail + 1.5 && act && act.WallSpot(want, 2.0, ws))
+			{
+				want = ws;
+				DCO_Perf.Count("cqb:follow_wall");
+			}
+			if (d > m_fTrail + 1.5 && vector.Distance(want, m_vGoal) > 1.5)
+			{
+				m_vGoal = SnapGoal(want, 1.5, m_sRole, "follow");
+				m_vLook = lp + Vector(0, 1.2, 0);
+				m_bArrived = false;
+				m_bRedirect = true;
+				m_iStuck = 0;
+				DCO_Perf.Count("cqb:follow_update");
+			}
+		}
+		return super.DCO_Step();
 	}
 }
 

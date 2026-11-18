@@ -6,7 +6,7 @@ class DCO_ROEModeAttribute : SCR_BaseFloatValueHolderEditorAttribute
 	override int GetEntries(notnull array<ref SCR_BaseEditorAttributeEntry> outEntries)
 	{
 		m_aValues.Clear();
-		array<string> labels = {"Hold fire", "Tight", "Free"};
+		array<string> labels = {"Hold fire", "Tight", "Free", "Forced hold"};
 		foreach (int i, string l : labels)
 		{
 			SCR_EditorAttributeFloatStringValueHolder value = new SCR_EditorAttributeFloatStringValueHolder();

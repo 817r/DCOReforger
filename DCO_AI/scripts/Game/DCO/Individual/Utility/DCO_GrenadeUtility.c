@@ -489,7 +489,7 @@ class DCO_GrenadeUtility
 
 	static bool IsIndoorThrow(IEntity self, vector targetPos)
 	{
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(self))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(self))
 			return true;
 		return DCO_Util.TraceFrac(targetPos + Vector(0, 0.5, 0), targetPos + Vector(0, 12.0, 0), self, TraceFlags.WORLD, -1, "t:DCO_GrenadeUtility") < 1.0;
 	}
@@ -579,13 +579,21 @@ class DCO_GrenadeUtility
 
 		DCO_EGrenadeThrowMode mode = DCO_EGrenadeThrowMode.NONE;
 
-		if (breach && IsFlatClear(self, start, targetPos, 0.6))
+		bool flatOk = breach && IsFlatClear(self, start, targetPos, 0.6);
+		bool lobOk = !flatOk && IsTrajectoryClear(self, grenade, start, targetPos, LobClearance(breach));
+		if (lobOk && !breach && dist < 15.0 && !IsTrajectoryClear(self, grenade, start, targetPos, LobClearance(breach), 0.4))
+		{
+			lobOk = false;
+			DCO_Perf.Count("gren:rej_wall_margin");
+		}
+
+		if (flatOk)
 		{
 			throwPos = targetPos;
 			mode     = DCO_EGrenadeThrowMode.DIRECT;
 			s_sDCOMode = "flat";
 		}
-		else if (IsTrajectoryClear(self, grenade, start, targetPos, LobClearance(breach)))
+		else if (lobOk)
 		{
 			throwPos = targetPos;
 			mode     = DCO_EGrenadeThrowMode.DIRECT;
@@ -683,7 +691,7 @@ class DCO_GrenadeUtility
 		return 0.85;
 	}
 
-	protected static bool IsTrajectoryClear(IEntity self, IEntity grenade, vector start, vector end, float uEnd)
+	protected static bool IsTrajectoryClear(IEntity self, IEntity grenade, vector start, vector end, float uEnd, float drop = 0)
 	{
 		float a, b;
 		if (!ComputeArcCoeffs(grenade, start, end, a, b))
@@ -695,6 +703,7 @@ class DCO_GrenadeUtility
 		for (int i = 1; i <= 5; i++)
 		{
 			vector point = ArcPointAt(start, end, a, b, (1.0 * i / segs) * uEnd);
+			point[1] = point[1] - drop;
 
 			if (!IsSegmentClear(self, prev, point))
 			{

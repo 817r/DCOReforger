@@ -58,6 +58,21 @@ class DCO_AssaultLock
 		return true;
 	}
 
+	static bool OutsideCQB(SCR_AIUtilityComponent u)
+	{
+		if (!u || !u.m_OwnerEntity || DCO_Ctx.TuneG("cqb.dodge_out", 1.0) <= 0)
+			return false;
+		int owner = DCO_CtrlLock.OwnerOf(u.GetAIAgent());
+		if (owner != DCO_ECtrlOwner.CQB_ENTRY && owner != DCO_ECtrlOwner.CQB_SUPPORT)
+			return false;
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(u.m_OwnerEntity))
+			return false;
+		DCO_Perf.Count("cqb:dodge_outside");
+		if (DCO_Log.On(DCO_ELogChannel.CQB, DCO_ELogLevel.DEBUG))
+			DCO_Log.Write(DCO_ELogChannel.CQB, DCO_ELogLevel.DEBUG, DCO_Log.IdUnit(u.m_OwnerEntity), string.Format("cqb_dodge_outside unit=%1 owner=%2", DCO_Log.IdUnit(u.m_OwnerEntity), DCO_CtrlLock.OwnerName(owner)));
+		return true;
+	}
+
 	static bool CheckBlock(SCR_AIUtilityComponent u, string reaction)
 	{
 		if (!u)
@@ -70,6 +85,8 @@ class DCO_AssaultLock
 		string lim;
 		int ans = DCO_CtrlLock.AskUtil(u, req, lim);
 		if (ans == DCO_ECtrlAns.ALLOW)
+			return false;
+		if (req == DCO_ECtrlReq.DODGE && OutsideCQB(u))
 			return false;
 		if (req == DCO_ECtrlReq.MORALE && DCO_CtrlLock.OwnerOf(u.GetAIAgent()) == DCO_ECtrlOwner.FM_FIX && u.GetAIAgent() && DCO_CtrlLock.GroupLoss(u.GetAIAgent().GetParentGroup()) >= 0.35)
 		{
@@ -99,6 +116,8 @@ class DCO_AssaultLock
 		string lim;
 		int ans = DCO_CtrlLock.AskUtil(u, DCO_ECtrlReq.DODGE, lim);
 		if (ans == DCO_ECtrlAns.ALLOW)
+			return -1;
+		if (OutsideCQB(u))
 			return -1;
 		if (lim != "radius3")
 			return 0;

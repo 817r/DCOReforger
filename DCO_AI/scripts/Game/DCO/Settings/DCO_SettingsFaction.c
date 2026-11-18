@@ -177,12 +177,15 @@ modded class DCO_GlobalAIComponent
 		DCO_Doctrine gd;
 		if (gx)
 			gd = gx.DCO_GetDoctrine();
-		bool globalExplicit = gd && (gd.m_sPreset != DCO_DoctrineStore.DefaultName() || gd.m_bModified);
+		bool globalPreset = gd && gd.m_sPreset != DCO_DoctrineStore.DefaultName();
+		bool globalExplicit = globalPreset || (gd && gd.m_bModified);
 		if (globalExplicit && !builtinName.IsEmpty())
 		{
 			d = gd.Copy();
-			source = "global_explicit_over_builtin";
-			DCO_Perf.Count("doctrine:global_over_builtin");
+			source = "global_preset_over_builtin";
+			if (!globalPreset)
+				source = "global_modified_over_builtin";
+			DCO_Perf.Count("doctrine:" + source);
 		}
 		else if (!builtinName.IsEmpty())
 		{
@@ -218,6 +221,17 @@ modded class DCO_GlobalAIComponent
 			}
 		}
 		return d;
+	}
+
+	static void DCO_OverrideFactions(notnull array<string> outKeys)
+	{
+		if (!s_mDCO_Overrides)
+			return;
+		foreach (string fk, map<string, vector> overrides : s_mDCO_Overrides)
+		{
+			if (overrides && !overrides.IsEmpty() && outKeys.Find(fk) < 0)
+				outKeys.Insert(fk);
+		}
 	}
 
 	static void DCO_GetOverrides(string factionKey, notnull array<string> outClasses, notnull array<vector> outValues)
@@ -296,30 +310,40 @@ modded class DCO_GlobalAIComponent
 			return;
 
 		comp.DCO_ImportConfig(base.DCO_ExportConfig());
+		array<SCR_BaseEditorAttribute> attributes = {};
 		if (manager)
-		{
-			array<SCR_BaseEditorAttribute> attributes = {};
 			manager.DCO_FactionAttributes(attributes);
-			foreach (SCR_BaseEditorAttribute attribute : attributes)
-			{
-				SCR_BaseEditorAttributeVar var = attribute.ReadVariable(gameMode, manager);
-				if (var)
-					attribute.WriteVariable(holder, SCR_BaseEditorAttributeVar.CreateVector(var.GetVector()), manager, -1);
-			}
+		else
+			DCO_SettingsPersist.FactionAttributes(attributes);
+		foreach (SCR_BaseEditorAttribute attribute : attributes)
+		{
+			SCR_BaseEditorAttributeVar var = attribute.ReadVariable(gameMode, manager);
+			if (var)
+				attribute.WriteVariable(holder, SCR_BaseEditorAttributeVar.CreateVector(var.GetVector()), manager, -1);
 		}
 		comp.DCO_CfgApplyFaction(factionKey);
-		if (manager && hasOv)
+		int ovApplied;
+		if (hasOv)
 		{
 			foreach (string className, vector value : overrides)
 			{
-				SCR_BaseEditorAttribute ovAttr = manager.DCO_AttributeByClass(className);
+				SCR_BaseEditorAttribute ovAttr;
+				if (manager)
+					ovAttr = manager.DCO_AttributeByClass(className);
+				else
+					ovAttr = DCO_SettingsPersist.Attr(className);
 				if (ovAttr && ovAttr.ReadVariable(holder, manager))
+				{
 					ovAttr.WriteVariable(holder, SCR_BaseEditorAttributeVar.CreateVector(value), manager, -1);
+					ovApplied++;
+				}
 			}
 		}
 		if (!s_mDCO_FactionComp)
 			s_mDCO_FactionComp = new map<string, DCO_GlobalAIComponent>();
 		s_mDCO_FactionComp.Set(factionKey, comp);
+		DCO_BumpVerAll();
+		DCO_Log.Write(DCO_ELogChannel.SYS, DCO_ELogLevel.INFO, "-", string.Format("faction_layer_built faction=%1 base_attrs=%2 overrides=%3 manager=%4", factionKey, attributes.Count(), ovApplied, DCO_Util.B01(manager != null)));
 	}
 
 	override protected void DCO_OnCfgLoaded()

@@ -94,12 +94,36 @@ class DCO_NoFireAreas
 		if (!s_aPos || !own || !own.GetMyCommander())
 			return null;
 		AICommander_BaseComponent cmd = own.GetMyCommander();
+		if (vector.DistanceXZ(from, target) <= 50.0)
+		{
+			DCO_Perf.Count("op_nofire:close_target");
+			return null;
+		}
+		if (shooter && Vehicle.Cast(shooter.GetRootParent()))
+		{
+			DCO_Perf.Count("op_nofire:vehicle_exempt");
+			return null;
+		}
 		foreach (int i, vector c : s_aPos)
 		{
 			if (s_aCmd[i] != cmd || s_aGrp[i] == own || !s_aGrp[i] || !s_aGrp[i].GetOwner())
 				continue;
 			if (vector.DistanceXZ(from, c) <= 60.0)
 				continue;
+			if (vector.DistanceXZ(target, c) <= 60.0)
+			{
+				DCO_Perf.Count("op_nofire:enemy_inside");
+				if (!s_mLogAt)
+					s_mLogAt = new map<IEntity, float>();
+				float nowIn = DCO_Util.NowS();
+				float atIn;
+				if (!s_mLogAt.Find(shooter, atIn) || nowIn - atIn >= 10.0)
+				{
+					s_mLogAt.Set(shooter, nowIn);
+					DCO_Log.Write(DCO_ELogChannel.TACTIC, DCO_ELogLevel.INFO, "-", string.Format("op_nofire_allow shooter=%1 target=%2 zone_of=%3 why=enemy_inside", shooter, DCO_Util.XZ(target), s_aGrp[i].GetOwner().GetName()));
+				}
+				continue;
+			}
 			vector ab = target - from;
 			ab[1] = 0;
 			vector ac = c - from;
@@ -107,8 +131,10 @@ class DCO_NoFireAreas
 			float l2 = ab.LengthSq();
 			float tt = 0;
 			if (l2 > 0.01)
-				tt = Math.Clamp(vector.Dot(ac, ab) / l2, 0, 1);
-			if (vector.DistanceXZ(c, from + ab * tt) > 60.0)
+				tt = vector.Dot(ac, ab) / l2;
+			if (tt <= 0.05 || tt >= 0.95)
+				continue;
+			if (vector.DistanceXZ(c, from + ab * tt) > 10.0)
 				continue;
 			AIGroup ag = AIGroup.Cast(s_aGrp[i].GetOwner());
 			IEntity blocker = s_aGrp[i].GetOwner();
@@ -122,7 +148,7 @@ class DCO_NoFireAreas
 			{
 				s_mLogAt.Set(shooter, now);
 				DCO_Perf.Count("op_nofire_reject");
-				DCO_Log.Write(DCO_ELogChannel.TACTIC, DCO_ELogLevel.INFO, "-", string.Format("op_nofire_reject shooter=%1 target=%2 blocked_by=%3 dist=%4", shooter, DCO_Util.XZ(target), s_aGrp[i].GetOwner().GetName(), Math.Round(vector.DistanceXZ(target, c))));
+				DCO_Log.Write(DCO_ELogChannel.TACTIC, DCO_ELogLevel.INFO, "-", string.Format("op_nofire_reject shooter=%1 target=%2 blocked_by=%3 dist=%4 lane_m=%5 t=%6", shooter, DCO_Util.XZ(target), s_aGrp[i].GetOwner().GetName(), Math.Round(vector.DistanceXZ(target, c)), Math.Round(vector.DistanceXZ(c, from + ab * tt)), Math.Round(tt * 100) / 100));
 			}
 			return blocker;
 		}
@@ -1023,6 +1049,9 @@ class DCO_OpPlanner
 		ph.m_aFix.Insert(old);
 		ph.m_Main = best;
 		ph.m_sFires = string.Format("prep:%1 fix:%2", best.GetLogName(), ph.m_aFix.Count());
+		if (cmd.GetTactics().GetPlan(old))
+			cmd.GetTactics().OnAborted(cmd, old, "main_shift");
+		cmd.DCO_ReleaseAttackers(old, "main_shift");
 		PhaseStart(cmd, now);
 	}
 
@@ -1376,6 +1405,8 @@ class DCO_OpPlanner
 				}
 				continue;
 			}
+			if (f != ph.m_Main)
+				cmd.DCO_ReleaseAttackers(f, "fix_objective");
 			if (mainFirst && f != ph.m_Main)
 			{
 				DCO_Perf.Count("op:fix_hold_main_first");
@@ -1435,31 +1466,6 @@ class DCO_OpPlanner
 		if (now < m_Op.m_fConsolidateUntil)
 			next = string.Format("consolidating %1 s", Math.Round(m_Op.m_fConsolidateUntil - now));
 		rows.Insert("V\tNext trigger\t" + next + string.Format(" (stall in %1 s)", Math.Max(0, Math.Round(300.0 - (now - m_Op.m_fProgressAt)))));
-	}
-
-	void DbgShapes(AICommander_BaseComponent cmd, array<float> f, array<string> s, int mask, out int count)
-	{
-		if (!m_Op)
-			return;
-		vector pp = m_Op.m_Primary.GetOwner().GetOrigin();
-		foreach (DCO_OpObj oo : m_Op.m_aObjs)
-		{
-			if (!oo.m_Obj || oo.m_Obj == m_Op.m_Primary)
-				continue;
-			vector op = oo.m_Obj.GetOwner().GetOrigin();
-			DCO_CmdDbg.AddShape(f, s, mask, DCO_ECDLayer.OBJECTIVES, DCO_ECDShape.LINE, pp[0], pp[2], op[0], op[2], 0, DCO_ECDCol.GREY, 1, m_Op.m_sSrc, count);
-		}
-		vector prev = vector.Zero;
-		foreach (DCO_OpPhase ph : m_Op.m_aPhases)
-		{
-			if (!ph.m_Main)
-				continue;
-			vector mp = ph.m_Main.GetOwner().GetOrigin();
-			DCO_CmdDbg.AddShape(f, s, mask, DCO_ECDLayer.FOCUS, DCO_ECDShape.LETTER, mp[0], mp[2] - ph.m_Main.GetRadius() - 10.0, 0, 0, 0, DCO_ECDCol.WHITE, 0, ph.m_iN.ToString(), count);
-			if (prev != vector.Zero)
-				DCO_CmdDbg.AddShape(f, s, mask, DCO_ECDLayer.FOCUS, DCO_ECDShape.LINE, prev[0], prev[2], mp[0], mp[2], 0, DCO_ECDCol.PURPLE, 1, "", count);
-			prev = mp;
-		}
 	}
 }
 

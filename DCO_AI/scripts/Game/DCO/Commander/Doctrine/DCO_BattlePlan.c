@@ -120,7 +120,7 @@ class DCO_BattlePlanner
 		else if (cmd.GetDecision() == DCO_EDecision.SLOW)
 			m = 300;
 		if (cmd.DCO_K2())
-			return Math.Max(m / Tempo(cmd), Math.Min(m, DCO_Ctx.TuneForCmd(cmd, "agg.k2_staging_floor_s", 30.0)));
+			return Math.Max(m / Tempo(cmd), Math.Min(m, DCO_Ctx.TuneForCmd(cmd, "agg.k2_staging_floor_s", 30.0) / DCO_Stress.ReachCmd(cmd)));
 		return m / Tempo(cmd);
 	}
 
@@ -201,7 +201,13 @@ class DCO_BattlePlanner
 			if (st.m_iReconRoll < 0)
 			{
 				st.m_iReconRoll = 0;
-				if (Math.RandomFloat01() < cmd.GetTraitIntel() * 0.5)
+				if (cmd.DCO_IdleDedicated(DCO_EGroupJob.RECON, 7, true))
+				{
+					st.m_iReconRoll = 1;
+					DCO_Perf.Count("doc:recon_dedicated");
+					DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(cmd), string.Format("doctrine_recon_dedicated cmd=%1 obj=%2 band=%3 why=idle_recon_only_squad", cmd.GetCommanderUID(), obj.GetLogName(), DCO_Doctrine.BandName(band)));
+				}
+				else if (Math.RandomFloat01() < cmd.GetTraitIntel() * 0.5)
 					st.m_iReconRoll = 1;
 				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(cmd), "doctrine_choice cmd=" + cmd.GetCommanderUID() + " obj=" + obj.GetLogName() + " column=recon band=" + DCO_Doctrine.BandName(band) + " intel=" + cmd.GetTraitIntel().ToString(-1, 1) + " recon=" + st.m_iReconRoll.ToString());
 			}
@@ -215,7 +221,9 @@ class DCO_BattlePlanner
 		}
 		if (reconWanted && !st.m_bReconDone)
 		{
-			bool reconOk = band != DCO_EForceBand.UNKNOWN && obj.IsReconArrived(cmd.GetCommanderFactionKey(), now);
+			DCO_GroupUtilityComponent reconSq = ReconSquad(cmd, obj);
+			bool reconNear = reconSq && reconSq.DCO_NearOrderTarget(40.0);
+			bool reconOk = band != DCO_EForceBand.UNKNOWN && (reconNear || obj.IsReconArrived(cmd.GetCommanderFactionKey(), now));
 			if (!reconOk)
 			{
 				if (st.m_fReconStart < 0)
@@ -226,14 +234,26 @@ class DCO_BattlePlanner
 					reconLimit *= 0.5;
 					DCO_Perf.Count("doctrine:aggr_recon_half");
 				}
-				if (band == DCO_EForceBand.UNKNOWN)
-					reconLimit = Math.Min(reconLimit, 60.0);
+				float unknownCap = DCO_Ctx.TuneForCmd(cmd, "doc.recon_unknown_cap_s", 60.0);
+				if (band == DCO_EForceBand.UNKNOWN && unknownCap > 0)
+				{
+					if (reconSq)
+						DCO_Perf.Count("doc:recon_cap_wait_squad");
+					else
+						reconLimit = Math.Min(reconLimit, unknownCap);
+				}
 				if (cmd.DCO_K2())
-					reconLimit = Math.Max(reconLimit, Math.Min(d.m_fReconTimeout, DCO_Ctx.TuneForCmd(cmd, "agg.k2_recon_floor_s", 90.0)));
+					reconLimit = Math.Max(reconLimit, Math.Min(d.m_fReconTimeout, DCO_Ctx.TuneForCmd(cmd, "agg.k2_recon_floor_s", 90.0) / DCO_Stress.ReachCmd(cmd)));
 				if (now - st.m_fReconStart < reconLimit)
 				{
 					Phase(cmd, obj, "recon", "band_" + DCO_Doctrine.BandName(band) + "_limit_" + Math.Round(reconLimit).ToString(), now);
 					return DCO_EDoctrineGate.RECON;
+				}
+				if (reconSq)
+				{
+					DCO_Perf.Count("doc:recon_release");
+					DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, DCO_Log.IdCmd(cmd), string.Format("doctrine_recon_release cmd=%1 obj=%2 grp=%3 why=timeout waited_s=%4 limit_s=%5 band=%6 near=%7", cmd.GetCommanderUID(), obj.GetLogName(), DCO_Log.IdGroup(SCR_AIGroup.Cast(reconSq.GetOwner())), Math.Round(now - st.m_fReconStart), Math.Round(reconLimit), DCO_Doctrine.BandName(band), DCO_Util.B01(reconNear)));
+					cmd.TacticRelease(reconSq, obj);
 				}
 				if (band == DCO_EForceBand.UNKNOWN)
 				{
@@ -316,6 +336,14 @@ class DCO_BattlePlanner
 	DCO_BattleState Peek(CMD_AICommanderObjectiveComponent obj)
 	{
 		return m_mState.Get(obj);
+	}
+
+	static DCO_GroupUtilityComponent ReconSquad(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj)
+	{
+		DCO_GroupUtilityComponent g = obj.GetReconGroup(cmd.GetCommanderFactionKey());
+		if (!g || !g.GetOwner() || g.GetUnitCount() <= 0 || g.IsPlayerGroup() || g.GetTask() != DCO_EGroupTask.RECON || g.GetGroupObjective() != obj)
+			return null;
+		return g;
 	}
 
 	static float NearestOwnGroupM(AICommander_BaseComponent cmd, CMD_AICommanderObjectiveComponent obj)

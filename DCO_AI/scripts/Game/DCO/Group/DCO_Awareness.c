@@ -232,7 +232,7 @@ class DCO_Awareness
 		array<AIAgent> agents = {};
 		grp.GetAgents(agents);
 		float now = DCO_Util.NowS();
-		if (now - g.m_fDCODisplacedAt > 60.0 && !SCR_CoverManagerComponent.IsEntityInsideBuilding(leader) && DCO_ConcealmentUtility.IsPositionExposed(lp, leader))
+		if (now - g.m_fDCODisplacedAt > 60.0 && !DCO_CoverManagerComponent.IsEntityInsideBuilding(leader) && DCO_ConcealmentUtility.IsPositionExposed(lp, leader))
 		{
 			vector cover = HidingSpot(lp, 80.0);
 			if (cover != vector.Zero && vector.DistanceXZ(cover, lp) > 15.0)
@@ -258,7 +258,7 @@ class DCO_Awareness
 		{
 			IEntity ei = ai.GetControlledEntity();
 			SCR_ChimeraAIAgent cai = SCR_ChimeraAIAgent.Cast(ai);
-			if (!ei || !cai || !cai.m_UtilityComponent || !DCO_Util.IsAlive(ei) || SCR_CoverManagerComponent.IsEntityInsideBuilding(ei))
+			if (!ei || !cai || !cai.m_UtilityComponent || !DCO_Util.IsAlive(ei) || DCO_CoverManagerComponent.IsEntityInsideBuilding(ei))
 				continue;
 			for (int j = 0; j < i; j++)
 			{

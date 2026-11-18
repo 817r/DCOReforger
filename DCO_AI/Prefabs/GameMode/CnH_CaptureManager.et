@@ -1,7 +1,7 @@
 GenericEntity {
  ID "690EFE02C96B0224"
  components {
-  CNH_CaptureManager "{690EFE033FF8E5DE}" {
+  DCO_CNH_CaptureManager "{690EFE033FF8E5DE}" {
   }
   RplComponent "{690EFE0330BDF645}" {
   }

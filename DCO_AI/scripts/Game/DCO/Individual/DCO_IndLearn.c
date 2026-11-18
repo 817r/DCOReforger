@@ -68,7 +68,7 @@ class DCO_IndLearn
 		{
 			s_Inst = new DCO_IndLearn();
 			s_Inst.m_World = GetGame().GetWorld();
-			s_Inst.m_bTest = DCO_TestCaseComponent.Active();
+			s_Inst.m_bTest = DCO_Dev.TestActive();
 			string file = "$profile:DCO/IndLearn/" + DCO_LearnStore.WorldName() + ".json";
 			if (s_Inst.m_bTest)
 				file = "$profile:DCO/IndLearn/_test/" + DCO_LearnStore.WorldName() + ".json";

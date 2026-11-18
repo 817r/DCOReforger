@@ -45,7 +45,75 @@ class DCO_RpgUnseen
 		return n;
 	}
 
-	static bool Allowed(SCR_AIUtilityComponent u, IEntity target, vector pos)
+	static float MaxM(SCR_AIUtilityComponent u)
+	{
+		return DCO_Stress.T(u, "at.max_m", 350.0);
+	}
+
+	static bool Fortified(IEntity me, IEntity target)
+	{
+		if (!me || !target)
+			return false;
+		vector tp = target.GetOrigin();
+		vector dir = me.GetOrigin() - tp;
+		dir[1] = 0;
+		if (dir.LengthSq() < 1.0)
+			return false;
+		dir.Normalize();
+		IEntity hit;
+		float h;
+		int prot = DCO_CoverId.Prot(tp, dir, target, hit, h);
+		if (prot < 2 || !hit)
+			return false;
+		bool hard;
+		string ent;
+		DCO_CoverId.Kind(hit, hard, ent);
+		return hard;
+	}
+
+	static string Kind(SCR_AIUtilityComponent u, IEntity target, out bool hard)
+	{
+		hard = false;
+		if (!target)
+			return "unknown";
+		IEntity root = target.GetRootParent();
+		if (Vehicle.Cast(root))
+		{
+			hard = true;
+			return "vehicle";
+		}
+		ChimeraCharacter tc = ChimeraCharacter.Cast(target);
+		if (tc && tc.IsInVehicle())
+		{
+			hard = true;
+			return "crew";
+		}
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(target))
+		{
+			hard = true;
+			return "building";
+		}
+		SCR_AICombatComponent comp = u.m_CombatComponent;
+		if (!comp || !u.m_OwnerEntity)
+			return "soft";
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (comp.m_DCOFortTgt != target || now - comp.m_fDCOFortAt_ms > 2000.0)
+		{
+			comp.m_DCOFortTgt = target;
+			comp.m_fDCOFortAt_ms = now;
+			comp.m_bDCOFort = Fortified(u.m_OwnerEntity, target);
+			if (comp.m_bDCOFort)
+				DCO_Perf.Count("spec:at_target_fortified");
+		}
+		if (comp.m_bDCOFort)
+		{
+			hard = true;
+			return "fortified";
+		}
+		return "soft";
+	}
+
+	protected static bool Gate(SCR_AIUtilityComponent u, IEntity target, vector pos, bool seen, float seenAgo)
 	{
 		SCR_AICombatComponent comp = u.m_CombatComponent;
 		IEntity me = u.m_OwnerEntity;
@@ -59,36 +127,54 @@ class DCO_RpgUnseen
 		string why;
 		float d = vector.Distance(me.GetOrigin(), pos);
 		bool hard;
-		if (target)
-		{
-			IEntity root = target.GetRootParent();
-			hard = Vehicle.Cast(root) != null;
-			ChimeraCharacter tc = ChimeraCharacter.Cast(target);
-			if (!hard && tc)
-				hard = tc.IsInVehicle() || SCR_CoverManagerComponent.IsEntityInsideBuilding(target);
-		}
+		string kind = Kind(u, target, hard);
 		int rockets = Rockets(me);
-		if (d < 15.0)
+		float minM = 15.0;
+		float maxM = 250.0;
+		if (seen)
+		{
+			minM = 10.0;
+			maxM = MaxM(u);
+		}
+		if (d < minM)
 			why = "close";
-		else if (d > 250.0)
+		else if (d > maxM)
 			why = "far";
-		else if (comp.m_fDCORpgUnseenAt_ms >= 0 && since < 30000.0)
+		else if (!seen && comp.m_fDCORpgUnseenAt_ms >= 0 && since < 30000.0)
 			why = "cooldown";
 		else if (rockets <= 0)
 			why = "ammo";
-		else if (!hard && rockets <= 1)
+		else if (!hard && rockets <= 1 && DCO_Specialist.ArmorKnown(u))
 			why = "ammo_last_soft";
 		else if (!hard && NearTargets(u, pos, 10.0) < 2)
 			why = "soft";
+		string mode = "unseen";
+		if (seen)
+			mode = "seen";
 		if (!why.IsEmpty())
 		{
-			DCO_Perf.Count("rpg_unseen_block:" + why);
+			DCO_Perf.Count("rpg_" + mode + "_block:" + why);
+			if (now >= comp.m_fDCOAtGateLogAt_ms && DCO_Log.On(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO))
+			{
+				comp.m_fDCOAtGateLogAt_ms = now + 5000.0;
+				DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("at_fire_gate unit=%1 tgt=%2 kind=%3 dist=%4 seen_s=%5 why=%6 max_m=%7 rockets=%8", DCO_Log.IdUnit(me), DCO_Log.IdUnit(target), kind, Math.Round(d), seenAgo.ToString(-1, 1), why, Math.Round(maxM), rockets));
+			}
 			return false;
 		}
 		comp.m_fDCORpgUnseenAt_ms = now;
-		DCO_Perf.Count("rpg_unseen_fire");
+		DCO_Perf.Count("rpg_" + mode + "_fire");
 		DCO_Perf.Count("spec:at_rocket");
-		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_at_rocket unit=%1 tgt=%2 dist=%3 hard=%4 rockets=%5", DCO_Log.IdUnit(me), DCO_Log.IdUnit(target), Math.Round(d), DCO_Util.B01(hard), rockets));
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(me), string.Format("spec_at_rocket unit=%1 tgt=%2 dist=%3 hard=%4 rockets=%5 kind=%6 seen=%7", DCO_Log.IdUnit(me), DCO_Log.IdUnit(target), Math.Round(d), DCO_Util.B01(hard), rockets, kind, DCO_Util.B01(seen)));
 		return true;
+	}
+
+	static bool Allowed(SCR_AIUtilityComponent u, IEntity target, vector pos)
+	{
+		return Gate(u, target, pos, false, 99.0);
+	}
+
+	static bool AllowedSeen(SCR_AIUtilityComponent u, IEntity target, vector pos, float seenAgo)
+	{
+		return Gate(u, target, pos, seenAgo <= 5.0, seenAgo);
 	}
 }

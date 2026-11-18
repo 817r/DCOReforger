@@ -23,6 +23,9 @@ class DCO_MedicDispatcher
 	protected ref map<SCR_AIGroup, float> m_mSkipLogAt = new map<SCR_AIGroup, float>();
 	protected IEntity m_CurCasualty;
 	protected bool m_bOwnOnly;
+	protected ref map<IEntity, ref DCO_MedicBooking> m_mSecond = new map<IEntity, ref DCO_MedicBooking>();
+	protected ref set<IEntity> m_sSecondTried = new set<IEntity>();
+	protected bool m_bSecond;
 
 	static DCO_MedicDispatcher Get()
 	{
@@ -71,13 +74,78 @@ class DCO_MedicDispatcher
 
 		DCO_MedicBooking b = s_Instance.m_mBookings.Get(casualty);
 		if (!b || b.m_Medic != medic)
+		{
+			DCO_MedicBooking second = s_Instance.m_mSecond.Get(casualty);
+			if (second && second.m_Medic == medic)
+				s_Instance.Release(second, success, "done");
 			return;
+		}
 
 		s_Instance.Release(b, success, "done");
 		if (!success)
 		{
 			s_Instance.Redispatch(casualty, b);
 		}
+	}
+
+	static void OnMedicDown(IEntity medic)
+	{
+		if (s_Instance && medic)
+			s_Instance.ReleaseMedic(medic);
+	}
+
+	protected void ReleaseMedic(IEntity medic)
+	{
+		array<ref DCO_MedicBooking> mine = {};
+		foreach (IEntity cas, DCO_MedicBooking b : m_mBookings)
+		{
+			if (b && b.m_Medic == medic)
+				mine.Insert(b);
+		}
+		foreach (IEntity cas2, DCO_MedicBooking b2 : m_mSecond)
+		{
+			if (b2 && b2.m_Medic == medic)
+				mine.Insert(b2);
+		}
+		foreach (DCO_MedicBooking rb : mine)
+		{
+			bool primary = m_mBookings.Get(rb.m_Casualty) == rb;
+			DCO_Perf.Count("medic:medic_down");
+			Release(rb, false, "medic_down");
+			if (primary)
+				Redispatch(rb.m_Casualty, rb);
+		}
+	}
+
+	static bool IsPrimary(IEntity medic, IEntity casualty)
+	{
+		if (!s_Instance || !casualty)
+			return true;
+		DCO_MedicBooking second = s_Instance.m_mSecond.Get(casualty);
+		return !second || second.m_Medic != medic;
+	}
+
+	static void RequestSecond(IEntity casualty, IEntity firstMedic)
+	{
+		if (!s_Instance || !casualty || !firstMedic)
+			return;
+		s_Instance.TrySecond(casualty, firstMedic);
+	}
+
+	protected void TrySecond(IEntity casualty, IEntity firstMedic)
+	{
+		if (m_mSecond.Contains(casualty) || m_sSecondTried.Contains(casualty))
+			return;
+		DCO_MedicBooking b = m_mBookings.Get(casualty);
+		if (!b || b.m_Medic != firstMedic)
+			return;
+		m_sSecondTried.Insert(casualty);
+		DCO_Perf.Count("medic:second_try");
+		array<IEntity> exclude = {};
+		exclude.Insert(firstMedic);
+		m_bSecond = true;
+		TryDispatch(casualty, IsUnconscious(casualty), GetOwnGroup(casualty), exclude);
+		m_bSecond = false;
 	}
 
 	protected void OnWounded(IEntity casualty, bool unconscious, bool ignoreOwnGroup)
@@ -102,7 +170,7 @@ class DCO_MedicDispatcher
 		string ownWhy;
 		if (!ignoreOwnGroup && HasOwnMedic(ownGroup, casualty, ownWhy))
 		{
-			GetGame().GetCallqueue().CallLater(RecheckOwn, GetTimeoutMs(), false, casualty);
+			GetGame().GetCallqueue().CallLater(RecheckOwn, GetTimeoutMs(casualty), false, casualty);
 			return;
 		}
 		if (!ignoreOwnGroup && !ownWhy.IsEmpty())
@@ -199,6 +267,8 @@ class DCO_MedicDispatcher
 		float radius = cfg.GetMedicRadiusBleeding();
 		if (unconscious)
 			radius = cfg.GetMedicRadiusUnconscious();
+		if (m_bSecond)
+			radius = Math.Min(radius, 40.0);
 
 		Faction casFaction = GetFaction(casualty);
 		if (!casFaction)
@@ -208,7 +278,8 @@ class DCO_MedicDispatcher
 		bool underFire = fireLevel >= 2;
 		if (underFire && (!unconscious || !cfg.GetMedicUnderFire()))
 		{
-			ScheduleRetry(casualty);
+			if (!m_bSecond)
+				ScheduleRetry(casualty);
 			return;
 		}
 		m_bOwnOnly = fireLevel == 1 && !unconscious;
@@ -280,6 +351,19 @@ class DCO_MedicDispatcher
 		m_bOwnOnly = false;
 		if (!best)
 		{
+			if (m_bSecond)
+			{
+				DCO_Perf.Count("medic:second_none");
+				DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", string.Format("medic_second casualty=%1 result=none", DCO_Log.IdUnit(casualty)));
+				return;
+			}
+			if (!ownGroup)
+			{
+				m_mRetries.Remove(casualty);
+				DCO_Perf.Count("medic:skip_no_group");
+				DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", string.Format("medic_skip casualty=%1 why=no_group", DCO_Log.IdUnit(casualty)));
+				return;
+			}
 			ScheduleRetry(casualty);
 			return;
 		}
@@ -375,11 +459,13 @@ class DCO_MedicDispatcher
 			}
 
 			DCO_GroupUtilityComponent lenderUtil = DCO_GroupUtilityComponent.Cast(grp.FindComponent(DCO_GroupUtilityComponent));
-			if (lenderUtil && lenderUtil.IsInContact())
+			if (lenderUtil && lenderUtil.IsInContact() && lenderUtil.HasState(DCO_EGroupState.SUPPRESSED))
 			{
 				NoteSkip(grp, "lender_contact");
 				return null;
 			}
+			if (lenderUtil && lenderUtil.IsInContact())
+				DCO_Perf.Count("medic:lend_in_contact");
 			bool lenderTasked = lenderUtil && lenderUtil.IsMoving() && lenderUtil.GetTask() != DCO_EGroupTask.NONE && lenderUtil.GetTask() != DCO_EGroupTask.PATROL;
 			if (lenderTasked)
 			{
@@ -427,7 +513,7 @@ class DCO_MedicDispatcher
 		comms.RequestBroadcast(msg, medicAgent);
 
 		SCR_ChimeraAIAgent casAgent = GetAgent(casualty);
-		if (casAgent && !unconscious && casAgent.GetCommunicationComponent())
+		if (casAgent && !unconscious && !m_bSecond && casAgent.GetCommunicationComponent())
 		{
 			SCR_AIMessage_HealWait wait = new SCR_AIMessage_HealWait();
 			wait.m_HealProvider = medic;
@@ -436,7 +522,7 @@ class DCO_MedicDispatcher
 		}
 
 		SCR_AIGroup medicGroup = SCR_AIGroup.Cast(medicAgent.GetParentGroup());
-		if (underFire && unconscious)
+		if (underFire && unconscious && !m_bSecond)
 			ThrowSmoke(medicGroup, casualty, medicAgent);
 
 		DCO_MedicBooking b = new DCO_MedicBooking();
@@ -449,24 +535,60 @@ class DCO_MedicDispatcher
 		if (exclude)
 			b.m_aExclude.Copy(exclude);
 		b.m_aExclude.Insert(medic);
-		m_mBookings.Set(casualty, b);
+		int slot = 1;
+		if (m_bSecond)
+		{
+			slot = 2;
+			m_mSecond.Set(casualty, b);
+		}
+		else
+			m_mBookings.Set(casualty, b);
 		m_mLent.Set(medicGroup, m_mLent.Get(medicGroup) + 1);
 
-		GetGame().GetCallqueue().CallLater(OnTimeout, GetTimeoutMs(), false, casualty, medic);
+		GetGame().GetCallqueue().CallLater(OnTimeout, GetTimeoutMs(casualty), false, casualty, medic);
 
 		string line = string.Format("medic_dispatch casualty=%1 medic=%2 grp=%3 dist=%4 unconscious=%5 underFire=%6 player=%7",
-			DCO_Log.IdUnit(casualty), DCO_Log.IdUnit(medic), DCO_Log.IdGroup(medicGroup), vector.Distance(casualty.GetOrigin(), medic.GetOrigin()).ToString(-1, 0), unconscious, underFire, SCR_CharacterHelper.IsPlayer(casualty));
+			DCO_Log.IdUnit(casualty), DCO_Log.IdUnit(medic), DCO_Log.IdGroup(medicGroup), vector.Distance(casualty.GetOrigin(), medic.GetOrigin()).ToString(-1, 0), unconscious, underFire, SCR_CharacterHelper.IsPlayer(casualty)) + " slot=" + slot.ToString();
 		DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", line);
 		SCR_AIGroup casGroup = GetOwnGroup(casualty);
 		DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", string.Format("medic_job patient=%1 medic=%2 medic_grp=%3 cross_group=%4 result=assigned dist=%5 ms=0",
 			DCO_Log.IdUnit(casualty), DCO_Log.IdUnit(medic), DCO_Log.IdGroup(medicGroup), DCO_Util.B01(casGroup != medicGroup), Math.Round(vector.Distance(casualty.GetOrigin(), medic.GetOrigin()))));
 	}
 
+	protected string GateWhy(IEntity casualty, IEntity medic)
+	{
+		if (!casualty || !medic || !DCO_Util.IsAlive(medic) || !SCR_AIDamageHandling.IsAlive(casualty))
+			return "";
+		SCR_ChimeraAIAgent ma = GetAgent(medic);
+		if (!ma || !ma.m_UtilityComponent)
+			return "";
+		SCR_AIMedicHealBehavior hb = SCR_AIMedicHealBehavior.Cast(ma.m_UtilityComponent.FindActionOfType(SCR_AIMedicHealBehavior));
+		if (!hb || hb.m_EntityToHeal.m_Value != casualty)
+			return "";
+		return hb.DCO_GateWhy();
+	}
+
 	protected void OnTimeout(IEntity casualty, IEntity medic)
 	{
 		DCO_MedicBooking b = m_mBookings.Get(casualty);
-		if (!b || b.m_Medic != medic)
+		DCO_MedicBooking held = m_mSecond.Get(casualty);
+		if (b && b.m_Medic == medic)
+			held = b;
+		string gateWhy = GateWhy(casualty, medic);
+		if (held && held.m_Medic == medic && !gateWhy.IsEmpty())
+		{
+			DCO_Perf.Count("medic:timeout_wait");
+			DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", string.Format("medic_timeout_wait casualty=%1 medic=%2 why=%3 waited_s=%4", DCO_Log.IdUnit(casualty), DCO_Log.IdUnit(medic), gateWhy, Math.Round((GetGame().GetWorld().GetWorldTime() - held.m_fStart_ms) / 1000.0)));
+			GetGame().GetCallqueue().CallLater(OnTimeout, GetTimeoutMs(casualty), false, casualty, medic);
 			return;
+		}
+		if (!b || b.m_Medic != medic)
+		{
+			DCO_MedicBooking second = m_mSecond.Get(casualty);
+			if (second && second.m_Medic == medic)
+				Release(second, false, "timeout");
+			return;
+		}
 
 		Release(b, false, "timeout");
 		Redispatch(casualty, b);
@@ -482,16 +604,30 @@ class DCO_MedicDispatcher
 			else
 				m_mLent.Set(b.m_MedicGroup, n);
 		}
-		m_mBookings.Remove(b.m_Casualty);
+		int slot = 1;
+		if (m_mSecond.Get(b.m_Casualty) == b)
+		{
+			slot = 2;
+			m_mSecond.Remove(b.m_Casualty);
+		}
+		else
+		{
+			m_mBookings.Remove(b.m_Casualty);
+			int tried = m_sSecondTried.Find(b.m_Casualty);
+			if (tried >= 0)
+				m_sSecondTried.Remove(tried);
+		}
 
 		float secs = (GetGame().GetWorld().GetWorldTime() - b.m_fStart_ms) / 1000;
-		string line = string.Format("medic_done casualty=%1 medic=%2 success=%3 why=%4 time=%5s", DCO_Log.IdUnit(b.m_Casualty), DCO_Log.IdUnit(b.m_Medic), success, why, secs.ToString(-1, 0));
+		string line = string.Format("medic_done casualty=%1 medic=%2 success=%3 why=%4 time=%5s slot=%6", DCO_Log.IdUnit(b.m_Casualty), DCO_Log.IdUnit(b.m_Medic), success, why, secs.ToString(-1, 0), slot);
 		DCO_Log.Write(DCO_ELogChannel.MEDIC, DCO_ELogLevel.INFO, "-", line);
 		string jobResult = "abandoned";
 		if (success)
 			jobResult = "healed";
-		else if (!b.m_Casualty || !DCO_Util.IsAlive(b.m_Casualty))
+		else if (!b.m_Casualty || !DCO_Util.IsNotDead(b.m_Casualty))
 			jobResult = "patient_died";
+		else if (!DCO_Util.IsAlive(b.m_Casualty))
+			jobResult = "patient_unconscious";
 		float jobDist = -1;
 		if (b.m_Casualty && b.m_Medic)
 			jobDist = vector.Distance(b.m_Casualty.GetOrigin(), b.m_Medic.GetOrigin());
@@ -501,7 +637,7 @@ class DCO_MedicDispatcher
 		if (crossGroup && why != "retarget" && b.m_Medic && b.m_MedicGroup && DCO_Util.IsAlive(b.m_Medic))
 			ReturnMedic(b.m_Medic, b.m_MedicGroup);
 		if (success)
-			DCO_Battle.OnHealed(b.m_Casualty);
+			DCO_Dev.OnHealed(b.m_Casualty);
 		if (b.m_Casualty)
 			DCO_Logistics.NotifyStabilized(b.m_Casualty);
 	}
@@ -530,6 +666,12 @@ class DCO_MedicDispatcher
 				enemy = p;
 			}
 		}
+		if (DCO_Ctx.TuneFor(grp, "smk.pos_v2", 1.0) > 0 && DCO_Beaten.HitRecent(casualty, 60.0) && DCO_Beaten.LastAttackerPos(casualty) != vector.Zero)
+		{
+			enemy = DCO_Beaten.LastAttackerPos(casualty);
+			best = 0;
+			DCO_Perf.Count("medic:smoke_at_attacker");
+		}
 		if (best == float.MAX)
 			return;
 
@@ -545,8 +687,8 @@ class DCO_MedicDispatcher
 			SCR_ChimeraAIAgent ca = SCR_ChimeraAIAgent.Cast(a);
 			if (!ca || ca == medicAgent || !ca.m_InfoComponent || !ca.m_InfoComponent.HasRole(EUnitRole.HAS_SMOKE_GRENADE) || !ca.GetCommunicationComponent())
 				continue;
-			if (!DCO_SmokeUtility.Allowed(ca.m_UtilityComponent, "medic"))
-				continue;
+			if (!DCO_SmokeUtility.GroupOk(grp, ca.m_UtilityComponent, smokePos, "medic"))
+				return;
 
 			SCR_AIMessage_ThrowGrenadeTo msg = SCR_AIMessage_ThrowGrenadeTo.Create(smokePos, EWeaponType.WT_SMOKEGRENADE, 0);
 			msg.m_fPriorityLevel = SCR_AIActionBase.PRIORITY_BEHAVIOR_THROW_GRENADE;
@@ -558,6 +700,11 @@ class DCO_MedicDispatcher
 
 	protected int AreaFireLevel(IEntity casualty, SCR_AIGroup ownGroup)
 	{
+		if (DCO_Beaten.HitRecent(casualty, 20.0))
+		{
+			DCO_Perf.Count("medic:casualty_hit_recent");
+			return 2;
+		}
 		SCR_ChimeraAIAgent agent = GetAgent(casualty);
 		if (agent && agent.m_UtilityComponent && agent.m_UtilityComponent.m_ThreatSystem
 			&& agent.m_UtilityComponent.m_ThreatSystem.GetState() == EAIThreatState.THREATENED && !IsUnconscious(casualty))
@@ -705,8 +852,11 @@ class DCO_MedicDispatcher
 		return ctrl && ctrl.IsUnconscious();
 	}
 
-	protected int GetTimeoutMs()
+	protected int GetTimeoutMs(IEntity casualty)
 	{
-		return DCO_GlobalAIComponent.GetInstance().GetMedicTimeout() * 1000;
+		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetFor(casualty);
+		if (!cfg)
+			return 90000;
+		return cfg.GetMedicTimeout() * 1000;
 	}
 }

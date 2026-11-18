@@ -1,9 +1,9 @@
 [EntityEditorProps(category: "GameScripted/Spawner", description: "Player-Scaled Random Group Spawner (With Safe Radius)")]
-class SCR_PlayerScaledGroupSpawnerClass : ScriptComponentClass
+class DCO_PlayerScaledGroupSpawnerClass : ScriptComponentClass
 {
 }
 
-class SCR_PlayerScaledGroupSpawner : ScriptComponent
+class DCO_PlayerScaledGroupSpawner : ScriptComponent
 {
     [Attribute("", UIWidgets.ResourceAssignArray, desc: "List of group configs/prefabs to spawn.", params: "et")]
     ref array<ResourceName> m_aGroupPrefabs;
@@ -148,7 +148,7 @@ class SCR_PlayerScaledGroupSpawner : ScriptComponent
         }
     }
 
-    void ~SCR_PlayerScaledGroupSpawner()
+    void ~DCO_PlayerScaledGroupSpawner()
     {
         if (GetGame() && GetGame().GetCallqueue())
             GetGame().GetCallqueue().Remove(CheckAndSpawn);

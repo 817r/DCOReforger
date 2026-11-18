@@ -73,7 +73,7 @@ class DCO_ShareDebugAttribute : DCO_GlobalBoolAttribute
 {
 	override SCR_BaseEditorAttributeVar ReadVariable(Managed item, SCR_AttributesManagerEditorComponent manager)
 	{
-		if (!DCO_TestCaseComponent.RunOn())
+		if (!DCO_Dev.RunOn())
 			return null;
 		return super.ReadVariable(item, manager);
 	}

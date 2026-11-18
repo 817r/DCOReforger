@@ -11,6 +11,11 @@ modded class SCR_AISuppressGroupClusterBehavior
 
 	override float CustomEvaluate()
 	{
+		if (DCO_SuppressAmmoHold())
+		{
+			Complete();
+			return 0;
+		}
 		if (DCO_FriendlyInFire())
 		{
 			DCO_Perf.Count("supp_friendly_cancel");
@@ -23,7 +28,37 @@ modded class SCR_AISuppressGroupClusterBehavior
 			Complete();
 			return 0;
 		}
+		if (DCO_WallBlocked())
+		{
+			Complete();
+			return 0;
+		}
 		return super.CustomEvaluate();
+	}
+
+	protected float m_fDCOClusterMulAt_ms;
+	protected float m_fDCOClusterMul = 1.0;
+
+	protected float DCO_ClusterRateMul()
+	{
+		if (!m_Utility || !m_Utility.m_OwnerEntity || !m_Utility.m_CombatComponent)
+			return 1.0;
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (now < m_fDCOClusterMulAt_ms)
+			return m_fDCOClusterMul;
+		m_fDCOClusterMulAt_ms = now + 2000.0;
+		BaseWeaponComponent w;
+		int muzzle;
+		m_Utility.m_CombatComponent.GetSelectedWeapon(w, muzzle);
+		string info;
+		float mul = DCO_AmmoUtility.SuppressRateMul(m_Utility, w, info);
+		if (mul != m_fDCOClusterMul)
+		{
+			DCO_Perf.Count("supp_ammo_scale");
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, DCO_Log.IdUnit(m_Utility.m_OwnerEntity), string.Format("supp_ammo_scale unit=%1 mul=%2 %3 beh=%4", DCO_Log.IdUnit(m_Utility.m_OwnerEntity), mul.ToString(-1, 2), info, ClassName()));
+		}
+		m_fDCOClusterMul = mul;
+		return mul;
 	}
 
 	override protected float GetFireRate(float distance, float timeSinceLastInfoS, float soldierThreat, float groupThreat, float peakReactionFactor)
@@ -46,6 +81,6 @@ modded class SCR_AISuppressGroupClusterBehavior
 		if (timeSinceLastInfoS > SCR_AIGroupUtilityComponent.SUPPRESS_OLD_CLUSTER_INFO_AGE_S)
 			fireRate *= Math.Map(timeSinceLastInfoS, 0, SCR_AIGroupUtilityComponent.SUPPRESS_MAX_CLUSTER_INFO_AGE_S, 1, 0.3);
 
-		return fireRate;
+		return fireRate * DCO_ClusterRateMul();
 	}
 }

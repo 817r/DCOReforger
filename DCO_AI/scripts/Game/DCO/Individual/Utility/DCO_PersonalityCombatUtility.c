@@ -95,6 +95,24 @@ class DCO_PersonalityCombatUtility
 		return 1.0;
 	}
 
+	static float GetReturnFireChanceScale(SCR_AIUtilityComponent utility)
+	{
+		DCO_EAIPersonality p = GetPersonalitySafe(utility);
+
+		switch (p)
+		{
+			case DCO_EAIPersonality.CAUTIOUS:
+				return 0.5;
+			case DCO_EAIPersonality.AGGRESSIVE:
+				return 1.5;
+			case DCO_EAIPersonality.RECKLESS:
+				return 2.0;
+			default:
+				return 1.0;
+		}
+		return 1.0;
+	}
+
 	static float GetTakeCoverChanceScale(SCR_AIUtilityComponent utility)
 	{
 		DCO_EAIPersonality p = GetPersonalitySafe(utility);

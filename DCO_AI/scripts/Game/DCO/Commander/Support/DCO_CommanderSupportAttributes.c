@@ -79,6 +79,11 @@ class DCO_ThreatMinClusterScoreAttribute : DCO_CommanderThreatBaseAttribute
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_ThreatMaxReinforcementAttribute : DCO_CommanderThreatBaseAttribute
 {
+	override protected bool Read(AICommander_BaseComponent cmd, out float value)
+	{
+		return false;
+	}
+
 	override protected float ReadThreat(CMD_ThreatResponseComponent t) { return t.GetMaxReinforcementSent(); }
 	override protected void WriteThreat(CMD_ThreatResponseComponent t, float v) { t.SetMaxReinforcementSent(Math.Round(v)); }
 }

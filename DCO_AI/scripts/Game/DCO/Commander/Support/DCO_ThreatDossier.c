@@ -544,7 +544,7 @@ class DCO_ThreatBook
 			if (mg)
 				sent += mg.GetUnitCount();
 		}
-		float need = Math.Max(8.0, a.m_fEnemy * 2.5);
+		float need = Math.Max(DCO_Ctx.TuneForCmd(m_Cmd, "thr.cap_min_men", 8.0), a.m_fEnemy * DCO_Ctx.TuneForCmd(m_Cmd, "thr.cap_enemy_mul", 2.5));
 		if (sent >= need)
 		{
 			DCO_Perf.Count("threat:cap_per_threat");
@@ -564,7 +564,7 @@ class DCO_ThreatBook
 			if (og.m_iDCOThreatAct == CMD_EThreatAction.HOLD_DESTROY || og.m_iDCOThreatAct == CMD_EThreatAction.COUNTERATTACK)
 				committed += og.GetUnitCount();
 		}
-		if (committed > 0 && committed + g.GetUnitCount() > total / 3.0)
+		if (committed > 0 && committed + g.GetUnitCount() > total * DCO_Ctx.TuneForCmd(m_Cmd, "thr.cap_force_share", 0.33))
 		{
 			DCO_Perf.Count("threat:cap_non_main");
 			if (CapLogOnce(mission.m_iId, "non_main"))

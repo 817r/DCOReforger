@@ -144,8 +144,10 @@ class DCO_SpawnerGroupEntry
 
 class DCO_SpawnerOrder
 {
+	int m_iDCOFails;
 	ref DCO_SpawnerGroupEntry m_Entry;
 	ResourceName m_sPrefab;
+	ResourceName m_sVehicle;
 	float m_fDue;
 	float m_fOrdered;
 	int m_iMen;
@@ -157,6 +159,7 @@ class DCO_SpawnerOrder
 	float m_fDueReached = -1;
 	ref DCO_ReinfRequest m_Req;
 	float m_fArrival_s;
+	bool m_bTransport;
 }
 
 [ComponentEditorProps(category: "GameScripted/Commander", description: "DCO Commander Spawner: spawns groups and hands them straight to the AI Commander.")]
@@ -187,6 +190,9 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 
 	[Attribute("0", UIWidgets.CheckBox, "Vehicles: ON = Crewed (vehicles come with their own crew: driver + gunner, the group rides as passengers). OFF = Group mounts (the group drives itself).", category: "Content")]
 	protected bool m_bCrewed;
+
+	[Attribute("0", UIWidgets.Slider, "Vehicle chance (%): a group without a vehicle of its own gets an unarmed ground vehicle from its faction catalog with enough seats. 0 = only groups that bring a vehicle.", params: "0 100 5", category: "Content")]
+	protected float m_fVehicleChance;
 
 	[Attribute("1", UIWidgets.ComboBox, "Default experience for catalog groups (empty pool).", enums: ParamEnumArray.FromEnum(DCO_ESpawnerExperience), category: "Content")]
 	protected DCO_ESpawnerExperience m_eDefExperience;
@@ -374,6 +380,8 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 	}
 	bool GetCrewed()							{ return m_bCrewed; }
 	void SetCrewed(bool b)						{ m_bCrewed = b; LogEdit("vehicles", b.ToString()); }
+	float GetVehicleChance()					{ return m_fVehicleChance; }
+	void SetVehicleChance(float v)				{ m_fVehicleChance = Math.Clamp(v, 0, 100); LogEdit("vehicle_chance", m_fVehicleChance.ToString()); }
 	bool GetCommanderChooses()					{ return m_bCommanderChooses; }
 	void SetCommanderChooses(bool b)			{ m_bCommanderChooses = b; LogEdit("commander_chooses", b.ToString()); }
 	bool GetCommanderRequest()					{ return m_bCommanderRequest; }
@@ -452,6 +460,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		m_fLateMin = Math.Clamp(m_fLateMin, 5, 600);
 		m_fHoldTime = Math.Clamp(m_fHoldTime, 10, 600);
 		m_iGroupsPerSpawn = Math.ClampInt(m_iGroupsPerSpawn, 1, 20);
+		m_fVehicleChance = Math.Clamp(m_fVehicleChance, 0, 100);
 		string now = string.Format("%1/%2/%3/%4/%5/%6", m_fSpawnRadius, m_fSafeRadius, m_fCooldown, m_fLateMin, m_fHoldTime, m_iGroupsPerSpawn);
 		if (was != now)
 			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("spawner_init_clamped spawner=%1 was=%2 now=%3 fields=spawn_r/safe_r/cooldown/late_min/hold/groups", LogName(), was, now));
@@ -547,6 +556,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 				cmd.RefundPoints(o.m_iPoints);
 			if (o.m_bFromPool && o.m_Entry)
 				o.m_Entry.m_iUsed = Math.Max(o.m_Entry.m_iUsed - 1, 0);
+			DropOrderRequest(o, "gm_cancel");
 			DCO_Perf.Count("spawner:refund_gm_cancel");
 			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_cancel spawner=%1 group=%2 refund_men=%3 refund_pts=%4 reason=gm_cancel gm=%5", LogName(), EntryLabel(o.m_Entry), o.m_iMen, o.m_iPoints, playerID));
 			m_aOrders.Remove(i);
@@ -622,6 +632,96 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		GetGame().GetCallqueue().CallLater(Tick, 5000, true);
 		GetGame().GetCallqueue().CallLater(PublishPresets, 3000, false);
 		GetGame().GetCallqueue().CallLater(InitWorkbenchSetup, 2500, false);
+	}
+
+	void DCO_SaveState(SaveContext context)
+	{
+		int target = m_eTarget;
+		int ev = m_eObjectiveEvent;
+		int stock = m_eStockMode;
+		context.WriteValue("preset", m_iPreset);
+		context.WriteValue("target", target);
+		context.WriteValue("cmd_uid", m_sCommanderUID);
+		context.WriteValue("faction", m_sFaction);
+		context.WriteValue("at_start", m_bSpawnAtStart);
+		context.WriteValue("trigger_obj", m_sTriggerObjective);
+		context.WriteValue("event", ev);
+		context.WriteValue("manpower_below", m_iManpowerBelow);
+		context.WriteValue("cmd_request", m_bCommanderRequest);
+		context.WriteValue("cooldown", m_fCooldown);
+		context.WriteValue("groups_per_spawn", m_iGroupsPerSpawn);
+		context.WriteValue("crewed", m_bCrewed);
+		context.WriteValue("vehicle_chance", m_fVehicleChance);
+		context.WriteValue("chooses", m_bCommanderChooses);
+		context.WriteValue("stock_mode", stock);
+		context.WriteValue("safe_radius", m_fSafeRadius);
+		context.WriteValue("spawn_radius", m_fSpawnRadius);
+		context.WriteValue("stop_overrun", m_bStopOverrun);
+		context.WriteValue("stop_home", m_bStopHomeLost);
+		context.WriteValue("stop_cmd", m_bStopCommanderGone);
+		context.WriteValue("stop_late", m_bStopLate);
+		context.WriteValue("late_min", m_fLateMin);
+		context.WriteValue("back_on", m_bBackOn);
+		context.WriteValue("hold_time", m_fHoldTime);
+		context.WriteValue("home", m_sHomeObjective);
+		context.WriteValue("start_done", m_bStartDone);
+		context.WriteValue("stopped", m_bStopped);
+		context.WriteValue("stop_reason", m_sStopReason);
+		context.WriteValue("gm_off", m_bGMOff);
+		context.WriteValue("spawned_groups", m_iSpawnedGroups);
+		context.WriteValue("spawned_men", m_iSpawnedMen);
+		context.WriteValue("last_cmd", m_sLastCmdUID);
+		DCO_Perf.Count("persist:save_spawner");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("persist_save_spawner spawner=%1 preset=%2 spawned=%3 stopped=%4 gm_off=%5", LogName(), m_iPreset, m_iSpawnedGroups, DCO_Util.B01(m_bStopped), DCO_Util.B01(m_bGMOff)));
+	}
+
+	void DCO_LoadState(LoadContext context)
+	{
+		int preset;
+		if (!context.ReadValue("preset", preset))
+			return;
+		int target = m_eTarget;
+		int ev = m_eObjectiveEvent;
+		int stock = m_eStockMode;
+		context.ReadValue("target", target);
+		context.ReadValue("cmd_uid", m_sCommanderUID);
+		context.ReadValue("faction", m_sFaction);
+		context.ReadValue("at_start", m_bSpawnAtStart);
+		context.ReadValue("trigger_obj", m_sTriggerObjective);
+		context.ReadValue("event", ev);
+		context.ReadValue("manpower_below", m_iManpowerBelow);
+		context.ReadValue("cmd_request", m_bCommanderRequest);
+		context.ReadValue("cooldown", m_fCooldown);
+		context.ReadValue("groups_per_spawn", m_iGroupsPerSpawn);
+		context.ReadValue("crewed", m_bCrewed);
+		context.ReadValue("vehicle_chance", m_fVehicleChance);
+		context.ReadValue("chooses", m_bCommanderChooses);
+		context.ReadValue("stock_mode", stock);
+		context.ReadValue("safe_radius", m_fSafeRadius);
+		context.ReadValue("spawn_radius", m_fSpawnRadius);
+		context.ReadValue("stop_overrun", m_bStopOverrun);
+		context.ReadValue("stop_home", m_bStopHomeLost);
+		context.ReadValue("stop_cmd", m_bStopCommanderGone);
+		context.ReadValue("stop_late", m_bStopLate);
+		context.ReadValue("late_min", m_fLateMin);
+		context.ReadValue("back_on", m_bBackOn);
+		context.ReadValue("hold_time", m_fHoldTime);
+		context.ReadValue("home", m_sHomeObjective);
+		context.ReadValue("start_done", m_bStartDone);
+		context.ReadValue("stopped", m_bStopped);
+		context.ReadValue("stop_reason", m_sStopReason);
+		context.ReadValue("gm_off", m_bGMOff);
+		context.ReadValue("spawned_groups", m_iSpawnedGroups);
+		context.ReadValue("spawned_men", m_iSpawnedMen);
+		context.ReadValue("last_cmd", m_sLastCmdUID);
+		m_iPreset = preset;
+		m_eTarget = target;
+		m_eObjectiveEvent = ev;
+		m_eStockMode = stock;
+		m_sPresetSnap = Snap();
+		m_iLastObjState = -1;
+		DCO_Perf.Count("persist:load_spawner");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("persist_load_spawner spawner=%1 preset=%2 spawned=%3 stopped=%4 gm_off=%5 cmd=%6", LogName(), m_iPreset, m_iSpawnedGroups, DCO_Util.B01(m_bStopped), DCO_Util.B01(m_bGMOff), m_sLastCmdUID));
 	}
 
 	bool DCO_HasTrigger()
@@ -1181,6 +1281,54 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		UpdateState();
 		PublishStatus(cmd, now);
 		IdleReport(cmd, now);
+		NoLimitWarn(cmd, now);
+	}
+
+	protected bool m_bDCONoLimitWarned;
+
+	protected void NoLimitWarn(AICommander_BaseComponent cmd, float now)
+	{
+		if (!cmd || now - m_fStartTime < 15.0)
+			return;
+		bool recurring = m_iManpowerBelow != 0 || m_bCommanderRequest || m_eObjectiveEvent != DCO_ESpawnerObjectiveEvent.NONE;
+		if (!recurring || m_bStopLate || m_bStopped || m_bGMOff)
+			return;
+		bool budget = !m_aGroups || m_aGroups.IsEmpty();
+		if (m_aGroups)
+		{
+			foreach (DCO_SpawnerGroupEntry e : m_aGroups)
+			{
+				if (Usable(e) && e.m_iBudget < 0)
+					budget = true;
+			}
+		}
+		DCO_ESpawnerStock mode = StockMode();
+		bool stock = mode == DCO_ESpawnerStock.NONE;
+		if (mode == DCO_ESpawnerStock.POINTS && cmd.GetPointsStock() < 0)
+			stock = true;
+		if (mode == DCO_ESpawnerStock.MEN && cmd.GetReinforcementStock() < 0)
+			stock = true;
+		int cap = 0;
+		FactionManager fm = GetGame().GetFactionManager();
+		Faction faction;
+		if (fm)
+			faction = fm.GetFactionByKey(cmd.GetCommanderFactionKey());
+		DCO_GlobalAIComponent cfg;
+		if (faction)
+			cfg = DCO_GlobalAIComponent.GetForFactionObj(faction);
+		if (cfg)
+			cap = cfg.GetSpawnerFactionAICap();
+		if (!budget || !stock || cap > 0)
+		{
+			m_bDCONoLimitWarned = false;
+			return;
+		}
+		if (m_bDCONoLimitWarned)
+			return;
+		m_bDCONoLimitWarned = true;
+		Card(0, Title() + " has no limit", "It can keep spawning for the whole mission: the force pool budget is unlimited, no stock is taken, and Max AI Per Faction is 0. Set a budget, Take From Stock, or Max AI Per Faction.", cmd);
+		DCO_Perf.Count("spawner:no_limit_warn");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("spawner_no_limit spawner=%1 cmd=%2 manpower_below=%3 commander_asks=%4 objective_event=%5 stock=%6", LogName(), cmd.GetCommanderUID(), m_iManpowerBelow, DCO_Util.B01(m_bCommanderRequest), m_eObjectiveEvent, typename.EnumToString(DCO_ESpawnerStock, mode)));
 	}
 
 	protected float m_fIdleLogAt = -1;
@@ -1646,10 +1794,37 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		return ResolveHomeName();
 	}
 
+	protected int m_iDCOStopStock = -2;
+
+	protected void DCO_TryResume(AICommander_BaseComponent cmd)
+	{
+		bool resume;
+		if (m_sStopReason == "budget")
+			resume = AnyBudget();
+		else if (m_sStopReason == "stock" && cmd)
+		{
+			int stock = cmd.GetReinforcementStock();
+			if (StockMode() == DCO_ESpawnerStock.POINTS)
+				stock = cmd.GetPointsStock();
+			if (m_iDCOStopStock == -2)
+				m_iDCOStopStock = stock;
+			resume = stock < 0 || stock > m_iDCOStopStock;
+		}
+		if (!resume)
+			return;
+		DCO_Perf.Count("spawner:resume_" + m_sStopReason);
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_resume spawner=%1 reason=%2_raised", LogName(), m_sStopReason));
+		m_bStopped = false;
+		m_sStopReason = string.Empty;
+	}
+
 	protected void UpdateStopConditions(AICommander_BaseComponent cmd, float now)
 	{
 		if (m_bStopped)
+		{
+			DCO_TryResume(cmd);
 			return;
+		}
 
 		if (m_bStopLate && now - m_fStartTime >= m_fLateMin * 60.0)
 		{
@@ -1919,14 +2094,26 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			return;
 		m_bStopped = true;
 		m_sStopReason = reason;
+		m_iDCOStopStock = -2;
 		m_sOffDetail = detail;
 		CancelOrders("stopped");
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("spawner_stop spawner=%1 reason=%2 detail=%3", LogName(), reason, detail));
 		DCO_Events.Spawner("spawner_stop", string.Format("spawner=%1 reason=%2 detail=%3", Name(), reason, detail));
 	}
 
+	protected void DropOrderRequest(DCO_SpawnerOrder o, string reason)
+	{
+		if (!o || !o.m_Req)
+			return;
+		if (o.m_Req.m_iOrdered > o.m_Req.m_iArrived)
+			o.m_Req.m_iOrdered--;
+		DCO_Perf.Count("spawner:req_order_dropped");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_req_order_dropped spawner=%1 id=%2 why=%3 ordered=%4 arrived=%5 groups=%6", LogName(), o.m_Req.m_iId, reason, o.m_Req.m_iOrdered, o.m_Req.m_iArrived, o.m_Req.m_iGroups));
+	}
+
 	protected void RefundOrder(DCO_SpawnerOrder o, string reason)
 	{
+		DropOrderRequest(o, reason);
 		AICommander_BaseComponent cmd;
 		AICommander_ManagerComponent mgr = AICommander_ManagerComponent.GetInstance();
 		if (mgr)
@@ -1945,7 +2132,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 	{
 		if (!DCO_CanFill(cmd))
 			return;
-		DCO_ReinfRequest r = cmd.DCO_Reinf().Claimable(ClaimKey());
+		DCO_ReinfRequest r = cmd.DCO_Reinf().Claimable(ClaimKey(), cmd);
 		if (!r)
 			return;
 		if (r.m_sSpawner.IsEmpty())
@@ -1964,6 +2151,34 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		Request("reinf:" + r.KindName(), r.m_iPrio >= 2);
 		if (m_sPending.IndexOf("reinf:") != 0)
 			m_DCOClaim = null;
+	}
+
+	static bool DCO_KeyCloser(string askerKey, string holderKey, vector pos, DCO_ReinfRequest r)
+	{
+		DCO_CommanderSpawnerComponent asker;
+		DCO_CommanderSpawnerComponent holder;
+		foreach (DCO_CommanderSpawnerComponent s : GetAllStore())
+		{
+			if (!s)
+				continue;
+			if (s.ClaimKey() == askerKey)
+				asker = s;
+			else if (s.ClaimKey() == holderKey)
+				holder = s;
+		}
+		if (!asker || !holder || holder.m_DCOClaim == r)
+			return false;
+		return vector.DistanceXZ(asker.GetOwner().GetOrigin(), pos) + 100.0 < vector.DistanceXZ(holder.GetOwner().GetOrigin(), pos);
+	}
+
+	static bool DCO_KeyCanFill(string key, AICommander_BaseComponent cmd)
+	{
+		foreach (DCO_CommanderSpawnerComponent s : GetAllStore())
+		{
+			if (s && s.ClaimKey() == key)
+				return s.DCO_CanFill(cmd);
+		}
+		return false;
 	}
 
 	bool DCO_CanFill(AICommander_BaseComponent cmd)
@@ -2001,6 +2216,8 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			return PickEntry(faction, needs, why);
 		}
 		why = "reinf_" + req.m_sType;
+		if (DCO_ReinfRequest.IsTruck(req.m_sType))
+			return TruckEntry(faction, req.m_sType == "AMMO_TRUCK", why);
 		if (m_aGroups && !m_aGroups.IsEmpty())
 		{
 			array<DCO_SpawnerGroupEntry> fit = {};
@@ -2064,6 +2281,45 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		pick.m_iArrivalMin = m_iDefArrivalMin;
 		pick.m_iCostOverride = -1;
 		why = "catalog_" + req.m_sType;
+		return pick;
+	}
+
+	protected DCO_SpawnerGroupEntry TruckEntry(Faction faction, bool ammo, out string why)
+	{
+		if (m_aGroups && !m_aGroups.IsEmpty())
+		{
+			foreach (DCO_SpawnerGroupEntry c : m_aGroups)
+			{
+				if (!Usable(c) || c.m_iSoldiers <= 0 || c.m_iSoldiers > 4 || c.m_sVehicle.IsEmpty())
+					continue;
+				string n = c.m_sVehicle;
+				n.ToLower();
+				int pilot, turret, cargo;
+				DCO_GroupPresets.SeatsOf(c.m_sVehicle, pilot, turret, cargo);
+				if (pilot > 0 && n.Contains("ammo") == ammo && (ammo || (turret == 0 && cargo >= 4)))
+				{
+					why = "pool_truck";
+					return c;
+				}
+			}
+			return null;
+		}
+		ResourceName veh = AutoVehicle(faction.GetFactionKey(), 8, ammo);
+		if (veh.IsEmpty())
+			return null;
+		DCO_SpawnerGroupEntry pick = new DCO_SpawnerGroupEntry();
+		pick.m_sMembers = "RIF,RIF";
+		pick.m_iSoldiers = 2;
+		pick.m_sPresetName = "Truck crew";
+		pick.m_sVehicle = veh;
+		pick.m_iWeight = 1;
+		pick.m_iBudget = -1;
+		pick.m_eExperience = m_eDefExperience;
+		pick.m_eMorale = m_eDefMorale;
+		pick.m_eShape = m_eDefShape;
+		pick.m_iArrivalMin = m_iDefArrivalMin;
+		pick.m_iCostOverride = -1;
+		why = "catalog_truck";
 		return pick;
 	}
 
@@ -2164,8 +2420,25 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			}
 			entry.m_iSoldiers = soldiers;
 			int crew = CrewCount(entry);
+			bool transport = req && req.m_iKind == 2 && DCO_ReinfRequest.IsTruck(req.m_sType);
+			if (transport)
+				crew = 0;
+			int points = CostOf(entry, entry.m_iSoldiers);
+			ResourceName orderVeh = entry.m_sVehicle;
+			if (orderVeh.IsEmpty() && m_fVehicleChance > 0 && Math.RandomFloat(0, 100) < m_fVehicleChance)
+			{
+				orderVeh = AutoVehicle(cmd.GetCommanderFactionKey(), soldiers);
+				if (!orderVeh.IsEmpty())
+				{
+					if (m_bCrewed)
+						crew = 1;
+					points += VehicleCost(orderVeh);
+					DCO_Perf.Count("spawner:vehicle_auto");
+					DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_vehicle_give spawner=%1 group=%2 men=%3 vehicle=%4", LogName(), EntryLabel(entry), soldiers, orderVeh));
+				}
+			}
 			soldiers += crew;
-			int points = CostOf(entry, entry.m_iSoldiers) + crew;
+			points += crew;
 			int men;
 			int pts;
 			if (stockMode == DCO_ESpawnerStock.MEN)
@@ -2194,6 +2467,8 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			DCO_SpawnerOrder o = new DCO_SpawnerOrder();
 			o.m_Entry = entry;
 			o.m_sPrefab = entry.m_sPrefab;
+			o.m_sVehicle = orderVeh;
+			o.m_bTransport = transport;
 			o.m_fOrdered = now;
 			o.m_fArrival_s = Math.Max(entry.m_iArrivalMin, 0) * 60.0;
 			o.m_fDue = now + o.m_fArrival_s;
@@ -2244,7 +2519,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		}
 		if (ordered > 0)
 		{
-			Card(0, string.Format("%1 → %2", Title(), cmd.GetCommanderUID()), string.Format("%1 %2 ordered: %3.%4", ordered, Plural(ordered, "group", "groups"), list, StockSentence(cmd)), cmd);
+			Card(0, string.Format("%1 -> %2", Title(), cmd.GetCommanderUID()), string.Format("%1 %2 ordered: %3.%4", ordered, Plural(ordered, "group", "groups"), list, StockSentence(cmd)), cmd);
 			m_fNextAllowed = now + m_fCooldown;
 		}
 		if (ordered > 0 || m_bStopped)
@@ -2332,7 +2607,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			}
 
 			string detail;
-			string block = SafetyBlock(faction, force, detail);
+			string block = SafetyBlock(faction, force, detail, o.m_Entry.m_iSoldiers);
 			if (!block.IsEmpty())
 			{
 				SetWait(block, detail);
@@ -2346,6 +2621,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 				res = Resource.Load(o.m_sPrefab);
 				if (!res || !res.IsValid())
 				{
+					DropOrderRequest(o, "bad_prefab");
 					m_aOrders.RemoveOrdered(i);
 					i--;
 					continue;
@@ -2353,10 +2629,21 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 				soldiers = PrefabSoldiers(res);
 			}
 			if (!SpawnGroup(cmd, o, res, soldiers))
+			{
+				o.m_iDCOFails++;
+				if (o.m_iDCOFails < 6)
+					continue;
+				DCO_Perf.Count("spawner:spawn_giveup");
+				DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("spawner_spawn_giveup spawner=%1 group=%2 tries=%3 action=refund", LogName(), EntryLabel(o.m_Entry), o.m_iDCOFails));
+				RefundOrder(o, "spawn_failed");
+				m_aOrders.RemoveOrdered(i);
+				i--;
 				continue;
+			}
 
 			m_iSpawnedGroups++;
 			m_iSpawnedMen += soldiers;
+			NoteSpawned(cmd.GetCommanderFactionKey(), soldiers);
 			if (o.m_Req)
 				o.m_Req.m_iArrived++;
 			if (o.m_Req && o.m_Req.m_iKind == 3 && o.m_Req.m_DefObj && m_LastSpawnGrp)
@@ -2366,7 +2653,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			float waited = now - o.m_fDueReached;
 			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_arrive spawner=%1 cmd=%2 group=%3 waited_s=%4 forced=%5", LogName(), cmd.GetCommanderUID(), EntryLabel(o.m_Entry), Math.Round(waited), force));
 			if (o.m_fDue > o.m_fOrdered + 1.0)
-				Card(0, string.Format("%1 → %2", Title(), cmd.GetCommanderUID()), EntryLabel(o.m_Entry) + " arrived.", cmd);
+				Card(0, string.Format("%1 -> %2", Title(), cmd.GetCommanderUID()), EntryLabel(o.m_Entry) + " arrived.", cmd);
 			m_aOrders.RemoveOrdered(i);
 			i--;
 		}
@@ -2431,7 +2718,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		else if (st == DCO_ESpawnerState.WAITING)
 		{
 			if (prev != DCO_ESpawnerState.WAITING)
-				Card(1, Title() + " is waiting", m_sWaitDetail + ". It spawns as soon as the area is clear. Spawn anyway skips the safe radius for this one spawn, never the faction AI cap.", ResolveCommander());
+				Card(1, Title() + " is waiting", m_sWaitDetail + ". It spawns as soon as the area is clear. Spawn anyway skips the safe radius for this one spawn, never the Max AI Per Faction limit.", ResolveCommander());
 		}
 		else if (st == DCO_ESpawnerState.OFF && reason == "gm")
 		{
@@ -2490,7 +2777,35 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		return "ready";
 	}
 
-	protected string SafetyBlock(Faction faction, bool force, out string detail)
+	protected static ref map<string, int> s_mRecentMen;
+	protected static ref map<string, float> s_mRecentAt;
+
+	protected static int RecentMen(string fk)
+	{
+		float at;
+		int n;
+		if (!s_mRecentAt || !s_mRecentAt.Find(fk, at))
+			return 0;
+		float age = DCO_Util.NowS() - at;
+		if (age < 0 || age > 10.0)
+			return 0;
+		s_mRecentMen.Find(fk, n);
+		return n;
+	}
+
+	protected static void NoteSpawned(string fk, int men)
+	{
+		if (!s_mRecentAt)
+		{
+			s_mRecentAt = new map<string, float>();
+			s_mRecentMen = new map<string, int>();
+		}
+		int n = RecentMen(fk);
+		s_mRecentMen.Set(fk, n + men);
+		s_mRecentAt.Set(fk, DCO_Util.NowS());
+	}
+
+	protected string SafetyBlock(Faction faction, bool force, out string detail, int men = 0)
 	{
 		vector origin = GetOwner().GetOrigin();
 		float safeSq = m_fSafeRadius * m_fSafeRadius;
@@ -2510,6 +2825,14 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			}
 		}
 
+		AIWorld world = GetGame().GetAIWorld();
+		if (world && world.GetLimitOfActiveAIs() > 0 && world.GetCurrentNumOfActiveAIs() + Math.Max(men, 1) > world.GetLimitOfActiveAIs())
+		{
+			detail = string.Format("%1 of %2 AI are already in play (the game's AI limit)", world.GetCurrentNumOfActiveAIs(), world.GetLimitOfActiveAIs());
+			DCO_Perf.Count("spawner:ai_limit_block");
+			return "ai_limit";
+		}
+
 		DCO_GlobalAIComponent cfg = DCO_GlobalAIComponent.GetForFactionObj(faction);
 		int cap = 0;
 		if (cfg)
@@ -2517,7 +2840,6 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		if ((m_fSafeRadius <= 0 || force) && cap <= 0)
 			return string.Empty;
 
-		AIWorld world = GetGame().GetAIWorld();
 		if (!world)
 			return string.Empty;
 
@@ -2548,9 +2870,11 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			detail = string.Format("%1 %2 inside the %3 m safe radius", enemies, Plural(enemies, "enemy is", "enemies are"), Math.Round(m_fSafeRadius));
 			return "enemy_near";
 		}
-		if (cap > 0 && count >= cap)
+		int recent = RecentMen(faction.GetFactionKey());
+		if (cap > 0 && count + recent + Math.Max(men, 1) > cap)
 		{
-			detail = string.Format("%1 of %2 AI soldiers of this faction are already in play", count, cap);
+			detail = string.Format("%1 of %2 AI soldiers of this faction are already in play", count + recent, cap);
+			DCO_Perf.Count("spawner:faction_cap_block");
 			return "faction_cap";
 		}
 		return string.Empty;
@@ -2729,7 +3053,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			}
 			if (armor > antiArmor)
 				needs |= 1;
-			if (unclear > 0)
+			if (unclear > 0 && cmd.DCO_ThreatReconCount() < 2)
 				needs |= 4;
 		}
 
@@ -2889,29 +3213,113 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		m_LastSpawnGrp = grp;
 
 		IEntity vehicle;
-		if (!entry.m_sVehicle.IsEmpty())
+		if (!order.m_sVehicle.IsEmpty())
 		{
-			Resource vres = Resource.Load(entry.m_sVehicle);
+			Resource vres = Resource.Load(order.m_sVehicle);
 			vector vpos;
 			if (!SCR_WorldTools.FindEmptyTerrainPosition(vpos, pos, 25, 4, 3))
 				vpos = pos + Vector(8, 0, 0);
+			string vwhy = "its prefab cannot be loaded";
 			if (vres && vres.IsValid())
 			{
 				EntitySpawnParams vparams = new EntitySpawnParams();
 				vparams.TransformMode = ETransformMode.WORLD;
 				vparams.Transform[3] = vpos;
 				vehicle = GetGame().SpawnEntityPrefab(vres, GetOwner().GetWorld(), vparams);
+				vwhy = "the game did not create it";
 			}
+			if (!vehicle)
+				VehicleFail(order.m_sVehicle, EntryLabel(entry), vwhy);
 		}
 
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_spawn spawner=%1 cmd=%2 group=%3 prefab=%4 soldiers=%5 vehicle=%6 trigger=%7 stock=%8",
 			LogName(), cmd.GetCommanderUID(), grp, entry.m_sPrefab, soldiers, vehicle != null, order.m_sTrigger, StockLeftText(cmd)));
 		DCO_Events.Spawner("spawner_spawn", string.Format("spawner=%1 cmd=%2 prefab=%3 soldiers=%4 vehicle=%5", Name(), cmd.GetCommanderUID(), entry.m_sPrefab, soldiers, vehicle != null));
-		GetGame().GetCallqueue().CallLater(AssignLater, 500, false, grp, cmd.GetCommanderUID(), vehicle);
-		if (vehicle && m_bCrewed)
+		GetGame().GetCallqueue().CallLater(AssignLater, 500, false, grp, cmd.GetCommanderUID(), vehicle, order.m_bTransport);
+		if (vehicle && m_bCrewed && !order.m_bTransport)
 			GetGame().GetCallqueue().CallLater(CrewAndBoard, 1500, false, grp, vehicle, cmd.GetCommanderFactionKey(), 0);
 		GetGame().GetCallqueue().CallLater(ApplyQuality, 2000, false, grp, entry.m_eExperience, entry.m_eMorale, entry.m_eShape, soldiers, 0);
 		return true;
+	}
+
+	protected static ref array<ResourceName> s_aVehFailTold;
+	protected static ref map<string, ResourceName> s_mAutoVeh;
+
+	protected void VehicleFail(ResourceName veh, string group, string why)
+	{
+		string code = "not_created";
+		if (why.Contains("prefab"))
+			code = "bad_prefab";
+		DCO_Perf.Count("spawner:vehicle_fail");
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("spawner_vehicle_fail spawner=%1 group=%2 vehicle=%3 why=%4", LogName(), group, veh, code));
+		if (!s_aVehFailTold)
+			s_aVehFailTold = {};
+		if (s_aVehFailTold.Contains(veh))
+			return;
+		s_aVehFailTold.Insert(veh);
+		DCO_PlayerComms.SendToGameMasters("DCO", string.Format("%1: the vehicle %2 could not be spawned, %3.", Name(), FilePath.StripExtension(FilePath.StripPath(veh)), why));
+	}
+
+	protected ResourceName AutoVehicle(FactionKey fk, int men, bool ammo = false)
+	{
+		string key = string.Format("%1:%2:%3:%4", fk, men, DCO_Util.B01(m_bCrewed), DCO_Util.B01(ammo));
+		if (!s_mAutoVeh)
+			s_mAutoVeh = new map<string, ResourceName>();
+		ResourceName best;
+		if (s_mAutoVeh.Find(key, best))
+			return best;
+		int bestSeats = 9999;
+		int seen;
+		SCR_Faction fac;
+		FactionManager fm = GetGame().GetFactionManager();
+		if (fm)
+			fac = SCR_Faction.Cast(fm.GetFactionByKey(fk));
+		SCR_EntityCatalog cat;
+		if (fac)
+			cat = fac.GetFactionEntityCatalogOfType(EEntityCatalogType.VEHICLE, false);
+		if (cat)
+		{
+			array<SCR_EntityCatalogEntry> list = {};
+			cat.GetEntityList(list);
+			foreach (SCR_EntityCatalogEntry e : list)
+			{
+				if (!e || !e.IsEnabled())
+					continue;
+				if (e.HasEditableEntityLabel(EEditableEntityLabel.VEHICLE_HELICOPTER) || e.HasEditableEntityLabel(EEditableEntityLabel.VEHICLE_AIRPLANE) || VehicleCost(e.GetPrefab()) > 2)
+					continue;
+				string n = e.GetPrefab();
+				n.ToLower();
+				if (ammo)
+				{
+					int ap, at, ac;
+					DCO_GroupPresets.SeatsOf(e.GetPrefab(), ap, at, ac);
+					if (ap <= 0 || at > 0 || (!n.Contains("ammo") && !e.HasEditableEntityLabel(EEditableEntityLabel.TRAIT_REARMING)))
+						continue;
+					seen++;
+					bestSeats = ac;
+					best = e.GetPrefab();
+					break;
+				}
+				if (n.Contains("helicopter") || n.Contains("conflict") || n.Contains("armed") || n.Contains("tanker") || n.Contains("fuel") || n.Contains("arsenal") || n.Contains("ammo") || n.Contains("repair") || n.Contains("engineer") || n.Contains("command") || n.Contains("ambulance") || n.Contains("supply"))
+					continue;
+				int pilot, turret, cargo;
+				DCO_GroupPresets.SeatsOf(e.GetPrefab(), pilot, turret, cargo);
+				int seats = cargo;
+				if (!m_bCrewed)
+					seats += pilot;
+				seen++;
+				if (pilot <= 0 || turret > 0 || seats < men || seats >= bestSeats)
+					continue;
+				bestSeats = seats;
+				best = e.GetPrefab();
+			}
+		}
+		s_mAutoVeh.Set(key, best);
+		string why = "fits";
+		if (best.IsEmpty())
+			why = "no_fit";
+		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_vehicle_auto spawner=%1 faction=%2 men=%3 vehicle=%4 seats=%5 candidates=%6 why=%7", LogName(), fk, men, best, bestSeats, seen, why));
+		return best;
 	}
 
 	protected SCR_AIGroup SpawnFromMembers(DCO_SpawnerGroupEntry e, FactionKey fk, vector pos)
@@ -2950,6 +3358,13 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			IEntity ch = GetGame().SpawnEntityPrefab(cres, GetOwner().GetWorld(), cp);
 			if (ch && grp.AddAIEntityToGroup(ch))
 				added++;
+		}
+		if (added == 0)
+		{
+			DCO_Perf.Count("spawner:preset_empty");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.WARN, "-", string.Format("spawner_preset_spawn_fail spawner=%1 preset=%2 members=%3 why=no_member_spawned", LogName(), e.m_sPresetName, types.Count()));
+			SCR_EntityHelper.DeleteEntityAndChildren(grp);
+			return null;
 		}
 		grp.SetDeleteWhenEmpty(true);
 		DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_preset_spawn spawner=%1 preset=%2 members=%3 added=%4 faction=%5", LogName(), e.m_sPresetName, types.Count(), added, fk));
@@ -3019,7 +3434,7 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 			LogName(), DCO_Log.IdGroup(grp), vehicle.GetPrefabData().GetPrefabName(), crewMade, turrets, boarded, walking, crewPrefab));
 	}
 
-	protected void AssignLater(SCR_AIGroup grp, string uid, IEntity vehicle)
+	protected void AssignLater(SCR_AIGroup grp, string uid, IEntity vehicle, bool transport)
 	{
 		if (!grp)
 			return;
@@ -3032,8 +3447,14 @@ class DCO_CommanderSpawnerComponent : ScriptComponent
 		}
 
 		if (vehicle)
-			util.DCO_AddSpawnVehicle(vehicle);
+			util.DCO_AddSpawnVehicle(vehicle, !m_bCrewed || transport);
 		util.DCO_AssignFromSpawner(uid);
+		if (transport)
+		{
+			util.DCO_SetWantedRole(2, -1);
+			DCO_Perf.Count("spawner:truck_team");
+			DCO_Log.Write(DCO_ELogChannel.CMD, DCO_ELogLevel.INFO, "-", string.Format("spawner_truck_team spawner=%1 group=%2 cmd=%3 vehicle=%4", LogName(), grp, uid, vehicle != null));
+		}
 		bool ok = util.GetMyCommander() != null;
 		string how = "direct";
 		if (!ok)

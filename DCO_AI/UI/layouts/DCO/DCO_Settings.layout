@@ -563,6 +563,34 @@ HorizontalLayoutWidgetClass {
         }
        }
       }
+      ButtonWidgetClass "{A1C4D7E2903B5F61}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "MapObjWidth"
+       Slot LayoutSlot "{B2D5E8F3A14C6072}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Objective circle line thickness"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1 px"
+         m_bRoundValue 1
+        }
+       }
+      }
+      ButtonWidgetClass "{C3E6F904B25D7183}" : "{4A41296C0E9A889F}UI/layouts/WidgetLibrary/WLib_Slider.layout" {
+       Name "MapObjFill"
+       Slot LayoutSlot "{D4F7A015C36E8294}" {
+        Padding 4 4 4 4
+       }
+       components {
+        SCR_SliderComponent "{548294960C7399D9}" {
+         m_sLabel "Objective circle fill opacity"
+         m_sLabelLayout "{F003823FF141983C}UI/layouts/Menus/SettingsMenu/CustomWidgets/SettingsLabel.layout"
+         m_sFormatText "%1%"
+         m_bRoundValue 1
+        }
+       }
+      }
      }
     }
    }

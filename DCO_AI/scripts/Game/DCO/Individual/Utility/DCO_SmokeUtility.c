@@ -39,9 +39,9 @@ class DCO_SmokeUtility
 		return s_aRecentSmokeTimes;
 	}
 
-	protected static bool IsAreaRecentlySmoked(vector pos, float worldTime_ms)
+	protected static bool IsAreaRecentlySmoked(vector pos, float worldTime_ms, float radius = 60.0)
 	{
-		float radiusSq = 60.0 * 60.0;
+		float radiusSq = radius * radius;
 		bool found = false;
 
 		for (int i = GetRecentSmokePositions().Count() - 1; i >= 0; i--)
@@ -123,6 +123,72 @@ class DCO_SmokeUtility
 		return false;
 	}
 
+	protected static bool GroupFired(AIGroup grp, float window_ms)
+	{
+		array<AIAgent> agents = {};
+		grp.GetAgents(agents);
+		float now_ms = GetGame().GetWorld().GetWorldTime();
+		foreach (AIAgent a : agents)
+		{
+			if (a && a.GetControlledEntity() && now_ms - DCO_ShotCounter.LastShotAt(a.GetControlledEntity()) < window_ms)
+				return true;
+		}
+		return false;
+	}
+
+	static string Rule(SCR_AIUtilityComponent u, string why)
+	{
+		if (!u || !u.m_OwnerEntity || DCO_Stress.T(u, "smk.rule", 1.0) <= 0)
+			return string.Empty;
+		if (why == "cqb" || why == "medic" || why == "assault_stuck")
+			return string.Empty;
+		AIGroup grp;
+		if (u.GetAIAgent())
+			grp = u.GetAIAgent().GetParentGroup();
+		if (!grp)
+			return string.Empty;
+		SCR_AIGroupUtilityComponent gu = SCR_AIGroupUtilityComponent.Cast(grp.FindComponent(SCR_AIGroupUtilityComponent));
+		if (!gu)
+			return string.Empty;
+		if (gu.DCO_IsOvermatch())
+			return "overmatch";
+		bool threatened = u.m_ThreatSystem && u.m_ThreatSystem.GetState() == EAIThreatState.THREATENED;
+		if (gu.DCO_UnderFireAgeS() > 20.0 && !threatened && !DCO_Beaten.HitRecent(u.m_OwnerEntity, 20.0))
+			return "no_enemy_fire";
+		bool retreating = why.StartsWith("break_contact") || why == "withdraw";
+		if (!retreating && u.m_CombatComponent && u.m_CombatComponent.GetCombatMode() != EAIGroupCombatMode.HOLD_FIRE && !GroupFired(grp, 30000.0))
+			return "no_own_fire";
+		return string.Empty;
+	}
+
+	static bool GroupOk(SCR_AIGroup grp, SCR_AIUtilityComponent u, vector smokePos, string why)
+	{
+		if (!u || !u.m_OwnerEntity)
+			return false;
+		float now_ms = GetGame().GetWorld().GetWorldTime();
+		string reason = Rule(u, why);
+		float cd_ms = DCO_Stress.T(u, "smk.group_cd_s", 60.0) * 1000.0;
+		float last;
+		if (reason.IsEmpty() && grp && why != "medic" && GetLastGroupSmokeThrowTime().Find(grp, last) && now_ms - last < cd_ms)
+			reason = "cooldown";
+		if (reason.IsEmpty() && IsAreaRecentlySmoked(smokePos, now_ms, 30.0))
+			reason = "recent";
+		if (reason.IsEmpty() && !Allowed(u, why))
+			reason = "usage";
+		if (!reason.IsEmpty())
+		{
+			DCO_Perf.Count("smoke_group_skip:" + reason);
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, "-", string.Format("smoke_group_skip grp=%1 why=%2 reason=%3 unit=%4", DCO_Log.IdGroup(grp), why, reason, DCO_Log.IdUnit(u.m_OwnerEntity)));
+			return false;
+		}
+		if (grp)
+			GetLastGroupSmokeThrowTime().Set(grp, now_ms);
+		Note(smokePos, now_ms);
+		DCO_Perf.Count("smoke_group:" + why);
+		DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, "-", string.Format("smoke_group grp=%1 why=%2 unit=%3 dist=%4 pos=%5", DCO_Log.IdGroup(grp), why, DCO_Log.IdUnit(u.m_OwnerEntity), Math.Round(vector.DistanceXZ(u.m_OwnerEntity.GetOrigin(), smokePos)), DCO_Log.Pos(smokePos)));
+		return true;
+	}
+
 	static bool TryDeploySmokeForRetreat(SCR_AIUtilityComponent utility, vector threatPos, float dangerSeverity = -1)
 	{
 		if (!utility || !utility.m_CombatComponent || !utility.m_ThreatSystem || !utility.m_CombatMoveState)
@@ -167,7 +233,7 @@ class DCO_SmokeUtility
 		if (!utility.m_CombatComponent.HasWeaponOfType(EWeaponType.WT_SMOKEGRENADE))
 			return false;
 
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(me) || !IsInOpenArea(me, 15.0))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(me) || !IsInOpenArea(me, 15.0))
 			return false;
 
 		vector dirToThreat = vector.Direction(me.GetOrigin(), threatPos).Normalized();
@@ -177,6 +243,15 @@ class DCO_SmokeUtility
 
 		if (IsAreaRecentlySmoked(smokePos, now_ms))
 			return false;
+
+		string rule = Rule(utility, "retreat");
+		if (!rule.IsEmpty())
+		{
+			GetLastDeclineTime().Set(me, now_ms);
+			DCO_Perf.Count("smoke_block:rule_" + rule);
+			DCO_Log.Write(DCO_ELogChannel.COMBAT, DCO_ELogLevel.INFO, "-", string.Format("smoke_skip unit=%1 reason=%2 threat_dist=%3", DCO_Log.IdUnit(me), rule, Math.Round(distToThreat)));
+			return false;
+		}
 
 		float chance = PersonalityChance(utility);
 		chance *= DCO_AIConfigComponent.UsageToChanceScale(DCO_AIConfigComponent.SmokeUsageOf(utility));

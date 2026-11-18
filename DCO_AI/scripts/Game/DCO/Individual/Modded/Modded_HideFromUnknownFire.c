@@ -5,7 +5,7 @@ modded class SCR_AICombatMoveLogic_HideFromUnknownFire : AITaskScripted
 		if (!m_State)
 			return;
 
-		if (SCR_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
+		if (DCO_CoverManagerComponent.IsEntityInsideBuilding(m_Utility.m_OwnerEntity))
 			return;
 
 		if (!m_State.IsMoving() && !m_State.IsInValidCover() && !m_bPushedMoveRequest)

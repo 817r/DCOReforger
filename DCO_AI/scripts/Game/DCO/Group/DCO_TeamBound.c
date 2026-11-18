@@ -270,6 +270,7 @@ class DCO_TeamBound
 		if (st.m_fWaitStart < 0)
 			st.m_fWaitStart = now;
 		float waited = now - st.m_fWaitStart;
+		float reach = DCO_Stress.ReachFor(group);
 		string why;
 		if (othersSet && (!enemy || cover))
 		{
@@ -277,8 +278,10 @@ class DCO_TeamBound
 			if (enemy)
 				why = "set_covered";
 		}
+		else if (othersSet && waited > T(group, "tb.deadlock_s", 10.0) / reach)
+			why = "deadlock_set";
 		else if (waited > T(group, "tb.deadlock_s", 10.0))
-			why = "deadlock";
+			why = "deadlock_moving";
 		if (why.IsEmpty())
 		{
 			if (!othersSet)
@@ -296,7 +299,7 @@ class DCO_TeamBound
 			Callout(teams[pick]);
 		DCO_Perf.Count("tb:turn_" + why);
 		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(group), string.Format("tb_turn grp=%1 team=%2 why=%3 waited_s=%4 teams=%5 enemy=%6 cover=%7",
-			DCO_Log.IdGroup(group), pick, why, waited.ToString(-1, 1), n, DCO_Util.B01(enemy), DCO_Util.B01(cover)));
+			DCO_Log.IdGroup(group), pick, why, waited.ToString(-1, 1), n, DCO_Util.B01(enemy), DCO_Util.B01(cover)) + string.Format(" reach=%1", reach.ToString(-1, 2)));
 	}
 
 	protected static void Callout(SCR_AIGroupFireteam ft)

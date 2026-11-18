@@ -19,6 +19,7 @@ modded class DCO_GlobalAIComponent
 	string DCO_PresetUploads()			{ return m_sDCOPresetUploads; }
 	int DCO_PresetLimit()				{ return m_iDCOPresetLimit; }
 	bool DCO_StartupPrompt()			{ return m_bDCOStartupPrompt; }
+	void DCO_SetStartupPrompt(bool b)	{ m_bDCOStartupPrompt = b; }
 
 	static bool DCO_CanSaveConfig(int playerId, out string why)
 	{
@@ -44,6 +45,7 @@ modded class DCO_GlobalAIComponent
 	}
 
 	static int DCO_TuneVerAll()		{ return s_iDCOTuneVerAll; }
+	static void DCO_BumpVerAll()		{ s_iDCOTuneVerAll++; }
 	int DCO_TuneVer()					{ return m_iDCOTuneVer; }
 	float DCO_Aggression()				{ return DCO_AggressionSlider() * 2.5; }
 	float DCO_AggressionSlider()		{ return Math.Clamp(m_fDCOAggression, 0.5, 10); }
@@ -204,8 +206,29 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("va.recon_apc_per_min", "tune_va_recon_apc_per_min", 5.0, 0.0, 30.0);
 		DCO_TuneCfg("va.recon_ammo_floor", "tune_va_recon_ammo_floor", 0.3, 0.0, 1.0);
 		DCO_TuneCfg("veh.gm_pair", "tune_veh_gm_pair", 0.0, 0.0, 1.0);
+		DCO_TuneCfg("veh.standoff_m", "tune_veh_standoff_m", 200.0, 0.0, 800.0);
+		DCO_TuneCfg("mo.dismount_m", "tune_mo_dismount_m", 400.0, 50.0, 1500.0);
+		DCO_TuneCfg("mo.dismount_mech_m", "tune_mo_dismount_mech_m", 175.0, 20.0, 800.0);
+		DCO_TuneCfg("mo.split_min_foot", "tune_mo_split_min_foot", 4.0, 0.0, 12.0);
+		DCO_TuneCfg("mo.park_leave_m", "tune_mo_park_leave_m", 400.0, 100.0, 2000.0);
+		DCO_TuneCfg("route.cover_m", "tune_route_cover_m", 600.0, 0.0, 2000.0);
+		DCO_TuneCfg("route.cover_leg_m", "tune_route_cover_leg_m", 100.0, 40.0, 400.0);
+		DCO_TuneCfg("mo.dismount_assault_m", "tune_mo_dismount_assault_m", 50.0, 10.0, 300.0);
 		DCO_TuneCfg("veh.cruise_kmh", "tune_veh_cruise_kmh", 0.0, 0.0, 120.0);
 		DCO_TuneCfg("ammo.magic_chance", "tune_ammo_magic_chance", 0.0, 0.0, 100.0);
+		DCO_TuneCfg("ammo.supp_min_mags", "tune_ammo_supp_min_mags", 1.0, 0.0, 5.0);
+		DCO_TuneCfg("ammo.supp_mode", "tune_ammo_supp_mode", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("supp.gate_skip_m", "tune_supp_gate_skip_m", 3.0, 0.3, 10.0);
+		DCO_TuneCfg("ammo.supp_normal_mags", "tune_ammo_supp_normal_mags", 4.0, 2.0, 8.0);
+		DCO_TuneCfg("at.max_m", "tune_at_max_m", 350.0, 100.0, 600.0);
+		DCO_TuneCfg("at.group", "tune_at_group", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("gl.group", "tune_gl_group", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("gl.safe_m", "tune_gl_safe_m", 25.0, 15.0, 50.0);
+		DCO_TuneCfg("perf.lite_on", "tune_perf_lite_on", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("perf.lite_m", "tune_perf_lite_m", 1000.0, 200.0, 5000.0);
+		DCO_TuneCfg("lod.smart_player_m", "tune_lod_smart_player_m", 1000.0, 200.0, 5000.0);
+		DCO_TuneCfg("lod.smart_enemy_m", "tune_lod_smart_enemy_m", 800.0, 100.0, 3000.0);
+		DCO_TuneCfg("lod.smart_hold_s", "tune_lod_smart_hold_s", 60.0, 10.0, 600.0);
 		DCO_TuneCfg("stance.prone_gate", "tune_stance_prone_gate", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("civ.pickup", "tune_civ_pickup", 0.0, 0.0, 1.0);
 		DCO_TuneCfg("civ.mode", "tune_civ_mode", 1.0, 0.0, 1.0);
@@ -213,8 +236,12 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("civ.hide_s", "tune_civ_hide_s", 180.0, 10.0, 900.0);
 		DCO_TuneCfg("civ.cautious_s", "tune_civ_cautious_s", 240.0, 10.0, 900.0);
 		DCO_TuneCfg("ind.yield_m", "tune_ind_yield_m", 150.0, 0.0, 600.0);
+		DCO_TuneCfg("ind.unk_pause_m", "tune_ind_unk_pause_m", 100.0, 0.0, 400.0);
+		DCO_TuneCfg("ind.unk_pause_s", "tune_ind_unk_pause_s", 2.5, 0.0, 10.0);
 		DCO_TuneCfg("inv.pos_err", "tune_inv_pos_err", 0.12, 0.0, 0.5);
 		DCO_TuneCfg("inv.age_grow", "tune_inv_age_grow", 1.0, 0.0, 5.0);
+		DCO_TuneCfg("inv.desel_grace_s", "tune_inv_desel_grace_s", 2.0, 0.0, 10.0);
+		DCO_TuneCfg("inv.cover_dir", "tune_inv_cover_dir", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("ax.used_pen", "tune_ax_used_pen", 0.25, 0.0, 1.0);
 		DCO_TuneCfg("ax.vary", "tune_ax_vary", 0.3, 0.0, 1.0);
 		DCO_TuneCfg("ax.staging_ttl_s", "tune_ax_staging_ttl_s", 900.0, 60.0, 3600.0);
@@ -255,6 +282,14 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("opp.callout", "tune_opp_callout", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("opp.bound_callout", "tune_opp_bound_callout", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("agg.profile", "tune_agg_profile", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("agg.reach", "tune_agg_reach", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("sop.engage_m", "tune_sop_engage_m", 150.0, 0.0, 400.0);
+		DCO_TuneCfg("sop.recon_ambush", "tune_sop_recon_ambush", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("sop.recon_observe_s", "tune_sop_recon_observe_s", 180.0, 0.0, 1800.0);
+		DCO_TuneCfg("sop.attack_released_engage", "tune_sop_attack_released_engage", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("sop.engage_hold_s", "tune_sop_engage_hold_s", 30.0, 0.0, 300.0);
+		DCO_TuneCfg("sop.none_fight", "tune_sop_none_fight", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("sop.observe_latch_s", "tune_sop_observe_latch_s", 120.0, 0.0, 600.0);
 		DCO_TuneCfg("agg.bound_v2", "tune_agg_bound_v2", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("agg.retfire", "tune_agg_retfire", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("agg.usage_map", "tune_agg_usage_map", 1.0, 0.0, 1.0);
@@ -267,6 +302,36 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("logi.low_rel", "tune_logi_low_rel", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("logi.extract_ineff", "tune_logi_extract_ineff", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("logi.cross_src", "tune_logi_cross_src", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("logi.supply_mode", "tune_logi_supply_mode", 1.0, 0.0, 2.0);
+		DCO_TuneCfg("logi.hub_supply_m", "tune_logi_hub_supply_m", 60.0, 10.0, 300.0);
+		DCO_TuneCfg("logi.mag_cost_mul", "tune_logi_mag_cost_mul", 1.0, 0.0, 5.0);
+		DCO_TuneCfg("logi.shell_cost", "tune_logi_shell_cost", 20.0, 0.0, 500.0);
+		DCO_TuneCfg("logi.mortar_resupply", "tune_logi_mortar_resupply", 0.0, 0.0, 1.0);
+		DCO_TuneCfg("logi.mortar_arsenal_m", "tune_logi_mortar_arsenal_m", 25.0, 5.0, 100.0);
+		DCO_TuneCfg("logi.mortar_hold_s", "tune_logi_mortar_hold_s", 600.0, 60.0, 3600.0);
+		DCO_TuneCfg("logi.supply_runs", "tune_logi_supply_runs", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("logi.resupply_wait_s", "tune_logi_resupply_wait_s", 90.0, 20.0, 600.0);
+		DCO_TuneCfg("logi.hub_low", "tune_logi_hub_low", 300.0, 0.0, 5000.0);
+		DCO_TuneCfg("logi.depot_search_m", "tune_logi_depot_search_m", 3000.0, 200.0, 10000.0);
+		DCO_TuneCfg("logi.depot_min", "tune_logi_depot_min", 200.0, 0.0, 5000.0);
+		DCO_TuneCfg("logi.transfer_amount", "tune_logi_transfer_amount", 500.0, 50.0, 5000.0);
+		DCO_TuneCfg("logi.transfer_timeout_s", "tune_logi_transfer_timeout_s", 120.0, 10.0, 600.0);
+		DCO_TuneCfg("logi.player_resupply_hold_s", "tune_logi_player_resupply_hold_s", 180.0, 30.0, 1800.0);
+		DCO_TuneCfg("wp.assault_clear_s", "tune_wp_assault_clear_s", 60.0, 10.0, 600.0);
+		DCO_TuneCfg("wp.sbf_hold_s", "tune_wp_sbf_hold_s", 0.0, 0.0, 3600.0);
+		DCO_TuneCfg("wp.ambush_done_s", "tune_wp_ambush_done_s", 60.0, 10.0, 600.0);
+		DCO_TuneCfg("wp.line_spacing_m", "tune_wp_line_spacing_m", 4.0, 2.0, 15.0);
+		DCO_TuneCfg("convoy.gap_m", "tune_convoy_gap_m", 25.0, 8.0, 100.0);
+		DCO_TuneCfg("convoy.speed_kmh", "tune_convoy_speed_kmh", 40.0, 10.0, 120.0);
+		DCO_TuneCfg("convoy.contact", "tune_convoy_contact", 0.0, 0.0, 1.0);
+		DCO_TuneCfg("convoy.wait_s", "tune_convoy_wait_s", 60.0, 0.0, 600.0);
+		DCO_TuneCfg("wp.ambush_range_m", "tune_wp_ambush_range_m", 60.0, 10.0, 300.0);
+		DCO_TuneCfg("wp.sbf_target_m", "tune_wp_sbf_target_m", 0.0, 0.0, 600.0);
+		DCO_TuneCfg("build.rate_per_s", "tune_build_rate_per_s", 2.0, 0.1, 20.0);
+		DCO_TuneCfg("build.radius_m", "tune_build_radius_m", 12.0, 3.0, 40.0);
+		DCO_TuneCfg("build.search_m", "tune_build_search_m", 30.0, 5.0, 100.0);
+		DCO_TuneCfg("build.wait_outline_s", "tune_build_wait_outline_s", 300.0, 0.0, 3600.0);
+		DCO_TuneCfg("build.wait_tools_s", "tune_build_wait_tools_s", 30.0, 0.0, 3600.0);
 		DCO_TuneCfg("thr.flank_rel", "tune_thr_flank_rel", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("thr.flank_route", "tune_thr_flank_route", 0.0, 0.0, 1.0);
 		DCO_TuneCfg("thr.flank_retarget", "tune_thr_flank_retarget", 1.0, 0.0, 1.0);
@@ -275,19 +340,50 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("rearm.end_rel", "tune_rearm_end_rel", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("pc.night_on", "tune_pc_night_on", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("pc.night_min", "tune_pc_night_min", 0.25, 0.05, 1.0);
+		DCO_TuneCfg("pc.night_min_black", "tune_pc_night_min_black", 0.1, 0.02, 0.5);
+		DCO_TuneCfg("pc.night_lv_black", "tune_pc_night_lv_black", -9.0, -20.0, 20.0);
+		DCO_TuneCfg("pc.dark_gate", "tune_pc_dark_gate", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("pc.dark_gate_lv", "tune_pc_dark_gate_lv", -8.0, -20.0, 20.0);
+		DCO_TuneCfg("hear.flash_exact_m", "tune_hear_flash_exact_m", 300.0, 100.0, 800.0);
 		DCO_TuneCfg("pc.night_lv_day", "tune_pc_night_lv_day", 8.0, -20.0, 20.0);
 		DCO_TuneCfg("pc.night_lv_dark", "tune_pc_night_lv_dark", -6.0, -20.0, 20.0);
 		DCO_TuneCfg("pc.night_flare_m", "tune_pc_night_flare_m", 0.0, 0.0, 1500.0);
+		DCO_TuneCfg("pc.safe", "tune_pc_safe", 1.2, 0.1, 10.0);
+		DCO_TuneCfg("pc.vigilant", "tune_pc_vigilant", 4.2, 0.1, 10.0);
+		DCO_TuneCfg("pc.alerted", "tune_pc_alerted", 3.2, 0.1, 10.0);
 		DCO_TuneCfg("hear.shot_err", "tune_hear_shot_err", 1.0, 0.0, 3.0);
 		DCO_TuneCfg("rearm.reach_m", "tune_rearm_reach_m", 2.5, 1.0, 10.0);
 		DCO_TuneCfg("pickup.debounce_s", "tune_pickup_debounce_s", 2.0, 0.0, 10.0);
 		DCO_TuneCfg("pickup.fail_cooldown_s", "tune_pickup_fail_cooldown_s", 120.0, 10.0, 600.0);
 		DCO_TuneCfg("spec.mg_pre_yield_rearm", "tune_spec_mg_pre_yield_rearm", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("spec.assist_commit_s", "tune_spec_assist_commit_s", 6.0, 1.0, 30.0);
+		DCO_TuneCfg("spec.bof_reaim_s", "tune_spec_bof_reaim_s", 20.0, 0.0, 120.0);
 		DCO_TuneCfg("ctrl.gun_exceptions", "tune_ctrl_gun_exceptions", 0.0, 0.0, 1.0);
 		DCO_TuneCfg("cqb.lost_window_s", "tune_cqb_lost_window_s", 0.0, 0.0, 120.0);
 		DCO_TuneCfg("opp.push_quiet_s", "tune_opp_push_quiet_s", 5.0, 2.0, 30.0);
 		DCO_TuneCfg("opp.push_cd_s", "tune_opp_push_cd_s", 15.0, 5.0, 120.0);
+		DCO_TuneCfg("opp.stalemate", "tune_opp_stalemate", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("opp.stalemate_s", "tune_opp_stalemate_s", 20.0, 5.0, 120.0);
+		DCO_TuneCfg("opp.stalemate_cd_s", "tune_opp_stalemate_cd_s", 20.0, 5.0, 120.0);
+		DCO_TuneCfg("wire.on", "tune_wire_on", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("wire.breach", "tune_wire_breach", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("mv.rush", "tune_mv_rush", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("ft.flank", "tune_ft_flank", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("kz.hold_s", "tune_kz_hold_s", 120.0, 0.0, 600.0);
+		DCO_TuneCfg("dodge.hold_s", "tune_dodge_hold_s", 20.0, 0.0, 60.0);
+		DCO_TuneCfg("dodge.cover_run", "tune_dodge_cover_run", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("hit.stay_prone", "tune_hit_stay_prone", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("atk.obstructed_s", "tune_atk_obstructed_s", 2.0, 0.0, 10.0);
+		DCO_TuneCfg("smk.rule", "tune_smk_rule", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("smk.group_cd_s", "tune_smk_group_cd_s", 60.0, 0.0, 300.0);
+		DCO_TuneCfg("smk.bc_wait_s", "tune_smk_bc_wait_s", 5.0, 0.0, 20.0);
+		DCO_TuneCfg("smk.prio_boost", "tune_smk_prio_boost", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("smk.pos_v2", "tune_smk_pos_v2", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("strag.skip_fighting", "tune_strag_skip_fighting", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("strag.repeat_s", "tune_strag_repeat_s", 45.0, 0.0, 300.0);
+		DCO_TuneCfg("idle.join_fight_m", "tune_idle_join_fight_m", 250.0, 0.0, 1000.0);
+		DCO_TuneCfg("medic.keep_fighting", "tune_medic_keep_fighting", 1.0, 0.0, 4.0);
+		DCO_TuneCfg("medic.danger_gate", "tune_medic_danger_gate", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("opp.push_step_m", "tune_opp_push_step_m", 25.0, 10.0, 50.0);
 		DCO_TuneCfg("opp.push_min_m", "tune_opp_push_min_m", 35.0, 10.0, 60.0);
 		DCO_TuneCfg("opp.side_cd_s", "tune_opp_side_cd_s", 20.0, 5.0, 120.0);
@@ -453,6 +549,7 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("tb.idle_s", "tune_tb_idle_s", 4.0, 1.0, 20.0);
 		DCO_TuneCfg("tb.deadlock_s", "tune_tb_deadlock_s", 10.0, 3.0, 60.0);
 		DCO_TuneCfg("tb.ow_sup", "tune_tb_ow_sup", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("tb.ow_sup_s", "tune_tb_ow_sup_s", 15.0, 0.0, 60.0);
 		DCO_TuneCfg("tgt.claim", "tune_tgt_claim", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("tgt.claim_pen", "tune_tgt_claim_pen", 1.5, 0.0, 10.0);
 		DCO_TuneCfg("tgt.claim_ttl", "tune_tgt_claim_ttl", 3.0, 0.5, 10.0);
@@ -488,9 +585,23 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("hear.est", "tune_hear_est", 0.0, 0.0, 1.0);
 		DCO_TuneCfg("rt.fast", "tune_rt_fast", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("rt.close_m", "tune_rt_close_m", 30.0, 0.0, 100.0);
+		DCO_TuneCfg("rt.pointblank_m", "tune_rt_pointblank_m", 15.0, 0.0, 40.0);
+		DCO_TuneCfg("rt.move_fire_m", "tune_rt_move_fire_m", 150.0, 0.0, 400.0);
+		DCO_TuneCfg("roe.self_defence_m", "tune_roe_self_defence_m", 150.0, 0.0, 600.0);
+		DCO_TuneCfg("roe.under_fire_s", "tune_roe_under_fire_s", 30.0, 0.0, 300.0);
+		DCO_TuneCfg("att.on", "tune_att_on", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("att.scan_s", "tune_att_scan_s", 15.0, 1.0, 60.0);
+		DCO_TuneCfg("att.near_m", "tune_att_near_m", 15.0, 0.0, 40.0);
+		DCO_TuneCfg("att.pred_s", "tune_att_pred_s", 8.0, 0.0, 20.0);
+		DCO_TuneCfg("att.front_bias", "tune_att_front_bias", 0.3, 0.0, 1.0);
+		DCO_TuneCfg("att.formation", "tune_att_formation", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("front.free_m", "tune_front_free_m", 60.0, 0.0, 150.0);
+		DCO_TuneCfg("front.close_m", "tune_front_close_m", 50.0, 0.0, 100.0);
+		DCO_TuneCfg("front.on", "tune_front_on", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("rt.close_threat_s", "tune_rt_close_threat_s", 0.2, 0.0, 1.0);
 		DCO_TuneCfg("rt.close_surprise_s", "tune_rt_close_surprise_s", 0.15, 0.0, 1.0);
 		DCO_TuneCfg("rt.reacquire_s", "tune_rt_reacquire_s", 10.0, 0.0, 60.0);
+		DCO_TuneCfg("rt.vanilla_wait", "tune_rt_vanilla_wait", 0.0, 0.0, 1.0);
 		DCO_TuneCfg("rt.settle_close_s", "tune_rt_settle_close_s", 0.35, 0.1, 1.5);
 		DCO_TuneCfg("rt.close_reset_mul", "tune_rt_close_reset_mul", 0.5, 0.0, 1.0);
 		DCO_TuneCfg("fm.open_shape", "tune_fm_open_shape", 0.0, 0.0, 9.0);
@@ -502,6 +613,9 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("fm.night_tight", "tune_fm_night_tight", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("fm.contact_line", "tune_fm_contact_line", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("fm.echelon", "tune_fm_echelon", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("fm.hold_s", "tune_fm_hold_s", 20.0, 0.0, 120.0);
+		DCO_TuneCfg("fm.cover_hold_s", "tune_fm_cover_hold_s", 20.0, 0.0, 120.0);
+		DCO_TuneCfg("diag.stare_m", "tune_diag_stare_m", 300.0, 50.0, 600.0);
 		DCO_TuneCfg("reinf.green", "tune_reinf_green", 0.85, 0.0, 1.0);
 		DCO_TuneCfg("reinf.amber", "tune_reinf_amber", 0.7, 0.0, 1.0);
 		DCO_TuneCfg("reinf.red", "tune_reinf_red", 0.5, 0.0, 1.0);
@@ -510,6 +624,10 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("reinf.ratio_defend", "tune_reinf_ratio_defend", 0.5, 0.0, 5.0);
 		DCO_TuneCfg("reinf.conf_min", "tune_reinf_conf_min", 0.4, 0.0, 1.0);
 		DCO_TuneCfg("reinf.hold_s", "tune_reinf_hold_s", 60.0, 0.0, 300.0);
+		DCO_TuneCfg("reinf.idle_block", "tune_reinf_idle_block", 2.0, 0.0, 10.0);
+		DCO_TuneCfg("reinf.recon_gap_s", "tune_reinf_recon_gap_s", 900.0, 0.0, 3600.0);
+		DCO_TuneCfg("reinf.truck_gap_s", "tune_reinf_truck_gap_s", 300.0, 0.0, 3600.0);
+		DCO_TuneCfg("logi.truck_request", "tune_logi_truck_request", 1.0, 0.0, 1.0);
 	}
 
 	protected void DCO_TuneSyncBD()
@@ -519,6 +637,7 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("mb.rush_stress_s", "tune_mb_rush_stress_s", 2.5, 1.0, 10.0);
 		DCO_TuneCfg("mb.gain_min", "tune_mb_gain_min", 0.15, 0.0, 1.0);
 		DCO_TuneCfg("ff.vert", "tune_ff_vert", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("ff.near", "tune_ff_near", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("cqb.kind_beh", "tune_cqb_kind_beh", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("cqb.in_bound_m", "tune_cqb_in_bound_m", 6.0, 2.0, 15.0);
 		DCO_TuneCfg("cqb.out_cover_m", "tune_cqb_out_cover_m", 12.0, 4.0, 30.0);
@@ -532,6 +651,9 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("cov.on", "tune_cov_on", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("sa.hazard_skip", "tune_sa_hazard_skip", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("sa.hazard_r", "tune_sa_hazard_r", 1.5, 0.5, 5.0);
+		DCO_TuneCfg("cov.terrain_v2", "tune_cov_terrain_v2", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("cov.danger_safe", "tune_cov_danger_safe", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("cov.sector_retry", "tune_cov_sector_retry", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("cov.cands", "tune_cov_cands", 4.0, 1.0, 10.0);
 		DCO_TuneCfg("cov.cands_min", "tune_cov_cands_min", 2.0, 1.0, 10.0);
 		DCO_TuneCfg("cov.space_m", "tune_cov_space_m", 5.0, 1.0, 20.0);
@@ -552,7 +674,7 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("osc.fix_cover", "tune_osc_fix_cover", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("osc.cover_half_deg", "tune_osc_cover_half_deg", 60.0, 10.0, 180.0);
 		DCO_TuneCfg("osc.fix_short", "tune_osc_fix_short", 1.0, 0.0, 1.0);
-		DCO_TuneCfg("osc.fix_bound", "tune_osc_fix_bound", 0.0, 0.0, 1.0);
+		DCO_TuneCfg("osc.fix_bound", "tune_osc_fix_bound", 1.0, 0.0, 1.0);
 		DCO_TuneCfg("osc.bound_min_s", "tune_osc_bound_min_s", 4.0, 1.0, 20.0);
 		DCO_TuneCfg("cqb.door_avoid", "tune_cqb_door_avoid", 0.0, 0.0, 1.0);
 		DCO_TuneCfg("cqb.door_push_m", "tune_cqb_door_push_m", 1.8, 0.5, 4.0);
@@ -560,6 +682,11 @@ modded class DCO_GlobalAIComponent
 		DCO_TuneCfg("cqb.out_min_m", "tune_cqb_out_min_m", 5.0, 1.0, 12.0);
 		DCO_TuneCfg("cqb.out_rush_s", "tune_cqb_out_rush_s", 3.0, 1.0, 8.0);
 		DCO_TuneCfg("cqb.out_need_cover", "tune_cqb_out_need_cover", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("cqb.dodge_out", "tune_cqb_dodge_out", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("cqb.two_door", "tune_cqb_two_door", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("cqb.rear_exit", "tune_cqb_rear_exit", 1.0, 0.0, 1.0);
+		DCO_TuneCfg("sq.tactics_def", "tune_sq_tactics_def", 0.0, 0.0, 4.0);
+		DCO_TuneCfg("ga.reroll_live", "tune_ga_reroll_live", 0.0, 0.0, 1.0);
 	}
 
 	override DCO_EAIPersonality RollWeightedPersonality()
@@ -586,25 +713,30 @@ modded class DCO_GlobalAIComponent
 		return DCO_EAIPersonality.RECKLESS;
 	}
 
+	string DCO_RollSig()
+	{
+		return string.Format("%1 %2 %3 %4 %5 %6 %7 %8", m_fPersonalityWeightStandard, m_fPersonalityWeightCautious, m_fPersonalityWeightAggressive, m_fPersonalityWeightReckless, m_fLeadershipWeightPoor, m_fLeadershipWeightAverage, m_fLeadershipWeightGood, m_fLeadershipWeightInspiring);
+	}
+
 	float DCO_GT_LeadershipWeightPoor()				{ return m_fLeadershipWeightPoor; }
-	void DCO_ST_LeadershipWeightPoor(float v)			{ m_fLeadershipWeightPoor = v; }
+	void DCO_ST_LeadershipWeightPoor(float v)			{ m_fLeadershipWeightPoor = v; s_iDCOTuneVerAll++; }
 	float DCO_GT_LeadershipWeightAverage()			{ return m_fLeadershipWeightAverage; }
-	void DCO_ST_LeadershipWeightAverage(float v)		{ m_fLeadershipWeightAverage = v; }
+	void DCO_ST_LeadershipWeightAverage(float v)		{ m_fLeadershipWeightAverage = v; s_iDCOTuneVerAll++; }
 	float DCO_GT_LeadershipWeightGood()				{ return m_fLeadershipWeightGood; }
-	void DCO_ST_LeadershipWeightGood(float v)			{ m_fLeadershipWeightGood = v; }
+	void DCO_ST_LeadershipWeightGood(float v)			{ m_fLeadershipWeightGood = v; s_iDCOTuneVerAll++; }
 	float DCO_GT_LeadershipWeightInspiring()			{ return m_fLeadershipWeightInspiring; }
-	void DCO_ST_LeadershipWeightInspiring(float v)	{ m_fLeadershipWeightInspiring = v; }
+	void DCO_ST_LeadershipWeightInspiring(float v)	{ m_fLeadershipWeightInspiring = v; s_iDCOTuneVerAll++; }
 	float DCO_GT_PersonalityWeightStandard()			{ return m_fPersonalityWeightStandard; }
-	void DCO_ST_PersonalityWeightStandard(float v)		{ m_fPersonalityWeightStandard = v; }
+	void DCO_ST_PersonalityWeightStandard(float v)		{ m_fPersonalityWeightStandard = v; s_iDCOTuneVerAll++; }
 
 	float DCO_GT_PersonalityWeightCautious()			{ return m_fPersonalityWeightCautious; }
-	void DCO_ST_PersonalityWeightCautious(float v)		{ m_fPersonalityWeightCautious = v; }
+	void DCO_ST_PersonalityWeightCautious(float v)		{ m_fPersonalityWeightCautious = v; s_iDCOTuneVerAll++; }
 
 	float DCO_GT_PersonalityWeightAggressive()			{ return m_fPersonalityWeightAggressive; }
-	void DCO_ST_PersonalityWeightAggressive(float v)		{ m_fPersonalityWeightAggressive = v; }
+	void DCO_ST_PersonalityWeightAggressive(float v)		{ m_fPersonalityWeightAggressive = v; s_iDCOTuneVerAll++; }
 
 	float DCO_GT_PersonalityWeightReckless()			{ return m_fPersonalityWeightReckless; }
-	void DCO_ST_PersonalityWeightReckless(float v)		{ m_fPersonalityWeightReckless = v; }
+	void DCO_ST_PersonalityWeightReckless(float v)		{ m_fPersonalityWeightReckless = v; s_iDCOTuneVerAll++; }
 
 	bool DCO_GT_StragglerEnabled()			{ return m_bStragglerEnabled; }
 	void DCO_ST_StragglerEnabled(bool v)		{ m_bStragglerEnabled = v; }
