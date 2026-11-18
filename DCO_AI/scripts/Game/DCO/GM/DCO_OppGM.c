@@ -202,6 +202,13 @@ class DCO_T_PERF_LiteMAttribute : DCO_TuneFloatAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_PERF_DormantAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "perf.dormant"; }
+	override protected bool Def() { return false; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_T_LOD_SmartPlayerMAttribute : DCO_TuneFloatAttribute
 {
 	override protected string Key() { return "lod.smart_player_m"; }

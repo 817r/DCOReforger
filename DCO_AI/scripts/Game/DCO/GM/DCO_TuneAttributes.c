@@ -2598,6 +2598,27 @@ class DCO_T_VA_EnabledAttribute : DCO_TuneFloatAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_VA_BrainAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "va.brain"; }
+	override protected float Def() { return 0.0; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_VA_DebugAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "va.debug"; }
+	override protected float Def() { return 0.0; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_VA_DebugAlwaysAttribute : DCO_TuneFloatAttribute
+{
+	override protected string Key() { return "va.debug_always"; }
+	override protected float Def() { return 0.0; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_T_PC_IdentifyMulAttribute : DCO_TuneFloatAttribute
 {
 	override protected string Key() { return "pc.identify_mul"; }

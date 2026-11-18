@@ -369,7 +369,10 @@ class DCO_MountedOps
 		{
 			SCR_AIWaypoint getOut = cmd.SpawnGetOutWP(leader.GetOrigin());
 			if (getOut)
+			{
 				grp.AddWaypointAt(getOut, 0);
+				DCO_VehExit.NoteGroup(grp, "mounted_dismount");
+			}
 		}
 
 		st.m_fDismountAt_ms = GetGame().GetWorld().GetWorldTime();
@@ -450,7 +453,10 @@ class DCO_MountedOps
 		{
 			SCR_AIWaypoint getOut = cmd.SpawnGetOutWP(leader.GetOrigin());
 			if (getOut)
+			{
 				grp.AddWaypointAt(getOut, 0);
+				DCO_VehExit.NoteGroup(grp, "mounted_vehicle_lost");
+			}
 		}
 		DCO_Perf.Count("veh:vehicle_lost");
 		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_lost grp=%1 why=%2", grp, why));

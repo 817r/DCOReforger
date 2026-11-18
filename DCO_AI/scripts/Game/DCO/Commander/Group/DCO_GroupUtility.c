@@ -941,6 +941,67 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		return DCO_Dormant.Count(m_Group);
 	}
 
+	protected float m_fDCODormAt_s;
+	protected bool m_bDCODormPolicy;
+
+	protected bool DCO_DormantWanted(out string why)
+	{
+		why = "off";
+		if (!m_Group || DCO_LodTune("perf.dormant", 0.0) <= 0)
+			return false;
+		why = "world_off";
+		if (!DCO_Dormant.WorldEnabled())
+			return false;
+		why = "not_reserve";
+		if (!GetMyCommander() || IsPlayerGroup() || IsDedicatedTransport() || GetGroupVehicle())
+			return false;
+		why = "task";
+		if (m_Task.m_eType != DCO_EGroupTask.NONE)
+			return false;
+		why = "contact";
+		if (IsInContact())
+			return false;
+		why = "enemy_near";
+		if (DCO_LodEnemyNear(DCO_LodTune("lod.smart_enemy_m", 800.0)))
+			return false;
+		why = "pinned";
+		if (EffectiveLOD() == DCO_EAILODMode.FULL_DETAIL || EffectiveLOD() == DCO_EAILODMode.PREVENT_MAX_LOD)
+			return false;
+		why = "idle";
+		return true;
+	}
+
+	void DCO_DormantTick()
+	{
+		float now = DCO_Util.NowS();
+		if (now - m_fDCODormAt_s < 10.0)
+			return;
+		m_fDCODormAt_s = now;
+		string why;
+		bool want = DCO_DormantWanted(why);
+		if (want && !m_bDCODormPolicy)
+		{
+			if (!DCO_Dormant.SetProximity(m_Group, DCO_LodTune("perf.dormant_wake_m", 1200.0), DCO_LodTune("perf.dormant_m", 1500.0)))
+				return;
+			m_bDCODormPolicy = true;
+			DCO_Perf.Count("perf:dormant_policy_on");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("dormant_policy grp=%1 on=1 units=%2", DCO_Log.IdGroup(m_Group), m_Group.GetAgentsCount()));
+		}
+		else if (!want && m_bDCODormPolicy)
+			DCO_DormantRelease(why);
+	}
+
+	void DCO_DormantRelease(string why)
+	{
+		if (!m_bDCODormPolicy || !m_Group)
+			return;
+		m_bDCODormPolicy = false;
+		int alive = DCO_Dormant.AliveCount(m_Group);
+		bool wake = DCO_Dormant.Release(m_Group);
+		DCO_Perf.Count("perf:dormant_policy_off_" + why);
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("dormant_policy grp=%1 on=0 why=%2 wake=%3 dormant_alive=%4", DCO_Log.IdGroup(m_Group), why, DCO_Util.B01(wake), alive));
+	}
+
 	void MoveTo(SCR_AIWaypoint wp, float worldTime)
 	{
 		if (!m_Group || !wp)
@@ -1061,6 +1122,9 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			task = DCO_EGroupTask.NONE;
 		if (IsMortar() && task != DCO_EGroupTask.FIRE_MISSION)
 			task = DCO_EGroupTask.NONE;
+
+		if (task != DCO_EGroupTask.NONE)
+			DCO_DormantRelease("task");
 
 		if (m_bCruiseLimited && task != DCO_EGroupTask.PATROL && task != DCO_EGroupTask.NONE)
 			SetVehicleCruiseSpeed(0);
@@ -2008,6 +2072,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			DCO_SimTick();
 			DCO_WpTick();
 			DCO_LodTick();
+			DCO_DormantTick();
 		}
 		UpdateGroupDebug(timeSlice);
 	}

@@ -89,6 +89,9 @@ class DCO_VehicleCombat
 		if (!vehicle)
 			return;
 
+		DCO_VehDbg.Touch(vehicle);
+		DCO_VehBrain.Tick(utility, vehicle);
+
 		if (utility.m_DCOConfig && utility.m_DCOConfig.IsHoldPosition())
 		{
 			SetHandBrakeIfDriver(self, true);
@@ -258,7 +261,9 @@ class DCO_VehicleCombat
 		if (!threat)
 			return false;
 
-		utility.AddAction(new SCR_AIGetOutVehicle(utility, null, vehicle));
+		SCR_AIGetOutVehicle dismount = new SCR_AIGetOutVehicle(utility, null, vehicle);
+		DCO_VehExit.Tag(dismount, "dismount_unarmed");
+		utility.AddAction(dismount);
 		DCO_Perf.Count("crew_dismount_unarmed");
 		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("crew_dismount_unarmed unit=%1 grp=%2", utility.m_OwnerEntity, grp.GetName()));
 		return true;
@@ -292,6 +297,10 @@ class DCO_VehicleCombat
 			return false;
 
 		bool gunner = utility.m_AIInfo && utility.m_AIInfo.HasUnitState(EUnitState.IN_TURRET);
+		bool brain = DCO_VehBrain.On(utility);
+		float bailHp = 0.25;
+		if (brain)
+			bailHp = DCO_Stress.T(utility, "va.bail_hp", 0.25);
 		string reason;
 		float hp = dmg.GetHealthScaled();
 		if (!dmg.IsOnFire())
@@ -305,7 +314,12 @@ class DCO_VehicleCombat
 				fireAt = now;
 				GetFireAt().Set(vehicle, now);
 			}
-			if (IsArmored(vehicle) && hp >= 0.5 && now - fireAt < 10000.0)
+			float fireWait = 0;
+			if (brain && hp >= bailHp)
+				fireWait = DCO_VehBrain.FireWait_ms(utility, vehicle);
+			else if (!brain && IsArmored(vehicle) && hp >= 0.5)
+				fireWait = 10000.0;
+			if (now - fireAt < fireWait)
 			{
 				DCO_Perf.Count("veh:bailout_fire_wait");
 				DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("crew_bailout_wait unit=%1 reason=fire hp=%2 burn_s=%3", DCO_Log.IdUnit(utility.m_OwnerEntity), hp.ToString(1, 2), (0.001 * (now - fireAt)).ToString(1, 1)));
@@ -313,11 +327,13 @@ class DCO_VehicleCombat
 			}
 			reason = "fire";
 		}
-		else if (dmg.GetHealthScaled() < 0.25)
+		else if (hp < bailHp)
 			reason = "hp";
 		else if (!dmg.GetEngineFunctional())
 		{
-			if (gunner && IsArmored(vehicle) && dmg.GetAimingDamage() < 0.9)
+			if (gunner && dmg.GetAimingDamage() < 0.9 && (brain || IsArmored(vehicle)))
+				return false;
+			if (brain && !gunner && IsArmored(vehicle) && utility.m_AIInfo && utility.m_AIInfo.HasUnitState(EUnitState.PILOT))
 				return false;
 			reason = "immobile";
 		}
@@ -333,7 +349,9 @@ class DCO_VehicleCombat
 			return false;
 		}
 
-		utility.AddAction(new SCR_AIGetOutVehicle(utility, null, vehicle, priority: SCR_AIActionBase.PRIORITY_BEHAVIOR_GET_OUT_VEHICLE_HIGH_PRIORITY));
+		SCR_AIGetOutVehicle bail = new SCR_AIGetOutVehicle(utility, null, vehicle, priority: SCR_AIActionBase.PRIORITY_BEHAVIOR_GET_OUT_VEHICLE_HIGH_PRIORITY);
+		DCO_VehExit.Tag(bail, "bail_" + reason);
+		utility.AddAction(bail);
 		DCO_Perf.Count("veh:bailout_" + reason);
 		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("crew_bailout unit=%1 reason=%2 gunner=%3 hp=%4",
 			DCO_Log.IdUnit(utility.m_OwnerEntity), reason, gunner, hp.ToString(1, 2)));

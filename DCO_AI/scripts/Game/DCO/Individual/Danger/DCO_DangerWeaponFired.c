@@ -404,6 +404,7 @@ modded class SCR_AIDangerReaction_WeaponFired
 					return false;
 
 				SCR_AIGetOutVehicle getOutAction = new SCR_AIGetOutVehicle(utility, null, compartmentAccess.GetOwner(), priority: SCR_AIActionBase.PRIORITY_BEHAVIOR_GET_OUT_VEHICLE_HIGH_PRIORITY);
+				DCO_VehExit.Tag(getOutAction, "danger_passenger");
 				utility.AddAction(getOutAction);
 
 				SCR_AICombatMoveState state = utility.m_CombatMoveState;

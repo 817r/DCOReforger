@@ -253,7 +253,10 @@ class DCO_TransportMissionComponent : ScriptComponent
 
 		SCR_AIWaypoint wpGetOut = m_Commander.SpawnGetOutWP(dest);
 		if (wpGetOut)
+		{
 			grp.AddWaypoint(wpGetOut);
+			DCO_VehExit.NoteGroup(grp, "pool_dropoff");
+		}
 	}
 
 	void AbortMission(float worldTime)

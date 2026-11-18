@@ -387,9 +387,38 @@ modded class SCR_AICombatMoveState
 
 	override void ApplyNewRequest(notnull SCR_AICombatMoveRequestBase request)
 	{
+		string vehSrc = DCO_VehMove.TakeSrc();
 		if (SCR_AICombatMoveRequest_Move.Cast(request) && m_DCOOwnerUtility && m_DCOOwnerUtility.m_DCOConfig
 			&& m_DCOOwnerUtility.m_DCOConfig.IsHoldPosition())
 			return;
+
+		if (DCO_VehMove.IsDriver(m_DCOOwnerUtility) && DCO_VehMove.OnRequest(m_DCOOwnerUtility, request, vehSrc))
+		{
+			m_bDCOFromAttackLogic = false;
+			m_bDCOOrdered = false;
+			m_bDCOUrgentNext = false;
+			SCR_AICombatMoveRequest_Move vehRq = SCR_AICombatMoveRequest_Move.Cast(request);
+			string vehDrop;
+			if (DCO_LeashGate(request))
+				vehDrop = "leash";
+			else if (vehRq && DCO_Relentless.Unit(m_DCOOwnerUtility) && (vehRq.m_eDirection == SCR_EAICombatMoveDirection.BACKWARD || vehRq.m_eReason == SCR_EAICombatMoveReason.MOVE_FROM_DANGER))
+				vehDrop = "relentless_hold_line";
+			else
+			{
+				string vehHeld = DCO_VehBrain.Accept(m_DCOOwnerUtility, request, vehSrc);
+				if (!vehHeld.IsEmpty())
+					vehDrop = "brain_" + vehHeld;
+			}
+			if (!vehDrop.IsEmpty())
+			{
+				DCO_Drop(vehDrop, request);
+				return;
+			}
+			DCO_Perf.Count("cm:req_vehicle");
+			DCO_VehMove.NoteApplied(m_DCOOwnerUtility);
+			super.ApplyNewRequest(request);
+			return;
+		}
 
 		DCO_CQC.ClampProne(m_DCOOwnerUtility, request);
 
@@ -474,6 +503,8 @@ modded class SCR_AICombatMoveState
 			DCO_Perf.Count("cm:req_move");
 		else
 			DCO_Perf.Count("cm:req_other");
+		if (DCO_VehMove.IsDriver(m_DCOOwnerUtility))
+			DCO_VehMove.NoteApplied(m_DCOOwnerUtility);
 		super.ApplyNewRequest(request);
 	}
 
@@ -613,6 +644,11 @@ modded class SCR_AICombatMoveState
 		m_DCODroppedRq = request;
 		m_sDCODropGate = gate;
 		DCO_Perf.Count("cm:drop_" + gate);
+		if (DCO_VehMove.IsDriver(m_DCOOwnerUtility))
+		{
+			DCO_Perf.Count("vmove:drop_" + gate);
+			DCO_VehDbg.NoteDrop(DCO_VehicleCombat.GetVehicle(m_DCOOwnerUtility.m_OwnerEntity), gate);
+		}
 		float now = GetGame().GetWorld().GetWorldTime();
 		if (now < m_fDCODropLogAt_ms || !m_DCOOwnerUtility || !m_DCOOwnerUtility.m_OwnerEntity || !DCO_Log.On(DCO_ELogChannel.UNIT, DCO_ELogLevel.DEBUG))
 			return;
