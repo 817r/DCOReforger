@@ -250,7 +250,7 @@ class DCO_GroupUtilityComponent : ScriptComponent
 			why = "enemy_near";
 			return true;
 		}
-		if (DCO_PlayerProx.Within(GetOwner().GetOrigin(), DCO_LodTune("lod.smart_player_m", 1000.0)))
+		if (DCO_PlayerProx.Within(GetOwner().GetOrigin(), DCO_Gov.Dist(DCO_LodTune("lod.smart_player_m", 1000.0), 600.0)))
 		{
 			why = "player_near";
 			return true;
@@ -942,7 +942,29 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	}
 
 	protected float m_fDCODormAt_s;
+	protected float m_fDCOWakeAt_s = -1000;
 	protected bool m_bDCODormPolicy;
+	protected int m_iDCODormGov = -1;
+	protected float m_fDCOPhaseAt_s;
+	protected int m_iDCOImpBase = -1;
+	protected int m_iDCOImpSet = -1;
+
+	// Player distances for the sleep policy, shortened by the frame-rate governor (with floors)
+	// while the server is struggling. Sleep is always further out than wake.
+	protected float DCO_DormantWakeM()
+	{
+		return DCO_Gov.Dist(DCO_LodTune("perf.dormant_wake_m", 1200.0), 700.0);
+	}
+
+	protected float DCO_DormantSleepM()
+	{
+		return Math.Max(DCO_Gov.Dist(DCO_LodTune("perf.dormant_m", 1500.0), 900.0), DCO_DormantWakeM() + 200.0);
+	}
+
+	protected float DCO_DormantEnemyM()
+	{
+		return DCO_LodTune("perf.dormant_enemy_m", 1000.0);
+	}
 
 	protected bool DCO_DormantWanted(out string why)
 	{
@@ -953,10 +975,10 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		if (!DCO_Dormant.WorldEnabled())
 			return false;
 		why = "not_reserve";
-		if (!GetMyCommander() || IsPlayerGroup() || IsDedicatedTransport() || GetGroupVehicle())
+		if (!GetMyCommander() || IsPlayerGroup() || IsDedicatedTransport())
 			return false;
 		why = "task";
-		if (m_Task.m_eType != DCO_EGroupTask.NONE)
+		if (!DCO_DormantTaskFits())
 			return false;
 		why = "contact";
 		if (IsInContact())
@@ -964,10 +986,126 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		why = "enemy_near";
 		if (DCO_LodEnemyNear(DCO_LodTune("lod.smart_enemy_m", 800.0)))
 			return false;
+		// Thinking enemy AI a bit beyond the wake distance: don't sleep only to wake again.
+		why = "enemy_ai";
+		if (DCO_Hostiles.SimNear(GetOwner().GetOrigin(), m_Group.GetFaction(), DCO_DormantEnemyM() * 1.25))
+			return false;
 		why = "pinned";
-		if (EffectiveLOD() == DCO_EAILODMode.FULL_DETAIL || EffectiveLOD() == DCO_EAILODMode.PREVENT_MAX_LOD)
+		DCO_EAILODMode lod = EffectiveLOD();
+		if (lod == DCO_EAILODMode.FULL_DETAIL || lod == DCO_EAILODMode.PREVENT_MAX_LOD)
+			return false;
+		// Smart mode: only while smart LOD has the group asleep too.
+		why = "smart_awake";
+		if (lod == DCO_EAILODMode.SMART && m_bDCOLodDecided && m_bDCOLodAwake)
+			return false;
+		why = "vehicle";
+		if (!DCO_DormantVehicleFits())
+			return false;
+		if (!DCO_DormantMembersFit(why))
 			return false;
 		why = "idle";
+		return true;
+	}
+
+	// Tasks a sleeping group can keep: none, or a defend/garrison position it has held quietly
+	// for two minutes.
+	protected bool DCO_DormantTaskFits()
+	{
+		DCO_EGroupTask t = m_Task.m_eType;
+		if (t == DCO_EGroupTask.NONE)
+			return true;
+		if (t != DCO_EGroupTask.DEFEND && t != DCO_EGroupTask.GARRISON)
+			return false;
+		if (DCO_LodTune("perf.dormant_garrison", 1.0) <= 0 || m_Task.m_ePhase != DCO_ETaskPhase.HOLDING)
+			return false;
+		if (DCO_Util.NowS() - m_fDCOPhaseAt_s < 120.0)
+			return false;
+		// Actually at its post: HOLDING alone also follows an order timeout or a 15 s stall.
+		vector post = m_Task.m_vTarget;
+		float r = 60.0;
+		AIWaypoint wp;
+		if (m_Group)
+			wp = m_Group.GetCurrentWaypoint();
+		if (wp)
+		{
+			post = wp.GetOrigin();
+			r = Math.Max(r, wp.GetCompletionRadius() + 30.0);
+		}
+		return post == vector.Zero || vector.DistanceXZ(GetOwner().GetOrigin(), post) <= r;
+	}
+
+	// Parked vehicle groups may sleep: everyone dismounted (checked per member) and the vehicle
+	// standing still close to the group. The vehicle stays where it is; they respawn next to it.
+	protected bool DCO_DormantVehicleFits()
+	{
+		IEntity veh = GetGroupVehicle();
+		if (!veh)
+			return true;
+		if (DCO_LodTune("perf.dormant_vehicle", 1.0) <= 0)
+			return false;
+		if (vector.DistanceXZ(veh.GetOrigin(), GetOwner().GetOrigin()) > 150.0)
+			return false;
+		Physics ph = veh.GetPhysics();
+		return !ph || ph.GetVelocity().Length() < 0.5;
+	}
+
+	// Only groups that come back the same as they left: everyone on foot, conscious and nearly
+	// unhurt (respawned soldiers are fresh prefabs, so a wounded group would wake up healed).
+	protected bool DCO_DormantMembersFit(out string why)
+	{
+		array<AIAgent> agents = {};
+		m_Group.GetAgents(agents);
+		foreach (AIAgent a : agents)
+		{
+			ChimeraCharacter ch;
+			if (a)
+				ch = ChimeraCharacter.Cast(a.GetControlledEntity());
+			if (!ch)
+				continue;
+			why = "in_vehicle";
+			if (ch.IsInVehicle())
+				return false;
+			why = "hurt";
+			CharacterControllerComponent ctrl = ch.GetCharacterController();
+			if (ctrl && ctrl.IsUnconscious())
+				return false;
+			SCR_CharacterDamageManagerComponent dm = SCR_CharacterDamageManagerComponent.Cast(ch.FindComponent(SCR_CharacterDamageManagerComponent));
+			if (dm && dm.GetHealthScaled() < DCO_LodTune("perf.dormant_min_hp", 0.9))
+				return false;
+		}
+		return true;
+	}
+
+	// Why a sleeping group has to wake now (empty: stay asleep). includeTask also wakes it for a
+	// task it can't do asleep; DCO_PaperKeeps passes false because that is its own question.
+	protected string DCO_DormantWakeReason(bool includeTask)
+	{
+		vector pos = GetOwner().GetOrigin();
+		// Someone else's ProximityDriven group (a vanilla spawner's): the engine wakes it for
+		// players and would put it straight back to sleep after any other wake.
+		if (!m_bDCODormPolicy && DCO_Dormant.IsProximity(m_Group))
+			return string.Empty;
+		// Groups on our own ProximityDriven policy are woken for players by the engine.
+		if (!m_bDCODormPolicy && DCO_PlayerProx.NearAny(pos, DCO_DormantWakeM()))
+			return "player_near";
+		if (DCO_Hostiles.SimNear(pos, m_Group.GetFaction(), DCO_DormantEnemyM()))
+			return "enemy_ai";
+		if (includeTask && !DCO_DormantTaskFits() && !DCO_PaperKeeps())
+			return "task";
+		return string.Empty;
+	}
+
+	// A task given while asleep: re-asserting a settled defend/garrison doesn't wake the group,
+	// and with off-screen battles on it travels asleep. Anything else wakes it.
+	protected bool DCO_DormantTaskKept(DCO_EGroupTask task)
+	{
+		if (!m_Group || m_Group.GetAgentsCount() > 0)
+			return false;
+		if (task == m_Task.m_eType && DCO_DormantTaskFits())
+			return true;
+		if (!DCO_PaperKeeps())
+			return false;
+		DCO_PaperAdopt(task);
 		return true;
 	}
 
@@ -977,29 +1115,326 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		if (now - m_fDCODormAt_s < 10.0)
 			return;
 		m_fDCODormAt_s = now;
+		if (!m_Group)
+			return;
+		DCO_ImportanceTick();
+		// Asleep, whoever put it to sleep: our policy, vanilla lifecycle or the engine evicting
+		// groups when the active-AI budget is full (those stay Manual, so only this wakes them).
+		if (m_Group.GetAgentsCount() == 0 && now - m_fDCOWakeAt_s > 30.0 && DCO_Dormant.Is(m_Group))
+		{
+			string wake = DCO_DormantWakeReason(true);
+			if (!wake.IsEmpty())
+			{
+				m_fDCOWakeAt_s = now;
+				DCO_DormantRelease(wake);
+				return;
+			}
+		}
 		string why;
 		bool want = DCO_DormantWanted(why);
-		if (want && !m_bDCODormPolicy)
+		// Respawning a squad costs far more than letting it idle: after any wake, stay up a while.
+		if (want && !m_bDCODormPolicy && now - Math.Max(DCO_Dormant.WokeAt(m_Group), m_fDCOWakeAt_s) < DCO_LodTune("perf.dormant_hold_s", 180.0))
 		{
-			if (!DCO_Dormant.SetProximity(m_Group, DCO_LodTune("perf.dormant_wake_m", 1200.0), DCO_LodTune("perf.dormant_m", 1500.0)))
+			want = false;
+			why = "woke_recently";
+		}
+		if (want && (!m_bDCODormPolicy || m_iDCODormGov != DCO_Gov.Level()))
+		{
+			if (!DCO_Dormant.SetProximity(m_Group, DCO_DormantWakeM(), DCO_DormantSleepM()))
 				return;
+			bool was = m_bDCODormPolicy;
 			m_bDCODormPolicy = true;
-			DCO_Perf.Count("perf:dormant_policy_on");
-			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("dormant_policy grp=%1 on=1 units=%2", DCO_Log.IdGroup(m_Group), m_Group.GetAgentsCount()));
+			m_iDCODormGov = DCO_Gov.Level();
+			if (!was)
+			{
+				DCO_Perf.Count("perf:dormant_policy_on");
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("dormant_policy grp=%1 on=1 units=%2 task=%3 wake_m=%4 sleep_m=%5 gov=%6", DCO_Log.IdGroup(m_Group), m_Group.GetAgentsCount(), typename.EnumToString(DCO_EGroupTask, m_Task.m_eType), DCO_DormantWakeM(), DCO_DormantSleepM(), DCO_Gov.Level()));
+			}
 		}
 		else if (!want && m_bDCODormPolicy)
 			DCO_DormantRelease(why);
 	}
 
+	// Ends the perf.dormant policy (if this group had it) and wakes the group if it is dormant,
+	// whoever put it to sleep (our policy, vanilla lifecycle or the engine's budget eviction).
 	void DCO_DormantRelease(string why)
 	{
-		if (!m_bDCODormPolicy || !m_Group)
+		if (!m_Group)
 			return;
+		bool policy = m_bDCODormPolicy;
 		m_bDCODormPolicy = false;
 		int alive = DCO_Dormant.AliveCount(m_Group);
-		bool wake = DCO_Dormant.Release(m_Group);
-		DCO_Perf.Count("perf:dormant_policy_off_" + why);
-		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("dormant_policy grp=%1 on=0 why=%2 wake=%3 dormant_alive=%4", DCO_Log.IdGroup(m_Group), why, DCO_Util.B01(wake), alive));
+		if (policy)
+		{
+			DCO_Dormant.Release(m_Group);
+			// Leaving ProximityDriven clears the group entity's FRAME mask; this component's
+			// tick (dormancy, LOD, waypoints, cruise) needs it while a commander owns the group.
+			if (GetMyCommander())
+				SetEventMask(GetOwner(), EntityEvent.FRAME);
+		}
+		bool wake = DCO_Dormant.Wake(m_Group, why);
+		if (!policy && !wake)
+			return;
+		if (policy)
+			DCO_Perf.Count("perf:dormant_policy_off_" + why);
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("dormant_policy grp=%1 on=0 why=%2 wake=%3 dormant_alive=%4 policy=%5", DCO_Log.IdGroup(m_Group), why, DCO_Util.B01(wake), alive, DCO_Util.B01(policy)));
+	}
+
+	// Called by the group just before its soldiers are deleted for sleep (any cause).
+	void DCO_OnDespawning()
+	{
+		DCO_AIGarrisonActivity act = GetGarrisonActivity();
+		if (act)
+			act.DCO_ForgetForDormancy();
+	}
+
+	// Spawn-budget priority: groups with a task, in contact, hurt or mounted get HIGH, so when the
+	// active-AI limit is full the engine evicts idle healthy reserves first (an evicted hurt or
+	// mounted group would come back healed and on foot). Never lowers a group below the
+	// importance it spawned with or one another system set, and never uses CRITICAL.
+	protected void DCO_ImportanceTick()
+	{
+		if (IsPlayerGroup() || !GetMyCommander() || DCO_LodTune("perf.importance", 1.0) <= 0)
+			return;
+		int cur = m_Group.GetImportance();
+		if (cur != m_iDCOImpSet)
+		{
+			m_iDCOImpBase = cur;
+			m_iDCOImpSet = cur;
+		}
+		string why = "base";
+		// Settled defenders count as reserves: DCO itself would put them to sleep.
+		if (!DCO_DormantTaskFits())
+			why = "task";
+		else if (IsInContact())
+			why = "contact";
+		else if (m_Group.GetAgentsCount() > 0)
+		{
+			string unfit;
+			if (!DCO_DormantMembersFit(unfit))
+				why = unfit;
+		}
+		int want = m_iDCOImpBase;
+		if (why != "base" && want < SCR_EAISpawnImportance.HIGH)
+			want = SCR_EAISpawnImportance.HIGH;
+		if (want == cur)
+			return;
+		m_Group.SetImportance(want);
+		m_iDCOImpSet = want;
+		DCO_Perf.Count("importance:" + want.ToString());
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("grp_importance grp=%1 from=%2 to=%3 base=%4 why=%5", DCO_Log.IdGroup(m_Group), cur, want, m_iDCOImpBase, why));
+	}
+
+	// ---- Off-screen battles (paper.on). Driven by DCO_Paper's central pass every ~5 s. ----
+
+	protected float m_fDCOPaperAcc;
+	protected int m_iDCOPaperStart;
+	protected bool m_bDCOPaperFight;
+	protected float m_fDCOPaperBreakUntil_s = -1;
+	protected bool m_bDCOPaperBlocked;
+	protected float m_fDCOPaperLogAt_s = -1000;
+
+	bool DCO_PaperAsleep()
+	{
+		if (!m_Group || m_Group.GetAgentsCount() > 0 || !GetMyCommander())
+			return false;
+		return DCO_Dormant.SnapCount(m_Group) > 0 && DCO_Dormant.Is(m_Group);
+	}
+
+	Faction DCO_PaperFaction()
+	{
+		if (!m_Group)
+			return null;
+		return m_Group.GetFaction();
+	}
+
+	int DCO_PaperMen()
+	{
+		return DCO_Dormant.SnapCount(m_Group);
+	}
+
+	bool DCO_PaperBroken(float now)
+	{
+		return now < m_fDCOPaperBreakUntil_s;
+	}
+
+	// Dug in rather than on the move: idle, or holding its position.
+	bool DCO_PaperHolding()
+	{
+		return m_Task.m_eType == DCO_EGroupTask.NONE || m_Task.m_ePhase == DCO_ETaskPhase.HOLDING;
+	}
+
+	// Can this sleeping group take its task asleep? On foot only (a vehicle would be left behind)
+	// and nothing that would wake it anyway.
+	bool DCO_PaperKeeps()
+	{
+		if (!DCO_Paper.On() || !DCO_PaperAsleep() || IsPlayerGroup() || IsDedicatedTransport() || GetGroupVehicle())
+			return false;
+		// A vanilla spawner's ProximityDriven group would be put back to sleep at its destination.
+		if (!m_bDCODormPolicy && DCO_Dormant.IsProximity(m_Group))
+			return false;
+		return DCO_DormantWakeReason(false).IsEmpty();
+	}
+
+	protected void DCO_PaperAdopt(DCO_EGroupTask task)
+	{
+		// Off our ProximityDriven policy, or the engine would only ever wake it for players.
+		if (m_bDCODormPolicy)
+		{
+			m_bDCODormPolicy = false;
+			DCO_Dormant.Release(m_Group);
+			if (GetMyCommander())
+				SetEventMask(GetOwner(), EntityEvent.FRAME);
+		}
+		m_bDCOPaperBlocked = false;
+		DCO_Perf.Count("paper:keep");
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("paper_keep grp=%1 task=%2 men=%3 pos=%4", DCO_Log.IdGroup(m_Group), typename.EnumToString(DCO_EGroupTask, task), DCO_PaperMen(), GetOwner().GetOrigin()));
+	}
+
+	protected void DCO_PaperWake(string why)
+	{
+		m_fDCOWakeAt_s = DCO_Util.NowS();
+		DCO_DormantRelease(why);
+	}
+
+	// One travel step toward the current waypoint. True when the group moved.
+	bool DCO_PaperMove(float dt, float now)
+	{
+		// Idle or settled defenders sleep in place (a garrison sits on its own defend waypoint).
+		if (DCO_DormantTaskFits() || DCO_PaperBroken(now) || m_bDCOPaperFight)
+			return false;
+		// Already asked to wake: the spawn queue hasn't served it yet, don't enqueue again.
+		if (now - m_fDCOWakeAt_s <= 30.0)
+			return false;
+		if (!DCO_PaperKeeps())
+		{
+			string why = DCO_DormantWakeReason(true);
+			if (!why.IsEmpty())
+				DCO_PaperWake(why);
+			return false;
+		}
+		AIWaypoint wp = m_Group.GetCurrentWaypoint();
+		vector dest = m_Task.m_vTarget;
+		if (wp)
+			dest = wp.GetOrigin();
+		if (dest == vector.Zero)
+			return false;
+		vector pos = GetOwner().GetOrigin();
+		float arrive = 30.0;
+		if (wp)
+			arrive = Math.Max(arrive, wp.GetCompletionRadius());
+		float dist = vector.DistanceXZ(pos, dest);
+		if (dist <= arrive)
+		{
+			// A plain move waypoint on a longer route is passed on paper; anything else (the
+			// end of the route, defend, attack, boarding...) needs real soldiers.
+			array<AIWaypoint> wps = {};
+			m_Group.GetWaypoints(wps);
+			if (wp && wp.Type() == SCR_AIWaypoint && wps.Count() > 1)
+			{
+				m_Group.CompleteWaypoint(wp);
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("paper_waypoint grp=%1 left=%2", DCO_Log.IdGroup(m_Group), wps.Count() - 1));
+				return true;
+			}
+			DCO_PaperWake("paper_arrive");
+			return false;
+		}
+		BaseWorld world = GetGame().GetWorld();
+		vector dir = dest - pos;
+		dir[1] = 0;
+		dir.Normalize();
+		float step = Math.Min(DCO_Paper.T("paper.mps", 2.5) * dt, dist - arrive * 0.5);
+		vector next = pos + dir * step;
+		next[1] = world.GetSurfaceY(next[0], next[2]);
+		if (next[1] < world.GetOceanBaseHeight() + 0.3)
+		{
+			DCO_PaperWake("paper_water");
+			return false;
+		}
+		// A spawned enemy ahead that is frozen at max LOD (no player near it). With smart or
+		// pinned LOD a woken, tasked group stays awake and makes contact for real; in vanilla
+		// mode it would just freeze too, so the paper group halts instead.
+		DCO_HostileEntry frozen = DCO_Hostiles.Nearest(next, DCO_PaperFaction(), DCO_Paper.T("paper.fight_m", 400.0), false);
+		if (frozen)
+		{
+			if (EffectiveLOD() != DCO_EAILODMode.VANILLA)
+			{
+				DCO_PaperWake("paper_contact");
+				return false;
+			}
+			if (!m_bDCOPaperBlocked)
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("paper_blocked grp=%1 by=%2 dist=%3", DCO_Log.IdGroup(m_Group), DCO_Log.IdGroup(frozen.m_Group), vector.DistanceXZ(frozen.m_vPos, next)));
+			m_bDCOPaperBlocked = true;
+			return false;
+		}
+		m_bDCOPaperBlocked = false;
+		vector mat[4];
+		Math3D.AnglesToMatrix(Vector(dir.ToYaw(), 0, 0), mat);
+		mat[3] = next;
+		GetOwner().SetWorldTransform(mat);
+		GetOwner().Update();
+		if (now - m_fDCOPaperLogAt_s > 60.0)
+		{
+			m_fDCOPaperLogAt_s = now;
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("paper_move grp=%1 task=%2 men=%3 left_m=%4 pos=%5", DCO_Log.IdGroup(m_Group), typename.EnumToString(DCO_EGroupTask, m_Task.m_eType), DCO_PaperMen(), Math.Round(dist - step), next));
+		}
+		return true;
+	}
+
+	// Losses from an off-screen fight this pass (fire 0: not in a fight).
+	void DCO_PaperTakeFire(float fire, float now, string foe)
+	{
+		if (fire <= 0)
+		{
+			if (m_bDCOPaperFight)
+			{
+				m_bDCOPaperFight = false;
+				DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("paper_fight_end grp=%1 men=%2 start=%3", DCO_Log.IdGroup(m_Group), DCO_PaperMen(), m_iDCOPaperStart));
+			}
+			return;
+		}
+		int men = DCO_PaperMen();
+		if (!m_bDCOPaperFight)
+		{
+			m_bDCOPaperFight = true;
+			m_iDCOPaperStart = men;
+			m_fDCOPaperAcc = 0;
+			DCO_Perf.Count("paper:fight");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("paper_fight_start grp=%1 foe=%2 men=%3 pos=%4", DCO_Log.IdGroup(m_Group), foe, men, GetOwner().GetOrigin()));
+		}
+		m_fDCOPaperAcc += fire * Math.RandomFloat(0.5, 1.5);
+		int hits = (int)m_fDCOPaperAcc;
+		if (hits <= 0)
+			return;
+		m_fDCOPaperAcc -= hits;
+		int lost = DCO_Dormant.PaperLose(m_Group, hits);
+		DCO_PerfHub.s_iPaperLost += lost;
+		men = DCO_PaperMen();
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("paper_loss grp=%1 lost=%2 men=%3 start=%4 foe=%5", DCO_Log.IdGroup(m_Group), lost, men, m_iDCOPaperStart, foe));
+		if (men <= 0)
+		{
+			DCO_PaperDestroy(foe);
+			return;
+		}
+		// Broken: stops fighting and holds for five minutes; the commander sees the losses.
+		if (men <= m_iDCOPaperStart * DCO_Paper.T("paper.break_pct", 0.4))
+		{
+			m_bDCOPaperFight = false;
+			m_fDCOPaperBreakUntil_s = now + 300.0;
+			DCO_Perf.Count("paper:break");
+			DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("paper_break grp=%1 men=%2 start=%3 foe=%4", DCO_Log.IdGroup(m_Group), men, m_iDCOPaperStart, foe));
+		}
+	}
+
+	protected void DCO_PaperDestroy(string foe)
+	{
+		DCO_PerfHub.s_iPaperGone++;
+		DCO_Perf.Count("paper:destroyed");
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Group), string.Format("paper_destroyed grp=%1 foe=%2 start=%3 pos=%4", DCO_Log.IdGroup(m_Group), foe, m_iDCOPaperStart, GetOwner().GetOrigin()));
+		AICommander_BaseComponent cmd = GetMyCommander();
+		if (cmd)
+			cmd.ReleaseGroup(this);
+		DCO_Dormant.Eliminate(m_Group);
 	}
 
 	void MoveTo(SCR_AIWaypoint wp, float worldTime)
@@ -1123,7 +1558,9 @@ class DCO_GroupUtilityComponent : ScriptComponent
 		if (IsMortar() && task != DCO_EGroupTask.FIRE_MISSION)
 			task = DCO_EGroupTask.NONE;
 
-		if (task != DCO_EGroupTask.NONE)
+		if (task != m_Task.m_eType)
+			m_fDCOPhaseAt_s = DCO_Util.NowS();
+		if (task != DCO_EGroupTask.NONE && !DCO_DormantTaskKept(task))
 			DCO_DormantRelease("task");
 
 		if (m_bCruiseLimited && task != DCO_EGroupTask.PATROL && task != DCO_EGroupTask.NONE)
@@ -1426,6 +1863,8 @@ class DCO_GroupUtilityComponent : ScriptComponent
 	{
 		if (phase != m_Task.m_ePhase && phase != DCO_ETaskPhase.HOLDING)
 			DCO_LodWake("phase");
+		if (phase != m_Task.m_ePhase)
+			m_fDCOPhaseAt_s = DCO_Util.NowS();
 		m_Task.m_ePhase = phase;
 		m_fStateCheck_ms = -1;
 	}

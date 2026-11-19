@@ -87,6 +87,36 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 		return PRIORITY_ACTIVITY_DEFEND;
 	}
 
+	// Soldiers that were holding when the group last went to sleep (see ShouldRelease).
+	protected int m_iDCOAway;
+	protected float m_fDCOBackAt_ms = -1;
+
+	// The group is going dormant: its soldiers are about to be deleted, not killed. Frees their
+	// building slots without counting casualties; when the group wakes, the respawned soldiers
+	// are picked up as new free agents and assigned to the free ranks again.
+	void DCO_ForgetForDormancy()
+	{
+		DCO_GarrisonRegistry registry = DCO_GarrisonRegistry.GetInstance();
+		foreach (DCO_GarrisonAssignment a : m_aAssigned)
+		{
+			if (!a)
+				continue;
+			SetAgentLeash(a.m_Agent, null);
+			if (!registry)
+				continue;
+			registry.Book(a.m_Building, a.m_iSlot, null);
+			if (a.m_bInterior && a.m_HomeBuilding)
+				registry.Book(a.m_HomeBuilding, a.m_iHomeSlot, null);
+		}
+		int n = m_aAssigned.Count();
+		if (n > m_iDCOAway)
+			m_iDCOAway = n;
+		m_fDCOBackAt_ms = -1;
+		m_aAssigned.Clear();
+		m_aVacancies.Clear();
+		DCO_Log.Write(DCO_ELogChannel.SQUAD, DCO_ELogLevel.INFO, DCO_Log.IdGroup(m_Utility.m_Owner), string.Format("garrison_dormant grp=%1 freed=%2 casualties=%3 phase=%4", DCO_Log.IdGroup(m_Utility.m_Owner), n, m_iCasualties, typename.EnumToString(DCO_EGarrisonPhase, m_ePhase)));
+	}
+
 	bool IsActive()
 	{
 		return IsRunning() && m_ePhase != DCO_EGarrisonPhase.RELEASED;
@@ -201,7 +231,20 @@ class DCO_AIGarrisonActivity : SCR_AIActivityBase
 	protected bool ShouldRelease(float now_ms)
 	{
 		float pct = m_Waypoint.GetReleaseCasualtyPct();
-		int total = m_iCasualties + m_aAssigned.Count();
+		// While the group sleeps (and while its respawned soldiers are being re-assigned) the
+		// soldiers that went to sleep still count as holding, or the ratio would read 100%.
+		// A minute after the first soldier is back in position, count only the real ones again.
+		if (m_iDCOAway > 0 && !m_aAssigned.IsEmpty())
+		{
+			if (m_fDCOBackAt_ms < 0)
+				m_fDCOBackAt_ms = now_ms;
+			else if (now_ms - m_fDCOBackAt_ms > 60000)
+				m_iDCOAway = 0;
+		}
+		int held = m_aAssigned.Count();
+		if (held < m_iDCOAway)
+			held = m_iDCOAway;
+		int total = m_iCasualties + held;
 		if (pct > 0 && total > 0 && m_iCasualties * 100.0 / total >= pct)
 			return true;
 

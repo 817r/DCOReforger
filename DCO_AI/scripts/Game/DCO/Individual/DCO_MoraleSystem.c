@@ -482,6 +482,16 @@ class DCO_AIMoraleSystem
 		m_fDCOLevelBase = base;
 	}
 
+	float DCO_GetMoraleMul()
+	{
+		return m_fDCOLevelMul;
+	}
+
+	float DCO_GetMoraleBase()
+	{
+		return m_fDCOLevelBase;
+	}
+
 	void Update(SCR_AIUtilityComponent utility, float timeSlice)
 	{
 		AIAgent moraleAgent = m_Utility.GetAIAgent();
