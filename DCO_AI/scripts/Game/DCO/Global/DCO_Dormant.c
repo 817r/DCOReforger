@@ -40,6 +40,53 @@ class DCO_Dormant
 		return grp.GetAgentsCount();
 	}
 
+	static bool WorldEnabled()
+	{
+#ifdef DCO_GAME_19
+		ChimeraAIWorld aiWorld = ChimeraAIWorld.Cast(GetGame().GetAIWorld());
+		return aiWorld && aiWorld.IsGroupDormancyEnabled();
+#endif
+		return false;
+	}
+
+	static int AliveCount(AIGroup grp)
+	{
+#ifdef DCO_GAME_19
+		SCR_AIGroup sg = SCR_AIGroup.Cast(grp);
+		if (sg)
+			return sg.GetDormantAliveCount();
+#endif
+		return 0;
+	}
+
+	static bool SetProximity(AIGroup grp, float spawnM, float despawnM)
+	{
+#ifdef DCO_GAME_19
+		SCR_AIGroup sg = SCR_AIGroup.Cast(grp);
+		if (!sg)
+			return false;
+		sg.SetLifecyclePolicy(SCR_EAIGroupLifecyclePolicy.ProximityDriven, spawnM, despawnM);
+		return true;
+#endif
+		return false;
+	}
+
+	static bool Release(AIGroup grp)
+	{
+#ifdef DCO_GAME_19
+		SCR_AIGroup sg = SCR_AIGroup.Cast(grp);
+		if (!sg)
+			return false;
+		sg.SetLifecyclePolicy(SCR_EAIGroupLifecyclePolicy.Manual);
+		if (sg.GetAgentsCount() == 0 && sg.GetDormantAliveCount() > 0)
+		{
+			sg.SpawnMembers();
+			return true;
+		}
+#endif
+		return false;
+	}
+
 #ifdef DCO_GAME_19
 	protected static void Note(SCR_AIGroup sg, bool dormant)
 	{

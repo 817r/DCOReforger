@@ -409,6 +409,7 @@ modded class SCR_AICombatMoveLogic_HideFromThreatSystem
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 
+		DCO_VehMove.Src("hide_threat");
 		m_DriverCombatState.ApplyNewRequest(rq);
 		rq.GetOnCompleted().Insert(OnMoveRequestCompleted);
 		m_LastMoveRequest = rq;

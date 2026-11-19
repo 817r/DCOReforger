@@ -647,6 +647,7 @@ class DCO_CtrlLock
 modded class SCR_AIGetOutVehicle
 {
 	protected bool m_bDCOCtrlChecked;
+	string m_sDCOCause;
 
 	override float CustomEvaluate()
 	{
@@ -655,7 +656,9 @@ modded class SCR_AIGetOutVehicle
 			m_bDCOCtrlChecked = true;
 			SCR_AIGetOutActivity outAct = SCR_AIGetOutActivity.Cast(GetRelatedGroupActivity());
 			bool ordered = outAct && outAct.m_RelatedWaypoint;
-			if (m_Utility && !DCO_CtrlLock.MayGetOut(m_Utility, m_Vehicle.m_Value, ordered))
+			bool allowed = !m_Utility || DCO_CtrlLock.MayGetOut(m_Utility, m_Vehicle.m_Value, ordered);
+			allowed = DCO_VehExit.OnGate(this, m_Utility, m_Vehicle.m_Value, ordered, allowed);
+			if (!allowed)
 			{
 				Fail();
 				return 0;

@@ -1062,7 +1062,10 @@ class DCO_TransportTeamComponent : ScriptComponent
 					continue;
 				CompartmentAccessComponent acc = ch.GetCompartmentAccessComponent();
 				if (acc && acc.IsInCompartment())
+				{
+					DCO_VehExit.Note(ch, "transport_unload");
 					acc.GetOutVehicle(EGetOutType.TELEPORT, -1, ECloseDoorAfterActions.INVALID, false);
+				}
 				if (m_Commander && m_Commander.GetLogistics())
 					m_Commander.GetLogistics().AddHubCasualty(c, worldTime);
 			}
@@ -1218,7 +1221,10 @@ class DCO_TransportTeamComponent : ScriptComponent
 			grp.CompleteAllWaypoints();
 			SCR_AIWaypoint wpGetOut = m_Commander.SpawnGetOutWP(dest);
 			if (wpGetOut)
+			{
 				grp.AddWaypoint(wpGetOut);
+				DCO_VehExit.NoteGroup(grp, "transport_dropoff");
+			}
 			if (vector.DistanceXZ(dest, m_Job.m_vDest) > 20.0)
 			{
 				SCR_AIWaypoint wpOn = m_Commander.SpawnMoveWP(DCO_Util.Surface(m_Job.m_vDest));
@@ -1377,7 +1383,10 @@ class DCO_TransportTeamComponent : ScriptComponent
 						continue;
 					CompartmentAccessComponent cacc = ch.GetCompartmentAccessComponent();
 					if (cacc && cacc.IsInCompartment())
+					{
+						DCO_VehExit.Note(ch, "transport_abandon");
 						cacc.GetOutVehicle(EGetOutType.TELEPORT, -1, ECloseDoorAfterActions.INVALID, false);
+					}
 				}
 			}
 			else
@@ -1398,7 +1407,10 @@ class DCO_TransportTeamComponent : ScriptComponent
 			SCR_AIGroup team = SCR_AIGroup.Cast(GetOwner());
 			SCR_AIWaypoint crewOut = m_Commander.SpawnGetOutWP(here);
 			if (team && crewOut)
+			{
 				team.AddWaypoint(crewOut);
+				DCO_VehExit.NoteGroup(team, "transport_abandon");
+			}
 
 			foreach (DCO_GroupUtilityComponent g : riders)
 			{
@@ -1410,7 +1422,10 @@ class DCO_TransportTeamComponent : ScriptComponent
 				grp.CompleteAllWaypoints();
 				SCR_AIWaypoint wpOut = m_Commander.SpawnGetOutWP(here);
 				if (wpOut)
+				{
 					grp.AddWaypoint(wpOut);
+					DCO_VehExit.NoteGroup(grp, "transport_abandon");
+				}
 				SCR_AIWaypoint wpWalk = m_Commander.SpawnMoveWP(lz);
 				if (wpWalk)
 					g.MoveTo(wpWalk, worldTime);

@@ -152,6 +152,13 @@ class DCO_VehicleActive
 		return st;
 	}
 
+	static DCO_VehActState Find(IEntity veh)
+	{
+		if (!veh)
+			return null;
+		return GetState().Get(veh);
+	}
+
 	static SCR_AICombatMoveState DriverState(IEntity veh)
 	{
 		BaseCompartmentManagerComponent mgr = BaseCompartmentManagerComponent.Cast(veh.FindComponent(BaseCompartmentManagerComponent));
@@ -566,6 +573,7 @@ class DCO_VehicleActive
 				st.m_vLastFire = vector.Zero;
 				st.m_fNextSeek_ms = now;
 			}
+			DCO_VehMove.Src("va_unstick");
 			ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(p, DCO_Util.Surface(back), lkp, SCR_EAICombatMoveReason.STANDARD));
 		}
 		DCO_Perf.Count("veh:stuck_" + step);
@@ -577,6 +585,12 @@ class DCO_VehicleActive
 	{
 		bool relentless = DCO_Relentless.Unit(u);
 		st.m_fNextSeek_ms = now + 4000.0;
+		string brainHold = DCO_VehBrain.WouldHold(u, veh);
+		if (!brainHold.IsEmpty())
+		{
+			DCO_Perf.Count("veh:seek_brain_" + brainHold);
+			return false;
+		}
 		if (relentless)
 		{
 			DCO_Perf.Count("relentless:veh_seek");
@@ -616,6 +630,7 @@ class DCO_VehicleActive
 		}
 		else if (found)
 		{
+			DCO_VehMove.Src("va_seek_firepos");
 			ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(veh.GetOrigin(), pos, lkp, SCR_EAICombatMoveReason.STANDARD));
 			st.m_vLastFire = pos;
 			st.m_fFireSince_ms = -1;
@@ -635,6 +650,7 @@ class DCO_VehicleActive
 				if (relentless)
 					step = Math.RandomFloat(80.0, 120.0);
 				pos = DCO_Util.Surface(veh.GetOrigin() + dir.Normalized() * step);
+				DCO_VehMove.Src("va_seek_advance");
 				ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(veh.GetOrigin(), pos, lkp, SCR_EAICombatMoveReason.STANDARD));
 				action = "advance";
 				st.m_fNextSeek_ms = now + 20000.0;
@@ -653,6 +669,7 @@ class DCO_VehicleActive
 			{
 				float stepA = Math.Min(Math.RandomFloat(30.0, 50.0), d - standoff);
 				pos = DCO_Util.Surface(veh.GetOrigin() + dirA.Normalized() * stepA);
+				DCO_VehMove.Src("va_seek_advance_at");
 				ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(veh.GetOrigin(), pos, lkp, SCR_EAICombatMoveReason.STANDARD));
 				action = "advance_at";
 				st.m_fNextSeek_ms = now + 20000.0;
@@ -665,6 +682,7 @@ class DCO_VehicleActive
 				if (d < standoff - 20.0 && dirA.Length() > 1.0 && vector.DistanceXZ(backPos, c) <= r)
 				{
 					pos = backPos;
+					DCO_VehMove.Src("va_seek_backoff_at");
 					ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(veh.GetOrigin(), pos, lkp, SCR_EAICombatMoveReason.STANDARD));
 					action = "backoff_at";
 					st.m_fNextSeek_ms = now + 20000.0;
@@ -707,6 +725,7 @@ class DCO_VehicleActive
 		if (DCO_VehicleCombat.GetATThreat(veh, atShooter, atPos))
 			threat = atPos;
 		vector pos = DCO_Stress.AwayPoint(veh, threat, Math.RandomFloat(150.0, 300.0), 30.0);
+		DCO_VehMove.Src("va_withdraw");
 		ds.ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(veh.GetOrigin(), pos, threat, SCR_EAICombatMoveReason.MOVE_FROM_TARGET));
 		DCO_VehiclePositioning.MarkHiding(veh, 60.0);
 		DCO_Perf.Count("veh:withdraw_" + why);

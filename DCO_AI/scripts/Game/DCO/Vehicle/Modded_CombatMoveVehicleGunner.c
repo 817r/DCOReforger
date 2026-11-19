@@ -30,7 +30,10 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		if (DCO_VehicleCombat.ATReact(m_MyVehicle, m_Utility, m_DriverState, atRq))
 		{
 			if (atRq)
+			{
+				DCO_VehMove.Src("at_react");
 				ApplyNewRequest(atRq);
+			}
 		}
 		else if (DCO_UpdateDuel())
 		{
@@ -74,6 +77,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 				m_Target.GetLastSeenPosition(), SCR_EAICombatMoveReason.STANDARD);
 			fireRq.GetOnMovementStarted().Insert(OnMovementStarted);
 			fireRq.GetOnCompleted().Insert(OnMovementCompleted);
+			DCO_VehMove.Src("atk_firepos");
 			ApplyNewRequest(fireRq);
 			DCO_VehicleActive.NoteFirePos(m_MyVehicle, firePos);
 			bool aggr = DCO_VehiclePositioning.Aggr(m_Utility);
@@ -121,6 +125,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		rq.GetOnMovementStarted().Insert(OnMovementStarted);
 		rq.GetOnCompleted().Insert(OnMovementCompleted);
 
+		DCO_VehMove.Src("atk_advance");
 		ApplyNewRequest(rq);
 	}
 
@@ -180,7 +185,8 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 	{
 		return m_eThreatState == EAIThreatState.THREATENED
 			&& !m_DriverState.IsExecutingRequest()
-			&& m_DriverState.m_fTimerStopped_s > 12.0;
+			&& m_DriverState.m_fTimerStopped_s > 12.0
+			&& DCO_VehBrain.WouldHold(m_Utility, m_MyVehicle).IsEmpty();
 	}
 
 	protected float DCO_ChaseExtra()
@@ -234,6 +240,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 			if (DCO_VehiclePositioning.PrefersHiding(posture, m_MyVehicle)
 				&& DCO_VehiclePositioning.FindHidePosition(m_MyVehicle, threatPos, wpPos, wpRadius, pos))
 			{
+				DCO_VehMove.Src("atk_hide");
 				ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), pos, threatPos, SCR_EAICombatMoveReason.MOVE_FROM_TARGET));
 				DCO_VehiclePositioning.MarkHiding(m_MyVehicle);
 				DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_hide veh=%1 posture=%2", DCO_Log.IdVeh(m_MyVehicle), typename.EnumToString(DCO_GroupTactics, posture)));
@@ -243,6 +250,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 			if (DCO_VehiclePositioning.FindFirePosition(m_MyVehicle, threatPos, ResolveStandoffDistance(),
 				DCO_VehiclePositioning.GetHullDownWeight(posture), wpPos, wpRadius, pos))
 			{
+				DCO_VehMove.Src("atk_relocate_firepos");
 				ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), pos, threatPos, SCR_EAICombatMoveReason.STANDARD));
 				return;
 			}
@@ -266,6 +274,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 
+		DCO_VehMove.Src("atk_relocate_random");
 		ApplyNewRequest(rq);
 	}
 
@@ -306,7 +315,10 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 			float desired = Math.Clamp(m_fTargetDist, 150.0, 600.0);
 			if (DCO_VehiclePositioning.FindFirePosition(m_MyVehicle, tpos, desired, 0.8, wpPos, wpRadius, firePos, true)
 				&& vector.DistanceXZ(firePos, m_MyVehicle.GetOrigin()) > 8.0)
+			{
+				DCO_VehMove.Src("duel_firepos");
 				ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), firePos, tpos, SCR_EAICombatMoveReason.STANDARD));
+			}
 			m_iDCODuelAmmo = Math.Max(ammo, 0);
 			m_iDCODuelShots = Math.RandomIntInclusive(1, 2);
 			if (DCO_VehiclePositioning.Aggr(m_Utility))
@@ -346,6 +358,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 		}
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
+		DCO_VehMove.Src("duel_scoot");
 		ApplyNewRequest(rq);
 		m_iDCODuelAmmo = -1;
 		DCO_Perf.Count("veh:duel_scoot_" + scootDir);
@@ -408,6 +421,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 				vector flank = tpos + side * Math.Clamp(d, 150.0, 400.0);
 				if (DCO_VehiclePositioning.FindFirePosition(m_MyVehicle, tpos, Math.Clamp(d, 150.0, 400.0), 0.8, flank, 120.0, pos))
 				{
+					DCO_VehMove.Src("duel_flank");
 					ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), pos, tpos, SCR_EAICombatMoveReason.STANDARD));
 					DCO_Perf.Count("veh:duel_flank");
 					DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_duel_flank veh=%1 posture=%2", DCO_Log.IdVeh(m_MyVehicle), typename.EnumToString(DCO_GroupTactics, posture)));
@@ -418,6 +432,7 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 
 		if (DCO_VehiclePositioning.FindHidePosition(m_MyVehicle, tpos, vector.Zero, 0, pos))
 		{
+			DCO_VehMove.Src("duel_hide");
 			ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), pos, tpos, SCR_EAICombatMoveReason.MOVE_FROM_TARGET));
 			DCO_VehiclePositioning.MarkHiding(m_MyVehicle);
 		}
@@ -467,6 +482,12 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 	{
 		if (DCO_Relentless.Unit(m_Utility))
 			return Math.Max(m_fWeaponMinDist + 5.0, 50.0);
+		if (DCO_VehBrain.On(m_Utility))
+		{
+			float brainD = DCO_VehBrain.StandoffFloor(m_Utility, m_MyVehicle);
+			if (brainD > 0)
+				return brainD;
+		}
 		float dist = ResolveOptimalDistance(m_fWeaponMinDist);
 		if (!DCO_IsATKnown())
 		{
@@ -494,6 +515,9 @@ modded class SCR_AICombatMoveLogicVehicleGunner_Attack : SCR_AICombatMoveLogicVe
 			return false;
 
 		if (m_DriverState.IsExecutingRequest())
+			return false;
+
+		if (!DCO_VehBrain.WouldHold(m_Utility, m_MyVehicle).IsEmpty())
 			return false;
 
 		if (IsFirstExecution())
@@ -539,7 +563,10 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		if (DCO_VehicleCombat.ATReact(m_MyVehicle, m_Utility, m_DriverState, atRq))
 		{
 			if (atRq)
+			{
+				DCO_VehMove.Src("at_react");
 				m_DriverState.ApplyNewRequest(atRq);
+			}
 		}
 		else if (MoveFromTargetCondition())
 		{
@@ -603,6 +630,7 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 
+		DCO_VehMove.Src("supp_backoff");
 		m_DriverState.ApplyNewRequest(rq);
 		DCO_Perf.Count("veh:supp_backoff");
 		DCO_Log.Write(DCO_ELogChannel.VEH, DCO_ELogLevel.INFO, "-", string.Format("veh_supp_backoff veh=%1 dist=%2 back=%3", DCO_Log.IdVeh(m_MyVehicle), Math.Round(vector.Distance(m_MyVehicle.GetOrigin(), rq.m_vMovePos)), backDist));
@@ -612,6 +640,9 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 	{
 		vector targetPos = m_SuppressionVolume.GetCenterPosition();
 		if (m_DriverState.IsExecutingRequest())
+			return false;
+
+		if (!DCO_VehBrain.WouldHold(m_Utility, m_MyVehicle).IsEmpty())
 			return false;
 
 		if (!TargetWithinTurretSafeHorizontalLimits(targetPos))
@@ -637,10 +668,14 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 			if (DCO_VehiclePositioning.Aggr(m_Utility))
 				standoff = 50.0;
 		}
+		standoff = standoff * Math.Min(DCO_VehiclePositioning.GetStandoffScale(posture), 1.2);
+		if (DCO_VehBrain.On(m_Utility) && !DCO_Relentless.Unit(m_Utility))
+			standoff = Math.Max(standoff, DCO_VehBrain.StandoffFloor(m_Utility, m_MyVehicle));
 		vector firePos;
-		if (DCO_VehiclePositioning.FindFirePosition(m_MyVehicle, center, standoff * Math.Min(DCO_VehiclePositioning.GetStandoffScale(posture), 1.2),
+		if (DCO_VehiclePositioning.FindFirePosition(m_MyVehicle, center, standoff,
 			DCO_VehiclePositioning.GetHullDownWeight(posture), vector.Zero, 0, firePos))
 		{
+			DCO_VehMove.Src("supp_firepos");
 			ApplyNewRequest(DCO_VehiclePositioning.CreateMoveRequest(m_MyVehicle.GetOrigin(), firePos, center, SCR_EAICombatMoveReason.STANDARD));
 			return;
 		}
@@ -666,6 +701,7 @@ class SCR_AICombatMoveLogicVehicleGunner_SuppressiveDCO : SCR_AICombatMoveLogicV
 		rq.m_bAimAtTarget = false;
 		rq.m_bAimAtTargetEnd = false;
 
+		DCO_VehMove.Src("supp_rotate");
 		ApplyNewRequest(rq);
 	}
 
