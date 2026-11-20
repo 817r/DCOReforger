@@ -209,6 +209,20 @@ class DCO_T_PERF_DormantAttribute : DCO_TuneBoolAttribute
 }
 
 [BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_PERF_PaperAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "paper.on"; }
+	override protected bool Def() { return false; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
+class DCO_T_PERF_GovAttribute : DCO_TuneBoolAttribute
+{
+	override protected string Key() { return "gov.on"; }
+	override protected bool Def() { return true; }
+}
+
+[BaseContainerProps(), SCR_BaseEditorAttributeCustomTitle()]
 class DCO_T_LOD_SmartPlayerMAttribute : DCO_TuneFloatAttribute
 {
 	override protected string Key() { return "lod.smart_player_m"; }

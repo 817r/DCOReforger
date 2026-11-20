@@ -435,6 +435,8 @@ class DCO_GlobalAIComponent: ScriptComponent
 	override void EOnFrame(IEntity owner, float timeSlice)
 	{
 		DCO_Perf.Tick(timeSlice);
+		if (Replication.IsServer() && m_sInstance == this)
+			DCO_PerfHub.Tick(timeSlice);
 	}
 
 	override void OnDelete(IEntity owner)
@@ -505,7 +507,8 @@ class DCO_GlobalAIComponent: ScriptComponent
 	{
 		bool on = m_bPerfProfiling && Replication.IsServer();
 		DCO_Perf.SetEnabled(on);
-		if (on || DCO_Dev.CensusOn())
+		// The server always ticks: frame-rate governor, off-screen battles, per-minute line.
+		if (on || DCO_Dev.CensusOn() || Replication.IsServer())
 			SetEventMask(GetOwner(), EntityEvent.FRAME);
 		else
 			ClearEventMask(GetOwner(), EntityEvent.FRAME);

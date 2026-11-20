@@ -32,6 +32,22 @@ class DCO_PlayerProx
 		return s_aPos.Count();
 	}
 
+	// Like Within, but with no players connected nobody is near (Within treats an empty server as
+	// "everyone is near" so lite mode stays off; waking sleeping groups for nobody would flap).
+	static bool NearAny(vector pos, float m)
+	{
+		if (DCO_Dev.TestActive())
+			return true;
+		Refresh(GetGame().GetWorld().GetWorldTime());
+		float m2 = m * m;
+		foreach (vector p : s_aPos)
+		{
+			if (vector.DistanceSqXZ(p, pos) <= m2)
+				return true;
+		}
+		return false;
+	}
+
 	static bool Within(vector pos, float m)
 	{
 		if (DCO_Dev.TestActive())

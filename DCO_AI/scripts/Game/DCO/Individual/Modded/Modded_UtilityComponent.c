@@ -29,7 +29,7 @@ modded class SCR_AIUtilityComponent
 		if (m_OwnerEntity && m_ThreatSystem && m_CombatComponent && DCO_Stress.T(this, "perf.lite_on", 1.0) > 0)
 		{
 			bool quiet = m_ThreatSystem.GetState() == EAIThreatState.SAFE && !m_CombatComponent.GetCurrentTarget();
-			if (quiet && !DCO_PlayerProx.Within(m_OwnerEntity.GetOrigin(), DCO_Stress.T(this, "perf.lite_m", 1000.0)))
+			if (quiet && !DCO_PlayerProx.Within(m_OwnerEntity.GetOrigin(), DCO_Gov.Dist(DCO_Stress.T(this, "perf.lite_m", 1000.0), 500.0)))
 				m_bDCOLite = true;
 		}
 		if (m_bDCOLite != was)
