@@ -73,6 +73,11 @@ class DCO_ContactSharing
 
 	protected static ref DCO_ContactSharing s_Instance;
 
+	// Perf: tick 4x per second with a quarter of the scan budget each time, so the work is spread
+	// over several frames instead of one large hitch per second. Group scan rate is unchanged.
+	static const int TICK_MS = 250;
+	static const int TICKS_PER_S = 4;
+
 	protected ref array<SCR_AIGroupUtilityComponent> m_aGroups = {};
 	protected ref array<ref DCO_SharedContact> m_aPending = {};
 	protected ref array<ref DCO_SharedContact> m_aDeferred = {};
@@ -95,7 +100,7 @@ class DCO_ContactSharing
 		if (!s_Instance)
 		{
 			s_Instance = new DCO_ContactSharing();
-			GetGame().GetCallqueue().CallLater(s_Instance.Tick, 1000, true);
+			GetGame().GetCallqueue().CallLater(s_Instance.Tick, TICK_MS, true);
 		}
 
 		if (!s_Instance.m_aGroups.Contains(group))
@@ -129,7 +134,7 @@ class DCO_ContactSharing
 		DeliverEst(now);
 
 		int n = m_aGroups.Count();
-		int budget = Math.Max(4, Math.Ceil(1.0 * n / 3.0));
+		int budget = Math.Max(1, Math.Ceil(1.0 * n / (3.0 * TICKS_PER_S)));
 		while (budget > 0 && !m_aGroups.IsEmpty())
 		{
 			if (m_iScanIdx >= m_aGroups.Count())
@@ -623,7 +628,7 @@ class DCO_ContactSharing
 				continue;
 			}
 			k.m_iDeferTicks++;
-			if (k.m_iDeferTicks > 3)
+			if (k.m_iDeferTicks > 3 * TICKS_PER_S)
 			{
 				m_aDeferred.Remove(i);
 				i--;

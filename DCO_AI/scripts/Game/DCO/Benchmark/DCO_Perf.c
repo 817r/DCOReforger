@@ -332,9 +332,21 @@ class DCO_Perf
 		if (s_iFrames > 0)
 			dcoPerFrame = dcoMs * 1.0 / s_iFrames;
 
+		// Counters are written in chunks: a single line longer than ~8 KB gets truncated and the
+		// counters at the end were silently lost.
 		string queries;
+		array<string> queryChunks = {};
 		foreach (string src, int n : GetCounts())
+		{
 			queries += string.Format(" %1=%2", src, (1.0 * n / s_fWindow).ToString(-1, 1));
+			if (queries.Length() > 3500)
+			{
+				queryChunks.Insert(queries);
+				queries = string.Empty;
+			}
+		}
+		if (!queries.IsEmpty() || queryChunks.IsEmpty())
+			queryChunks.Insert(queries);
 
 		int players = 0;
 		if (GetGame().GetPlayerManager())
@@ -343,7 +355,8 @@ class DCO_Perf
 			fpsAvg.ToString(-1, 1), fpsMin.ToString(-1, 1), Math.Round(s_fMaxFrame * 1000), aiTotal, aiLocked, players, lod0, lodMid, lodMax));
 		Write("PERF groups:" + groups);
 		Write("PERF sections(calls/ms_total/ms_max/us_per_call):" + sections);
-		Write("PERF queries_per_s:" + queries);
+		foreach (string chunk : queryChunks)
+			Write("PERF queries_per_s:" + chunk);
 		DCO_Report.Perf(fpsAvg, fpsMin, Math.Round(s_fMaxFrame * 1000), aiTotal, players, lod0, lodMid + lodMax, dcoPerFrame, top);
 	}
 
