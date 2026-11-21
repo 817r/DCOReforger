@@ -19,6 +19,20 @@ modded class SCR_AIUtilityComponent
 		return m_bDCOLite;
 	}
 
+	// Perf: faction-specific DCO config for this soldier, re-resolved at most every 2 s.
+	protected DCO_GlobalAIComponent m_DCOGlobalCache;
+	protected float m_fDCOGlobalCacheAt = -1;
+
+	DCO_GlobalAIComponent DCO_CachedGlobal()
+	{
+		float now = GetGame().GetWorld().GetWorldTime();
+		if (m_DCOGlobalCache && m_fDCOGlobalCacheAt >= 0 && now - m_fDCOGlobalCacheAt < 2000.0)
+			return m_DCOGlobalCache;
+		m_DCOGlobalCache = DCO_GlobalAIComponent.GetFor(m_OwnerEntity);
+		m_fDCOGlobalCacheAt = now;
+		return m_DCOGlobalCache;
+	}
+
 	protected bool DCO_LiteNow(float time)
 	{
 		if (m_fDCOLiteAt_ms >= 0 && time < m_fDCOLiteAt_ms)

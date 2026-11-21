@@ -78,7 +78,9 @@ modded class DCO_GlobalAIComponent
 	{
 		if (!utility || !DCO_FactionActive())
 			return GetInstance();
-		return GetFor(utility.m_OwnerEntity);
+		// Perf: per-soldier cache instead of resolving the faction (component search + string key)
+		// on every tuning lookup.
+		return utility.DCO_CachedGlobal();
 	}
 
 	static DCO_GlobalAIComponent GetForCommander(AICommander_BaseComponent cmd)
